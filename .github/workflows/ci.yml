@@ -1,0 +1,28 @@
+name: CI dev
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+
+    - name: Install dependencies
+      run: yarn
+
+    - name: Run linter
+      run: yarn lint
+
+    - name: Install dapptools
+      run: |
+        curl -L https://nixos.org/nix/install | sh
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+        curl https://dapp.tools/install | sh
+        dapp update
+        dapp test
+      env:
+        # Only fuzz deeply if we're pushing to main or this is a PR to main:
+        DEEP_FUZZ: ${{ github.ref == 'refs/heads/main' || github.base_ref == 'main' }}

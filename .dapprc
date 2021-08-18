@@ -1,0 +1,7 @@
+export DAPP_COVERAGE=0
+if [ "$CI" == "true" ]
+then
+  export DAPP_TEST_FUZZ_RUNS=1000000 # In CI we want to fuzz for a long time.
+else
+  export DAPP_TEST_FUZZ_RUNS=1000 # When developing we only want to fuzz briefly.
+fi

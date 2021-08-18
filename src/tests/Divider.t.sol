@@ -2,13 +2,13 @@ pragma solidity ^0.8.6;
 
 import "ds-test/test.sol";
 
-import "./Sense.sol";
+import "../Divider.sol";
 
-contract SenseTest is DSTest {
-    Sense sense;
+contract DividerTest is DSTest {
+    Divider divider;
 
     function setUp() public {
-        sense = new Sense();
+        divider = new Divider();
     }
 
     function testFail_basic_sanity() public {
