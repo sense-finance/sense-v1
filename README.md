@@ -59,7 +59,7 @@ make
 | `dapp test`  | run tests   	|
 | `dapp debug` | run tests using HEVM interactive debugger |
 | `yarn lint`  | run linter |
-| `yarn lint --fix`  | run linter and fix errors |
+| `yarn prettier`  | fix linter errors |
 
 ## Branching (TBD)
 

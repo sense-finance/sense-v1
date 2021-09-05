@@ -2,5 +2,6 @@
 out/
 lib/
 node_modules/
+src/external/
 
 # files

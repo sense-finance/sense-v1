@@ -5,7 +5,8 @@
   "author": "Federico M. Alconada Verzini",
   "license": "ISC",
   "scripts": {
-    "lint": "npx solhint -f table src/**/*.sol"
+    "lint": "npx solhint -f table src/**/*.sol",
+    "prettier": "prettier --write src/**/*.sol"
   },
   "devDependencies": {
     "prettier": "^2.3.2",

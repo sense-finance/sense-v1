@@ -1,9 +1,9 @@
 pragma solidity ^0.8.6;
 
 abstract contract IDivider {
-    function initSeries(address feed, uint256 maturity) external virtual;
+    function initSeries(address feed, uint256 maturity) external virtual returns (address zero, address claim);
 
-    function settleSeries(address feed, uint256 maturity) public virtual;
+    function settleSeries(address feed, uint256 maturity) external virtual;
 
     function issue(
         address feed,
@@ -24,10 +24,11 @@ abstract contract IDivider {
     ) external virtual;
 
     function collect(
+        address usr,
         address feed,
         uint256 maturity,
         uint256 balance
-    ) external virtual;
+    ) external virtual returns (uint256 _collected);
 
     function setFeed(address feed, bool isOn) external virtual;
 
@@ -38,4 +39,6 @@ abstract contract IDivider {
     ) external virtual;
 
     function stop() external virtual;
+
+    function setStableAsset(address _stableAsset) external virtual;
 }
