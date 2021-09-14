@@ -1,5 +1,9 @@
 pragma solidity ^0.8.6;
 
+import "../external/tokens/ERC20.sol";
+import "../tokens/Zero.sol";
+import "../tokens/Claim.sol";
+
 abstract contract IDivider {
     function initSeries(address feed, uint256 maturity) external virtual returns (address zero, address claim);
 
@@ -35,10 +39,8 @@ abstract contract IDivider {
     function backfillScale(
         address feed,
         uint256 maturity,
-        uint256 scale
+        uint256 scale,
+        uint256[] memory values,
+        address[] memory accounts
     ) external virtual;
-
-    function stop() external virtual;
-
-    function setStableAsset(address _stableAsset) external virtual;
 }

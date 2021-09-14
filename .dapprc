@@ -1,4 +1,6 @@
-export DAPP_COVERAGE=0
+export DAPP_SOLC_VERSION=0.8.6
+export DAPP_BUILD_OPTIMIZE=1
+export DAPP_COVERAGE=1
 if [ "$CI" == "true" ]
 then
   export DAPP_TEST_FUZZ_RUNS=1000000 # In CI we want to fuzz for a long time.

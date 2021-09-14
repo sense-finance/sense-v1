@@ -1,20 +1,16 @@
 pragma solidity ^0.8.6;
 
 // External references
-import "../external/openzeppelin/ERC20.sol";
-
-// Internal references
-import "../interfaces/IDivider.sol";
-import "../interfaces/IFeed.sol";
+import "../external/tokens/ERC20.sol";
 
 // @title Zero token contract that allows Divider contract to burn Zero tokens for any address
 // @dev This is an EXAMPLE interface, the actual functions one needs
 // to override depend on the ERC20 implementation
-contract BaseToken is ERC20 {
+abstract contract BaseToken is ERC20 {
     // The Target token's address this feed applies to
     uint256 public maturity;
-    IDivider public divider;
-    IFeed public feed;
+    address public divider;
+    address public feed;
 
     constructor(
         uint256 _maturity,
@@ -22,10 +18,10 @@ contract BaseToken is ERC20 {
         address _feed,
         string memory _name,
         string memory _symbol
-    ) public ERC20(_name, _symbol) {
+    ) ERC20(_name, _symbol, 18) {
         maturity = _maturity;
-        divider = IDivider(_divider);
-        feed = IFeed(_feed);
+        divider = _divider;
+        feed = _feed;
     }
 
     /**
