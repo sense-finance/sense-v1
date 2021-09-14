@@ -1,22 +1,31 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import "../../BaseFeed.sol";
+import "../../feed/BaseFeed.sol";
+import "../../external/tokens/ERC20.sol";
 
 contract TestFeed is BaseFeed {
 
     constructor(
         address _target,
-        string memory _name,
-        string memory _symbol
-    ) public BaseFeed(_target, _name, _symbol) {}
+        address _divider,
+        uint256 _delta
+    ) BaseFeed(_target, _divider, _delta) {}
 
-    /// @notice Calculate and return this feed's Scale value for the current timestamp
-    /// @dev For some Targets, such as cTokens, this is simply the exchange rate,
-    /// or `supply cToken / supply underlying`
-    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    /// @return _scale 18 decimal Scale value
-    function scale() external override virtual returns (uint256 _scale) {
-        return 1;
+    uint256 internal _counter = 1;
+    uint256 internal constant EMERGENCY = 911;
+
+    function _scale() internal override virtual returns (uint256 _value) {
+        _value = 1e17 * _counter;
+        if (_counter >= EMERGENCY) { // we force an invalid scale value
+            _value = 0;
+        }
+        _counter++;
     }
+
+    function setCounter(uint256 num) public {
+        _counter = num;
+        emit Counter(_counter);
+    }
+    event Counter(uint256 _counter);
 }
