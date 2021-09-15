@@ -89,7 +89,7 @@ contract Divider is IDivider {
             mscale : 0
         });
         series[feed][maturity] = newSeries;
-        emit SeriesInitialised(zero, claim, msg.sender);
+        emit SeriesInitialised(feed, maturity, zero, claim, msg.sender);
     }
 
     // @notice Settles a Series and transfer a settlement reward to the caller
@@ -363,14 +363,14 @@ contract Divider is IDivider {
     }
 
     /* ========== EVENTS ========== */
-    event SeriesInitialised(address zero, address claim, address sponsor);
-    event SeriesSettled(address feed, uint256 maturity, address settler);
-    event Issued(address feed, uint256 maturity, uint256 balance, address sender);
-    event ZerosBurned(address account, uint256 zeros);
-    event ClaimsBurned(address account, uint256 claims);
-    event Combined(address feed, uint256 maturity, uint256 balance, address sender);
-    event Backfilled(address feed, uint256 maturity, uint256 scale, uint256[] values, address[] accounts);
-    event FeedChanged(address feed, bool isOn);
-    event Collected(address feed, uint256 maturity, uint256 collected);
-    event Redeemed(address feed, uint256 maturity, uint256 redeemed);
+    event SeriesInitialised(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
+    event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
+    event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event ZerosBurned(address indexed account, uint256 indexed zeros);
+    event ClaimsBurned(address indexed account, uint256 indexed claims);
+    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 scale, uint256[] values, address[] accounts);
+    event FeedChanged(address indexed feed, bool isOn);
+    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
+    event Redeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
 }
