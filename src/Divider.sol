@@ -161,7 +161,7 @@ contract Divider is IDivider {
         Zero zero = Zero(series[feed][maturity].zero);
         Claim claim = Claim(series[feed][maturity].claim);
         zero.burn(msg.sender, balance);
-        claim.burn(msg.sender, balance);
+        claim.burn(msg.sender, balance, true);
 
         uint256 cscale = series[feed][maturity].mscale;
         if (!_settled(feed, maturity)) {

@@ -76,16 +76,7 @@ contract ERC20 {
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
-        balanceOf[msg.sender] -= value;
-
-        // This is safe because the sum of all user
-        // balances can't exceed type(uint256).max!
-    unchecked {
-        balanceOf[to] += value;
-    }
-
-        emit Transfer(msg.sender, to, value);
-
+        _transfer(msg.sender, to, value);
         return true;
     }
 
@@ -94,20 +85,7 @@ contract ERC20 {
         address to,
         uint256 value
     ) external returns (bool) {
-        if (allowance[from][msg.sender] != type(uint256).max) {
-            allowance[from][msg.sender] -= value;
-        }
-
-        balanceOf[from] -= value;
-
-        // This is safe because the sum of all user
-        // balances can't exceed type(uint256).max!
-    unchecked {
-        balanceOf[to] += value;
-    }
-
-        emit Transfer(from, to, value);
-
+        _transfer(from, to, value);
         return true;
     }
 
@@ -169,4 +147,26 @@ contract ERC20 {
 
         emit Transfer(from, address(0), value);
     }
+
+    function _transfer(address from, address to, uint256 value) internal virtual returns (bool) {
+        _beforeTokenTransfer(from, to, value);
+
+        balanceOf[from] -= value;
+
+        // This is safe because the sum of all user
+        // balances can't exceed type(uint256).max!
+    unchecked {
+        balanceOf[to] += value;
+    }
+
+        emit Transfer(from, to, value);
+
+        return true;
+    }
+    
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 value
+    ) internal virtual {}
 }

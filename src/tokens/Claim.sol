@@ -21,6 +21,14 @@ contract Claim is BaseToken {
         return IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
     }
 
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 value
+    ) internal virtual override {
+        IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
+    }
+
     /**
      * @dev ERC20 override that adds a call to collect on each burn.
      * @dev Destroys `amount` tokens from the caller.
