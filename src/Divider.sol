@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 // Internal references
 import "./interfaces/IDivider.sol";
 import "./interfaces/IFeed.sol";
-import "./tokens/Zero.sol";
+import "./tokens/BaseToken.sol";
 import "./tokens/Claim.sol";
 import "./libs/errors.sol";
 
@@ -140,7 +140,7 @@ contract Divider is IDivider {
             }
         }
         uint256 amount = newBalance.wmul(scale);
-        Zero(series[feed][maturity].zero).mint(msg.sender, amount);
+        BaseToken(series[feed][maturity].zero).mint(msg.sender, amount);
         Claim(series[feed][maturity].claim).mint(msg.sender, amount);
 
         emit Issued(feed, maturity, amount, msg.sender);
@@ -158,7 +158,7 @@ contract Divider is IDivider {
     ) external override {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
-        Zero zero = Zero(series[feed][maturity].zero);
+        BaseToken zero = BaseToken(series[feed][maturity].zero);
         Claim claim = Claim(series[feed][maturity].claim);
         zero.burn(msg.sender, balance);
         claim.burn(msg.sender, balance, true);
@@ -189,7 +189,7 @@ contract Divider is IDivider {
         require(_exists(feed, maturity), Errors.NotExists);
         require(balance > 0, Errors.ZeroBalance);
         require(_settled(feed, maturity), Errors.NotSettled);
-        Zero zero = Zero(series[feed][maturity].zero);
+        BaseToken zero = BaseToken(series[feed][maturity].zero);
 //        uint256 b = zero.balanceOf(msg.sender);
 //        require(b >= balance, Errors.NotSettled);
         zero.burn(msg.sender, balance);
@@ -333,7 +333,7 @@ contract Divider is IDivider {
 
         string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", date));
         string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", date));
-        zero = address(new Zero(maturity, address(this), feed, zname, zsymbol));
+        zero = address(new BaseToken(maturity, address(this), feed, zname, zsymbol));
 
         string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", date));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", date));

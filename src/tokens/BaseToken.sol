@@ -6,7 +6,7 @@ import "../external/tokens/ERC20.sol";
 // @title Zero token contract that allows Divider contract to burn Zero tokens for any address
 // @dev This is an EXAMPLE interface, the actual functions one needs
 // to override depend on the ERC20 implementation
-abstract contract BaseToken is ERC20 {
+contract BaseToken is ERC20 {
     // The Target token's address this feed applies to
     uint256 public maturity;
     address public divider;
@@ -25,24 +25,25 @@ abstract contract BaseToken is ERC20 {
     }
 
     /**
-     * @dev Mints new Zero or Claim tokens for user, increasing the total supply.
-     * @param user The address to send the minted tokens.
+     * @dev Mints new Zero or Claim tokens for usr, increasing the total supply.
+     * @param usr The address to send the minted tokens.
      * @param amount The amount to be minted.
      **/
-    function mint(address user, uint256 amount) public onlyDivider {
-        _mint(user, amount);
-        emit Mint(user, amount);
+    function mint(address usr, uint256 amount) public onlyDivider {
+        _mint(usr, amount);
+        emit Mint(usr, amount);
     }
 
     /**
      * @dev ERC20 override that adds a call to collect on each burn.
      * @dev Destroys `amount` tokens from the caller.
      * See {ERC20-_burn}.
-     * @param account The address to send the minted tokens.
+     * @param usr The address to send the minted tokens.
      * @param amount The amount to be minted.
      **/
-    function burn(address account, uint256 amount) public virtual onlyDivider {
-        _burn(account, amount);
+    function burn(address usr, uint256 amount) public virtual onlyDivider {
+        _burn(usr, amount);
+        emit Burn(usr, amount);
     }
 
     /* ========== MODIFIERS ========== */
@@ -56,5 +57,6 @@ abstract contract BaseToken is ERC20 {
     }
 
     /* ========== EVENTS ========== */
-    event Mint(address user, uint256 amount);
+    event Mint(address usr, uint256 amount);
+    event Burn(address usr, uint256 amount);
 }
