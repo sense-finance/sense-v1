@@ -1,9 +1,5 @@
 pragma solidity ^0.8.6;
 
-import "../external/tokens/ERC20.sol";
-import "../tokens/Zero.sol";
-import "../tokens/Claim.sol";
-
 abstract contract IDivider {
     function initSeries(address feed, uint256 maturity) external virtual returns (address zero, address claim);
 

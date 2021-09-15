@@ -5,7 +5,7 @@ import "./test-helpers/TestToken.sol";
 import "./test-helpers/TestFeed.sol";
 import "../external/DateTime.sol";
 import "../tokens/Claim.sol";
-import "../tokens/Zero.sol";
+import "../tokens/BaseToken.sol";
 
 contract Divide is DividerTest {
     using WadMath for uint256;
@@ -341,15 +341,15 @@ contract Divide is DividerTest {
         uint256 amount = 100e18; // 100 target
         uint256 fee = (ISSUANCE_FEE * 100e18) / 100; // 1 target
         uint256 tBalanceBefore = target.balanceOf(address(alice));
-        uint256 zBalanceBefore = Zero(zero).balanceOf(address(alice));
+        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(alice));
         uint256 cBalanceBefore = Claim(claim).balanceOf(address(alice));
         alice.doIssue(address(feed), maturity, amount);
-        uint256 zBalanceAfter = Zero(zero).balanceOf(address(alice));
+        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(alice));
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(alice));
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         // Formula = newBalance.wmul(scale)
-        uint256 lScale = 2e17;
-        uint256 mintedAmount = (amount - fee).wmul(lScale);
+        uint256 lscale = 2e17;
+        uint256 mintedAmount = (amount - fee).wmul(lscale);
         assertEq(zBalanceAfter, mintedAmount);
         assertEq(cBalanceAfter, mintedAmount);
         assertEq(tBalanceAfter, tBalanceBefore - amount);
@@ -397,17 +397,19 @@ contract Divide is DividerTest {
         uint256 tBal = 100e18;
         alice.doIssue(address(feed), maturity, tBal);
         uint256 tBalanceBefore = target.balanceOf(address(alice));
-        uint256 zBalanceBefore = Zero(zero).balanceOf(address(alice));
+        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(alice));
         uint256 cBalanceBefore = Claim(claim).balanceOf(address(alice));
         alice.doCombine(address(feed), maturity, zBalanceBefore);
         uint256 tBalanceAfter = target.balanceOf(address(alice));
-        uint256 zBalanceAfter = Zero(zero).balanceOf(address(alice));
+        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(alice));
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(alice));
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
-        uint256 lScale = 2e17; // TODO: retrieve from contract? Will need a view function
-        assertEq(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lScale)); // TODO: check if this is correct!!
+        uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
+        assertEq(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!!
         // Amount of Zeros before combining == underlying balance
+        // uint256 collected = ??
+        // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
     }
 
     /* ========== redeemZero() tests ========== */
@@ -415,7 +417,7 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
         gov.doSetFeed(address(feed), false);
-        uint256 balance = Zero(zero).balanceOf(address(alice));
+        uint256 balance = BaseToken(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -447,7 +449,7 @@ contract Divide is DividerTest {
     function testCantRedeemZeroSeriesNotSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
-        uint256 balance = Zero(zero).balanceOf(address(alice));
+        uint256 balance = BaseToken(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -460,7 +462,7 @@ contract Divide is DividerTest {
         (address zero, ) = initSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 balance = Zero(zero).balanceOf(address(alice)) + 1e18;
+        uint256 balance = BaseToken(zero).balanceOf(address(alice)) + 1e18;
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch (bytes memory error) {
@@ -475,11 +477,11 @@ contract Divide is DividerTest {
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 zBalanceBefore = Zero(zero).balanceOf(address(bob));
+        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 balanceToRedeem = zBalanceBefore;
         bob.doRedeemZero(address(feed), maturity, balanceToRedeem);
-        uint256 zBalanceAfter = Zero(zero).balanceOf(address(bob));
+        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: tBal = balance / mscale
@@ -534,11 +536,11 @@ contract Divide is DividerTest {
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
-        // Formula: collected = tBal * ( ( cscale - lScale ) / ( cscale * lScale) )
+        // Formula: collected = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
         uint256 cscale = 3e17;
-        uint256 lScale = 2e17;
-        uint256 collected = cBalanceBefore.wmul((cscale - lScale).wdiv(cscale.wmul(lScale)));
+        uint256 lscale = 2e17;
+        uint256 collected = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
@@ -556,11 +558,11 @@ contract Divide is DividerTest {
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
-        // Formula: collected = tBal * ( ( cscale - lScale ) / ( cscale * lScale) )
+        // Formula: collected = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
         uint256 cscale = 3e17;
-        uint256 lScale = 2e17;
-        uint256 collected = cBalanceBefore.wmul((cscale - lScale).wdiv(cscale.wmul(lScale)));
+        uint256 lscale = 2e17;
+        uint256 collected = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
@@ -577,7 +579,7 @@ contract Divide is DividerTest {
         bob.doCollect(claim);
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
-        // TODO: check .scale() is not called (like to add the lScale). We can't?
+        // TODO: check .scale() is not called (like to add the lscale). We can't?
     }
 
     /* ========== backfillScale() tests ========== */

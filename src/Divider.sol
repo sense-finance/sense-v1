@@ -40,7 +40,7 @@ contract Divider is IDivider {
     mapping(address => uint256) public wards;
     mapping(address => bool) public feeds;
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
-    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lScale
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
 
     struct Series {
         address zero; // Zero address for this Series (deployed on Series initialization)
@@ -219,9 +219,9 @@ contract Divider is IDivider {
 
         bool burn = false;
         uint256 cscale = series[feed][maturity].mscale;
-        uint256 lScale = lscales[feed][maturity][usr];
+        uint256 lscale = lscales[feed][maturity][usr];
         Claim claim = Claim(series[feed][maturity].claim);
-        if (lScale == 0) lScale = series[feed][maturity].iscale;
+        if (lscale == 0) lscale = series[feed][maturity].iscale;
         if (block.timestamp >= maturity) {
             if (!_settled(feed, maturity)) revert(Errors.CollectNotSettled);
             burn = true;
@@ -233,8 +233,8 @@ contract Divider is IDivider {
         }
 
         require(claim.balanceOf(usr) >= balance, "Not enough claims to collect given target balance");
-        collected = balance.wmul((cscale.sub(lScale)).wdiv(cscale.wmul(lScale)));
-        require(collected <= balance.wdiv(lScale), Errors.CapReached); // TODO check this
+        collected = balance.wmul((cscale.sub(lscale)).wdiv(cscale.wmul(lscale)));
+        require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
         if (burn) {
             claim.burn(usr, balance, false);
             emit ClaimsBurned(usr, balance);
