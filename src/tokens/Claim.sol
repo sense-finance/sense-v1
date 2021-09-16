@@ -36,20 +36,4 @@ contract Claim is BaseToken {
         IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
         return true;
     }
-
-//    /**
-//     * @dev ERC20 override that adds a call to collect on each burn.
-//     * @dev Destroys `amount` tokens from the caller.
-//     * See {ERC20-_burn}.
-//     * @param account The address to send the minted tokens.
-//     * @param amount The amount to be minted.
-//     **/
-//    function burn(
-//        address account,
-//        uint256 amount,
-//        bool collect
-//    ) public virtual onlyDivider {
-//        if (collect) IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
-//        _burn(account, amount);
-//    }
 }

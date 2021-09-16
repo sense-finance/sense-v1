@@ -446,7 +446,8 @@ contract Divide is DividerTest {
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
-        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!! Should it be .wmul(mscale));
+        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale));
+        // TODO: check if this is correct!! Should it be .wmul(mscale));
         // Amount of Zeros before combining == underlying balance
         // uint256 collected = ??
         // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
