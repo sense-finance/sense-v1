@@ -49,11 +49,11 @@ contract DividerTest is DSTest {
         gov = new User();
         gov.setStableToken(stableToken);
         gov.setTargetToken(target);
-        divider = new Divider(address(gov), address(stableToken), address(gov));
+        divider = new Divider(address(stableToken), address(gov));
         gov.setDivider(divider);
 
         feed = new TestFeed(address(target), address(divider), 150);
-        gov.doSetFeed(address(feed), true);
+        divider.setFeed(address(feed), true);
 
         alice = createUser();
         bob = createUser();

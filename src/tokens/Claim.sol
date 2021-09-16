@@ -21,27 +21,35 @@ contract Claim is BaseToken {
         return IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
     }
 
-    function _beforeTokenTransfer(
+    function transfer(address to, uint256 value) public override returns (bool) {
+        super.transfer(to, value);
+        IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
+        return true;
+    }
+
+    function transferFrom(
         address from,
         address to,
         uint256 value
-    ) internal virtual override {
+    ) public override returns (bool) {
+        super.transferFrom(from, to, value);
         IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
+        return true;
     }
 
-    /**
-     * @dev ERC20 override that adds a call to collect on each burn.
-     * @dev Destroys `amount` tokens from the caller.
-     * See {ERC20-_burn}.
-     * @param account The address to send the minted tokens.
-     * @param amount The amount to be minted.
-     **/
-    function burn(
-        address account,
-        uint256 amount,
-        bool collect
-    ) public virtual onlyDivider {
-        if (collect) IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
-        _burn(account, amount);
-    }
+//    /**
+//     * @dev ERC20 override that adds a call to collect on each burn.
+//     * @dev Destroys `amount` tokens from the caller.
+//     * See {ERC20-_burn}.
+//     * @param account The address to send the minted tokens.
+//     * @param amount The amount to be minted.
+//     **/
+//    function burn(
+//        address account,
+//        uint256 amount,
+//        bool collect
+//    ) public virtual onlyDivider {
+//        if (collect) IDivider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
+//        _burn(account, amount);
+//    }
 }

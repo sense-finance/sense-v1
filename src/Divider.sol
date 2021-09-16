@@ -24,7 +24,7 @@ contract Divider is IDivider {
     using Errors for string;
 
     address public stable;
-    address public multisig;
+    address public cup;
     uint256 public constant ISSUANCE_FEE = 1; // In percentage (1%). // TODO: TBD
     uint256 public constant INIT_STAKE = 1e18; // Series initialisation stablecoin stake. // TODO: TBD
     uint public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
@@ -52,10 +52,10 @@ contract Divider is IDivider {
         uint256 mscale; // Scale value at maturity
     }
 
-    constructor(address govAddress, address _stable, address _multisig) {
-        wards[govAddress] = 1;
+    constructor(address _stable, address _cup) {
+        wards[msg.sender] = 1;
         stable = _stable;
-        multisig = _multisig;
+        cup = _cup;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -67,7 +67,6 @@ contract Divider is IDivider {
     // @param feed IFeed to associate with the Series
     // @param maturity Maturity date for the new Series, in units of unix time
     function initSeries(address feed, uint256 maturity) external override returns (address zero, address claim) {
-        require(ERC20(stable).allowance(msg.sender, address(this)) >= INIT_STAKE, "Allowance not high enough");
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), "Series with given maturity already exists");
 
@@ -123,8 +122,8 @@ contract Divider is IDivider {
     ) external override {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
+        require(!_settled(feed, maturity), Errors.IssueOnSettled);
         ERC20 target = ERC20(IFeed(feed).target());
-        require(target.allowance(msg.sender, address(this)) >= balance, Errors.AllowanceNotEnough);
         target.safeTransferFrom(msg.sender, address(this), balance);
         uint256 fee = ISSUANCE_FEE.mul(balance).div(100);
         series[feed][maturity].reward = series[feed][maturity].reward.add(fee);
@@ -148,6 +147,7 @@ contract Divider is IDivider {
 
     // @notice Burn Zeros and Claims of a specific Series
     // @dev Reverts if the Series doesn't exist
+    // @dev Burns claims before maturity and also at/after but this is done in the collect() call
     // @param feed Feed address for the Series
     // @param maturity Maturity date for the Series
     // @param balance Balance of Zeros and Claims to burn
@@ -158,18 +158,17 @@ contract Divider is IDivider {
     ) external override {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
+
         BaseToken zero = BaseToken(series[feed][maturity].zero);
         Claim claim = Claim(series[feed][maturity].claim);
         zero.burn(msg.sender, balance);
-        claim.burn(msg.sender, balance, true);
+        _collect(msg.sender, feed, maturity, balance);
+        if (block.timestamp < maturity) claim.burn(msg.sender, balance);
 
-        uint256 cscale = series[feed][maturity].mscale;
-        if (!_settled(feed, maturity)) {
-            cscale = lscales[feed][maturity][msg.sender];
-        }
-
+        uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
         uint256 tBal = balance.wdiv(cscale);
         ERC20(IFeed(feed).target()).safeTransfer(msg.sender, tBal);
+
         emit Combined(feed, maturity, tBal, msg.sender);
     }
 
@@ -187,7 +186,6 @@ contract Divider is IDivider {
     ) external override {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
-        require(balance > 0, Errors.ZeroBalance);
         require(_settled(feed, maturity), Errors.NotSettled);
         BaseToken zero = BaseToken(series[feed][maturity].zero);
 //        uint256 b = zero.balanceOf(msg.sender);
@@ -214,32 +212,37 @@ contract Divider is IDivider {
         uint256 maturity,
         uint256 balance
     ) external override onlyClaim(feed, maturity) returns (uint256 collected) {
+        return _collect(usr,
+            feed,
+            maturity,
+            balance
+        );
+    }
+
+    function _collect(
+        address usr,
+        address feed,
+        uint256 maturity,
+        uint256 balance
+    ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
-
-        bool burn = false;
+        Claim claim = Claim(series[feed][maturity].claim);
+        require(claim.balanceOf(usr) >= balance, "Not enough claims to collect given target balance");
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
-        Claim claim = Claim(series[feed][maturity].claim);
         if (lscale == 0) lscale = series[feed][maturity].iscale;
         if (block.timestamp >= maturity) {
             if (!_settled(feed, maturity)) revert(Errors.CollectNotSettled);
-            burn = true;
+            claim.burn(usr, balance);
         } else {
             if (!_settled(feed, maturity)) {
                 cscale = IFeed(feed).scale();
                 lscales[feed][maturity][usr] = cscale;
             }
         }
-
-        require(claim.balanceOf(usr) >= balance, "Not enough claims to collect given target balance");
         collected = balance.wmul((cscale.sub(lscale)).wdiv(cscale.wmul(lscale)));
         require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
-        if (burn) {
-            claim.burn(usr, balance, false);
-            emit ClaimsBurned(usr, balance);
-        }
-        ERC20(IFeed(feed).target()).balanceOf(address(this));
         ERC20(IFeed(feed).target()).safeTransfer(usr, collected);
         emit Collected(feed, maturity, collected);
     }
@@ -283,18 +286,14 @@ contract Divider is IDivider {
         for (uint i = 0; i < accounts.length; i++) {
             lscales[feed][maturity][accounts[i]] = values[i];
         }
-        _transferRewards(feed, maturity);
-        emit Backfilled(feed, maturity, scale, values, accounts);
-    }
 
-    function _transferRewards(
-        address feed,
-        uint256 maturity
-    ) internal {
-        address to = block.timestamp <= maturity.add(SPONSOR_WINDOW) ? series[feed][maturity].sponsor : multisig;
+        // transfer rewards
+        address to = block.timestamp <= maturity.add(SPONSOR_WINDOW) ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(IFeed(feed).target());
-        target.safeTransfer(multisig, series[feed][maturity].reward);
+        target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(to, INIT_STAKE);
+
+        emit Backfilled(feed, maturity, scale, values, accounts);
     }
 
     /* ========== AUTH FUNCTIONS ========== */
@@ -366,8 +365,6 @@ contract Divider is IDivider {
     event SeriesInitialised(address zero, address claim, address sponsor);
     event SeriesSettled(address feed, uint256 maturity, address settler);
     event Issued(address feed, uint256 maturity, uint256 balance, address sender);
-    event ZerosBurned(address account, uint256 zeros);
-    event ClaimsBurned(address account, uint256 claims);
     event Combined(address feed, uint256 maturity, uint256 balance, address sender);
     event Backfilled(address feed, uint256 maturity, uint256 scale, uint256[] values, address[] accounts);
     event FeedChanged(address feed, bool isOn);

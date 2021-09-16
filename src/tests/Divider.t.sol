@@ -33,13 +33,13 @@ contract Divide is DividerTest {
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AllowanceNotEnough);
+            assertEq(error, Errors.AmountExceedsBalance);
         }
     }
 
     function testCantInitSeriesFeedNotEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -154,7 +154,7 @@ contract Divide is DividerTest {
     function testCantSettleSeriesIfDisabledFeed() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         try alice.doSettleSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -294,7 +294,7 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         uint256 amount = 1e18;
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         try alice.doIssue(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
@@ -331,7 +331,20 @@ contract Divide is DividerTest {
         try alice.doIssue(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AllowanceNotEnough);
+            assertEq(error, Errors.AmountExceedsBalance);
+        }
+    }
+
+    function testCantIssueIfSeriesSettled() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        initSampleSeries(address(alice), maturity);
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(feed), maturity);
+        uint256 amount = target.balanceOf(address(alice));
+        try alice.doIssue(address(feed), maturity, amount) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssueOnSettled);
         }
     }
 
@@ -365,7 +378,7 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         uint256 amount = 1e18;
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         try alice.doCombine(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
@@ -399,14 +412,41 @@ contract Divide is DividerTest {
         uint256 tBalanceBefore = target.balanceOf(address(alice));
         uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(alice));
         uint256 cBalanceBefore = Claim(claim).balanceOf(address(alice));
+        uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
         alice.doCombine(address(feed), maturity, zBalanceBefore);
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(alice));
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(alice));
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
-        uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
-        assertEq(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!!
+        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!!
+        // Amount of Zeros before combining == underlying balance
+        // uint256 collected = ??
+        // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
+    }
+
+    function testCombineAtMaturityBurnClaimsAndDoesNotCallBurnTwice() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 tBal = 100e18;
+        bob.doIssue(address(feed), maturity, tBal);
+        uint256 tBalanceBefore = target.balanceOf(address(bob));
+        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(bob));
+        uint256 cBalanceBefore = Claim(claim).balanceOf(address(bob));
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(feed), maturity);
+
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        bob.doCombine(address(feed), maturity, zBalanceBefore);
+        uint256 tBalanceAfter = target.balanceOf(address(bob));
+        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(bob));
+        uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
+
+        require(zBalanceAfter == 0);
+        require(cBalanceAfter == 0);
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!! Should it be .wmul(mscale));
         // Amount of Zeros before combining == underlying balance
         // uint256 collected = ??
         // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
@@ -416,7 +456,7 @@ contract Divide is DividerTest {
     function testCantRedeemZeroDisabledFeed() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         uint256 balance = BaseToken(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
@@ -500,7 +540,7 @@ contract Divide is DividerTest {
     function testCantCollectDisabledFeed() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         try alice.doCollect(claim) {
             fail();
         } catch Error(string memory error) {
@@ -530,18 +570,19 @@ contract Divide is DividerTest {
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = Claim(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        bob.doCollect(claim);
+        uint256 collected = bob.doCollect(claim);
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
-        // Formula: collected = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
+        // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 cscale = 3e17;
-        uint256 lscale = 2e17;
-        uint256 collected = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
+        uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
+        uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(cBalanceBefore, cBalanceAfter);
+        assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
@@ -550,19 +591,19 @@ contract Divide is DividerTest {
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = Claim(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        bob.doCollect(claim);
+        uint256 collected = bob.doCollect(claim);
         uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
-
-        // Formula: collected = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
-        (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 cscale = 3e17;
-        uint256 lscale = 2e17;
-        uint256 collected = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
+        // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
+        uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
+        assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
@@ -572,10 +613,10 @@ contract Divide is DividerTest {
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
-        gov.doSetFeed(address(feed), false); // emergency stop
+        divider.setFeed(address(feed), false); // emergency stop
         uint256 newScale = 20e17;
-        gov.doBackfillScale(address(feed), maturity, newScale, values, accounts); // fix invalid scale value
-        gov.doSetFeed(address(feed), true); // re-enable feed after emergency
+        divider.backfillScale(address(feed), maturity, newScale, values, accounts); // fix invalid scale value
+        divider.setFeed(address(feed), true); // re-enable feed after emergency
         bob.doCollect(claim);
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
@@ -586,7 +627,7 @@ contract Divide is DividerTest {
     function testCantBackfillScaleSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 amount = 1e18;
-        try gov.doBackfillScale(address(feed), maturity, amount, values, accounts) {
+        try divider.backfillScale(address(feed), maturity, amount, values, accounts) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotExists);
@@ -597,7 +638,7 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         uint256 amount = 1e18;
-        try gov.doBackfillScale(address(feed), maturity, amount, values, accounts) {
+        try divider.backfillScale(address(feed), maturity, amount, values, accounts) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.OutOfWindowBoundaries);
@@ -621,7 +662,7 @@ contract Divide is DividerTest {
         initSampleSeries(address(alice), maturity);
         hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 amount = 1e16;
-        try gov.doBackfillScale(address(feed), maturity, amount, values, accounts) {
+        try divider.backfillScale(address(feed), maturity, amount, values, accounts) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
@@ -635,7 +676,7 @@ contract Divide is DividerTest {
         uint256 newScale = 1e18;
         values = [5e17, 4e17];
         accounts = [address(alice), address(bob)];
-        gov.doBackfillScale(address(feed), maturity, newScale, values, accounts);
+        divider.backfillScale(address(feed), maturity, newScale, values, accounts);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
@@ -648,9 +689,9 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
-        gov.doSetFeed(address(feed), false);
+        divider.setFeed(address(feed), false);
         uint256 newScale = 1e18;
-        gov.doBackfillScale(address(feed), maturity, newScale, values, accounts);
+        divider.backfillScale(address(feed), maturity, newScale, values, accounts);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
     }
@@ -660,7 +701,7 @@ contract Divide is DividerTest {
     function testFeedIsDisabledIfScaleValueLowerThanPrevious() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
-        TestFeed(feed).setCounter(911);
+        hevm.roll(911);
         try TestFeed(feed).scale() {
             fail();
         } catch Error(string memory error) {
@@ -696,6 +737,6 @@ contract Divide is DividerTest {
     function assertClose(uint256 actual, uint256 expected) public {
         uint256 variance = 10;
         assertTrue(actual >= (expected - variance));
-        assertTrue(actual <= (expected - variance));
+        assertTrue(actual <= (expected + variance));
     }
 }

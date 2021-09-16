@@ -1,12 +1,17 @@
 pragma solidity ^0.8.6;
 
+import "../Hevm.sol";
 import "../TestToken.sol";
 import "../../../Divider.sol";
 
 contract User {
+    address constant HEVM_ADDRESS =
+    address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
+
     TestToken stableToken; // stable token
     TestToken target; // stable token
     Divider divider;
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setStableToken(TestToken _token) public {
         stableToken = _token;
@@ -77,23 +82,28 @@ contract User {
     }
 
     function doInitSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
-        return divider.initSeries(feed, maturity);
+        hevm.roll(block.number + 1);
+    (zero, claim) = divider.initSeries(feed, maturity);
     }
 
     function doSettleSeries(address feed, uint256 maturity) public {
-        return divider.settleSeries(feed, maturity);
+        hevm.roll(block.number + 1);
+    divider.settleSeries(feed, maturity);
     }
 
     function doIssue(address feed, uint256 maturity, uint256 balance) public {
-        return divider.issue(feed, maturity, balance);
+        hevm.roll(block.number + 1);
+    divider.issue(feed, maturity, balance);
     }
 
     function doCombine(address feed, uint256 maturity, uint256 balance) public {
-        return divider.combine(feed, maturity, balance);
+        hevm.roll(block.number + 1);
+    divider.combine(feed, maturity, balance);
     }
 
     function doBackfillScale(address feed, uint256 maturity, uint256 scale, uint256[] memory values, address[] memory accounts) public {
-        return divider.backfillScale(feed, maturity, scale, values, accounts);
+        hevm.roll(block.number + 1);
+    divider.backfillScale(feed, maturity, scale, values, accounts);
     }
 
     function doRedeemZero(address feed, uint256 maturity, uint256 balance) public {
@@ -101,6 +111,7 @@ contract User {
     }
 
     function doCollect(address claim) public returns (uint256 collected) {
-        return Claim(claim).collect();
+        hevm.roll(block.number + 1);
+    collected = Claim(claim).collect();
     }
 }
