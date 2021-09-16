@@ -11,7 +11,7 @@ import "./libs/errors.sol";
 import "./external/SafeMath.sol";
 import "./external/DateTime.sol";
 import "./external/WadMath.sol";
-import "./external/tokens/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // @title Divide tokens in two
 // @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims

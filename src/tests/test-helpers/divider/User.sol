@@ -8,16 +8,16 @@ contract User {
     address constant HEVM_ADDRESS =
     address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
 
-    TestToken stableToken; // stable token
+    TestToken stable; // stable token
     TestToken target; // stable token
     Divider divider;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    function setStableToken(TestToken _token) public {
-        stableToken = _token;
+    function setStable(TestToken _token) public {
+        stable = _token;
     }
 
-    function setTargetToken(TestToken _token) public {
+    function setTarget(TestToken _token) public {
         target = _token;
     }
 
@@ -30,19 +30,19 @@ contract User {
         address to,
         uint256 amount
     ) public returns (bool) {
-        return stableToken.transferFrom(from, to, amount);
+        return stable.transferFrom(from, to, amount);
     }
 
     function doTransfer(address to, uint256 amount) public returns (bool) {
-        return stableToken.transfer(to, amount);
+        return stable.transfer(to, amount);
     }
 
     function doApproveStable(address recipient, uint256 amount) public returns (bool) {
-        return stableToken.approve(recipient, amount);
+        return stable.approve(recipient, amount);
     }
 
     function doApproveStable(address guy) public returns (bool) {
-        return stableToken.approve(guy, type(uint256).max);
+        return stable.approve(guy, type(uint256).max);
     }
 
     function doApproveTarget(address recipient, uint256 amount) public returns (bool) {
@@ -54,19 +54,19 @@ contract User {
     }
 
     function doAllowance(address owner, address spender) public view returns (uint256) {
-        return stableToken.allowance(owner, spender);
+        return stable.allowance(owner, spender);
     }
 
     function doBalanceOf(address who) public view returns (uint256) {
-        return stableToken.balanceOf(who);
+        return stable.balanceOf(who);
     }
 
     function doMintStable(uint256 wad) public {
-        stableToken.mint(address(this), wad);
+        stable.mint(address(this), wad);
     }
 
     function doMintStable(address guy, uint256 wad) public {
-        stableToken.mint(guy, wad);
+        stable.mint(guy, wad);
     }
 
     function doMintTarget(uint256 wad) public {

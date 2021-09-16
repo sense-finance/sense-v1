@@ -17,7 +17,7 @@ contract Divide is DividerTest {
     /* ========== initSeries() tests ========== */
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
-        uint256 balance = stableToken.balanceOf(address(alice));
+        uint256 balance = stable.balanceOf(address(alice));
         alice.doTransfer(address(bob), balance - INIT_STAKE / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doInitSeries(address(feed), maturity) {
@@ -33,7 +33,7 @@ contract Divide is DividerTest {
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsBalance);
+            assertEq(error, Errors.AmountExceedsAllowance);
         }
     }
 
@@ -116,11 +116,11 @@ contract Divide is DividerTest {
 
     function testInitSeriesWithdrawStake() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stableToken.balanceOf(address(alice));
+        uint256 beforeBalance = stable.balanceOf(address(alice));
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         assertTrue(address(zero) != address(0));
         assertTrue(address(claim) != address(0));
-        uint256 afterBalance = stableToken.balanceOf(address(alice));
+        uint256 afterBalance = stable.balanceOf(address(alice));
         assertEq(afterBalance, beforeBalance - INIT_STAKE);
     }
 
@@ -262,21 +262,21 @@ contract Divide is DividerTest {
 
     function testSettleSeriesStakeIsTransferredIfSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stableToken.balanceOf(address(alice));
+        uint256 beforeBalance = stable.balanceOf(address(alice));
         initSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 afterBalance = stableToken.balanceOf(address(alice));
+        uint256 afterBalance = stable.balanceOf(address(alice));
         assertEq(beforeBalance, afterBalance);
     }
 
     function testSettleSeriesStakeIsTransferredIfNotSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stableToken.balanceOf(address(bob));
+        uint256 beforeBalance = stable.balanceOf(address(bob));
         initSampleSeries(address(alice), maturity);
         hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
         bob.doSettleSeries(address(feed), maturity);
-        uint256 afterBalance = stableToken.balanceOf(address(bob));
+        uint256 afterBalance = stable.balanceOf(address(bob));
         assertEq(afterBalance, beforeBalance + INIT_STAKE);
     }
 
@@ -331,7 +331,7 @@ contract Divide is DividerTest {
         try alice.doIssue(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsBalance);
+            assertEq(error, Errors.AmountExceedsAllowance);
         }
     }
 

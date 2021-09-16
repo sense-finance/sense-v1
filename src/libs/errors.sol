@@ -1,7 +1,8 @@
 pragma solidity ^0.8.6;
 
 library Errors {
-    string constant AmountExceedsBalance = "TRANSFER_FROM_FAILED";
+    string constant AmountExceedsAllowance = "ERC20: transfer amount exceeds allowance";
+    string constant AmountExceedsBalance = "ERC20: transfer amount exceeds balance";
     string constant AlreadySettled = "Series has already been settled";
     string constant BurnAmountExceedsBalance = "ERC20: burn amount exceeds balance";
     string constant CapReached = "Transfer amount must be below cap";

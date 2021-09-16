@@ -1,8 +1,7 @@
 pragma solidity ^0.8.6;
 
-// Internal references
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../feed/BaseFeed.sol";
-import "../../external/tokens/ERC20.sol";
 
 contract TestFeed is BaseFeed {
 

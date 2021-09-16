@@ -1,15 +1,14 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import "../../external/tokens/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract TestToken is ERC20 {
 
     constructor(
         string memory _name,
-        string memory _symbol,
-        uint8 _decimals
-    ) ERC20(_name, _symbol, _decimals) {}
+        string memory _symbol
+    ) ERC20(_name, _symbol) {}
 
     function mint(address account, uint256 amount) external virtual {
         _mint(account, amount);
