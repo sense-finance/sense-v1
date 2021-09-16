@@ -476,25 +476,16 @@ contract Divide is DividerTest {
         }
     }
 
-    function testCantRedeemZeroBalanceIsZero() public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        initSampleSeries(address(alice), maturity);
-        uint256 balance = 0;
-        try alice.doRedeemZero(address(feed), maturity, balance) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.ZeroBalance);
-        }
-    }
-
     function testCantRedeemZeroSeriesNotSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
-        uint256 balance = BaseToken(zero).balanceOf(address(alice));
-        try alice.doRedeemZero(address(feed), maturity, balance) {
+        uint256 tBal = 100e18;
+        bob.doIssue(address(feed), maturity, tBal);
+        uint256 balance = BaseToken(zero).balanceOf(address(bob));
+        try bob.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.ZeroBalance);
+            assertEq(error, Errors.NotSettled);
         }
     }
 
@@ -530,6 +521,18 @@ contract Divide is DividerTest {
         uint256 redeemed = balanceToRedeem.wdiv(mscale);
         assertEq(zBalanceBefore, redeemed.wmul(mscale)); // Amount of Zeros burned == underlying amount
         assertEq(zBalanceBefore, zBalanceAfter + balanceToRedeem);
+    }
+
+    function testRedeemZeroBalanceIsZero() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        initSampleSeries(address(alice), maturity);
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(feed), maturity);
+        uint256 tBalanceBefore = target.balanceOf(address(alice));
+        uint256 balance = 0;
+        alice.doRedeemZero(address(feed), maturity, balance);
+        uint256 tBalanceAfter = target.balanceOf(address(alice));
+        assertEq(tBalanceAfter, tBalanceBefore);
     }
 
     //    function testCanRedeemZeroBeforeMaturityIfSettled() public {

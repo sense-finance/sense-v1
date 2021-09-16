@@ -165,6 +165,7 @@ contract Divider is IDivider {
         _collect(msg.sender, feed, maturity, balance);
         if (block.timestamp < maturity) claim.burn(msg.sender, balance);
 
+        // we use lscale since we have already got the current value on the _collect() call
         uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
         uint256 tBal = balance.wdiv(cscale);
         ERC20(IFeed(feed).target()).safeTransfer(msg.sender, tBal);
@@ -186,13 +187,11 @@ contract Divider is IDivider {
     ) external override {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
-        require(balance > 0, Errors.ZeroBalance);
         require(_settled(feed, maturity), Errors.NotSettled);
         BaseToken zero = BaseToken(series[feed][maturity].zero);
         zero.burn(msg.sender, balance);
         uint256 mscale = series[feed][maturity].mscale;
         uint256 tBal = balance.wdiv(mscale);
-        require(tBal <= balance.wdiv(mscale), Errors.CapReached);
         ERC20(IFeed(feed).target()).safeTransfer(msg.sender, tBal);
         emit Redeemed(feed, maturity, tBal);
     }
