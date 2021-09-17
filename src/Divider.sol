@@ -328,15 +328,13 @@ contract Divider {
 
     function _strip(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(IFeed(feed).target());
-        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(maturity);
-        bytes32 date = bytes32(abi.encodePacked(year, "-", month, "-", day));
-
-        string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", date));
-        string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", date));
+        string memory datestring = DateTime.toDateString(maturity);
+        string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", datestring));
+        string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         zero = address(new BaseToken(maturity, address(this), feed, zname, zsymbol));
 
-        string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", date));
-        string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", date));
+        string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", datestring));
+        string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol));
     }
 

@@ -32,13 +32,49 @@ library DateTime {
     uint256 constant SECONDS_PER_MINUTE = 60;
     int256 constant OFFSET19700101 = 2440588;
 
-    uint256 constant DOW_MON = 1;
-    uint256 constant DOW_TUE = 2;
-    uint256 constant DOW_WED = 3;
-    uint256 constant DOW_THU = 4;
-    uint256 constant DOW_FRI = 5;
-    uint256 constant DOW_SAT = 6;
-    uint256 constant DOW_SUN = 7;
+    function timestampToDate(uint256 timestamp) internal pure returns (uint256 year, uint256 month, uint256 day) {
+        (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);
+    }
+
+    function timestampToDateTime(uint256 timestamp) internal pure returns (uint256 year, uint256 month, uint256 day, uint256 hour, uint256 minute, uint256 second) {
+        (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);
+        uint256 secs = timestamp % SECONDS_PER_DAY;
+        hour = secs / SECONDS_PER_HOUR;
+        secs = secs % SECONDS_PER_HOUR;
+        minute = secs / SECONDS_PER_MINUTE;
+        second = secs % SECONDS_PER_MINUTE;
+    }
+
+    function toDateString(uint256 _timestamp) internal pure returns (string memory datestring) {
+        (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);
+        string memory d = uintToString(day);
+        string memory m = uintToString(month);
+        string memory y = uintToString(year);
+        datestring = string(abi.encodePacked(y, "-", m, "-", d));
+    }
+
+    /*
+     * @author https://stackoverflow.com/questions/47129173/how-to-convert-uint-to-string-in-solidity
+     */
+    function uintToString(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) return "0";
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len;
+        while (_i != 0) {
+            k = k-1;
+            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
+    }
 
     // ------------------------------------------------------------------------
     // Calculate the number of days from 1970/01/01 to year/month/day using
@@ -53,11 +89,7 @@ library DateTime {
     //      - 3 * ((year + 4900 + (month - 14) / 12) / 100) / 4
     //      - offset
     // ------------------------------------------------------------------------
-    function _daysFromDate(
-        uint256 year,
-        uint256 month,
-        uint256 day
-    ) internal pure returns (uint256 _days) {
+    function _daysFromDate(uint256 year, uint256 month, uint256 day) internal pure returns (uint256 _days) {
         require(year >= 1970);
         int256 _year = int256(year);
         int256 _month = int256(month);
@@ -94,15 +126,7 @@ library DateTime {
     // month = month + 2 - 12 * L
     // year = 100 * (N - 49) + year + L
     // ------------------------------------------------------------------------
-    function _daysToDate(uint256 _days)
-    internal
-    pure
-    returns (
-        uint256 year,
-        uint256 month,
-        uint256 day
-    )
-    {
+    function _daysToDate(uint256 _days) internal pure returns (uint256 year, uint256 month, uint256 day) {
         int256 __days = int256(_days);
 
         int256 L = __days + 68569 + OFFSET19700101;
@@ -119,136 +143,5 @@ library DateTime {
         year = uint256(_year);
         month = uint256(_month);
         day = uint256(_day);
-    }
-
-    function timestampFromDate(
-        uint256 year,
-        uint256 month,
-        uint256 day
-    ) internal pure returns (uint256 timestamp) {
-        timestamp = _daysFromDate(year, month, day) * SECONDS_PER_DAY;
-    }
-
-    function timestampFromDateTime(
-        uint256 year,
-        uint256 month,
-        uint256 day,
-        uint256 hour,
-        uint256 minute,
-        uint256 second
-    ) internal pure returns (uint256 timestamp) {
-        timestamp =
-        _daysFromDate(year, month, day) *
-        SECONDS_PER_DAY +
-        hour *
-        SECONDS_PER_HOUR +
-        minute *
-        SECONDS_PER_MINUTE +
-        second;
-    }
-
-    function timestampToDate(uint256 timestamp)
-    internal
-    pure
-    returns (
-        uint256 year,
-        uint256 month,
-        uint256 day
-    )
-    {
-        (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);
-    }
-
-    function timestampToDateTime(uint256 timestamp)
-    internal
-    pure
-    returns (
-        uint256 year,
-        uint256 month,
-        uint256 day,
-        uint256 hour,
-        uint256 minute,
-        uint256 second
-    )
-    {
-        (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);
-        uint256 secs = timestamp % SECONDS_PER_DAY;
-        hour = secs / SECONDS_PER_HOUR;
-        secs = secs % SECONDS_PER_HOUR;
-        minute = secs / SECONDS_PER_MINUTE;
-        second = secs % SECONDS_PER_MINUTE;
-    }
-
-    function _isLeapYear(uint256 year) internal pure returns (bool leapYear) {
-        leapYear = ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
-    }
-
-    function _getDaysInMonth(uint256 year, uint256 month)
-    internal
-    pure
-    returns (uint256 daysInMonth)
-    {
-        if (
-            month == 1 ||
-            month == 3 ||
-            month == 5 ||
-            month == 7 ||
-            month == 8 ||
-            month == 10 ||
-            month == 12
-        ) {
-            daysInMonth = 31;
-        } else if (month != 2) {
-            daysInMonth = 30;
-        } else {
-            daysInMonth = _isLeapYear(year) ? 29 : 28;
-        }
-    }
-
-    function getYear(uint256 timestamp) internal pure returns (uint256 year) {
-        (year, , ) = _daysToDate(timestamp / SECONDS_PER_DAY);
-    }
-
-    function getMonth(uint256 timestamp) internal pure returns (uint256 month) {
-        (, month, ) = _daysToDate(timestamp / SECONDS_PER_DAY);
-    }
-
-    function addMonths(uint256 timestamp, uint256 _months)
-    internal
-    pure
-    returns (uint256 newTimestamp)
-    {
-        (uint256 year, uint256 month, uint256 day) =
-        _daysToDate(timestamp / SECONDS_PER_DAY);
-        month += _months;
-        year += (month - 1) / 12;
-        month = ((month - 1) % 12) + 1;
-        uint256 daysInMonth = _getDaysInMonth(year, month);
-        if (day > daysInMonth) {
-            day = daysInMonth;
-        }
-        newTimestamp =
-        _daysFromDate(year, month, day) *
-        SECONDS_PER_DAY +
-        (timestamp % SECONDS_PER_DAY);
-        require(newTimestamp >= timestamp);
-    }
-
-    function addSeconds(uint256 timestamp, uint256 _seconds)
-    internal
-    pure
-    returns (uint256 newTimestamp)
-    {
-        newTimestamp = timestamp + _seconds;
-        require(newTimestamp >= timestamp);
-    }
-
-    function subSeconds(uint256 timestamp, uint256 _seconds)
-    internal
-    pure
-    returns (uint256 newTimestamp)
-    {
-        newTimestamp = timestamp - _seconds;
-        require(newTimestamp <= timestamp);
     }
 }
