@@ -31,10 +31,10 @@ contract Divider {
     uint public constant MIN_MATURITY = 2 weeks; // TODO: TBD
     uint public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
-    bytes32 private constant ZERO_SYMBOL_PREFIX = "z";
-    bytes32 private constant ZERO_NAME_PREFIX = "Zero";
-    bytes32 private constant CLAIM_SYMBOL_PREFIX = "c";
-    bytes32 private constant CLAIM_NAME_PREFIX = "Claim";
+    string private constant ZERO_SYMBOL_PREFIX = "z";
+    string private constant ZERO_NAME_PREFIX = "Zero";
+    string private constant CLAIM_SYMBOL_PREFIX = "c";
+    string private constant CLAIM_NAME_PREFIX = "Claim";
 
     mapping(address => uint256) public wards;
     mapping(address => bool) public feeds;

@@ -108,9 +108,9 @@ contract Dividers is DividerTest {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
         assertEq(ERC20(zero).name(), "Zero Compound Dai 2021-10-1");
-        assertEq(ERC20(zero).symbol(), "zST:2021-10-1");
+        assertEq(ERC20(zero).symbol(), "zcDAI:2021-10-1");
         assertEq(ERC20(claim).name(), "Claim Compound Dai 2021-10-1");
-        assertEq(ERC20(claim).symbol(), "cST:2021-10-1");
+        assertEq(ERC20(claim).symbol(), "ccDAI:2021-10-1");
     }
 
     function testInitSeriesWithdrawStake() public {
