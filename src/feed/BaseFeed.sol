@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // Internal references
 import "../interfaces/IFeed.sol";
-import "../interfaces/IDivider.sol";
+import "../Divider.sol";
 
 //import "./libs/Errors.sol";
 
@@ -53,7 +53,7 @@ abstract contract BaseFeed is IFeed {
     function scale() external virtual override returns (uint256 _value) {
         _value = _scale();
         if (_value < lscale || (lscale != 0 && _value > lscale.add(lscale.wmul(delta).wdiv(100)))) {
-            IDivider(divider).setFeed(address(this), false);
+            Divider(divider).setFeed(address(this), false);
             //            revert(Errors.InvalidScaleValue);
             revert("Scale value is invalid");
         }

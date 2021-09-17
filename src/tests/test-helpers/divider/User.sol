@@ -2,7 +2,7 @@ pragma solidity ^0.8.6;
 
 import "../Hevm.sol";
 import "../MockToken.sol";
-import "../../../interfaces/IDivider.sol";
+import "../../../Divider.sol";
 import "../../../tokens/Claim.sol";
 
 contract User {
@@ -11,8 +11,13 @@ contract User {
 
     MockToken stable;
     MockToken target;
-    IDivider divider;
+    Divider divider;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+
+    struct Backfill {
+        address usr; // address of the backfilled user
+        uint256 scale; // scale value to backfill for usr
+    }
 
     function setStable(MockToken _token) public {
         stable = _token;
@@ -22,7 +27,7 @@ contract User {
         target = _token;
     }
 
-    function setDivider(IDivider _divider) public {
+    function setDivider(Divider _divider) public {
         divider = _divider;
     }
 
@@ -84,27 +89,27 @@ contract User {
 
     function doInitSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
         hevm.roll(block.number + 1);
-    (zero, claim) = divider.initSeries(feed, maturity);
+        (zero, claim) = divider.initSeries(feed, maturity);
     }
 
     function doSettleSeries(address feed, uint256 maturity) public {
         hevm.roll(block.number + 1);
-    divider.settleSeries(feed, maturity);
+        divider.settleSeries(feed, maturity);
     }
 
     function doIssue(address feed, uint256 maturity, uint256 balance) public {
         hevm.roll(block.number + 1);
-    divider.issue(feed, maturity, balance);
+        divider.issue(feed, maturity, balance);
     }
 
     function doCombine(address feed, uint256 maturity, uint256 balance) public {
         hevm.roll(block.number + 1);
-    divider.combine(feed, maturity, balance);
+        divider.combine(feed, maturity, balance);
     }
 
-    function doBackfillScale(address feed, uint256 maturity, uint256 scale, uint256[] memory values, address[] memory accounts) public {
+    function doBackfillScale(address feed, uint256 maturity, uint256 scale, Divider.Backfill[] memory backfills) public {
         hevm.roll(block.number + 1);
-    divider.backfillScale(feed, maturity, scale, values, accounts);
+        divider.backfillScale(feed, maturity, scale, backfills);
     }
 
     function doRedeemZero(address feed, uint256 maturity, uint256 balance) public {
