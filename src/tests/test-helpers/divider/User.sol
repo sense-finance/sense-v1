@@ -2,7 +2,8 @@ pragma solidity ^0.8.6;
 
 import "../Hevm.sol";
 import "../TestToken.sol";
-import "../../../Divider.sol";
+import "../../../interfaces/IDivider.sol";
+import "../../../tokens/Claim.sol";
 
 contract User {
     address constant HEVM_ADDRESS =
@@ -10,7 +11,7 @@ contract User {
 
     TestToken stable; // stable token
     TestToken target; // stable token
-    Divider divider;
+    IDivider divider;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setStable(TestToken _token) public {
@@ -21,7 +22,7 @@ contract User {
         target = _token;
     }
 
-    function setDivider(Divider _divider) public {
+    function setDivider(IDivider _divider) public {
         divider = _divider;
     }
 
@@ -112,6 +113,6 @@ contract User {
 
     function doCollect(address claim) public returns (uint256 collected) {
         hevm.roll(block.number + 1);
-    collected = Claim(claim).collect();
+        collected = Claim(claim).collect();
     }
 }

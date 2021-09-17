@@ -226,7 +226,7 @@ contract Divider is IDivider {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         Claim claim = Claim(series[feed][maturity].claim);
-        require(claim.balanceOf(usr) >= balance, "Not enough claims to collect given target balance");
+        require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
         if (lscale == 0) lscale = series[feed][maturity].iscale;
