@@ -2,10 +2,9 @@ pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./test-helpers/divider/DividerTest.sol";
-import "../interfaces/IFeed.sol";
 import "../external/DateTime.sol";
 
-contract Divide is DividerTest {
+contract Dividers is DividerTest {
     using WadMath for uint256;
     using Errors for string;
 
@@ -346,6 +345,23 @@ contract Divide is DividerTest {
         }
     }
 
+    function testCantIssueIfFeedValueLowerThanPrevious() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.roll(911);
+        try feed.scale() {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidScaleValue);
+        }
+        uint256 amount = 100e18;
+        try alice.doIssue(address(feed), maturity, amount) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidScaleValue);
+        }
+    }
+
     function testIssue() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
@@ -391,6 +407,20 @@ contract Divide is DividerTest {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotExists);
+        }
+    }
+
+    function testCantCombineIfFeedValueLowerThanPrevious() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 tBal = 100e18;
+        alice.doIssue(address(feed), maturity, tBal);
+        uint256 zBal = IERC20(zero).balanceOf(address(alice));
+        hevm.roll(911);
+        try alice.doCombine(address(feed), maturity, zBal) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidScaleValue);
         }
     }
 
@@ -700,22 +730,8 @@ contract Divide is DividerTest {
 
     /* ========== misc tests ========== */
 
-    function testFeedIsDisabledIfScaleValueLowerThanPrevious() public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        (address zero, address claim) = initSampleSeries(address(alice), maturity);
-        hevm.roll(911);
-        try IFeed(feed).scale() {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-        uint256 amount = 100e18;
-        try alice.doIssue(address(feed), maturity, amount) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-    }
+    //    function testFeedIsDisabledIfScaleValueLowerThanPrevious() public {
+    //    }
 
     //    function testFeedIsDisabledIfScaleValueCallReverts() public {
     //        revert("IMPLEMENT");

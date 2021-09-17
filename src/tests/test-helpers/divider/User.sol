@@ -1,7 +1,7 @@
 pragma solidity ^0.8.6;
 
 import "../Hevm.sol";
-import "../TestToken.sol";
+import "../MockToken.sol";
 import "../../../interfaces/IDivider.sol";
 import "../../../tokens/Claim.sol";
 
@@ -9,16 +9,16 @@ contract User {
     address constant HEVM_ADDRESS =
     address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
 
-    TestToken stable; // stable token
-    TestToken target; // stable token
+    MockToken stable;
+    MockToken target;
     IDivider divider;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    function setStable(TestToken _token) public {
+    function setStable(MockToken _token) public {
         stable = _token;
     }
 
-    function setTarget(TestToken _token) public {
+    function setTarget(MockToken _token) public {
         target = _token;
     }
 

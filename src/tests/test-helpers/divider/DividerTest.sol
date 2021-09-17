@@ -4,16 +4,16 @@ import "ds-test/test.sol";
 
 // Internal references
 import "../Hevm.sol";
-import "../TestToken.sol";
-import "../TestFeed.sol";
+import "../MockToken.sol";
+import "../feed/MockFeed.sol";
 import "./User.sol";
 import "../../../Divider.sol";
 import "../../../external/DateTime.sol";
 
 contract DividerTest is DSTest {
-    TestFeed feed;
-    TestToken stable;
-    TestToken target;
+    MockFeed feed;
+    MockToken stable;
+    MockToken target;
 
     Divider internal divider;
     User internal gov;
@@ -43,8 +43,8 @@ contract DividerTest is DSTest {
     function setUp() public {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        stable = new TestToken("Stable Token", "ST");
-        target = new TestToken("Compound Dai", "cDAI");
+        stable = new MockToken("Stable Token", "ST");
+        target = new MockToken("Compound Dai", "cDAI");
 
         gov = new User();
         gov.setStable(stable);
@@ -52,7 +52,7 @@ contract DividerTest is DSTest {
         divider = new Divider(address(stable), address(gov));
         gov.setDivider(divider);
 
-        feed = new TestFeed(address(target), address(divider), 150);
+        feed = new MockFeed(address(target), address(divider), 150);
         divider.setFeed(address(feed), true);
 
         alice = createUser();
