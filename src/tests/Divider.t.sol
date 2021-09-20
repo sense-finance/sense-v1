@@ -108,10 +108,10 @@ contract Dividers is DividerTest {
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Zero Compound Dai 2021-10-1");
-        assertEq(ERC20(zero).symbol(), "zcDAI:2021-10-1");
-        assertEq(ERC20(claim).name(), "Claim Compound Dai 2021-10-1");
-        assertEq(ERC20(claim).symbol(), "ccDAI:2021-10-1");
+        assertEq(ERC20(zero).name(), "Compound Dai 21-10 Zero by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:21-10");
+        assertEq(ERC20(claim).name(), "Compound Dai 21-10 Claim by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:21-10");
     }
 
     function testInitSeriesWithdrawStake() public {

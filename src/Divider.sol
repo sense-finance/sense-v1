@@ -323,12 +323,15 @@ contract Divider is Warded {
 
     function _strip(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(IFeed(feed).target());
-        string memory datestring = DateTime.toDateString(maturity);
-        string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", datestring));
+        (, string memory m, string memory y) = DateTime.toDateString(maturity);
+        y = string(abi.encodePacked(bytes(y)[2], bytes(y)[3]));
+        string memory datestring = string(abi.encodePacked(y, "-", m));
+
+        string memory zname = string(abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense"));
         string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         zero = address(new Zero(maturity, address(this), feed, zname, zsymbol));
 
-        string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", datestring));
+        string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol));
     }

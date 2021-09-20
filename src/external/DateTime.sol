@@ -45,12 +45,11 @@ library DateTime {
         second = secs % SECONDS_PER_MINUTE;
     }
 
-    function toDateString(uint256 _timestamp) internal pure returns (string memory datestring) {
+    function toDateString(uint256 _timestamp) internal pure returns (string memory d, string memory m, string memory y) {
         (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);
-        string memory d = uintToString(day);
-        string memory m = uintToString(month);
-        string memory y = uintToString(year);
-        datestring = string(abi.encodePacked(y, "-", m, "-", d));
+        d = uintToString(day);
+        m = uintToString(month);
+        y = uintToString(year);
     }
 
     /*
