@@ -1,18 +1,20 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// External references
+// external references
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../external/WadMath.sol";
 import "../external/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// Internal references
-import "../interfaces/IFeed.sol";
+// internal references
 import "../Divider.sol";
-
 //import "./libs/Errors.sol";
 
-/// @title Assign time-based value to target assets
-/// @dev In most cases, the only function that will be unique to each feed type is `scale`
+// interfaces
+import "../interfaces/IFeed.sol";
+
+// @title Assign time-based value to target assets
+// @dev In most cases, the only function that will be unique to each feed type is `scale`
 abstract contract BaseFeed is IFeed {
     using WadMath for uint256;
     using SafeMath for uint256;
@@ -43,13 +45,13 @@ abstract contract BaseFeed is IFeed {
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
     }
 
-    /// @notice Calculate and return this feed's Scale value for the current timestamp
-    /// @dev For some Targets, such as cTokens, this is simply the exchange rate,
-    /// or `supply cToken / supply underlying`
-    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    /// @dev Reverts if scale value is higher than previous scale + %delta.
-    /// @dev Reverts if scale value is below the previous scale.
-    /// @return _value 18 decimal Scale value
+    // @notice Calculate and return this feed's Scale value for the current timestamp
+    // @dev For some Targets, such as cTokens, this is simply the exchange rate,
+    // or `supply cToken / supply underlying`
+    // @dev For other Targets, such as AMM LP shares, specialized logic will be required
+    // @dev Reverts if scale value is higher than previous scale + %delta.
+    // @dev Reverts if scale value is below the previous scale.
+    // @return _value 18 decimal Scale value
     function scale() external virtual override returns (uint256 _value) {
         _value = _scale();
         if (_value < lscale || (lscale != 0 && _value > lscale.add(lscale.wmul(delta).wdiv(100)))) {

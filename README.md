@@ -1,8 +1,8 @@
 # Sense Finance
 
-![ci](https://github.com/sense-finance/sense-v1-core/actions/workflows/ci.yml/badge.svg)
+![ci](https://github.com/sense-finance/sense-v1/actions/workflows/ci.yml/badge.svg)
 
-[comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1-core/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
+[comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
 [comment]: <> ([![npm version]&#40;https://badge.fury.io/js/sense-finance.svg&#41;]&#40;https://badge.fury.io/js/sense-finance&#41;)
 [![Discord](https://img.shields.io/discord/790088877381517322.svg?color=768AD4&label=discord&logo=https%3A%2F%2Fdiscordapp.com%2Fassets%2F8c9701b98ad4372b58f13fd9f65f966e.svg)](https://discordapp.com/channels/790088877381517322/)
 [![Twitter Follow](https://img.shields.io/twitter/follow/senseprotocol.svg?label=senseprotocol&style=social)](https://twitter.com/senseprotocol)
@@ -42,17 +42,38 @@ This configures the dapphub binary cache and installs the `dapp`, `solc`, `seth`
 
 More info about dapptools on https://github.com/dapphub/dapptools
 
-### Project setup
+## Project setup
 - Clone this repo
 ```coffeescript
-git clone https://github.com/sense-finance/sense-v1-core.git
+git clone https://github.com/sense-finance/sense-v1.git
 ```
 - Install dependencies
 ```
 make
 ```
 
-### Developing
+## Sense V1 project structure
+
+### Divider
+TBD
+
+### Tokens
+TBD
+
+### Modules
+
+A Collection of Modules and Utilities for Sense V1
+
+### G Claim Wrapper
+
+The G Claim Wrapper is a contract that lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims.
+
+### Recycling Module
+
+The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, refocusing user's positions on FY.
+
+
+## Developing
 |       |   	|
 |---	|---	|
 | `dapp build` | compiles code  |
@@ -72,14 +93,14 @@ Right now, we will be just using `dev` and  `master` branches.
 
 When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility). `patch` changes are simply for changes to the JavaScript interface.
 
-### Testing
+## Testing
 
 Run tests with `dapp test`
 TBD: How to get test coverage with dapptools?
 
 `
-![ci](https://github.com/sense-finance/sense-v1-core/actions/workflows/ci.yml/badge.svg)
+![ci](https://github.com/sense-finance/sense-v1/actions/workflows/ci.yml/badge.svg)
 
-[comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1-core/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
+[comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
 
 Please see [docs.sense.finance/contracts/testing](https://docs.sense.finance/contracts/testing) for an overview of the automated testing methodologies.

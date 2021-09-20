@@ -1,22 +1,26 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// Internal references
-import "./interfaces/IFeed.sol";
-import "./tokens/BaseToken.sol";
-import "./tokens/Claim.sol";
-import "./libs/errors.sol";
-
-// External references
+// external references
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./external/SafeMath.sol";
 import "./external/DateTime.sol";
 import "./external/WadMath.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+// internal references
+import { BaseToken as Zero } from "./tokens/BaseToken.sol";
+import "./tokens/Claim.sol";
+import "./libs/errors.sol";
+import "./Warded/Warded.sol";
+
+// interfaces
+import "./interfaces/IFeed.sol";
 
 // @title Divide tokens in two
 // @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims
 // @dev The implementation of the following function will likely require utility functions and/or libraries,
 // the usage thereof is left to the implementer
-contract Divider {
+contract Divider is Warded {
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
     using WadMath for uint256;
@@ -36,7 +40,6 @@ contract Divider {
     string private constant CLAIM_SYMBOL_PREFIX = "c";
     string private constant CLAIM_NAME_PREFIX = "Claim";
 
-    mapping(address => uint256) public wards;
     mapping(address => bool) public feeds;
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
@@ -56,8 +59,7 @@ contract Divider {
         uint256 scale; // scale value to backfill for usr
     }
 
-    constructor(address _stable, address _cup) {
-        wards[msg.sender] = 1;
+    constructor(address _stable, address _cup) Warded() {
         stable = _stable;
         cup = _cup;
     }
@@ -143,7 +145,7 @@ contract Divider {
             }
         }
         uint256 amount = newBalance.wmul(scale);
-        BaseToken(series[feed][maturity].zero).mint(msg.sender, amount);
+        Zero(series[feed][maturity].zero).mint(msg.sender, amount);
         Claim(series[feed][maturity].claim).mint(msg.sender, amount);
 
         emit Issued(feed, maturity, amount, msg.sender);
@@ -163,7 +165,7 @@ contract Divider {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
 
-        BaseToken zero = BaseToken(series[feed][maturity].zero);
+        Zero zero = Zero(series[feed][maturity].zero);
         Claim claim = Claim(series[feed][maturity].claim);
         zero.burn(msg.sender, balance);
         _collect(msg.sender, feed, maturity, balance);
@@ -192,7 +194,7 @@ contract Divider {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(_settled(feed, maturity), Errors.NotSettled);
-        BaseToken zero = BaseToken(series[feed][maturity].zero);
+        Zero zero = Zero(series[feed][maturity].zero);
         zero.burn(msg.sender, balance);
         uint256 mscale = series[feed][maturity].mscale;
         uint256 tBal = balance.wdiv(mscale);
@@ -276,7 +278,7 @@ contract Divider {
         uint256 maturity,
         uint256 scale,
         Backfill[] memory backfills
-    ) external onlyGov {
+    ) external onlyWards {
         require(_exists(feed, maturity), Errors.NotExists);
         require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
@@ -296,13 +298,6 @@ contract Divider {
 
         emit Backfilled(feed, maturity, scale, backfills);
     }
-
-    /* ========== AUTH FUNCTIONS ========== */
-
-    function rely(address usr) external onlyGov {wards[usr] = 1;}
-
-    function deny(address usr) external onlyGov {wards[usr] = 0;}
-
 
     /* ========== INTERNAL & HELPER FUNCTIONS ========== */
 
@@ -331,7 +326,7 @@ contract Divider {
         string memory datestring = DateTime.toDateString(maturity);
         string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", datestring));
         string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        zero = address(new BaseToken(maturity, address(this), feed, zname, zsymbol));
+        zero = address(new Zero(maturity, address(this), feed, zname, zsymbol));
 
         string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", datestring));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
@@ -348,11 +343,6 @@ contract Divider {
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier onlyGov() {
-        require(wards[msg.sender] == 1, Errors.NotAuthorised);
-        _;
-    }
 
     modifier onlyClaim(address feed, uint256 maturity) {
         address callingContract = address(series[feed][maturity].claim);
