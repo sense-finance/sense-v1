@@ -11,7 +11,7 @@ import "./external/WadMath.sol";
 import { BaseToken as Zero } from "./tokens/BaseToken.sol";
 import "./tokens/Claim.sol";
 import "./libs/errors.sol";
-import "./Warded/Warded.sol";
+import "./access/Warded.sol";
 
 // interfaces
 import "./interfaces/IFeed.sol";

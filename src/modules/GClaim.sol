@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 //internal references
-import "./MintableERC20.sol";
+import "../tokens/Mintable.sol";
 
 // interfaces
 import "../interfaces/IDivider.sol";
@@ -21,7 +21,7 @@ contract GClaim {
     mapping(address => uint256) private inits;
     // Total amount of interest collected separated by Claim address.
     mapping(address => uint256) private totals;
-    mapping(address => MintableERC20) private gclaims;
+    mapping(address => Mintable) private gclaims;
     IDivider public divider;
 
     constructor(address _divider) {
@@ -51,7 +51,7 @@ contract GClaim {
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here.
-            gclaims[claim] = new MintableERC20(name, symbol);
+            gclaims[claim] = new Mintable(name, symbol);
         } else {
             uint256 initScale = inits[claim];
             uint256 currScale = IFeed(feed).scale();

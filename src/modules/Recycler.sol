@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // internal references
-import "./MintableERC20.sol";
-import "../Warded/Warded.sol";
+import "../tokens/Mintable.sol";
+import "../access/Warded.sol";
 
 // interfaces
 import "../interfaces/IDivider.sol";
@@ -45,7 +45,7 @@ contract Recycler is Warded {
         uint256 collected;
         uint256 lastKick;
         Config config;
-        MintableERC20 token;
+        Mintable token;
     }
 
     struct Auction {
@@ -137,7 +137,7 @@ contract Recycler is Warded {
         // Only applies to future auctions
         string memory name = string(abi.encodePacked("R-", ERC20(claim).name(), "-R"));
         string memory symbol = string(abi.encodePacked("R-", ERC20(claim).symbol(), "-R"));
-        rclaims[claim].token = new MintableERC20(name, symbol); // NOTE: Default to mainnet chainId for now.
+        rclaims[claim].token = new Mintable(name, symbol); // NOTE: Default to mainnet chainId for now.
         rclaims[claim].config = params;
         rclaims[claim].lastKick = block.timestamp;
 

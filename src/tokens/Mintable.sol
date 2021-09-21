@@ -3,16 +3,17 @@ pragma solidity ^0.8.6;
 
 // external references
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../access/Warded.sol";
 
-contract MintableERC20 is ERC20 {
-    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {}
+contract Mintable is ERC20, Warded {
+    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) Warded() {}
 
     /**
      * @dev Mints new Zero or Claim tokens for usr, increasing the total supply.
      * @param usr The address to send the minted tokens.
      * @param amount The amount to be minted.
      **/
-    function mint(address usr, uint256 amount) public {
+    function mint(address usr, uint256 amount) public onlyWards {
         _mint(usr, amount);
         emit Mint(usr, amount);
     }
