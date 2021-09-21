@@ -27,9 +27,8 @@ contract BaseToken is Mintable {
     }
 
     /**
-     * @dev ERC20 override that adds a call to collect on each burn.
-     * @dev Destroys `amount` tokens from the caller.
-     * See {ERC20-_burn}.
+     * @dev Mintable override that adds onlyWards auth.
+     * See {Mintable-burn}.
      * @param usr The address to send the minted tokens.
      * @param amount The amount to be minted.
      **/

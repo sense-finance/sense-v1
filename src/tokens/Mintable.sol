@@ -9,7 +9,7 @@ contract Mintable is ERC20, Warded {
     constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) Warded() {}
 
     /**
-     * @dev Mints new Zero or Claim tokens for usr, increasing the total supply.
+     * See {ERC20-_mint}.
      * @param usr The address to send the minted tokens.
      * @param amount The amount to be minted.
      **/
@@ -19,11 +19,9 @@ contract Mintable is ERC20, Warded {
     }
 
     /**
-     * @dev ERC20 override that adds a call to collect on each burn.
-     * @dev Destroys `amount` tokens from the caller.
      * See {ERC20-_burn}.
-     * @param usr The address to send the minted tokens.
-     * @param amount The amount to be minted.
+     * @param usr The address from where to burn tokens from.
+     * @param amount The amount to be burned.
      **/
     function burn(address usr, uint256 amount) public virtual {
         _burn(usr, amount);
