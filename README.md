@@ -70,7 +70,7 @@ The G Claim Wrapper is a contract that lets a user deposit their "Collect" Claim
 
 ### Recycling Module
 
-The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, refocusing user's positions on FY.
+The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 
 
 ## Developing
