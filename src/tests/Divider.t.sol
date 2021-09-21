@@ -1,23 +1,19 @@
 pragma solidity ^0.8.6;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./test-helpers/divider/DividerTest.sol";
-import "./test-helpers/TestToken.sol";
-import "./test-helpers/TestFeed.sol";
-import "../external/DateTime.sol";
-import "../tokens/Claim.sol";
-import "../tokens/BaseToken.sol";
+import "./test-helpers/DateTimeFull.sol";
 
-contract Divide is DividerTest {
+contract Dividers is DividerTest {
     using WadMath for uint256;
     using Errors for string;
 
-    address[] accounts;
-    uint256[] values;
+    Divider.Backfill[] backfills;
 
     /* ========== initSeries() tests ========== */
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
-        uint256 balance = stableToken.balanceOf(address(alice));
+        uint256 balance = stable.balanceOf(address(alice));
         alice.doTransfer(address(bob), balance - INIT_STAKE / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doInitSeries(address(feed), maturity) {
@@ -33,7 +29,7 @@ contract Divide is DividerTest {
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsBalance);
+            assertEq(error, Errors.AmountExceedsAllowance);
         }
     }
 
@@ -60,14 +56,14 @@ contract Divide is DividerTest {
     function testCantInitSeriesActiveSeriesReached() public {
         uint256 SERIES_TO_INIT = 3;
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
-            uint256 nextMonthDate = DateTime.addMonths(block.timestamp, i);
-            nextMonthDate = getValidMaturity(DateTime.getYear(nextMonthDate), DateTime.getMonth(nextMonthDate));
+            uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
+            nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = initSampleSeries(address(alice), nextMonthDate);
             assertTrue(address(zero) != address(0));
             assertTrue(address(claim) != address(0));
         }
-        uint256 lastDate = DateTime.addMonths(block.timestamp, SERIES_TO_INIT + 1);
-        lastDate = getValidMaturity(DateTime.getYear(lastDate), DateTime.getMonth(lastDate));
+        uint256 lastDate = DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1);
+        lastDate = getValidMaturity(DateTimeFull.getYear(lastDate), DateTimeFull.getMonth(lastDate));
         try alice.doInitSeries(address(feed), lastDate) {
             fail();
         } catch Error(string memory error) {
@@ -76,7 +72,7 @@ contract Divide is DividerTest {
     }
 
     function testCantInitSeriesWithMaturityBeforeTimestamp() public {
-        uint256 maturity = DateTime.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -87,7 +83,7 @@ contract Divide is DividerTest {
     function testCantInitSeriesLessThanMinMaturity() public {
         hevm.warp(1631923200);
         // 18-09-21 00:00 UTC
-        uint256 maturity = DateTime.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -98,7 +94,7 @@ contract Divide is DividerTest {
     function testCantInitSeriesMoreThanMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTime.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -109,26 +105,29 @@ contract Divide is DividerTest {
     function testInitSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
-        assertTrue(address(zero) != address(0));
-        assertTrue(address(claim) != address(0));
-        // TODO: check names
+        assertTrue(zero != address(0));
+        assertTrue(claim != address(0));
+        assertEq(ERC20(zero).name(), "Zero Compound Dai 2021-10-1");
+        assertEq(ERC20(zero).symbol(), "zcDAI:2021-10-1");
+        assertEq(ERC20(claim).name(), "Claim Compound Dai 2021-10-1");
+        assertEq(ERC20(claim).symbol(), "ccDAI:2021-10-1");
     }
 
     function testInitSeriesWithdrawStake() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stableToken.balanceOf(address(alice));
+        uint256 beforeBalance = stable.balanceOf(address(alice));
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         assertTrue(address(zero) != address(0));
         assertTrue(address(claim) != address(0));
-        uint256 afterBalance = stableToken.balanceOf(address(alice));
+        uint256 afterBalance = stable.balanceOf(address(alice));
         assertEq(afterBalance, beforeBalance - INIT_STAKE);
     }
 
     function testInitThreeSeries() public {
         uint256 SERIES_TO_INIT = 3;
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
-            uint256 nextMonthDate = DateTime.addMonths(block.timestamp, i);
-            nextMonthDate = getValidMaturity(DateTime.getYear(nextMonthDate), DateTime.getMonth(nextMonthDate));
+            uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
+            nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = initSampleSeries(address(alice), nextMonthDate);
             assertTrue(address(zero) != address(0));
             assertTrue(address(claim) != address(0));
@@ -138,14 +137,14 @@ contract Divide is DividerTest {
     function testInitSeriesOnMinMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTime.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         initSampleSeries(address(alice), maturity);
     }
 
     function testInitSeriesOnMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTime.timestampFromDateTime(2021, 12, 1, 0, 0, 0);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 12, 1, 0, 0, 0);
         initSampleSeries(address(alice), maturity);
     }
 
@@ -188,7 +187,7 @@ contract Divide is DividerTest {
     function testCantSettleSeriesIfNotSponsorCutoffTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try bob.doSettleSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -199,7 +198,7 @@ contract Divide is DividerTest {
     function testCantSettleSeriesIfSponsorAndCutoffTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try alice.doSettleSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -210,7 +209,7 @@ contract Divide is DividerTest {
     function testCantSettleSeriesIfNotSponsorAndSponsorTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
         try bob.doSettleSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -235,48 +234,48 @@ contract Divide is DividerTest {
     function testSettleSeriesIfSponsorAndOnSponsorWindowMinLimit() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.subSeconds(maturity, SPONSOR_WINDOW));
+        hevm.warp(DateTimeFull.subSeconds(maturity, SPONSOR_WINDOW));
         alice.doSettleSeries(address(feed), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMaxLimit() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW));
         alice.doSettleSeries(address(feed), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSettlementWindow() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         alice.doSettleSeries(address(feed), maturity);
     }
 
     function testSettleSeriesIfNotSponsorAndSettlementWindow() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         bob.doSettleSeries(address(feed), maturity);
     }
 
     function testSettleSeriesStakeIsTransferredIfSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stableToken.balanceOf(address(alice));
+        uint256 beforeBalance = stable.balanceOf(address(alice));
         initSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 afterBalance = stableToken.balanceOf(address(alice));
+        uint256 afterBalance = stable.balanceOf(address(alice));
         assertEq(beforeBalance, afterBalance);
     }
 
     function testSettleSeriesStakeIsTransferredIfNotSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stableToken.balanceOf(address(bob));
+        uint256 beforeBalance = stable.balanceOf(address(bob));
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
         bob.doSettleSeries(address(feed), maturity);
-        uint256 afterBalance = stableToken.balanceOf(address(bob));
+        uint256 afterBalance = stable.balanceOf(address(bob));
         assertEq(afterBalance, beforeBalance + INIT_STAKE);
     }
 
@@ -331,7 +330,7 @@ contract Divide is DividerTest {
         try alice.doIssue(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsBalance);
+            assertEq(error, Errors.AmountExceedsAllowance);
         }
     }
 
@@ -348,17 +347,34 @@ contract Divide is DividerTest {
         }
     }
 
+    function testCantIssueIfFeedValueLowerThanPrevious() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.roll(911);
+        try feed.scale() {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidScaleValue);
+        }
+        uint256 amount = 100e18;
+        try alice.doIssue(address(feed), maturity, amount) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidScaleValue);
+        }
+    }
+
     function testIssue() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         uint256 amount = 100e18; // 100 target
         uint256 fee = (ISSUANCE_FEE * 100e18) / 100; // 1 target
         uint256 tBalanceBefore = target.balanceOf(address(alice));
-        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(alice));
-        uint256 cBalanceBefore = Claim(claim).balanceOf(address(alice));
+        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(alice));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(alice));
         alice.doIssue(address(feed), maturity, amount);
-        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(alice));
-        uint256 cBalanceAfter = Claim(claim).balanceOf(address(alice));
+        uint256 zBalanceAfter = ERC20(zero).balanceOf(address(alice));
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(alice));
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         // Formula = newBalance.wmul(scale)
         uint256 lscale = 2e17;
@@ -396,6 +412,20 @@ contract Divide is DividerTest {
         }
     }
 
+    function testCantCombineIfFeedValueLowerThanPrevious() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 tBal = 100e18;
+        alice.doIssue(address(feed), maturity, tBal);
+        uint256 zBal = ERC20(zero).balanceOf(address(alice));
+        hevm.roll(911);
+        try alice.doCombine(address(feed), maturity, zBal) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidScaleValue);
+        }
+    }
+
     //    function testCantCombineNotEnoughBalance() public {
     //        revert("IMPLEMENT");
     //    }
@@ -410,13 +440,13 @@ contract Divide is DividerTest {
         uint256 tBal = 100e18;
         alice.doIssue(address(feed), maturity, tBal);
         uint256 tBalanceBefore = target.balanceOf(address(alice));
-        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(alice));
-        uint256 cBalanceBefore = Claim(claim).balanceOf(address(alice));
+        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(alice));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(alice));
         uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
         alice.doCombine(address(feed), maturity, zBalanceBefore);
         uint256 tBalanceAfter = target.balanceOf(address(alice));
-        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(alice));
-        uint256 cBalanceAfter = Claim(claim).balanceOf(address(alice));
+        uint256 zBalanceAfter = ERC20(zero).balanceOf(address(alice));
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(alice));
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
         assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!!
@@ -431,8 +461,8 @@ contract Divide is DividerTest {
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(bob));
-        uint256 cBalanceBefore = Claim(claim).balanceOf(address(bob));
+        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
 
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
@@ -440,8 +470,8 @@ contract Divide is DividerTest {
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         bob.doCombine(address(feed), maturity, zBalanceBefore);
         uint256 tBalanceAfter = target.balanceOf(address(bob));
-        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(bob));
-        uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
+        uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
 
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
@@ -458,7 +488,7 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
         divider.setFeed(address(feed), false);
-        uint256 balance = BaseToken(zero).balanceOf(address(alice));
+        uint256 balance = ERC20(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -481,7 +511,7 @@ contract Divide is DividerTest {
         (address zero, ) = initSampleSeries(address(alice), maturity);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
-        uint256 balance = BaseToken(zero).balanceOf(address(bob));
+        uint256 balance = ERC20(zero).balanceOf(address(bob));
         try bob.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -494,7 +524,7 @@ contract Divide is DividerTest {
         (address zero, ) = initSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 balance = BaseToken(zero).balanceOf(address(alice)) + 1e18;
+        uint256 balance = ERC20(zero).balanceOf(address(alice)) + 1e18;
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch (bytes memory error) {
@@ -509,11 +539,11 @@ contract Divide is DividerTest {
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 zBalanceBefore = BaseToken(zero).balanceOf(address(bob));
+        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 balanceToRedeem = zBalanceBefore;
         bob.doRedeemZero(address(feed), maturity, balanceToRedeem);
-        uint256 zBalanceAfter = BaseToken(zero).balanceOf(address(bob));
+        uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: tBal = balance / mscale
@@ -575,10 +605,10 @@ contract Divide is DividerTest {
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
-        uint256 cBalanceBefore = Claim(claim).balanceOf(address(bob));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 collected = bob.doCollect(claim);
-        uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
@@ -596,12 +626,12 @@ contract Divide is DividerTest {
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
-        uint256 cBalanceBefore = Claim(claim).balanceOf(address(bob));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
         uint256 collected = bob.doCollect(claim);
-        uint256 cBalanceAfter = Claim(claim).balanceOf(address(bob));
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
@@ -619,7 +649,7 @@ contract Divide is DividerTest {
         bob.doIssue(address(feed), maturity, tBal);
         divider.setFeed(address(feed), false); // emergency stop
         uint256 newScale = 20e17;
-        divider.backfillScale(address(feed), maturity, newScale, values, accounts); // fix invalid scale value
+        divider.backfillScale(address(feed), maturity, newScale, backfills); // fix invalid scale value
         divider.setFeed(address(feed), true); // re-enable feed after emergency
         bob.doCollect(claim);
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
@@ -631,7 +661,7 @@ contract Divide is DividerTest {
     function testCantBackfillScaleSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 amount = 1e18;
-        try divider.backfillScale(address(feed), maturity, amount, values, accounts) {
+        try divider.backfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotExists);
@@ -642,7 +672,7 @@ contract Divide is DividerTest {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         uint256 amount = 1e18;
-        try divider.backfillScale(address(feed), maturity, amount, values, accounts) {
+        try divider.backfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.OutOfWindowBoundaries);
@@ -652,9 +682,9 @@ contract Divide is DividerTest {
     function testCantBackfillScaleSeriesNotGov() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 amount = 1e18;
-        try alice.doBackfillScale(address(feed), maturity, amount, values, accounts) {
+        try alice.doBackfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotAuthorised);
@@ -664,9 +694,9 @@ contract Divide is DividerTest {
     function testCantBackfillScaleInvalidValue() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 amount = 1e16;
-        try divider.backfillScale(address(feed), maturity, amount, values, accounts) {
+        try divider.backfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
@@ -676,17 +706,19 @@ contract Divide is DividerTest {
     function testBackfillScale() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        hevm.warp(DateTime.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 newScale = 1e18;
-        values = [5e17, 4e17];
-        accounts = [address(alice), address(bob)];
-        divider.backfillScale(address(feed), maturity, newScale, values, accounts);
+        Divider.Backfill memory aliceBackfill = Divider.Backfill(address(alice), 5e17);
+        Divider.Backfill memory bobBackfill = Divider.Backfill(address(bob), 4e17);
+        backfills.push(aliceBackfill);
+        backfills.push(bobBackfill);
+        divider.backfillScale(address(feed), maturity, newScale, backfills);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
-        assertEq(lscale, values[0]);
+        assertEq(lscale, aliceBackfill.scale);
         lscale = divider.lscales(address(feed), maturity, address(bob));
-        assertEq(lscale, values[1]);
+        assertEq(lscale, bobBackfill.scale);
     }
 
     function testBackfillScaleBeforeCutoffAndFeedDisabled() public {
@@ -695,29 +727,15 @@ contract Divide is DividerTest {
         hevm.warp(maturity);
         divider.setFeed(address(feed), false);
         uint256 newScale = 1e18;
-        divider.backfillScale(address(feed), maturity, newScale, values, accounts);
+        divider.backfillScale(address(feed), maturity, newScale, backfills);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
     }
 
     /* ========== misc tests ========== */
 
-    function testFeedIsDisabledIfScaleValueLowerThanPrevious() public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        (address zero, address claim) = initSampleSeries(address(alice), maturity);
-        hevm.roll(911);
-        try TestFeed(feed).scale() {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-        uint256 amount = 100e18;
-        try alice.doIssue(address(feed), maturity, amount) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-    }
+    //    function testFeedIsDisabledIfScaleValueLowerThanPrevious() public {
+    //    }
 
     //    function testFeedIsDisabledIfScaleValueCallReverts() public {
     //        revert("IMPLEMENT");
@@ -730,7 +748,7 @@ contract Divide is DividerTest {
     /* ========== test helpers ========== */
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
-        maturity = DateTime.timestampFromDateTime(year, month, 1, 0, 0, 0);
+        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         require(maturity >= block.timestamp + 2 weeks, "Can not return valid maturity with given year an month");
     }
 

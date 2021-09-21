@@ -1,23 +1,29 @@
 pragma solidity ^0.8.6;
 
 import "../Hevm.sol";
-import "../TestToken.sol";
+import "../MockToken.sol";
 import "../../../Divider.sol";
+import "../../../tokens/Claim.sol";
 
 contract User {
     address constant HEVM_ADDRESS =
     address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
 
-    TestToken stableToken; // stable token
-    TestToken target; // stable token
+    MockToken stable;
+    MockToken target;
     Divider divider;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    function setStableToken(TestToken _token) public {
-        stableToken = _token;
+    struct Backfill {
+        address usr; // address of the backfilled user
+        uint256 scale; // scale value to backfill for usr
     }
 
-    function setTargetToken(TestToken _token) public {
+    function setStable(MockToken _token) public {
+        stable = _token;
+    }
+
+    function setTarget(MockToken _token) public {
         target = _token;
     }
 
@@ -30,19 +36,19 @@ contract User {
         address to,
         uint256 amount
     ) public returns (bool) {
-        return stableToken.transferFrom(from, to, amount);
+        return stable.transferFrom(from, to, amount);
     }
 
     function doTransfer(address to, uint256 amount) public returns (bool) {
-        return stableToken.transfer(to, amount);
+        return stable.transfer(to, amount);
     }
 
     function doApproveStable(address recipient, uint256 amount) public returns (bool) {
-        return stableToken.approve(recipient, amount);
+        return stable.approve(recipient, amount);
     }
 
     function doApproveStable(address guy) public returns (bool) {
-        return stableToken.approve(guy, type(uint256).max);
+        return stable.approve(guy, type(uint256).max);
     }
 
     function doApproveTarget(address recipient, uint256 amount) public returns (bool) {
@@ -54,19 +60,19 @@ contract User {
     }
 
     function doAllowance(address owner, address spender) public view returns (uint256) {
-        return stableToken.allowance(owner, spender);
+        return stable.allowance(owner, spender);
     }
 
     function doBalanceOf(address who) public view returns (uint256) {
-        return stableToken.balanceOf(who);
+        return stable.balanceOf(who);
     }
 
     function doMintStable(uint256 wad) public {
-        stableToken.mint(address(this), wad);
+        stable.mint(address(this), wad);
     }
 
     function doMintStable(address guy, uint256 wad) public {
-        stableToken.mint(guy, wad);
+        stable.mint(guy, wad);
     }
 
     function doMintTarget(uint256 wad) public {
@@ -83,27 +89,27 @@ contract User {
 
     function doInitSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
         hevm.roll(block.number + 1);
-    (zero, claim) = divider.initSeries(feed, maturity);
+        (zero, claim) = divider.initSeries(feed, maturity);
     }
 
     function doSettleSeries(address feed, uint256 maturity) public {
         hevm.roll(block.number + 1);
-    divider.settleSeries(feed, maturity);
+        divider.settleSeries(feed, maturity);
     }
 
     function doIssue(address feed, uint256 maturity, uint256 balance) public {
         hevm.roll(block.number + 1);
-    divider.issue(feed, maturity, balance);
+        divider.issue(feed, maturity, balance);
     }
 
     function doCombine(address feed, uint256 maturity, uint256 balance) public {
         hevm.roll(block.number + 1);
-    divider.combine(feed, maturity, balance);
+        divider.combine(feed, maturity, balance);
     }
 
-    function doBackfillScale(address feed, uint256 maturity, uint256 scale, uint256[] memory values, address[] memory accounts) public {
+    function doBackfillScale(address feed, uint256 maturity, uint256 scale, Divider.Backfill[] memory backfills) public {
         hevm.roll(block.number + 1);
-    divider.backfillScale(feed, maturity, scale, values, accounts);
+        divider.backfillScale(feed, maturity, scale, backfills);
     }
 
     function doRedeemZero(address feed, uint256 maturity, uint256 balance) public {
@@ -112,6 +118,6 @@ contract User {
 
     function doCollect(address claim) public returns (uint256 collected) {
         hevm.roll(block.number + 1);
-    collected = Claim(claim).collect();
+        collected = Claim(claim).collect();
     }
 }

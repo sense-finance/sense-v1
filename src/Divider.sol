@@ -1,7 +1,6 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import "./interfaces/IDivider.sol";
 import "./interfaces/IFeed.sol";
 import "./tokens/BaseToken.sol";
 import "./tokens/Claim.sol";
@@ -11,13 +10,13 @@ import "./libs/errors.sol";
 import "./external/SafeMath.sol";
 import "./external/DateTime.sol";
 import "./external/WadMath.sol";
-import "./external/tokens/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // @title Divide tokens in two
 // @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims
 // @dev The implementation of the following function will likely require utility functions and/or libraries,
 // the usage thereof is left to the implementer
-contract Divider is IDivider {
+contract Divider {
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
     using WadMath for uint256;
@@ -32,10 +31,10 @@ contract Divider is IDivider {
     uint public constant MIN_MATURITY = 2 weeks; // TODO: TBD
     uint public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
-    bytes32 private constant ZERO_SYMBOL_PREFIX = "z";
-    bytes32 private constant ZERO_NAME_PREFIX = "Zero";
-    bytes32 private constant CLAIM_SYMBOL_PREFIX = "c";
-    bytes32 private constant CLAIM_NAME_PREFIX = "Claim";
+    string private constant ZERO_SYMBOL_PREFIX = "z";
+    string private constant ZERO_NAME_PREFIX = "Zero";
+    string private constant CLAIM_SYMBOL_PREFIX = "c";
+    string private constant CLAIM_NAME_PREFIX = "Claim";
 
     mapping(address => uint256) public wards;
     mapping(address => bool) public feeds;
@@ -52,6 +51,11 @@ contract Divider is IDivider {
         uint256 mscale; // Scale value at maturity
     }
 
+    struct Backfill {
+        address usr; // address of the backfilled user
+        uint256 scale; // scale value to backfill for usr
+    }
+
     constructor(address _stable, address _cup) {
         wards[msg.sender] = 1;
         stable = _stable;
@@ -66,7 +70,7 @@ contract Divider is IDivider {
     // @dev Transfers some fixed amount of stable asset to this contract
     // @param feed IFeed to associate with the Series
     // @param maturity Maturity date for the new Series, in units of unix time
-    function initSeries(address feed, uint256 maturity) external override returns (address zero, address claim) {
+    function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), "Series with given maturity already exists");
 
@@ -97,7 +101,7 @@ contract Divider is IDivider {
     // a Series that has matured but hasn't been officially settled yet
     // @param feed IFeed to associate with the Series
     // @param maturity Maturity date for the new Series
-    function settleSeries(address feed, uint256 maturity) external override {
+    function settleSeries(address feed, uint256 maturity) external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.AlreadySettled);
@@ -119,7 +123,7 @@ contract Divider is IDivider {
         address feed,
         uint256 maturity,
         uint256 balance
-    ) external override {
+    ) external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
@@ -155,7 +159,7 @@ contract Divider is IDivider {
         address feed,
         uint256 maturity,
         uint256 balance
-    ) external override {
+    ) external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
 
@@ -184,7 +188,7 @@ contract Divider is IDivider {
         address feed,
         uint256 maturity,
         uint256 balance
-    ) external override {
+    ) external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(_settled(feed, maturity), Errors.NotSettled);
@@ -209,7 +213,7 @@ contract Divider is IDivider {
         address feed,
         uint256 maturity,
         uint256 balance
-    ) external override onlyClaim(feed, maturity) returns (uint256 collected) {
+    ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         return _collect(usr,
             feed,
             maturity,
@@ -226,7 +230,7 @@ contract Divider is IDivider {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         Claim claim = Claim(series[feed][maturity].claim);
-        require(claim.balanceOf(usr) >= balance, "Not enough claims to collect given target balance");
+        require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
         if (lscale == 0) lscale = series[feed][maturity].iscale;
@@ -254,7 +258,7 @@ contract Divider is IDivider {
     // @dev Store the feed address in a registry for easy access on-chain
     // @param feed Feedr's address
     // @param isOn Flag setting this feed to enabled or disabled
-    function setFeed(address feed, bool isOn) external override {
+    function setFeed(address feed, bool isOn) external {
         require(feeds[feed] != isOn, Errors.ExistingValue);
         require(wards[msg.sender] == 1 || msg.sender == address(feed), Errors.NotAuthorised);
         feeds[feed] = isOn;
@@ -271,9 +275,8 @@ contract Divider is IDivider {
         address feed,
         uint256 maturity,
         uint256 scale,
-        uint256[] memory values, // TODO: array of struct??
-        address[] memory accounts
-    ) external override onlyGov {
+        Backfill[] memory backfills
+    ) external onlyGov {
         require(_exists(feed, maturity), Errors.NotExists);
         require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
@@ -281,8 +284,8 @@ contract Divider is IDivider {
         // If feed is disabled, it will allow the admin to backfill no matter the maturity.
         require(!feeds[feed] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
         series[feed][maturity].mscale = scale;
-        for (uint i = 0; i < accounts.length; i++) {
-            lscales[feed][maturity][accounts[i]] = values[i];
+        for (uint i = 0; i < backfills.length; i++) {
+            lscales[feed][maturity][backfills[i].usr] = backfills[i].scale;
         }
 
         // transfer rewards
@@ -291,7 +294,7 @@ contract Divider is IDivider {
         target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(to, INIT_STAKE);
 
-        emit Backfilled(feed, maturity, scale, values, accounts);
+        emit Backfilled(feed, maturity, scale, backfills);
     }
 
     /* ========== AUTH FUNCTIONS ========== */
@@ -325,15 +328,13 @@ contract Divider is IDivider {
 
     function _strip(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(IFeed(feed).target());
-        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(maturity);
-        bytes32 date = bytes32(abi.encodePacked(year, "-", month, "-", day));
-
-        string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", date));
-        string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", date));
+        string memory datestring = DateTime.toDateString(maturity);
+        string memory zname = string(abi.encodePacked(ZERO_NAME_PREFIX, " ", target.name(), " ", datestring));
+        string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         zero = address(new BaseToken(maturity, address(this), feed, zname, zsymbol));
 
-        string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", date));
-        string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", date));
+        string memory cname = string(abi.encodePacked(CLAIM_NAME_PREFIX, " ", target.name(), " ", datestring));
+        string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol));
     }
 
@@ -364,7 +365,7 @@ contract Divider is IDivider {
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
-    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 scale, uint256[] values, address[] accounts);
+    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 scale, Backfill[] backfills);
     event FeedChanged(address indexed feed, bool isOn);
     event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
     event Redeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);

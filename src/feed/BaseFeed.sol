@@ -3,10 +3,11 @@ pragma solidity ^0.8.6;
 // External references
 import "../external/WadMath.sol";
 import "../external/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // Internal references
 import "../interfaces/IFeed.sol";
-import "../interfaces/IDivider.sol";
+import "../Divider.sol";
 
 //import "./libs/Errors.sol";
 
@@ -21,7 +22,7 @@ abstract contract BaseFeed is IFeed {
     address public override divider;
     string public override name;
     string public override symbol;
-    uint256 private delta;
+    uint256 public delta;
     uint256 public lscale;
 
     /**
@@ -37,6 +38,9 @@ abstract contract BaseFeed is IFeed {
         target = _target;
         divider = _divider;
         delta = _delta;
+
+        name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
+        symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
     }
 
     /// @notice Calculate and return this feed's Scale value for the current timestamp
@@ -49,7 +53,7 @@ abstract contract BaseFeed is IFeed {
     function scale() external virtual override returns (uint256 _value) {
         _value = _scale();
         if (_value < lscale || (lscale != 0 && _value > lscale.add(lscale.wmul(delta).wdiv(100)))) {
-            IDivider(divider).setFeed(address(this), false);
+            Divider(divider).setFeed(address(this), false);
             //            revert(Errors.InvalidScaleValue);
             revert("Scale value is invalid");
         }

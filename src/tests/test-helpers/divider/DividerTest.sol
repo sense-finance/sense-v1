@@ -4,16 +4,16 @@ import "ds-test/test.sol";
 
 // Internal references
 import "../Hevm.sol";
-import "../TestToken.sol";
-import "../TestFeed.sol";
+import "../MockToken.sol";
+import "../feed/MockFeed.sol";
 import "./User.sol";
 import "../../../Divider.sol";
 import "../../../external/DateTime.sol";
 
 contract DividerTest is DSTest {
-    TestFeed feed;
-    TestToken stableToken;
-    TestToken target;
+    MockFeed feed;
+    MockToken stable;
+    MockToken target;
 
     Divider internal divider;
     User internal gov;
@@ -43,16 +43,16 @@ contract DividerTest is DSTest {
     function setUp() public {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        stableToken = new TestToken("Stable Token", "ST", 18);
-        target = new TestToken("Compound Dai", "cDAI", 18);
+        stable = new MockToken("Stable Token", "ST");
+        target = new MockToken("Compound Dai", "cDAI");
 
         gov = new User();
-        gov.setStableToken(stableToken);
-        gov.setTargetToken(target);
-        divider = new Divider(address(stableToken), address(gov));
+        gov.setStable(stable);
+        gov.setTarget(target);
+        divider = new Divider(address(stable), address(gov));
         gov.setDivider(divider);
 
-        feed = new TestFeed(address(target), address(divider), 150);
+        feed = new MockFeed(address(target), address(divider), 150);
         divider.setFeed(address(feed), true);
 
         alice = createUser();
@@ -61,12 +61,12 @@ contract DividerTest is DSTest {
 
     function createUser() public returns (User user) {
         user = new User();
-        user.setStableToken(stableToken);
-        user.setTargetToken(target);
+        user.setStable(stable);
+        user.setTarget(target);
         user.setDivider(divider);
         user.doApproveStable(address(divider));
-        user.doMintStable(address(alice), INIT_STAKE * 1000);
+        user.doMintStable(INIT_STAKE * 1000);
         user.doApproveTarget(address(divider));
-        user.doMintTarget(1e18 * 10000);
+        user.doMintTarget(INIT_STAKE * 10000);
     }
 }
