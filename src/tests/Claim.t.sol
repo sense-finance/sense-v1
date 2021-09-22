@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/divider/DividerTest.sol";
+import "./test-helpers/TestHelper.sol";
 
-contract Claims is DividerTest {
+contract Claims is TestHelper {
     using WadMath for uint256;
 
     function testCollect() public {
