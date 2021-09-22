@@ -8,11 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // internal references
 import "../tokens/Mintable.sol";
 import "../access/Warded.sol";
-
-// interfaces
-import "../interfaces/IDivider.sol";
-import "../interfaces/IClaim.sol";
-import "../interfaces/IFeed.sol";
+import "../Divider.sol";
+import "../tokens/Claim.sol";
+import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
 
 // @title Amplify deposited Claims
 // @notice You can use this contract to amplify the FY component of your Claims
@@ -31,7 +29,7 @@ contract Recycler is Warded {
     mapping(address => uint256) private multipliers;
     mapping(address => RClaim) private rclaims;
 
-    IDivider public divider;
+    Divider public divider;
 
     uint256 public constant AUCTION_SPEED = 0.001 ether; // Zero lot size decreases by 0.001 each second
 
@@ -55,7 +53,7 @@ contract Recycler is Warded {
     }
 
     constructor(address _divider) Warded() {
-        divider = IDivider(_divider);
+        divider = Divider(_divider);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -70,7 +68,7 @@ contract Recycler is Warded {
         uint256 maturity,
         uint256 balance
     ) public {
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
 
         require(!_auctionActive(claim), "Auction active for this Claim");
@@ -94,7 +92,7 @@ contract Recycler is Warded {
         uint256 maturity,
         uint256 balance
     ) public {
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
 
         ERC20(claim).safeTransfer(msg.sender, balance);
@@ -116,7 +114,7 @@ contract Recycler is Warded {
         uint256 maturity,
         Config calldata params
     ) public onlyWards {
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
         require(rclaims[claim].token != ERC20(address(0)), "rClaim hasn't yet been initialized");
         rclaims[claim].config = params;
     }
@@ -130,7 +128,7 @@ contract Recycler is Warded {
         uint256 maturity,
         Config calldata params
     ) public onlyWards {
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
         require(rclaims[claim].token == ERC20(address(0)), "rClaim type has already been initialized");
 
@@ -147,7 +145,7 @@ contract Recycler is Warded {
     // @notice Start an auction for a specific Series
     // @dev Reverts if the conditions for an auction on that Series have not been met
     function kick(address feed, uint256 maturity) public {
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
         require(!_auctionActive(claim), "Auction already active for this Claim");
 
@@ -157,7 +155,7 @@ contract Recycler is Warded {
         );
 
         // Amount of target collected
-        uint256 collected = IClaim(claim).collect();
+        uint256 collected = Claim(claim).collect();
         require(collected > rclaims[claim].config.discountThreshold, "Not enough yield to collect for an auction");
 
         auctions[claim].discount = collected;
@@ -175,7 +173,7 @@ contract Recycler is Warded {
         uint256 maturity,
         uint256 balance
     ) public {
-        (address zero, address claim, , ) = divider.series(feed, maturity);
+        (address zero, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
 
         uint256 lot = _getLotSize(claim);
@@ -183,7 +181,7 @@ contract Recycler is Warded {
 
         // Take the users Target
         uint256 discount = auctions[claim].discount;
-        ERC20(IFeed(feed).target()).safeTransferFrom(msg.sender, address(this), balance - discount);
+        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), balance - discount);
 
         // Use it plus the Target collected for this auction to issue new Zeros and Claims
         divider.issue(feed, maturity, balance);

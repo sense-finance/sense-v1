@@ -5,13 +5,11 @@ pragma solidity ^0.8.6;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-//internal references
+// internal references
+import "../Divider.sol";
+import "../tokens/Claim.sol";
 import "../tokens/Mintable.sol";
-
-// interfaces
-import "../interfaces/IDivider.sol";
-import "../interfaces/IClaim.sol";
-import "../interfaces/IFeed.sol";
+import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
 
 // The GClaim contract turns Collect Claims into Drag Claims.
 contract GClaim {
@@ -22,10 +20,10 @@ contract GClaim {
     // Total amount of interest collected separated by Claim address.
     mapping(address => uint256) private totals;
     mapping(address => Mintable) private gclaims;
-    IDivider public divider;
+    Divider public divider;
 
     constructor(address _divider) {
-        divider = IDivider(_divider);
+        divider = Divider(_divider);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -36,7 +34,7 @@ contract GClaim {
     ) external {
         require(maturity > block.timestamp, "Maturity must be in the future");
 
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
 
         if (gclaims[claim] == ERC20(address(0))) {
@@ -47,20 +45,20 @@ contract GClaim {
             // NOTE: Because we're transfering Claims in this same TX, we could technically
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later.
-            inits[claim] = IFeed(feed).scale();
+            inits[claim] = Feed(feed).scale();
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here.
             gclaims[claim] = new Mintable(name, symbol);
         } else {
             uint256 initScale = inits[claim];
-            uint256 currScale = IFeed(feed).scale();
+            uint256 currScale = Feed(feed).scale();
             // Calculate the amount of excess that has accrued since
             // the first Claim from this Series was deposited.
             uint256 gap = (balance * currScale) / (currScale - initScale) / 10**18;
 
             // Pull the amount of Target needed to backfill the excess.
-            ERC20(IFeed(feed).target()).safeTransferFrom(msg.sender, address(this), gap);
+            ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), gap);
             totals[claim] += gap;
         }
         // NOTE: Is there any way to drag inits up for everyone after a certain about of time has passed?
@@ -78,12 +76,12 @@ contract GClaim {
         uint256 maturity,
         uint256 balance
     ) external {
-        (, address claim, , ) = divider.series(feed, maturity);
+        (, address claim, , , , , ) = divider.series(feed, maturity);
 
         require(claim != address(0), "Series must exist");
 
         // Collect excess for all Claims from this Series in this contract holds.
-        uint256 collected = IClaim(claim).collect();
+        uint256 collected = Claim(claim).collect();
         // Track the total Target collected manually so that that we don't get
         // mixed up when multiple Series have the same Target.
         uint256 total = totals[claim] + collected;
@@ -94,7 +92,7 @@ contract GClaim {
         totals[claim] = total;
 
         // Send the excess Target back to the user.
-        ERC20(IFeed(feed).target()).safeTransfer(msg.sender, rights);
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, rights);
         // Transfer Collect Claims back to the user
         ERC20(claim).safeTransfer(msg.sender, balance);
         // Burn the user's gclaims.

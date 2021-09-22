@@ -4,20 +4,23 @@ pragma solidity ^0.8.6;
 import "ds-test/test.sol";
 
 // internal references
-import "../Hevm.sol";
-import "../MockToken.sol";
-import "../feed/MockFeed.sol";
-import "./User.sol";
-import "../../../Divider.sol";
-import "../DateTimeFull.sol";
+import "./MockToken.sol";
+import "./MockFeed.sol";
+import "../../controller/Controller.sol";
+import "../../feed/FeedFactory.sol";
 
-contract DividerTest is DSTest {
+import "./Hevm.sol";
+import "./DateTimeFull.sol";
+import "./User.sol";
+
+contract TestHelper is DSTest {
     MockFeed feed;
     MockToken stable;
     MockToken target;
 
+    Controller internal controller;
+    FeedFactory internal factory;
     Divider internal divider;
-    User internal gov;
     User internal alice;
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
@@ -50,14 +53,13 @@ contract DividerTest is DSTest {
         stable = new MockToken("Stable Token", "ST");
         target = new MockToken("Compound Dai", "cDAI");
 
-        gov = new User();
-        gov.setStable(stable);
-        gov.setTarget(target);
-        divider = new Divider(address(stable), address(gov));
-        gov.setDivider(divider);
+        controller = new Controller();
+        controller.supportTarget(address(target), true);
 
-        feed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
-        divider.setFeed(address(feed), true);
+        divider = new Divider(address(stable), address(this));
+        MockFeed implementation = new MockFeed(); // feed implementation
+        factory = new FeedFactory(address(implementation), address(divider), address(controller), DELTA); // deploy feed factory
+        feed = MockFeed(factory.deployFeed(address(target)));
 
         alice = createUser();
         bob = createUser();
@@ -65,6 +67,7 @@ contract DividerTest is DSTest {
 
     function createUser() public returns (User user) {
         user = new User();
+        user.setFactory(factory);
         user.setStable(stable);
         user.setTarget(target);
         user.setDivider(divider);
@@ -74,11 +77,9 @@ contract DividerTest is DSTest {
         user.doMint(address(target), INIT_STAKE * 10000);
     }
 
-    /* ========== test helpers ========== */
-
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
         maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        require(maturity >= block.timestamp + 2 weeks, "Can not return valid maturity with given year an month");
+        require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
     }
 
     function initSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
@@ -87,7 +88,8 @@ contract DividerTest is DSTest {
 
     function assertClose(uint256 actual, uint256 expected) public {
         uint256 variance = 10;
-        assertTrue(actual >= (expected - variance));
-        assertTrue(actual <= (expected + variance));
+        DSTest.assertTrue(actual >= (expected - variance));
+        DSTest.assertTrue(actual <= (expected + variance));
     }
+
 }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 import "./test-helpers/feed/FeedTest.sol";
 import "./test-helpers/feed/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
+import "./test-helpers/TestHelper.sol";
 
 contract Feeds is FeedTest {
     using WadMath for uint256;

@@ -2,10 +2,9 @@
 pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./test-helpers/divider/DividerTest.sol";
-import "./test-helpers/DateTimeFull.sol";
+import "./test-helpers/TestHelper.sol";
 
-contract Dividers is DividerTest {
+contract Dividers is TestHelper {
     using WadMath for uint256;
     using Errors for string;
 

@@ -17,6 +17,7 @@ library Errors {
     string constant NotEnoughClaims = "Not enough claims to collect given target balance";
     string constant NotExists = "Series does not exist";
     string constant NotSettled = "Series must be settled";
+    string constant NotSupported = "Target is not supported";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
     string constant ExistingValue = "New value must be different than previous";
     string constant ZeroBalance = "Balance must be greater than 0";

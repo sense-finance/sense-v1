@@ -8,13 +8,11 @@ import "./external/DateTime.sol";
 import "./external/WadMath.sol";
 
 // internal references
-import { BaseToken as Zero } from "./tokens/BaseToken.sol";
-import "./tokens/Claim.sol";
-import "./libs/errors.sol";
 import "./access/Warded.sol";
-
-// interfaces
-import "./interfaces/IFeed.sol";
+import "./libs/errors.sol";
+import "./tokens/Claim.sol";
+import { BaseFeed as Feed } from "./feed/BaseFeed.sol";
+import { BaseToken as Zero } from "./tokens/BaseToken.sol";
 
 // @title Divide tokens in two
 // @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims
@@ -70,7 +68,7 @@ contract Divider is Warded {
     // @dev Reverts if the feed hasn't been approved or if the Maturity date is invalid
     // @dev Deploys two ERC20 contracts, one for each Zero type
     // @dev Transfers some fixed amount of stable asset to this contract
-    // @param feed IFeed to associate with the Series
+    // @param feed Feed to associate with the Series
     // @param maturity Maturity date for the new Series, in units of unix time
     function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
@@ -90,7 +88,7 @@ contract Divider is Warded {
             sponsor : msg.sender,
             issuance : block.timestamp,
             reward : 0,
-            iscale : IFeed(feed).scale(),
+            iscale : Feed(feed).scale(),
             mscale : 0
         });
         series[feed][maturity] = newSeries;
@@ -101,15 +99,15 @@ contract Divider is Warded {
     // @dev The Series' sponsor has a buffer where only they can settle the Series
     // @dev After the buffer, the reward becomes MEV
     // a Series that has matured but hasn't been officially settled yet
-    // @param feed IFeed to associate with the Series
+    // @param feed Feed to associate with the Series
     // @param maturity Maturity date for the new Series
     function settleSeries(address feed, uint256 maturity) external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.AlreadySettled);
         require(_settable(feed, maturity), Errors.OutOfWindowBoundaries);
-        series[feed][maturity].mscale = IFeed(feed).scale();
-        ERC20 target = ERC20(IFeed(feed).target());
+        series[feed][maturity].mscale = Feed(feed).scale();
+        ERC20 target = ERC20(Feed(feed).target());
         target.safeTransfer(msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
         emit SeriesSettled(feed, maturity, msg.sender);
@@ -117,7 +115,7 @@ contract Divider is Warded {
 
     // @notice Mint Zeros and Claims of a specific Series
     // @dev Pulls Target from the caller and takes the Issuance Fee out of their Zero & Claim share
-    // @param feed IFeed address for the Series
+    // @param feed Feed address for the Series
     // @param maturity Maturity date for the Series
     // @param balance Balance of Zeros and Claims to mint the user –
     // the same as the amount of Target they must deposit (less fees)
@@ -129,7 +127,7 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
-        ERC20 target = ERC20(IFeed(feed).target());
+        ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(msg.sender, address(this), balance);
         uint256 fee = ISSUANCE_FEE.mul(balance).div(100);
         series[feed][maturity].reward = series[feed][maturity].reward.add(fee);
@@ -140,7 +138,7 @@ contract Divider is Warded {
         if (!_settled(feed, maturity)) {
             scale = lscales[feed][maturity][msg.sender];
             if (scale == 0) {
-                scale = IFeed(feed).scale();
+                scale = Feed(feed).scale();
                 lscales[feed][maturity][msg.sender] = scale;
             }
         }
@@ -174,7 +172,7 @@ contract Divider is Warded {
         // we use lscale since we have already got the current value on the _collect() call
         uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
         uint256 tBal = balance.wdiv(cscale);
-        ERC20(IFeed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
 
         emit Combined(feed, maturity, tBal, msg.sender);
     }
@@ -183,7 +181,7 @@ contract Divider is Warded {
     // @dev Reverts if the maturity date is invalid or if the Series doesn't exist
     // @dev Reverts if the series is not settled
     // @dev The balance of Fixed Zeros to burn is a function of the change in Scale
-    // @param feed IFeed address for the Series
+    // @param feed Feed address for the Series
     // @param maturity Maturity date for the Series
     // @param balance Amount of Zeros to burn
     function redeemZero(
@@ -198,7 +196,7 @@ contract Divider is Warded {
         zero.burn(msg.sender, balance);
         uint256 mscale = series[feed][maturity].mscale;
         uint256 tBal = balance.wdiv(mscale);
-        ERC20(IFeed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
         emit Redeemed(feed, maturity, tBal);
     }
 
@@ -207,7 +205,7 @@ contract Divider is Warded {
     // @dev Reverts if not called by the Claim contract directly
     // @dev Burns the claim tokens if it's currently at or after maturity as this will be the last possible collect
     // @param usr User who's collecting for their Claims
-    // @param feed IFeed address for the Series
+    // @param feed Feed address for the Series
     // @param maturity Maturity date for the Series
     // @param balance Amount of Claim to burn
     function collect(
@@ -241,13 +239,13 @@ contract Divider is Warded {
             claim.burn(usr, balance);
         } else {
             if (!_settled(feed, maturity)) {
-                cscale = IFeed(feed).scale();
+                cscale = Feed(feed).scale();
                 lscales[feed][maturity][usr] = cscale;
             }
         }
         collected = balance.wmul((cscale.sub(lscale)).wdiv(cscale.wmul(lscale)));
         require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
-        ERC20(IFeed(feed).target()).safeTransfer(usr, collected);
+        ERC20(Feed(feed).target()).safeTransfer(usr, collected);
         emit Collected(feed, maturity, collected);
     }
 
@@ -292,7 +290,7 @@ contract Divider is Warded {
 
         // transfer rewards
         address to = block.timestamp <= maturity.add(SPONSOR_WINDOW) ? series[feed][maturity].sponsor : cup;
-        ERC20 target = ERC20(IFeed(feed).target());
+        ERC20 target = ERC20(Feed(feed).target());
         target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(to, INIT_STAKE);
 
@@ -322,7 +320,7 @@ contract Divider is Warded {
     }
 
     function _strip(address feed, uint256 maturity) internal returns (address zero, address claim) {
-        ERC20 target = ERC20(IFeed(feed).target());
+        ERC20 target = ERC20(Feed(feed).target());
         (, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(m, "-", y));
 

@@ -1,23 +1,28 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "../Hevm.sol";
-import "../MockToken.sol";
-import "../../../Divider.sol";
-import "../../../tokens/Claim.sol";
+import "./Hevm.sol";
+import "./MockToken.sol";
+import "../../Divider.sol";
+import "../../tokens/Claim.sol";
+import "../../feed/FeedFactory.sol";
 
 contract User {
-    address constant HEVM_ADDRESS =
-    address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
+    address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
 
     MockToken stable;
     MockToken target;
     Divider divider;
+    FeedFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     struct Backfill {
         address usr; // address of the backfilled user
         uint256 scale; // scale value to backfill for usr
+    }
+
+    function setFactory(FeedFactory _factory) public {
+        factory = _factory;
     }
 
     function setStable(MockToken _token) public {
@@ -30,6 +35,10 @@ contract User {
 
     function setDivider(Divider _divider) public {
         divider = _divider;
+    }
+
+    function doDeployFeed (address _target) public returns (address clone){
+        return factory.deployFeed(_target);
     }
 
     function doTransferFrom(
@@ -100,4 +109,5 @@ contract User {
     function doCollect(address claim) public returns (uint256 collected) {
         collected = Claim(claim).collect();
     }
+
 }

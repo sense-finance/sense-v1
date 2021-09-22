@@ -10,5 +10,13 @@ abstract contract IFeed {
 
     function symbol() external view virtual returns (string memory symbol);
 
+    function delta() external view virtual returns (uint256 delta);
+
     function scale() external virtual returns (uint256 _scale);
+
+    function initialise(
+        address _target,
+        address _divider,
+        uint256 _delta
+    ) external virtual;
 }
