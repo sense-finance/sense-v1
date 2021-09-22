@@ -8,7 +8,7 @@ let
 in
   pkgs.mkShell {
     src = null;
-    name = "sense-v1-core";
+    name = "sense-v1";
     buildInputs = with pkgs; [
       pkgs.dapp
     ];
