@@ -22,6 +22,9 @@ contract FeedTest is DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
+        hevm.warp(1630454400);
+        // 01-09-21 00:00 UTC
+
         stable = new MockToken("Stable Token", "ST");
         target = new MockToken("Compound Dai", "cDAI");
         divider = new Divider(address(stable), address(this));
