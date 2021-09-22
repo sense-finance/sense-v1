@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// External references
+// external references
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// Internal references
+// internal references
 import "../Divider.sol";
 import "./BaseToken.sol";
 
