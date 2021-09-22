@@ -33,55 +33,40 @@ contract User {
     }
 
     function doTransferFrom(
+        address token,
         address from,
         address to,
         uint256 amount
     ) public returns (bool) {
-        return stable.transferFrom(from, to, amount);
+        return MockToken(token).transferFrom(from, to, amount);
     }
 
-    function doTransfer(address to, uint256 amount) public returns (bool) {
-        return stable.transfer(to, amount);
+    function doTransfer(address token, address to, uint256 amount) public returns (bool) {
+        return MockToken(token).transfer(to, amount);
     }
 
-    function doApproveStable(address recipient, uint256 amount) public returns (bool) {
-        return stable.approve(recipient, amount);
+    function doApprove(address token, address recipient, uint256 amount) public returns (bool) {
+        return MockToken(token).approve(recipient, amount);
     }
 
-    function doApproveStable(address guy) public returns (bool) {
-        return stable.approve(guy, type(uint256).max);
+    function doApprove(address token, address guy) public returns (bool) {
+        return MockToken(token).approve(guy, type(uint256).max);
     }
 
-    function doApproveTarget(address recipient, uint256 amount) public returns (bool) {
-        return target.approve(recipient, amount);
+    function doAllowance(address token, address owner, address spender) public view returns (uint256) {
+        return MockToken(token).allowance(owner, spender);
     }
 
-    function doApproveTarget(address guy) public returns (bool) {
-        return target.approve(guy, type(uint256).max);
+    function doBalanceOf(address token, address who) public view returns (uint256) {
+        return MockToken(token).balanceOf(who);
     }
 
-    function doAllowance(address owner, address spender) public view returns (uint256) {
-        return stable.allowance(owner, spender);
+    function doMint(address token, uint256 wad) public {
+        MockToken(token).mint(address(this), wad);
     }
 
-    function doBalanceOf(address who) public view returns (uint256) {
-        return stable.balanceOf(who);
-    }
-
-    function doMintStable(uint256 wad) public {
-        stable.mint(address(this), wad);
-    }
-
-    function doMintStable(address guy, uint256 wad) public {
-        stable.mint(guy, wad);
-    }
-
-    function doMintTarget(uint256 wad) public {
-        target.mint(address(this), wad);
-    }
-
-    function doMintTarget(address guy, uint256 wad) public {
-        target.mint(guy, wad);
+    function doMint(address token, address guy, uint256 wad) public {
+        MockToken(token).mint(guy, wad);
     }
 
     function doSetFeed(address feed, bool isOn) public {

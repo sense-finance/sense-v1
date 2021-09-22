@@ -15,7 +15,7 @@ contract Dividers is DividerTest {
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
         uint256 balance = stable.balanceOf(address(alice));
-        alice.doTransfer(address(bob), balance - INIT_STAKE / 2);
+        alice.doTransfer(address(stable), address(bob), balance - INIT_STAKE / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doInitSeries(address(feed), maturity) {
             fail();
@@ -25,7 +25,7 @@ contract Dividers is DividerTest {
     }
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
-        alice.doApproveStable(address(divider), 0);
+        alice.doApprove(address(stable), address(divider), 0);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doInitSeries(address(feed), maturity) {
             fail();
@@ -324,7 +324,7 @@ contract Dividers is DividerTest {
     }
 
     function testCantIssueNotEnoughAllowance() public {
-        alice.doApproveTarget(address(divider), 0);
+        alice.doApprove(address(target), address(divider), 0);
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         uint256 amount = target.balanceOf(address(alice));
@@ -745,21 +745,4 @@ contract Dividers is DividerTest {
     //    function testFeedIsDisabledIfScaleValueHigherThanThanPreviousPlusDelta() public {
     //        revert("IMPLEMENT");
     //    }
-
-    /* ========== test helpers ========== */
-
-    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
-        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        require(maturity >= block.timestamp + 2 weeks, "Can not return valid maturity with given year an month");
-    }
-
-    function initSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = User(sponsor).doInitSeries(address(feed), maturity);
-    }
-
-    function assertClose(uint256 actual, uint256 expected) public {
-        uint256 variance = 10;
-        assertTrue(actual >= (expected - variance));
-        assertTrue(actual <= (expected + variance));
-    }
 }

@@ -3,13 +3,13 @@ pragma solidity ^0.8.6;
 
 import "ds-test/test.sol";
 
-// Internal references
+// internal references
 import "../Hevm.sol";
 import "../MockToken.sol";
 import "../feed/MockFeed.sol";
 import "./User.sol";
 import "../../../Divider.sol";
-import "../../../external/DateTime.sol";
+import "../DateTimeFull.sol";
 
 contract DividerTest is DSTest {
     MockFeed feed;
@@ -65,9 +65,26 @@ contract DividerTest is DSTest {
         user.setStable(stable);
         user.setTarget(target);
         user.setDivider(divider);
-        user.doApproveStable(address(divider));
-        user.doMintStable(INIT_STAKE * 1000);
-        user.doApproveTarget(address(divider));
-        user.doMintTarget(INIT_STAKE * 10000);
+        user.doApprove(address(stable), address(divider));
+        user.doMint(address(stable), INIT_STAKE * 1000);
+        user.doApprove(address(target), address(divider));
+        user.doMint(address(target), INIT_STAKE * 10000);
+    }
+
+    /* ========== test helpers ========== */
+
+    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
+        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+        require(maturity >= block.timestamp + 2 weeks, "Can not return valid maturity with given year an month");
+    }
+
+    function initSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
+        (zero, claim) = User(sponsor).doInitSeries(address(feed), maturity);
+    }
+
+    function assertClose(uint256 actual, uint256 expected) public {
+        uint256 variance = 10;
+        assertTrue(actual >= (expected - variance));
+        assertTrue(actual <= (expected + variance));
     }
 }
