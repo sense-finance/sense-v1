@@ -4,8 +4,11 @@ pragma solidity ^0.8.6;
 import "./test-helpers/feed/FeedTest.sol";
 import "./test-helpers/feed/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
+import "../external/WadMath.sol";
 
 contract Feeds is FeedTest {
+    using WadMath for uint256;
+
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
         MockFeed feed = new MockFeed(address(target), address(divider), 150);
@@ -22,32 +25,24 @@ contract Feeds is FeedTest {
         assertEq(feed.scale(), 1e17);
     }
 
-    function testScaleIfEqualToDelta() public {
-        hevm.roll(1);
-        uint256 scale = feed.scale();
-        uint256 delta = feed.delta();
-        uint256 newValue = scale + (scale * delta) / 100;
-        feed.setScale(newValue);
+    function testCantScaleIfMoreThanDelta() public {
+        hevm.roll(block.number + 1);
+        uint256 lscale = feed.scale();
+        uint256 ltimestamp = block.timestamp;
+        uint256 lscalePerSec = lscale / ltimestamp; // last scale value per second
+
+        hevm.roll(block.number + 1);
+        uint256 timeDiff = block.timestamp - ltimestamp;
+        uint256 scaleAfterTime = lscalePerSec * timeDiff;
+        uint256 maxScaleValue = scaleAfterTime + (scaleAfterTime * feed.delta()) / 100; // TODO double check
+        feed.setScale(maxScaleValue);
         feed.scale();
     }
 
     function testCantScaleIfBelowThanPrevious() public {
-        hevm.roll(1);
+        hevm.roll(block.number + 1);
         assertEq(feed.scale(), 1e17);
         feed.setScale(1e17 - 1);
-        try feed.scale() {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-    }
-
-    function testCantScaleIfMoreThanDelta() public {
-        hevm.roll(1);
-        uint256 scale = feed.scale();
-        uint256 delta = feed.delta();
-        uint256 newValue = scale + (scale * delta) / 100 + 1;
-        feed.setScale(newValue);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {
