@@ -53,7 +53,7 @@ contract DividerTest is DSTest {
         divider = new Divider(address(stable), address(gov));
         gov.setDivider(divider);
 
-        feed = new MockFeed(address(target), address(divider), 150);
+        feed = new MockFeed(address(target), address(divider), 150, 150);
         divider.setFeed(address(feed), true);
 
         alice = createUser();
