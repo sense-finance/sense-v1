@@ -64,9 +64,11 @@ abstract contract BaseFeed is IFeed {
         require(_value >= lvalue, "Scale value is invalid");
 
         if (lvalue != 0) {
-            uint256 lvalPerSec = lvalue.div(lscale.timestamp); // last value per second
-            uint256 valPerSec = _value.div(block.timestamp); // value per second
-            if (valPerSec > lvalPerSec.add(lvalPerSec.mul(delta).div(100))) revert("Scale value is invalid");
+            uint256 timeDiff = block.timestamp - lscale.timestamp;
+            uint256 growthPerSec = _value.div(lvalue).wdiv(timeDiff);
+            if (growthPerSec > delta) revert("Scale value is invalid");
+            emit Lina(_value, lvalue, timeDiff, _value.div(lvalue).div(timeDiff));
+
             // if (valPerSec > lvalPerSec.add(lvalPerSec.wmul(delta).wdiv(100))) revert(Errors.InvalidScaleValue);
         }
         lscale.value = _value;
@@ -74,4 +76,5 @@ abstract contract BaseFeed is IFeed {
     }
 
     function _scale() internal virtual returns (uint256 _value);
+    event Lina(uint256 a, uint256 b, uint256 c, uint256 d);
 }

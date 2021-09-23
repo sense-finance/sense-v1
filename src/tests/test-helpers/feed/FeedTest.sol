@@ -11,6 +11,7 @@ import "../../../Divider.sol";
 import "../Hevm.sol";
 
 contract FeedTest is DSTest {
+    using WadMath for uint256;
 
     MockFeed feed;
     MockToken stable;
@@ -20,6 +21,8 @@ contract FeedTest is DSTest {
     User internal alice;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+    uint256 internal constant GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 internal constant DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
     function setUp() public {
         hevm.warp(1630454400);
@@ -29,7 +32,7 @@ contract FeedTest is DSTest {
         target = new MockToken("Compound Dai", "cDAI");
         divider = new Divider(address(stable), address(this));
 
-        feed = new MockFeed(address(target), address(divider), 150);
+        feed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
         divider.setFeed(address(feed), true);
     }
 }
