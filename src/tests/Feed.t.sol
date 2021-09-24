@@ -6,6 +6,8 @@ import "./test-helpers/feed/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
 
 contract Feeds is FeedTest {
+    uint256 constant public WAD = 1e18;
+
     using WadMath for uint256;
 
     function testFeedHasParams() public {
@@ -21,49 +23,52 @@ contract Feeds is FeedTest {
 
     function testScale() public {
         hevm.roll(block.number + 1);
-        assertEq(feed.scale(), DELTA);
+        assertEq(feed.scale(), WAD);
     }
 
     function testScaleIfEqualDelta() public {
+        hevm.warp(0);
         feed.scale();
+        // Initializes to ltimestamp = 0 & lvalue = 1 WAD
         (uint256 ltimestamp, uint256 lvalue) = feed.lscale();
-        hevm.warp(block.timestamp + 1 days);
-        uint256 timeDiff = block.timestamp - ltimestamp;
-//        uint256 maxGrowth = DELTA * timeDiff;
-//        uint256 growthPerSec = _value.div(lvalue).div(timeDiff);
 
-        uint256 maxGrowth = DELTA * timeDiff * lvalue;
-//        uint256 maxGrowth = GROWTH_PER_SECOND * timeDiff;
-        feed.setScale(maxGrowth);
+        hevm.warp(1 days);
+
+        // 86400 (1 day)
+        uint256 timeDiff = block.timestamp - ltimestamp;
+
+        // What scale value would bring us right up to the acceptable growth per second (delta)?
+        uint256 maxScale = (DELTA * timeDiff + lvalue).wdiv(lvalue);
+
+        feed.setScale(maxScale);
         feed.scale();
-        assertEq(maxGrowth, feed.delta());
-        assertEq(timeDiff, ltimestamp);
+
+        // Logging
+        // assertTrue(false);
     }
 
     function testCantScaleIfMoreThanDelta() public {
+        hevm.warp(0);
         feed.scale();
         (uint256 ltimestamp, uint256 lvalue) = feed.lscale();
-        hevm.warp(block.timestamp + 1 days);
-        uint256 timeDiff = block.timestamp - ltimestamp;
-        //        uint256 maxGrowth = DELTA * timeDiff;
-        //        uint256 growthPerSec = _value.div(lvalue).div(timeDiff);
 
-        uint256 maxGrowth = DELTA * timeDiff * lvalue;
-        //        uint256 maxGrowth = GROWTH_PER_SECOND * timeDiff;
-        feed.setScale(maxGrowth + 1); // we set the max growth +
+        hevm.warp(1 days);
+        uint256 timeDiff = block.timestamp - ltimestamp;
+        uint256 maxScale = (DELTA * timeDiff + lvalue).wdiv(lvalue);
+
+        // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded away in wdivs)
+        feed.setScale(maxScale.wmul(1000001e12));
 
         try feed.scale() {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
         }
-        assertEq(maxGrowth, feed.delta());
-        assertEq(timeDiff, ltimestamp);
     }
 
     function testCantScaleIfBelowThanPrevious() public {
-        assertEq(feed.scale(), GROWTH_PER_SECOND);
-        feed.setScale(GROWTH_PER_SECOND - 1);
+        assertEq(feed.scale(), WAD);
+        feed.setScale(WAD - 1);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {

@@ -65,7 +65,7 @@ abstract contract BaseFeed is IFeed {
 
         if (lvalue != 0) {
             uint256 timeDiff = block.timestamp - lscale.timestamp;
-            uint256 growthPerSec = _value.div(lvalue).wdiv(timeDiff);
+            uint256 growthPerSec = (_value.wdiv(lvalue) - lvalue) / timeDiff;
             if (growthPerSec > delta) revert("Scale value is invalid");
             emit Lina(_value, lvalue, timeDiff, _value.div(lvalue).div(timeDiff));
 

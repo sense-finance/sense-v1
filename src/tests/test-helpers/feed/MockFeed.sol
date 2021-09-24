@@ -17,12 +17,11 @@ contract MockFeed is BaseFeed {
         gps = _gps;
     }
 
-    uint256 internal value = 0;
+    uint256 internal value = 1e18; // one WAD
     uint256 internal constant SECONDS_IN_YEAR = 31536000;
 
-    function _scale() internal override virtual returns (uint256 _value) {
-        uint256 timeDiff = lscale.timestamp > 0 ? block.timestamp - lscale.timestamp : 1;
-        _value = value > 0 ? value : gps * timeDiff;
+    function _scale() internal override virtual returns (uint256) {
+        return value;
     }
 
     function setScale(uint256 _value) external {
