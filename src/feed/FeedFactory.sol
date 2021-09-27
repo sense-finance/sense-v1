@@ -30,30 +30,31 @@ contract FeedFactory is Warded {
         delta = _delta;
     }
 
-    function setDivider(address _divider) public onlyWards {
+    function setDivider(address _divider) external onlyWards {
         divider = _divider;
         emit DividerChanged(_divider);
     }
 
-    function setDelta(uint256 _delta) public onlyWards {
+    function setDelta(uint256 _delta) external onlyWards {
         delta = _delta;
         emit DeltaChanged(_delta);
     }
 
-    function setImplementation(address _implementation) public onlyWards {
+    function setImplementation(address _implementation) external onlyWards {
         implementation = _implementation;
         emit ImplementationChanged(_implementation);
     }
 
-    function deployFeed(address _target) public returns (address clone) {
+    function deployFeed(address _target) external returns (address clone) {
         require(Controller(controller).targets(_target), "Target is not supported");
         //        require(Controller(controller).targets(_target), Errors.NotSupported);
         clone = implementation.clone();
         BaseFeed(clone).initialise(_target, divider, delta);
-        emit ProxyCreated(clone);
+        Divider(divider).setFeed(clone, true);
+        emit FeedDeployed(clone);
     }
 
-    event ProxyCreated(address addr);
+    event FeedDeployed(address addr);
     event DividerChanged(address divider);
     event DeltaChanged(uint256 delta);
     event ImplementationChanged(address implementation);

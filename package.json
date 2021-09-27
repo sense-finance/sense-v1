@@ -5,8 +5,13 @@
   "author": "Federico M. Alconada Verzini",
   "license": "ISC",
   "scripts": {
+    "build": "dapp build",
+    "debug": "dapp test",
+    "test": "dapp test -m \".t.sol\"",
+    "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
-    "prettier": "prettier --write src/**/*.sol"
+    "fix": "prettier --write src/**/*.sol && yarn lint --fix",
+    "test-mainnet": "dapp test --rpc -m -m \".tm.sol\""
   },
   "devDependencies": {
     "prettier": "^2.3.2",

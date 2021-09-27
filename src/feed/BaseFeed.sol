@@ -43,7 +43,6 @@ abstract contract BaseFeed {
         target = _target;
         name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
-        Divider(divider).setFeed(address(this), true);
         emit Initialised();
     }
 

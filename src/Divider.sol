@@ -258,9 +258,8 @@ contract Divider is Warded {
     // @dev Store the feed address in a registry for easy access on-chain
     // @param feed Feedr's address
     // @param isOn Flag setting this feed to enabled or disabled
-    function setFeed(address feed, bool isOn) external {
+    function setFeed(address feed, bool isOn) external onlyWards {
         require(feeds[feed] != isOn, Errors.ExistingValue);
-        require(wards[msg.sender] == 1 || msg.sender == address(feed), Errors.NotAuthorised);
         feeds[feed] = isOn;
         emit FeedChanged(feed, isOn);
     }

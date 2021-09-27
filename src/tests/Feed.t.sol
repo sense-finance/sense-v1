@@ -6,8 +6,17 @@ import "./test-helpers/feed/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
 import "./test-helpers/TestHelper.sol";
 
-contract Feeds is FeedTest {
-    using WadMath for uint256;
+contract FakeFeed is BaseFeed {
+    function _scale() internal virtual override returns (uint256 _value) {
+        _value = 100e18;
+    }
+
+    function doSetFeed(Divider d, address _feed) public {
+        d.setFeed(_feed, true);
+    }
+}
+
+contract Feeds is TestHelper {
 
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
@@ -114,6 +123,18 @@ contract Feeds is FeedTest {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
+        }
+    }
+
+    function testCantAddCustomFeedToDivider() public {
+        MockToken newTarget = new MockToken("Compound USDC", "cUSDC");
+        controller.supportTarget(address(newTarget), true);
+        FakeFeed fakeFeed = new FakeFeed();
+        fakeFeed.initialise(address(newTarget), address(divider), 0);
+        try fakeFeed.doSetFeed(divider, address(fakeFeed)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotAuthorised);
         }
     }
 }

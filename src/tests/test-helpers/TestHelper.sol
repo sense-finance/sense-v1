@@ -59,6 +59,7 @@ contract TestHelper is DSTest {
         divider = new Divider(address(stable), address(this));
         MockFeed implementation = new MockFeed(); // feed implementation
         factory = new FeedFactory(address(implementation), address(divider), address(controller), DELTA); // deploy feed factory
+        divider.rely(address(factory)); // add factory as a ward
         feed = MockFeed(factory.deployFeed(address(target)));
 
         alice = createUser();
