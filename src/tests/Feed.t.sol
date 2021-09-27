@@ -62,7 +62,7 @@ contract Feeds is FeedTest {
             localFeed.scale();
 
             // add 1 more day
-            hevm.warp(1 days);
+            hevm.warp(2 days);
             (ltimestamp, lvalue) = localFeed.lscale();
             timeDiff = block.timestamp - ltimestamp;
             maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
