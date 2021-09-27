@@ -52,35 +52,71 @@ git clone https://github.com/sense-finance/sense-v1.git
 make
 ```
 
-## Sense V1 project structure
+## Sense V1 structure
+
+### Access
+We use `Warded.sol` to provide with access control via wards to contracts inheriting from it. Currently, `Divider.sol`, `FeedFactory.sol`, `Recycler.sol` and `Controller.sol` are using it.
+
+### Controller
+This contract is used to manage some of Sense's settings and configurations. For the V1, we are only using it to manage the *supported targets* for the feed factory.
+
+Supported targets are yield bearing assets (e.g cDAI) that Sense protocol has decided to support on its protocol.
+
+Adding/removing targets is done via this contract through a warded method.
 
 ### Divider
-TBD
+The Divider contract contains the logic to "divide" Target assets into ERC20 Zeros and Claims, recombine those assets into Target, collect using Claim tokens, and redeem Zeros at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
 
-### Tokens
-TBD
+### External
+These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
+- DateTime.sol
+- SafeMath.sol
+- WadMath.sol
+
+### Feed
+Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
+
+### Feed factory
+The feed factory allows any person to deploy a feed for a given Target in a permissionless manner.
+
+In order to do so, users will have to make a call to `deployFeed(_target)` sending the address of the target.
+
+Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
+
+TODO: explain DELTA
 
 ### Modules
 
 A Collection of Modules and Utilities for Sense V1
 
-### G Claim Wrapper
+#### G Claim Wrapper
 
 The G Claim Wrapper is a contract that lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims.
 
-### Recycling Module
+#### Recycling Module
 
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 
+### Tokens
+This directory contains the tokens contracts. Sense protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
+- `Mintable.sol` as a token which has minting and burning public methods and is also warded,
+- `BaseToken.sol` as a `Mintable` token with the addition of `maturity`, `divider` and `feed` address variables and restriction of the `burn()` to only be called from the `wards` and
+- `Claim.sol` which inherits from `BaseToken` and defines a `collect()` (which calls `collect()` on `Divider.sol`) and overrides  `transfer()` and `transferFrom()` to also call `collect()`
+
+Note that Zeros are represented with the `BaseToken.sol` contract.
 
 ## Developing
 |       |   	|
 |---	|---	|
-| `dapp build` | compiles code  |
-| `dapp test`  | run tests   	|
-| `dapp debug` | run tests using HEVM interactive debugger |
+| `yarn build` | compiles code  |
+| `yarn debug` | run tests using HEVM interactive debugger |
+| `yarn test`  | run tests   	|
+| `yarn testcov`  | run tests with coverage  	|
+| `yarn test-mainnet`  | run tests using a fork from mainnet* |
 | `yarn lint`  | run linter |
-| `yarn prettier`  | fix linter errors |
+| `yarn fix`   | runs both prettier and solhint and automatically fix errors |
+
+* Testing on mainnet requires to have a ETH_RPC_URL set: make a copy of `.env.example`, rename it to `.env`  and set `ETH_RPC_URL` to your rpc provider.
 
 ## Branching (TBD)
 
@@ -91,16 +127,4 @@ Right now, we will be just using `dev` and  `master` branches.
 - `beta` is for promoted alpha contracts, and is reserved for deploys to `rinkeby`
 - `release-candidate` is for promoted beta contracts, and is reserved for deploys to `ropsten`
 
-When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility). `patch` changes are simply for changes to the JavaScript interface.
-
-## Testing
-
-Run tests with `dapp test`
-TBD: How to get test coverage with dapptools?
-
-`
-![ci](https://github.com/sense-finance/sense-v1/actions/workflows/ci.yml/badge.svg)
-
-[comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
-
-Please see [docs.sense.finance/contracts/testing](https://docs.sense.finance/contracts/testing) for an overview of the automated testing methodologies.
+When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility).
