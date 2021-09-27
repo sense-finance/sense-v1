@@ -11,7 +11,7 @@
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
     "fix": "prettier --write src/**/*.sol && yarn lint --fix",
-    "test-mainnet": "dapp test --rpc -m -m \".tm.sol\""
+    "test-mainnet": "dapp test --rpc -m \".tm.sol\""
   },
   "devDependencies": {
     "prettier": "^2.3.2",
