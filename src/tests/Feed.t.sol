@@ -50,14 +50,22 @@ contract Feeds is FeedTest {
             // Equation rationale:
             //      *  DELTA is the max tolerable percent growth in the scale value per second.
             //      *  So, we multiply that by the number of seconds that have passed.
-            //      *  And multiply that result by the previous scale value to 
-            //         get the max amount of scale that we say can have grown. 
+            //      *  And multiply that result by the previous scale value to
+            //         get the max amount of scale that we say can have grown.
             //         We are functionally doing `maxPercentIncrease * value`, which gets
             //         us the max *amount* that the value could have increased by.
             //      *  Then add that max increase to the original value to get the maximum possible.
             uint256 maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
 
             // Set max scale and ensure calling `scale` with it doesn't revert
+            localFeed.setScale(maxScale);
+            localFeed.scale();
+
+            // add 1 more day
+            hevm.warp(1 days);
+            (ltimestamp, lvalue) = localFeed.lscale();
+            timeDiff = block.timestamp - ltimestamp;
+            maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
             localFeed.setScale(maxScale);
             localFeed.scale();
         }
