@@ -13,7 +13,7 @@ library Errors {
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";
     string constant InvalidScaleValue = "Scale value is invalid";
-    string constant NotAuthorised = "Sender must be authorised";
+    string constant NotAuthorized = "Sender must be authorized";
     string constant NotEnoughClaims = "Not enough claims to collect given target balance";
     string constant NotExists = "Series does not exist";
     string constant NotSettled = "Series must be settled";

@@ -49,7 +49,7 @@ contract FeedFactory is Warded {
         require(Controller(controller).targets(_target), "Target is not supported");
         //        require(Controller(controller).targets(_target), Errors.NotSupported);
         clone = implementation.clone();
-        BaseFeed(clone).initialise(_target, divider, delta);
+        BaseFeed(clone).initialize(_target, divider, delta);
         Divider(divider).setFeed(clone, true);
         emit FeedDeployed(clone);
     }

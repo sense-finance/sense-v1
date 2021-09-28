@@ -17,7 +17,7 @@ abstract contract BaseFeed {
     using WadMath for uint256;
     using SafeMath for uint256;
 
-    bool private initialised;
+    bool private initialized;
     address public target;
     address public divider; // TODO: must be hardcoded!
     uint256 public delta;
@@ -30,20 +30,20 @@ abstract contract BaseFeed {
         uint256 value; // last scale value
     }
 
-    function initialise(
+    function initialize(
         address _target,
         address _divider,
         uint256 _delta
     ) external virtual {
         // TODO: only factory?
         // TODO: add input validation?
-        initialised = true;
+        initialized = true;
         divider = _divider;
         delta = _delta;
         target = _target;
         name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
-        emit Initialised();
+        emit Initialized();
     }
 
     // @notice Calculate and return this feed's Scale value for the current timestamp
@@ -71,5 +71,5 @@ abstract contract BaseFeed {
 
     function _scale() internal virtual returns (uint256 _value);
 
-    event Initialised();
+    event Initialized();
 }
