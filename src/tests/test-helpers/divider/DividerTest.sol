@@ -22,6 +22,9 @@ contract DividerTest is DSTest {
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
+    uint256 internal constant GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 internal constant DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
+
     uint256 public constant ISSUANCE_FEE = 1; // In percentage (1%). Hardcoded value at least for v1.
     uint256 public constant INIT_STAKE = 1e18; // Hardcoded value at least for v1.
     uint public constant SPONSOR_WINDOW = 4 hours; // Hardcoded value at least for v1.
@@ -53,7 +56,7 @@ contract DividerTest is DSTest {
         divider = new Divider(address(stable), address(gov));
         gov.setDivider(divider);
 
-        feed = new MockFeed(address(target), address(divider), 150, 150);
+        feed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
         divider.setFeed(address(feed), true);
 
         alice = createUser();

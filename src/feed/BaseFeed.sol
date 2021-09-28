@@ -67,14 +67,11 @@ abstract contract BaseFeed is IFeed {
             uint256 timeDiff = block.timestamp - lscale.timestamp;
             uint256 growthPerSec = (_value - lvalue).wdiv(lvalue * timeDiff);
             if (growthPerSec > delta) revert("Scale value is invalid");
-            emit Lina(_value, lvalue, timeDiff, growthPerSec);
-
-            // if (valPerSec > lvalPerSec.add(lvalPerSec.wmul(delta).wdiv(100))) revert(Errors.InvalidScaleValue);
+            //            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
         lscale.value = _value;
         lscale.timestamp = block.timestamp;
     }
 
     function _scale() internal virtual returns (uint256 _value);
-    event Lina(uint256 a, uint256 b, uint256 c, uint256 d);
 }

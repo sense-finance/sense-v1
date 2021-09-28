@@ -6,27 +6,26 @@ import "./test-helpers/feed/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
 
 contract Feeds is FeedTest {
-    uint256 constant public WAD = 1e18;
     using WadMath for uint256;
 
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
-        MockFeed feed = new MockFeed(address(target), address(divider), 150, 150);
+        MockFeed feed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
 
         assertEq(feed.target(), address(target));
         assertEq(feed.divider(), address(divider));
-        assertEq(feed.delta(), 150);
+        assertEq(feed.delta(), DELTA);
         assertEq(feed.name(), "Compound Dai Yield");
         assertEq(feed.symbol(), "cDAI-yield");
     }
 
     function testScale() public {
-        hevm.roll(block.number + 1);
-        assertEq(feed.scale(), WAD);
+        //        hevm.roll(block.number + 1);
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
     }
 
     function testScaleIfEqualDelta() public {
-        uint256[] memory startingScales = new uint[](4);
+        uint256[] memory startingScales = new uint256[](4);
         startingScales[0] = 2e20; // 200 WAD
         startingScales[1] = 1e18; // 1 WAD
         startingScales[2] = 1e17; // 0.1 WAD
@@ -72,7 +71,7 @@ contract Feeds is FeedTest {
     }
 
     function testCantScaleIfMoreThanDelta() public {
-        uint256[] memory startingScales = new uint[](4);
+        uint256[] memory startingScales = new uint256[](4);
         startingScales[0] = 2e20; // 200 WAD
         startingScales[1] = 1e18; // 1 WAD
         startingScales[2] = 1e17; // 0.1 WAD
@@ -95,7 +94,8 @@ contract Feeds is FeedTest {
             // find the scale value would bring us right up to the acceptable growth per second (delta)?
             uint256 maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
 
-            // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded away in wdivs)
+            // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded
+            // away in wdivs)
             localFeed.setScale(maxScale.wmul(1000001e12));
 
             try localFeed.scale() {
@@ -107,8 +107,8 @@ contract Feeds is FeedTest {
     }
 
     function testCantScaleIfBelowPrevious() public {
-        assertEq(feed.scale(), WAD);
-        feed.setScale(WAD - 1);
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+        feed.setScale(feed.INITIAL_VALUE() - 1);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {

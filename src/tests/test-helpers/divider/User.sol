@@ -74,27 +74,22 @@ contract User {
     }
 
     function doInitSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
-        hevm.roll(block.number + 1);
         (zero, claim) = divider.initSeries(feed, maturity);
     }
 
     function doSettleSeries(address feed, uint256 maturity) public {
-        hevm.roll(block.number + 1);
         divider.settleSeries(feed, maturity);
     }
 
     function doIssue(address feed, uint256 maturity, uint256 balance) public {
-        hevm.roll(block.number + 1);
         divider.issue(feed, maturity, balance);
     }
 
     function doCombine(address feed, uint256 maturity, uint256 balance) public {
-        hevm.roll(block.number + 1);
         divider.combine(feed, maturity, balance);
     }
 
     function doBackfillScale(address feed, uint256 maturity, uint256 scale, Divider.Backfill[] memory backfills) public {
-        hevm.roll(block.number + 1);
         divider.backfillScale(feed, maturity, scale, backfills);
     }
 
@@ -103,7 +98,6 @@ contract User {
     }
 
     function doCollect(address claim) public returns (uint256 collected) {
-        hevm.roll(block.number + 1);
         collected = Claim(claim).collect();
     }
 }
