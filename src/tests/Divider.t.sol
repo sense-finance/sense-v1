@@ -60,6 +60,7 @@ contract Dividers is DividerTest {
             uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = initSampleSeries(address(alice), nextMonthDate);
+            hevm.warp(block.timestamp + 1 days);
             assertTrue(address(zero) != address(0));
             assertTrue(address(claim) != address(0));
         }
@@ -130,6 +131,7 @@ contract Dividers is DividerTest {
             uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = initSampleSeries(address(alice), nextMonthDate);
+            hevm.warp(block.timestamp + 1 days);
             assertTrue(address(zero) != address(0));
             assertTrue(address(claim) != address(0));
         }
@@ -351,7 +353,8 @@ contract Dividers is DividerTest {
     function testCantIssueIfFeedValueLowerThanPrevious() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
-        hevm.roll(911);
+        (, uint256 lvalue) = feed.lscale();
+        feed.setScale(lvalue - 1);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {
@@ -368,6 +371,7 @@ contract Dividers is DividerTest {
     function testIssue() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 amount = 100e18; // 100 target
         uint256 fee = (ISSUANCE_FEE * 100e18) / 100; // 1 target
         uint256 tBalanceBefore = target.balanceOf(address(alice));
@@ -378,7 +382,7 @@ contract Dividers is DividerTest {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(alice));
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         // Formula = newBalance.wmul(scale)
-        uint256 lscale = 2e17;
+        (, uint256 lscale) = feed.lscale();
         uint256 mintedAmount = (amount - fee).wmul(lscale);
         assertEq(zBalanceAfter, mintedAmount);
         assertEq(cBalanceAfter, mintedAmount);
@@ -416,10 +420,12 @@ contract Dividers is DividerTest {
     function testCantCombineIfFeedValueLowerThanPrevious() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         alice.doIssue(address(feed), maturity, tBal);
         uint256 zBal = ERC20(zero).balanceOf(address(alice));
-        hevm.roll(911);
+        (, uint256 lvalue) = feed.lscale();
+        feed.setScale(lvalue - 1);
         try alice.doCombine(address(feed), maturity, zBal) {
             fail();
         } catch Error(string memory error) {
@@ -438,8 +444,10 @@ contract Dividers is DividerTest {
     function testCombine() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         alice.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBalanceBefore = target.balanceOf(address(alice));
         uint256 zBalanceBefore = ERC20(zero).balanceOf(address(alice));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(alice));
@@ -459,6 +467,7 @@ contract Dividers is DividerTest {
     function testCombineAtMaturityBurnClaimsAndDoesNotCallBurnTwice() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -488,6 +497,7 @@ contract Dividers is DividerTest {
     function testCantRedeemZeroDisabledFeed() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         divider.setFeed(address(feed), false);
         uint256 balance = ERC20(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(feed), maturity, balance) {
@@ -510,8 +520,10 @@ contract Dividers is DividerTest {
     function testCantRedeemZeroSeriesNotSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 1 days);
         uint256 balance = ERC20(zero).balanceOf(address(bob));
         try bob.doRedeemZero(address(feed), maturity, balance) {
             fail();
@@ -536,10 +548,12 @@ contract Dividers is DividerTest {
     function testRedeemZero() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 balanceToRedeem = zBalanceBefore;
@@ -550,7 +564,7 @@ contract Dividers is DividerTest {
         // Formula: tBal = balance / mscale
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         uint256 redeemed = balanceToRedeem.wdiv(mscale);
-        assertEq(zBalanceBefore, redeemed.wmul(mscale)); // Amount of Zeros burned == underlying amount
+        assertClose(zBalanceBefore, redeemed.wmul(mscale)); // Amount of Zeros burned == underlying amount
         assertEq(zBalanceBefore, zBalanceAfter + balanceToRedeem);
     }
 
@@ -586,6 +600,7 @@ contract Dividers is DividerTest {
     function testCantCollectIfMaturityAndNotSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
@@ -603,8 +618,10 @@ contract Dividers is DividerTest {
     function testCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -614,7 +631,8 @@ contract Dividers is DividerTest {
 
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
@@ -624,18 +642,21 @@ contract Dividers is DividerTest {
     function testCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(maturity);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 collected = bob.doCollect(claim);
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(collected, collect);
@@ -646,6 +667,7 @@ contract Dividers is DividerTest {
     function testCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
         divider.setFeed(address(feed), false); // emergency stop

@@ -9,8 +9,10 @@ contract Claims is DividerTest {
     function testCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -20,7 +22,8 @@ contract Claims is DividerTest {
 
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
@@ -30,8 +33,11 @@ contract Claims is DividerTest {
     function testCollectOnTransfer() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 1 days);
+
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
         uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
@@ -43,7 +49,8 @@ contract Claims is DividerTest {
 
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
         (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 cscale = block.timestamp >= maturity ? mscale : feed.scale();
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);

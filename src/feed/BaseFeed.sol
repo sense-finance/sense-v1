@@ -25,7 +25,12 @@ abstract contract BaseFeed is IFeed {
     string public override name;
     string public override symbol;
     uint256 public delta;
-    uint256 public lscale;
+    LScale public lscale;
+
+    struct LScale {
+        uint256 timestamp; // timestamp of the last scale value
+        uint256 value; // last scale value
+    }
 
     /**
      * @param _divider address of the divider
@@ -54,12 +59,18 @@ abstract contract BaseFeed is IFeed {
     // @return _value 18 decimal Scale value
     function scale() external virtual override returns (uint256 _value) {
         _value = _scale();
-        if (_value < lscale || (lscale != 0 && _value > lscale.add(lscale.wmul(delta).wdiv(100)))) {
-            Divider(divider).setFeed(address(this), false);
-            //            revert(Errors.InvalidScaleValue);
-            revert("Scale value is invalid");
+        uint256 lvalue = lscale.value;
+        //        require(_value < lvalue, Errors.InvalidScaleValue);
+        require(_value >= lvalue, "Scale value is invalid");
+
+        if (lvalue != 0) {
+            uint256 timeDiff = block.timestamp - lscale.timestamp;
+            uint256 growthPerSec = (_value - lvalue).wdiv(lvalue * timeDiff);
+            if (growthPerSec > delta) revert("Scale value is invalid");
+            //            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
-        lscale = _value;
+        lscale.value = _value;
+        lscale.timestamp = block.timestamp;
     }
 
     function _scale() internal virtual returns (uint256 _value);
