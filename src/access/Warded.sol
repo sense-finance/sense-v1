@@ -29,8 +29,8 @@ contract Warded {
     /* ========== MODIFIERS ========== */
 
     modifier onlyWards() {
-        require(wards[msg.sender] == 1, "Sender must be authorised");
-        //        require(wards[msg.sender] == 1, Errors.NotAuthorised);
+        require(wards[msg.sender] == 1, "Sender must be authorized");
+        //        require(wards[msg.sender] == 1, Errors.NotAuthorized);
         _;
     }
 

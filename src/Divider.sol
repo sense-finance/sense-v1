@@ -92,7 +92,7 @@ contract Divider is Warded {
             mscale : 0
         });
         series[feed][maturity] = newSeries;
-        emit SeriesInitialised(feed, maturity, zero, claim, msg.sender);
+        emit SeriesInitialized(feed, maturity, zero, claim, msg.sender);
     }
 
     // @notice Settles a Series and transfer a settlement reward to the caller
@@ -134,13 +134,10 @@ contract Divider is Warded {
 
         // mint Zero and Claim tokens
         uint256 newBalance = balance.sub(fee);
-        uint256 scale = series[feed][maturity].mscale;
-        if (!_settled(feed, maturity)) {
-            scale = lscales[feed][maturity][msg.sender];
-            if (scale == 0) {
-                scale = Feed(feed).scale();
-                lscales[feed][maturity][msg.sender] = scale;
-            }
+        uint256 scale = lscales[feed][maturity][msg.sender];
+        if (scale == 0) {
+            scale = Feed(feed).scale();
+            lscales[feed][maturity][msg.sender] = scale;
         }
         uint256 amount = newBalance.wmul(scale);
         Zero(series[feed][maturity].zero).mint(msg.sender, amount);
@@ -350,7 +347,7 @@ contract Divider is Warded {
     }
 
     /* ========== EVENTS ========== */
-    event SeriesInitialised(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
+    event SeriesInitialized(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);

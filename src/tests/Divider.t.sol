@@ -709,7 +709,7 @@ contract Dividers is TestHelper {
         try alice.doBackfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotAuthorised);
+            assertEq(error, Errors.NotAuthorized);
         }
     }
 

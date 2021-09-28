@@ -130,11 +130,11 @@ contract Feeds is TestHelper {
         MockToken newTarget = new MockToken("Compound USDC", "cUSDC");
         controller.supportTarget(address(newTarget), true);
         FakeFeed fakeFeed = new FakeFeed();
-        fakeFeed.initialise(address(newTarget), address(divider), 0);
+        fakeFeed.initialize(address(newTarget), address(divider), 0);
         try fakeFeed.doSetFeed(divider, address(fakeFeed)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotAuthorised);
+            assertEq(error, Errors.NotAuthorized);
         }
     }
 }
