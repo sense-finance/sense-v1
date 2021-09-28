@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/feed/FeedTest.sol";
-import "./test-helpers/feed/MockFeed.sol";
+import "./test-helpers/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
 import "./test-helpers/TestHelper.sol";
 
@@ -17,10 +16,12 @@ contract FakeFeed is BaseFeed {
 }
 
 contract Feeds is TestHelper {
+    using WadMath for uint256;
 
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
-        MockFeed feed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
+        MockFeed feed = new MockFeed(GROWTH_PER_SECOND);
+        feed.initialize(address(target), address(divider), DELTA);
 
         assertEq(feed.target(), address(target));
         assertEq(feed.divider(), address(divider));
@@ -30,7 +31,6 @@ contract Feeds is TestHelper {
     }
 
     function testScale() public {
-        //        hevm.roll(block.number + 1);
         assertEq(feed.scale(), feed.INITIAL_VALUE());
     }
 
@@ -41,7 +41,8 @@ contract Feeds is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -87,7 +88,8 @@ contract Feeds is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
