@@ -6,8 +6,7 @@ import "ds-test/test.sol";
 // internal references
 import "./MockToken.sol";
 import "./MockFeed.sol";
-import "../../controller/Controller.sol";
-import "../../feed/FeedFactory.sol";
+import "./MockFactory.sol";
 
 import "./Hevm.sol";
 import "./DateTimeFull.sol";
@@ -17,9 +16,8 @@ contract TestHelper is DSTest {
     MockFeed feed;
     MockToken stable;
     MockToken target;
+    MockFactory factory;
 
-    Controller internal controller;
-    FeedFactory internal factory;
     Divider internal divider;
     User internal alice;
     User internal bob;
@@ -53,12 +51,10 @@ contract TestHelper is DSTest {
         stable = new MockToken("Stable Token", "ST");
         target = new MockToken("Compound Dai", "cDAI");
 
-        controller = new Controller();
-        controller.supportTarget(address(target), true);
-
         divider = new Divider(address(stable), address(this));
         MockFeed implementation = new MockFeed(GROWTH_PER_SECOND); // feed implementation
-        factory = new FeedFactory(address(implementation), address(divider), address(controller), DELTA); // deploy feed factory
+        factory = new MockFactory(address(implementation), address(divider), DELTA); // deploy feed factory
+        factory.addTarget(address(target), true); // add support to target
         divider.rely(address(factory)); // add factory as a ward
         feed = MockFeed(factory.deployFeed(address(target)));
 
@@ -76,6 +72,13 @@ contract TestHelper is DSTest {
         user.doMint(address(stable), INIT_STAKE * 1000);
         user.doApprove(address(target), address(divider));
         user.doMint(address(target), INIT_STAKE * 10000);
+    }
+
+    function createFactory(address _target) public returns (MockFactory someFactory) {
+        MockFeed implementation = new MockFeed(GROWTH_PER_SECOND);
+        someFactory = new MockFactory(address(implementation), address(divider), DELTA);
+        someFactory.addTarget(_target, true);
+        divider.rely(address(someFactory));
     }
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {

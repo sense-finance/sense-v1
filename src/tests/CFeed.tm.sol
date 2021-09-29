@@ -4,18 +4,15 @@ pragma solidity ^0.8.6;
 import "ds-test/test.sol";
 
 // internal references
-import "../feed/CFeed.sol";
-import "../controller/Controller.sol";
-import "../feed/FeedFactory.sol";
-
+import "../feed/compound/CFeed.sol";
+import "./test-helpers/MockFactory.sol";
 import "./test-helpers/Hevm.sol";
 import "./test-helpers/DateTimeFull.sol";
 import "./test-helpers/User.sol";
 
 contract CFeedTestHelper is DSTest {
     CFeed feed;
-    Controller internal controller;
-    FeedFactory internal factory;
+    MockFactory internal factory;
     Divider internal divider;
 
     uint256 public constant DELTA = 150;
@@ -23,13 +20,11 @@ contract CFeedTestHelper is DSTest {
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     function setUp() public {
-        controller = new Controller();
-        controller.supportTarget(cDAI, true);
-
         divider = new Divider(DAI, address(this));
         CFeed implementation = new CFeed(); // compound feed implementation
         // deploy compound feed factory
-        factory = new FeedFactory(address(implementation), address(divider), address(controller), DELTA);
+        factory = new MockFactory(address(implementation), address(divider), DELTA);
+        factory.addTarget(cDAI, true);
         divider.rely(address(factory)); // add factory as a ward
         feed = CFeed(factory.deployFeed(cDAI)); // deploy a cDAI feed
     }

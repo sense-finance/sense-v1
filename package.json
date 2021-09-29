@@ -11,9 +11,10 @@
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
     "fix": "prettier --write src/**/*.sol && yarn lint --fix",
-    "test-mainnet": "dapp test --rpc -m \".tm.sol\""
+    "test-mainnet": "sh -c 'dapp test --rpc-url $(grep ETH_RPC_URL .env | cut -d '=' -f2)' -m \".tm.sol\""
   },
   "devDependencies": {
+    "husky": "^7.0.2",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.17",
     "solhint": "^3.3.6",

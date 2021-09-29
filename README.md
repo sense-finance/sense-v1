@@ -55,14 +55,7 @@ make
 ## Sense V1 structure
 
 ### Access
-We use `Warded.sol` to provide with access control via wards to contracts inheriting from it. Currently, `Divider.sol`, `FeedFactory.sol`, `Recycler.sol` and `Controller.sol` are using it.
-
-### Controller
-This contract is used to manage some of Sense's settings and configurations. For the V1, we are only using it to manage the *supported targets* for the feed factory.
-
-Supported targets are yield bearing assets (e.g cDAI) that Sense protocol has decided to support on its protocol.
-
-Adding/removing targets is done via this contract through a warded method.
+We use `Warded.sol` to provide with access control via wards to contracts inheriting from it. Currently, `Divider.sol`, `BaseFactory.sol` and `Recycler.sol` are using it.
 
 ### Divider
 The Divider contract contains the logic to "divide" Target assets into ERC20 Zeros and Claims, recombine those assets into Target, collect using Claim tokens, and redeem Zeros at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
@@ -76,14 +69,20 @@ These are libraries we need as part of the protocol that we've imported from oth
 ### Feed
 Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
 
+Each feed has a *delta* value that represents the maximum growth per second a scale can be when retrieving a value from the protocol's scale method. This delta value is the same across all the targets within the same target type and is defined on the feed factory which then sets it to the feed on initialization.
+
+To create a feed implementation, the contract needs to inherit from `BaseFeed.sol` and override `_scale()` which is a function that calls the external protocol to get the current scale value.
+
 ### Feed factory
 The feed factory allows any person to deploy a feed for a given Target in a permissionless manner.
 
-In order to do so, users will have to make a call to `deployFeed(_target)` sending the address of the target.
+Sense will deploy one Feed Factory for each protocol it wants to give support to (e.g cTokens Feed Factory, aTokens Feed Factory, etc) and will grant core access to the Divider. 
 
-Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
+Most factories will be similar except for how they implement the `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the target passed is a supported asset of that protocol.
 
-TODO: explain DELTA
+Users can deploy a feed by making a call to `deployFeed(_target)` and sending the address of the target. Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
+
+To create a feed factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
 ### Modules
 
