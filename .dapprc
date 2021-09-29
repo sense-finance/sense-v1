@@ -9,4 +9,3 @@ else
   export DAPP_TEST_FUZZ_RUNS=1000 # When developing we only want to fuzz briefly.
 fi
 export DAPP_TEST_ADDRESS=0xd8da6bf26964af9d7eed9e03e53415d37aa96045
-export ETH_RPC_URL=https://mainnet.infura.io/v3/dc09286de0304ca9858737efeae37133

@@ -130,7 +130,6 @@ contract Feeds is TestHelper {
 
     function testCantAddCustomFeedToDivider() public {
         MockToken newTarget = new MockToken("Compound USDC", "cUSDC");
-        controller.supportTarget(address(newTarget), true);
         FakeFeed fakeFeed = new FakeFeed();
         fakeFeed.initialize(address(newTarget), address(divider), 0);
         try fakeFeed.doSetFeed(divider, address(fakeFeed)) {

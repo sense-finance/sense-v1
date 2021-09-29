@@ -5,7 +5,7 @@ import "./Hevm.sol";
 import "./MockToken.sol";
 import "../../Divider.sol";
 import "../../tokens/Claim.sol";
-import "../../feed/FeedFactory.sol";
+import "../../feed/BaseFactory.sol";
 
 contract User {
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
@@ -13,7 +13,7 @@ contract User {
     MockToken stable;
     MockToken target;
     Divider divider;
-    FeedFactory factory;
+    BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     struct Backfill {
@@ -21,7 +21,7 @@ contract User {
         uint256 scale; // scale value to backfill for usr
     }
 
-    function setFactory(FeedFactory _factory) public {
+    function setFactory(BaseFactory _factory) public {
         factory = _factory;
     }
 

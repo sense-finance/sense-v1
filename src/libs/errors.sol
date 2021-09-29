@@ -8,8 +8,9 @@ library Errors {
     string constant BurnAmountExceedsBalance = "ERC20: burn amount exceeds balance";
     string constant CapReached = "Transfer amount must be below cap";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
-    string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant DuplicateSeries = "Series with given maturity already exists";
+    string constant FeedAlreadyExists = "Feed already exists";
+    string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";
     string constant InvalidScaleValue = "Scale value is invalid";

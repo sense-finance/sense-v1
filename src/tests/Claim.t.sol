@@ -21,7 +21,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
-        (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
@@ -48,7 +48,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
-        (, , , , , uint256 iscale, uint256 mscale) = divider.series(address(feed), maturity);
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));

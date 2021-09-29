@@ -246,9 +246,6 @@ contract Divider is Warded {
         emit Collected(feed, maturity, collected);
     }
 
-    /* ========== VIEW FUNCTIONS ========== */
-    // TODO any?
-
     /* ========== ADMIN FUNCTIONS ========== */
 
     // @notice Enable or disable an feed
@@ -267,6 +264,7 @@ contract Divider is Warded {
     // @param feed Feed's address
     // @param maturity Maturity date for the Series
     // @param scale Value to set as the Series' Scale value at maturity
+    // @param backfills Values to set on lscales mapping
     function backfillScale(
         address feed,
         uint256 maturity,
