@@ -39,6 +39,7 @@ contract Divider is Warded {
     string private constant CLAIM_NAME_PREFIX = "Claim";
 
     mapping(address => bool) public feeds;
+    mapping(address => uint256) public guards; // target -> max amount of target allowed to be issued
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
 
@@ -128,6 +129,7 @@ contract Divider is Warded {
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
         ERC20 target = ERC20(Feed(feed).target());
+        require(target.balanceOf(address(this)).add(balance) <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
         uint256 fee = ISSUANCE_FEE.mul(balance).div(100);
         series[feed][maturity].reward = series[feed][maturity].reward.add(fee);
@@ -258,6 +260,14 @@ contract Divider is Warded {
         emit FeedChanged(feed, isOn);
     }
 
+    // @notice Set target's guard. The amount passed will be the max target that can be deposited on the Divider
+    // @param feed Target address
+    // @param cap Amount of target
+    function setGuard(address target, uint256 cap) external onlyWards {
+        guards[target] = cap;
+        emit GuardChanged(target, cap);
+    }
+
     // @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
     // @dev Reverts if the Series has already been settled or if the maturity is invalid
     // @dev Reverts if the Scale value is larger than the Scale from issuance, or if its above a certain threshold
@@ -345,12 +355,14 @@ contract Divider is Warded {
     }
 
     /* ========== EVENTS ========== */
+
+    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 scale, Backfill[] backfills);
+    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
+    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event GuardChanged(address indexed target, uint256 indexed cap);
+    event FeedChanged(address indexed feed, bool isOn);
+    event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Redeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event SeriesInitialized(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
-    event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
-    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
-    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 scale, Backfill[] backfills);
-    event FeedChanged(address indexed feed, bool isOn);
-    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
-    event Redeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
 }
