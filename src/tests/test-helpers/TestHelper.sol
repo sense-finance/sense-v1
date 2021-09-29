@@ -52,6 +52,7 @@ contract TestHelper is DSTest {
         target = new MockToken("Compound Dai", "cDAI");
 
         divider = new Divider(address(stable), address(this));
+        divider.setGuard(address(target), 100e18);
         MockFeed implementation = new MockFeed(GROWTH_PER_SECOND); // feed implementation
         factory = new MockFactory(address(implementation), address(divider), DELTA); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target

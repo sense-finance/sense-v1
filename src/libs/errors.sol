@@ -10,6 +10,7 @@ library Errors {
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
     string constant DuplicateSeries = "Series with given maturity already exists";
     string constant FeedAlreadyExists = "Feed already exists";
+    string constant GuardCapReached = "Issuance cap reached";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";

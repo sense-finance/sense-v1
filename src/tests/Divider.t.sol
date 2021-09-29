@@ -314,10 +314,11 @@ contract Dividers is TestHelper {
     }
 
     function testCantIssueNotEnoughBalance() public {
+        uint256 aliceBalance = target.balanceOf(address(alice));
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        uint256 amount = target.balanceOf(address(alice));
-        try alice.doIssue(address(feed), maturity, amount + 1) {
+        divider.setGuard(address(target), aliceBalance * 2);
+        try alice.doIssue(address(feed), maturity, aliceBalance + 1) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.AmountExceedsBalance);
@@ -325,11 +326,12 @@ contract Dividers is TestHelper {
     }
 
     function testCantIssueNotEnoughAllowance() public {
+        uint256 aliceBalance = target.balanceOf(address(alice));
         alice.doApprove(address(target), address(divider), 0);
+        divider.setGuard(address(target), aliceBalance);
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        uint256 amount = target.balanceOf(address(alice));
-        try alice.doIssue(address(feed), maturity, amount) {
+        try alice.doIssue(address(feed), maturity, aliceBalance) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.AmountExceedsAllowance);
@@ -364,6 +366,17 @@ contract Dividers is TestHelper {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
+        }
+    }
+
+    function testCantIssueIfMoreThanCap() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        initSampleSeries(address(alice), maturity);
+        uint256 amount = divider.guards(address(target)) + 1;
+        try alice.doIssue(address(feed), maturity, amount) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.GuardCapReached);
         }
     }
 
