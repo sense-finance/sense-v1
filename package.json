@@ -6,7 +6,7 @@
   "license": "ISC",
   "scripts": {
     "build": "dapp build",
-    "debug": "dapp test",
+    "debug": "dapp debug",
     "test": "dapp test -m \".t.sol\"",
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
