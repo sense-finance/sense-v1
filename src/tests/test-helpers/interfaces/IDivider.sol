@@ -47,7 +47,6 @@ abstract contract IDivider {
         address feed,
         uint256 maturity,
         uint256 scale,
-        uint256[] memory values,
-        address[] memory accounts
+        bytes[] memory backfills
     ) external virtual;
 }

@@ -1,16 +1,27 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/feed/FeedTest.sol";
-import "./test-helpers/feed/MockFeed.sol";
+import "./test-helpers/MockFeed.sol";
 import "./test-helpers/MockToken.sol";
+import "./test-helpers/TestHelper.sol";
 
-contract Feeds is FeedTest {
+contract FakeFeed is BaseFeed {
+    function _scale() internal virtual override returns (uint256 _value) {
+        _value = 100e18;
+    }
+
+    function doSetFeed(Divider d, address _feed) public {
+        d.setFeed(_feed, true);
+    }
+}
+
+contract Feeds is TestHelper {
     using WadMath for uint256;
 
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
-        MockFeed feed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
+        MockFeed feed = new MockFeed(GROWTH_PER_SECOND);
+        feed.initialize(address(target), address(divider), DELTA);
 
         assertEq(feed.target(), address(target));
         assertEq(feed.divider(), address(divider));
@@ -20,7 +31,6 @@ contract Feeds is FeedTest {
     }
 
     function testScale() public {
-        //        hevm.roll(block.number + 1);
         assertEq(feed.scale(), feed.INITIAL_VALUE());
     }
 
@@ -31,7 +41,8 @@ contract Feeds is FeedTest {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -77,7 +88,8 @@ contract Feeds is FeedTest {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(address(target), address(divider), DELTA, GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -113,6 +125,17 @@ contract Feeds is FeedTest {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
+        }
+    }
+
+    function testCantAddCustomFeedToDivider() public {
+        MockToken newTarget = new MockToken("Compound USDC", "cUSDC");
+        FakeFeed fakeFeed = new FakeFeed();
+        fakeFeed.initialize(address(newTarget), address(divider), 0);
+        try fakeFeed.doSetFeed(divider, address(fakeFeed)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotAuthorized);
         }
     }
 }

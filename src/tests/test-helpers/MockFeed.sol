@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../../feed/BaseFeed.sol";
+import "../../feed/BaseFeed.sol";
 
 contract MockFeed is BaseFeed {
     uint256 private gps;
     using WadMath for uint256;
 
-    constructor(
-        address _target,
-        address _divider,
-        uint256 _delta,
-        uint256 _gps // growth per second
-    ) BaseFeed(_target, _divider, _delta) {
-        gps = _gps;
+    constructor(uint256 _gps)  {
+        gps = _gps; // growth per second
     }
 
     uint256 internal value;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // internal references
-import "../libs/errors.sol";
+//import "../libs/errors.sol";
 
 // @title Access control via wards
 // @notice You can use this contract to access control to specific methods by adding the modifier onlyWards()
@@ -29,7 +29,8 @@ contract Warded {
     /* ========== MODIFIERS ========== */
 
     modifier onlyWards() {
-        require(wards[msg.sender] == 1, Errors.NotAuthorised);
+        require(wards[msg.sender] == 1, "Sender must be authorized");
+        //        require(wards[msg.sender] == 1, Errors.NotAuthorized);
         _;
     }
 

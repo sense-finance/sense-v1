@@ -52,35 +52,70 @@ git clone https://github.com/sense-finance/sense-v1.git
 make
 ```
 
-## Sense V1 project structure
+## Sense V1 structure
+
+### Access
+We use `Warded.sol` to provide with access control via wards to contracts inheriting from it. Currently, `Divider.sol`, `BaseFactory.sol` and `Recycler.sol` are using it.
 
 ### Divider
-TBD
+The Divider contract contains the logic to "divide" Target assets into ERC20 Zeros and Claims, recombine those assets into Target, collect using Claim tokens, and redeem Zeros at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
 
-### Tokens
-TBD
+### External
+These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
+- DateTime.sol
+- SafeMath.sol
+- WadMath.sol
+
+### Feed
+Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
+
+Each feed has a *delta* value that represents the maximum growth per second a scale can be when retrieving a value from the protocol's scale method. This delta value is the same across all the targets within the same target type and is defined on the feed factory which then sets it to the feed on initialization.
+
+To create a feed implementation, the contract needs to inherit from `BaseFeed.sol` and override `_scale()` which is a function that calls the external protocol to get the current scale value.
+
+### Feed factory
+The feed factory allows any person to deploy a feed for a given Target in a permissionless manner.
+
+Sense will deploy one Feed Factory for each protocol it wants to give support to (e.g cTokens Feed Factory, aTokens Feed Factory, etc) and will grant core access to the Divider. 
+
+Most factories will be similar except for how they implement the `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the target passed is a supported asset of that protocol.
+
+Users can deploy a feed by making a call to `deployFeed(_target)` and sending the address of the target. Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
+
+To create a feed factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
 ### Modules
 
 A Collection of Modules and Utilities for Sense V1
 
-### G Claim Wrapper
+#### G Claim Wrapper
 
 The G Claim Wrapper is a contract that lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims.
 
-### Recycling Module
+#### Recycling Module
 
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 
+### Tokens
+This directory contains the tokens contracts. Sense protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
+- `Mintable.sol` as a token which has minting and burning public methods and is also warded,
+- `BaseToken.sol` as a `Mintable` token with the addition of `maturity`, `divider` and `feed` address variables and restriction of the `burn()` to only be called from the `wards` and
+- `Claim.sol` which inherits from `BaseToken` and defines a `collect()` (which calls `collect()` on `Divider.sol`) and overrides  `transfer()` and `transferFrom()` to also call `collect()`
+
+Note that Zeros are represented with the `BaseToken.sol` contract.
 
 ## Developing
 |       |   	|
 |---	|---	|
-| `dapp build` | compiles code  |
-| `dapp test`  | run tests   	|
-| `dapp debug` | run tests using HEVM interactive debugger |
+| `yarn build` | compiles code  |
+| `yarn debug` | run tests using HEVM interactive debugger |
+| `yarn test`  | run tests   	|
+| `yarn testcov`  | run tests with coverage  	|
+| `yarn test-mainnet`  | run tests using a fork from mainnet* |
 | `yarn lint`  | run linter |
-| `yarn prettier`  | fix linter errors |
+| `yarn fix`   | runs both prettier and solhint and automatically fix errors |
+
+* Testing on mainnet requires to have a ETH_RPC_URL set: make a copy of `.env.example`, rename it to `.env`  and set `ETH_RPC_URL` to your rpc provider.
 
 ## Branching (TBD)
 
@@ -91,16 +126,4 @@ Right now, we will be just using `dev` and  `master` branches.
 - `beta` is for promoted alpha contracts, and is reserved for deploys to `rinkeby`
 - `release-candidate` is for promoted beta contracts, and is reserved for deploys to `ropsten`
 
-When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility). `patch` changes are simply for changes to the JavaScript interface.
-
-## Testing
-
-Run tests with `dapp test`
-TBD: How to get test coverage with dapptools?
-
-`
-![ci](https://github.com/sense-finance/sense-v1/actions/workflows/ci.yml/badge.svg)
-
-[comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
-
-Please see [docs.sense.finance/contracts/testing](https://docs.sense.finance/contracts/testing) for an overview of the automated testing methodologies.
+When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility).

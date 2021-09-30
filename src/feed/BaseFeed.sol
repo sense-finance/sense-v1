@@ -8,23 +8,21 @@ import "../external/SafeMath.sol";
 
 // internal references
 import "../Divider.sol";
-//import "./libs/Errors.sol";
 
-// interfaces
-import "../interfaces/IFeed.sol";
+//import "../libs/Errors.sol";
 
 // @title Assign time-based value to target assets
 // @dev In most cases, the only function that will be unique to each feed type is `scale`
-abstract contract BaseFeed is IFeed {
+abstract contract BaseFeed {
     using WadMath for uint256;
     using SafeMath for uint256;
-    //    using Errors for string;
 
-    address public override target;
-    address public override divider;
-    string public override name;
-    string public override symbol;
+    bool private initialized;
+    address public target;
+    address public divider; // TODO: must be hardcoded!
     uint256 public delta;
+    string public name;
+    string public symbol;
     LScale public lscale;
 
     struct LScale {
@@ -32,22 +30,20 @@ abstract contract BaseFeed is IFeed {
         uint256 value; // last scale value
     }
 
-    /**
-     * @param _divider address of the divider
-     * @param _delta value in percentage used to check for invalid scale values
-     */
-    constructor(
+    function initialize(
         address _target,
         address _divider,
         uint256 _delta
-    ) {
+    ) external virtual {
+        // TODO: only factory?
         // TODO: add input validation?
-        target = _target;
+        initialized = true;
         divider = _divider;
         delta = _delta;
-
+        target = _target;
         name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
+        emit Initialized();
     }
 
     // @notice Calculate and return this feed's Scale value for the current timestamp
@@ -57,7 +53,7 @@ abstract contract BaseFeed is IFeed {
     // @dev Reverts if scale value is higher than previous scale + %delta.
     // @dev Reverts if scale value is below the previous scale.
     // @return _value 18 decimal Scale value
-    function scale() external virtual override returns (uint256 _value) {
+    function scale() external virtual returns (uint256 _value) {
         _value = _scale();
         uint256 lvalue = lscale.value;
         //        require(_value < lvalue, Errors.InvalidScaleValue);
@@ -74,4 +70,6 @@ abstract contract BaseFeed is IFeed {
     }
 
     function _scale() internal virtual returns (uint256 _value);
+
+    event Initialized();
 }
