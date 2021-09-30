@@ -755,6 +755,68 @@ contract Dividers is DividerTest {
         assertEq(mscale, newScale);
     }
 
+    // @notice if backfill happens before the maturity and sponsor window, stablecoin stake is transferred to the
+    // sponsor and issuance fees are returned to Sense's cup multisig address
+    function testBackfillScaleBeforeSponsorWindowTransfersStablecoinStakeAndFees() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        uint256 cupStableBalanceBefore = stable.balanceOf(address(this));
+        uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
+        uint256 sponsorStableBalanceBefore = stable.balanceOf(address(alice));
+        initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+
+        uint256 amount = 100e18; // 100 target
+        uint256 fee = (ISSUANCE_FEE * amount) / 100; // 1 target
+        bob.doIssue(address(feed), maturity, amount);
+
+        hevm.warp(maturity - SPONSOR_WINDOW);
+        divider.setFeed(address(feed), false);
+        uint256 newScale = 1e18;
+        divider.backfillScale(address(feed), maturity, newScale, backfills);
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        assertEq(mscale, newScale);
+        uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
+        uint256 sponsorStableBalanceAfter = stable.balanceOf(address(alice));
+        assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
+        assertEq(sponsorStableBalanceAfter, sponsorStableBalanceBefore);
+        uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
+        uint256 cupStableBalanceAfter = stable.balanceOf(address(this));
+        assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
+        assertEq(cupStableBalanceAfter, cupStableBalanceBefore);
+    }
+
+    // @notice if backfill happens after issuance fees are returned to Sense's cup multisig address, both issuance fees
+    // and the stablecoin stake will go to Sense's cup multisig address
+    function testBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStablecoinStakeAndFees() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
+        uint256 sponsorStableBalanceBefore = stable.balanceOf(address(alice));
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        uint256 cupStableBalanceBefore = stable.balanceOf(address(this));
+        initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+
+        uint256 amount = 100e18; // 100 target
+        uint256 fee = (ISSUANCE_FEE * amount) / 100; // 1 target
+        bob.doIssue(address(feed), maturity, amount);
+
+        hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
+        divider.setFeed(address(feed), false);
+        uint256 newScale = 1e18;
+        divider.backfillScale(address(feed), maturity, newScale, backfills);
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        assertEq(mscale, newScale);
+        uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
+        uint256 sponsorStableBalanceAfter = stable.balanceOf(address(alice));
+        assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
+        assertEq(sponsorStableBalanceAfter, sponsorStableBalanceBefore - INIT_STAKE);
+        uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
+        uint256 cupStableBalanceAfter = stable.balanceOf(address(this));
+        assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
+        assertEq(cupStableBalanceAfter, cupStableBalanceBefore + INIT_STAKE);
+    }
+
     /* ========== misc tests ========== */
 
     //    function testFeedIsDisabledIfScaleValueLowerThanPrevious() public {
