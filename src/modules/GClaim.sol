@@ -34,10 +34,10 @@ contract GClaim {
         uint256 maturity,
         uint256 balance
     ) external {
-        require(maturity > block.timestamp, "Maturity must be in the future");
+        require(maturity > block.timestamp, Errors.InvalidMaturity);
 
         (, address claim, , ) = divider.series(feed, maturity);
-        require(claim != address(0), "Series must exist");
+        require(claim != address(0), Errors.NotExists);
 
         if (gclaims[claim] == ERC20(address(0))) {
             // If this is the first Claim from this Series:
@@ -80,7 +80,7 @@ contract GClaim {
     ) external {
         (, address claim, , ) = divider.series(feed, maturity);
 
-        require(claim != address(0), "Series must exist");
+        require(claim != address(0), Errors.NotExists);
 
         // Collect excess for all Claims from this Series in this contract holds.
         uint256 collected = IClaim(claim).collect();
