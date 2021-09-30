@@ -14,7 +14,7 @@ abstract contract IFeed {
 
     function scale() external virtual returns (uint256 _scale);
 
-    function initialise(
+    function initialize(
         address _target,
         address _divider,
         uint256 _delta

@@ -28,7 +28,7 @@ contract Factories is TestHelper {
         assertEq(scale, 1e17);
     }
 
-    function testDeployFeedAndInitialiseSeries() public {
+    function testDeployFeedAndinitializeSeries() public {
         MockToken someTarget = new MockToken("Some Target", "ST");
         MockFactory someFactory = createFactory(address(someTarget));
         address feed = someFactory.deployFeed(address(someTarget));
