@@ -3,6 +3,7 @@ pragma solidity ^0.8.6;
 
 // external references
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../external/WadMath.sol";
 
 // internal references
@@ -12,10 +13,9 @@ import "../Divider.sol";
 
 // @title Assign time-based value to target assets
 // @dev In most cases, the only function that will be unique to each feed type is `scale`
-abstract contract BaseFeed {
+abstract contract BaseFeed is Initializable {
     using WadMath for uint256;
 
-    bool private initialized;
     address public target;
     address public divider; // TODO: must be hardcoded!
     uint256 public delta;
@@ -32,10 +32,9 @@ abstract contract BaseFeed {
         address _target,
         address _divider,
         uint256 _delta
-    ) external virtual {
+    ) external virtual initializer {
         // TODO: only factory?
         // TODO: add input validation?
-        initialized = true;
         divider = _divider;
         delta = _delta;
         target = _target;
