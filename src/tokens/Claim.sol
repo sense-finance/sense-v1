@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 // internal references
 import "../Divider.sol";
 import "./BaseToken.sol";
@@ -19,12 +16,12 @@ contract Claim is BaseToken {
     ) BaseToken(_maturity, _divider, _feed, _name, _symbol) {}
 
     function collect() external returns (uint256 _collected) {
-        return Divider(divider).collect(msg.sender, feed, maturity, balanceOf(msg.sender));
+        return Divider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
         super.transfer(to, value);
-        Divider(divider).collect(msg.sender, feed, maturity, balanceOf(msg.sender));
+        Divider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
         return true;
     }
 
@@ -34,7 +31,7 @@ contract Claim is BaseToken {
         uint256 value
     ) public override returns (bool) {
         super.transferFrom(from, to, value);
-        Divider(divider).collect(msg.sender, feed, maturity, balanceOf(msg.sender));
+        Divider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
         return true;
     }
 }

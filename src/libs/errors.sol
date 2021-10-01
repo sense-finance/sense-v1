@@ -9,6 +9,7 @@ library Errors {
     string constant CapReached = "Transfer amount must be below cap";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
     string constant DuplicateSeries = "Series with given maturity already exists";
+    string constant ExistingValue = "New value must be different than previous";
     string constant FeedAlreadyExists = "Feed already exists";
     string constant GuardCapReached = "Issuance cap reached";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
@@ -21,6 +22,6 @@ library Errors {
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
-    string constant ExistingValue = "New value must be different than previous";
+    string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
 }
