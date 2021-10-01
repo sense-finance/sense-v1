@@ -3,7 +3,6 @@ pragma solidity ^0.8.6;
 
 // external references
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./external/SafeMath.sol";
 import "./external/DateTime.sol";
 import "./external/WadMath.sol";
 
@@ -20,7 +19,6 @@ import { BaseToken as Zero } from "./tokens/BaseToken.sol";
 // the usage thereof is left to the implementer
 contract Divider is Warded {
     using SafeERC20 for ERC20;
-    using SafeMath for uint256;
     using WadMath for uint256;
     using Errors for string;
 
@@ -74,7 +72,6 @@ contract Divider is Warded {
     function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), "Series with given maturity already exists");
-
         require(_valid(maturity), "Maturity date is not valid");
 
         // transfer stable asset balance from msg.sender to this contract
@@ -129,13 +126,13 @@ contract Divider is Warded {
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
         ERC20 target = ERC20(Feed(feed).target());
-        require(target.balanceOf(address(this)).add(balance) <= guards[address(target)], Errors.GuardCapReached);
+        require(target.balanceOf(address(this)) + balance <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
-        uint256 fee = ISSUANCE_FEE.mul(balance).div(100);
-        series[feed][maturity].reward = series[feed][maturity].reward.add(fee);
+        uint256 fee = ISSUANCE_FEE * balance / 100;
+        series[feed][maturity].reward += fee;
 
         // mint Zero and Claim tokens
-        uint256 newBalance = balance.sub(fee);
+        uint256 newBalance = balance - fee;
         uint256 scale = lscales[feed][maturity][msg.sender];
         if (scale == 0) {
             scale = Feed(feed).scale();
@@ -232,7 +229,9 @@ contract Divider is Warded {
         require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
+
         if (lscale == 0) lscale = series[feed][maturity].iscale;
+
         if (block.timestamp >= maturity) {
             if (!_settled(feed, maturity)) revert(Errors.CollectNotSettled);
             claim.burn(usr, balance);
@@ -242,7 +241,8 @@ contract Divider is Warded {
                 lscales[feed][maturity][usr] = cscale;
             }
         }
-        collected = balance.wmul((cscale.sub(lscale)).wdiv(cscale.wmul(lscale)));
+
+        collected = balance.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
         emit Collected(feed, maturity, collected);
@@ -284,7 +284,7 @@ contract Divider is Warded {
         require(_exists(feed, maturity), Errors.NotExists);
         require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
-        uint256 cutoff = maturity.add(SPONSOR_WINDOW).add(SETTLEMENT_WINDOW);
+        uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If feed is disabled, it will allow the admin to backfill no matter the maturity.
         require(!feeds[feed] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
         series[feed][maturity].mscale = scale;
@@ -293,7 +293,7 @@ contract Divider is Warded {
         }
 
         // transfer rewards
-        address to = block.timestamp <= maturity.add(SPONSOR_WINDOW) ? series[feed][maturity].sponsor : cup;
+        address to = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(to, INIT_STAKE);
@@ -313,11 +313,11 @@ contract Divider is Warded {
 
     function _settable(address feed, uint256 maturity) internal view returns (bool exists) {
         bool isSponsor = msg.sender == series[feed][maturity].sponsor;
-        uint256 cutoff = maturity.add(SPONSOR_WINDOW).add(SETTLEMENT_WINDOW);
-        if (isSponsor && maturity.sub(SPONSOR_WINDOW) <= block.timestamp && block.timestamp <= cutoff) {
+        uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
+        if (isSponsor && maturity - SPONSOR_WINDOW <= block.timestamp && block.timestamp <= cutoff) {
             return true;
         }
-        if (!isSponsor && maturity.add(SPONSOR_WINDOW) < block.timestamp && block.timestamp <= cutoff) {
+        if (!isSponsor && maturity + SPONSOR_WINDOW < block.timestamp && block.timestamp <= cutoff) {
             return true;
         }
         return false;

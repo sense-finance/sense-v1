@@ -4,7 +4,6 @@ pragma solidity ^0.8.6;
 // external references
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../external/WadMath.sol";
-import "../external/SafeMath.sol";
 
 // internal references
 import "../Divider.sol";
@@ -15,7 +14,6 @@ import "../Divider.sol";
 // @dev In most cases, the only function that will be unique to each feed type is `scale`
 abstract contract BaseFeed {
     using WadMath for uint256;
-    using SafeMath for uint256;
 
     bool private initialized;
     address public target;
