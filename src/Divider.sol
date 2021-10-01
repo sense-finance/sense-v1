@@ -105,8 +105,8 @@ contract Divider is Warded {
         require(!_settled(feed, maturity), Errors.AlreadySettled);
         require(_settable(feed, maturity), Errors.OutOfWindowBoundaries);
         series[feed][maturity].mscale = Feed(feed).scale();
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransfer(msg.sender, series[feed][maturity].reward);
+
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
         emit SeriesSettled(feed, maturity, msg.sender);
     }
@@ -126,8 +126,10 @@ contract Divider is Warded {
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
         ERC20 target = ERC20(Feed(feed).target());
+
         require(target.balanceOf(address(this)) + balance <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
+
         uint256 fee = ISSUANCE_FEE * balance / 100;
         series[feed][maturity].reward += fee;
 
@@ -159,11 +161,9 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
 
-        Zero zero = Zero(series[feed][maturity].zero);
-        Claim claim = Claim(series[feed][maturity].claim);
-        zero.burn(msg.sender, balance);
+        Zero(series[feed][maturity].zero).burn(msg.sender, balance);
         _collect(msg.sender, feed, maturity, balance);
-        if (block.timestamp < maturity) claim.burn(msg.sender, balance);
+        if (block.timestamp < maturity) Claim(series[feed][maturity].claim).burn(msg.sender, balance);
 
         // we use lscale since we have already got the current value on the _collect() call
         uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
@@ -186,10 +186,10 @@ contract Divider is Warded {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.NotExists);
+        // If a Series is settled, we know that it must exist as well
         require(_settled(feed, maturity), Errors.NotSettled);
-        Zero zero = Zero(series[feed][maturity].zero);
-        zero.burn(msg.sender, balance);
+
+        Zero(series[feed][maturity].zero).burn(msg.sender, balance);
         uint256 mscale = series[feed][maturity].mscale;
         uint256 tBal = balance.wdiv(mscale);
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
@@ -226,6 +226,7 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         Claim claim = Claim(series[feed][maturity].claim);
+        
         require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
@@ -294,8 +295,7 @@ contract Divider is Warded {
 
         // transfer rewards
         address to = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransfer(cup, series[feed][maturity].reward);
+        ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(to, INIT_STAKE);
 
         emit Backfilled(feed, maturity, scale, backfills);
@@ -338,8 +338,7 @@ contract Divider is Warded {
     }
 
     function _valid(uint256 maturity) internal view returns (bool valid) {
-        if (maturity < block.timestamp + MIN_MATURITY) return false;
-        if (maturity > block.timestamp + MAX_MATURITY) return false;
+        if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
 
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
         if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
@@ -349,8 +348,7 @@ contract Divider is Warded {
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address feed, uint256 maturity) {
-        address callingContract = address(series[feed][maturity].claim);
-        require(callingContract == msg.sender, "Can only be invoked by the Claim contract");
+        require(series[feed][maturity].claim == msg.sender, "Can only be invoked by the Claim contract");
         _;
     }
 
