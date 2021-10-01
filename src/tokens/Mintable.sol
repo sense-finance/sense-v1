@@ -2,11 +2,11 @@
 pragma solidity ^0.8.6;
 
 // external references
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "solmate/erc20/ERC20.sol";
 import "../access/Warded.sol";
 
 contract Mintable is ERC20, Warded {
-    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) Warded() {}
+    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol, 18) Warded() {}
 
     /**
      * See {ERC20-_mint}.
