@@ -72,7 +72,7 @@ contract Divider is Warded {
     function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), "Series with given maturity already exists");
-        require(_valid(maturity), "Maturity date is not valid");
+        require(_isValid(maturity), "Maturity date is not valid");
 
         // transfer stable asset balance from msg.sender to this contract
         ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE);
@@ -103,11 +103,12 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.AlreadySettled);
-        require(_settable(feed, maturity), Errors.OutOfWindowBoundaries);
-        series[feed][maturity].mscale = Feed(feed).scale();
+        require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
 
+        series[feed][maturity].mscale = Feed(feed).scale();
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
+
         emit SeriesSettled(feed, maturity, msg.sender);
     }
 
@@ -125,8 +126,8 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
+        
         ERC20 target = ERC20(Feed(feed).target());
-
         require(target.balanceOf(address(this)) + balance <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
 
@@ -286,7 +287,7 @@ contract Divider is Warded {
         require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
-        // If feed is disabled, it will allow the admin to backfill no matter the maturity.
+        // If feed is disabled, it will allow the admin to backfill no matter the maturity
         require(!feeds[feed] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
         series[feed][maturity].mscale = scale;
         for (uint i = 0; i < backfills.length; i++) {
@@ -294,14 +295,14 @@ contract Divider is Warded {
         }
 
         // transfer rewards
-        address to = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
+        address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(to, INIT_STAKE);
+        ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
         emit Backfilled(feed, maturity, scale, backfills);
     }
 
-    /* ========== INTERNAL & HELPER FUNCTIONS ========== */
+    /* ========== INTERNAL VIEWS ========== */
 
     function _exists(address feed, uint256 maturity) internal view returns (bool exists) {
         return address(series[feed][maturity].zero) != address(0);
@@ -311,17 +312,25 @@ contract Divider is Warded {
         return series[feed][maturity].mscale > 0;
     }
 
-    function _settable(address feed, uint256 maturity) internal view returns (bool exists) {
-        bool isSponsor = msg.sender == series[feed][maturity].sponsor;
+    function _canBeSettled(address feed, uint256 maturity) internal view returns (bool canBeSettled) {
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
-        if (isSponsor && maturity - SPONSOR_WINDOW <= block.timestamp && block.timestamp <= cutoff) {
-            return true;
+        // If the sender is the sponsor for the Series
+        if (msg.sender == series[feed][maturity].sponsor) {
+            return maturity - SPONSOR_WINDOW <= block.timestamp && cutoff >= block.timestamp;
+        } else {
+            return maturity + SPONSOR_WINDOW < block.timestamp && cutoff >= block.timestamp;
         }
-        if (!isSponsor && maturity + SPONSOR_WINDOW < block.timestamp && block.timestamp <= cutoff) {
-            return true;
-        }
-        return false;
     }
+
+    function _isValid(uint256 maturity) internal view returns (bool valid) {
+        if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
+
+        (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
+        if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
+        return true;
+    }
+
+    /* ========== INTERNAL HELPERS ========== */
 
     function _strip(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(Feed(feed).target());
@@ -335,14 +344,6 @@ contract Divider is Warded {
         string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol));
-    }
-
-    function _valid(uint256 maturity) internal view returns (bool valid) {
-        if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
-
-        (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
-        if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
-        return true;
     }
 
     /* ========== MODIFIERS ========== */
