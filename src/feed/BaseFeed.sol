@@ -53,17 +53,18 @@ abstract contract BaseFeed is Initializable {
     function scale() external virtual returns (uint256 _value) {
         _value = _scale();
         uint256 lvalue = lscale.value;
-        //        require(_value < lvalue, Errors.InvalidScaleValue);
         require(_value >= lvalue, "Scale value is invalid");
-
-        if (lvalue != 0) {
-            uint256 timeDiff = block.timestamp - lscale.timestamp;
+        //        require(_value < lvalue, Errors.InvalidScaleValue);
+        uint256 timeDiff = block.timestamp - lscale.timestamp;
+        if (timeDiff > 0 && lvalue != 0) {
             uint256 growthPerSec = (_value - lvalue).wdiv(lvalue * timeDiff);
             if (growthPerSec > delta) revert("Scale value is invalid");
-            //            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
+            // if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
-        lscale.value = _value;
-        lscale.timestamp = block.timestamp;
+        if (_value != lscale.value) { // update value only if different than previous
+            lscale.value = _value;
+            lscale.timestamp = block.timestamp;
+        }
     }
 
     function _scale() internal virtual returns (uint256 _value);

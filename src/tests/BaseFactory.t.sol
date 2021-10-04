@@ -6,7 +6,7 @@ import "./test-helpers/interfaces/IFeed.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {
-        MockFeed implementation = new MockFeed(GROWTH_PER_SECOND);
+        MockFeed implementation = new MockFeed();
         MockFactory someFactory = new MockFactory(address(implementation), address(divider), DELTA);
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).implementation(), address(implementation));
