@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
-import "solmate/erc20/ERC20.sol";
-import "../external/WadMath.sol";
-
 // internal references
 import "../Divider.sol";
 
@@ -16,7 +12,7 @@ contract EmergencyStop is Warded {
         divider = _divider;
     }
 
-    function stop(address[] memory feeds) external virtual {
+    function stop(address[] memory feeds) external virtual onlyWards {
         for (uint256 i = 0; i < feeds.length; i++) {
             Divider(divider).setFeed(feeds[i], false);
             emit Stopped(feeds[i]);
