@@ -208,13 +208,12 @@ contract Divider is Warded {
     function collect(
         address usr,
         address feed,
-        uint256 maturity,
-        uint256 balance
+        uint256 maturity
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         return _collect(usr,
             feed,
             maturity,
-            balance
+            Claim(msg.sender).balanceOf(usr)
         );
     }
 
