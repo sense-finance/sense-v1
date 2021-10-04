@@ -11,7 +11,7 @@ import "./access/Warded.sol";
 import "./libs/errors.sol";
 import "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feed/BaseFeed.sol";
-import { BaseToken as Zero } from "./tokens/BaseToken.sol";
+import { Token as Zero } from "./tokens/Token.sol";
 
 // @title Divide tokens in two
 // @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims
@@ -337,7 +337,7 @@ contract Divider is Warded {
 
         string memory zname = string(abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense"));
         string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        zero = address(new Zero(maturity, address(this), feed, zname, zsymbol));
+        zero = address(new Zero(zname, zsymbol));
 
         string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
