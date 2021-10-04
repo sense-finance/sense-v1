@@ -20,8 +20,8 @@ contract Claim is BaseToken {
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
-        super.transfer(to, value);
         Divider(divider).collect(msg.sender, feed, maturity, balanceOf[msg.sender]);
+        super.transfer(to, value);
         return true;
     }
 

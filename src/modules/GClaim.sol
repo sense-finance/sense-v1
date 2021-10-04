@@ -14,12 +14,13 @@ import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
 // The GClaim contract turns Collect Claims into Drag Claims.
 contract GClaim {
     using SafeERC20 for ERC20;
+    using WadMath for uint256;
 
     // "Issuance" scale value all claims of the same Series must backfill to separated by Claim address.
     mapping(address => uint256) private inits;
     // Total amount of interest collected separated by Claim address.
     mapping(address => uint256) private totals;
-    mapping(address => Mintable) private gclaims;
+    mapping(address => Mintable) public gclaims;
     Divider public divider;
 
     constructor(address _divider) {
@@ -35,14 +36,14 @@ contract GClaim {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
         (, address claim, , , , , ) = divider.series(feed, maturity);
-        require(claim != address(0), Errors.NotExists);
+        require(claim != address(0), Errors.ClaimNotExists);
 
         if (gclaims[claim] == ERC20(address(0))) {
             // If this is the first Claim from this Series:
             // * Set the current scale value as the floor
             // * Deploy a new gClaim contract
 
-            // NOTE: Because we're transfering Claims in this same TX, we could technically
+            // NOTE: Because we're transferring Claims in this same TX, we could technically
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later.
             inits[claim] = Feed(feed).scale();
@@ -78,7 +79,7 @@ contract GClaim {
     ) external {
         (, address claim, , , , , ) = divider.series(feed, maturity);
 
-        require(claim != address(0), Errors.NotExists);
+        require(claim != address(0), Errors.ClaimNotExists);
 
         // Collect excess for all Claims from this Series in this contract holds.
         uint256 collected = Claim(claim).collect();
@@ -87,7 +88,7 @@ contract GClaim {
         uint256 total = totals[claim] + collected;
 
         // Determine the percent of the excess this caller has a right to.
-        uint256 rights = (balance / gclaims[claim].totalSupply()) * total;
+        uint256 rights = (balance.wdiv(gclaims[claim].totalSupply())).wmul(total);
         total -= rights;
         totals[claim] = total;
 

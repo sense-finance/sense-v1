@@ -356,6 +356,7 @@ contract Dividers is TestHelper {
         initSampleSeries(address(alice), maturity);
         (, uint256 lvalue) = feed.lscale();
         feed.setScale(lvalue - 1);
+        hevm.warp(block.timestamp + 1 days);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {
@@ -436,6 +437,7 @@ contract Dividers is TestHelper {
         uint256 zBal = ERC20(zero).balanceOf(address(alice));
         (, uint256 lvalue) = feed.lscale();
         feed.setScale(lvalue - 1);
+        hevm.warp(block.timestamp + 1 days);
         try alice.doCombine(address(feed), maturity, zBal) {
             fail();
         } catch Error(string memory error) {
@@ -456,15 +458,15 @@ contract Dividers is TestHelper {
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
-        alice.doIssue(address(feed), maturity, tBal);
+        bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBalanceBefore = target.balanceOf(address(alice));
-        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(alice));
-        uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
-        alice.doCombine(address(feed), maturity, zBalanceBefore);
-        uint256 tBalanceAfter = target.balanceOf(address(alice));
-        uint256 zBalanceAfter = ERC20(zero).balanceOf(address(alice));
-        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(alice));
+        uint256 tBalanceBefore = target.balanceOf(address(bob));
+        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        bob.doCombine(address(feed), maturity, zBalanceBefore);
+        uint256 tBalanceAfter = target.balanceOf(address(bob));
+        uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
         assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!!
@@ -473,7 +475,7 @@ contract Dividers is TestHelper {
         // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
     }
 
-    function testCombineAtMaturityBurnClaimsAndDoesNotCallBurnTwice() public {
+    function testCombineAtMaturity() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -487,6 +489,8 @@ contract Dividers is TestHelper {
 
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         bob.doCombine(address(feed), maturity, zBalanceBefore);
+        // TODO: fix! its failing because its trying to withdraw more target that what it is on the contract
+        // (difference is minimal: 804 wei)
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));

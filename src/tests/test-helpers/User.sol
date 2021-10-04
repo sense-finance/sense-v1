@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 import "./Hevm.sol";
 import "./MockToken.sol";
 import "../../Divider.sol";
+import "../../modules/GClaim.sol";
 import "../../tokens/Claim.sol";
 import "../../feed/BaseFactory.sol";
 
@@ -13,6 +14,7 @@ contract User {
     MockToken stable;
     MockToken target;
     Divider divider;
+    GClaim gclaim;
     BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -35,6 +37,10 @@ contract User {
 
     function setDivider(Divider _divider) public {
         divider = _divider;
+    }
+
+    function setGclaim(GClaim _gclaim) public {
+        gclaim = _gclaim;
     }
 
     function doDeployFeed (address _target) public returns (address clone){
@@ -108,6 +114,14 @@ contract User {
 
     function doCollect(address claim) public returns (uint256 collected) {
         collected = Claim(claim).collect();
+    }
+
+    function doJoin(address feed, uint256 maturity, uint256 balance) public {
+        gclaim.join(feed, maturity, balance);
+    }
+
+    function doExit(address feed, uint256 maturity, uint256 balance) public {
+        gclaim.exit(feed, maturity, balance);
     }
 
 }

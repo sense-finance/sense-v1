@@ -20,7 +20,7 @@ contract Feeds is TestHelper {
 
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
-        MockFeed feed = new MockFeed(GROWTH_PER_SECOND);
+        MockFeed feed = new MockFeed();
         feed.initialize(address(target), address(divider), DELTA);
 
         assertEq(feed.target(), address(target));
@@ -34,6 +34,12 @@ contract Feeds is TestHelper {
         assertEq(feed.scale(), feed.INITIAL_VALUE());
     }
 
+    function testScaleMultipleTimes() public {
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+    }
+
     function testScaleIfEqualDelta() public {
         uint256[] memory startingScales = new uint256[](4);
         startingScales[0] = 2e20; // 200 WAD
@@ -41,7 +47,7 @@ contract Feeds is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed();
             localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
@@ -88,7 +94,7 @@ contract Feeds is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed();
             localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
@@ -121,6 +127,7 @@ contract Feeds is TestHelper {
     function testCantScaleIfBelowPrevious() public {
         assertEq(feed.scale(), feed.INITIAL_VALUE());
         feed.setScale(feed.INITIAL_VALUE() - 1);
+        hevm.warp(block.timestamp + 1 days);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {
