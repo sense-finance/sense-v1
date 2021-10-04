@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 
 /**
  * @title Fixed point arithmetic library
- * @author Taken from https://github.com/yieldprotocol/yield-utils-v2/blob/main/contracts/math/WDiv.sol
+ * @author Taken from https://github.com/yieldprotocol/yield-utils-v2/blob/main/contracts/math/WDiv.sol & https://github.com/yieldprotocol/yield-utils-v2/blob/main/contracts/math/WMul.sol
  */
 library WadMath {
     // Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol
