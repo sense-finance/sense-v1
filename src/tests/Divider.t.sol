@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "solmate/erc20/ERC20.sol";
 import "./test-helpers/TestHelper.sol";
 
 contract Dividers is TestHelper {
@@ -19,7 +19,7 @@ contract Dividers is TestHelper {
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsBalance);
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
@@ -29,7 +29,7 @@ contract Dividers is TestHelper {
         try alice.doInitSeries(address(feed), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsAllowance);
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
@@ -321,7 +321,7 @@ contract Dividers is TestHelper {
         try alice.doIssue(address(feed), maturity, aliceBalance + 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsBalance);
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
@@ -334,7 +334,7 @@ contract Dividers is TestHelper {
         try alice.doIssue(address(feed), maturity, aliceBalance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.AmountExceedsAllowance);
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 

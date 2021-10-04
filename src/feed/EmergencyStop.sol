@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // external references
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "solmate/erc20/ERC20.sol";
 import "../external/WadMath.sol";
 
 // internal references

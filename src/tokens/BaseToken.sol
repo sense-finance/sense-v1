@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "solmate/erc20/ERC20.sol";
 import "./Mintable.sol";
 
 // @title Zero token contract that allows Divider contract to burn Zero tokens for any address
