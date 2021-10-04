@@ -35,6 +35,7 @@ contract Warded {
     }
 
     /* ========== EVENTS ========== */
+    
     event Rely(address indexed usr);
     event Deny(address indexed usr);
 }

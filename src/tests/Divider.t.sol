@@ -521,7 +521,8 @@ contract Dividers is TestHelper {
         try alice.doRedeemZero(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotExists);
+            // The settled check will fail if the Series does not exist
+            assertEq(error, Errors.NotSettled);
         }
     }
 

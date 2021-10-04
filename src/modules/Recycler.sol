@@ -2,11 +2,10 @@
 pragma solidity ^0.8.6;
 
 // external references
-import "solmate/erc20/ERC20.sol";
 import "solmate/erc20/SafeERC20.sol";
 
 // internal references
-import "../tokens/Mintable.sol";
+import "../tokens/Token.sol";
 import "../access/Warded.sol";
 import "../Divider.sol";
 import "../tokens/Claim.sol";
@@ -43,7 +42,7 @@ contract Recycler is Warded {
         uint256 collected;
         uint256 lastKick;
         Config config;
-        Mintable token;
+        Token token;
     }
 
     struct Auction {
@@ -135,7 +134,7 @@ contract Recycler is Warded {
         // Only applies to future auctions
         string memory name = string(abi.encodePacked("R-", ERC20(claim).name(), "-R"));
         string memory symbol = string(abi.encodePacked("R-", ERC20(claim).symbol(), "-R"));
-        rclaims[claim].token = new Mintable(name, symbol); // NOTE: Default to mainnet chainId for now.
+        rclaims[claim].token = new Token(name, symbol); // NOTE: Default to mainnet chainId for now.
         rclaims[claim].config = params;
         rclaims[claim].lastKick = block.timestamp;
 
