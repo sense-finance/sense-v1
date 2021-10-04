@@ -9,7 +9,6 @@ import "solmate/erc20/ERC20.sol";
 contract DividerMock {}
 
 contract GClaims is TestHelper {
-
     /* ========== join() tests ========== */
 
     function testCantJoinIfInvalidMaturity() public {
@@ -101,7 +100,6 @@ contract GClaims is TestHelper {
         uint256 aliceGclaimBalance = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(alice));
         assertEq(aliceGclaimBalance, aliceClaimBalance);
         assertTrue(aliceTargetBalAfter < aliceTargetBalBefore); // TODO: calculate exactly the value?
-
     }
 
     /* ========== exit() tests ========== */
@@ -195,7 +193,5 @@ contract GClaims is TestHelper {
         assertEq(gclaimBalanceAfter, 0);
         assertEq(claimBalanceAfter, aliceGclaimBalance);
         assertTrue(tBalanceAfter > tBalanceBefore);
-
     }
-
 }

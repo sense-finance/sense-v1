@@ -61,7 +61,8 @@ abstract contract BaseFeed is Initializable {
             if (growthPerSec > delta) revert("Scale value is invalid");
             // if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
-        if (_value != lscale.value) { // update value only if different than previous
+        if (_value != lscale.value) {
+            // update value only if different than previous
             lscale.value = _value;
             lscale.timestamp = block.timestamp;
         }
