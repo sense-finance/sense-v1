@@ -24,7 +24,7 @@ contract Divider is Warded {
 
     address public stable;
     address public cup;
-    uint256 public constant ISSUANCE_FEE = 1; // In percentage (1%). // TODO: TBD
+    uint256 public constant ISSUANCE_FEE = 1e16; // In percentage (1%). // TODO: TBD
     uint256 public constant INIT_STAKE = 1e18; // Series initialisation stablecoin stake. // TODO: TBD
     uint public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
     uint public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
@@ -131,7 +131,7 @@ contract Divider is Warded {
         require(target.balanceOf(address(this)) + balance <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
 
-        uint256 fee = ISSUANCE_FEE * balance / 100;
+        uint256 fee = ISSUANCE_FEE.wmul(balance);
         series[feed][maturity].reward += fee;
 
         // mint Zero and Claim tokens
@@ -187,7 +187,7 @@ contract Divider is Warded {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        // If a Series is settled, we know that it must exist as well
+        // If a Series is settled, we know that it must have existed as well
         require(_settled(feed, maturity), Errors.NotSettled);
 
         Zero(series[feed][maturity].zero).burn(msg.sender, balance);
@@ -235,15 +235,13 @@ contract Divider is Warded {
         if (lscale == 0) lscale = series[feed][maturity].iscale;
 
         if (block.timestamp >= maturity) {
-            if (!_settled(feed, maturity)) revert(Errors.CollectNotSettled);
+            require(_settled(feed, maturity), Errors.CollectNotSettled);
             claim.burn(usr, balance);
-        } else {
-            if (!_settled(feed, maturity)) {
-                cscale = Feed(feed).scale();
-                lscales[feed][maturity][usr] = cscale;
-            }
+        } else if (!_settled(feed, maturity)) {
+            cscale = Feed(feed).scale();
+            lscales[feed][maturity][usr] = cscale;
         }
-
+        
         collected = balance.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
