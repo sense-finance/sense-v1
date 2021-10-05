@@ -3,7 +3,6 @@ pragma solidity ^0.8.6;
 
 // external references
 import "solmate/erc20/SafeERC20.sol";
-import "./external/SafeMath.sol";
 import "./external/DateTime.sol";
 import "./external/WadMath.sol";
 
@@ -12,7 +11,7 @@ import "./access/Warded.sol";
 import "./libs/errors.sol";
 import "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feed/BaseFeed.sol";
-import { BaseToken as Zero } from "./tokens/BaseToken.sol";
+import { Token as Zero } from "./tokens/Token.sol";
 
 // @title Divide tokens in two
 // @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims
@@ -20,13 +19,12 @@ import { BaseToken as Zero } from "./tokens/BaseToken.sol";
 // the usage thereof is left to the implementer
 contract Divider is Warded {
     using SafeERC20 for ERC20;
-    using SafeMath for uint256;
     using WadMath for uint256;
     using Errors for string;
 
     address public stable;
     address public cup;
-    uint256 public constant ISSUANCE_FEE = 1; // In percentage (1%). // TODO: TBD
+    uint256 public constant ISSUANCE_FEE = 1e16; // In percentage (1%). // TODO: TBD
     uint256 public constant INIT_STAKE = 1e18; // Series initialisation stablecoin stake. // TODO: TBD
     uint public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
     uint public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
@@ -74,8 +72,7 @@ contract Divider is Warded {
     function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), "Series with given maturity already exists");
-
-        require(_valid(maturity), "Maturity date is not valid");
+        require(_isValid(maturity), "Maturity date is not valid");
 
         // transfer stable asset balance from msg.sender to this contract
         ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE);
@@ -106,11 +103,12 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.AlreadySettled);
-        require(_settable(feed, maturity), Errors.OutOfWindowBoundaries);
+        require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
+
         series[feed][maturity].mscale = Feed(feed).scale();
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransfer(msg.sender, series[feed][maturity].reward);
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
+
         emit SeriesSettled(feed, maturity, msg.sender);
     }
 
@@ -128,14 +126,16 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
+        
         ERC20 target = ERC20(Feed(feed).target());
-        require(target.balanceOf(address(this)).add(balance) <= guards[address(target)], Errors.GuardCapReached);
+        require(target.balanceOf(address(this)) + balance <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
-        uint256 fee = ISSUANCE_FEE.mul(balance).div(100);
-        series[feed][maturity].reward = series[feed][maturity].reward.add(fee);
+
+        uint256 fee = ISSUANCE_FEE.wmul(balance);
+        series[feed][maturity].reward += fee;
 
         // mint Zero and Claim tokens
-        uint256 newBalance = balance.sub(fee);
+        uint256 newBalance = balance - fee;
         uint256 scale = lscales[feed][maturity][msg.sender];
         if (scale == 0) {
             scale = Feed(feed).scale();
@@ -162,11 +162,9 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
 
-        Zero zero = Zero(series[feed][maturity].zero);
-        Claim claim = Claim(series[feed][maturity].claim);
-        zero.burn(msg.sender, balance);
+        Zero(series[feed][maturity].zero).burn(msg.sender, balance);
         _collect(msg.sender, feed, maturity, balance);
-        if (block.timestamp < maturity) claim.burn(msg.sender, balance);
+        if (block.timestamp < maturity) Claim(series[feed][maturity].claim).burn(msg.sender, balance);
 
         // we use lscale since we have already got the current value on the _collect() call
         uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
@@ -189,10 +187,10 @@ contract Divider is Warded {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.NotExists);
+        // If a Series is settled, we know that it must have existed as well
         require(_settled(feed, maturity), Errors.NotSettled);
-        Zero zero = Zero(series[feed][maturity].zero);
-        zero.burn(msg.sender, balance);
+
+        Zero(series[feed][maturity].zero).burn(msg.sender, balance);
         uint256 mscale = series[feed][maturity].mscale;
         uint256 tBal = balance.wdiv(mscale);
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
@@ -210,13 +208,12 @@ contract Divider is Warded {
     function collect(
         address usr,
         address feed,
-        uint256 maturity,
-        uint256 balance
+        uint256 maturity
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         return _collect(usr,
             feed,
             maturity,
-            balance
+            Claim(msg.sender).balanceOf(usr)
         );
     }
 
@@ -229,20 +226,22 @@ contract Divider is Warded {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.NotExists);
         Claim claim = Claim(series[feed][maturity].claim);
+        
         require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
+
         if (lscale == 0) lscale = series[feed][maturity].iscale;
+
         if (block.timestamp >= maturity) {
-            if (!_settled(feed, maturity)) revert(Errors.CollectNotSettled);
+            require(_settled(feed, maturity), Errors.CollectNotSettled);
             claim.burn(usr, balance);
-        } else {
-            if (!_settled(feed, maturity)) {
-                cscale = Feed(feed).scale();
-                lscales[feed][maturity][usr] = cscale;
-            }
+        } else if (!_settled(feed, maturity)) {
+            cscale = Feed(feed).scale();
+            lscales[feed][maturity][usr] = cscale;
         }
-        collected = balance.wmul((cscale.sub(lscale)).wdiv(cscale.wmul(lscale)));
+        
+        collected = balance.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
         require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
         emit Collected(feed, maturity, collected);
@@ -284,8 +283,8 @@ contract Divider is Warded {
         require(_exists(feed, maturity), Errors.NotExists);
         require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
-        uint256 cutoff = maturity.add(SPONSOR_WINDOW).add(SETTLEMENT_WINDOW);
-        // If feed is disabled, it will allow the admin to backfill no matter the maturity.
+        uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
+        // If feed is disabled, it will allow the admin to backfill no matter the maturity
         require(!feeds[feed] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
         series[feed][maturity].mscale = scale;
         for (uint i = 0; i < backfills.length; i++) {
@@ -293,15 +292,14 @@ contract Divider is Warded {
         }
 
         // transfer rewards
-        address to = block.timestamp <= maturity.add(SPONSOR_WINDOW) ? series[feed][maturity].sponsor : cup;
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransfer(cup, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(to, INIT_STAKE);
+        address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
+        ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
+        ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
         emit Backfilled(feed, maturity, scale, backfills);
     }
 
-    /* ========== INTERNAL & HELPER FUNCTIONS ========== */
+    /* ========== INTERNAL VIEWS ========== */
 
     function _exists(address feed, uint256 maturity) internal view returns (bool exists) {
         return address(series[feed][maturity].zero) != address(0);
@@ -311,17 +309,25 @@ contract Divider is Warded {
         return series[feed][maturity].mscale > 0;
     }
 
-    function _settable(address feed, uint256 maturity) internal view returns (bool exists) {
-        bool isSponsor = msg.sender == series[feed][maturity].sponsor;
-        uint256 cutoff = maturity.add(SPONSOR_WINDOW).add(SETTLEMENT_WINDOW);
-        if (isSponsor && maturity.sub(SPONSOR_WINDOW) <= block.timestamp && block.timestamp <= cutoff) {
-            return true;
+    function _canBeSettled(address feed, uint256 maturity) internal view returns (bool canBeSettled) {
+        uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
+        // If the sender is the sponsor for the Series
+        if (msg.sender == series[feed][maturity].sponsor) {
+            return maturity - SPONSOR_WINDOW <= block.timestamp && cutoff >= block.timestamp;
+        } else {
+            return maturity + SPONSOR_WINDOW < block.timestamp && cutoff >= block.timestamp;
         }
-        if (!isSponsor && maturity.add(SPONSOR_WINDOW) < block.timestamp && block.timestamp <= cutoff) {
-            return true;
-        }
-        return false;
     }
+
+    function _isValid(uint256 maturity) internal view returns (bool valid) {
+        if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
+
+        (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
+        if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
+        return true;
+    }
+
+    /* ========== INTERNAL HELPERS ========== */
 
     function _strip(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(Feed(feed).target());
@@ -330,27 +336,17 @@ contract Divider is Warded {
 
         string memory zname = string(abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense"));
         string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        zero = address(new Zero(maturity, address(this), feed, zname, zsymbol));
+        zero = address(new Zero(zname, zsymbol));
 
         string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol));
     }
 
-    function _valid(uint256 maturity) internal view returns (bool valid) {
-        if (maturity < block.timestamp + MIN_MATURITY) return false;
-        if (maturity > block.timestamp + MAX_MATURITY) return false;
-
-        (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
-        if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
-        return true;
-    }
-
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address feed, uint256 maturity) {
-        address callingContract = address(series[feed][maturity].claim);
-        require(callingContract == msg.sender, "Can only be invoked by the Claim contract");
+        require(series[feed][maturity].claim == msg.sender, "Can only be invoked by the Claim contract");
         _;
     }
 

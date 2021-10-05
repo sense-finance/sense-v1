@@ -63,7 +63,6 @@ The Divider contract contains the logic to "divide" Target assets into ERC20 Zer
 ### External
 These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
 - DateTime.sol
-- SafeMath.sol
 - WadMath.sol
 
 ### Feed

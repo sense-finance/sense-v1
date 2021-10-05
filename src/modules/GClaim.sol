@@ -2,13 +2,12 @@
 pragma solidity ^0.8.6;
 
 // external references
-import "solmate/erc20/ERC20.sol";
 import "solmate/erc20/SafeERC20.sol";
 
 // internal references
 import "../Divider.sol";
 import "../tokens/Claim.sol";
-import "../tokens/Mintable.sol";
+import "../tokens/Token.sol";
 import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
 
 // The GClaim contract turns Collect Claims into Drag Claims.
@@ -20,7 +19,7 @@ contract GClaim {
     mapping(address => uint256) private inits;
     // Total amount of interest collected separated by Claim address.
     mapping(address => uint256) private totals;
-    mapping(address => Mintable) public gclaims;
+    mapping(address => Token  ) public gclaims;
     Divider public divider;
 
     constructor(address _divider) {
@@ -38,7 +37,7 @@ contract GClaim {
         (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), Errors.ClaimNotExists);
 
-        if (gclaims[claim] == ERC20(address(0))) {
+        if (address(gclaims[claim]) == address(0)) {
             // If this is the first Claim from this Series:
             // * Set the current scale value as the floor
             // * Deploy a new gClaim contract
@@ -50,7 +49,7 @@ contract GClaim {
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here.
-            gclaims[claim] = new Mintable(name, symbol);
+            gclaims[claim] = new Token(name, symbol);
         } else {
             uint256 initScale = inits[claim];
             uint256 currScale = Feed(feed).scale();
