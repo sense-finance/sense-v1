@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// internal references
-//import "../libs/errors.sol";
+// Internal references
+// import "../libs/errors.sol";
 
-// @title Access control via wards
-// @notice You can use this contract to access control to specific methods by adding the modifier onlyWards()
+/// @title Access control via wards
+/// @notice You can use this contract to access control to specific methods by adding the modifier onlyWards()
 contract Warded {
     mapping(address => uint256) public wards;
 

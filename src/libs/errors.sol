@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
+/// @notice Program error types
 library Errors {
     string constant AmountExceedsAllowance = "ERC20: transfer amount exceeds allowance";
     string constant AmountExceedsBalance = "ERC20: transfer amount exceeds balance";

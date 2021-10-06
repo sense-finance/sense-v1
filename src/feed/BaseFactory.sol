@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
-import "@openzeppelin/contracts/proxy/Clones.sol";
+// External references
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
-// internal references
+// Internal references
 import "./BaseFeed.sol";
 import "../access/Warded.sol";
 
-//import "../libs/Errors.sol";
+// import "../libs/Errors.sol";
 
 abstract contract BaseFactory is Warded {
     using Clones for address;
@@ -34,10 +34,8 @@ abstract contract BaseFactory is Warded {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // @notice Deploys a feed for the given _target
-    // @dev Reverts if target is not supported
-    // @dev Reverts is a feed already exists for the given target
-    // @param target Address of the target token
+    /// @notice Deploys a feed for the given _target
+    /// @param target Address of the target token
     function deployFeed(address _target) external returns (address clone) {
         require(_exists(_target), "Target is not supported");
         //        require(_exists(_target), Errors.NotSupported);
@@ -74,6 +72,7 @@ abstract contract BaseFactory is Warded {
 
     /* ========== INTERNAL & HELPER FUNCTIONS ========== */
 
+    /// @notice Target validity check that must be overriden by child contracts
     function _exists(address _target) internal virtual returns (bool);
 
     /* ========== EVENTS ========== */

@@ -1,67 +1,60 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
+// External references
 import "solmate/erc20/SafeERC20.sol";
 
-// internal references
+// Internal references
 import "../tokens/Token.sol";
 import "../access/Warded.sol";
 import "../Divider.sol";
 import "../tokens/Claim.sol";
 import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
 
-// @title Amplify deposited Claims
-// @notice You can use this contract to amplify the FY component of your Claims
-// @dev The majority of the business logic in this contract deals with the auction
+/// @title Claim Recycler
+/// @notice You can use this contract to amplify the FY component of your Claims
+/// @dev The majority of the business logic in this contract deals with the auction
 contract Recycler is Warded {
     using SafeERC20 for ERC20;
 
-    mapping(address => mapping(address => uint256)) private deposits;
+    uint256 public constant AUCTION_SPEED = 0.001e18; // Zero lot size decreases by 0.001 each second
+
     mapping(address => uint256) private totalDeposits;
     mapping(address => uint256) private tick;
-
+    mapping(address => mapping(address => uint256)) private deposits;
     mapping(address => mapping(address => uint256)) private marks;
-
     mapping(address => Auction) private auctions;
     mapping(address => uint256) private ids;
     mapping(address => uint256) private multipliers;
     mapping(address => RClaim) private rclaims;
-
     Divider public divider;
-
-    uint256 public constant AUCTION_SPEED = 0.001 ether; // Zero lot size decreases by 0.001 each second
-
     struct Config {
         uint256 dustLimit;
         uint256 discountThreshold;
         uint256 cadence;
     }
-
     struct RClaim {
         uint256 collected;
         uint256 lastKick;
         Config config;
         Token token;
     }
-
     struct Auction {
         uint256 lot;
         uint256 rho;
         uint256 discount;
     }
 
-    constructor(address _divider) Warded() {
-        divider = Divider(_divider);
-    }
+    constructor(address _divider) Warded() { divider = Divider(_divider); }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // @notice Transfer Claims from the caller
-    // @dev Reverts if the deposit window for this Claim type is not open
-    // @dev Reverts if the Claim address is not a valid Claim or if the Claim type has not been initialized yet
-    // @dev Determines Claim type by calling Sense Core with the token address
-    // @dev Track the timestamp of the deposit
+    /// @notice Transfer Claims from the caller
+    /// @dev Determines Claim type by calling Sense Core with the token address
+    /// @dev Track the timestamp of the deposit
+    /// @param feed Address of feed for Claim token that msg.sender is depositing
+    /// @param maturity Maturity date (timestamp) for Claim tokens that msg.sender is depositing
+    /// @param balance Amount of Claims to transfer from the caller
     function join(
         address feed,
         uint256 maturity,
@@ -69,23 +62,19 @@ contract Recycler is Warded {
     ) public {
         (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
-
         require(!_auctionActive(claim), "Auction active for this Claim");
 
         ERC20(claim).safeTransferFrom(msg.sender, address(this), balance);
-
         rclaims[claim].token.mint(msg.sender, balance);
 
         deposits[msg.sender][claim] += balance * multipliers[claim];
         totalDeposits[claim] += balance;
     }
 
-    // @notice Transfer Claims and associated PY to the caller
-    // @dev Reverts if the Claim address is not valid or if caller is trying to withdraw more than their share of Claims
-    // @dev Reverts if the Claim type has an auction active
-    // @param feed Address of feed for Claim token user is withdrawing
-    // @param maturity Maturity date (timestamp) for Claim tokens user is withdrawing
-    // @param balance Amount of Claims to transfer to the caller
+    /// @notice Transfer Claims and associated PY to the caller
+    /// @param feed Address of feed for Claim token that msg.sender is withdrawing
+    /// @param maturity Maturity date (timestamp) for Claim tokens that msg.sender is withdrawing
+    /// @param balance Amount of Claims to transfer to the caller
     function exit(
         address feed,
         uint256 maturity,
@@ -104,10 +93,10 @@ contract Recycler is Warded {
         totalDeposits[claim] -= balance;
     }
 
-    // @notice Update configuration parameter
-    // @param feed Address of feed for Claim token params are being changed for
-    // @param maturity Claim type identifier
-    // @param params new value for the parameter
+    /// @notice Update configuration parameter
+    /// @param feed Address of feed that Recycle Claim params are being changed for
+    /// @param maturity Maturity date (timestamp) for the Claim
+    /// @param params new value for the parameter
     function file(
         address feed,
         uint256 maturity,
@@ -118,10 +107,10 @@ contract Recycler is Warded {
         rclaims[claim].config = params;
     }
 
-    // @notice Initialize a new Claim type
-    // @param feed Address of feed for Claim token user is initializing
-    // @param maturity Claim type identifier
-    // @param params Configuration struct to set all of the initial variables needed for a Claim type
+    /// @notice Initialize a new Claim 
+    /// @param feed Address of feed for Claim token user is initializing
+    /// @param maturity maturity Maturity date (timestamp) for the Claim 
+    /// @param params Configuration struct to set all of the initial variables needed for a Claim type
     function init(
         address feed,
         uint256 maturity,
@@ -141,8 +130,7 @@ contract Recycler is Warded {
         multipliers[claim] = 1 ether;
     }
 
-    // @notice Start an auction for a specific Series
-    // @dev Reverts if the conditions for an auction on that Series have not been met
+    /// @notice Start an auction for a specific Series
     function kick(address feed, uint256 maturity) public {
         (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
@@ -162,11 +150,10 @@ contract Recycler is Warded {
         auctions[claim].lot = 100 ether * collected; // starting price: 100/101 -> 0.99
     }
 
-    // @notice Takes some amount of the lot of Zeros currently on auction for the given Claim token
-    // @dev Reverts if either the balance is too large, or if the given Claim token is not having an auction
-    // @param feed Address of feed for Claim token user is initializing
-    // @param maturity Claim type identifier
-    // @param balance Balance of Zeros caller is buying
+    /// @notice Takes some amount of the lot of Zeros currently on auction for the given Claim token
+    /// @param feed Address of feed for Claim token user is initializing
+    /// @param maturity Claim type identifier
+    /// @param balance Balance of Zeros caller is buying
     function take(
         address feed,
         uint256 maturity,
@@ -199,6 +186,7 @@ contract Recycler is Warded {
     }
 
     /* ========== VIEW FUNCTIONS ========== */
+
     function _getLotSize(address claim) public view returns (uint256 lot) {
         lot = auctions[claim].lot * ((block.timestamp - auctions[claim].rho) * AUCTION_SPEED);
     }

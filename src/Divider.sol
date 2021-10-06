@@ -1,46 +1,46 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
+// External references
 import "solmate/erc20/SafeERC20.sol";
 import "./external/DateTime.sol";
 import "./external/WadMath.sol";
 
-// internal references
+// Internal references
 import "./access/Warded.sol";
 import "./libs/errors.sol";
 import "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feed/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
 
-// @title Divide tokens in two
-// @notice You can use this contract to issue and redeem Sense ERC20 Zeros and Claims
-// @dev The implementation of the following function will likely require utility functions and/or libraries,
-// the usage thereof is left to the implementer
+/// @title Sense Divider: Divide Assets in Two
+/// @author fedealconada + jparklev
+/// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Divider is Warded {
     using SafeERC20 for ERC20;
     using WadMath for uint256;
-    using Errors for string;
+    using Errors for   string;
 
-    address public stable;
-    address public cup;
-    uint256 public constant ISSUANCE_FEE = 1e16; // In percentage (1%). // TODO: TBD
-    uint256 public constant INIT_STAKE = 1e18; // Series initialisation stablecoin stake. // TODO: TBD
-    uint public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
-    uint public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
-    uint public constant MIN_MATURITY = 2 weeks; // TODO: TBD
-    uint public constant MAX_MATURITY = 14 weeks; // TODO: TBD
+    /// @notice Configuration
+    uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%) [WAD] // TODO: TBD
+    uint256 public constant INIT_STAKE = 1e18; // Series initialisation stablecoin stake [WAD] // TODO: TBD
+    uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
+    uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
+    uint256 public constant MIN_MATURITY = 2 weeks; // TODO: TBD
+    uint256 public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
     string private constant ZERO_SYMBOL_PREFIX = "z";
     string private constant ZERO_NAME_PREFIX = "Zero";
     string private constant CLAIM_SYMBOL_PREFIX = "c";
     string private constant CLAIM_NAME_PREFIX = "Claim";
 
-    mapping(address => bool) public feeds;
-    mapping(address => uint256) public guards; // target -> max amount of target allowed to be issued
+    /// @notice Mutable app state
+    address public stable;
+    address public    cup;
+    mapping(address => bool   ) public feeds;  // feed -> approved 
+    mapping(address => uint256) public guards; // target -> max amount of Target allowed to be issued
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
-
     struct Series {
         address zero; // Zero address for this Series (deployed on Series initialization)
         address claim; // Claim address for this Series (deployed on Series initialization)
@@ -51,11 +51,6 @@ contract Divider is Warded {
         uint256 mscale; // Scale value at maturity
     }
 
-    struct Backfill {
-        address usr; // address of the backfilled user
-        uint256 scale; // scale value to backfill for usr
-    }
-
     constructor(address _stable, address _cup) Warded() {
         stable = _stable;
         cup = _cup;
@@ -63,12 +58,11 @@ contract Divider is Warded {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // @notice Initializes a new Series
-    // @dev Reverts if the feed hasn't been approved or if the Maturity date is invalid
-    // @dev Deploys two ERC20 contracts, one for each Zero type
-    // @dev Transfers some fixed amount of stable asset to this contract
-    // @param feed Feed to associate with the Series
-    // @param maturity Maturity date for the new Series, in units of unix time
+    /// @notice Initializes a new Series
+    /// @dev Deploys two ERC20 contracts, one for each Zero type
+    /// @dev Transfers some fixed amount of stable asset to this contract
+    /// @param feed Feed to associate with the Series
+    /// @param maturity Maturity date for the new Series, in units of unix time
     function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), "Series with given maturity already exists");
@@ -93,31 +87,29 @@ contract Divider is Warded {
         emit SeriesInitialized(feed, maturity, zero, claim, msg.sender);
     }
 
-    // @notice Settles a Series and transfer a settlement reward to the caller
-    // @dev The Series' sponsor has a buffer where only they can settle the Series
-    // @dev After the buffer, the reward becomes MEV
-    // a Series that has matured but hasn't been officially settled yet
-    // @param feed Feed to associate with the Series
-    // @param maturity Maturity date for the new Series
+    /// @notice Settles a Series and transfer the settlement reward to the caller
+    /// @dev The Series' sponsor has a buffer where only they can settle the Series
+    /// @dev After the buffer, the reward becomes MEV
+    /// @param feed Feed to associate with the Series
+    /// @param maturity Maturity date for the new Series
     function settleSeries(address feed, uint256 maturity) external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesNotExists);
-        require(!_settled(feed, maturity), Errors.AlreadySettled);
         require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
 
+        // Setting the maturity scale value
         series[feed][maturity].mscale = Feed(feed).scale();
+
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
 
         emit SeriesSettled(feed, maturity, msg.sender);
     }
 
-    // @notice Mint Zeros and Claims of a specific Series
-    // @dev Pulls Target from the caller and takes the Issuance Fee out of their Zero & Claim share
-    // @param feed Feed address for the Series
-    // @param maturity Maturity date for the Series
-    // @param balance Balance of Zeros and Claims to mint the user –
-    // the same as the amount of Target they must deposit (less fees)
+    /// @notice Mint Zeros and Claims of a specific Series
+    /// @param feed Feed address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param balance Balance of Target to deposit – the amount of Zeros/Claims minted will be the underlying (less fees)
     function issue(
         address feed,
         uint256 maturity,
@@ -134,7 +126,7 @@ contract Divider is Warded {
         uint256 fee = ISSUANCE_FEE.wmul(balance);
         series[feed][maturity].reward += fee;
 
-        // mint Zero and Claim tokens
+        // Mint Zero and Claim tokens
         uint256 newBalance = balance - fee;
         uint256 scale = lscales[feed][maturity][msg.sender];
         if (scale == 0) {
@@ -148,12 +140,11 @@ contract Divider is Warded {
         emit Issued(feed, maturity, amount, msg.sender);
     }
 
-    // @notice Burn Zeros and Claims of a specific Series
-    // @dev Reverts if the Series doesn't exist
-    // @dev Burns claims before maturity and also at/after but this is done in the collect() call
-    // @param feed Feed address for the Series
-    // @param maturity Maturity date for the Series
-    // @param balance Balance of Zeros and Claims to burn
+    /// @notice Burn Zeros and Claims of a specific Series
+    /// @dev Burns claims before maturity and also at/after but this is done in the collect() call
+    /// @param feed Feed address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param balance Balance of Zeros and Claims to burn
     function combine(
         address feed,
         uint256 maturity,
@@ -166,7 +157,7 @@ contract Divider is Warded {
         _collect(msg.sender, feed, maturity, balance, address(0));
         if (block.timestamp < maturity) Claim(series[feed][maturity].claim).burn(msg.sender, balance);
 
-        // we use lscale since we have already got the current value on the _collect() call
+        // We use lscale since we have already got the current value on the _collect() call
         uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
         uint256 tBal = balance.wdiv(cscale);
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
@@ -174,14 +165,34 @@ contract Divider is Warded {
         emit Combined(feed, maturity, tBal, msg.sender);
     }
 
-    // @notice Burn Zeros of a Series after maturity
-    // @dev Reverts if the maturity date is invalid or if the Series doesn't exist
-    // @dev Reverts if the series is not settled
-    // @dev The balance of Fixed Zeros to burn is a function of the change in Scale
-    // @param feed Feed address for the Series
-    // @param maturity Maturity date for the Series
-    // @param balance Amount of Zeros to burn
+    /// @notice Burn Zeros of a Series after maturity
+    /// @dev The balance of redeemable Target is a function of the change in Scale
+    /// @param feed Feed address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param balance Amount of Zeros to burn
     function redeemZero(
+        address feed,
+        uint256 maturity,
+        uint256 balance
+    ) external {
+        require(feeds[feed], Errors.InvalidFeed);
+        // If a Series is settled, we know that it must have existed as well, so we don't need to check that
+        require(_settled(feed, maturity), Errors.NotSettled);
+
+        Zero(series[feed][maturity].zero).burn(msg.sender, balance);
+        uint256 mscale = series[feed][maturity].mscale;
+        uint256 tBal = balance.wdiv(mscale);
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        emit Redeemed(feed, maturity, tBal);
+    }
+
+
+    /// @notice Burn Zeros of a Series after maturity
+    /// @dev The balance of Fixed Zeros to burn is a function of the change in Scale
+    /// @param feed Feed address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param balance Amount of Zeros to burn
+    function redeemClaim(
         address feed,
         uint256 maturity,
         uint256 balance
@@ -197,16 +208,13 @@ contract Divider is Warded {
         emit Redeemed(feed, maturity, tBal);
     }
 
-    // @notice Collect Claim excess before or at/after maturity
-    // @dev Reverts if the maturity date is invalid or if the Series doesn't exist
-    // @dev Reverts if not called by the Claim contract directly
-    // @dev Burns the claim tokens if it's currently at or after maturity as this will be the last possible collect
-    // @dev If `to` is set, we copy the lscale value from usr to this address
-    // @param usr User who's collecting for their Claims
-    // @param feed Feed address for the Series
-    // @param maturity Maturity date for the Series
-    // @param balance Amount of Claim to burn
-    // @param to address to set the lscale value from usr
+    /// @notice Collect Claim excess before, at, or after maturity
+    /// @dev Burns the claim tokens if it's currently at or after maturity as this will be the last possible collect
+    /// @dev If `to` is set, we copy the lscale value from usr to this address
+    /// @param usr User who's collecting for their Claims
+    /// @param feed Feed address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param to address to set the lscale value from usr
     function collect(
         address usr,
         address feed,
@@ -230,9 +238,10 @@ contract Divider is Warded {
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesNotExists);
-        Claim claim = Claim(series[feed][maturity].claim);
 
+        Claim claim = Claim(series[feed][maturity].claim);
         require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
+
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
 
@@ -259,49 +268,54 @@ contract Divider is Warded {
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    // @notice Enable or disable an feed
-    // @dev Store the feed address in a registry for easy access on-chain
-    // @param feed Feedr's address
-    // @param isOn Flag setting this feed to enabled or disabled
+    /// @notice Enable or disable a feed
+    /// @param feed Feed's address
+    /// @param isOn Flag setting this feed to enabled or disabled
     function setFeed(address feed, bool isOn) external onlyWards {
         require(feeds[feed] != isOn, Errors.ExistingValue);
         feeds[feed] = isOn;
         emit FeedChanged(feed, isOn);
     }
 
-    // @notice Set target's guard. The amount passed will be the max target that can be deposited on the Divider
-    // @param feed Target address
-    // @param cap Amount of target
+    /// @notice Set target's guard
+    /// @param target Target address
+    /// @param cap The max target that can be deposited on the Divider 
     function setGuard(address target, uint256 cap) external onlyWards {
         guards[target] = cap;
         emit GuardChanged(target, cap);
     }
 
-    // @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
-    // @dev Reverts if the Series has already been settled or if the maturity is invalid
-    // @dev Reverts if the Scale value is larger than the Scale from issuance, or if its above a certain threshold
-    // @param feed Feed's address
-    // @param maturity Maturity date for the Series
-    // @param scale Value to set as the Series' Scale value at maturity
-    // @param backfills Values to set on lscales mapping
+    struct Backfill {
+        address usr;   // Address of the user who's getting their lscale backfilled
+        uint256 lscale; // Scale value to backfill for usr's lscale
+    }
+    
+    /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
+    /// @param feed Feed's address
+    /// @param maturity Maturity date for the Series
+    /// @param scale Value to set as the Series' Scale value at maturity
+    /// @param backfills Values to set on lscales mapping
     function backfillScale(
         address feed,
         uint256 maturity,
-        uint256 scale,
+        uint256 mscale,
         Backfill[] memory backfills
     ) external onlyWards {
         require(_exists(feed, maturity), Errors.SeriesNotExists);
-        require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
+        require(mscale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
-        // If feed is disabled, it will allow the admin to backfill no matter the maturity
+        // If the feed is disabled, it will allow the admin to backfill no matter the maturity
         require(!feeds[feed] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
-        series[feed][maturity].mscale = scale;
+
+        // Set the maturity scale for the Series (important for `redeem` methods)
+        series[feed][maturity].mscale = mscale;
+        // Set user's last scale values the Series (important for the `collect` method)
         for (uint i = 0; i < backfills.length; i++) {
-            lscales[feed][maturity][backfills[i].usr] = backfills[i].scale;
+            lscales[feed][maturity][backfills[i].usr] = backfills[i].lscale;
         }
 
-        // transfer rewards
+        // Transfer rewards
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
@@ -320,6 +334,7 @@ contract Divider is Warded {
     }
 
     function _canBeSettled(address feed, uint256 maturity) internal view returns (bool canBeSettled) {
+        require(!_settled(feed, maturity), Errors.AlreadySettled);
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the sender is the sponsor for the Series
         if (msg.sender == series[feed][maturity].sponsor) {

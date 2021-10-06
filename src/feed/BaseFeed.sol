@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
+// External references
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "solmate/erc20/ERC20.sol";
 import "../external/WadMath.sol";
 
-// internal references
+// Internal references
 import "../Divider.sol";
 
-//import "../libs/Errors.sol";
+// import "../libs/Errors.sol";
 
-// @title Assign time-based value to target assets
-// @dev In most cases, the only function that will be unique to each feed type is `scale`
+/// @title Assign time-based value to target assets
+/// @dev In most cases, the only function that will be unique to each feed type is `scale`
 abstract contract BaseFeed is Initializable {
     using WadMath for uint256;
 
@@ -43,13 +43,11 @@ abstract contract BaseFeed is Initializable {
         emit Initialized();
     }
 
-    // @notice Calculate and return this feed's Scale value for the current timestamp
-    // @dev For some Targets, such as cTokens, this is simply the exchange rate,
-    // or `supply cToken / supply underlying`
-    // @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    // @dev Reverts if scale value is higher than previous scale + %delta.
-    // @dev Reverts if scale value is below the previous scale.
-    // @return _value 18 decimal Scale value
+    /// @notice Calculate and return this feed's Scale value for the current timestamp
+    /// @dev For some Targets, such as cTokens, this is simply the exchange rate,
+    /// or `supply cToken / supply underlying`
+    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
+    /// @return _value WAD Scale value
     function scale() external virtual returns (uint256 _value) {
         _value = _scale();
         uint256 lvalue = lscale.value;
@@ -68,6 +66,7 @@ abstract contract BaseFeed is Initializable {
         }
     }
 
+    /// @notice Actual scale value check that must be overriden by child contracts
     function _scale() internal virtual returns (uint256 _value);
 
     event Initialized();
