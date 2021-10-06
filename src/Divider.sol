@@ -2,21 +2,21 @@
 pragma solidity ^0.8.6;
 
 // External references
-import "solmate/erc20/SafeERC20.sol";
-import "./external/DateTime.sol";
-import "./external/WadMath.sol";
+import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
+import { Trust } from "solmate/auth/Trust.sol";
+import { DateTime } from "./external/DateTime.sol";
+import { WadMath } from "./external/WadMath.sol";
 
 // Internal references
-import "./access/Warded.sol";
-import "./libs/errors.sol";
-import "./tokens/Claim.sol";
+import { Errors } from "./libs/errors.sol";
+import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feed/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
-contract Divider is Warded {
+contract Divider is Trust {
     using SafeERC20 for ERC20;
     using WadMath for uint256;
     using Errors for   string;
@@ -51,7 +51,7 @@ contract Divider is Warded {
         uint256 mscale; // Scale value at maturity
     }
 
-    constructor(address _stable, address _cup) Warded() {
+    constructor(address _stable, address _cup) Trust(msg.sender) {
         stable = _stable;
         cup = _cup;
     }
@@ -271,7 +271,7 @@ contract Divider is Warded {
     /// @notice Enable or disable a feed
     /// @param feed Feed's address
     /// @param isOn Flag setting this feed to enabled or disabled
-    function setFeed(address feed, bool isOn) external onlyWards {
+    function setFeed(address feed, bool isOn) external requiresTrust {
         require(feeds[feed] != isOn, Errors.ExistingValue);
         feeds[feed] = isOn;
         emit FeedChanged(feed, isOn);
@@ -280,7 +280,7 @@ contract Divider is Warded {
     /// @notice Set target's guard
     /// @param target Target address
     /// @param cap The max target that can be deposited on the Divider 
-    function setGuard(address target, uint256 cap) external onlyWards {
+    function setGuard(address target, uint256 cap) external requiresTrust {
         guards[target] = cap;
         emit GuardChanged(target, cap);
     }
@@ -293,14 +293,14 @@ contract Divider is Warded {
     /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
     /// @param feed Feed's address
     /// @param maturity Maturity date for the Series
-    /// @param scale Value to set as the Series' Scale value at maturity
+    /// @param mscale Value to set as the Series' Scale value at maturity
     /// @param backfills Values to set on lscales mapping
     function backfillScale(
         address feed,
         uint256 maturity,
         uint256 mscale,
         Backfill[] memory backfills
-    ) external onlyWards {
+    ) external requiresTrust {
         require(_exists(feed, maturity), Errors.SeriesNotExists);
         require(mscale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
@@ -320,7 +320,7 @@ contract Divider is Warded {
         ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
-        emit Backfilled(feed, maturity, scale, backfills);
+        emit Backfilled(feed, maturity, mscale, backfills);
     }
 
     /* ========== INTERNAL VIEWS ========== */
@@ -377,7 +377,7 @@ contract Divider is Warded {
 
     /* ========== EVENTS ========== */
 
-    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 scale, Backfill[] backfills);
+    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 mscale, Backfill[] backfills);
     event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
     event GuardChanged(address indexed target, uint256 indexed cap);

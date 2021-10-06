@@ -2,19 +2,19 @@
 pragma solidity ^0.8.6;
 
 // External references
-import "solmate/erc20/SafeERC20.sol";
+import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
+import { Trust } from "solmate/auth/Trust.sol";
 
 // Internal references
-import "../tokens/Token.sol";
-import "../access/Warded.sol";
-import "../Divider.sol";
-import "../tokens/Claim.sol";
+import { Token } from "../tokens/Token.sol";
+import { Divider } from "../Divider.sol";
+import { Claim } from "../tokens/Claim.sol";
 import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
 
 /// @title Claim Recycler
 /// @notice You can use this contract to amplify the FY component of your Claims
 /// @dev The majority of the business logic in this contract deals with the auction
-contract Recycler is Warded {
+contract Recycler is Trust {
     using SafeERC20 for ERC20;
 
     uint256 public constant AUCTION_SPEED = 0.001e18; // Zero lot size decreases by 0.001 each second
@@ -45,7 +45,7 @@ contract Recycler is Warded {
         uint256 discount;
     }
 
-    constructor(address _divider) Warded() { divider = Divider(_divider); }
+    constructor(address _divider) Trust(msg.sender) { divider = Divider(_divider); }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -101,7 +101,7 @@ contract Recycler is Warded {
         address feed,
         uint256 maturity,
         Config calldata params
-    ) public onlyWards {
+    ) public requiresTrust {
         (, address claim, , , , , ) = divider.series(feed, maturity);
         require(rclaims[claim].token != ERC20(address(0)), "rClaim hasn't yet been initialized");
         rclaims[claim].config = params;
@@ -115,7 +115,7 @@ contract Recycler is Warded {
         address feed,
         uint256 maturity,
         Config calldata params
-    ) public onlyWards {
+    ) public requiresTrust {
         (, address claim, , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
         require(rclaims[claim].token == ERC20(address(0)), "rClaim type has already been initialized");

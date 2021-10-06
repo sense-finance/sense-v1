@@ -2,8 +2,8 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import "../Divider.sol";
-import "./Token.sol";
+import {Divider} from "../Divider.sol";
+import {Token} from "./Token.sol";
 
 /// @title Claim token contract that allows excess collection pre-maturity
 contract Claim is Token {

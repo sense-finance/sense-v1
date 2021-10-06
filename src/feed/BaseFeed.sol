@@ -2,12 +2,12 @@
 pragma solidity ^0.8.6;
 
 // External references
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "solmate/erc20/ERC20.sol";
-import "../external/WadMath.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { WadMath } from "../external/WadMath.sol";
 
 // Internal references
-import "../Divider.sol";
+import { Divider } from "../Divider.sol";
 
 // import "../libs/Errors.sol";
 

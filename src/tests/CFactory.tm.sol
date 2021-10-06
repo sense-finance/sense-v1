@@ -24,7 +24,7 @@ contract CFeedTestHelper is DSTest {
         CFeed implementation = new CFeed(); // compound feed implementation
         // deploy compound feed factory
         factory = new CFactory(address(implementation), address(divider), DELTA);
-        divider.rely(address(factory)); // add factory as a ward
+        divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
 

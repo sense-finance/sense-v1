@@ -2,15 +2,16 @@
 pragma solidity ^0.8.6;
 
 // External references
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { Trust } from "solmate/auth/Trust.sol";
 
 // Internal references
-import "./BaseFeed.sol";
-import "../access/Warded.sol";
+import { BaseFeed } from "./BaseFeed.sol";
+import { Divider } from "../Divider.sol";
 
 // import "../libs/Errors.sol";
 
-abstract contract BaseFactory is Warded {
+abstract contract BaseFactory is Trust {
     using Clones for address;
 
     mapping(address => address) public feeds; // target -> feed (to check if a feed for a given target is deployed)
@@ -25,7 +26,7 @@ abstract contract BaseFactory is Warded {
         address _implementation,
         address _divider,
         uint256 _delta
-    ) Warded() {
+    ) Trust(msg.sender) {
         protocol = _protocol;
         implementation = _implementation;
         divider = _divider;
@@ -35,7 +36,7 @@ abstract contract BaseFactory is Warded {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// @notice Deploys a feed for the given _target
-    /// @param target Address of the target token
+    /// @param _target Address of the target token
     function deployFeed(address _target) external returns (address clone) {
         require(_exists(_target), "Target is not supported");
         //        require(_exists(_target), Errors.NotSupported);
@@ -50,22 +51,22 @@ abstract contract BaseFactory is Warded {
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    function setDivider(address _divider) external onlyWards {
+    function setDivider(address _divider) external requiresTrust {
         divider = _divider;
         emit DividerChanged(_divider);
     }
 
-    function setDelta(uint256 _delta) external onlyWards {
+    function setDelta(uint256 _delta) external requiresTrust {
         delta = _delta;
         emit DeltaChanged(_delta);
     }
 
-    function setImplementation(address _implementation) external onlyWards {
+    function setImplementation(address _implementation) external requiresTrust {
         implementation = _implementation;
         emit ImplementationChanged(_implementation);
     }
 
-    function setProtocol(address _protocol) external onlyWards {
+    function setProtocol(address _protocol) external requiresTrust {
         protocol = _protocol;
         emit ProtocolChanged(_protocol);
     }

@@ -25,7 +25,7 @@ contract CFeedTestHelper is DSTest {
         // deploy compound feed factory
         factory = new MockFactory(address(implementation), address(divider), DELTA);
         factory.addTarget(cDAI, true);
-        divider.rely(address(factory)); // add factory as a ward
+        divider.setIsTrusted(address(factory), true); // add factory as a ward
         feed = CFeed(factory.deployFeed(cDAI)); // deploy a cDAI feed
     }
 }

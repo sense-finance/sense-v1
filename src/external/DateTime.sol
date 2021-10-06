@@ -52,7 +52,7 @@ library DateTime {
         y = uintToString(year);
     }
 
-    /// @author https://stackoverflow.com/questions/47129173/how-to-convert-uint-to-string-in-solidity
+    /// Taken from https://stackoverflow.com/questions/47129173/how-to-convert-uint-to-string-in-solidity
     function uintToString(uint _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) return "0";
         uint j = _i;

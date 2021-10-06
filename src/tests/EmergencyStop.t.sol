@@ -19,7 +19,7 @@ contract Emergency is TestHelper {
             feeds[i] = address(feed);
         }
         EmergencyStop e = new EmergencyStop(address(divider));
-        divider.rely(address(e));
+        divider.setIsTrusted(address(e), true);
         e.stop(feeds);
 
         for (uint256 i = 0; i < feeds.length; i++) {

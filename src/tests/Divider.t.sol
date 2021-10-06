@@ -780,9 +780,9 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
-        assertEq(lscale, aliceBackfill.scale);
+        assertEq(lscale, aliceBackfill.lscale);
         lscale = divider.lscales(address(feed), maturity, address(bob));
-        assertEq(lscale, bobBackfill.scale);
+        assertEq(lscale, bobBackfill.lscale);
     }
 
     function testBackfillScaleBeforeCutoffAndFeedDisabled() public {

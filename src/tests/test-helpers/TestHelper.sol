@@ -61,7 +61,7 @@ contract TestHelper is DSTest {
         MockFeed implementation = new MockFeed(); // feed implementation
         factory = new MockFactory(address(implementation), address(divider), DELTA); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target
-        divider.rely(address(factory)); // add factory as a ward
+        divider.setIsTrusted(address(factory), true); // add factory as a ward
         feed = MockFeed(factory.deployFeed(address(target)));
 
         // modules
@@ -89,7 +89,7 @@ contract TestHelper is DSTest {
         MockFeed implementation = new MockFeed();
         someFactory = new MockFactory(address(implementation), address(divider), DELTA);
         someFactory.addTarget(_target, true);
-        divider.rely(address(someFactory));
+        divider.setIsTrusted(address(someFactory), true);
     }
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
