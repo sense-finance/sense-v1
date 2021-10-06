@@ -309,7 +309,7 @@ contract Dividers is TestHelper {
         try alice.doIssue(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotExists);
+            assertEq(error, Errors.SeriesNotExists);
         }
     }
 
@@ -424,7 +424,7 @@ contract Dividers is TestHelper {
         try alice.doCombine(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotExists);
+            assertEq(error, Errors.SeriesNotExists);
         }
     }
 
@@ -640,11 +640,11 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
-        // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
+        // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
+        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -668,8 +668,8 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        // Formula: collect = tBal * ( ( cscale - lscale ) / ( cscale * lscale) )
-        uint256 collect = cBalanceBefore.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
+        // Formula: collect = tBal / lscale - tBal / cscale
+        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -691,6 +691,36 @@ contract Dividers is TestHelper {
         // TODO: check .scale() is not called (like to add the lscale). We can't?
     }
 
+    function testCollectTransferAndCollect() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 tBal = 100e18;
+        bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 15 days);
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
+        uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 btBalanceBefore = target.balanceOf(address(bob));
+        bob.doTransfer(address(claim), address(alice), bcBalanceBefore); // collects and transfer
+        uint256 acBalanceAfter = ERC20(claim).balanceOf(address(alice));
+        uint256 bcBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        uint256 btBalanceAfter = target.balanceOf(address(bob));
+        uint256 bcollected = btBalanceAfter - btBalanceBefore;
+        uint256 acollected = alice.doCollect(claim); // try to collect
+
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        // Formula: collect = tBal / lscale - tBal / cscale
+        uint256 collect = bcBalanceBefore.wdiv(lscale) - bcBalanceBefore.wdiv(cscale);
+        assertEq(bcollected, collect);
+        assertEq(acBalanceAfter, bcBalanceBefore);
+        assertEq(bcBalanceAfter, 0);
+        assertEq(btBalanceAfter, btBalanceBefore + bcollected);
+        assertEq(acollected, 0);
+    }
+
     /* ========== backfillScale() tests ========== */
     function testCantBackfillScaleSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
@@ -698,7 +728,7 @@ contract Dividers is TestHelper {
         try divider.backfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotExists);
+            assertEq(error, Errors.SeriesNotExists);
         }
     }
 

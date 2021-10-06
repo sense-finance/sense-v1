@@ -16,9 +16,9 @@ contract GClaim {
     using WadMath for uint256;
 
     // "Issuance" scale value all claims of the same Series must backfill to separated by Claim address.
-    mapping(address => uint256) private inits;
+    mapping(address => uint256) public inits;
     // Total amount of interest collected separated by Claim address.
-    mapping(address => uint256) private totals;
+    mapping(address => uint256) public totals;
     mapping(address => Token) public gclaims;
     Divider public divider;
 
@@ -35,7 +35,7 @@ contract GClaim {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
         (, address claim, , , , , ) = divider.series(feed, maturity);
-        require(claim != address(0), Errors.ClaimNotExists);
+        require(claim != address(0), Errors.SeriesNotExists);
 
         if (address(gclaims[claim]) == address(0)) {
             // If this is the first Claim from this Series:
@@ -55,11 +55,13 @@ contract GClaim {
             uint256 currScale = Feed(feed).scale();
             // Calculate the amount of excess that has accrued since
             // the first Claim from this Series was deposited.
-            uint256 gap = (balance * currScale) / (currScale - initScale) / 10**18;
+            if (currScale - initScale > 0) {
+                uint256 gap = (balance * currScale) / (currScale - initScale) / 10**18;
 
-            // Pull the amount of Target needed to backfill the excess.
-            ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), gap);
-            totals[claim] += gap;
+                // Pull the amount of Target needed to backfill the excess.
+                ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), gap);
+                totals[claim] += gap;
+            }
         }
         // NOTE: Is there any way to drag inits up for everyone after a certain about of time has passed?
 
@@ -78,7 +80,7 @@ contract GClaim {
     ) external {
         (, address claim, , , , , ) = divider.series(feed, maturity);
 
-        require(claim != address(0), Errors.ClaimNotExists);
+        require(claim != address(0), Errors.SeriesNotExists);
 
         // Collect excess for all Claims from this Series in this contract holds.
         uint256 collected = Claim(claim).collect();

@@ -21,13 +21,13 @@ contract GClaims is TestHelper {
         }
     }
 
-    function testCantJoinIfClaimNotExists() public {
+    function testCantJoinIfSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 10e18;
         try alice.doJoin(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.ClaimNotExists);
+            assertEq(error, Errors.SeriesNotExists);
         }
     }
 
@@ -75,6 +75,32 @@ contract GClaims is TestHelper {
     function testJoinAfterFirstGClaim() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+
+        // bob issues and joins
+        uint256 balance = 10e18;
+        bob.doIssue(address(feed), maturity, balance);
+        bob.doApprove(address(claim), address(gclaim));
+        uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
+        bob.doJoin(address(feed), maturity, bobClaimBalance);
+        uint256 bobGclaimBalance = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(bob));
+        assertEq(bobGclaimBalance, bobClaimBalance);
+
+        // alice issues and joins
+        alice.doIssue(address(feed), maturity, balance);
+        alice.doApprove(address(claim), address(gclaim));
+        alice.doApprove(address(target), address(gclaim));
+        uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
+        uint256 aliceTargetBalBefore = target.balanceOf(address(alice));
+        alice.doJoin(address(feed), maturity, aliceClaimBalance);
+        uint256 aliceTargetBalAfter = target.balanceOf(address(alice));
+        uint256 aliceGclaimBalance = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(alice));
+        assertEq(aliceGclaimBalance, aliceClaimBalance);
+        assertEq(aliceTargetBalAfter, aliceTargetBalBefore);
+    }
+
+    function testJoinAfterFirstGClaimWithdrawsGap() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
 
         // bob issues and joins
@@ -92,25 +118,62 @@ contract GClaims is TestHelper {
         alice.doIssue(address(feed), maturity, balance);
         alice.doApprove(address(claim), address(gclaim));
         alice.doApprove(address(target), address(gclaim));
-        hevm.warp(block.timestamp + 1 days);
         uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
         uint256 aliceTargetBalBefore = target.balanceOf(address(alice));
+        alice.doJoin(address(feed), maturity, aliceClaimBalance);
+        (, uint256 currScale) = feed.lscale();
+        uint256 initScale = gclaim.inits(address(claim));
+        uint256 gap = (aliceClaimBalance * currScale) / (currScale - initScale) / 10**18;
+        uint256 aliceTargetBalAfter = target.balanceOf(address(alice));
+        uint256 aliceGclaimBalance = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(alice));
+        assertEq(aliceGclaimBalance, aliceClaimBalance);
+        assertEq(aliceTargetBalAfter + gap, aliceTargetBalBefore);
+    }
+
+    function testJoinAfterFirstGClaimMaxTargetBalance() public {
+        divider.setGuard(address(target), 10000e18 * 10000);
+
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+
+        // bob issues and joins
+        uint256 bbalance = target.balanceOf(address(bob));
+        bob.doIssue(address(feed), maturity, bbalance);
+        bob.doApprove(address(claim), address(gclaim));
+        hevm.warp(block.timestamp + 1 days);
+        uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
+        bob.doJoin(address(feed), maturity, bobClaimBalance);
+        uint256 bobGclaimBalance = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(bob));
+        assertEq(bobGclaimBalance, bobClaimBalance);
+
+        // alice issues and joins
+        uint256 abalance = target.balanceOf(address(alice));
+        hevm.warp(block.timestamp + 1 days);
+        alice.doIssue(address(feed), maturity, abalance);
+        alice.doApprove(address(claim), address(gclaim));
+        alice.doApprove(address(target), address(gclaim));
+        hevm.warp(block.timestamp + 20 days);
+        uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
+        uint256 aliceTargetBalBefore = target.balanceOf(address(alice));
+        alice.doCollect(address(claim));
+        alice.doTransfer(address(target), address(bob), target.balanceOf(address(alice)));
         alice.doJoin(address(feed), maturity, aliceClaimBalance);
         uint256 aliceTargetBalAfter = target.balanceOf(address(alice));
         uint256 aliceGclaimBalance = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(alice));
         assertEq(aliceGclaimBalance, aliceClaimBalance);
-        assertTrue(aliceTargetBalAfter < aliceTargetBalBefore); // TODO: calculate exactly the value?
+        assertEq(aliceTargetBalAfter, aliceTargetBalBefore); // TODO: calculate exactly the value?
     }
 
     /* ========== exit() tests ========== */
 
-    function testCantExitIfClaimNotExists() public {
+    function testCantExitIfSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
         try alice.doExit(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.ClaimNotExists);
+            assertEq(error, Errors.SeriesNotExists);
         }
     }
 
@@ -122,9 +185,9 @@ contract GClaims is TestHelper {
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 claimBalanceBefore = Claim(claim).balanceOf(address(bob));
         bob.doJoin(address(feed), maturity, claimBalanceBefore);
+        uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 gclaimBalanceBefore = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(bob));
         bob.doExit(address(feed), maturity, gclaimBalanceBefore);
         uint256 gclaimBalanceAfter = ERC20(gclaim.gclaims(address(claim))).balanceOf(address(bob));
@@ -191,7 +254,7 @@ contract GClaims is TestHelper {
         uint256 claimBalanceAfter = Claim(claim).balanceOf(address(alice));
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         assertEq(gclaimBalanceAfter, 0);
-        assertEq(claimBalanceAfter, aliceGclaimBalance);
+        assertEq(claimBalanceAfter, aliceClaimBalance);
         assertTrue(tBalanceAfter > tBalanceBefore);
     }
 }

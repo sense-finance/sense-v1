@@ -101,7 +101,7 @@ contract Divider is Warded {
     // @param maturity Maturity date for the new Series
     function settleSeries(address feed, uint256 maturity) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.NotExists);
+        require(_exists(feed, maturity), Errors.SeriesNotExists);
         require(!_settled(feed, maturity), Errors.AlreadySettled);
         require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
 
@@ -124,9 +124,9 @@ contract Divider is Warded {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.NotExists);
+        require(_exists(feed, maturity), Errors.SeriesNotExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
-        
+
         ERC20 target = ERC20(Feed(feed).target());
         require(target.balanceOf(address(this)) + balance <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), balance);
@@ -160,10 +160,10 @@ contract Divider is Warded {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.NotExists);
+        require(_exists(feed, maturity), Errors.SeriesNotExists);
 
         Zero(series[feed][maturity].zero).burn(msg.sender, balance);
-        _collect(msg.sender, feed, maturity, balance);
+        _collect(msg.sender, feed, maturity, balance, address(0));
         if (block.timestamp < maturity) Claim(series[feed][maturity].claim).burn(msg.sender, balance);
 
         // we use lscale since we have already got the current value on the _collect() call
@@ -201,19 +201,23 @@ contract Divider is Warded {
     // @dev Reverts if the maturity date is invalid or if the Series doesn't exist
     // @dev Reverts if not called by the Claim contract directly
     // @dev Burns the claim tokens if it's currently at or after maturity as this will be the last possible collect
+    // @dev If `to` is set, we copy the lscale value from usr to this address
     // @param usr User who's collecting for their Claims
     // @param feed Feed address for the Series
     // @param maturity Maturity date for the Series
     // @param balance Amount of Claim to burn
+    // @param to address to set the lscale value from usr
     function collect(
         address usr,
         address feed,
-        uint256 maturity
+        uint256 maturity,
+        address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         return _collect(usr,
             feed,
             maturity,
-            Claim(msg.sender).balanceOf(usr)
+            Claim(msg.sender).balanceOf(usr),
+            to
         );
     }
 
@@ -221,12 +225,13 @@ contract Divider is Warded {
         address usr,
         address feed,
         uint256 maturity,
-        uint256 balance
+        uint256 balance,
+        address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.NotExists);
+        require(_exists(feed, maturity), Errors.SeriesNotExists);
         Claim claim = Claim(series[feed][maturity].claim);
-        
+
         require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
@@ -240,10 +245,15 @@ contract Divider is Warded {
             cscale = Feed(feed).scale();
             lscales[feed][maturity][usr] = cscale;
         }
-        
-        collected = balance.wmul((cscale - lscale).wdiv(cscale.wmul(lscale)));
+
+        collected = balance.wdiv(lscale) - balance.wdiv(cscale);
         require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
+
+        if (to != address(0)) {
+            lscales[feed][maturity][to] = cscale;
+        }
+
         emit Collected(feed, maturity, collected);
     }
 
@@ -280,7 +290,7 @@ contract Divider is Warded {
         uint256 scale,
         Backfill[] memory backfills
     ) external onlyWards {
-        require(_exists(feed, maturity), Errors.NotExists);
+        require(_exists(feed, maturity), Errors.SeriesNotExists);
         require(scale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
