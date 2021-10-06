@@ -7,7 +7,6 @@ library Errors {
     string constant AlreadySettled = "Series has already been settled";
     string constant BurnAmountExceedsBalance = "ERC20: burn amount exceeds balance";
     string constant CapReached = "Transfer amount must be below cap";
-    string constant ClaimNotExists = "Claim does not exist";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
     string constant DuplicateSeries = "Series with given maturity already exists";
     string constant ExistingValue = "New value must be different than previous";
