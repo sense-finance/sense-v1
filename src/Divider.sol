@@ -233,7 +233,7 @@ contract Divider is Trust {
         if (lscale == 0) lscale = series[feed][maturity].iscale;
 
         // If we're past maturity, this Series must be settled before collect can be called
-        if (block.timestamp >= maturity) {
+        if (block.timestamp >= maturity || _settled(feed, maturity)) {
             require(_settled(feed, maturity), Errors.CollectNotSettled);
             Claim(series[feed][maturity].claim).burn(usr, uBal);
         } else if (!_settled(feed, maturity)) {
