@@ -8,8 +8,8 @@ import { Trust } from "solmate/auth/Trust.sol";
 contract Token is ERC20, Trust {
     constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol, 18) Trust(msg.sender) {}
 
-     /// @param usr The address to send the minted tokens
-     /// @param amount The amount to be minted
+    /// @param usr The address to send the minted tokens
+    /// @param amount The amount to be minted
     function mint(address usr, uint256 amount) public requiresTrust {
         _mint(usr, amount);
         emit Mint(usr, amount);

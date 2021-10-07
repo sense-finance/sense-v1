@@ -45,7 +45,9 @@ contract Recycler is Trust {
         uint256 discount;
     }
 
-    constructor(address _divider) Trust(msg.sender) { divider = Divider(_divider); }
+    constructor(address _divider) Trust(msg.sender) {
+        divider = Divider(_divider);
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -107,9 +109,9 @@ contract Recycler is Trust {
         rclaims[claim].config = params;
     }
 
-    /// @notice Initialize a new Claim 
+    /// @notice Initialize a new Claim
     /// @param feed Address of feed for Claim token user is initializing
-    /// @param maturity maturity Maturity date (timestamp) for the Claim 
+    /// @param maturity maturity Maturity date (timestamp) for the Claim
     /// @param params Configuration struct to set all of the initial variables needed for a Claim type
     function init(
         address feed,

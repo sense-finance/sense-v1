@@ -22,10 +22,12 @@ contract GClaim {
     mapping(address => uint256) public inits;
     /// @notice Total amount of interest collected separated by Claim address.
     mapping(address => uint256) public totals;
-    mapping(address => Token  ) public gclaims;
+    mapping(address => Token) public gclaims;
     Divider public divider;
 
-    constructor(address _divider) { divider = Divider(_divider); }
+    constructor(address _divider) {
+        divider = Divider(_divider);
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -109,7 +111,7 @@ contract GClaim {
     // NOTE: Admin approved claims?
 
     /* ========== EVENTS ========== */
-    
+
     event Join(address indexed feed, uint256 maturity, address indexed guy, uint256 balance);
     event Exit(address indexed feed, uint256 maturity, address indexed guy, uint256 balance);
 }

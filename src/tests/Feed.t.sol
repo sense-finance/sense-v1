@@ -11,7 +11,6 @@ import { MockFeed } from "./test-helpers/MockFeed.sol";
 import { MockToken } from "./test-helpers/MockToken.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
-
 contract FakeFeed is BaseFeed {
     function _scale() internal virtual override returns (uint256 _value) {
         _value = 100e18;
