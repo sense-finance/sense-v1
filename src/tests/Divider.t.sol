@@ -721,6 +721,33 @@ contract Dividers is TestHelper {
         assertEq(acollected, 0);
     }
 
+    function testCollectTransferToMyselfAndCollect() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = initSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 tBal = 100e18;
+        bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 15 days);
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 tBalanceBefore = target.balanceOf(address(bob));
+        bob.doTransfer(address(claim), address(bob), cBalanceBefore); // collects and transfer
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        uint256 tBalanceAfter = target.balanceOf(address(bob));
+        uint256 collected = tBalanceAfter - tBalanceBefore;
+        uint256 collectedAfterTransfer = alice.doCollect(claim); // try to collect
+
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        // Formula: collect = tBal / lscale - tBal / cscale
+        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
+        assertEq(collected, collect);
+        assertEq(cBalanceAfter, cBalanceBefore);
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
+        assertEq(collectedAfterTransfer, 0);
+    }
+
     /* ========== backfillScale() tests ========== */
     function testCantBackfillScaleSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
