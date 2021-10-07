@@ -2,8 +2,8 @@
 pragma solidity ^0.8.6;
 
 // External references
-import {ERC20} from "solmate/erc20/ERC20.sol";
-import {Trust} from "solmate/auth/Trust.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { Trust } from "solmate/auth/Trust.sol";
 
 contract Token is ERC20, Trust {
     constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol, 18) Trust(msg.sender) {}

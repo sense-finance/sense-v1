@@ -186,28 +186,6 @@ contract Divider is Trust {
         emit Redeemed(feed, maturity, tBal);
     }
 
-
-    /// @notice Burn Zeros of a Series after maturity
-    /// @dev The balance of Fixed Zeros to burn is a function of the change in Scale
-    /// @param feed Feed address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param balance Amount of Zeros to burn
-    function redeemClaim(
-        address feed,
-        uint256 maturity,
-        uint256 balance
-    ) external {
-        require(feeds[feed], Errors.InvalidFeed);
-        // If a Series is settled, we know that it must have existed as well
-        require(_settled(feed, maturity), Errors.NotSettled);
-
-        Zero(series[feed][maturity].zero).burn(msg.sender, balance);
-        uint256 mscale = series[feed][maturity].mscale;
-        uint256 tBal = balance.wdiv(mscale);
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
-        emit Redeemed(feed, maturity, tBal);
-    }
-
     /// @notice Collect Claim excess before, at, or after maturity
     /// @dev Burns the claim tokens if it's currently at or after maturity as this will be the last possible collect
     /// @dev If `to` is set, we copy the lscale value from usr to this address
