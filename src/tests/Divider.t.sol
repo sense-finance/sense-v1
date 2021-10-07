@@ -619,7 +619,7 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
-        hevm.warp(maturity);
+        hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
         try bob.doCollect(claim) {
             fail();
         } catch Error(string memory error) {

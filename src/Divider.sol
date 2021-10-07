@@ -233,17 +233,22 @@ contract Divider is Trust {
         if (lscale == 0) lscale = series[feed][maturity].iscale;
 
         // If we're past maturity, this Series must be settled before collect can be called
-        if (block.timestamp >= maturity || _settled(feed, maturity)) {
-            require(_settled(feed, maturity), Errors.CollectNotSettled);
+        if (_settled(feed, maturity)) {
             Claim(series[feed][maturity].claim).burn(usr, uBal);
         } else {
-            cscale = Feed(feed).scale();
-            lscales[feed][maturity][usr] = cscale;
+            // If we're not settled and we're past maturity + the sponsor window,
+            // anyone can settle this Series so revert until someone does
+            if (block.timestamp > maturity + SPONSOR_WINDOW) {
+                revert(Errors.CollectNotSettled);
+            } else {
+                cscale = Feed(feed).scale();
+                lscales[feed][maturity][usr] = cscale;
+            }
         }
 
-        // Determine how much yield has accrued since the last time this user collected in units of Target
-        // (or take the last time as issuance if they haven't yet).
-        // Reminder that `Underlying / Scale = Target`, so this equation is saying, for some amount of Underlying `u`:
+        // Determine how much yield has accrued since the last time this user collected, in units of Target.
+        // (Or take the last time as issuance if they haven't yet.)
+        // Reminder that `Underlying / Scale` = `Target`, so this equation is saying, for some amount of Underlying `u`:
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
         // Because scale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
         // is what Claim holders are collecting
