@@ -9,7 +9,7 @@ import { Trust } from "solmate/auth/Trust.sol";
 import { Token } from "../tokens/Token.sol";
 import { Divider } from "../Divider.sol";
 import { Claim } from "../tokens/Claim.sol";
-import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
+import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 
 /// @title Claim Recycler
 /// @notice You can use this contract to amplify the FY component of your Claims

@@ -6,7 +6,7 @@ import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Trust } from "solmate/auth/Trust.sol";
 
 // Internal references
-import { Errors } from "../lib/Errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { BaseFeed } from "./BaseFeed.sol";
 import { Divider } from "../Divider.sol";
 

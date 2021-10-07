@@ -6,7 +6,7 @@ import { MockToken } from "./MockToken.sol";
 import { Divider } from "../../Divider.sol";
 import { GClaim } from "../../modules/GClaim.sol";
 import { Claim } from "../../tokens/Claim.sol";
-import { BaseFactory } from "../../feed/BaseFactory.sol";
+import { BaseFactory } from "../../feeds/BaseFactory.sol";
 
 contract User {
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));

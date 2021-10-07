@@ -4,8 +4,8 @@ pragma solidity ^0.8.6;
 import { DSTest } from "ds-test/test.sol";
 
 // Internal references
-import { CFeed } from "../feed/compound/CFeed.sol";
-import { CFactory } from "../feed/compound/CFactory.sol";
+import { CFeed } from "../feeds/compound/CFeed.sol";
+import { CFactory } from "../feeds/compound/CFactory.sol";
 import { Divider } from "../Divider.sol";
 
 import { Hevm } from "./test-helpers/Hevm.sol";

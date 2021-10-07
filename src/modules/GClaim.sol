@@ -7,10 +7,10 @@ import { WadMath } from "../external/WadMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { Errors } from "../lib/errors.sol";
+import { Errors } from "../libs/errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
-import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
+import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 
 /// @title Gravity Claims (gClaims)
 /// @notice The GClaim contract turns Collect Claims into Drag Claims

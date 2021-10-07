@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { BaseFeed } from "../../feed/BaseFeed.sol";
+import { BaseFeed } from "../../feeds/BaseFeed.sol";
 import { WadMath } from "../../external/WadMath.sol";
 
 contract MockFeed is BaseFeed {

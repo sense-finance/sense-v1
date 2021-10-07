@@ -7,7 +7,7 @@ import { WadMath } from "../external/WadMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { CFeed, CTokenInterface } from "../feed/compound/CFeed.sol";
+import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 
 import { MockFactory } from "./test-helpers/MockFactory.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";

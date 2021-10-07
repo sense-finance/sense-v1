@@ -8,7 +8,7 @@ import { WadMath } from "../external/WadMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { Errors } from "../lib/Errors.sol";
+import { Errors } from "../libs/Errors.sol";
 
 
 /// @title Assign time-based value to target assets
