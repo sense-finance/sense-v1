@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "solmate/erc20/ERC20.sol";
-import "./test-helpers/TestHelper.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { WadMath } from "../external/WadMath.sol";
+import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+
+import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { Errors } from "../lib/Errors.sol";
+import { Divider } from "../Divider.sol";
 
 contract Dividers is TestHelper {
     using WadMath for uint256;
@@ -303,13 +308,13 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantIssueSeriesNotExists() public {
+    function testCantIssueSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 amount = 100e18;
         try alice.doIssue(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesNotExists);
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
@@ -418,13 +423,13 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantCombineSeriesNotExists() public {
+    function testCantCombineSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 amount = 100e18;
         try alice.doCombine(address(feed), maturity, amount) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesNotExists);
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
@@ -519,7 +524,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantRedeemZeroSeriesNotExists() public {
+    function testCantRedeemZeroSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
         try alice.doRedeemZero(address(feed), maturity, balance) {
@@ -722,13 +727,13 @@ contract Dividers is TestHelper {
     }
 
     /* ========== backfillScale() tests ========== */
-    function testCantBackfillScaleSeriesNotExists() public {
+    function testCantBackfillScaleSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 amount = 1e18;
         try divider.backfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesNotExists);
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 

@@ -8,8 +8,8 @@ import { WadMath } from "../external/WadMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
+import { Errors } from "../lib/Errors.sol";
 
-// import "../libs/Errors.sol";
 
 /// @title Assign time-based value to target assets
 /// @dev In most cases, the only function that will be unique to each feed type is `scale`
@@ -51,13 +51,11 @@ abstract contract BaseFeed is Initializable {
     function scale() external virtual returns (uint256 _value) {
         _value = _scale();
         uint256 lvalue = lscale.value;
-        require(_value >= lvalue, "Scale value is invalid");
-        //        require(_value < lvalue, Errors.InvalidScaleValue);
+        require(_value >= lvalue, Errors.InvalidScaleValue);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (timeDiff > 0 && lvalue != 0) {
             uint256 growthPerSec = (_value - lvalue).wdiv(lvalue * timeDiff);
-            if (growthPerSec > delta) revert("Scale value is invalid");
-            // if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
+            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
         if (_value != lscale.value) {
             // update value only if different than previous

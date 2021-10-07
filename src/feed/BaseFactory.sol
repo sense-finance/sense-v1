@@ -6,10 +6,9 @@ import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Trust } from "solmate/auth/Trust.sol";
 
 // Internal references
+import { Errors } from "../lib/Errors.sol";
 import { BaseFeed } from "./BaseFeed.sol";
 import { Divider } from "../Divider.sol";
-
-// import "../libs/Errors.sol";
 
 abstract contract BaseFactory is Trust {
     using Clones for address;
@@ -38,10 +37,9 @@ abstract contract BaseFactory is Trust {
     /// @notice Deploys a feed for the given _target
     /// @param _target Address of the target token
     function deployFeed(address _target) external returns (address clone) {
-        require(_exists(_target), "Target is not supported");
-        //        require(_exists(_target), Errors.NotSupported);
-        require(feeds[_target] == address(0), "Feed already exists");
-        //        require(feeds[_target] == address(0), Errors.FeedAlreadyExists);
+        require(_exists(_target), Errors.NotSupported);
+        require(feeds[_target] == address(0), Errors.FeedAlreadyExists);
+
         clone = implementation.clone();
         BaseFeed(clone).initialize(_target, divider, delta);
         Divider(divider).setFeed(clone, true);

@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/MockFeed.sol";
-import "./test-helpers/MockToken.sol";
-import "./test-helpers/TestHelper.sol";
+import { WadMath } from "../external/WadMath.sol";
+
+import { Errors } from "../lib/Errors.sol";
+import { BaseFeed } from "../feed/BaseFeed.sol";
+import { Divider } from "../Divider.sol";
+
+import { MockFeed } from "./test-helpers/MockFeed.sol";
+import { MockToken } from "./test-helpers/MockToken.sol";
+import { TestHelper } from "./test-helpers/TestHelper.sol";
+
 
 contract FakeFeed is BaseFeed {
     function _scale() internal virtual override returns (uint256 _value) {

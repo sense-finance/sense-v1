@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "ds-test/test.sol";
+import { DSTest } from "ds-test/test.sol";
 
-// internal references
-import "../feed/compound/CFeed.sol";
-import "./test-helpers/MockFactory.sol";
-import "./test-helpers/Hevm.sol";
-import "./test-helpers/DateTimeFull.sol";
-import "./test-helpers/User.sol";
+import { WadMath } from "../external/WadMath.sol";
+
+// Internal references
+import { Divider } from "../Divider.sol";
+import { CFeed, CTokenInterface } from "../feed/compound/CFeed.sol";
+
+import { MockFactory } from "./test-helpers/MockFactory.sol";
+import { Hevm } from "./test-helpers/Hevm.sol";
+import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { User } from "./test-helpers/User.sol";
 
 contract CFeedTestHelper is DSTest {
     CFeed feed;

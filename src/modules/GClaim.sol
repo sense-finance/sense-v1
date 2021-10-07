@@ -7,7 +7,7 @@ import { WadMath } from "../external/WadMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../lib/errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
 import { BaseFeed as Feed } from "../feed/BaseFeed.sol";
@@ -37,7 +37,7 @@ contract GClaim {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
         (, address claim, , , , , ) = divider.series(feed, maturity);
-        require(claim != address(0), Errors.SeriesNotExists);
+        require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
             // If this is the first Claim from this Series:
@@ -82,7 +82,7 @@ contract GClaim {
     ) external {
         (, address claim, , , , , ) = divider.series(feed, maturity);
 
-        require(claim != address(0), Errors.SeriesNotExists);
+        require(claim != address(0), Errors.SeriesDoesntExists);
 
         // Collect excess for all Claims from this Series in this contract holds
         uint256 collected = Claim(claim).collect();

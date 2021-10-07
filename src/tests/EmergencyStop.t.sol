@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "../feed/EmergencyStop.sol";
-import "./test-helpers/TestHelper.sol";
-import "./test-helpers/MockToken.sol";
+import { Errors } from "../lib/Errors.sol";
+import { EmergencyStop } from "../feed/EmergencyStop.sol";
+
+import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { MockToken } from "./test-helpers/MockToken.sol";
 
 contract Emergency is TestHelper {
     function testAllFeedsAreStopped() public {

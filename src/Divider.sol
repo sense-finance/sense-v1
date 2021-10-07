@@ -8,7 +8,7 @@ import { DateTime } from "./external/DateTime.sol";
 import { WadMath } from "./external/WadMath.sol";
 
 // Internal references
-import { Errors } from "./libs/errors.sol";
+import { Errors } from "./lib/errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feed/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
@@ -94,7 +94,7 @@ contract Divider is Trust {
     /// @param maturity Maturity date for the new Series
     function settleSeries(address feed, uint256 maturity) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.SeriesNotExists);
+        require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
 
         // Setting the maturity scale value
@@ -116,7 +116,7 @@ contract Divider is Trust {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.SeriesNotExists);
+        require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
 
         ERC20 target = ERC20(Feed(feed).target());
@@ -151,7 +151,7 @@ contract Divider is Trust {
         uint256 balance
     ) external {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.SeriesNotExists);
+        require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
         Zero(series[feed][maturity].zero).burn(msg.sender, balance);
         _collect(msg.sender, feed, maturity, balance, address(0));
@@ -237,7 +237,7 @@ contract Divider is Trust {
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
-        require(_exists(feed, maturity), Errors.SeriesNotExists);
+        require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
         Claim claim = Claim(series[feed][maturity].claim);
         require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
@@ -301,7 +301,7 @@ contract Divider is Trust {
         uint256 mscale,
         Backfill[] memory backfills
     ) external requiresTrust {
-        require(_exists(feed, maturity), Errors.SeriesNotExists);
+        require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(mscale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;

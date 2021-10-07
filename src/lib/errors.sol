@@ -19,7 +19,7 @@ library Errors {
     string constant InvalidScaleValue = "Scale value is invalid";
     string constant NotAuthorized = "UNTRUSTED"; // We copy the error message used by solmate's `Trust` auth lib
     string constant NotEnoughClaims = "Not enough claims to collect given target balance";
-    string constant SeriesNotExists = "Series does not exist";
+    string constant SeriesDoesntExists = "Series does not exist";
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
