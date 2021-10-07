@@ -236,7 +236,7 @@ contract Divider is Trust {
         if (block.timestamp >= maturity || _settled(feed, maturity)) {
             require(_settled(feed, maturity), Errors.CollectNotSettled);
             Claim(series[feed][maturity].claim).burn(usr, uBal);
-        } else if (!_settled(feed, maturity)) {
+        } else {
             cscale = Feed(feed).scale();
             lscales[feed][maturity][usr] = cscale;
         }
