@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import { ERC20 } from "solmate/erc20/ERC20.sol";
 
-import { Errors } from "../libs/Errors.sol";
+import { Errors } from "../libs/errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { GClaim } from "../modules/GClaim.sol";
 

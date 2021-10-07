@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import { WadMath } from "../external/WadMath.sol";
 
-import { Errors } from "../libs/Errors.sol";
+import { Errors } from "../libs/errors.sol";
 import { BaseFeed } from "../feeds/BaseFeed.sol";
 import { Divider } from "../Divider.sol";
 

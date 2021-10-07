@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { Errors } from "../libs/Errors.sol";
+import { Errors } from "../libs/errors.sol";
 import { EmergencyStop } from "../feeds/EmergencyStop.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";

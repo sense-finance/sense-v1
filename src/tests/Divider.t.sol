@@ -6,7 +6,7 @@ import { WadMath } from "../external/WadMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { Errors } from "../libs/Errors.sol";
+import { Errors } from "../libs/errors.sol";
 import { Divider } from "../Divider.sol";
 
 contract Dividers is TestHelper {
