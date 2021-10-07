@@ -218,33 +218,44 @@ contract Divider is Trust {
         address usr,
         address feed,
         uint256 maturity,
-        uint256 balance,
+        uint256 uBal,
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
         Claim claim = Claim(series[feed][maturity].claim);
-        require(claim.balanceOf(usr) >= balance, Errors.NotEnoughClaims);
+        require(claim.balanceOf(usr) >= uBal, Errors.NotEnoughClaims);
 
+        // Get the scale value from the last time this holder collected
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
 
-        // If this is the Claim holder's first time collecting and nobody 
+        // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
+        // set the "last scale" value to the scale at issuance for this series
         if (lscale == 0) lscale = series[feed][maturity].iscale;
 
+        // If we're past maturity, this Series must be settled before collect can be called
         if (block.timestamp >= maturity) {
             require(_settled(feed, maturity), Errors.CollectNotSettled);
-            claim.burn(usr, balance);
+            claim.burn(usr, uBal);
         } else if (!_settled(feed, maturity)) {
             cscale = Feed(feed).scale();
             lscales[feed][maturity][usr] = cscale;
         }
 
-        collected = balance.wdiv(lscale) - balance.wdiv(cscale);
-        require(collected <= balance.wdiv(lscale), Errors.CapReached); // TODO check this
+        // Determine how much yield has accrued since the last time this user collected in units of Target
+        // (or take the last time as issuance if they haven't yet).
+        // Reminder that `Underlying / Scale = Target`, so this equation is saying, for some amount of Underlying `u`:
+        // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
+        // Because scale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
+        // is what Claim holders are collecting
+        collected = uBal.wdiv(lscale) - uBal.wdiv(cscale);
+        require(collected <= uBal.wdiv(lscale), Errors.CapReached); // TODO check this
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
 
+        // If this collect is a part of a token transfer to another address, set the receiver's
+        // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = cscale;
         }
