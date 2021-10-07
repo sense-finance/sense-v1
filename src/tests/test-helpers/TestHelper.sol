@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "ds-test/test.sol";
+import { DSTest } from "ds-test/test.sol";
 
-// internal references
-import "../../modules/GClaim.sol";
-import "./MockToken.sol";
-import "./MockFeed.sol";
-import "./MockFactory.sol";
+// Internal references
+import { GClaim } from "../../modules/GClaim.sol";
+import { Divider } from "../../Divider.sol";
+import { MockToken } from "./MockToken.sol";
+import { MockFeed } from "./MockFeed.sol";
+import { MockFactory } from "./MockFactory.sol";
 
-import "./Hevm.sol";
-import "./DateTimeFull.sol";
-import "./User.sol";
+import { Hevm } from "./Hevm.sol";
+import { DateTimeFull } from "./DateTimeFull.sol";
+import { User } from "./User.sol";
 
 contract TestHelper is DSTest {
     MockFeed feed;
@@ -61,7 +62,7 @@ contract TestHelper is DSTest {
         MockFeed implementation = new MockFeed(); // feed implementation
         factory = new MockFactory(address(implementation), address(divider), DELTA); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target
-        divider.rely(address(factory)); // add factory as a ward
+        divider.setIsTrusted(address(factory), true); // add factory as a ward
         feed = MockFeed(factory.deployFeed(address(target)));
 
         // modules
@@ -89,7 +90,7 @@ contract TestHelper is DSTest {
         MockFeed implementation = new MockFeed();
         someFactory = new MockFactory(address(implementation), address(divider), DELTA);
         someFactory.addTarget(_target, true);
-        divider.rely(address(someFactory));
+        divider.setIsTrusted(address(someFactory), true);
     }
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {

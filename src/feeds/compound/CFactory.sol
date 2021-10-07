@@ -2,14 +2,13 @@
 pragma solidity ^0.8.6;
 
 // internal references
-import "../BaseFactory.sol";
+import { BaseFactory } from "../BaseFactory.sol";
 
 interface Comptroller {
     function markets(address target) external returns (bool isListted, uint collateralFactorMantissa, bool isComped);
 }
 
 contract CFactory is BaseFactory {
-
     constructor(
         address _implementation,
         address _divider,
@@ -20,5 +19,4 @@ contract CFactory is BaseFactory {
         (bool isListed, , ) = Comptroller(protocol).markets(_target);
         return isListed;
     }
-
 }

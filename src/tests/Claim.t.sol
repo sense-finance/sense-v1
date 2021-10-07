@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/TestHelper.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { WadMath } from "../external/WadMath.sol";
 
 contract Claims is TestHelper {
     using WadMath for uint256;

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./Hevm.sol";
-import "./MockToken.sol";
-import "../../Divider.sol";
-import "../../modules/GClaim.sol";
-import "../../tokens/Claim.sol";
-import "../../feed/BaseFactory.sol";
+import { Hevm } from "./Hevm.sol";
+import { MockToken } from "./MockToken.sol";
+import { Divider } from "../../Divider.sol";
+import { GClaim } from "../../modules/GClaim.sol";
+import { Claim } from "../../tokens/Claim.sol";
+import { BaseFactory } from "../../feeds/BaseFactory.sol";
 
 contract User {
-    address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256('hevm cheat code')))));
+    address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
 
     MockToken stable;
     MockToken target;

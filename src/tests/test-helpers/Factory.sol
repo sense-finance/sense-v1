@@ -1,7 +1,7 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import "../../Divider.sol";
+import { Divider } from "../../Divider.sol";
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;

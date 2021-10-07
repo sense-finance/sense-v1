@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "solmate/erc20/ERC20.sol";
-import "../external/WadMath.sol";
+// External references
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { WadMath } from "../external/WadMath.sol";
 
-// internal references
-import "../Divider.sol";
+// Internal references
+import { Divider } from "../Divider.sol";
+import { Errors } from "../libs/errors.sol";
 
-//import "../libs/Errors.sol";
-
-// @title Assign time-based value to target assets
-// @dev In most cases, the only function that will be unique to each feed type is `scale`
+/// @title Assign time-based value to target assets
+/// @dev In most cases, the only function that will be unique to each feed type is `scale`
 abstract contract BaseFeed is Initializable {
     using WadMath for uint256;
 
@@ -43,23 +42,19 @@ abstract contract BaseFeed is Initializable {
         emit Initialized();
     }
 
-    // @notice Calculate and return this feed's Scale value for the current timestamp
-    // @dev For some Targets, such as cTokens, this is simply the exchange rate,
-    // or `supply cToken / supply underlying`
-    // @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    // @dev Reverts if scale value is higher than previous scale + %delta.
-    // @dev Reverts if scale value is below the previous scale.
-    // @return _value 18 decimal Scale value
+    /// @notice Calculate and return this feed's Scale value for the current timestamp
+    /// @dev For some Targets, such as cTokens, this is simply the exchange rate,
+    /// or `supply cToken / supply underlying`
+    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
+    /// @return _value WAD Scale value
     function scale() external virtual returns (uint256 _value) {
         _value = _scale();
         uint256 lvalue = lscale.value;
-        require(_value >= lvalue, "Scale value is invalid");
-        //        require(_value < lvalue, Errors.InvalidScaleValue);
+        require(_value >= lvalue, Errors.InvalidScaleValue);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (timeDiff > 0 && lvalue != 0) {
             uint256 growthPerSec = (_value - lvalue).wdiv(lvalue * timeDiff);
-            if (growthPerSec > delta) revert("Scale value is invalid");
-            // if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
+            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
         if (_value != lscale.value) {
             // update value only if different than previous
@@ -68,6 +63,7 @@ abstract contract BaseFeed is Initializable {
         }
     }
 
+    /// @notice Actual scale value check that must be overriden by child contracts
     function _scale() internal virtual returns (uint256 _value);
 
     event Initialized();

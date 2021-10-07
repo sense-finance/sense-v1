@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
+/// @notice Program error types
 library Errors {
     string constant AmountExceedsAllowance = "ERC20: transfer amount exceeds allowance";
     string constant AmountExceedsBalance = "ERC20: transfer amount exceeds balance";
@@ -16,9 +17,9 @@ library Errors {
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";
     string constant InvalidScaleValue = "Scale value is invalid";
-    string constant NotAuthorized = "Sender must be authorized";
+    string constant NotAuthorized = "UNTRUSTED"; // We copy the error message used by solmate's `Trust` auth lib
     string constant NotEnoughClaims = "Not enough claims to collect given target balance";
-    string constant SeriesNotExists = "Series does not exist";
+    string constant SeriesDoesntExists = "Series does not exist";
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// internal references
-import "../Divider.sol";
-import "./Token.sol";
+// Internal references
+import { Divider } from "../Divider.sol";
+import { Token } from "./Token.sol";
 
-// @title Claim token contract that allows excess collection pre-maturity
+/// @title Claim token contract that allows excess collection pre-maturity
 contract Claim is Token {
     uint256 public maturity;
     address public divider;

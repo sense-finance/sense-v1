@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/Hevm.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+
+import { Errors } from "../libs/errors.sol";
+import { Claim } from "../tokens/Claim.sol";
 import { GClaim } from "../modules/GClaim.sol";
-import "./test-helpers/TestHelper.sol";
-import "solmate/erc20/ERC20.sol";
+
+import { Hevm } from "./test-helpers/Hevm.sol";
+import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract DividerMock {}
 
@@ -21,13 +25,13 @@ contract GClaims is TestHelper {
         }
     }
 
-    function testCantJoinIfSeriesNotExists() public {
+    function testCantJoinIfSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 10e18;
         try alice.doJoin(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesNotExists);
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
@@ -168,13 +172,13 @@ contract GClaims is TestHelper {
 
     /* ========== exit() tests ========== */
 
-    function testCantExitIfSeriesNotExists() public {
+    function testCantExitIfSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
         try alice.doExit(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesNotExists);
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 

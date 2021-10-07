@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "../BaseFeed.sol";
+// External references
+import { WadMath } from "../../external/WadMath.sol";
+
+// Internal references
+import { BaseFeed } from "../BaseFeed.sol";
 
 interface CTokenInterface {
     // @notice cToken is convertible into an ever increasing quantity of the underlying asset, as interest accrues in
