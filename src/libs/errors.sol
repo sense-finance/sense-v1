@@ -3,11 +3,8 @@ pragma solidity ^0.8.6;
 
 /// @notice Program error types
 library Errors {
-    string constant AmountExceedsAllowance = "ERC20: transfer amount exceeds allowance";
-    string constant AmountExceedsBalance = "ERC20: transfer amount exceeds balance";
     string constant AlreadySettled = "Series has already been settled";
     string constant BurnAmountExceedsBalance = "ERC20: burn amount exceeds balance";
-    string constant CapReached = "Transfer amount must be below cap";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
     string constant DuplicateSeries = "Series with given maturity already exists";
     string constant ExistingValue = "New value must be different than previous";

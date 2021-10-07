@@ -253,7 +253,6 @@ contract Divider is Trust {
         // Because scale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
         // is what Claim holders are collecting
         collected = uBal.wdiv(lscale) - uBal.wdiv(cscale);
-        require(collected <= uBal.wdiv(lscale), Errors.CapReached); // TODO check this
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
 
         // If this collect is a part of a token transfer to another address, set the receiver's
