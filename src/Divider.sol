@@ -224,9 +224,6 @@ contract Divider is Trust {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
-        Claim claim = Claim(series[feed][maturity].claim);
-        require(claim.balanceOf(usr) >= uBal, Errors.NotEnoughClaims);
-
         // Get the scale value from the last time this holder collected
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
@@ -238,7 +235,7 @@ contract Divider is Trust {
         // If we're past maturity, this Series must be settled before collect can be called
         if (block.timestamp >= maturity) {
             require(_settled(feed, maturity), Errors.CollectNotSettled);
-            claim.burn(usr, uBal);
+            Claim(series[feed][maturity].claim).burn(usr, uBal);
         } else if (!_settled(feed, maturity)) {
             cscale = Feed(feed).scale();
             lscales[feed][maturity][usr] = cscale;
