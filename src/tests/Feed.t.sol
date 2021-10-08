@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/MockFeed.sol";
-import "./test-helpers/MockToken.sol";
-import "./test-helpers/TestHelper.sol";
+import { WadMath } from "../external/WadMath.sol";
+
+import { Errors } from "../libs/errors.sol";
+import { BaseFeed } from "../feeds/BaseFeed.sol";
+import { Divider } from "../Divider.sol";
+
+import { MockFeed } from "./test-helpers/MockFeed.sol";
+import { MockToken } from "./test-helpers/MockToken.sol";
+import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeFeed is BaseFeed {
     function _scale() internal virtual override returns (uint256 _value) {
@@ -20,7 +26,7 @@ contract Feeds is TestHelper {
 
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI");
-        MockFeed feed = new MockFeed(GROWTH_PER_SECOND);
+        MockFeed feed = new MockFeed();
         feed.initialize(address(target), address(divider), DELTA);
 
         assertEq(feed.target(), address(target));
@@ -34,6 +40,12 @@ contract Feeds is TestHelper {
         assertEq(feed.scale(), feed.INITIAL_VALUE());
     }
 
+    function testScaleMultipleTimes() public {
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+        assertEq(feed.scale(), feed.INITIAL_VALUE());
+    }
+
     function testScaleIfEqualDelta() public {
         uint256[] memory startingScales = new uint256[](4);
         startingScales[0] = 2e20; // 200 WAD
@@ -41,7 +53,7 @@ contract Feeds is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed();
             localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
@@ -88,7 +100,7 @@ contract Feeds is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockFeed localFeed = new MockFeed(GROWTH_PER_SECOND);
+            MockFeed localFeed = new MockFeed();
             localFeed.initialize(address(target), address(divider), DELTA);
             uint256 startingScale = startingScales[i];
 
@@ -121,6 +133,7 @@ contract Feeds is TestHelper {
     function testCantScaleIfBelowPrevious() public {
         assertEq(feed.scale(), feed.INITIAL_VALUE());
         feed.setScale(feed.INITIAL_VALUE() - 1);
+        hevm.warp(block.timestamp + 1 days);
         try feed.scale() {
             fail();
         } catch Error(string memory error) {

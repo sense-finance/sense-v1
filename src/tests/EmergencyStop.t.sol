@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "../feed/EmergencyStop.sol";
-import "./test-helpers/TestHelper.sol";
-import "./test-helpers/MockToken.sol";
+import { Errors } from "../libs/errors.sol";
+import { EmergencyStop } from "../feeds/EmergencyStop.sol";
+
+import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { MockToken } from "./test-helpers/MockToken.sol";
 
 contract Emergency is TestHelper {
     function testAllFeedsAreStopped() public {
@@ -19,7 +21,7 @@ contract Emergency is TestHelper {
             feeds[i] = address(feed);
         }
         EmergencyStop e = new EmergencyStop(address(divider));
-        divider.rely(address(e));
+        divider.setIsTrusted(address(e), true);
         e.stop(feeds);
 
         for (uint256 i = 0; i < feeds.length; i++) {

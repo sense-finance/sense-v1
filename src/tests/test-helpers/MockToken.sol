@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// external references
-import "solmate/erc20/ERC20.sol";
+// External references
+import { ERC20 } from "solmate/erc20/ERC20.sol";
 
 contract MockToken is ERC20 {
-
     constructor(
         string memory _name,
         string memory _symbol

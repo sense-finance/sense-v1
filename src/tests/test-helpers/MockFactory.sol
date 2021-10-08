@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// internal references
-import "../../feed/BaseFactory.sol";
+// Internal references
+import { BaseFactory } from "../../feeds/BaseFactory.sol";
 
 contract MockFactory is BaseFactory {
     mapping(address => bool) public targets;

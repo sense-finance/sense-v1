@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "ds-test/test.sol";
+import { DSTest } from "ds-test/test.sol";
 
-// internal references
-import "../feed/compound/CFeed.sol";
-import "../feed/compound/CFactory.sol";
+// Internal references
+import { CFeed } from "../feeds/compound/CFeed.sol";
+import { CFactory } from "../feeds/compound/CFactory.sol";
+import { Divider } from "../Divider.sol";
 
-import "./test-helpers/Hevm.sol";
-import "./test-helpers/DateTimeFull.sol";
-import "./test-helpers/User.sol";
+import { Hevm } from "./test-helpers/Hevm.sol";
+import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { User } from "./test-helpers/User.sol";
 
 contract CFeedTestHelper is DSTest {
     CFactory internal factory;
@@ -24,7 +25,7 @@ contract CFeedTestHelper is DSTest {
         CFeed implementation = new CFeed(); // compound feed implementation
         // deploy compound feed factory
         factory = new CFactory(address(implementation), address(divider), DELTA);
-        divider.rely(address(factory)); // add factory as a ward
+        divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
 

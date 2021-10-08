@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import "./test-helpers/TestHelper.sol";
-import "./test-helpers/interfaces/IFeed.sol";
+import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { MockFeed } from "./test-helpers/MockFeed.sol";
+import { MockFactory } from "./test-helpers/MockFactory.sol";
+import { MockToken } from "./test-helpers/MockToken.sol";
+import { IFeed } from "./test-helpers/interfaces/IFeed.sol";
+import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { Errors } from "../libs/errors.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {
-        MockFeed implementation = new MockFeed(GROWTH_PER_SECOND);
+        MockFeed implementation = new MockFeed();
         MockFactory someFactory = new MockFactory(address(implementation), address(divider), DELTA);
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).implementation(), address(implementation));
