@@ -14,7 +14,7 @@ contract Emergency is TestHelper {
         targets[0] = address(target);
         feeds[0] = address(feed);
         for (uint256 i = 1; i <= 10; i++) {
-            MockToken target = new MockToken("Test Target", "TT");
+            MockToken target = new MockToken("Test Target", "TT", 18);
             factory.addTarget(address(target), true);
             address feed = factory.deployFeed(address(target));
             targets[i] = address(target);
@@ -35,7 +35,7 @@ contract Emergency is TestHelper {
         targets[0] = address(target);
         feeds[0] = address(feed);
         for (uint256 i = 1; i <= 10; i++) {
-            MockToken target = new MockToken("Test Target", "TT");
+            MockToken target = new MockToken("Test Target", "TT", 18);
             factory.addTarget(address(target), true);
             address feed = factory.deployFeed(address(target));
             targets[i] = address(target);

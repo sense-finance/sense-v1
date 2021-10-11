@@ -2,15 +2,16 @@
 pragma solidity ^0.8.6;
 
 import { ERC20 } from "solmate/erc20/ERC20.sol";
-import { WadMath } from "../external/WadMath.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { Errors } from "../libs/errors.sol";
 import { Divider } from "../Divider.sol";
+import { Token } from "../tokens/Token.sol";
 
 contract Dividers is TestHelper {
-    using WadMath for uint256;
+    using FixedMath for uint256;
     using Errors for string;
 
     Divider.Backfill[] backfills;
@@ -299,9 +300,10 @@ contract Dividers is TestHelper {
     function testCantIssueFeedDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        uint256 amount = 1e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         divider.setFeed(address(feed), false);
-        try alice.doIssue(address(feed), maturity, amount) {
+        try alice.doIssue(address(feed), maturity, tBal) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidFeed);
@@ -310,8 +312,9 @@ contract Dividers is TestHelper {
 
     function testCantIssueSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 amount = 100e18;
-        try alice.doIssue(address(feed), maturity, amount) {
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+        try alice.doIssue(address(feed), maturity, tBal) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.SeriesDoesntExists);
@@ -367,8 +370,9 @@ contract Dividers is TestHelper {
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
         }
-        uint256 amount = 100e18;
-        try alice.doIssue(address(feed), maturity, amount) {
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+        try alice.doIssue(address(feed), maturity, tBal) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
@@ -390,19 +394,25 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 amount = 100e18; // 100 target
-        uint256 fee = (ISSUANCE_FEE * 100e18) / 100; // 1 target
+        uint256 convertBase = 1;
+        uint256 tDecimals = target.decimals();
+        if (tDecimals != 18) {
+            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
+        }
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase; // 100 target
+        uint256 fee = (ISSUANCE_FEE / convertBase).wmul(tBal, tBase); // 1 target
         uint256 tBalanceBefore = target.balanceOf(address(alice));
-        alice.doIssue(address(feed), maturity, amount);
+        alice.doIssue(address(feed), maturity, tBal);
         uint256 zBalanceAfter = ERC20(zero).balanceOf(address(alice));
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(alice));
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         // Formula = newBalance.wmul(scale)
         (, uint256 lscale) = feed.lscale();
-        uint256 mintedAmount = (amount - fee).wmul(lscale);
+        uint256 mintedAmount = (tBal - fee).wmul(lscale, Token(zero).BASE_UNIT());
         assertEq(zBalanceAfter, mintedAmount);
         assertEq(cBalanceAfter, mintedAmount);
-        assertEq(tBalanceAfter, tBalanceBefore - amount);
+        assertEq(tBalanceAfter, tBalanceBefore - tBal);
     }
 
     //    function testIssueTwoTimes() public {
@@ -414,9 +424,10 @@ contract Dividers is TestHelper {
     function testCantCombineFeedDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        uint256 amount = 1e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         divider.setFeed(address(feed), false);
-        try alice.doCombine(address(feed), maturity, amount) {
+        try alice.doCombine(address(feed), maturity, tBal) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidFeed);
@@ -425,8 +436,9 @@ contract Dividers is TestHelper {
 
     function testCantCombineSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 amount = 100e18;
-        try alice.doCombine(address(feed), maturity, amount) {
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+        try alice.doCombine(address(feed), maturity, tBal) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.SeriesDoesntExists);
@@ -437,7 +449,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         alice.doIssue(address(feed), maturity, tBal);
         uint256 zBal = ERC20(zero).balanceOf(address(alice));
         (, uint256 lvalue) = feed.lscale();
@@ -462,7 +475,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -474,7 +488,7 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
-        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale)); // TODO: check if this is correct!!
+        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale, Token(zero).BASE_UNIT()));
         // Amount of Zeros before combining == underlying balance
         // uint256 collected = ??
         // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
@@ -484,7 +498,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
@@ -503,7 +518,7 @@ contract Dividers is TestHelper {
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
         //        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
-        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale));
+        assertClose(zBalanceBefore, (tBalanceAfter - tBalanceBefore).wmul(lscale, Token(zero).BASE_UNIT()));
         // TODO: check if this is correct!! Should it be .wmul(mscale));
         // Amount of Zeros before combining == underlying balance
         // uint256 collected = ??
@@ -539,7 +554,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 balance = ERC20(zero).balanceOf(address(bob));
@@ -567,7 +583,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
@@ -579,8 +596,9 @@ contract Dividers is TestHelper {
 
         // Formula: tBal = balance / mscale
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
-        uint256 redeemed = balanceToRedeem.wdiv(mscale);
-        assertClose(zBalanceBefore, redeemed.wmul(mscale)); // Amount of Zeros burned == underlying amount
+        uint256 redeemed = balanceToRedeem.wdiv(mscale, Token(zero).BASE_UNIT());
+        // Amount of Zeros burned == underlying amount
+        assertClose(zBalanceBefore, redeemed.wmul(mscale, Token(zero).BASE_UNIT()));
         assertEq(zBalanceBefore, zBalanceAfter + balanceToRedeem);
     }
 
@@ -617,7 +635,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
         try bob.doCollect(claim) {
@@ -634,8 +653,10 @@ contract Dividers is TestHelper {
     function testCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -649,7 +670,8 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
+        uint256 collect = cBalanceBefore.wdiv(lscale, claimBaseUnit);
+        collect -= cBalanceBefore.wdiv(cscale, claimBaseUnit);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -658,8 +680,10 @@ contract Dividers is TestHelper {
     function testCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -674,7 +698,8 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
+        uint256 collect = cBalanceBefore.wdiv(lscale, claimBaseUnit);
+        collect -= cBalanceBefore.wdiv(cscale, claimBaseUnit);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -684,7 +709,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         divider.setFeed(address(feed), false); // emergency stop
         uint256 newScale = 20e17;
@@ -699,8 +725,10 @@ contract Dividers is TestHelper {
     function testCollectBeforeMaturityAndSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity - SPONSOR_WINDOW);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -715,7 +743,8 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
+        uint256 collect = cBalanceBefore.wdiv(lscale, claimBaseUnit);
+        collect -= cBalanceBefore.wdiv(cscale, claimBaseUnit);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -724,8 +753,10 @@ contract Dividers is TestHelper {
     function testCollectTransferAndCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -733,8 +764,6 @@ contract Dividers is TestHelper {
         uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 btBalanceBefore = target.balanceOf(address(bob));
         bob.doTransfer(address(claim), address(alice), bcBalanceBefore); // collects and transfer
-        uint256 acBalanceAfter = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 btBalanceAfter = target.balanceOf(address(bob));
         uint256 bcollected = btBalanceAfter - btBalanceBefore;
         uint256 acollected = alice.doCollect(claim); // try to collect
@@ -743,10 +772,11 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = bcBalanceBefore.wdiv(lscale) - bcBalanceBefore.wdiv(cscale);
+        uint256 collect = bcBalanceBefore.wdiv(lscale, claimBaseUnit);
+        collect -= bcBalanceBefore.wdiv(cscale, claimBaseUnit);
         assertEq(bcollected, collect);
-        assertEq(acBalanceAfter, bcBalanceBefore);
-        assertEq(bcBalanceAfter, 0);
+        assertEq(ERC20(claim).balanceOf(address(alice)), bcBalanceBefore);
+        assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         assertEq(btBalanceAfter, btBalanceBefore + bcollected);
         assertEq(acollected, 0);
     }
@@ -754,8 +784,10 @@ contract Dividers is TestHelper {
     function testCollectTransferToMyselfAndCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -771,7 +803,8 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = cBalanceBefore.wdiv(lscale) - cBalanceBefore.wdiv(cscale);
+        uint256 collect = cBalanceBefore.wdiv(lscale, claimBaseUnit);
+        collect -= cBalanceBefore.wdiv(cscale, claimBaseUnit);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, cBalanceBefore);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -781,8 +814,9 @@ contract Dividers is TestHelper {
     /* ========== backfillScale() tests ========== */
     function testCantBackfillScaleSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 amount = 1e18;
-        try divider.backfillScale(address(feed), maturity, amount, backfills) {
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+        try divider.backfillScale(address(feed), maturity, tBal, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.SeriesDoesntExists);
@@ -792,8 +826,9 @@ contract Dividers is TestHelper {
     function testCantBackfillScaleBeforeCutoffAndFeedEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
-        uint256 amount = 1e18;
-        try divider.backfillScale(address(feed), maturity, amount, backfills) {
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+        try divider.backfillScale(address(feed), maturity, tBal, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.OutOfWindowBoundaries);
@@ -804,8 +839,9 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        uint256 amount = 1e18;
-        try alice.doBackfillScale(address(feed), maturity, amount, backfills) {
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+        try alice.doBackfillScale(address(feed), maturity, tBal, backfills) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotAuthorized);
@@ -816,7 +852,7 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         initSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        uint256 amount = 1e16;
+        uint256 amount = 1 * (10**(target.decimals() - 2));
         try divider.backfillScale(address(feed), maturity, amount, backfills) {
             fail();
         } catch Error(string memory error) {
@@ -864,24 +900,26 @@ contract Dividers is TestHelper {
         initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
 
-        uint256 amount = 100e18; // 100 target
-        uint256 fee = (ISSUANCE_FEE * amount) / 100; // 1 target
-        bob.doIssue(address(feed), maturity, amount);
+        uint256 convertBase = 1;
+        uint256 tDecimals = target.decimals();
+        if (target.decimals() != 18) {
+            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
+        }
+        uint256 tBase = 10**tDecimals;
+        uint256 tBal = 100 * tBase; // 100 target
+        uint256 fee = (ISSUANCE_FEE / convertBase).wmul(tBal, tBase); // 1 target
+        bob.doIssue(address(feed), maturity, tBal);
 
         hevm.warp(maturity - SPONSOR_WINDOW);
         divider.setFeed(address(feed), false);
-        uint256 newScale = 1e18;
+        uint256 newScale = 1 * tBase;
         divider.backfillScale(address(feed), maturity, newScale, backfills);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
-        uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
-        uint256 sponsorStableBalanceAfter = stable.balanceOf(address(alice));
-        assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
-        assertEq(sponsorStableBalanceAfter, sponsorStableBalanceBefore);
-        uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
-        uint256 cupStableBalanceAfter = stable.balanceOf(address(this));
-        assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
-        assertEq(cupStableBalanceAfter, cupStableBalanceBefore);
+        assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
+        assertEq(stable.balanceOf(address(alice)), sponsorStableBalanceBefore);
+        assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore + fee);
+        assertEq(stable.balanceOf(address(this)), cupStableBalanceBefore);
     }
 
     // @notice if backfill happens after issuance fees are returned to Sense's cup multisig address, both issuance fees
@@ -895,13 +933,19 @@ contract Dividers is TestHelper {
         initSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
 
-        uint256 amount = 100e18; // 100 target
-        uint256 fee = (ISSUANCE_FEE * amount) / 100; // 1 target
-        bob.doIssue(address(feed), maturity, amount);
+        uint256 convertBase = 1;
+        uint256 tDecimals = target.decimals();
+        if (tDecimals != 18) {
+            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
+        }
+        uint256 tBase = 10**tDecimals;
+        uint256 tBal = 100 * tBase; // 100 target
+        uint256 fee = (ISSUANCE_FEE / convertBase).wmul(tBal, tBase); // 1 target
+        bob.doIssue(address(feed), maturity, tBal);
 
         hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
         divider.setFeed(address(feed), false);
-        uint256 newScale = 1e18;
+        uint256 newScale = 1 * tBase;
         divider.backfillScale(address(feed), maturity, newScale, backfills);
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);

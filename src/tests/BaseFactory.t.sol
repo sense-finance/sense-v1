@@ -20,7 +20,7 @@ contract Factories is TestHelper {
     }
 
     function testDeployFeed() public {
-        MockToken someTarget = new MockToken("Some Target", "ST");
+        MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget));
         address feed = someFactory.deployFeed(address(someTarget));
         assertTrue(feed != address(0));
@@ -33,8 +33,10 @@ contract Factories is TestHelper {
         assertEq(scale, 1e17);
     }
 
+    event Nini(uint256 n);
+
     function testDeployFeedAndinitializeSeries() public {
-        MockToken someTarget = new MockToken("Some Target", "ST");
+        MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget));
         address feed = someFactory.deployFeed(address(someTarget));
         assertTrue(feed != address(0));
@@ -48,7 +50,7 @@ contract Factories is TestHelper {
     }
 
     function testCantDeployFeedIfTargetIsNotSupported() public {
-        MockToken newTarget = new MockToken("Not Supported", "NS");
+        MockToken newTarget = new MockToken("Not Supported", "NS", 18);
         try factory.deployFeed(address(newTarget)) {
             fail();
         } catch Error(string memory error) {
@@ -57,7 +59,7 @@ contract Factories is TestHelper {
     }
 
     function testCantDeployFeedIfTargetIsNotSupportedOnSpecificFeed() public {
-        MockToken someTarget = new MockToken("Some Target", "ST");
+        MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget));
         try factory.deployFeed(address(someTarget)) {
             fail();

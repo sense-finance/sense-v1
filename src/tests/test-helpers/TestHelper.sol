@@ -26,10 +26,10 @@ contract TestHelper is DSTest {
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    uint256 internal constant GROWTH_PER_SECOND = 792744799594; // 25% APY
-    uint256 internal constant DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
+    uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
-    uint256 public constant ISSUANCE_FEE = 1; // In percentage (1%). Hardcoded value at least for v1.
+    uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%). Hardcoded value at least for v1.
     uint256 public constant INIT_STAKE = 1e18; // Hardcoded value at least for v1.
     uint public constant SPONSOR_WINDOW = 4 hours; // Hardcoded value at least for v1.
     uint public constant SETTLEMENT_WINDOW = 2 hours; // Hardcoded value at least for v1.
@@ -51,12 +51,20 @@ contract TestHelper is DSTest {
     function setUp() public {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        stable = new MockToken("Stable Token", "ST");
-        target = new MockToken("Compound Dai", "cDAI");
+        uint8 tDecimals = 18;
+        stable = new MockToken("Stable Token", "ST", tDecimals);
+        uint256 tBase = 10 ** tDecimals;
+        uint256 convertBase = 1;
+        if (tDecimals != 18) {
+            convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
+        }
+        target = new MockToken("Compound Dai", "cDAI", tDecimals);
+        GROWTH_PER_SECOND = GROWTH_PER_SECOND / convertBase;
+        DELTA = DELTA / convertBase;
 
         // divider
         divider = new Divider(address(stable), address(this));
-        divider.setGuard(address(target), 100e18*100);
+        divider.setGuard(address(target), 10000 * tBase);
 
         // feed & factory
         MockFeed implementation = new MockFeed(); // feed implementation
