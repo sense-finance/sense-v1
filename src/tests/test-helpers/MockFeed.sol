@@ -14,7 +14,11 @@ contract MockFeed is BaseFeed {
     function _scale() internal override virtual returns (uint256 _value) {
         uint8 tDecimals = ERC20(target).decimals();
         if (INITIAL_VALUE == 0)  {
-            INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18;
+            if (tDecimals != 18) {
+                INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18 * (10**(tDecimals - 18));
+            } else {
+                INITIAL_VALUE = 0.1e18;
+            }
         }
         uint256 gps = delta.wmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
