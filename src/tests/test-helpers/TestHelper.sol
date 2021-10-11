@@ -64,7 +64,7 @@ contract TestHelper is DSTest {
 
         // divider
         divider = new Divider(address(stable), address(this));
-        divider.setGuard(address(target), 10000 * tBase);
+        divider.setGuard(address(target), 2**96);
 
         // feed & factory
         MockFeed implementation = new MockFeed(); // feed implementation
@@ -77,11 +77,11 @@ contract TestHelper is DSTest {
         gclaim = new GClaim(address(divider));
 
         // users
-        alice = createUser();
-        bob = createUser();
+        alice = createUser(2**96, 2**96);
+        bob = createUser(2**96, 2**96);
     }
 
-    function createUser() public returns (User user) {
+    function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
         user = new User();
         user.setFactory(factory);
         user.setStable(stable);
@@ -89,9 +89,11 @@ contract TestHelper is DSTest {
         user.setDivider(divider);
         user.setGclaim(gclaim);
         user.doApprove(address(stable), address(divider));
-        user.doMint(address(stable), INIT_STAKE * 1000);
+        uint256 sBase = 10 ** stable.decimals();
+        user.doMint(address(stable), sBal);
         user.doApprove(address(target), address(divider));
-        user.doMint(address(target), INIT_STAKE * 10000);
+        uint256 tBase = 10 ** target.decimals();
+        user.doMint(address(target), tBal);
     }
 
     function createFactory(address _target) public returns (MockFactory someFactory) {
@@ -111,7 +113,10 @@ contract TestHelper is DSTest {
     }
 
     function assertClose(uint256 actual, uint256 expected) public {
+        if (actual == expected) return DSTest.assertEq(actual, expected);
         uint256 variance = 100;
+        if (expected < variance) variance = 10;
+        if (expected < variance) variance = 1;
         DSTest.assertTrue(actual >= (expected - variance));
         DSTest.assertTrue(actual <= (expected + variance));
     }

@@ -33,8 +33,6 @@ contract Factories is TestHelper {
         assertEq(scale, 1e17);
     }
 
-    event Nini(uint256 n);
-
     function testDeployFeedAndinitializeSeries() public {
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget));

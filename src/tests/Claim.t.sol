@@ -9,13 +9,12 @@ import { FixedMath } from "../external/FixedMath.sol";
 contract Claims is TestHelper {
     using FixedMath for uint256;
 
-    function testCollect() public {
+    function testCollect(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
-        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -36,13 +35,12 @@ contract Claims is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    function testCollectOnTransfer() public {
+    function testCollectOnTransfer(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
-        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
@@ -64,18 +62,16 @@ contract Claims is TestHelper {
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
-        assertTrue(collected > 0);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
 
-    function testCollectOnTransferFrom() public {
+    function testCollectOnTransferFrom(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
-        uint256 tBal = 100 * tBase;
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
@@ -98,7 +94,6 @@ contract Claims is TestHelper {
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
-        assertTrue(collected > 0);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
