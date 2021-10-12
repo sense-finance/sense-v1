@@ -26,10 +26,10 @@ contract TestHelper is DSTest {
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    uint256 internal constant GROWTH_PER_SECOND = 792744799594; // 25% APY
-    uint256 internal constant DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
+    uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
-    uint256 public constant ISSUANCE_FEE = 1; // In percentage (1%). Hardcoded value at least for v1.
+    uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%). Hardcoded value at least for v1.
     uint256 public constant INIT_STAKE = 1e18; // Hardcoded value at least for v1.
     uint public constant SPONSOR_WINDOW = 4 hours; // Hardcoded value at least for v1.
     uint public constant SETTLEMENT_WINDOW = 2 hours; // Hardcoded value at least for v1.
@@ -51,12 +51,19 @@ contract TestHelper is DSTest {
     function setUp() public {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        stable = new MockToken("Stable Token", "ST");
-        target = new MockToken("Compound Dai", "cDAI");
+        uint8 tDecimals = 18;
+        stable = new MockToken("Stable Token", "ST", tDecimals);
+        uint256 convertBase = 1;
+        if (tDecimals != 18) {
+            convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
+        }
+        target = new MockToken("Compound Dai", "cDAI", tDecimals);
+        GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * convertBase : GROWTH_PER_SECOND / convertBase;
+        DELTA = tDecimals > 18 ? DELTA * convertBase : DELTA / convertBase;
 
         // divider
         divider = new Divider(address(stable), address(this));
-        divider.setGuard(address(target), 100e18*100);
+        divider.setGuard(address(target), 2**96);
 
         // feed & factory
         MockFeed implementation = new MockFeed(); // feed implementation
@@ -69,11 +76,11 @@ contract TestHelper is DSTest {
         gclaim = new GClaim(address(divider));
 
         // users
-        alice = createUser();
-        bob = createUser();
+        alice = createUser(2**96, 2**96);
+        bob = createUser(2**96, 2**96);
     }
 
-    function createUser() public returns (User user) {
+    function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
         user = new User();
         user.setFactory(factory);
         user.setStable(stable);
@@ -81,9 +88,10 @@ contract TestHelper is DSTest {
         user.setDivider(divider);
         user.setGclaim(gclaim);
         user.doApprove(address(stable), address(divider));
-        user.doMint(address(stable), INIT_STAKE * 1000);
+        uint256 sBase = 10 ** stable.decimals();
+        user.doMint(address(stable), sBal);
         user.doApprove(address(target), address(divider));
-        user.doMint(address(target), INIT_STAKE * 10000);
+        user.doMint(address(target), tBal);
     }
 
     function createFactory(address _target) public returns (MockFactory someFactory) {
@@ -103,7 +111,10 @@ contract TestHelper is DSTest {
     }
 
     function assertClose(uint256 actual, uint256 expected) public {
+        if (actual == expected) return DSTest.assertEq(actual, expected);
         uint256 variance = 100;
+        if (expected < variance) variance = 10;
+        if (expected < variance) variance = 1;
         DSTest.assertTrue(actual >= (expected - variance));
         DSTest.assertTrue(actual <= (expected + variance));
     }

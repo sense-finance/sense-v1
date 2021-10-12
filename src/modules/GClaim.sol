@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 // External references
 import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
-import { WadMath } from "../external/WadMath.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -16,7 +16,7 @@ import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 /// @notice The GClaim contract turns Collect Claims into Drag Claims
 contract GClaim {
     using SafeERC20 for ERC20;
-    using WadMath for uint256;
+    using FixedMath for uint256;
 
     /// @notice "Issuance" scale value all claims of the same Series must backfill to separated by Claim address.
     mapping(address => uint256) public inits;
@@ -53,7 +53,7 @@ contract GClaim {
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here
-            gclaims[claim] = new Token(name, symbol);
+            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals());
         } else {
             uint256 initScale = inits[claim];
             uint256 currScale = Feed(feed).scale();
@@ -93,7 +93,9 @@ contract GClaim {
         uint256 total = totals[claim] + collected;
 
         // Determine the percent of the excess this caller has a right to
-        uint256 rights = (balance.wdiv(gclaims[claim].totalSupply())).wmul(total);
+        uint256 rights = (
+            balance.fdiv(gclaims[claim].totalSupply(), Token(claim).BASE_UNIT()).fmul(total, Token(claim).BASE_UNIT())
+        );
         total -= rights;
         totals[claim] = total;
 

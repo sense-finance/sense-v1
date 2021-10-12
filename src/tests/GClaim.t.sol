@@ -38,7 +38,8 @@ contract GClaims is TestHelper {
     function testCantJoinIfNotEnoughClaim() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
-        uint256 balance = 10e18;
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doApprove(address(claim), address(gclaim));
         try bob.doJoin(address(feed), maturity, balance) {
@@ -51,7 +52,8 @@ contract GClaims is TestHelper {
     function testCantJoinIfNotEnoughClaimAllowance() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
-        uint256 balance = 10e18;
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
@@ -63,10 +65,12 @@ contract GClaims is TestHelper {
     }
 
     function testCantJoinAfterFirstGClaimNotEnoughTargetBalance() public {
-        divider.setGuard(address(target), 10000e18 * 10000);
+        uint256 tBase = 10**target.decimals();
+        divider.setGuard(address(target), 10000000000000000000000 * tBase);
 
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
 
         // bob issues and joins
@@ -101,7 +105,8 @@ contract GClaims is TestHelper {
     function testJoinFirstGClaim() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
-        uint256 balance = 10e18;
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
@@ -115,9 +120,10 @@ contract GClaims is TestHelper {
     function testJoinAfterFirstGClaim() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
 
         // bob issues and joins
-        uint256 balance = 10e18;
+        uint256 balance = 10 * claimBaseUnit;
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
         uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
@@ -141,10 +147,11 @@ contract GClaims is TestHelper {
     function testJoinAfterFirstGClaimWithdrawsGap() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
 
         // bob issues and joins
-        uint256 balance = 10e18;
+        uint256 balance = 10 * claimBaseUnit;
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
         hevm.warp(block.timestamp + 1 days);
@@ -185,7 +192,8 @@ contract GClaims is TestHelper {
     function testExitFirstGClaim() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
-        uint256 balance = 10e18;
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
@@ -206,7 +214,8 @@ contract GClaims is TestHelper {
     function testExitGClaimWithCollected() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
-        uint256 balance = 10e18;
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
@@ -228,10 +237,11 @@ contract GClaims is TestHelper {
     function testExitAfterFirstGClaim() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = 10**Claim(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
 
         // bob issues and joins
-        uint256 balance = 10e18;
+        uint256 balance = 10 * claimBaseUnit;
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(gclaim));
         hevm.warp(block.timestamp + 1 days);

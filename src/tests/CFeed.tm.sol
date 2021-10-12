@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import { DSTest } from "ds-test/test.sol";
 
-import { WadMath } from "../external/WadMath.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -35,14 +35,14 @@ contract CFeedTestHelper is DSTest {
 }
 
 contract CFeeds is CFeedTestHelper {
-    using WadMath for uint256;
+    using FixedMath for uint256;
 
     function testCFeedScale() public {
         CTokenInterface underlying = CTokenInterface(DAI);
         CTokenInterface ctoken = CTokenInterface(cDAI);
 
         uint256 decimals = 1 * 10**(18 - 8 + underlying.decimals());
-        uint256 scale = ctoken.exchangeRateCurrent().wdiv(decimals);
+        uint256 scale = ctoken.exchangeRateCurrent().fdiv(decimals, 10**ctoken.decimals());
         assertEq(feed.scale(), scale);
     }
 }
