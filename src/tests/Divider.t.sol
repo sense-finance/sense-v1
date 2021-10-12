@@ -663,6 +663,37 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
+    function testCollectAirdrop() public {
+        uint256 tBal = 1e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = initSampleSeries(address(alice), maturity);
+        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
+        hevm.warp(block.timestamp + 1 days);
+        bob.doIssue(address(feed), maturity, tBal);
+        uint256 airdropAmount = 1e18;
+        airdrop.mint(address(wtarget), airdropAmount);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 tBalanceBefore = target.balanceOf(address(bob));
+        uint256 airBalanceBefore = airdrop.balanceOf(address(bob));
+        uint256 collected = bob.doCollect(claim);
+        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        uint256 tBalanceAfter = target.balanceOf(address(bob));
+        uint256 airBalanceAfter = airdrop.balanceOf(address(bob));
+
+        // Formula: collect = tBal / lscale - tBal / cscale
+        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, uint256 lvalue) = feed.lscale();
+        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
+        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        assertEq(cBalanceBefore, cBalanceAfter);
+        assertEq(collected, collect);
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
+        assertEq(airBalanceAfter, airdropAmount);
+    }
+
     function testCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);

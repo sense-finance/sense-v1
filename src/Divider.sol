@@ -12,6 +12,7 @@ import { Errors } from "./libs/errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
+import { wTarget } from "./wrappers/wTarget.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -39,6 +40,7 @@ contract Divider is Trust {
     address public    cup;
     mapping(address => bool   ) public feeds;  // feed -> approved
     mapping(address => uint256) public guards; // target -> max amount of Target allowed to be issued
+    mapping(address => address) public wtargets;  // target -> target wrapper
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
     struct Series {
@@ -103,7 +105,8 @@ contract Divider is Trust {
         series[feed][maturity].mscale = Feed(feed).scale();
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransferFrom(wtargets[address(target)], msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
 
         emit SeriesSettled(feed, maturity, msg.sender);
@@ -126,7 +129,7 @@ contract Divider is Trust {
 
         // Ensure the caller won't hit the issuance cap with this action
         require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
-        target.safeTransferFrom(msg.sender, address(this), tBal);
+        target.safeTransferFrom(msg.sender, wtargets[address(target)], tBal);
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement
         if (tDecimals != 18) {
@@ -177,7 +180,8 @@ contract Divider is Trust {
 
         // Convert from units of Underlying to units of Target
         uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransferFrom(wtargets[address(target)], msg.sender, tBal);
 
         emit Combined(feed, maturity, tBal, msg.sender);
     }
@@ -197,7 +201,8 @@ contract Divider is Trust {
         // Calculate the amount of Target the caller is owed (amount of Target that's
         // equivelent to their principal in Underlying), then send it them
         uint256 tBal = uBal.fdiv(series[feed][maturity].mscale, 10**ERC20(Feed(feed).target()).decimals()); // Sensitive to precision loss
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransferFrom(wtargets[address(target)], msg.sender, tBal);
 
         emit Redeemed(feed, maturity, tBal);
     }
@@ -237,6 +242,7 @@ contract Divider is Trust {
         uint256 cscale = series[feed][maturity].mscale;
         uint256 lscale = lscales[feed][maturity][usr];
         Claim claim = Claim(series[feed][maturity].claim);
+        ERC20 target = ERC20(Feed(feed).target());
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
         // set the "last scale" value to the scale at issuance for this series
@@ -263,7 +269,9 @@ contract Divider is Trust {
         // Because scale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
         collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
-        ERC20(Feed(feed).target()).safeTransfer(usr, collected);
+        target.safeTransferFrom(wtargets[address(target)], usr, collected);
+
+        wTarget(wtargets[address(target)]).distribute(feed, maturity, usr, collected); // distribute airdrop tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
@@ -291,6 +299,15 @@ contract Divider is Trust {
     function setGuard(address target, uint256 cap) external requiresTrust {
         guards[target] = cap;
         emit GuardChanged(target, cap);
+    }
+
+    /// @notice Adds wrapped target to wtargets mapping
+    /// @param wtarget Wrapped Target address
+    function setWrapper(address wtarget) external requiresTrust {
+        address target = wTarget(wtarget).target();
+        require(wtargets[target] == address(0), Errors.ExistingValue);
+        wtargets[target] = wtarget;
+        emit WTargetAdded(wtarget);
     }
 
     struct Backfill {
@@ -325,7 +342,8 @@ contract Divider is Trust {
 
         // Determine where the rewards should go depending on where we are relative to the maturity date
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
-        ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransferFrom(wtargets[address(target)], cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
         emit Backfilled(feed, maturity, mscale, backfills);
@@ -395,4 +413,5 @@ contract Divider is Trust {
     event Redeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event SeriesInitialized(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
+    event WTargetAdded(address indexed wtarget);
 }
