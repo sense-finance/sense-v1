@@ -122,17 +122,18 @@ contract Divider is Trust {
         ERC20 target = ERC20(Feed(feed).target());
         uint256 tDecimals = target.decimals();
         uint256 tBase = 10 ** tDecimals;
-        uint256 convertBase = 1;
-        if (tDecimals != 18) {
-            convertBase = target.decimals() < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
-        }
+        uint256 fee;
 
         // Ensure the caller won't hit the issuance cap with this action
         require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement
-        uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase);
+        if (tDecimals != 18) {
+            fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
+        } else {
+            fee = ISSUANCE_FEE.fmul(tBal, tBase);
+        }
 
         series[feed][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;

@@ -53,14 +53,13 @@ contract TestHelper is DSTest {
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
         stable = new MockToken("Stable Token", "ST", tDecimals);
-        uint256 tBase = 10 ** tDecimals;
         uint256 convertBase = 1;
         if (tDecimals != 18) {
             convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
         }
         target = new MockToken("Compound Dai", "cDAI", tDecimals);
-        GROWTH_PER_SECOND = GROWTH_PER_SECOND / convertBase;
-        DELTA = DELTA / convertBase;
+        GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * convertBase : GROWTH_PER_SECOND / convertBase;
+        DELTA = tDecimals > 18 ? DELTA * convertBase : DELTA / convertBase;
 
         // divider
         divider = new Divider(address(stable), address(this));
@@ -92,7 +91,6 @@ contract TestHelper is DSTest {
         uint256 sBase = 10 ** stable.decimals();
         user.doMint(address(stable), sBal);
         user.doApprove(address(target), address(divider));
-        uint256 tBase = 10 ** target.decimals();
         user.doMint(address(target), tBal);
     }
 
