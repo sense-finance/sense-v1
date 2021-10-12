@@ -363,7 +363,7 @@ contract Divider is Trust {
 
     function _split(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(Feed(feed).target());
-        uint8 decimals = ERC20(Feed(feed).target()).decimals();
+        uint8 decimals = target.decimals();
         (, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(m, "-", y));
 
