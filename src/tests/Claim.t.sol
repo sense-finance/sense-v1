@@ -28,8 +28,8 @@ contract Claims is TestHelper {
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.wdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.wdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
+        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -57,8 +57,8 @@ contract Claims is TestHelper {
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bcBalanceBefore.wdiv(lscale, claimBaseUnit);
-        collect -= bcBalanceBefore.wdiv(cscale, claimBaseUnit);
+        uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
+        collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
@@ -89,8 +89,8 @@ contract Claims is TestHelper {
         (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bcBalanceBefore.wdiv(lscale, claimBaseUnit);
-        collect -= bcBalanceBefore.wdiv(cscale, claimBaseUnit);
+        uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
+        collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;

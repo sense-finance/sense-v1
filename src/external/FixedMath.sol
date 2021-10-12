@@ -7,14 +7,14 @@ library FixedMath {
 
     /// Taken from https://github.com/usmfum/USM/blob/master/contracts/FixedMath.sol
     /// @dev Multiply an amount by a fixed point factor with 18 decimals, rounds down
-    function wmul(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256 z) {
+    function fmul(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256 z) {
         z = x * y;
     unchecked { z /= baseUnit; }
     }
 
     /// Taken from https://github.com/usmfum/USM/blob/master/contracts/FixedMath.sol
     /// @dev Divide an amount by a fixed point factor with 18 decimals, rounds down
-    function wdiv(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256 z) {
+    function fdiv(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256 z) {
         z = (x * baseUnit) / y;
     }
 

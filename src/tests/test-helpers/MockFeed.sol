@@ -20,10 +20,10 @@ contract MockFeed is BaseFeed {
                 INITIAL_VALUE = 0.1e18;
             }
         }
-        uint256 gps = delta.wmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
+        uint256 gps = delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (value > 0) return value;
-        _value = lscale.value > 0 ? (gps * timeDiff).wmul(lscale.value, 10**tDecimals) + lscale.value : INITIAL_VALUE;
+        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, 10**tDecimals) + lscale.value : INITIAL_VALUE;
     }
 
     function setScale(uint256 _value) external {

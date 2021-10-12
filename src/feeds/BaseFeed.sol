@@ -53,7 +53,7 @@ abstract contract BaseFeed is Initializable {
         require(_value >= lvalue, Errors.InvalidScaleValue);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (timeDiff > 0 && lvalue != 0) {
-            uint256 growthPerSec = (_value - lvalue).wdiv(lvalue * timeDiff, 10**ERC20(target).decimals());
+            uint256 growthPerSec = (_value - lvalue).fdiv(lvalue * timeDiff, 10**ERC20(target).decimals());
             if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
         if (_value != lscale.value) {

@@ -94,7 +94,7 @@ contract GClaim {
 
         // Determine the percent of the excess this caller has a right to
         uint256 rights = (
-            balance.wdiv(gclaims[claim].totalSupply(), Token(claim).BASE_UNIT()).wmul(total, Token(claim).BASE_UNIT())
+            balance.fdiv(gclaims[claim].totalSupply(), Token(claim).BASE_UNIT()).fmul(total, Token(claim).BASE_UNIT())
         );
         total -= rights;
         totals[claim] = total;

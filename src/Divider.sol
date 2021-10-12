@@ -132,7 +132,7 @@ contract Divider is Trust {
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement
-        uint256 fee = (ISSUANCE_FEE / convertBase).wmul(tBal, tBase);
+        uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase);
 
         series[feed][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
@@ -149,7 +149,7 @@ contract Divider is Trust {
         }
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
-        uint256 uBal = tBalSubFee.wmul(scale, Zero(series[feed][maturity].zero).BASE_UNIT());
+        uint256 uBal = tBalSubFee.fmul(scale, Zero(series[feed][maturity].zero).BASE_UNIT());
 
         // Mint equal amounts of Zeros and Claims
         Zero(series[feed][maturity].zero  ).mint(msg.sender, uBal);
@@ -175,7 +175,7 @@ contract Divider is Trust {
         uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
 
         // Convert from units of Underlying to units of Target
-        uint256 tBal = uBal.wdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
+        uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
 
         emit Combined(feed, maturity, tBal, msg.sender);
@@ -195,7 +195,7 @@ contract Divider is Trust {
 
         // Calculate the amount of Target the caller is owed (amount of Target that's
         // equivelent to their principal in Underlying), then send it them
-        uint256 tBal = uBal.wdiv(series[feed][maturity].mscale, 10**ERC20(Feed(feed).target()).decimals()); // Sensitive to precision loss
+        uint256 tBal = uBal.fdiv(series[feed][maturity].mscale, 10**ERC20(Feed(feed).target()).decimals()); // Sensitive to precision loss
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
 
         emit Redeemed(feed, maturity, tBal);
@@ -261,7 +261,7 @@ contract Divider is Trust {
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
         // Because scale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        collected = uBal.wdiv(lscale, claim.BASE_UNIT()) - uBal.wdiv(cscale, claim.BASE_UNIT());
+        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
 
         // If this collect is a part of a token transfer to another address, set the receiver's

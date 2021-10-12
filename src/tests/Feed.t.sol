@@ -78,7 +78,7 @@ contract Feeds is TestHelper {
             //         We are functionally doing `maxPercentIncrease * value`, which gets
             //         us the max *amount* that the value could have increased by.
             //      *  Then add that max increase to the original value to get the maximum possible.
-            uint256 maxScale = (DELTA * timeDiff).wmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
 
             // Set max scale and ensure calling `scale` with it doesn't revert
             localFeed.setScale(maxScale);
@@ -88,7 +88,7 @@ contract Feeds is TestHelper {
             hevm.warp(2 days);
             (ltimestamp, lvalue) = localFeed.lscale();
             timeDiff = block.timestamp - ltimestamp;
-            maxScale = (DELTA * timeDiff).wmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
+            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
             localFeed.setScale(maxScale);
             localFeed.scale();
         }
@@ -117,11 +117,11 @@ contract Feeds is TestHelper {
             // 86400 (1 day)
             uint256 timeDiff = block.timestamp - ltimestamp;
             // find the scale value would bring us right up to the acceptable growth per second (delta)?
-            uint256 maxScale = (DELTA * timeDiff).wmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
 
             // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded
             // away in wdivs)
-            localFeed.setScale(maxScale.wmul(1000001e12, 10**ERC20(localFeed.target()).decimals()));
+            localFeed.setScale(maxScale.fmul(1000001e12, 10**ERC20(localFeed.target()).decimals()));
 
             try localFeed.scale() {
                 fail();
