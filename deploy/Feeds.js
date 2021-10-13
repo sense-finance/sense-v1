@@ -17,13 +17,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Deploy cToken feed factory");
   await deploy("CFactory", {
     from: deployer,
-    args: [cFeedAddress, divider.address, 150, airdropToken],
+    args: [cFeedAddress, divider.address, DELTA, airdropToken],
     log: true,
   });
   const cFactory = await ethers.getContract("CFactory");
 
   console.log("Trust cToken feed factory on the divider");
-  await (await divider.setIsTrusted(cFactoryAddress, true)).wait();
+  await (await divider.setIsTrusted(cFactory.address, true)).wait();
 
   console.log("Trust dev on the cToken feed factory");
   await (await cFactory.setIsTrusted(dev, true)).wait();

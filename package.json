@@ -12,16 +12,18 @@
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
     "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
+    "deploy:hardhat-fork": "hardhat node",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:goerli": "hardhat --network goerli deploy",
-    "deploy:arbitrum": "hardhat --network arbitrum deploy",
-    "deploy:hardhat-fork": "hardhat node"
+    "deploy:arbitrum": "hardhat --network arbitrum deploy"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "4.3.2",
+    "@rari-capital/solmate": "4.0.0"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
-    "@openzeppelin/contracts": "4.3.2",
-    "@rari-capital/solmate": "4.0.0",
     "@tenderly/hardhat-tenderly": "^1.0.12",
     "dotenv": "^10.0.0",
     "ethers": "^5.4.7",
