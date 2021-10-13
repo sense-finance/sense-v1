@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 contract MockToken is ERC20 {
     constructor(

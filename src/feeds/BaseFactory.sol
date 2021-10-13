@@ -3,8 +3,8 @@ pragma solidity ^0.8.6;
 
 // External references
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { Trust } from "solmate/auth/Trust.sol";
-import { ERC20 } from "solmate/erc20/SafeERC20.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
 import { Errors } from "../libs/errors.sol";

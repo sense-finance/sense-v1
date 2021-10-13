@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { BaseFeed } from "../../feeds/BaseFeed.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { DSTest } from "ds-test/test.sol";
-
 // Internal references
 import { GClaim } from "../../modules/GClaim.sol";
 import { Divider } from "../../Divider.sol";
@@ -11,6 +9,7 @@ import { MockToken } from "./MockToken.sol";
 import { MockFeed } from "./MockFeed.sol";
 import { MockFactory } from "./MockFactory.sol";
 
+import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { User } from "./User.sol";

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
-import { Trust } from "solmate/auth/Trust.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 // Internal references
 import { Token } from "../tokens/Token.sol";

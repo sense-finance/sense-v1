@@ -2,8 +2,8 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { ERC20 } from "solmate/erc20/ERC20.sol";
-import { Trust } from "solmate/auth/Trust.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 contract Token is ERC20, Trust {
     uint256 public immutable BASE_UNIT;
