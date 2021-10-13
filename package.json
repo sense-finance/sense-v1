@@ -11,7 +11,7 @@
     "test:mainnet": "sh -c 'dapp test --rpc-url $(grep ALCHEMY_KEY .env | cut -d '=' -f2 | (printf 'https://eth-mainnet.alchemyapi.io/v2/' && cat))' -m \".tm.sol\"",
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
-    "fix": "prettier --write src/**/*.sol && yarn lint --fix",
+    "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:goerli": "hardhat --network goerli deploy",
     "deploy:arbitrum": "hardhat --network arbitrum deploy",
