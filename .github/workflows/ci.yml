@@ -9,20 +9,24 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
+    - uses: cachix/install-nix-action@v13
+    - uses: cachix/cachix-action@v10
+      with:
+        name: dapp
 
     - name: Install dependencies
-      run: yarn
+      run: |
+        nix-shell --run 'make'
+        yarn
 
     - name: Run linter
       run: yarn lint
 
-    - name: Install dapptools
-      run: |
-        curl -L https://nixos.org/nix/install | sh
-        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
-        curl https://dapp.tools/install | sh
-        dapp update
-        yarn test
+    - name: Run tests
+      run: yarn test
       env:
         # Only fuzz deeply if we're pushing to main or this is a PR to main:
         DEEP_FUZZ: ${{ github.ref == 'refs/heads/main' || github.base_ref == 'main' }}
+
+    - name: Run deploy scripts on a local mainnet fork
+      run: yarn deploy:hardhat-fork
