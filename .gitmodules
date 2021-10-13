@@ -2,6 +2,3 @@
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 	ignore = dirty
-[submodule "lib/solmate"]
-	path = lib/solmate
-	url = https://github.com/Rari-Capital/solmate
