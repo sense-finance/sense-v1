@@ -62,7 +62,7 @@ contract Recycler is Trust {
         uint256 maturity,
         uint256 balance
     ) public {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , ,) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
         require(!_auctionActive(claim), "Auction active for this Claim");
 
@@ -82,7 +82,7 @@ contract Recycler is Trust {
         uint256 maturity,
         uint256 balance
     ) public {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , ,) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
 
         ERC20(claim).safeTransfer(msg.sender, balance);
@@ -104,7 +104,7 @@ contract Recycler is Trust {
         uint256 maturity,
         Config calldata params
     ) public requiresTrust {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , ,) = divider.series(feed, maturity);
         require(rclaims[claim].token != ERC20(address(0)), "rClaim hasn't yet been initialized");
         rclaims[claim].config = params;
     }
@@ -118,7 +118,7 @@ contract Recycler is Trust {
         uint256 maturity,
         Config calldata params
     ) public requiresTrust {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , ,) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
         require(rclaims[claim].token == ERC20(address(0)), "rClaim type has already been initialized");
 
@@ -134,7 +134,7 @@ contract Recycler is Trust {
 
     /// @notice Start an auction for a specific Series
     function kick(address feed, uint256 maturity) public {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , ,) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
         require(!_auctionActive(claim), "Auction already active for this Claim");
 
@@ -161,7 +161,7 @@ contract Recycler is Trust {
         uint256 maturity,
         uint256 balance
     ) public {
-        (address zero, address claim, , , , , ) = divider.series(feed, maturity);
+        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         require(claim != address(0), "Series must exist");
 
         uint256 lot = _getLotSize(claim);

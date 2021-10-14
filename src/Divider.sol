@@ -42,15 +42,15 @@ contract Divider is Trust {
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
     struct Series {
-        address zero; // Zero address for this Series (deployed on Series initialization)
-        address claim; // Claim address for this Series (deployed on Series initialization)
-        address sponsor; // Series initializer/sponsor
+        address zero;     // Zero address for this Series (deployed on Series initialization)
+        address claim;    // Claim address for this Series (deployed on Series initialization)
+        address sponsor;  // Series initializer/sponsor
         uint256 issuance; // Issuance date for this Series (needed for Zero redemption)
-        uint256 reward; // Tracks the fees due to the settler on Settlement
-        uint256 iscale; // Scale value at issuance
-        uint256 mscale; // Scale value at maturity
+        uint256 reward;   // Tracks the fees due to the settler on Settlement
+        uint256 iscale;   // Scale value at issuance
+        uint256 mscale;   // Scale value at maturity
         uint256 maxscale; // Max scale from this Series' lifetime
-        uint256 tilt; // % underlying principal to be reserved for Claims
+        uint256 tilt;     // % underlying principal to be reserved for Claims
     }
 
     constructor(address _stable, address _cup) Trust(msg.sender) {
@@ -85,7 +85,7 @@ contract Divider is Trust {
             reward : 0,
             iscale : Feed(feed).scale(),
             mscale : 0,
-            maxscale : 0,
+            maxscale : Feed(feed).scale(),
             tilt : Feed(feed).tilt()
         });
 
@@ -105,7 +105,12 @@ contract Divider is Trust {
         require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
 
         // The maturity scale value is all a Series needs for us to consider it "settled"
-        series[feed][maturity].mscale = Feed(feed).scale();
+        uint256 mscale = Feed(feed).scale();
+        series[feed][maturity].mscale = mscale;
+
+        if (mscale > series[feed][maturity].maxscale) {
+            series[feed][maturity].maxscale = mscale;
+        }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
@@ -166,13 +171,16 @@ contract Divider is Trust {
 
         // Burn the Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
-        // Collect whatever excess is due for accounting
+        // Collect whatever excess is due for accounting 
         _collect(msg.sender, feed, maturity, uBal, address(0));
-        // Burn the Claims
-        Claim(series[feed][maturity].claim).burn(msg.sender, uBal);
 
-        // We use lscale since the current scale was already stored there by the _collect() call
-        uint256 cscale = _settled(feed, maturity) ? series[feed][maturity].mscale : lscales[feed][maturity][msg.sender];
+        // We use lscale since the current scale was already stored there by the `_collect()` call
+        uint256 cscale = series[feed][maturity].mscale;
+        if (!_settled(feed, maturity)) {
+            // If it's not settled, then Claims won't be burned automatically by `_collect()`
+            Claim(series[feed][maturity].claim).burn(msg.sender, uBal);
+            cscale = lscales[feed][maturity][msg.sender];
+        }
 
         // Convert from units of Underlying to units of Target 
         uint256 tBal = uBal.wdiv(cscale);
@@ -194,10 +202,11 @@ contract Divider is Trust {
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
 
         // Amount of Target Zeros would ideally have
-        uint256 tBal = uBal.wdiv(series[feed][maturity].maxscale).wmul(1e18 - series[feed][maturity].tilt); 
-        if (series[feed][maturity].mscale != series[feed][maturity].maxscale) {
+        uint256 tBal = uBal.wdiv(series[feed][maturity].maxscale).wmul(WadMath.WAD - series[feed][maturity].tilt);
+
+        if (series[feed][maturity].mscale < series[feed][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = uBal.wdiv(series[feed][maturity].mscale).wmul(1e18 - series[feed][maturity].tilt); 
+            uint256 tBalZeroActual = uBal.wdiv(series[feed][maturity].mscale).wmul(WadMath.WAD - series[feed][maturity].tilt); 
 
             // Set our Target transfer value to the actual principal we have reserved for Zeros
             tBal = tBalZeroActual;
@@ -223,53 +232,8 @@ contract Divider is Trust {
         emit ZeroRedeemed(feed, maturity, tBal);
     }
 
-    function redeemClaim(address feed, uint256 maturity, uint256 uBal) external {
-        require(feeds[feed], Errors.InvalidFeed);
-        // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
-        require(_settled(feed, maturity), Errors.NotSettled);
-        // Burn the caller's Claims
-        Claim(series[feed][maturity].claim).burn(msg.sender, uBal);
-
-        // Amount of Target we have set aside for Claims
-        uint256 tBal = uBal.wdiv(series[feed][maturity].mscale).wmul(series[feed][maturity].tilt); 
-
-        if (series[feed][maturity].tilt == 0) {
-            tBal = 0;
-        }
-
-        if (series[feed][maturity].mscale != series[feed][maturity].maxscale) {
-            uint256 tBalZeroIdeal = uBal.wdiv(series[feed][maturity].maxscale).wmul(1e18 - series[feed][maturity].tilt); 
-
-            // Amount of Target we actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = uBal.wdiv(series[feed][maturity].mscale).wmul(1e18 - series[feed][maturity].tilt); 
-
-            // Calculate the cut claim holders are getting
-            uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
-            // If the shortfall is less than what we've reserved for Claims, cover the whole thing 
-            // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
-            if (tBal > shortfall) {
-                tBal -= shortfall;
-            // If the shortfall is greater than what we've reserved for Claims, take as much as we can
-            } else {
-                tBal = 0;
-            }
-        }
-
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
-        emit ClaimRedeemed(feed, maturity, tBal);
-    }
-
-    /// @notice Collect Claim excess before, at, or after maturity
-    /// @dev If `to` is set, we copy the lscale value from usr to this address
-    /// @param usr User who's collecting for their Claims
-    /// @param feed Feed address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param to address to set the lscale value from usr
     function collect(
-        address usr,
-        address feed,
-        uint256 maturity,
-        address to
+        address usr, address feed, uint256 maturity, address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         return _collect(usr,
             feed,
@@ -279,6 +243,13 @@ contract Divider is Trust {
         );
     }
 
+    /// @notice Collect Claim excess before, at, or after maturity
+    /// @dev If `to` is set, we copy the lscale value from usr to this address
+    /// @param usr User who's collecting for their Claims
+    /// @param feed Feed address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param to address to set the lscale value from usr
     function _collect(
         address usr,
         address feed,
@@ -289,27 +260,28 @@ contract Divider is Trust {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
-        // Get the scale value from the last time this holder collected
-        uint256 cscale = series[feed][maturity].mscale;
+        Series memory _series = series[feed][maturity];
+
+        // Get the scale value from the last time this holder collected (default to maturity)
+        uint256 cscale = _series.mscale;
         uint256 lscale = lscales[feed][maturity][usr];
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
         // set the "last scale" value to the scale at issuance for this series
-        if (lscale == 0) lscale = series[feed][maturity].iscale;
-
+        if (lscale == 0) lscale = _series.iscale;
 
         if (!_settled(feed, maturity)) {
             // If we're not settled and we're past maturity + the sponsor window,
             // anyone can settle this Series so revert until someone does
             if (block.timestamp > maturity + SPONSOR_WINDOW) {
                 revert(Errors.CollectNotSettled);
-            // Otherwise, this is a valid pre-settlement collect and we need to determine the scale value to use
+            // Otherwise, this is a valid pre-settlement collect and we need to determine the scale value
             } else {
-                uint256 maxscale = series[feed][maturity].maxscale;
+                uint256 maxscale = _series.maxscale;
                 cscale = Feed(feed).scale();
-                // If this is larger than the largest scale we've seen for this Series, use the current scale and update accounting
+                // If this is larger than the largest scale we've seen for this Series, use it
                 if (cscale > maxscale) {
-                    series[feed][maturity].maxscale = cscale;
+                    _series.maxscale = cscale;
                     lscales[feed][maturity][usr] = cscale;
                 // If not, use the previously noted max scale value
                 } else {
@@ -317,13 +289,16 @@ contract Divider is Trust {
                     lscales[feed][maturity][usr] = maxscale;
                 }
             }
+        // If the Series has been settled, this should be their last collect, so redeem the users claims for them
+        } else {
+            _redeemClaim(usr, feed, maturity, uBal);
         }
 
-        // Determine how much yield has accrued since the last time this user collected, in units of Target.
-        // (Or take the last time as issuance if they haven't yet.)
-        // Reminder that `Underlying / Scale` = `Target`, so this equation is saying, for some amount of Underlying `u`:
+        // Determine how much underlying has accrued since the last time this user collected, in units of Target.
+        // (Or take the last time as issuance if they haven't yet)
+        // Reminder that `Underlying / Scale` = `Target`, so the following equation is saying, for some amount of Underlying `u`:
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
-        // Because scale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
+        // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
         // is what Claim holders are collecting
         collected = uBal.wdiv(lscale) - uBal.wdiv(cscale);
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
@@ -335,6 +310,48 @@ contract Divider is Trust {
         }
 
         emit Collected(feed, maturity, collected);
+    }
+
+    function _redeemClaim(address usr, address feed, uint256 maturity, uint256 uBal) internal {
+        require(feeds[feed], Errors.InvalidFeed);
+        // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
+        require(_settled(feed, maturity), Errors.NotSettled);
+
+        Series memory _series = series[feed][maturity];
+
+        // Burn the users's Claims
+        Claim(_series.claim).burn(usr, uBal);
+
+        uint256 tBal = 0;
+        // If there's some principal set aside for Claims, determine whether they get it all
+        if (_series.tilt != 0) {
+            // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
+            tBal = uBal.wdiv(_series.mscale).wmul(_series.tilt); 
+
+            // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
+            if (_series.mscale < _series.maxscale) {
+                // Amount of Target we would ideally have set aside for Zero holders
+                uint256 tBalZeroIdeal = uBal.wdiv(_series.maxscale).wmul(WadMath.WAD - _series.tilt); 
+
+                // Amount of Target we actually have set aside for them (after collections from Claim holders)
+                uint256 tBalZeroActual = uBal.wdiv(_series.mscale).wmul(WadMath.WAD - _series.tilt); 
+
+                // Calculate how much is getting taken from Claim's principal
+                uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
+
+                // If the shortfall is less than what we've reserved for Claims, cover the whole thing 
+                // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
+                if (tBal > shortfall) {
+                    tBal -= shortfall;
+                // If the shortfall is greater than what we've reserved for Claims, take as much as we can
+                } else {
+                    tBal = 0;
+                }
+            }
+            ERC20(Feed(feed).target()).safeTransfer(usr, tBal);
+        }
+
+        emit ClaimRedeemed(feed, maturity, tBal);
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
@@ -357,7 +374,7 @@ contract Divider is Trust {
     }
 
     struct Backfill {
-        address usr;   // Address of the user who's getting their lscale backfilled
+        address usr;    // Address of the user who's getting their lscale backfilled
         uint256 lscale; // Scale value to backfill for usr's lscale
     }
     
@@ -447,7 +464,6 @@ contract Divider is Trust {
     }
 
     /* ========== EVENTS ========== */
-
     event Backfilled(address indexed feed, uint256 indexed maturity, uint256 mscale, Backfill[] backfills);
     event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
