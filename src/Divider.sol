@@ -202,11 +202,11 @@ contract Divider is Trust {
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
 
         // Amount of Target Zeros would ideally have
-        uint256 tBal = uBal.wdiv(series[feed][maturity].maxscale).wmul(WadMath.WAD - series[feed][maturity].tilt);
+        uint256 tBal = uBal.wdiv(series[feed][maturity].mscale).wmul(WadMath.WAD - series[feed][maturity].tilt);
 
         if (series[feed][maturity].mscale < series[feed][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = uBal.wdiv(series[feed][maturity].mscale).wmul(WadMath.WAD - series[feed][maturity].tilt); 
+            uint256 tBalZeroActual = uBal.wdiv(series[feed][maturity].maxscale).wmul(WadMath.WAD - series[feed][maturity].tilt); 
 
             // Set our Target transfer value to the actual principal we have reserved for Zeros
             tBal = tBalZeroActual;
@@ -263,7 +263,7 @@ contract Divider is Trust {
         Series memory _series = series[feed][maturity];
 
         // Get the scale value from the last time this holder collected (default to maturity)
-        uint256 cscale = _series.mscale;
+        uint256 cscale = _series.maxscale;
         uint256 lscale = lscales[feed][maturity][usr];
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
@@ -285,7 +285,6 @@ contract Divider is Trust {
                     lscales[feed][maturity][usr] = cscale;
                 // If not, use the previously noted max scale value
                 } else {
-                    cscale = maxscale;
                     lscales[feed][maturity][usr] = maxscale;
                 }
             }
@@ -326,15 +325,15 @@ contract Divider is Trust {
         // If there's some principal set aside for Claims, determine whether they get it all
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = uBal.wdiv(_series.mscale).wmul(_series.tilt); 
+            tBal = uBal.wdiv(_series.maxscale).wmul(_series.tilt); 
 
             // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
                 // Amount of Target we would ideally have set aside for Zero holders
-                uint256 tBalZeroIdeal = uBal.wdiv(_series.maxscale).wmul(WadMath.WAD - _series.tilt); 
+                uint256 tBalZeroIdeal = uBal.wdiv(_series.mscale).wmul(WadMath.WAD - _series.tilt); 
 
                 // Amount of Target we actually have set aside for them (after collections from Claim holders)
-                uint256 tBalZeroActual = uBal.wdiv(_series.mscale).wmul(WadMath.WAD - _series.tilt); 
+                uint256 tBalZeroActual = uBal.wdiv(_series.maxscale).wmul(WadMath.WAD - _series.tilt); 
 
                 // Calculate how much is getting taken from Claim's principal
                 uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
@@ -398,6 +397,9 @@ contract Divider is Trust {
 
         // Set the maturity scale for the Series (needed for `redeem` methods)
         series[feed][maturity].mscale = mscale;
+        if (mscale > series[feed][maturity].maxscale) {
+            series[feed][maturity].maxscale = mscale;
+        }
         // Set user's last scale values the Series (needed for the `collect` method)
         for (uint i = 0; i < backfills.length; i++) {
             lscales[feed][maturity][backfills[i].usr] = backfills[i].lscale;

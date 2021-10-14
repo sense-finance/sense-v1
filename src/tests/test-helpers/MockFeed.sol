@@ -8,6 +8,7 @@ contract MockFeed is BaseFeed {
     using WadMath for uint256;
 
     uint256 internal value;
+    uint256 internal _tilt = 0;
     uint256 public constant INITIAL_VALUE = 0.1e18;
 
     function _scale() internal override virtual returns (uint256 _value) {
@@ -17,8 +18,16 @@ contract MockFeed is BaseFeed {
         _value = lscale.value > 0 ? (gps * timeDiff).wmul(lscale.value) + lscale.value :  0.1e18;
     }
 
+    function tilt() external override virtual returns (uint256 _value) {
+        return _tilt;
+    }
+
     function setScale(uint256 _value) external {
         value = _value;
+    }
+
+    function setTilt(uint256 _value) external {
+        _tilt = _value;
     }
 
 }
