@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 library Errors {
     string constant AlreadySettled = "Series has already been settled";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
-    string constant DuplicateSeries = "Series with given maturity already exists";
+    string constant DuplicateSeries = "Series has already been initialized";
     string constant ExistingValue = "New value must be different than previous";
     string constant FeedAlreadyExists = "Feed already exists";
     string constant GuardCapReached = "Issuance cap reached";
