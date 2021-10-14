@@ -567,7 +567,7 @@ contract Dividers is TestHelper {
     /* ========== redeemClaim() tests ========== */
     function testRedeemClaimTiltPositiveScale() public {
         // Reserve 10% of principal for Claims
-        feed.setTilt(0.1e18); 
+        feed.setTilt(0.1e18);
         // Sanity check
         assertEq(feed.tilt(), 0.1e18);
 
@@ -604,12 +604,12 @@ contract Dividers is TestHelper {
 
     function testRedeemClaimNegativeScale() public {
         // Reserve 10% of principal for Claims
-        feed.setTilt(0.1e18); 
+        feed.setTilt(0.1e18);
         // Sanity check
         assertEq(feed.tilt(), 0.1e18);
 
         // Reserve 10% of principal for Claims
-        feed.setScale(1e18); 
+        feed.setScale(1e18);
         // Sanity check
         assertEq(feed.scale(), 1e18);
 
@@ -618,10 +618,10 @@ contract Dividers is TestHelper {
 
         uint256 tBal = 100e18;
         bob.doIssue(address(feed), maturity, tBal);
-    
+
         uint256 tBalanceBefore = ERC20(target).balanceOf(address(bob));
         hevm.warp(maturity);
-        feed.setScale(0.90e18); 
+        feed.setScale(0.90e18);
         alice.doSettleSeries(address(feed), maturity);
         uint256 collected = bob.doCollect(claim);
         // Nothing to collect if scale went down
