@@ -20,7 +20,6 @@ contract Factories is TestHelper {
     }
 
     function testDeployFeed() public {
-        MockToken someAirdrop = new MockToken("Some Airdrop", "SA", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget));
         address feed = someFactory.deployFeed(address(someTarget));
@@ -30,13 +29,11 @@ contract Factories is TestHelper {
         assertEq(IFeed(feed).delta(), DELTA);
         assertEq(IFeed(feed).name(), "Some Target Yield");
         assertEq(IFeed(feed).symbol(), "ST-yield");
-        assertEq(IFeed(feed).symbol(), "ST-yield");
         uint256 scale = IFeed(feed).scale();
         assertEq(scale, 1e17);
     }
 
     function testDeployFeedAndinitializeSeries() public {
-        MockToken someAirdrop = new MockToken("Some Airdrop", "SA", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget));
         address feed = someFactory.deployFeed(address(someTarget));

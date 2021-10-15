@@ -32,7 +32,6 @@ contract CFactories is CFeedTestHelper {
     function testDeployFactory() public {
         CFeed implementation = new CFeed();
         CFactory otherCFactory = new CFactory(address(implementation), address(divider), DELTA);
-        // TODO: replace for a real one
         assertTrue(address(otherCFactory) != address(0));
         assertEq(CFactory(otherCFactory).implementation(), address(implementation));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
@@ -40,8 +39,7 @@ contract CFactories is CFeedTestHelper {
     }
 
     function testDeployFeed() public {
-        address f = factory.deployFeed(cDAI);
-        CFeed feed = CFeed(f);
+        CFeed feed = CFeed(factory.deployFeed(cDAI));
         assertTrue(address(feed) != address(0));
         assertEq(CFeed(feed).target(), address(cDAI));
         assertEq(CFeed(feed).divider(), address(divider));
