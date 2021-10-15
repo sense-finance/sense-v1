@@ -40,6 +40,7 @@ contract PoolManager is Trust {
     AssetParams public zeros;
     AssetParams public claims;
     AssetParams public target;
+    mapping(address => => bool) public targets;
     mapping(address => mapping(uint256 => bool)) public inits;
 
     /// @notice Events
@@ -73,22 +74,37 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, comptrollerImpl, whitelist, closeFactor,liqIncentive, oracle);
     }
 
-    function initAssets(address feed, uint256 maturity) external {
+    function initTarget(address feed, uint256 maturity) external {
         (address zero, address claim, , , , , ) = Divider(divider).series(feed, maturity);
         address target = Feed(feed).target();
 
-        require(deployed, "Pool not yet deployed");
+        require(deployed, "Target not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(!inits[feed][maturity], Errors.DuplicateSeries);
+        require(!targets[target], Errors.DuplicateSeries);
 
-
-        // Create pool for this series with:
-        // * Zeros
-        // * Claims
-        // * Target
+        // Deploy asset for Target, given it
 
         // register on oracle
 
+        // Init each assset with the configured risk params
+        inits[feed][maturity] = true;
+    }
+
+    function initSeries(address feed, uint256 maturity) external {
+        (address zero, address claim, , , , , ) = Divider(divider).series(feed, maturity);
+        address target = Feed(feed).target();
+
+        require(deployed, "Series not yet deployed");
+        require(zero != address(0), Errors.SeriesDoesntExists);
+        require(!inits[feed][maturity], Errors.DuplicateSeries);
+        require(targets[target], "Target for this Series not yet deployed");
+
+
+        // Deploy asset for this series with:
+        // * Zeros
+        // * Claims
+
+        // register on oracle
 
         // Init each assset with the configured risk params
         inits[feed][maturity] = true;
