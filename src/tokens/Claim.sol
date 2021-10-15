@@ -16,8 +16,9 @@ contract Claim is Token {
         address _divider,
         address _feed,
         string memory _name,
-        string memory _symbol
-    ) Token(_name, _symbol) {
+        string memory _symbol,
+        uint8 _decimals
+    ) Token(_name, _symbol, _decimals) {
         maturity = _maturity;
         divider = _divider;
         feed = _feed;

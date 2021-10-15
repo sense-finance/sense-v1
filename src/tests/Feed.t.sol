@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { WadMath } from "../external/WadMath.sol";
+import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "../libs/errors.sol";
 import { BaseFeed } from "../feeds/BaseFeed.sol";
@@ -22,10 +23,10 @@ contract FakeFeed is BaseFeed {
 }
 
 contract Feeds is TestHelper {
-    using WadMath for uint256;
+    using FixedMath for uint256;
 
     function testFeedHasParams() public {
-        MockToken target = new MockToken("Compound Dai", "cDAI");
+        MockToken target = new MockToken("Compound Dai", "cDAI", 18);
         MockFeed feed = new MockFeed();
         feed.initialize(address(target), address(divider), DELTA);
 
@@ -77,7 +78,7 @@ contract Feeds is TestHelper {
             //         We are functionally doing `maxPercentIncrease * value`, which gets
             //         us the max *amount* that the value could have increased by.
             //      *  Then add that max increase to the original value to get the maximum possible.
-            uint256 maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
 
             // Set max scale and ensure calling `scale` with it doesn't revert
             localFeed.setScale(maxScale);
@@ -87,7 +88,7 @@ contract Feeds is TestHelper {
             hevm.warp(2 days);
             (ltimestamp, lvalue) = localFeed.lscale();
             timeDiff = block.timestamp - ltimestamp;
-            maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
+            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
             localFeed.setScale(maxScale);
             localFeed.scale();
         }
@@ -116,11 +117,11 @@ contract Feeds is TestHelper {
             // 86400 (1 day)
             uint256 timeDiff = block.timestamp - ltimestamp;
             // find the scale value would bring us right up to the acceptable growth per second (delta)?
-            uint256 maxScale = (DELTA * timeDiff).wmul(lvalue) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
 
             // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded
             // away in wdivs)
-            localFeed.setScale(maxScale.wmul(1000001e12));
+            localFeed.setScale(maxScale.fmul(1000001e12, 10**ERC20(localFeed.target()).decimals()));
 
             try localFeed.scale() {
                 fail();
@@ -131,7 +132,7 @@ contract Feeds is TestHelper {
     }
 
     function testCantAddCustomFeedToDivider() public {
-        MockToken newTarget = new MockToken("Compound USDC", "cUSDC");
+        MockToken newTarget = new MockToken("Compound USDC", "cUSDC", 18);
         FakeFeed fakeFeed = new FakeFeed();
         fakeFeed.initialize(address(newTarget), address(divider), 0);
         try fakeFeed.doSetFeed(divider, address(fakeFeed)) {

@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
 import { Trust } from "solmate/auth/Trust.sol";
 import { DateTime } from "./external/DateTime.sol";
-import { WadMath } from "./external/WadMath.sol";
+import { FixedMath } from "./external/FixedMath.sol";
 
 // Internal references
 import { Errors } from "./libs/errors.sol";
@@ -18,7 +18,7 @@ import { Token as Zero } from "./tokens/Token.sol";
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Divider is Trust {
     using SafeERC20 for ERC20;
-    using WadMath for uint256;
+    using FixedMath for uint256;
     using Errors for   string;
 
     /// @notice Configuration
@@ -37,7 +37,7 @@ contract Divider is Trust {
     /// @notice Mutable program state
     address public stable;
     address public    cup;
-    mapping(address => bool   ) public feeds;  // feed -> approved 
+    mapping(address => bool   ) public feeds;  // feed -> approved
     mapping(address => uint256) public guards; // target -> max amount of Target allowed to be issued
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
@@ -122,7 +122,7 @@ contract Divider is Trust {
     /// @notice Mint Zeros and Claims of a specific Series
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param tBal Balance of Target to deposit 
+    /// @param tBal Balance of Target to deposit
     /// the amount of Zeros/Claims minted will be the equivelent value in units of underlying (less fees)
     function issue(address feed, uint256 maturity, uint256 tBal) external {
         require(feeds[feed], Errors.InvalidFeed);
@@ -130,15 +130,24 @@ contract Divider is Trust {
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
 
         ERC20 target = ERC20(Feed(feed).target());
+        uint256 tDecimals = target.decimals();
+        uint256 tBase = 10 ** tDecimals;
+        uint256 fee;
+
         // Ensure the caller won't hit the issuance cap with this action
         require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
-        // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
-        uint256 fee = ISSUANCE_FEE.wmul(tBal);
+        // Take the issuance fee out of the deposited Target, and put it towards the settlement
+        if (tDecimals != 18) {
+            fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
+        } else {
+            fee = ISSUANCE_FEE.fmul(tBal, tBase);
+        }
+
         series[feed][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
-        
+
         // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
         // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
         uint256 scale = lscales[feed][maturity][msg.sender];
@@ -151,16 +160,16 @@ contract Divider is Trust {
         }
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
-        uint256 uBal = tBalSubFee.wmul(scale);
+        uint256 uBal = tBalSubFee.fmul(scale, Zero(series[feed][maturity].zero).BASE_UNIT());
 
-        // Mint equal amounts of Zeros and Claims 
+        // Mint equal amounts of Zeros and Claims
         Zero(series[feed][maturity].zero  ).mint(msg.sender, uBal);
         Claim(series[feed][maturity].claim).mint(msg.sender, uBal);
 
         emit Issued(feed, maturity, uBal, msg.sender);
     }
 
-    /// @notice Reconstitute Target by burning Zeros and Claims 
+    /// @notice Reconstitute Target by burning Zeros and Claims
     /// @dev Explicitly burns claims before maturity, and implicitly does it at/after maturity through collect()
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
@@ -182,8 +191,8 @@ contract Divider is Trust {
             cscale = lscales[feed][maturity][msg.sender];
         }
 
-        // Convert from units of Underlying to units of Target 
-        uint256 tBal = uBal.wdiv(cscale);
+        // Convert from units of Underlying to units of Target
+        uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
 
         emit Combined(feed, maturity, tBal, msg.sender);
@@ -202,17 +211,19 @@ contract Divider is Trust {
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
 
         // Amount of Target Zeros would ideally have
-        uint256 tBal = uBal.wdiv(series[feed][maturity].mscale).wmul(WadMath.WAD - series[feed][maturity].tilt);
+        uint256 tBal = uBal.fdiv(series[feed][maturity].mscale, 10 ** ERC20(Feed(feed).target()).decimals())
+            .fmul(FixedMath.WAD - series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals());
 
         if (series[feed][maturity].mscale < series[feed][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = uBal.wdiv(series[feed][maturity].maxscale).wmul(WadMath.WAD - series[feed][maturity].tilt); 
+            uint256 tBalZeroActual = uBal.fdiv(series[feed][maturity].maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
+                .fmul(FixedMath.WAD - series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
 
             // Set our Target transfer value to the actual principal we have reserved for Zeros
             tBal = tBalZeroActual;
 
             // How much principal we have set aside for Claim holders
-            uint256 tBalClaimActual = tBalZeroActual.wmul(series[feed][maturity].tilt);
+            uint256 tBalClaimActual = tBalZeroActual.fmul(series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals());
 
             // Cut from Claim holders to cover shortfall if we can
             if (tBalClaimActual != 0) {
@@ -265,12 +276,16 @@ contract Divider is Trust {
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 cscale = _series.maxscale;
         uint256 lscale = lscales[feed][maturity][usr];
+        Claim claim = Claim(series[feed][maturity].claim);
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
         // set the "last scale" value to the scale at issuance for this series
         if (lscale == 0) lscale = _series.iscale;
 
-        if (!_settled(feed, maturity)) {
+        // If the Series has been settled, this should be their last collect, so redeem the users claims for them
+        if (_settled(feed, maturity)) {
+            _redeemClaim(usr, feed, maturity, uBal);
+        } else {
             // If we're not settled and we're past maturity + the sponsor window,
             // anyone can settle this Series so revert until someone does
             if (block.timestamp > maturity + SPONSOR_WINDOW) {
@@ -288,10 +303,7 @@ contract Divider is Trust {
                     lscales[feed][maturity][usr] = maxscale;
                 }
             }
-        // If the Series has been settled, this should be their last collect, so redeem the users claims for them
-        } else {
-            _redeemClaim(usr, feed, maturity, uBal);
-        }
+        } 
 
         // Determine how much underlying has accrued since the last time this user collected, in units of Target.
         // (Or take the last time as issuance if they haven't yet)
@@ -299,7 +311,7 @@ contract Divider is Trust {
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
         // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
         // is what Claim holders are collecting
-        collected = uBal.wdiv(lscale) - uBal.wdiv(cscale);
+        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
         ERC20(Feed(feed).target()).safeTransfer(usr, collected);
 
         // If this collect is a part of a token transfer to another address, set the receiver's
@@ -325,15 +337,18 @@ contract Divider is Trust {
         // If there's some principal set aside for Claims, determine whether they get it all
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = uBal.wdiv(_series.maxscale).wmul(_series.tilt); 
+            tBal = uBal.fdiv(_series.maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
+                .fmul(_series.tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
 
             // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
                 // Amount of Target we would ideally have set aside for Zero holders
-                uint256 tBalZeroIdeal = uBal.wdiv(_series.mscale).wmul(WadMath.WAD - _series.tilt); 
+                uint256 tBalZeroIdeal = uBal.fdiv(_series.mscale, 10 ** ERC20(Feed(feed).target()).decimals())
+                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
 
                 // Amount of Target we actually have set aside for them (after collections from Claim holders)
-                uint256 tBalZeroActual = uBal.wdiv(_series.maxscale).wmul(WadMath.WAD - _series.tilt); 
+                uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
+                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
 
                 // Calculate how much is getting taken from Claim's principal
                 uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
@@ -366,7 +381,7 @@ contract Divider is Trust {
 
     /// @notice Set target's guard
     /// @param target Target address
-    /// @param cap The max target that can be deposited on the Divider 
+    /// @param cap The max target that can be deposited on the Divider
     function setGuard(address target, uint256 cap) external requiresTrust {
         guards[target] = cap;
         emit GuardChanged(target, cap);
@@ -376,7 +391,7 @@ contract Divider is Trust {
         address usr;    // Address of the user who's getting their lscale backfilled
         uint256 lscale; // Scale value to backfill for usr's lscale
     }
-    
+
     /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
     /// @param feed Feed's address
     /// @param maturity Maturity date for the Series
@@ -446,16 +461,17 @@ contract Divider is Trust {
 
     function _split(address feed, uint256 maturity) internal returns (address zero, address claim) {
         ERC20 target = ERC20(Feed(feed).target());
+        uint8 decimals = target.decimals();
         (, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(m, "-", y));
 
         string memory zname = string(abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense"));
         string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        zero = address(new Zero(zname, zsymbol));
+        zero = address(new Zero(zname, zsymbol, decimals));
 
         string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        claim = address(new Claim(maturity, address(this), feed, cname, csymbol));
+        claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
     }
 
     /* ========== MODIFIERS ========== */

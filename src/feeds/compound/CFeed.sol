@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { WadMath } from "../../external/WadMath.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 // Internal references
 import { BaseFeed } from "../BaseFeed.sol";
@@ -20,11 +20,11 @@ interface CTokenInterface {
 
 // @title feed contract for cTokens
 contract CFeed is BaseFeed {
-    using WadMath for uint256;
+    using FixedMath for uint256;
 
     function _scale() internal virtual override returns (uint256 _value) {
         CTokenInterface t = CTokenInterface(target);
         uint256 decimals = 10 + CTokenInterface(t.underlying()).decimals();
-        _value = t.exchangeRateCurrent().wdiv(1 * 10**decimals);
+        _value = t.exchangeRateCurrent() / (1 * 10**decimals);
     }
 }

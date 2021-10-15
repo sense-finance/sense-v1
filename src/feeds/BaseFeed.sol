@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 // External references
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { ERC20 } from "solmate/erc20/ERC20.sol";
-import { WadMath } from "../external/WadMath.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -13,7 +13,7 @@ import { Errors } from "../libs/errors.sol";
 /// @title Assign time-based value to target assets
 /// @dev In most cases, the only function that will be unique to each feed type is `scale`
 abstract contract BaseFeed is Initializable {
-    using WadMath for uint256;
+    using FixedMath for uint256;
 
     address public target;
     address public divider; // TODO: must be hardcoded!
@@ -52,7 +52,8 @@ abstract contract BaseFeed is Initializable {
         uint256 lvalue = lscale.value;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (timeDiff > 0 && lvalue != 0) {
-            uint256 growthPerSec = (_value > lvalue ? _value - lvalue : lvalue - _value).wdiv(lvalue * timeDiff);
+            uint256 growthPerSec = (_value > lvalue ? _value - lvalue : lvalue - _value)
+                .fdiv(lvalue * timeDiff, 10 ** ERC20(target).decimals());
             if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
 

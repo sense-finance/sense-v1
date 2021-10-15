@@ -6,7 +6,15 @@ import { ERC20 } from "solmate/erc20/ERC20.sol";
 import { Trust } from "solmate/auth/Trust.sol";
 
 contract Token is ERC20, Trust {
-    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol, 18) Trust(msg.sender) {}
+    uint256 public immutable BASE_UNIT;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
+    ) ERC20(_name, _symbol, _decimals) Trust(msg.sender) {
+        BASE_UNIT = 10**_decimals;
+    }
 
     /// @param usr The address to send the minted tokens
     /// @param amount The amount to be minted
