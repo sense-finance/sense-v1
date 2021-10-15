@@ -549,7 +549,8 @@ contract Dividers is TestHelper {
         // Formula: tBal = balance / mscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         uint256 redeemed = balanceToRedeem.fdiv(mscale, Token(zero).BASE_UNIT());
-        assertClose(redeemed.fmul(mscale, Token(zero).BASE_UNIT()), zBalanceBefore); // Amount of Zeros burned == underlying amount
+        // Amount of Zeros burned == underlying amount
+        assertClose(redeemed.fmul(mscale, Token(zero).BASE_UNIT()), zBalanceBefore);
         assertEq(zBalanceBefore, zBalanceAfter + balanceToRedeem);
     }
 
@@ -593,8 +594,8 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, 10 ** target.decimals()) - 
-            cBalanceBefore.fdiv(cscale, 10 ** target.decimals());
+        uint256 collect = cBalanceBefore.fdiv(lscale, 10**target.decimals()) -
+            cBalanceBefore.fdiv(cscale, 10**target.decimals());
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -604,8 +605,7 @@ contract Dividers is TestHelper {
         collected = bob.doCollect(claim);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , , mscale, , ) = divider.series(address(feed), maturity);
-        uint256 redeemed = cBalanceAfter.fdiv(mscale, 10 ** target.decimals())
-            .fmul(0.1e18, 10 ** target.decimals());
+        uint256 redeemed = cBalanceAfter.fdiv(mscale, 10**target.decimals()).fmul(0.1e18, 10**target.decimals());
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
     }
 
