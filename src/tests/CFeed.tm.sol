@@ -25,12 +25,14 @@ contract CFeedTestHelper is DSTest {
 
     function setUp() public {
         divider = new Divider(DAI, address(this));
-        CFeed implementation = new CFeed(); // compound feed implementation
+        CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
-        factory = new MockFactory(address(implementation), address(divider), DELTA);
+        factory = new MockFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
+        // TODO replace for a real reward token
         factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        feed = CFeed(factory.deployFeed(cDAI)); // deploy a cDAI feed
+        (address f, ) = factory.deployFeed(cDAI);
+        feed = CFeed(f); // deploy a cDAI feed
     }
 }
 

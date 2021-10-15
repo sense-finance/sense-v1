@@ -8,10 +8,12 @@ contract MockFactory is BaseFactory {
     mapping(address => bool) public targets;
 
     constructor(
-        address _implementation,
+        address _feedImpl,
+        address _wtImpl,
         address _divider,
-        uint256 _delta
-    ) BaseFactory(address(0), _implementation, _divider, _delta) {}
+        uint256 _delta,
+        address _reward
+    ) BaseFactory(address(0), _feedImpl, _wtImpl, _divider, _delta, _reward) {}
 
     function _exists(address _target) internal override virtual returns (bool) {
         return targets[_target];

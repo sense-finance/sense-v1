@@ -4,47 +4,63 @@ pragma solidity ^0.8.6;
 // External references
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Trust } from "solmate/auth/Trust.sol";
+import { ERC20 } from "solmate/erc20/SafeERC20.sol";
 
 // Internal references
 import { Errors } from "../libs/errors.sol";
 import { BaseFeed } from "./BaseFeed.sol";
 import { Divider } from "../Divider.sol";
+import { BaseTWrapper as wTarget } from "../wrappers/BaseTWrapper.sol";
 
 abstract contract BaseFactory is Trust {
     using Clones for address;
 
+    uint256 MAX_INT = 2**256 - 1;
+
     mapping(address => address) public feeds; // target -> feed (to check if a feed for a given target is deployed)
     address public protocol; // protocol's data contract address
-    address public implementation;
+    address public feedImpl; // feed implementation
+    address public wtImpl; // wrapped target implementation
     address public divider;
-    address public target;
     uint256 public delta;
+    address public reward; // reward token
 
     constructor(
         address _protocol,
-        address _implementation,
+        address _feedImpl,
+        address _wtImpl,
         address _divider,
-        uint256 _delta
+        uint256 _delta,
+        address _reward
     ) Trust(msg.sender) {
         protocol = _protocol;
-        implementation = _implementation;
+        feedImpl = _feedImpl;
+        wtImpl = _wtImpl;
         divider = _divider;
         delta = _delta;
+        reward = _reward;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Deploys a feed for the given _target
+    /// @notice Deploys both a feed and a target wrapper for the given _target
     /// @param _target Address of the target token
-    function deployFeed(address _target) external returns (address clone) {
+    function deployFeed(address _target) external returns (address feedClone, address wtClone) {
         require(_exists(_target), Errors.NotSupported);
         require(feeds[_target] == address(0), Errors.FeedAlreadyExists);
 
-        clone = implementation.clone();
-        BaseFeed(clone).initialize(_target, divider, delta);
-        Divider(divider).setFeed(clone, true);
-        feeds[_target] = clone;
-        emit FeedDeployed(clone);
+        // wrapped target deployment
+        wtClone = wtImpl.clone();
+        wTarget(wtClone).initialize(_target, divider, reward); // deploy Target Wrapper
+
+        // feed deployment
+        feedClone = feedImpl.clone();
+        BaseFeed(feedClone).initialize(_target, divider, delta, wtClone);
+        Divider(divider).setFeed(feedClone, true);
+        feeds[_target] = feedClone;
+        emit FeedDeployed(feedClone);
+
+        return (feedClone, wtClone);
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
@@ -59,9 +75,14 @@ abstract contract BaseFactory is Trust {
         emit DeltaChanged(_delta);
     }
 
-    function setImplementation(address _implementation) external requiresTrust {
-        implementation = _implementation;
-        emit ImplementationChanged(_implementation);
+    function setFeedImplementation(address _feedImpl) external requiresTrust {
+        feedImpl = _feedImpl;
+        emit FeedImplementationChanged(_feedImpl);
+    }
+
+    function setWTImplementation(address _wtImpl) external requiresTrust {
+        wtImpl = _wtImpl;
+        emit wTargetImplementationChanged(_wtImpl);
     }
 
     function setProtocol(address _protocol) external requiresTrust {
@@ -79,6 +100,7 @@ abstract contract BaseFactory is Trust {
     event FeedDeployed(address addr);
     event DividerChanged(address divider);
     event DeltaChanged(uint256 delta);
-    event ImplementationChanged(address implementation);
+    event FeedImplementationChanged(address implementation);
+    event wTargetImplementationChanged(address implementation);
     event ProtocolChanged(address protocol);
 }

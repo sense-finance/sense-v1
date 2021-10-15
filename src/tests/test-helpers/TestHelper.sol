@@ -6,9 +6,11 @@ import { DSTest } from "ds-test/test.sol";
 // Internal references
 import { GClaim } from "../../modules/GClaim.sol";
 import { Divider } from "../../Divider.sol";
+import { BaseTWrapper as wTarget } from "../../wrappers/BaseTWrapper.sol";
 import { MockToken } from "./MockToken.sol";
 import { MockFeed } from "./MockFeed.sol";
 import { MockFactory } from "./MockFactory.sol";
+import { MockTWrapper } from "./MockTWrapper.sol";
 
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
@@ -18,10 +20,12 @@ contract TestHelper is DSTest {
     MockFeed feed;
     MockToken stable;
     MockToken target;
+    MockToken reward;
     MockFactory factory;
 
     Divider internal divider;
     GClaim internal gclaim;
+    wTarget internal wtarget;
     User internal alice;
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
@@ -58,6 +62,7 @@ contract TestHelper is DSTest {
             convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
         }
         target = new MockToken("Compound Dai", "cDAI", tDecimals);
+        reward = new MockToken("Reward Token", "RT", tDecimals);
         GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * convertBase : GROWTH_PER_SECOND / convertBase;
         DELTA = tDecimals > 18 ? DELTA * convertBase : DELTA / convertBase;
 
@@ -65,12 +70,15 @@ contract TestHelper is DSTest {
         divider = new Divider(address(stable), address(this));
         divider.setGuard(address(target), 2**96);
 
-        // feed & factory
-        MockFeed implementation = new MockFeed(); // feed implementation
-        factory = new MockFactory(address(implementation), address(divider), DELTA); // deploy feed factory
+        // feed, target wrapper & factory
+        MockFeed feedImpl = new MockFeed(); // feed implementation
+        MockTWrapper wtImpl = new MockTWrapper(); // feed implementation
+        factory = new MockFactory(address(feedImpl), address(wtImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        feed = MockFeed(factory.deployFeed(address(target)));
+        (address f, address wt) = factory.deployFeed(address(target));
+        feed = MockFeed(f);
+        wtarget = wTarget(wt);
 
         // modules
         gclaim = new GClaim(address(divider));
@@ -94,9 +102,10 @@ contract TestHelper is DSTest {
         user.doMint(address(target), tBal);
     }
 
-    function createFactory(address _target) public returns (MockFactory someFactory) {
-        MockFeed implementation = new MockFeed();
-        someFactory = new MockFactory(address(implementation), address(divider), DELTA);
+    function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
+        MockFeed feedImpl = new MockFeed();
+        MockTWrapper wtImpl = new MockTWrapper();
+        someFactory = new MockFactory(address(feedImpl), address(wtImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
     }

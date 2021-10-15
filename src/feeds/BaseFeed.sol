@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 // External references
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { ERC20 } from "solmate/erc20/ERC20.sol";
+//import { Trust } from "solmate/auth/Trust.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
@@ -17,6 +18,7 @@ abstract contract BaseFeed is Initializable {
 
     address public target;
     address public divider; // TODO: must be hardcoded!
+    address public wtarget;
     uint256 public delta;
     string public name;
     string public symbol;
@@ -30,13 +32,15 @@ abstract contract BaseFeed is Initializable {
     function initialize(
         address _target,
         address _divider,
-        uint256 _delta
+        uint256 _delta,
+        address _wtarget
     ) external virtual initializer {
         // TODO: only factory?
         // TODO: add input validation?
         divider = _divider;
         delta = _delta;
         target = _target;
+        wtarget = _wtarget;
         name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
         emit Initialized();
@@ -73,5 +77,13 @@ abstract contract BaseFeed is Initializable {
     /// @notice Actual scale value check that must be overriden by child contracts
     function _scale() internal virtual returns (uint256 _value);
 
+    //    /// @notice Adds wrapped target to wtargets mapping
+    //    /// @param _wtarget Wrapped Target address
+    //    function setWrapper(address _wtarget) external requiresTrust {
+    //        wtarget = _wtarget;
+    //        emit WTargetAdded(wtarget);
+    //    } TODO: do we need this?
+
     event Initialized();
+    event WTargetAdded(address indexed wtarget);
 }
