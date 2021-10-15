@@ -38,7 +38,7 @@ contract GClaim {
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
@@ -82,7 +82,7 @@ contract GClaim {
         uint256 maturity,
         uint256 balance
     ) external {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = divider.series(feed, maturity);
 
         require(claim != address(0), Errors.SeriesDoesntExists);
 
