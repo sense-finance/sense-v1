@@ -50,17 +50,24 @@ abstract contract BaseFeed is Initializable {
     function scale() external virtual returns (uint256 _value) {
         _value = _scale();
         uint256 lvalue = lscale.value;
-        require(_value >= lvalue, Errors.InvalidScaleValue);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (timeDiff > 0 && lvalue != 0) {
-            uint256 growthPerSec = (_value - lvalue).fdiv(lvalue * timeDiff, 10**ERC20(target).decimals());
+            uint256 growthPerSec = (_value > lvalue ? _value - lvalue : lvalue - _value)
+                .fdiv(lvalue * timeDiff, 10 ** ERC20(target).decimals());
             if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
+
         if (_value != lscale.value) {
             // update value only if different than previous
             lscale.value = _value;
             lscale.timestamp = block.timestamp;
         }
+    }
+
+    /// @notice Tilt value read that may be overriden by child contracts
+    /// @dev By default, it's implemented as `0`, which means no principal is set aside for Claims
+    function tilt() external virtual returns (uint256) {
+        return 0;
     }
 
     /// @notice Actual scale value check that must be overriden by child contracts

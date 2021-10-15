@@ -131,17 +131,6 @@ contract Feeds is TestHelper {
         }
     }
 
-    function testCantScaleIfBelowPrevious() public {
-        assertEq(feed.scale(), feed.INITIAL_VALUE());
-        feed.setScale(feed.INITIAL_VALUE() - 1);
-        hevm.warp(block.timestamp + 1 days);
-        try feed.scale() {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-    }
-
     function testCantAddCustomFeedToDivider() public {
         MockToken newTarget = new MockToken("Compound USDC", "cUSDC", 18);
         FakeFeed fakeFeed = new FakeFeed();

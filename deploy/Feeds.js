@@ -11,13 +11,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const divider = await ethers.getContract("Divider");
   const DELTA = 150;
-  // FIXME: set the airdrop token address to 0 while we work on this functionality
-  const airdropToken = ethers.constants.AddressZero;
 
   console.log("Deploy cToken feed factory");
   await deploy("CFactory", {
     from: deployer,
-    args: [cFeedAddress, divider.address, DELTA, airdropToken],
+    args: [cFeedAddress, divider.address, DELTA],
     log: true,
   });
   const cFactory = await ethers.getContract("CFactory");

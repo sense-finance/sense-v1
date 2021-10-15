@@ -4,7 +4,6 @@ pragma solidity ^0.8.6;
 // Internal references
 import { GClaim } from "../../modules/GClaim.sol";
 import { Divider } from "../../Divider.sol";
-import { wTarget } from "../../wrappers/wTarget.sol";
 import { MockToken } from "./MockToken.sol";
 import { MockFeed } from "./MockFeed.sol";
 import { MockFactory } from "./MockFactory.sol";
@@ -18,12 +17,10 @@ contract TestHelper is DSTest {
     MockFeed feed;
     MockToken stable;
     MockToken target;
-    MockToken airdrop;
     MockFactory factory;
 
     Divider internal divider;
     GClaim internal gclaim;
-    wTarget internal wtarget;
     User internal alice;
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
@@ -60,7 +57,6 @@ contract TestHelper is DSTest {
             convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
         }
         target = new MockToken("Compound Dai", "cDAI", tDecimals);
-        airdrop = new MockToken("Airdrop Token", "ADROP", tDecimals);
         GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * convertBase : GROWTH_PER_SECOND / convertBase;
         DELTA = tDecimals > 18 ? DELTA * convertBase : DELTA / convertBase;
 
@@ -70,12 +66,10 @@ contract TestHelper is DSTest {
 
         // feed & factory
         MockFeed implementation = new MockFeed(); // feed implementation
-        factory = new MockFactory(address(implementation), address(divider), DELTA, address(airdrop)); // deploy feed factory
+        factory = new MockFactory(address(implementation), address(divider), DELTA); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, address wt) = factory.deployFeed(address(target));
-        feed = MockFeed(f);
-        wtarget = wTarget(wt);
+        feed = MockFeed(factory.deployFeed(address(target)));
 
         // modules
         gclaim = new GClaim(address(divider));
@@ -99,9 +93,9 @@ contract TestHelper is DSTest {
         user.doMint(address(target), tBal);
     }
 
-    function createFactory(address _target, address _airdrop) public returns (MockFactory someFactory) {
+    function createFactory(address _target) public returns (MockFactory someFactory) {
         MockFeed implementation = new MockFeed();
-        someFactory = new MockFactory(address(implementation), address(divider), DELTA, address(_airdrop));
+        someFactory = new MockFactory(address(implementation), address(divider), DELTA);
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
     }

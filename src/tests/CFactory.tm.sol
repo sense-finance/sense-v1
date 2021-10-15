@@ -23,7 +23,7 @@ contract CFeedTestHelper is DSTest {
         divider = new Divider(DAI, address(this));
         CFeed implementation = new CFeed(); // compound feed implementation
         // deploy compound feed factory
-        factory = new CFactory(address(implementation), address(divider), DELTA, DAI);
+        factory = new CFactory(address(implementation), address(divider), DELTA);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -31,7 +31,7 @@ contract CFeedTestHelper is DSTest {
 contract CFactories is CFeedTestHelper {
     function testDeployFactory() public {
         CFeed implementation = new CFeed();
-        CFactory otherCFactory = new CFactory(address(implementation), address(divider), DELTA, DAI);
+        CFactory otherCFactory = new CFactory(address(implementation), address(divider), DELTA);
         // TODO: replace for a real one
         assertTrue(address(otherCFactory) != address(0));
         assertEq(CFactory(otherCFactory).implementation(), address(implementation));
@@ -40,7 +40,7 @@ contract CFactories is CFeedTestHelper {
     }
 
     function testDeployFeed() public {
-        (address f, ) = factory.deployFeed(cDAI);
+        address f = factory.deployFeed(cDAI);
         CFeed feed = CFeed(f);
         assertTrue(address(feed) != address(0));
         assertEq(CFeed(feed).target(), address(cDAI));

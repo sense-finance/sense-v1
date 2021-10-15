@@ -10,9 +10,8 @@ contract MockFactory is BaseFactory {
     constructor(
         address _implementation,
         address _divider,
-        uint256 _delta,
-        address _airdropToken
-    ) BaseFactory(address(0), _implementation, _divider, _delta, _airdropToken) {}
+        uint256 _delta
+    ) BaseFactory(address(0), _implementation, _divider, _delta) {}
 
     function _exists(address _target) internal override virtual returns (bool) {
         return targets[_target];
