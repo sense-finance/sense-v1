@@ -23,7 +23,9 @@ jobs:
 
     # Tests use dapp
     - name: Run tests
-      run: yarn test
+      run: |
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+        yarn test
       env:
         # Only fuzz deeply if we're pushing to main or this is a PR to main:
         DEEP_FUZZ: ${{ github.ref == 'refs/heads/main' || github.base_ref == 'main' }}
