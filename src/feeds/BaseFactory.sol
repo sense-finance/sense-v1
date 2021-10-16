@@ -10,7 +10,7 @@ import { ERC20 } from "solmate/erc20/SafeERC20.sol";
 import { Errors } from "../libs/errors.sol";
 import { BaseFeed } from "./BaseFeed.sol";
 import { Divider } from "../Divider.sol";
-import { BaseTWrapper as wTarget } from "../wrappers/BaseTWrapper.sol";
+import { BaseTWrapper as TWrapper } from "../wrappers/BaseTWrapper.sol";
 
 abstract contract BaseFactory is Trust {
     using Clones for address;
@@ -20,7 +20,7 @@ abstract contract BaseFactory is Trust {
     mapping(address => address) public feeds; // target -> feed (to check if a feed for a given target is deployed)
     address public protocol; // protocol's data contract address
     address public feedImpl; // feed implementation
-    address public wtImpl; // wrapped target implementation
+    address public twImpl; // wrapped target implementation
     address public divider;
     uint256 public delta;
     address public reward; // reward token
@@ -28,14 +28,14 @@ abstract contract BaseFactory is Trust {
     constructor(
         address _protocol,
         address _feedImpl,
-        address _wtImpl,
+        address _twImpl,
         address _divider,
         uint256 _delta,
         address _reward
     ) Trust(msg.sender) {
         protocol = _protocol;
         feedImpl = _feedImpl;
-        wtImpl = _wtImpl;
+        twImpl = _twImpl;
         divider = _divider;
         delta = _delta;
         reward = _reward;
@@ -50,8 +50,8 @@ abstract contract BaseFactory is Trust {
         require(feeds[_target] == address(0), Errors.FeedAlreadyExists);
 
         // wrapped target deployment
-        wtClone = wtImpl.clone();
-        wTarget(wtClone).initialize(_target, divider, reward); // deploy Target Wrapper
+        wtClone = twImpl.clone();
+        TWrapper(wtClone).initialize(_target, divider, reward); // deploy Target Wrapper
 
         // feed deployment
         feedClone = feedImpl.clone();
@@ -80,9 +80,9 @@ abstract contract BaseFactory is Trust {
         emit FeedImplementationChanged(_feedImpl);
     }
 
-    function setWTImplementation(address _wtImpl) external requiresTrust {
-        wtImpl = _wtImpl;
-        emit wTargetImplementationChanged(_wtImpl);
+    function setTWImplementation(address _twImpl) external requiresTrust {
+        twImpl = _twImpl;
+        emit TWrapperImplementationChanged(_twImpl);
     }
 
     function setProtocol(address _protocol) external requiresTrust {
@@ -101,6 +101,6 @@ abstract contract BaseFactory is Trust {
     event DividerChanged(address divider);
     event DeltaChanged(uint256 delta);
     event FeedImplementationChanged(address implementation);
-    event wTargetImplementationChanged(address implementation);
+    event TWrapperImplementationChanged(address implementation);
     event ProtocolChanged(address protocol);
 }

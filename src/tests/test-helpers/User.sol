@@ -43,7 +43,7 @@ contract User {
         gclaim = _gclaim;
     }
 
-    function doDeployFeed (address _target) public returns (address clone, address wtarget){
+    function doDeployFeed (address _target) public returns (address clone, address twrapper){
         return factory.deployFeed(_target);
     }
 

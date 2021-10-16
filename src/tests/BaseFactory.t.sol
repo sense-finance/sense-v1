@@ -13,17 +13,17 @@ import { Errors } from "../libs/errors.sol";
 contract Factories is TestHelper {
     function testDeployFactory() public {
         MockFeed feedImpl = new MockFeed();
-        MockTWrapper wtImpl = new MockTWrapper();
+        MockTWrapper twImpl = new MockTWrapper();
         MockFactory someFactory = new MockFactory(
             address(feedImpl),
-            address(wtImpl),
+            address(twImpl),
             address(divider),
             DELTA,
             address(1)
         );
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).feedImpl(), address(feedImpl));
-        assertEq(MockFactory(someFactory).wtImpl(), address(wtImpl));
+        assertEq(MockFactory(someFactory).twImpl(), address(twImpl));
         assertEq(MockFactory(someFactory).divider(), address(divider));
         assertEq(MockFactory(someFactory).delta(), DELTA);
         assertEq(MockFactory(someFactory).reward(), address(1));
@@ -33,9 +33,9 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        (address feed, address wTarget) = someFactory.deployFeed(address(someTarget));
+        (address feed, address tWrapper) = someFactory.deployFeed(address(someTarget));
         assertTrue(feed != address(0));
-        assertTrue(wTarget != address(0));
+        assertTrue(tWrapper != address(0));
         assertEq(IFeed(feed).target(), address(someTarget));
         assertEq(IFeed(feed).divider(), address(divider));
         assertEq(IFeed(feed).delta(), DELTA);

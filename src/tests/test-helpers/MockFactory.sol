@@ -9,11 +9,11 @@ contract MockFactory is BaseFactory {
 
     constructor(
         address _feedImpl,
-        address _wtImpl,
+        address _twImpl,
         address _divider,
         uint256 _delta,
         address _reward
-    ) BaseFactory(address(0), _feedImpl, _wtImpl, _divider, _delta, _reward) {}
+    ) BaseFactory(address(0), _feedImpl, _twImpl, _divider, _delta, _reward) {}
 
     function _exists(address _target) internal override virtual returns (bool) {
         return targets[_target];

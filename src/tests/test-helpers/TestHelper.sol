@@ -6,7 +6,7 @@ import { DSTest } from "ds-test/test.sol";
 // Internal references
 import { GClaim } from "../../modules/GClaim.sol";
 import { Divider } from "../../Divider.sol";
-import { BaseTWrapper as wTarget } from "../../wrappers/BaseTWrapper.sol";
+import { BaseTWrapper as tWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { MockToken } from "./MockToken.sol";
 import { MockFeed } from "./MockFeed.sol";
 import { MockFactory } from "./MockFactory.sol";
@@ -25,7 +25,7 @@ contract TestHelper is DSTest {
 
     Divider internal divider;
     GClaim internal gclaim;
-    wTarget internal wtarget;
+    tWrapper internal twrapper;
     User internal alice;
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
@@ -72,13 +72,13 @@ contract TestHelper is DSTest {
 
         // feed, target wrapper & factory
         MockFeed feedImpl = new MockFeed(); // feed implementation
-        MockTWrapper wtImpl = new MockTWrapper(); // feed implementation
-        factory = new MockFactory(address(feedImpl), address(wtImpl), address(divider), DELTA, address(reward)); // deploy feed factory
+        MockTWrapper twImpl = new MockTWrapper(); // feed implementation
+        factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         (address f, address wt) = factory.deployFeed(address(target));
         feed = MockFeed(f);
-        wtarget = wTarget(wt);
+        twrapper = tWrapper(wt);
 
         // modules
         gclaim = new GClaim(address(divider));
@@ -104,8 +104,8 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        MockTWrapper wtImpl = new MockTWrapper();
-        someFactory = new MockFactory(address(feedImpl), address(wtImpl), address(divider), DELTA, address(_reward));
+        MockTWrapper twImpl = new MockTWrapper();
+        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
     }
