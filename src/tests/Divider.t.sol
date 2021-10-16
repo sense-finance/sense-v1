@@ -694,14 +694,13 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    function testCollectReward() public {
-        uint256 tBal = 1e18;
+    function testCollectReward(uint96 tBal) public {
+        if (tBal == 0) return;
+        feed.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
-        hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, tBal);
-        hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -709,6 +708,7 @@ contract Dividers is TestHelper {
 
         uint256 collected = bob.doCollect(claim);
         collected = bob.doCollect(claim); // forcing distribution of reward // TODO: check this
+
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         uint256 rBalanceAfter = reward.balanceOf(address(bob));
@@ -721,7 +721,7 @@ contract Dividers is TestHelper {
         collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
-        assertEq(tBalanceAfter, tBalanceBefore + collected);
+        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
         assertClose(rBalanceAfter, 1e18);
     }
 
