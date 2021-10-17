@@ -11,10 +11,9 @@ contract Claims is TestHelper {
 
     function testCollect(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -25,7 +24,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
@@ -37,10 +36,9 @@ contract Claims is TestHelper {
 
     function testCollectOnTransfer(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
@@ -54,7 +52,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
@@ -68,10 +66,9 @@ contract Claims is TestHelper {
 
     function testCollectOnTransferFrom(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
@@ -86,7 +83,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);

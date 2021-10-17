@@ -13,8 +13,8 @@ import { Token } from "../tokens/Token.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 
 /// @title Gravity Claims (gClaims)
-/// @notice The GClaim contract turns Collect Claims into Drag Claims
-contract GClaim {
+/// @notice The GClaim Manager contract turns Collect Claims into Drag Claims
+contract GClaimManager {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
@@ -38,7 +38,7 @@ contract GClaim {
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = divider.series(feed, maturity);
         require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
@@ -55,13 +55,8 @@ contract GClaim {
             // NOTE: Consider the benefits of using Create2 here
             gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals());
         } else {
-            uint256 initScale = inits[claim];
-            uint256 currScale = Feed(feed).scale();
-            // Calculate the amount of excess that has accrued since
-            // the first Claim from this Series was deposited
-            if (currScale - initScale > 0) {
-                uint256 gap = (balance * currScale) / (currScale - initScale) / 10**18;
-
+            uint256 gap = excess(feed, maturity, balance);
+            if (gap > 0) {
                 // Pull the amount of Target needed to backfill the excess
                 ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), gap);
                 totals[claim] += gap;
@@ -82,7 +77,7 @@ contract GClaim {
         uint256 maturity,
         uint256 balance
     ) external {
-        (, address claim, , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = divider.series(feed, maturity);
 
         require(claim != address(0), Errors.SeriesDoesntExists);
 
@@ -104,9 +99,26 @@ contract GClaim {
         // Transfer Collect Claims back to the user
         ERC20(claim).safeTransfer(msg.sender, balance);
         // Burn the user's gclaims
+        ERC20(gclaims[claim]).balanceOf(msg.sender);
         gclaims[claim].burn(msg.sender, balance);
 
         emit Exit(feed, maturity, msg.sender, balance);
+    }
+
+    /* ========== VIEWS ========== */
+
+    /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
+    function excess(
+        address feed,
+        uint256 maturity,
+        uint256 balance
+    ) public returns (uint256 amount) {
+        (, address claim, , , , , , , ) = divider.series(feed, maturity);
+        uint256 initScale = inits[claim];
+        uint256 currScale = Feed(feed).scale();
+        if (currScale - initScale > 0) {
+            amount = (balance * currScale) / (currScale - initScale) / 10**18;
+        }
     }
 
     // NOTE: Admin pull up issuance?

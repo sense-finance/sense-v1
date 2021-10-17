@@ -17,9 +17,7 @@ DIVIDER_CUP.set("111", "0x0000000000000000000000000000000000000000");
 module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
   const { deploy } = deployments;
   const { deployer, dev } = await getNamedAccounts();
-
   const chainId = await getChainId();
-  console.log(chainId, "con");
 
   if (!STABLE_TOKEN.has(chainId)) throw Error("No stable token found");
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");

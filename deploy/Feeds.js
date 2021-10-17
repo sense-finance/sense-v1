@@ -1,6 +1,14 @@
-module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
+const COMP_TOKEN = new Map();
+// DAI Mainnet
+COMP_TOKEN.set("1", "0xc00e94cb662c3520282e6f5717214004a7f26888");
+// DAI Local Mainnet fork
+COMP_TOKEN.set("111", "0xc00e94cb662c3520282e6f5717214004a7f26888");
+// TODO: Arbitrum
+
+module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
   const { deploy } = deployments;
   const { deployer, dev } = await getNamedAccounts();
+  const chainId = await getChainId();
 
   console.log("Deploy a cFeed implementation");
   const { address: cFeedAddress } = await deploy("CFeed", {
@@ -11,13 +19,20 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const divider = await ethers.getContract("Divider");
   const DELTA = 150;
-  // FIXME: set the airdrop token address to 0 while we work on this functionality
-  const airdropToken = ethers.constants.AddressZero;
+
+  if (!COMP_TOKEN.has(chainId)) throw Error("No stable token found");
+  const compAddress = COMP_TOKEN.get(chainId);
+
+  const { address: baseWrapperAddress } = await deploy("BaseTWrapper", {
+    from: deployer,
+    args: [],
+    log: true,
+  });
 
   console.log("Deploy cToken feed factory");
   await deploy("CFactory", {
     from: deployer,
-    args: [cFeedAddress, divider.address, DELTA, airdropToken],
+    args: [cFeedAddress, baseWrapperAddress, divider.address, DELTA, compAddress],
     log: true,
   });
   const cFactory = await ethers.getContract("CFactory");

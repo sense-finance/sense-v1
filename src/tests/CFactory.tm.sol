@@ -21,20 +21,20 @@ contract CFeedTestHelper is DSTest {
 
     function setUp() public {
         divider = new Divider(DAI, address(this));
-        CFeed implementation = new CFeed(); // compound feed implementation
+        CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
-        factory = new CFactory(address(implementation), address(divider), DELTA, DAI);
+        factory = new CFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
 
 contract CFactories is CFeedTestHelper {
     function testDeployFactory() public {
-        CFeed implementation = new CFeed();
-        CFactory otherCFactory = new CFactory(address(implementation), address(divider), DELTA, DAI);
+        CFeed feedImpl = new CFeed();
+        CFactory otherCFactory = new CFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
         // TODO: replace for a real one
         assertTrue(address(otherCFactory) != address(0));
-        assertEq(CFactory(otherCFactory).implementation(), address(implementation));
+        assertEq(CFactory(otherCFactory).feedImpl(), address(feedImpl));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
         assertEq(CFactory(otherCFactory).delta(), DELTA);
     }

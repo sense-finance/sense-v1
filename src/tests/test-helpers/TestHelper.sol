@@ -2,12 +2,18 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import { GClaim } from "../../modules/GClaim.sol";
+import {GClaimManager} from "../../modules/GClaimManager.sol";
 import { Divider } from "../../Divider.sol";
-import { wTarget } from "../../wrappers/wTarget.sol";
-import { MockToken } from "./MockToken.sol";
-import { MockFeed } from "./MockFeed.sol";
-import { MockFactory } from "./MockFactory.sol";
+import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
+import { Periphery } from "../../Periphery.sol";
+import { MockToken } from "./mocks/MockToken.sol";
+import { MockFeed } from "./mocks/MockFeed.sol";
+import { MockFactory } from "./mocks/MockFactory.sol";
+import { MockTWrapper } from "./mocks/MockTWrapper.sol";
+
+// Uniswap mocks
+import { MockUniFactory } from "./mocks/uniswap/MockUniFactory.sol";
+import { MockUniSwapRouter } from "./mocks/uniswap/MockUniSwapRouter.sol";
 
 import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
@@ -18,25 +24,30 @@ contract TestHelper is DSTest {
     MockFeed feed;
     MockToken stable;
     MockToken target;
-    MockToken airdrop;
+    MockToken reward;
     MockFactory factory;
 
     Divider internal divider;
-    GClaim internal gclaim;
-    wTarget internal wtarget;
+    TWrapper internal twrapper;
+    Periphery internal periphery;
+
     User internal alice;
     User internal bob;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
+    //uniswap
+    MockUniFactory uniFactory;
+    MockUniSwapRouter uniSwapRouter;
+
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
-    uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%). Hardcoded value at least for v1.
-    uint256 public constant INIT_STAKE = 1e18; // Hardcoded value at least for v1.
-    uint public constant SPONSOR_WINDOW = 4 hours; // Hardcoded value at least for v1.
-    uint public constant SETTLEMENT_WINDOW = 2 hours; // Hardcoded value at least for v1.
-    uint public constant MIN_MATURITY = 2 weeks; // Hardcoded value at least for v1.
-    uint public constant MAX_MATURITY = 14 weeks; // Hardcoded value at least for v1.
+    uint256 public ISSUANCE_FEE;
+    uint256 public INIT_STAKE;
+    uint public SPONSOR_WINDOW;
+    uint public SETTLEMENT_WINDOW;
+    uint public MIN_MATURITY;
+    uint public MAX_MATURITY;
 
     struct Series {
         address zero; // Zero address for this Series (deployed on Series initialization)
@@ -60,25 +71,36 @@ contract TestHelper is DSTest {
             convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
         }
         target = new MockToken("Compound Dai", "cDAI", tDecimals);
-        airdrop = new MockToken("Airdrop Token", "ADROP", tDecimals);
+        reward = new MockToken("Reward Token", "RT", tDecimals);
         GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * convertBase : GROWTH_PER_SECOND / convertBase;
         DELTA = tDecimals > 18 ? DELTA * convertBase : DELTA / convertBase;
 
         // divider
         divider = new Divider(address(stable), address(this));
         divider.setGuard(address(target), 2**96);
+        ISSUANCE_FEE = divider.ISSUANCE_FEE();
+        INIT_STAKE = divider.INIT_STAKE();
+        SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
+        SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
+        MIN_MATURITY = divider.MIN_MATURITY();
+        MAX_MATURITY = divider.MAX_MATURITY();
 
-        // feed & factory
-        MockFeed implementation = new MockFeed(); // feed implementation
-        factory = new MockFactory(address(implementation), address(divider), DELTA, address(airdrop)); // deploy feed factory
-        factory.addTarget(address(target), true); // add support to target
+        // periphery
+        uniFactory = new MockUniFactory();
+        uniSwapRouter = new MockUniSwapRouter();
+        address poolManager = address(0); // TODO replace for new PoolManager();
+        periphery = new Periphery(address(divider), poolManager, address(uniFactory), address(uniSwapRouter));
+        divider.setPeriphery(address(periphery));
+
+        // feed, target wrapper & factory
+        MockFeed feedImpl = new MockFeed(); // feed implementation
+        MockTWrapper twImpl = new MockTWrapper(); // feed implementation
+        factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
+        factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, address wt) = factory.deployFeed(address(target));
+        (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
-        wtarget = wTarget(wt);
-
-        // modules
-        gclaim = new GClaim(address(divider));
+        twrapper = TWrapper(wt);
 
         // users
         alice = createUser(2**96, 2**96);
@@ -91,17 +113,21 @@ contract TestHelper is DSTest {
         user.setStable(stable);
         user.setTarget(target);
         user.setDivider(divider);
-        user.setGclaim(gclaim);
+        user.setPeriphery(periphery);
+        user.doApprove(address(stable), address(periphery));
         user.doApprove(address(stable), address(divider));
-        uint256 sBase = 10 ** stable.decimals();
+        user.doApprove(address(stable), address(divider));
         user.doMint(address(stable), sBal);
+        user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
+        user.doApprove(address(target), address(periphery.gClaimManager()));
         user.doMint(address(target), tBal);
     }
 
-    function createFactory(address _target, address _airdrop) public returns (MockFactory someFactory) {
-        MockFeed implementation = new MockFeed();
-        someFactory = new MockFactory(address(implementation), address(divider), DELTA, address(_airdrop));
+    function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
+        MockFeed feedImpl = new MockFeed();
+        MockTWrapper twImpl = new MockTWrapper();
+        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
     }
@@ -111,8 +137,8 @@ contract TestHelper is DSTest {
         require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
     }
 
-    function initSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = User(sponsor).doInitSeries(address(feed), maturity);
+    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
+        (zero, claim) = User(sponsor).doSponsorSeries(address(feed), maturity);
     }
 
     function assertClose(uint256 actual, uint256 expected) public {
@@ -122,6 +148,20 @@ contract TestHelper is DSTest {
         if (expected < variance) variance = 1;
         DSTest.assertTrue(actual >= (expected - variance));
         DSTest.assertTrue(actual <= (expected + variance));
+    }
+
+    function addLiquidityToUniSwapRouter(uint256 maturity, address zero, address claim) public {
+        uint256 cBal = MockToken(claim).balanceOf(address(alice));
+        uint256 zBal = MockToken(zero).balanceOf(address(alice));
+        alice.doIssue(address(feed), maturity, 100e18);
+        uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
+        uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
+        alice.doApprove(address(claim), address(periphery.gClaimManager()));
+        alice.doApprove(address(zero), address(periphery.gClaimManager()));
+        alice.doJoin(address(feed), maturity, cBalIssued);
+        address gclaim = address(periphery.gClaimManager().gclaims(claim));
+        alice.doTransfer(gclaim, address(uniSwapRouter), cBalIssued);
+        alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
     }
 
 }

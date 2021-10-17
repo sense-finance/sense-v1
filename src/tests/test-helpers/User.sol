@@ -2,9 +2,10 @@
 pragma solidity ^0.8.6;
 
 import { Hevm } from "./Hevm.sol";
-import { MockToken } from "./MockToken.sol";
+import { MockToken } from "./mocks/MockToken.sol";
 import { Divider } from "../../Divider.sol";
-import { GClaim } from "../../modules/GClaim.sol";
+import { Periphery } from "../../Periphery.sol";
+import {GClaimManager} from "../../modules/GClaimManager.sol";
 import { Claim } from "../../tokens/Claim.sol";
 import { BaseFactory } from "../../feeds/BaseFactory.sol";
 
@@ -14,7 +15,8 @@ contract User {
     MockToken stable;
     MockToken target;
     Divider divider;
-    GClaim gclaim;
+    Periphery periphery;
+    GClaimManager gClaimManager;
     BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -39,11 +41,12 @@ contract User {
         divider = _divider;
     }
 
-    function setGclaim(GClaim _gclaim) public {
-        gclaim = _gclaim;
+    function setPeriphery(Periphery _periphery) public {
+        periphery = _periphery;
+        gClaimManager = periphery.gClaimManager();
     }
 
-    function doDeployFeed (address _target) public returns (address clone, address wtarget){
+    function doDeployFeed (address _target) public returns (address clone, address twrapper){
         return factory.deployFeed(_target);
     }
 
@@ -88,8 +91,8 @@ contract User {
         divider.setFeed(feed, isOn);
     }
 
-    function doInitSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = divider.initSeries(feed, maturity);
+    function doSponsorSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
+        (zero, claim) = periphery.sponsorSeries(feed, maturity, 0);
     }
 
     function doSettleSeries(address feed, uint256 maturity) public {
@@ -117,11 +120,24 @@ contract User {
     }
 
     function doJoin(address feed, uint256 maturity, uint256 balance) public {
-        gclaim.join(feed, maturity, balance);
+        gClaimManager.join(feed, maturity, balance);
     }
 
     function doExit(address feed, uint256 maturity, uint256 balance) public {
-        gclaim.exit(feed, maturity, balance);
+        gClaimManager.exit(feed, maturity, balance);
+    }
+
+    function doSwapTargetForZeros(address feed, uint256 maturity, uint256 balance, uint256 backfill) public {
+        periphery.swapTargetForZeros(feed, maturity, balance, backfill);
+    }
+    function doSwapTargetForClaims(address feed, uint256 maturity, uint256 balance) public {
+        periphery.swapTargetForClaims(feed, maturity, balance);
+    }
+    function doSwapZerosForTarget(address feed, uint256 maturity, uint256 balance) public {
+        periphery.swapZerosForTarget(feed, maturity, balance);
+    }
+    function doSwapClaimsForTarget(address feed, uint256 maturity, uint256 balance) public {
+        periphery.swapClaimsForTarget(feed, maturity, balance);
     }
 
 }
