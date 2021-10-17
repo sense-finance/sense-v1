@@ -110,19 +110,21 @@ contract Periphery {
     /// @param tBal Balance of Target to deposit
     /// @param backfill Amount in target to backfill gClaims
     function swapTargetForZeros(address feed, uint256 maturity, uint256 tBal, uint256 backfill) external {
+        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
+
         // transfer target into this contract
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal);
+        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal + backfill);
 
         // issue zeros & claims with target
         uint256 issued = divider.issue(feed, maturity, tBal);
 
         // convert claims to gclaims
+        ERC20(claim).approve(address(gClaimManager), issued);
         gClaimManager.join(feed, maturity, issued);
 
         // swap gclaims to zeros
-        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(gclaim, zero, issued);
+        uint256 swapped = _swap(gclaim, zero, issued, address(this));
 
         // transfer issued + bought zeros to user
         ERC20(zero).transfer(msg.sender, issued + swapped);
@@ -139,7 +141,7 @@ contract Periphery {
         // swap zeros to gclaims
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(zero, gclaim, issued);
+        uint256 swapped = _swap(zero, gclaim, issued, address(this));
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
@@ -160,7 +162,7 @@ contract Periphery {
 
         // swap some zeros for gclaims
         uint256 zerosToSell = zBal / (rate + 1); // TODO: is this equation correct?
-        uint256 swapped = _swap(zero, gclaim, zerosToSell);
+        uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this));
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
@@ -184,7 +186,7 @@ contract Periphery {
         gClaimManager.exit(feed, maturity, claimsToConvert);
 
         // swap gclaims for zeros
-        uint256 swapped = _swap(gclaim, zero, claimsToConvert);
+        uint256 swapped = _swap(gclaim, zero, claimsToConvert, address(this));
 
         // combine zeros & claims
         divider.combine(feed, maturity, swapped);
@@ -203,7 +205,7 @@ contract Periphery {
         return quote * BasePriceOracle(msg.sender).price(tokenB) / (10 ** uint256(ERC20(tokenB).decimals())); // TODO: what's this
     }
 
-    function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal returns (uint256 amountOut) {
+    function _swap(address tokenIn, address tokenOut, uint256 amountIn, address recipient) internal returns (uint256 amountOut) {
         // approve router to spend tokenIn.
         ERC20(tokenIn).safeApprove(address(uniSwapRouter), amountIn);
 
@@ -212,7 +214,7 @@ contract Periphery {
                 tokenIn: tokenIn,
                 tokenOut: tokenOut,
                 fee: UNI_POOL_FEE,
-                recipient: msg.sender,
+                recipient: recipient,
                 deadline: block.timestamp,
                 amountIn: amountIn,
                 amountOutMinimum: 0, // TODO: use an oracle or other data source to choose a safer value for amountOutMinimum

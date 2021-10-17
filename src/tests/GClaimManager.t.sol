@@ -5,7 +5,7 @@ import { ERC20 } from "solmate/erc20/ERC20.sol";
 
 import { Errors } from "../libs/errors.sol";
 import { Claim } from "../tokens/Claim.sol";
-import {GClaimManager} from "../modules/GClaimManager.sol";
+import { GClaimManager } from "../modules/GClaimManager.sol";
 
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";

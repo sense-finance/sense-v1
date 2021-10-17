@@ -43,8 +43,7 @@ contract PeripheryTest is TestHelper {
         assertTrue(uniFactory.getPool(gclaim, zero, periphery.UNI_POOL_FEE()) != address(0));
 
         // check zeros and claims onboarded on PoolManager (Fuse)
-//        assertTrue(poolManager.sInits(address(feed), maturity)); // TODO: do when PoolManage ready
-
+        //        assertTrue(poolManager.sInits(address(feed), maturity)); // TODO: do when PoolManage ready
     }
 
     function testOnboardTarget() public {
@@ -63,6 +62,7 @@ contract PeripheryTest is TestHelper {
         uint256 backfill = 1e18; // TODO: calculate this properly
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
         // add liquidity to mockUniSwapRouter
         addLiquidityToUniSwapRouter(maturity, zero, claim);
 
@@ -115,11 +115,11 @@ contract PeripheryTest is TestHelper {
         uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
         // calculate zeros swapped to claims
-        zBalBefore += issued + (issued / uniSwapRouter.EXCHANGE_RATE());
+        cBalBefore += issued + (issued / uniSwapRouter.EXCHANGE_RATE());
 
-        alice.doSwapTargetForClaims(address(feed), maturity, tBal);
+        bob.doSwapTargetForClaims(address(feed), maturity, tBal);
 
-        assertEq(cBalBefore, ERC20(claim).balanceOf(address(alice)));
+        assertEq(cBalBefore, ERC20(claim).balanceOf(address(bob)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
     }
 
@@ -155,6 +155,4 @@ contract PeripheryTest is TestHelper {
     function testQuotePrice() public {
         // TODO!
     }
-
-
 }

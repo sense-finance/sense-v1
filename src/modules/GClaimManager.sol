@@ -99,6 +99,7 @@ contract GClaimManager {
         // Transfer Collect Claims back to the user
         ERC20(claim).safeTransfer(msg.sender, balance);
         // Burn the user's gclaims
+        ERC20(gclaims[claim]).balanceOf(msg.sender);
         gclaims[claim].burn(msg.sender, balance);
 
         emit Exit(feed, maturity, msg.sender, balance);
@@ -107,8 +108,12 @@ contract GClaimManager {
     /* ========== VIEWS ========== */
 
     /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
-    function excess(address feed, uint256 maturity, uint256 balance) public returns (uint256 amount) {
-        (, address claim, , , , , , ,) = divider.series(feed, maturity);
+    function excess(
+        address feed,
+        uint256 maturity,
+        uint256 balance
+    ) public returns (uint256 amount) {
+        (, address claim, , , , , , , ) = divider.series(feed, maturity);
         uint256 initScale = inits[claim];
         uint256 currScale = Feed(feed).scale();
         uint256 gap = currScale - initScale > 0 ? (balance * currScale) / (currScale - initScale) / 10**18 : 0;
@@ -116,8 +121,6 @@ contract GClaimManager {
             amount = (balance * currScale) / (currScale - initScale) / 10**18;
         }
     }
-
-
 
     // NOTE: Admin pull up issuance?
     // NOTE: Admin approved claims?
