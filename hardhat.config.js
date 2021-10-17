@@ -1,7 +1,7 @@
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 // require("@tenderly/hardhat-tenderly");
-// require("hardhat-abi-exporter");
+require("hardhat-abi-exporter");
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
 require("hardhat-spdx-license-identifier");
@@ -14,9 +14,9 @@ const accounts = {
 
 const config = {
   defaultNetwork: "hardhat",
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
+  // etherscan: {
+  //   apiKey: process.env.ETHERSCAN_API_KEY,
+  // },
   namedAccounts: {
     deployer: {
       default: 0,
@@ -41,7 +41,7 @@ const config = {
       },
       chainId: 111,
       gas: 12000000,
-      blockGasLimit: 0x1fffffffffffff,
+      blockGasLimit: 21000000,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
     },

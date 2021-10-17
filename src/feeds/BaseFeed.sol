@@ -77,5 +77,4 @@ abstract contract BaseFeed is Initializable {
     function _scale() internal virtual returns (uint256 _value);
 
     event Initialized();
-    event WTargetAdded(address indexed twrapper);
 }
