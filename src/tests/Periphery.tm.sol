@@ -51,7 +51,8 @@ contract PeripheryTestHelper is DSTest {
         // feed & factory
         CFeed implementation = new CFeed(); // compound feed implementation
         BaseTWrapper twImpl = new BaseTWrapper(); // feed implementation
-        factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI); // deploy compound feed factory
+        // deploy compound feed factory
+        factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI); 
 //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         (address f, address wtClone) = factory.deployFeed(cDAI); // deploy a cDAI feed

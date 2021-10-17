@@ -42,6 +42,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   const periphery = await ethers.getContract("Periphery");
 
+  // Authorize the periphery on the divider
+  await divider.setPeriphery(periphery).then(tx => tx.wait());
+
   if (!CDAI.has(chainId)) throw Error("No cDai address found");
   const cDaiAddress = CDAI.get(chainId);
 
