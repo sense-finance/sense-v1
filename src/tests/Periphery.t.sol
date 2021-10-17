@@ -6,7 +6,7 @@ import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;

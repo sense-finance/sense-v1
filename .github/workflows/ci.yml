@@ -11,18 +11,26 @@ jobs:
     - uses: actions/setup-node@v2
 
     - name: Install dependencies
-      run: yarn
-
-    - name: Run linter
-      run: yarn lint
-
-    - name: Install dapptools
       run: |
         curl -L https://nixos.org/nix/install | sh
         . "$HOME/.nix-profile/etc/profile.d/nix.sh"
         curl https://dapp.tools/install | sh
-        dapp update
+        yarn install
+
+    - name: Run linter
+      run: yarn lint
+
+    # Tests use dapp
+    - name: Run tests
+      run: |
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
         yarn test
       env:
         # Only fuzz deeply if we're pushing to main or this is a PR to main:
         DEEP_FUZZ: ${{ github.ref == 'refs/heads/main' || github.base_ref == 'main' }}
+        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+    - name: Run deploy scripts on a local mainnet fork
+      run: yarn deploy:hardhat-fork
+      env:
+        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}

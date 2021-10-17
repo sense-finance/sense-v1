@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { OracleLibrary } from "./external/OracleLibrary.sol";
 
 // Internal references

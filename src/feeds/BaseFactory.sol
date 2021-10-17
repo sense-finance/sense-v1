@@ -3,8 +3,8 @@ pragma solidity ^0.8.6;
 
 // External references
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { Trust } from "solmate/auth/Trust.sol";
-import { ERC20 } from "solmate/erc20/SafeERC20.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
 import { Errors } from "../libs/errors.sol";
@@ -14,8 +14,6 @@ import { BaseTWrapper as TWrapper } from "../wrappers/BaseTWrapper.sol";
 
 abstract contract BaseFactory is Trust {
     using Clones for address;
-
-    uint256 MAX_INT = 2**256 - 1;
 
     mapping(address => address) public feeds; // target -> feed (to check if a feed for a given target is deployed)
     address public protocol; // protocol's data contract address
