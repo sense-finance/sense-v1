@@ -15,9 +15,9 @@ contract BaseTWrapper is Initializable {
     using FixedMath for uint256;
 
     /// @notice Program state
-    address public immutable target;
-    address public immutable reward;
-    address public immutable divider;
+    address public target;
+    address public divider;
+    address public reward;
     uint256 totalClaims;
     mapping(address => uint256) claimBalance;
 
