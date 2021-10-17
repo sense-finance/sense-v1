@@ -21,7 +21,6 @@ import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract PeripheryTestHelper is DSTest {
-
     uint256 public constant DELTA = 1;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -37,7 +36,6 @@ contract PeripheryTestHelper is DSTest {
     ISwapRouter uniSwapRouter;
 
     function setUp() public {
-
         // periphery
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
@@ -52,14 +50,14 @@ contract PeripheryTestHelper is DSTest {
         CFeed implementation = new CFeed(); // compound feed implementation
         BaseTWrapper twImpl = new BaseTWrapper(); // feed implementation
         // deploy compound feed factory
-        factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI); 
-//        factory.addTarget(cDAI, true);
+        factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI);
+        //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         (address f, address wtClone) = factory.deployFeed(cDAI); // deploy a cDAI feed
         feed = CFeed(f);
         // users
-//        alice = createUser(2**96, 2**96);
-//        bob = createUser(2**96, 2**96);
+        //        alice = createUser(2**96, 2**96);
+        //        bob = createUser(2**96, 2**96);
     }
 }
 
@@ -74,7 +72,7 @@ contract PeripheryTests is PeripheryTestHelper {
             maturity = DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0);
         }
         ERC20(cDAI).approve(address(periphery), 2**256 - 1);
-        (address zero, address claim) = periphery.sponsorSeries(address(feed), maturity);
+        (address zero, address claim) = periphery.sponsorSeries(address(feed), maturity, 0);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));
@@ -88,6 +86,5 @@ contract PeripheryTests is PeripheryTestHelper {
 
         // check zeros and claims onboarded on PoolManager (Fuse)
         // TODO: do when PoolManage ready
-
     }
 }

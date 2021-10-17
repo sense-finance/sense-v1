@@ -117,7 +117,6 @@ contract TestHelper is DSTest {
         user.doApprove(address(stable), address(periphery));
         user.doApprove(address(stable), address(divider));
         user.doApprove(address(stable), address(divider));
-        uint256 sBase = 10 ** stable.decimals();
         user.doMint(address(stable), sBal);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));

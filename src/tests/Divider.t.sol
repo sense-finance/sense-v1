@@ -433,7 +433,6 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -455,7 +454,6 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
@@ -704,7 +702,6 @@ contract Dividers is TestHelper {
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        uint256 rBalanceBefore = reward.balanceOf(address(bob));
 
         uint256 collected = bob.doCollect(claim);
         collected = bob.doCollect(claim); // forcing distribution of reward // TODO: check this
@@ -828,7 +825,6 @@ contract Dividers is TestHelper {
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));

@@ -21,7 +21,7 @@ contract Wrappers is TestHelper {
 
     function testDistribution() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         BaseTWrapper twrapper = new BaseTWrapper();
@@ -84,7 +84,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionProportionally() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         BaseTWrapper twrapper = new BaseTWrapper();
