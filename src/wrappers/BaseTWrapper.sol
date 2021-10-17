@@ -36,7 +36,7 @@ contract BaseTWrapper is Initializable {
     /* ========== MUTATIVE FUNCTIONS ========== */
     uint256 public share; // accumulated reward token per collected target
     uint256 public totalCollected; // total target collected
-    uint256 public lastRewardBal;  // last recorded balance of reward token
+    uint256 public lastRewardBal; // last recorded balance of reward token
 
     mapping(address => uint256) public crops; // reward token per collected target per user
     mapping(address => uint256) public collected; // collected target per user
@@ -44,8 +44,6 @@ contract BaseTWrapper is Initializable {
     function crop() internal virtual returns (uint256) {
         return ERC20(reward).balanceOf(address(this)) - lastRewardBal;
     }
-
-
 
     /// @notice Distributes rewarded tokens to Claim holders proportionally based on Claim balance
     /// @param _feed Feed to associate with the Series
