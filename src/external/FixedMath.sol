@@ -6,7 +6,7 @@ pragma solidity ^0.8.6;
 library FixedMath {
     uint256 internal constant WAD = 1e18;
 
-    /// Taken from https://github.com/usmfum/USM/blob/master/contracts/FixedMath.sol
+    /// Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol
     /// @dev Multiply an amount by a fixed point factor with 18 decimals, rounds down
     function fmul(
         uint256 x,
@@ -19,7 +19,12 @@ library FixedMath {
         }
     }
 
-    /// Taken from https://github.com/usmfum/USM/blob/master/contracts/FixedMath.sol
+    function fmulUp(uint x, uint y, uint256 baseUnit) internal pure returns (uint z) {
+        z = x * y + baseUnit - 1;    // Rounds up.  So (again imagining 2 decimal places):
+    unchecked { z /= (baseUnit); }     // 383 (3.83) * 235 (2.35) -> 90005 (9.0005), + 99 (0.0099) -> 90104, / 100 -> 901 (9.01).
+    }
+
+    /// Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol
     /// @dev Divide an amount by a fixed point factor with 18 decimals, rounds down
     function fdiv(
         uint256 x,

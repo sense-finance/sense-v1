@@ -8,7 +8,7 @@
     "build": "dapp build",
     "debug": "dapp debug",
     "test": "dapp test -m \".t.sol\"",
-    "test:mainnet": "sh -c 'dapp test --rpc-url $(grep ALCHEMY_KEY .env | cut -d '=' -f2 | (printf 'https://eth-mainnet.alchemyapi.io/v2/' && cat))' -m \".tm.sol\"",
+    "test:mainnet": "sh -c 'dapp test --rpc-url $(grep ALCHEMY_KEY .env | cut -d '=' -f2 | (printf 'https://eth-mainnet.alchemyapi.io/v2/' && cat))' -m \".tm.sol\" --verbose",
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
     "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
@@ -19,7 +19,9 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.3.2",
-    "@rari-capital/solmate": "4.0.0"
+    "@rari-capital/solmate": "4.0.0",
+    "@uniswap/v3-core": "^1.0.0",
+    "@uniswap/v3-periphery": "^1.2.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
