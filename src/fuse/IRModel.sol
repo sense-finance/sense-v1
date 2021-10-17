@@ -28,20 +28,3 @@ abstract contract InterestRateModel {
         uint256 reserveFactorMantissa
     ) external view virtual returns (uint256);
 }
-
-/// @title Sense Interest Rate Model
-/// @notice A fuse-copmatible interest rate model for Zeros, Claims, and Targets supported by Sense
-contract Model is InterestRateModel {
-    function getBorrowRate(
-        uint256 cash, uint256 borrows, uint256 reserves
-    ) external view override returns (uint256) {
-
-    }
-
-    function getSupplyRate(
-        uint256 cash, uint256 borrows, uint256 reserves, 
-        uint256 reserveFactorMantissa
-    ) external view override returns (uint256) {
-
-    }
-}

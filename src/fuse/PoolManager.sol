@@ -8,6 +8,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { Divider } from "../Divider.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 import { Errors } from "../libs/errors.sol";
+import { Token } from "../tokens/Token.sol";
 
 interface FuseDirectoryLike {
     function deployPool(
@@ -20,13 +21,28 @@ interface FuseDirectoryLike {
     ) external returns (uint256, address);
 }
 
+interface ComptrollerLike {
+    function _deployMarket(
+        bool isCEther,
+        bytes calldata constructorData,
+        uint collateralFactorMantissa
+    ) external returns (uint256);
+    function _acceptAdmin() external returns (uint256);
+    function admin() external returns (address);
+    function getAllMarkets() external returns (CTokenLike[] memory);
+}
+
+interface CTokenLike {}
+
 /// @title Fuse Pool Manager
 /// @notice Consolidated Fuse interactions
 contract PoolManager is Trust {
     address public immutable comptrollerImpl;
+    address public immutable cERC20Iml;
     address public immutable fuseDirectory;
     address public immutable divider;
     address public immutable oracle;
+    address public comptroller;
 
     struct AssetParams {
         address irModel;
@@ -35,32 +51,35 @@ contract PoolManager is Trust {
         uint256 closeFactor;
         uint256 liquidationIncentive;
     }
+    AssetParams public zeroParams;
+    AssetParams public claimParams;
+    AssetParams public targetParams;
 
-    bool public deployed;
-    AssetParams public zeros;
-    AssetParams public claims;
-    AssetParams public target;
-    mapping(address => => bool) public targets;
-    mapping(address => mapping(uint256 => bool)) public inits;
+    mapping(address => bool) public tInits; // Target Inits: target -> target added to pool
+    mapping(address => mapping(uint256 => bool)) public sInits; // Series Inits: feed -> maturity -> series (zerosclaims) added to pool
 
-    /// @notice Events
     event SetParams(bytes32 indexed what, AssetParams data);
     event PoolDeployed(
-        string name, address comptrollerImpl, bool whitelist, 
-        uint256 closeFactor, uint256 liqIncentive, address oracle
+        string name, address comptrollerImpl, address comptroller, uint256 poolIndex,
+        bool whitelist, uint256 closeFactor, uint256 liqIncentive, address oracle
     );
+    event TargetAdded(address target, address cTarget);
+    event SeriesAdded(address zero, address claim, address cZero, address cClaim);
 
-    constructor(address _fuseDirectory, address _comptrollerImpl, address _divider, address _oracle) Trust(msg.sender) {
+    constructor(address _fuseDirectory, address _comptrollerImpl, address _cERC20Iml, address _divider, address _oracle) Trust(msg.sender) {
         fuseDirectory   = _fuseDirectory;
         comptrollerImpl = _comptrollerImpl;
+        cERC20Iml       = _cERC20Iml;
         divider         = _divider;
-        oracle          = _oracle;
+        oracle          = _oracle; // Master oracle contract
     }
 
-    function deployPool(string calldata name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) external requiresTrust {
-        require(!deployed, "Pool already deployed");
-
-        FuseDirectoryLike(fuseDirectory).deployPool(
+    function deployPool(
+        string calldata name, bool whitelist, uint256 closeFactor, 
+        uint256 liqIncentive
+    ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
+        require(comptroller == address(0), "Pool already deployed");
+        (_poolIndex, _comptroller) = FuseDirectoryLike(fuseDirectory).deployPool(
             name,
             comptrollerImpl,
             whitelist,  
@@ -69,59 +88,122 @@ contract PoolManager is Trust {
             oracle  
         );
 
-        deployed = true;
+        uint256 err = ComptrollerLike(_comptroller)._acceptAdmin();
+        require(err == 0, "Failed to become admin");
 
-        emit PoolDeployed(name, comptrollerImpl, whitelist, closeFactor,liqIncentive, oracle);
+        comptroller = _comptroller;
+        emit PoolDeployed(name, comptrollerImpl, _comptroller, _poolIndex, whitelist, closeFactor, liqIncentive, oracle);
     }
 
-    function initTarget(address feed, uint256 maturity) external {
-        (address zero, address claim, , , , , ) = Divider(divider).series(feed, maturity);
-        address target = Feed(feed).target();
+    function addTarget(address target, address feed, uint256 maturity) external {
+        // Pass in a (feed, maturity) pair so that we can verify that this a Target is being used in a Series
+        (address zero, , , , , , ) = Divider(divider).series(feed, maturity);
 
-        require(deployed, "Target not yet deployed");
+        require(comptroller != address(0), "Pool not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(!targets[target], Errors.DuplicateSeries);
 
-        // Deploy asset for Target, given it
+        require(target == Feed(feed).target(), "Target is a valid");
+        require(!tInits[target], "Target already added");
+        require(targetParams.irModel != address(0), "Target asset params not set");
+
+        uint256 adminFee = 0;
+        bytes memory constructorData = abi.encodePacked(
+            target, 
+            comptroller, 
+            targetParams.irModel, 
+            Token(target).name(),
+            Token(target).symbol(),
+            cERC20Iml,
+            "0x00", // calldata sent to becomeImplementation (currently unused)
+            targetParams.reserveFactor,
+            adminFee
+        );
+
+        uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
+        require(err == 0, "Failed to add market");
+
+        // CTokenLike[] memory cTokens = ComptrollerLike(comptroller).getAllMarkets();
+        // cTokens[cTokens.length - 1];
 
         // register on oracle
 
-        // Init each assset with the configured risk params
-        inits[feed][maturity] = true;
+        tInits[target] = true;
+        emit TargetAdded(target, target);
     }
 
-    function initSeries(address feed, uint256 maturity) external {
+    function addSeries(address feed, uint256 maturity) external {
         (address zero, address claim, , , , , ) = Divider(divider).series(feed, maturity);
-        address target = Feed(feed).target();
 
-        require(deployed, "Series not yet deployed");
+        require(comptroller != address(0), "Pool not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(!inits[feed][maturity], Errors.DuplicateSeries);
-        require(targets[target], "Target for this Series not yet deployed");
+        require(!sInits[feed][maturity], Errors.DuplicateSeries);
 
+        address target = Feed(feed).target();
+        require(tInits[target], "Target for this Series not yet added");
 
-        // Deploy asset for this series with:
-        // * Zeros
-        // * Claims
+        uint256 adminFee = 0;
+        bytes memory constructorDataZero = abi.encodePacked(
+                zero, 
+                comptroller, 
+                zeroParams.irModel, 
+                Token(zero).name(),
+                Token(zero).symbol(),
+                cERC20Iml,
+                "0x00", // calldata sent to becomeImplementation (currently unused)
+                zeroParams.reserveFactor,
+                adminFee
+        );
 
-        // register on oracle
+        bytes memory constructorDataClaim = abi.encodePacked(
+                claim, 
+                comptroller, 
+                claimParams.irModel, 
+                Token(claim).name(),
+                Token(claim).symbol(),
+                cERC20Iml,
+                "0x00", // calldata sent to becomeImplementation (currently unused)
+                claimParams.reserveFactor,
+                adminFee
+        );
 
-        // Init each assset with the configured risk params
-        inits[feed][maturity] = true;
+        uint256 errZero = ComptrollerLike(comptroller)._deployMarket(false, constructorDataZero, zeroParams.collateralFactor);
+        require(errZero == 0, "Failed to add market");
+
+        uint256 errClaim = ComptrollerLike(comptroller)._deployMarket(false, constructorDataClaim, claimParams.collateralFactor);
+        require(errClaim == 0, "Failed to add market");
+
+        sInits[feed][maturity] = true;
     }
 
-    function stop(address feed, uint256 maturity) external {
+    function pauseTarget(address feed, uint256 maturity) external {
         // require Series to exist  
         require(isTrusted[msg.sender]); // is trusted OR series has already been settled
+
+        // _setMintPaused
+
+        // _setBorrowPaused
+
+        // Unset assets from Series in the pool
+
+    }
+
+
+    function pauseSeries(address feed, uint256 maturity) external {
+        // require Series to exist  
+        require(isTrusted[msg.sender]); // is trusted OR series has already been settled
+
+        // _setMintPaused
+
+        // _setBorrowPaused
 
         // Unset assets from Series in the pool
 
     }
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
-        if (what == "zeros") zeros = data;
-        else if (what == "claims") claims = data;
-        else if (what == "target") target = data;
+        if (what == "ZERO_PARAMS") zeroParams = data;
+        else if (what == "CLAIM_PARAMS") claimParams = data;
+        else if (what == "TARGET_PARAMS") targetParams = data;
         else revert("Invalid param");
         emit SetParams(what, data);
     }

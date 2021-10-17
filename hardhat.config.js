@@ -1,7 +1,7 @@
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 // require("@tenderly/hardhat-tenderly");
-// require("hardhat-abi-exporter");
+require("hardhat-abi-exporter");
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
 require("hardhat-spdx-license-identifier");
