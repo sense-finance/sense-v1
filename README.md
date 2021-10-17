@@ -73,6 +73,10 @@ The Divider contract contains the logic to `issue` ERC20 Zeros and Claims, re`co
 These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
 - DateTime.sol
 - FixedMath.sol
+- FullMath.sol
+- OracleLibrary.sol
+- PoolAddress.sol
+- TickMath.sol
 
 ### Feed
 Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
@@ -88,7 +92,7 @@ Sense will deploy one Feed Factory for each protocol it wants to give support to
 
 Most factories will be similar except for how they implement the `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the target passed is a supported asset of that protocol.
 
-Users can deploy a feed by making a call to `deployFeed(_target)` and sending the address of the target. Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
+Users can deploy a feed by making a call to the `Periphery` contract, which has authority to call `deployFeed(_target)`. Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
 
 To create a feed factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
@@ -102,34 +106,52 @@ Note that Zeros are represented with the `BaseToken.sol` contract.
 
 ### Periphery
 
-(plceholder)
+`Periphery` contains bundled actions for Series Actors and general users. 
+
+For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy feeds) and initialize new Series. The Target Sponsor calls `onboardTarget` which will deploy a Feed via a Feed Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/gClaim pool on UniswapV3.
+
+Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue` / `combine` and `wrap` / `unwrap` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interfact and perform the following operations atomically:
+- swapTargetForZeros
+- swapTargetForClaims
+- swapZerosForTarget
+- swapClaimsForTarget
+
 
 ### Target Wrappers
 
-(plceholder)
+`tWrappers` hold Target before a series' maturity and contain logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target.
 
 ### Emergency Stop
 
-(plceholder)
+`Emergency Stop` is used by Sense Finance, Inc, to `stop` the operation of the Divider by pausing all `Feeds`. 
 
 ### Modules
 
 A Collection of Modules and Utilities for Sense V1
 
-#### G Claim Wrapper
+#### G Claim Manager
 
-The G Claim Wrapper is a contract that lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims.
+`GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims.
+
+
+#### Pool Manager
+
+`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros & Claims and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget`) and Zeros/Claims (`addSeries`). 
 
 #### Recycling Module
 
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 
-#### Pool Manager
-
 ### Access
-We use `Trust.sol` to provide with access control via `requiresTrust` to contracts inheriting from it. Currently, `Divider.sol`, `BaseFactory.sol` and `Recycler.sol` are using it.
+We use `Trust.sol` to provide with access control via `requiresTrust` to contracts inheriting from it.
 
 ### Admin
+
+The long-term goal of the Sense Protocol is to be as governance minimized as possible. However, out of caution, we’re taking a progressive decentralization approach, where we retain certain privileged permissions of v1 of the Protocol to ensure the system scales safely as well as pause the system in case of an emergency (vulnerability, hack, etc). The following list elaborates on these permissions:
+- `Divider.setIsTrusted` - add a new Feed Factory
+- `Divider.setFeed` - pause a faulty feed
+- `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs
+- `EmergencyStop.stop` - stop the Sense Protocol
 
 
 ## Developing
