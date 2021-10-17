@@ -5,7 +5,7 @@ import { ERC20 } from "solmate/erc20/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 import { Claim } from "../tokens/Claim.sol";
-import { MockTWrapper } from "./test-helpers/MockTWrapper.sol";
+import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { Errors } from "../libs/errors.sol";
 
@@ -21,7 +21,7 @@ contract Wrappers is TestHelper {
 
     function testDistribution() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         BaseTWrapper twrapper = new BaseTWrapper();
@@ -50,7 +50,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionSimple() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         BaseTWrapper twrapper = new BaseTWrapper();
@@ -84,7 +84,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionProportionally() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         BaseTWrapper twrapper = new BaseTWrapper();

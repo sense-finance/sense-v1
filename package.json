@@ -11,7 +11,7 @@
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/**/*.sol",
     "fix": "prettier --write src/**/*.sol && yarn lint --fix",
-    "test-mainnet": "sh -c 'dapp test --rpc-url $(grep ETH_RPC_URL .env | cut -d '=' -f2)' -m \".tm.sol\""
+    "test-mainnet": "sh -c 'dapp test --rpc-url $(grep ETH_RPC_URL .env | cut -d '=' -f2) -m \".tm.sol\" --verbose'"
   },
   "devDependencies": {
     "husky": "^7.0.2",

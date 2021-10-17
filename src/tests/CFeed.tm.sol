@@ -9,7 +9,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 
-import { MockFactory } from "./test-helpers/MockFactory.sol";
+import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";

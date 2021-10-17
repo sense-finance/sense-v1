@@ -9,8 +9,8 @@ import { BaseFeed } from "../feeds/BaseFeed.sol";
 import { Divider } from "../Divider.sol";
 import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 
-import { MockFeed } from "./test-helpers/MockFeed.sol";
-import { MockToken } from "./test-helpers/MockToken.sol";
+import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
+import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeFeed is BaseFeed {

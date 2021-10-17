@@ -2,10 +2,10 @@
 pragma solidity ^0.8.6;
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { MockFeed } from "./test-helpers/MockFeed.sol";
-import { MockFactory } from "./test-helpers/MockFactory.sol";
-import { MockToken } from "./test-helpers/MockToken.sol";
-import { MockTWrapper } from "./test-helpers/MockTWrapper.sol";
+import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
+import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
+import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { IFeed } from "./test-helpers/interfaces/IFeed.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { Errors } from "../libs/errors.sol";
@@ -56,7 +56,7 @@ contract Factories is TestHelper {
         assertEq(scale, 1e17);
         hevm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        (address zero, address claim) = alice.doInitSeries(feed, maturity);
+        (address zero, address claim) = alice.doSponsorSeries(feed, maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
     }

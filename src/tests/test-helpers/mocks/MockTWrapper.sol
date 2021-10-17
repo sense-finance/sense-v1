@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { MockToken } from "./MockToken.sol";
 
 // Internal
-import { BaseTWrapper } from "../../wrappers/BaseTWrapper.sol";
+import { BaseTWrapper } from "../../../wrappers/BaseTWrapper.sol";
 
 /// @notice
 contract MockTWrapper is BaseTWrapper {
