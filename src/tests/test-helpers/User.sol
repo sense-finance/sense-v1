@@ -92,7 +92,7 @@ contract User {
     }
 
     function doSponsorSeries(address feed, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = periphery.sponsorSeries(feed, maturity);
+        (zero, claim) = periphery.sponsorSeries(feed, maturity, 0);
     }
 
     function doSettleSeries(address feed, uint256 maturity) public {

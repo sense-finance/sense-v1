@@ -72,7 +72,7 @@ contract PeripheryTests is PeripheryTestHelper {
             maturity = DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0);
         }
         ERC20(cDAI).approve(address(periphery), 2**256 - 1);
-        (address zero, address claim) = periphery.sponsorSeries(address(feed), maturity);
+        (address zero, address claim) = periphery.sponsorSeries(address(feed), maturity, 0);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));

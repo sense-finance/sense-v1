@@ -91,7 +91,6 @@ contract GClaimsManager is TestHelper {
         alice.doApprove(address(target), address(periphery.gClaimManager()));
         hevm.warp(block.timestamp + 20 days);
         uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
-        uint256 aliceTargetBalBefore = target.balanceOf(address(alice));
         alice.doCollect(address(claim));
         alice.doTransfer(address(target), address(bob), target.balanceOf(address(alice)));
 

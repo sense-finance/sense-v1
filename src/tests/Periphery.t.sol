@@ -128,7 +128,7 @@ contract PeripheryTest is TestHelper {
         uint256 backfill = 1e18; // TODO: calculate this properly
         uint256 maturity = getValidMaturity(2021, 10);
 
-        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         alice.doSwapTargetForZeros(address(feed), maturity, tBal, backfill);
 
         uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(alice));

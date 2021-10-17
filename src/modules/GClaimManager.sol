@@ -116,7 +116,6 @@ contract GClaimManager {
         (, address claim, , , , , , , ) = divider.series(feed, maturity);
         uint256 initScale = inits[claim];
         uint256 currScale = Feed(feed).scale();
-        uint256 gap = currScale - initScale > 0 ? (balance * currScale) / (currScale - initScale) / 10**18 : 0;
         if (currScale - initScale > 0) {
             amount = (balance * currScale) / (currScale - initScale) / 10**18;
         }

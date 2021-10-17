@@ -76,7 +76,8 @@ contract Periphery {
     /// @dev Onboards Zero and Claim to Sense Fuse pool
     /// @param feed Feed to associate with the Series
     /// @param maturity Maturity date for the new Series, in units of unix time
-    function sponsorSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
+    /// @param sqrtPriceX96 Initial price of the pool as a sqrt(token1/token0) Q64.96 value
+    function sponsorSeries(address feed, uint256 maturity, uint160 sqrtPriceX96) external returns (address zero, address claim) {
         // transfer INIT_STAKE from sponsor into this contract
         uint256 convertBase = 1;
         uint256 stableDecimals = ERC20(divider.stable()).decimals();
@@ -88,7 +89,7 @@ contract Periphery {
         gClaimManager.join(feed, maturity, 0); // we join just to force the gclaim deployment
         address gclaim = address(gClaimManager.gclaims(claim));
         address unipool = IUniswapV3Factory(uniFactory).createPool(gclaim, zero, UNI_POOL_FEE); // deploy UNIV3 pool
-        // TODO: IUniswapV3Pool(unipool).initialize(sqrtPriceX96);
+        IUniswapV3Pool(unipool).initialize(sqrtPriceX96);
 //        poolManager.addSeries(feed, maturity);
     }
 
