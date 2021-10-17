@@ -593,7 +593,7 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, 10 ** target.decimals()) - 
+        uint256 collect = cBalanceBefore.fdiv(lscale, 10 ** target.decimals()) -
             cBalanceBefore.fdiv(cscale, 10 ** target.decimals());
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
@@ -714,7 +714,7 @@ contract Dividers is TestHelper {
         uint256 rBalanceAfter = reward.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        (, , , , , , uint256 mscale) = divider.series(address(feed), maturity);
+        (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         (, uint256 lvalue) = feed.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);

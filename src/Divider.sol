@@ -242,7 +242,7 @@ contract Divider is Trust {
             }
         }
 
-        ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).wtarget(), msg.sender, tBal);
+        ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
         emit ZeroRedeemed(feed, maturity, tBal);
     }
 
@@ -368,7 +368,7 @@ contract Divider is Trust {
                     tBal = 0;
                 }
             }
-            ERC20(Feed(feed).target()).safeTransfer(usr, tBal);
+            ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), usr, tBal);
         }
 
         emit ClaimRedeemed(feed, maturity, tBal);

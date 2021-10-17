@@ -62,7 +62,7 @@ contract BaseTWrapper is Initializable {
         if (curr > last) require(ERC20(reward).transfer(_usr, curr - last));
         lastRewardBal = ERC20(reward).balanceOf(address(this));
 
-        (, address claim, , , , , ) = Divider(divider).series(_feed, _maturity);
+        (, address claim, , , , , , ,) = Divider(divider).series(_feed, _maturity);
         crops[_usr] = ERC20(claim).balanceOf(_usr).fmulUp(share, 10**27); // TODO: fmulup()?
         totalClaims = ERC20(claim).totalSupply();
         claimBalance[_usr] = ERC20(claim).balanceOf(_usr);
