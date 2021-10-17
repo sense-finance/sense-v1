@@ -15,8 +15,6 @@ import { BaseTWrapper as TWrapper } from "../wrappers/BaseTWrapper.sol";
 abstract contract BaseFactory is Trust {
     using Clones for address;
 
-    uint256 MAX_INT = 2**256 - 1;
-
     mapping(address => address) public feeds; // target -> feed (to check if a feed for a given target is deployed)
     address public protocol; // protocol's data contract address
     address public feedImpl; // feed implementation

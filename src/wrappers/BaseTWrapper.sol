@@ -30,7 +30,7 @@ contract BaseTWrapper is Initializable {
         target = _target;
         divider = _divider;
         reward = _reward;
-        ERC20(target).approve(divider, 2**256 - 1); // approve max int
+        ERC20(target).approve(divider, type(uin256).max); // approve max int
         emit Initialized();
     }
 
