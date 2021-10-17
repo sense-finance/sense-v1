@@ -96,8 +96,6 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, comptrollerImpl, _comptroller, _poolIndex, whitelist, closeFactor, liqIncentive, oracle);
     }
 
-    event A(address);
-    event B(bytes);
     function addTarget(address target, address feed, uint256 maturity) external {
         // Pass in a (feed, maturity) pair so that we can verify that this a Target is being used in a Series
         (address zero, , , , , , ) = Divider(divider).series(feed, maturity);
