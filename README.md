@@ -42,33 +42,42 @@ This configures the dapphub binary cache and installs the `dapp`, `solc`, `seth`
 
 More info about dapptools on https://github.com/dapphub/dapptools
 
+Note: This repo is configured with this version of `dapp` && `solc`:
+```
+dapp 0.34.0
+solc, the solidity compiler commandline interface
+Version: 0.8.6+commit.11564f7e.Darwin.appleclang
+hevm 0.48.1
+```
+
+
 ## Project setup
-- Clone this repo
-```coffeescript
+Clone this repo & install dependencies
+```
 git clone https://github.com/sense-finance/sense-v1.git
-```
-- Install dependencies
-```
-make
+yarn
+dapp update
+yarn build
 ```
 
-## Sense V1 structure
+## Sense V1 Architecture
 
-### Access
-We use `Warded.sol` to provide with access control via wards to contracts inheriting from it. Currently, `Divider.sol`, `BaseFactory.sol` and `Recycler.sol` are using it.
+The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims`, with the help of numerous auxilary contracts, including `Feeds`, `FeedFactories`, `tWrappers`, `Periphery`, and `Emergency Stop`. Each Target can have up to three instances, or `series`, of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+
+The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal, such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversion for Claims or the management of a [Zero/Claim borrowing/lending pool](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
 
 ### Divider
-The Divider contract contains the logic to "divide" Target assets into ERC20 Zeros and Claims, recombine those assets into Target, collect using Claim tokens, and redeem Zeros at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
+The Divider contract contains the logic to `issue` ERC20 Zeros and Claims, re`combine` those assets into Target before their `maturity`, `collect` Target with Claim tokens, and `redeemZero` at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
 
 ### External
 These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
 - DateTime.sol
-- WadMath.sol
+- FixedMath.sol
 
 ### Feed
 Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
 
-Each feed has a *delta* value that represents the maximum growth per second a scale can be when retrieving a value from the protocol's scale method. This delta value is the same across all the targets within the same target type and is defined on the feed factory which then sets it to the feed on initialization.
+Each feed has a `delta` that represents the maximum growth per second a scale can be when retrieving a value from the protocol's scale method. This delta value is the same across all the targets within the same target type and is defined on the feed factory which then sets it to the feed on initialization.
 
 To create a feed implementation, the contract needs to inherit from `BaseFeed.sol` and override `_scale()` which is a function that calls the external protocol to get the current scale value.
 
@@ -83,6 +92,26 @@ Users can deploy a feed by making a call to `deployFeed(_target)` and sending th
 
 To create a feed factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
+### Tokens
+This directory contains the tokens contracts. Sense protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
+- `Mintable.sol` as a token which has minting and burning public methods and is also warded,
+- `BaseToken.sol` as a `Mintable` token with the addition of `maturity`, `divider` and `feed` address variables and restriction of the `burn()` to only be called from the `wards` and
+- `Claim.sol` which inherits from `BaseToken` and defines a `collect()` (which calls `collect()` on `Divider.sol`) and overrides  `transfer()` and `transferFrom()` to also call `collect()`
+
+Note that Zeros are represented with the `BaseToken.sol` contract.
+
+### Periphery
+
+(plceholder)
+
+### Target Wrappers
+
+(plceholder)
+
+### Emergency Stop
+
+(plceholder)
+
 ### Modules
 
 A Collection of Modules and Utilities for Sense V1
@@ -95,13 +124,13 @@ The G Claim Wrapper is a contract that lets a user deposit their "Collect" Claim
 
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 
-### Tokens
-This directory contains the tokens contracts. Sense protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
-- `Mintable.sol` as a token which has minting and burning public methods and is also warded,
-- `BaseToken.sol` as a `Mintable` token with the addition of `maturity`, `divider` and `feed` address variables and restriction of the `burn()` to only be called from the `wards` and
-- `Claim.sol` which inherits from `BaseToken` and defines a `collect()` (which calls `collect()` on `Divider.sol`) and overrides  `transfer()` and `transferFrom()` to also call `collect()`
+#### Pool Manager
 
-Note that Zeros are represented with the `BaseToken.sol` contract.
+### Access
+We use `Trust.sol` to provide with access control via `requiresTrust` to contracts inheriting from it. Currently, `Divider.sol`, `BaseFactory.sol` and `Recycler.sol` are using it.
+
+### Admin
+
 
 ## Developing
 |       |   	|
