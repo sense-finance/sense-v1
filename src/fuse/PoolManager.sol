@@ -30,6 +30,7 @@ interface ComptrollerLike {
     function _acceptAdmin() external returns (uint256);
     function admin() external returns (address);
     function getAllMarkets() external returns (CTokenLike[] memory);
+
 }
 
 interface CTokenLike {}
@@ -95,6 +96,8 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, comptrollerImpl, _comptroller, _poolIndex, whitelist, closeFactor, liqIncentive, oracle);
     }
 
+    event A(address);
+    event B(bytes);
     function addTarget(address target, address feed, uint256 maturity) external {
         // Pass in a (feed, maturity) pair so that we can verify that this a Target is being used in a Series
         (address zero, , , , , , ) = Divider(divider).series(feed, maturity);
@@ -107,7 +110,7 @@ contract PoolManager is Trust {
         require(targetParams.irModel != address(0), "Target asset params not set");
 
         uint256 adminFee = 0;
-        bytes memory constructorData = abi.encodePacked(
+        bytes memory constructorData = abi.encode(
             target, 
             comptroller, 
             targetParams.irModel, 
@@ -175,9 +178,9 @@ contract PoolManager is Trust {
         sInits[feed][maturity] = true;
     }
 
-    function pauseTarget(address feed, uint256 maturity) external {
+    // function pauseTarget(address feed, uint256 maturity) external {
         // require Series to exist  
-        require(isTrusted[msg.sender]); // is trusted OR series has already been settled
+        // require(isTrusted[msg.sender]); // is trusted OR series has already been settled
 
         // _setMintPaused
 
@@ -185,12 +188,12 @@ contract PoolManager is Trust {
 
         // Unset assets from Series in the pool
 
-    }
+    // }
 
 
-    function pauseSeries(address feed, uint256 maturity) external {
+    // function pauseSeries(address feed, uint256 maturity) external {
         // require Series to exist  
-        require(isTrusted[msg.sender]); // is trusted OR series has already been settled
+        // require(isTrusted[msg.sender]); // is trusted OR series has already been settled
 
         // _setMintPaused
 
@@ -198,7 +201,7 @@ contract PoolManager is Trust {
 
         // Unset assets from Series in the pool
 
-    }
+    // }
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;

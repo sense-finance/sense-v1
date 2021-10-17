@@ -54,7 +54,7 @@ contract PoolManagerTest is DSTest {
 
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
-    address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
+    address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
@@ -109,7 +109,7 @@ contract PoolManagerTest is DSTest {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adminFeed), maturity) ;
+        // poolManager.addTarget(address(target), address(adminFeed), maturity) ;
 
         // assert
         assertTrue(false);
