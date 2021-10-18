@@ -49,7 +49,6 @@ contract Periphery {
     PoolManager public poolManager;
     GClaimManager public gClaimManager;
 
-
     constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);

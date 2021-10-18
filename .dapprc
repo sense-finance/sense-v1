@@ -6,7 +6,7 @@ if [ "$CI" == "true" ]
 then
   export DAPP_TEST_FUZZ_RUNS=10000 # In CI we want to fuzz for a long time.
 else
-  export DAPP_TEST_FUZZ_RUNS=1 # When developing we only want to fuzz briefly.
+  export DAPP_TEST_FUZZ_RUNS=100 # When developing we only want to fuzz briefly.
 fi
 # export DAPP_TEST_ADDRESS=0xd8da6bf26964af9d7eed9e03e53415d37aa96045 user with DAI
 export DAPP_TEST_ADDRESS=0xb1e9d641249a2033c37cf1c241a01e717c2f6c76 # user with cDAI

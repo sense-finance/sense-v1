@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 // Internal references
 import {GClaimManager} from "../../modules/GClaimManager.sol";
 import { Divider } from "../../Divider.sol";
+import { Token } from "../../tokens/Token.sol";
 //import { PoolManager } from "../src/fuse/PoolManager.sol";
 import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { Periphery } from "../../Periphery.sol";
@@ -21,8 +22,11 @@ import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { User } from "./User.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 contract TestHelper is DSTest {
+    using FixedMath for uint256;
+
     MockFeed feed;
     MockToken stable;
     MockToken target;
@@ -116,7 +120,6 @@ contract TestHelper is DSTest {
         user.setPeriphery(periphery);
         user.doApprove(address(stable), address(periphery));
         user.doApprove(address(stable), address(divider));
-        user.doApprove(address(stable), address(divider));
         user.doMint(address(stable), sBal);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
@@ -170,6 +173,17 @@ contract TestHelper is DSTest {
             base = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
         }
         return base;
+    }
+
+    function calculateAmountToIssue(uint256 tBal, uint256 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
+        (, uint256 cscale) = feed.lscale();
+//        uint256 cscale = divider.lscales(address(feed), maturity, address(bob));
+        toIssue = tBal.fmul(cscale, baseUnit);
+    }
+
+    function calculateExcess(uint256 tBal, uint256 maturity, address claim) public returns (uint256 gap){
+        uint256 toIssue = calculateAmountToIssue(tBal, maturity, Token(claim).BASE_UNIT());
+        gap = periphery.gClaimManager().excess(address(feed), maturity, toIssue);
     }
 
 }

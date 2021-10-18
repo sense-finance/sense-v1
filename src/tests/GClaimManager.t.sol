@@ -2,10 +2,12 @@
 pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "../libs/errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { GClaimManager } from "../modules/GClaimManager.sol";
+import { Periphery } from "../Periphery.sol";
 
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
@@ -13,11 +15,14 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 contract DividerMock {}
 
 contract GClaimsManager is TestHelper {
+    using FixedMath for uint256;
+    using FixedMath for uint96;
+
     /* ========== join() tests ========== */
 
-    function testCantJoinIfInvalidMaturity() public {
+    function testCantJoinIfInvalidMaturity(uint96 balance) public {
         uint256 maturity = block.timestamp - 1 days;
-        uint256 balance = 1e18;
+        //        uint256 balance = 1e18;
         try alice.doJoin(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -25,9 +30,9 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfSeriesDoesntExists() public {
+    function testCantJoinIfSeriesDoesntExists(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 balance = 10e18;
+        //        uint256 balance = 10e18;
         try alice.doJoin(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -35,11 +40,11 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfNotEnoughClaim() public {
+    function testCantJoinIfNotEnoughClaim(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
         try bob.doJoin(address(feed), maturity, balance) {
@@ -49,11 +54,11 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfNotEnoughClaimAllowance() public {
+    function testCantJoinIfNotEnoughClaimAllowance(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
@@ -68,27 +73,26 @@ contract GClaimsManager is TestHelper {
         uint256 tBase = 10**target.decimals();
         divider.setGuard(address(target), 10000000000000000000000 * tBase);
 
+        feed.setScale(0.1e18); // freeze scale so no excess is generated
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        hevm.warp(block.timestamp + 1 days);
 
         // bob issues and joins
         uint256 bbalance = target.balanceOf(address(bob));
+        bbalance = bbalance - calculateExcess(bbalance, maturity, claim);
         bob.doIssue(address(feed), maturity, bbalance);
-        bob.doApprove(address(claim), address(periphery.gClaimManager()));
-        hevm.warp(block.timestamp + 1 days);
         uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
+        bob.doApprove(address(claim), address(periphery.gClaimManager()));
         bob.doJoin(address(feed), maturity, bobClaimBalance);
         uint256 bobGclaimBalance = ERC20(periphery.gClaimManager().gclaims(address(claim))).balanceOf(address(bob));
         assertEq(bobGclaimBalance, bobClaimBalance);
 
         // alice issues and joins
+        feed.setScale(0); // unfreeze
         uint256 abalance = target.balanceOf(address(alice));
         hevm.warp(block.timestamp + 1 days);
         alice.doIssue(address(feed), maturity, abalance);
         alice.doApprove(address(claim), address(periphery.gClaimManager()));
-        alice.doApprove(address(target), address(periphery.gClaimManager()));
         hevm.warp(block.timestamp + 20 days);
         uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
         alice.doCollect(address(claim));
@@ -101,28 +105,44 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testJoinFirstGClaim() public {
+    function testJoinFirstGClaim(uint96 balance) public {
+        // creating new periphery as the one from test helper already had a first gclaim call
+        Periphery newPeriphery = new Periphery(
+            address(divider),
+            address(poolManager),
+            address(uniFactory),
+            address(uniSwapRouter),
+            "",
+            false,
+            0,
+            0
+        );
+        divider.setPeriphery(address(newPeriphery));
+        alice.setPeriphery(newPeriphery);
+        bob.setPeriphery(newPeriphery);
+        periphery = newPeriphery;
+        alice.doApprove(address(stable), address(periphery));
+
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
+
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        uint256 balance = 10 * claimBaseUnit;
-        hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
-        hevm.warp(block.timestamp + 1 days);
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
         bob.doJoin(address(feed), maturity, claimBalance);
         uint256 gclaimBalance = ERC20(periphery.gClaimManager().gclaims(address(claim))).balanceOf(address(bob));
         assertEq(gclaimBalance, claimBalance);
     }
 
-    function testJoinAfterFirstGClaim() public {
+    function testJoinAfterFirstGClaim(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
 
         // bob issues and joins
-        uint256 balance = 10 * claimBaseUnit;
+        //        uint256 balance = 10 * claimBaseUnit;
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
         uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
@@ -143,17 +163,14 @@ contract GClaimsManager is TestHelper {
         assertEq(aliceTargetBalAfter, aliceTargetBalBefore);
     }
 
-    function testJoinAfterFirstGClaimWithdrawsGap() public {
+    function testJoinAfterFirstGClaimWithdrawsGap(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        hevm.warp(block.timestamp + 1 days);
 
         // bob issues and joins
-        uint256 balance = 10 * claimBaseUnit;
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
-        hevm.warp(block.timestamp + 1 days);
         uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
         bob.doJoin(address(feed), maturity, bobClaimBalance);
         uint256 bobGclaimBalance = ERC20(periphery.gClaimManager().gclaims(address(claim))).balanceOf(address(bob));
@@ -161,7 +178,10 @@ contract GClaimsManager is TestHelper {
 
         // alice issues and joins
         hevm.warp(block.timestamp + 1 days);
-        alice.doIssue(address(feed), maturity, balance);
+        feed.scale();
+        uint256 balanceMinusExcess = uint96(balance - calculateExcess(balance, maturity, claim));
+        target.balanceOf(address(alice));
+        alice.doIssue(address(feed), maturity, balanceMinusExcess);
         alice.doApprove(address(claim), address(periphery.gClaimManager()));
         alice.doApprove(address(target), address(periphery.gClaimManager()));
         uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
@@ -178,9 +198,9 @@ contract GClaimsManager is TestHelper {
 
     /* ========== exit() tests ========== */
 
-    function testCantExitIfSeriesDoesntExists() public {
+    function testCantExitIfSeriesDoesntExists(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 balance = 1e18;
+        //        uint256 balance = 1e18;
         try alice.doExit(address(feed), maturity, balance) {
             fail();
         } catch Error(string memory error) {
@@ -188,15 +208,31 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testExitFirstGClaim() public {
+    function testExitFirstGClaim(uint96 balance) public {
+        // creating new periphery as the one from test helper already had a first gclaim call
+        Periphery newPeriphery = new Periphery(
+            address(divider),
+            address(poolManager),
+            address(uniFactory),
+            address(uniSwapRouter),
+            "",
+            false,
+            0,
+            0
+        );
+        divider.setPeriphery(address(newPeriphery));
+        alice.setPeriphery(newPeriphery);
+        bob.setPeriphery(newPeriphery);
+        periphery = newPeriphery;
+        alice.doApprove(address(stable), address(periphery));
+
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
+
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        uint256 balance = 10 * claimBaseUnit;
-        hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
-        hevm.warp(block.timestamp + 1 days);
         uint256 claimBalanceBefore = Claim(claim).balanceOf(address(bob));
         bob.doJoin(address(feed), maturity, claimBalanceBefore);
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -210,12 +246,15 @@ contract GClaimsManager is TestHelper {
         assertEq(tBalanceBefore, tBalanceAfter);
     }
 
-    function testExitGClaimWithCollected() public {
+    function testExitGClaimWithCollected(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        // avoid fuzz tests in which nothing is issued
+        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        uint256 balance = 10 * claimBaseUnit;
+        //        uint256 balance = 10 * claimBaseUnit;
         hevm.warp(block.timestamp + 1 days);
+        balance = balance - uint96(calculateExcess(balance, maturity, claim));
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
         hevm.warp(block.timestamp + 1 days);
@@ -233,17 +272,15 @@ contract GClaimsManager is TestHelper {
         assertTrue(tBalanceAfter > tBalanceBefore); // TODO: assert exact collected value
     }
 
-    function testExitAfterFirstGClaim() public {
+    function testExitAfterFirstGClaim(uint96 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        hevm.warp(block.timestamp + 1 days);
+        // avoid fuzz tests in which nothing is issued
+        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
 
         // bob issues and joins
-        uint256 balance = 10 * claimBaseUnit;
         bob.doIssue(address(feed), maturity, balance);
         bob.doApprove(address(claim), address(periphery.gClaimManager()));
-        hevm.warp(block.timestamp + 1 days);
         uint256 bobClaimBalance = Claim(claim).balanceOf(address(bob));
         bob.doJoin(address(feed), maturity, bobClaimBalance);
         uint256 bobGclaimBalance = ERC20(periphery.gClaimManager().gclaims(address(claim))).balanceOf(address(bob));
@@ -251,10 +288,11 @@ contract GClaimsManager is TestHelper {
 
         // alice issues and joins
         hevm.warp(block.timestamp + 1 days);
-        alice.doIssue(address(feed), maturity, balance);
+        feed.scale();
+        uint256 balanceMinusExcess = uint96(balance - calculateExcess(balance, maturity, claim));
+        alice.doIssue(address(feed), maturity, balanceMinusExcess);
         alice.doApprove(address(claim), address(periphery.gClaimManager()));
         alice.doApprove(address(target), address(periphery.gClaimManager()));
-        hevm.warp(block.timestamp + 1 days);
         uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
         alice.doJoin(address(feed), maturity, aliceClaimBalance);
         uint256 aliceGclaimBalance = ERC20(periphery.gClaimManager().gclaims(address(claim))).balanceOf(address(alice));

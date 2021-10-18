@@ -6,18 +6,19 @@ import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
 
     function testDeployPeriphery() public {
-        address poolManager = address(1);
+        MockPoolManager poolManager = new MockPoolManager();
         address uniFactory = address(2);
         address uniSwapRouter = address(3);
         Periphery somePeriphery = new Periphery(
             address(divider),
-            poolManager,
+            address(poolManager),
             uniFactory,
             uniSwapRouter,
             "Sense Fuse Pool",
