@@ -40,6 +40,10 @@ contract AdminFeed {
         return value;
     }
 
+    function tilt() external virtual returns (uint256 _value) {
+        return 0;
+    }
+
     function setScale(uint256 _value) external {
         require(msg.sender == owner, "Only owner");
         value = _value;
@@ -60,6 +64,7 @@ contract PoolManagerTest is DSTest {
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+    
 
     function setUp() public {
         stable = new Token("Stable", "SBL", 18);
@@ -72,14 +77,15 @@ contract PoolManagerTest is DSTest {
 
         // Enable the feed
         divider.setFeed(address(adminFeed), true);
+        // Give this address periphery access to the divider (so that it can create Series)
+        divider.setPeriphery(address(this)); 
     }
-
     function initSeries() public returns (uint256 _maturity) {
         // Setup mock stable token
         stable.mint(address(this), 1000 ether);
         stable.approve(address(divider), 1000 ether);
 
-        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 6 weeks);
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
         _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         divider.initSeries(address(adminFeed), _maturity, address(this));
     }
