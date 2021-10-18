@@ -116,7 +116,7 @@ contract Divider is Trust {
         // Reward the caller for doing the work of settling the Series at around the correct time
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, series[feed][maturity].reward);
-        BaseTWrapper(Feed(feed).twrapper()).exit(feed, maturity, address(this), series[feed][maturity].reward); // distribute reward tokens
+        BaseTWrapper(Feed(feed).twrapper()).exit(address(this), series[feed][maturity].reward); // distribute reward tokens
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
 
         emit SeriesSettled(feed, maturity, msg.sender);
@@ -140,7 +140,7 @@ contract Divider is Trust {
         // Ensure the caller won't hit the issuance cap with this action
         require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBal);
-        BaseTWrapper(Feed(feed).twrapper()).join(feed, maturity, msg.sender, tBal);
+        BaseTWrapper(Feed(feed).twrapper()).join(msg.sender, tBal);
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement
         if (tDecimals != 18) {
@@ -199,7 +199,7 @@ contract Divider is Trust {
         uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
-        BaseTWrapper(Feed(feed).twrapper()).exit(feed, maturity, msg.sender, tBal); // distribute reward tokens
+        BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal); // distribute reward tokens
 
         emit Combined(feed, maturity, tBal, msg.sender);
     }
@@ -246,7 +246,7 @@ contract Divider is Trust {
         }
 
         ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
-        BaseTWrapper(Feed(feed).twrapper()).exit(feed, maturity, msg.sender, tBal);
+        BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal);
         emit ZeroRedeemed(feed, maturity, tBal);
     }
 
@@ -321,7 +321,7 @@ contract Divider is Trust {
         // is what Claim holders are collecting
         collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
         target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
-        BaseTWrapper(Feed(feed).twrapper()).exit(feed, maturity, usr, collected); // distribute reward tokens
+        BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
@@ -372,7 +372,7 @@ contract Divider is Trust {
                 }
             }
             ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), usr, tBal);
-            BaseTWrapper(Feed(feed).twrapper()).exit(feed, maturity, usr, tBal);
+            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBal);
         }
 
         emit ClaimRedeemed(feed, maturity, tBal);
@@ -434,7 +434,7 @@ contract Divider is Trust {
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), cup, series[feed][maturity].reward);
-        BaseTWrapper(Feed(feed).twrapper()).exit(feed, maturity, address(this), series[feed][maturity].reward); // distribute reward tokens
+        BaseTWrapper(Feed(feed).twrapper()).exit(address(this), series[feed][maturity].reward); // distribute reward tokens
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
         emit Backfilled(feed, maturity, mscale, backfills);
