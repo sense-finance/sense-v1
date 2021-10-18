@@ -46,6 +46,7 @@ contract PoolManager is Trust {
     address public immutable divider;
     address public immutable oracle;
     address public comptroller;
+    address public periphery;
 
     struct AssetParams {
         address irModel;
@@ -75,6 +76,7 @@ contract PoolManager is Trust {
     );
     event TargetAdded(address target, address cTarget);
     event SeriesAdded(address zero, address claim, address cZero, address cClaim);
+    event PeripheryChanged(address periphery);
 
     constructor(
         address _fuseDirectory,
@@ -122,18 +124,8 @@ contract PoolManager is Trust {
         );
     }
 
-    function addTarget(
-        address target,
-        address feed,
-        uint256 maturity
-    ) external {
-        // Pass in a (feed, maturity) pair so that we can verify that this a Target is being used in a Series
-        (address zero, , , , , , , , ) = Divider(divider).series(feed, maturity);
-
+    function addTarget(address target) external onlyPeriphery {
         require(comptroller != address(0), "Pool not yet deployed");
-        require(zero != address(0), Errors.SeriesDoesntExists);
-
-        require(target == Feed(feed).target(), "Target is a valid");
         require(!tInits[target], "Target already added");
         require(targetParams.irModel != address(0), "Target asset params not set");
 
@@ -244,5 +236,17 @@ contract PoolManager is Trust {
         else if (what == "TARGET_PARAMS") targetParams = data;
         else revert("Invalid param");
         emit SetParams(what, data);
+    }
+
+    function setPeriphery(address _periphery) external requiresTrust {
+        periphery = _periphery;
+        emit PeripheryChanged(_periphery);
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyPeriphery() {
+        require(periphery == msg.sender, Errors.OnlyPeriphery);
+        _;
     }
 }

@@ -5,7 +5,6 @@ pragma solidity ^0.8.6;
 import {GClaimManager} from "../../modules/GClaimManager.sol";
 import { Divider } from "../../Divider.sol";
 import { Token } from "../../tokens/Token.sol";
-//import { PoolManager } from "../src/fuse/PoolManager.sol";
 import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
@@ -102,6 +101,7 @@ contract TestHelper is DSTest {
         factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
+        periphery.setFactory(address(factory), true);
         (address f, address wt) = periphery.onboardTarget(address(feed), 0, address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = TWrapper(wt);
