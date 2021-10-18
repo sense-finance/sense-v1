@@ -108,10 +108,8 @@ contract Periphery is Trust {
 
         // swap gclaims to zeros
         address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(gclaim, zero, issued, address(this));
-
+        uint256 swapped = _swap(gclaim, zero, issued, address(this), minAccepted);
         uint256 totalZeros = issued + swapped;
-        require(totalZeros >= minAccepted, "Too few tokens returned from trade");
 
         // transfer issued + bought zeros to user
         ERC20(zero).transfer(msg.sender, totalZeros);
@@ -128,13 +126,11 @@ contract Periphery is Trust {
         // swap zeros to gclaims
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(zero, gclaim, issued, address(this));
+        uint256 swapped = _swap(zero, gclaim, issued, address(this), minAccepted);
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
-
         uint256 totalClaims = issued + swapped;
-        require(totalClaims >= minAccepted, "Too few tokens returned from trade");
 
         // transfer issued + bought claims to user
         ERC20(claim).transfer(msg.sender, totalClaims);
@@ -152,12 +148,11 @@ contract Periphery is Trust {
 
         // swap some zeros for gclaims
         uint256 zerosToSell = zBal / (rate + 1);
-        uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this));
+        uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this), minAccepted);
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
 
-        require(swapped >= minAccepted, "Too few tokens returned from trade");
 
         // combine zeros & claims
         divider.combine(feed, maturity, swapped);
@@ -178,9 +173,7 @@ contract Periphery is Trust {
         gClaimManager.exit(feed, maturity, claimsToConvert);
 
         // swap gclaims for zeros
-        uint256 swapped = _swap(gclaim, zero, claimsToConvert, address(this));
-
-        require(swapped >= minAccepted, "Too few tokens returned from trade");
+        uint256 swapped = _swap(gclaim, zero, claimsToConvert, address(this), minAccepted);
 
         // combine zeros & claims
         divider.combine(feed, maturity, swapped);
@@ -196,7 +189,7 @@ contract Periphery is Trust {
         return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
     }
 
-    function _swap(address tokenIn, address tokenOut, uint256 amountIn, address recipient) internal returns (uint256 amountOut) {
+    function _swap(address tokenIn, address tokenOut, uint256 amountIn, address recipient, uint256 minAccepted) internal returns (uint256 amountOut) {
         // approve router to spend tokenIn.
         ERC20(tokenIn).safeApprove(address(uniSwapRouter), amountIn);
 
@@ -208,7 +201,7 @@ contract Periphery is Trust {
                 recipient: recipient,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: 0,
+                amountOutMinimum: minAccepted,
                 sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
 
