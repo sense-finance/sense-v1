@@ -120,4 +120,24 @@ contract Wrappers is TestHelper {
         assertClose(ERC20(reward).balanceOf(address(alice)), 80 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 50 * 1e18);
     }
+
+    function testDistributionCollectAndTransfer() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = initSampleSeries(address(alice), maturity);
+        feed.setScale(1e18);
+
+        BaseTWrapper twrapper = new BaseTWrapper();
+        twrapper.initialize(address(target), address(divider), address(reward));
+
+        alice.doIssue(address(feed), maturity, 60 * 1e18);
+        bob.doIssue(address(feed), maturity, 40 * 1e18);
+
+        assertEq(reward.balanceOf(address(bob)), 0);
+
+        reward.mint(address(twrapper), 60 * 1e18);
+
+        bob.doCollect(claim);
+        // Bob should get 1/3 of the reward
+        assertEq(reward.balanceOf(address(bob)), 20 * 1e18);
+    }
 }

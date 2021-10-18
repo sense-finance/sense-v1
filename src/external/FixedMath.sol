@@ -15,7 +15,7 @@ library FixedMath {
 
     function fmulUp(uint x, uint y, uint256 baseUnit) internal pure returns (uint z) {
         z = x * y + baseUnit - 1;    // Rounds up.  So (again imagining 2 decimal places):
-    unchecked { z /= (baseUnit); }     // 383 (3.83) * 235 (2.35) -> 90005 (9.0005), + 99 (0.0099) -> 90104, / 100 -> 901 (9.01).
+    unchecked { z /= baseUnit; }     // 383 (3.83) * 235 (2.35) -> 90005 (9.0005), + 99 (0.0099) -> 90104, / 100 -> 901 (9.01).
     }
 
     /// Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol

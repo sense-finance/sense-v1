@@ -65,6 +65,7 @@ contract BaseTWrapper is Initializable {
         crops[_usr] = ERC20(claim).balanceOf(_usr).fmulUp(share, 10**27); // TODO: fmulup()?
         totalClaims = ERC20(claim).totalSupply();
         claimBalance[_usr] = ERC20(claim).balanceOf(_usr);
+        emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
     /// @notice Some protocols do not airdrop the reward token but the user needs to make a call to claim them.
