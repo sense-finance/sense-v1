@@ -64,9 +64,9 @@ yarn build
 
 # <img src="contract-diagram.svg" alt="sense smart contract user/contract interaction diagram">
 
-The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Feeds`, `FeedFactories`, `TWrappers`, `Periphery` and `Emergency Stop`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Feeds`, `Feed Factories`, `Periphery`, `TWrappers` and `Emergency Stop`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
-The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal, such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversions for Claims or the management of a [Zero/Claim borrowing/lending pool](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
+The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversions for Claims or the management of a [Zero/Claim borrowing/lending pool](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
 
 ### Divider
 The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
@@ -89,27 +89,25 @@ Users can deploy a Feed by making a call to the `Periphery` contract, which has 
 
 To create a Feed Factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
-### Tokens
-This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
-- `Token.sol` as a minimalist ERC20 implementation with auth'd `burn()` and `mint()`. Used for Zero contracts.
-- `Claim.sol` as a minimalist yield token implementation that:
-    1. inherits from `Token`
-    2. adds `maturity`, `divider` and `feed` address variables
-    3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
-
-
 ### Periphery
 
 Periphery contains bundled actions for Series Actors and general users. 
 
 For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy feeds) and initialize new Series. The Target Sponsor calls `onboardTarget` which will deploy a Feed via a Feed Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/gClaim pool on UniswapV3.
 
-Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue()` / `combine()` and `wrap()` / `unwrap()` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interface and perform the following operations atomically:
+Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue()` / `combine()` and `join()` / `exit()` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interface and perform the following operations atomically:
 - swapTargetForZeros
 - swapTargetForClaims
 - swapZerosForTarget
 - swapClaimsForTarget
 
+### Tokens
+This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
+- `Token.sol` as a minimalist ERC20 implementation with auth'd `burn()` and `mint()`. Used for Zeros.
+- `Claim.sol` as a minimalist yield token implementation that:
+    1. inherits from `Token`
+    2. adds `maturity`, `divider` and `feed` address variables
+    3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
 
 ### Target Wrappers
 
@@ -146,6 +144,16 @@ The long-term goal of the Sense Protocol is to be as governance minimized as pos
 - `Divider.setFeed` - pause a faulty feed
 - `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs
 - `EmergencyStop.stop` - stop the Sense Protocol
+- `Divider.setGuard` - set the cap for the Guarded launch
+- `Divider.setPeriphery`
+- `Divider.setPeriphery`
+- `BaseFactory.setDivider`
+- `BaseFactory.setDelta`
+- `BaseFactory.setFeedImplementation`
+- `BaseFactory.setTWImplementation`
+- `BaseFactory.setProtocol`
+- `PoolManager.deployPool` - deploy the Sense Fuse Pool
+- `PoolManager.setParams` - set parameters for the Sense Fuse Pool
 
 ### External
 These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
