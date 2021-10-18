@@ -127,17 +127,17 @@ contract User {
         gClaimManager.exit(feed, maturity, balance);
     }
 
-    function doSwapTargetForZeros(address feed, uint256 maturity, uint256 balance, uint256 backfill) public {
-        periphery.swapTargetForZeros(feed, maturity, balance, backfill);
+    function doSwapTargetForZeros(address feed, uint256 maturity, uint256 balance, uint256 backfill, uint256 minAccepted) public {
+        periphery.swapTargetForZeros(feed, maturity, balance, backfill, minAccepted);
     }
-    function doSwapTargetForClaims(address feed, uint256 maturity, uint256 balance) public {
-        periphery.swapTargetForClaims(feed, maturity, balance);
+    function doSwapTargetForClaims(address feed, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+        periphery.swapTargetForClaims(feed, maturity, balance, minAccepted);
     }
-    function doSwapZerosForTarget(address feed, uint256 maturity, uint256 balance) public {
-        periphery.swapZerosForTarget(feed, maturity, balance);
+    function doSwapZerosForTarget(address feed, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+        periphery.swapZerosForTarget(feed, maturity, balance, minAccepted);
     }
-    function doSwapClaimsForTarget(address feed, uint256 maturity, uint256 balance) public {
-        periphery.swapClaimsForTarget(feed, maturity, balance);
+    function doSwapClaimsForTarget(address feed, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+        periphery.swapClaimsForTarget(feed, maturity, balance, minAccepted);
     }
 
 }

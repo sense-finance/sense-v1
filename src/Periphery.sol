@@ -18,23 +18,6 @@ import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
-
-/**
- * @title BasePriceOracle
- * @notice Returns prices of underlying tokens directly without the caller having to specify a cToken address.
- * @dev Implements the `PriceOracle` interface.
- * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- */
-interface BasePriceOracle {
-    /**
-     * @notice Get the price of an underlying asset.
-     * @param underlying The underlying asset to get the price of.
-     * @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
-     * Zero means the price is unavailable.
-     */
-    function price(address underlying) external view returns (uint);
-}
-
 /// @title Periphery contract
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Periphery is Trust {
@@ -110,7 +93,7 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
     /// @param backfill Amount in target to backfill gClaims
-    function swapTargetForZeros(address feed, uint256 maturity, uint256 tBal, uint256 backfill) external {
+    function swapTargetForZeros(address feed, uint256 maturity, uint256 tBal, uint256 backfill, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
         // transfer target into this contract
@@ -127,12 +110,15 @@ contract Periphery is Trust {
         address gclaim = address(gClaimManager.gclaims(claim));
         uint256 swapped = _swap(gclaim, zero, issued, address(this));
 
+        uint256 totalZeros = issued + swapped;
+        require(totalZeros >= minAccepted, "Too few tokens returned from trade");
+
         // transfer issued + bought zeros to user
-        ERC20(zero).transfer(msg.sender, issued + swapped);
+        ERC20(zero).transfer(msg.sender, totalZeros);
 
     }
 
-    function swapTargetForClaims(address feed, uint256 maturity, uint256 tBal) external {
+    function swapTargetForClaims(address feed, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
         // transfer target into this contract
         ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal);
 
@@ -147,11 +133,14 @@ contract Periphery is Trust {
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
 
+        uint256 totalClaims = issued + swapped;
+        require(totalClaims >= minAccepted, "Too few tokens returned from trade");
+
         // transfer issued + bought claims to user
-        ERC20(claim).transfer(msg.sender, issued + swapped);
+        ERC20(claim).transfer(msg.sender, totalClaims);
     }
 
-    function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal) external {
+    function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
 
@@ -163,16 +152,18 @@ contract Periphery is Trust {
 
         // swap some zeros for gclaims
         uint256 zerosToSell = zBal / (rate + 1);
-            uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this));
+        uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this));
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
+
+        require(swapped >= minAccepted, "Too few tokens returned from trade");
 
         // combine zeros & claims
         divider.combine(feed, maturity, swapped);
     }
 
-    function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal) external {
+    function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
 
@@ -188,6 +179,8 @@ contract Periphery is Trust {
 
         // swap gclaims for zeros
         uint256 swapped = _swap(gclaim, zero, claimsToConvert, address(this));
+
+        require(swapped >= minAccepted, "Too few tokens returned from trade");
 
         // combine zeros & claims
         divider.combine(feed, maturity, swapped);
@@ -215,7 +208,7 @@ contract Periphery is Trust {
                 recipient: recipient,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: price(tokenIn, tokenOut),
+                amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
 
