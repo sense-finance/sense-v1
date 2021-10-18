@@ -80,7 +80,7 @@ contract BaseTWrapper is Initializable {
     ) internal {
         _claimReward();
         uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
-        if (totalTarget > 0) share += (crop().fdiv(totalTarget, 10**27));
+        if (totalTarget > 0) share += (crop.fdiv(totalTarget, 10**27));
         uint256 last = rewarded[_usr];
         uint256 curr = tBalance[_usr].fmul(share, 10**27);
         if (curr > last) require(ERC20(reward).transfer(_usr, curr - last));
