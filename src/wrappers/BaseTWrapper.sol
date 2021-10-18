@@ -45,7 +45,7 @@ contract BaseTWrapper is Initializable {
         address _usr,
         uint256 val
     ) public onlyDivider {
-        _distribute(_feed, _maturity, _usr);
+        _distribute(_usr);
         (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
         if (val > 0) {
             totalTarget += val;
@@ -60,7 +60,7 @@ contract BaseTWrapper is Initializable {
         address _usr,
         uint256 val
     ) public onlyDivider {
-        _distribute(_feed, _maturity, _usr);
+        _distribute(_usr);
         (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
         if (val > 0) {
             totalTarget -= val;
@@ -70,14 +70,8 @@ contract BaseTWrapper is Initializable {
     }
 
     /// @notice Distributes rewarded tokens to Claim holders proportionally based on Claim balance
-    /// @param _feed Feed to associate with the Series
-    /// @param _maturity Maturity date
     /// @param _usr User to distribute reward tokens to
-    function _distribute(
-        address _feed,
-        uint256 _maturity,
-        address _usr
-    ) internal {
+    function _distribute(address _usr) internal {
         _claimReward();
         uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
         if (totalTarget > 0) share += (crop.fdiv(totalTarget, 10**27));
