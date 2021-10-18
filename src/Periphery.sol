@@ -4,8 +4,10 @@ pragma solidity ^0.8.6;
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { OracleLibrary } from "./external/OracleLibrary.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 // Internal references
+import { Errors } from "./libs/errors.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
@@ -35,8 +37,9 @@ interface BasePriceOracle {
 
 /// @title Periphery contract
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
-contract Periphery {
+contract Periphery is Trust {
     using SafeERC20 for ERC20;
+    using Errors for string;
 
     /// @notice Configuration
     uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
@@ -48,8 +51,9 @@ contract Periphery {
     Divider public divider;
     PoolManager public poolManager;
     GClaimManager public gClaimManager;
+    mapping(address => bool) public factories;  // feed factories -> supported
 
-    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) {
+    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
         gClaimManager = new GClaimManager(_divider);
@@ -92,9 +96,10 @@ contract Periphery {
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
     function onboardTarget(address feed, uint256 maturity, address factory, address target) external returns (address feedClone, address wtClone){
+        require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
-        poolManager.addTarget(target, feed, maturity);
+        poolManager.addTarget(target);
         emit TargetOnboarded(target);
     }
 
@@ -217,10 +222,19 @@ contract Periphery {
         amountOut = uniSwapRouter.exactInputSingle(params); // executes the swap
     }
 
+    /* ========== ADMIN FUNCTIONS ========== */
 
-    /* ========== MODIFIERS ========== */
+    /// @notice Enable or disable a factory
+    /// @param factory Factory's address
+    /// @param isOn Flag setting this factory to enabled or disabled
+    function setFactory(address factory, bool isOn) external requiresTrust {
+        require(factories[factory] != isOn, Errors.ExistingValue);
+        factories[factory] = isOn;
+        emit FactoryChanged(factory, isOn);
+    }
 
     /* ========== EVENTS ========== */
+    event FactoryChanged(address indexed feed, bool isOn);
     event SeriesSponsored(address indexed feed, uint256 indexed maturity, address indexed sponsor);
     event TargetOnboarded(address target);
 
