@@ -145,10 +145,7 @@ contract PoolManager is Trust {
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
         require(err == 0, "Failed to add market");
 
-        // CTokenLike[] memory cTokens = ComptrollerLike(comptroller).getAllMarkets();
-        // cTokens[cTokens.length - 1];
-
-        // register on oracle
+        // Will use univ3 price oracle on underlying for the Target
 
         tInits[target] = true;
         emit TargetAdded(target, target);
@@ -189,6 +186,8 @@ contract PoolManager is Trust {
             adminFee
         );
 
+        // Will use univ3 price oracle on these assets
+
         uint256 errZero = ComptrollerLike(comptroller)._deployMarket(
             false,
             constructorDataZero,
@@ -205,30 +204,6 @@ contract PoolManager is Trust {
 
         sInits[feed][maturity] = true;
     }
-
-    // function pauseTarget(address feed, uint256 maturity) external {
-    // require Series to exist
-    // require(isTrusted[msg.sender]); // is trusted OR series has already been settled
-
-    // _setMintPaused
-
-    // _setBorrowPaused
-
-    // Unset assets from Series in the pool
-
-    // }
-
-    // function pauseSeries(address feed, uint256 maturity) external {
-    // require Series to exist
-    // require(isTrusted[msg.sender]); // is trusted OR series has already been settled
-
-    // _setMintPaused
-
-    // _setBorrowPaused
-
-    // Unset assets from Series in the pool
-
-    // }
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;
