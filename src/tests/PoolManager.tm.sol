@@ -6,7 +6,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 // Internal references
 import { Divider } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
-import { Token } from "../tokens/token.sol";
+import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
