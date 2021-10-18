@@ -123,6 +123,6 @@ contract Wrappers is TestHelper {
         reward.mint(address(twrapper), 60 * 1e18);
 
         bob.doCollect(claim);
-        assertEq(reward.balanceOf(address(bob)), 24 * 1e18);
+        assertClose(reward.balanceOf(address(bob)), 24 * 1e18);
     }
 }

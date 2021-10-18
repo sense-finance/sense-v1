@@ -115,8 +115,7 @@ contract Divider is Trust {
 
         // Reward the caller for doing the work of settling the Series at around the correct time
         ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, series[feed][maturity].reward);
-        BaseTWrapper(Feed(feed).twrapper()).exit(address(this), series[feed][maturity].reward); // distribute reward tokens
+        target.safeTransferFrom(address(this), msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
 
         emit SeriesSettled(feed, maturity, msg.sender);
@@ -137,11 +136,6 @@ contract Divider is Trust {
         uint256 tBase = 10 ** tDecimals;
         uint256 fee;
 
-        // Ensure the caller won't hit the issuance cap with this action
-        require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
-        target.safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBal);
-        BaseTWrapper(Feed(feed).twrapper()).join(msg.sender, tBal);
-
         // Take the issuance fee out of the deposited Target, and put it towards the settlement
         if (tDecimals != 18) {
             fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
@@ -151,6 +145,14 @@ contract Divider is Trust {
 
         series[feed][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
+
+        // Ensure the caller won't hit the issuance cap with this action
+        require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
+        target.safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBalSubFee);
+        target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
+
+        // Update values on target wrapper
+        BaseTWrapper(Feed(feed).twrapper()).join(msg.sender, tBalSubFee);
 
         // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
         // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
@@ -433,11 +435,17 @@ contract Divider is Trust {
         // Determine where the rewards should go depending on where we are relative to the maturity date
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransferFrom(Feed(feed).twrapper(), cup, series[feed][maturity].reward);
-        BaseTWrapper(Feed(feed).twrapper()).exit(address(this), series[feed][maturity].reward); // distribute reward tokens
+        target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
         emit Backfilled(feed, maturity, mscale, backfills);
+    }
+
+    /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
+    /// @param feed Feed's address
+    function withdrawFeesRewards(address feed) external requiresTrust {
+        ERC20 rewardToken = ERC20(BaseTWrapper(Feed(feed).twrapper()).reward());
+        rewardToken.safeTransfer(cup, rewardToken.balanceOf(address(this)));
     }
 
     /* ========== INTERNAL VIEWS ========== */

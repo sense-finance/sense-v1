@@ -287,12 +287,33 @@ contract Dividers is TestHelper {
         assertEq(afterBalance, beforeBalance + INIT_STAKE);
     }
 
-    //    function testSettleSeriesFeesAreTransferredIfSponsor() public {
-    //        revert("IMPLEMENT");
-    //    }
-    //
+    function testSettleSeriesFeesAreTransferredIfSponsor(uint96 tBal) public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 beforeBalance = target.balanceOf(address(alice));
+        initSampleSeries(address(alice), maturity);
+        alice.doIssue(address(feed), maturity, tBal);
+        bob.doIssue(address(feed), maturity, tBal);
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(feed), maturity);
+        uint256 tBase = 10**target.decimals();
+        uint256 convertBase = 1;
+        uint256 tDecimals = target.decimals();
+        if (tDecimals != 18) {
+            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
+        }
+        uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase);
+        uint256 afterBalance = target.balanceOf(address(alice));
+        assertClose(beforeBalance + fee * 2, afterBalance);
+    }
+
     //    function testSettleSeriesFeesAreTransferredIfNotSponsor() public {
-    //        revert("IMPLEMENT");
+    //        uint256 maturity = getValidMaturity(2021, 10);
+    //        uint256 beforeBalance = stable.balanceOf(address(bob));
+    //        sponsorSampleSeries(address(alice), maturity);
+    //        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
+    //        bob.doSettleSeries(address(feed), maturity);
+    //        uint256 afterBalance = stable.balanceOf(address(bob));
+    //        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stable.decimals()));
     //    }
 
     /* ========== issue() tests ========== */
