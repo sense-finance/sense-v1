@@ -12,6 +12,7 @@ import { Errors } from "./libs/errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
+import { BaseTWrapper } from "./wrappers/BaseTWrapper.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -113,7 +114,8 @@ contract Divider is Trust {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, series[feed][maturity].reward);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransferFrom(address(this), msg.sender, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
 
         emit SeriesSettled(feed, maturity, msg.sender);
@@ -134,10 +136,6 @@ contract Divider is Trust {
         uint256 tBase = 10 ** tDecimals;
         uint256 fee;
 
-        // Ensure the caller won't hit the issuance cap with this action
-        require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
-        target.safeTransferFrom(msg.sender, address(this), tBal);
-
         // Take the issuance fee out of the deposited Target, and put it towards the settlement
         if (tDecimals != 18) {
             fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
@@ -147,6 +145,14 @@ contract Divider is Trust {
 
         series[feed][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
+
+        // Ensure the caller won't hit the issuance cap with this action
+        require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
+        target.safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBalSubFee);
+        target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
+
+        // Update values on target wrapper
+        BaseTWrapper(Feed(feed).twrapper()).join(msg.sender, tBalSubFee);
 
         // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
         // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
@@ -180,7 +186,7 @@ contract Divider is Trust {
 
         // Burn the Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
-        // Collect whatever excess is due for accounting 
+        // Collect whatever excess is due for accounting
         _collect(msg.sender, feed, maturity, uBal, address(0));
 
         // We use lscale since the current scale was already stored there by the `_collect()` call
@@ -193,7 +199,9 @@ contract Divider is Trust {
 
         // Convert from units of Underlying to units of Target
         uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
+        BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal); // distribute reward tokens
 
         emit Combined(feed, maturity, tBal, msg.sender);
     }
@@ -217,7 +225,7 @@ contract Divider is Trust {
         if (series[feed][maturity].mscale < series[feed][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
             uint256 tBalZeroActual = uBal.fdiv(series[feed][maturity].maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                .fmul(FixedMath.WAD - series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
+                .fmul(FixedMath.WAD - series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals());
 
             // Set our Target transfer value to the actual principal we have reserved for Zeros
             tBal = tBalZeroActual;
@@ -228,7 +236,7 @@ contract Divider is Trust {
             // Cut from Claim holders to cover shortfall if we can
             if (tBalClaimActual != 0) {
                 uint256 shortfall = tBal - tBalZeroActual;
-                // If the shortfall is less than what we've reserved for Claims, cover the whole thing 
+                // If the shortfall is less than what we've reserved for Claims, cover the whole thing
                 // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
                 if (tBalClaimActual > shortfall) {
                     tBal += shortfall;
@@ -239,7 +247,8 @@ contract Divider is Trust {
             }
         }
 
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
+        BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal);
         emit ZeroRedeemed(feed, maturity, tBal);
     }
 
@@ -277,6 +286,7 @@ contract Divider is Trust {
         uint256 cscale = _series.maxscale;
         uint256 lscale = lscales[feed][maturity][usr];
         Claim claim = Claim(series[feed][maturity].claim);
+        ERC20 target = ERC20(Feed(feed).target());
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
         // set the "last scale" value to the scale at issuance for this series
@@ -303,21 +313,25 @@ contract Divider is Trust {
                     lscales[feed][maturity][usr] = maxscale;
                 }
             }
-        } 
+        }
 
         // Determine how much underlying has accrued since the last time this user collected, in units of Target.
         // (Or take the last time as issuance if they haven't yet)
         // Reminder that `Underlying / Scale` = `Target`, so the following equation is saying, for some amount of Underlying `u`:
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
-        // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess" 
+        // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
-        ERC20(Feed(feed).target()).safeTransfer(usr, collected);
+        uint256 tBalNow = uBal.fdiv(cscale, claim.BASE_UNIT());
+        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
+        target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
+        BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = cscale;
+            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow - collected);
+            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow - collected);
         }
 
         emit Collected(feed, maturity, collected);
@@ -338,22 +352,22 @@ contract Divider is Trust {
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
             tBal = uBal.fdiv(_series.maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                .fmul(_series.tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
+                .fmul(_series.tilt, 10 ** ERC20(Feed(feed).target()).decimals());
 
             // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
                 // Amount of Target we would ideally have set aside for Zero holders
                 uint256 tBalZeroIdeal = uBal.fdiv(_series.mscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
+                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals());
 
                 // Amount of Target we actually have set aside for them (after collections from Claim holders)
                 uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals()); 
+                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals());
 
                 // Calculate how much is getting taken from Claim's principal
                 uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
 
-                // If the shortfall is less than what we've reserved for Claims, cover the whole thing 
+                // If the shortfall is less than what we've reserved for Claims, cover the whole thing
                 // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
                 if (tBal > shortfall) {
                     tBal -= shortfall;
@@ -362,7 +376,8 @@ contract Divider is Trust {
                     tBal = 0;
                 }
             }
-            ERC20(Feed(feed).target()).safeTransfer(usr, tBal);
+            ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), usr, tBal);
+            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBal);
         }
 
         emit ClaimRedeemed(feed, maturity, tBal);
@@ -422,10 +437,18 @@ contract Divider is Trust {
 
         // Determine where the rewards should go depending on where we are relative to the maturity date
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
-        ERC20(Feed(feed).target()).safeTransfer(cup, series[feed][maturity].reward);
+        ERC20 target = ERC20(Feed(feed).target());
+        target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
 
         emit Backfilled(feed, maturity, mscale, backfills);
+    }
+
+    /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
+    /// @param feed Feed's address
+    function withdrawFeesRewards(address feed) external requiresTrust {
+        ERC20 rewardToken = ERC20(BaseTWrapper(Feed(feed).twrapper()).reward());
+        rewardToken.safeTransfer(cup, rewardToken.balanceOf(address(this)));
     }
 
     /* ========== INTERNAL VIEWS ========== */

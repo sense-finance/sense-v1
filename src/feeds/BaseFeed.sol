@@ -16,7 +16,8 @@ abstract contract BaseFeed is Initializable {
     using FixedMath for uint256;
 
     address public target;
-    address public divider; // TODO: must be hardcoded!
+    address public divider;
+    address public twrapper;
     uint256 public delta;
     string public name;
     string public symbol;
@@ -30,13 +31,13 @@ abstract contract BaseFeed is Initializable {
     function initialize(
         address _target,
         address _divider,
-        uint256 _delta
+        uint256 _delta,
+        address _twrapper
     ) external virtual initializer {
-        // TODO: only factory?
-        // TODO: add input validation?
         divider = _divider;
         delta = _delta;
         target = _target;
+        twrapper = _twrapper;
         name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
         emit Initialized();
@@ -52,8 +53,10 @@ abstract contract BaseFeed is Initializable {
         uint256 lvalue = lscale.value;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         if (timeDiff > 0 && lvalue != 0) {
-            uint256 growthPerSec = (_value > lvalue ? _value - lvalue : lvalue - _value)
-                .fdiv(lvalue * timeDiff, 10 ** ERC20(target).decimals());
+            uint256 growthPerSec = (_value > lvalue ? _value - lvalue : lvalue - _value).fdiv(
+                lvalue * timeDiff,
+                10**ERC20(target).decimals()
+            );
             if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
 
@@ -74,4 +77,5 @@ abstract contract BaseFeed is Initializable {
     function _scale() internal virtual returns (uint256 _value);
 
     event Initialized();
+    event WTargetAdded(address indexed twrapper);
 }
