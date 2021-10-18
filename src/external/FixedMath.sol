@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 /// @author Taken from https://github.com/yieldprotocol/yield-utils-v2/blob/main/contracts/math/WDiv.sol & https://github.com/yieldprotocol/yield-utils-v2/blob/main/contracts/math/WMul.sol
 library FixedMath {
     uint256 internal constant WAD = 1e18;
+    uint256 internal constant RAY = 1e27;
 
     /// Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol
     /// @dev Multiply an amount by a fixed point factor with 18 decimals, rounds down

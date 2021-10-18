@@ -45,7 +45,7 @@ contract BaseTWrapper is Initializable {
             totalTarget += val;
             tBalance[_usr] += val;
         }
-        rewarded[_usr] = tBalance[_usr].fmulUp(share, 10**27);
+        rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
     function exit(address _usr, uint256 val) public onlyDivider {
@@ -54,7 +54,7 @@ contract BaseTWrapper is Initializable {
             totalTarget -= val;
             tBalance[_usr] -= val;
         }
-        rewarded[_usr] = tBalance[_usr].fmulUp(share, 10**27);
+        rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
     /// @notice Distributes rewarded tokens to Claim holders proportionally based on Claim balance
@@ -62,9 +62,9 @@ contract BaseTWrapper is Initializable {
     function _distribute(address _usr) internal {
         _claimReward();
         uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
-        if (totalTarget > 0) share += (crop.fdiv(totalTarget, 10**27));
+        if (totalTarget > 0) share += (crop.fdiv(totalTarget, FixedMath.RAY));
         uint256 last = rewarded[_usr];
-        uint256 curr = tBalance[_usr].fmul(share, 10**27);
+        uint256 curr = tBalance[_usr].fmul(share, FixedMath.RAY);
         if (curr > last) require(ERC20(reward).transfer(_usr, curr - last));
         rewardBal = ERC20(reward).balanceOf(address(this));
         emit Distributed(_usr, reward, curr > last ? curr - last : 0);
