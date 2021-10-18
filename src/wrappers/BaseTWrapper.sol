@@ -39,14 +39,8 @@ contract BaseTWrapper is Initializable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function join(
-        address _feed,
-        uint256 _maturity,
-        address _usr,
-        uint256 val
-    ) public onlyDivider {
+    function join(address _usr, uint256 val) public onlyDivider {
         _distribute(_usr);
-        (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
         if (val > 0) {
             totalTarget += val;
             tBalance[_usr] += val;
@@ -54,14 +48,8 @@ contract BaseTWrapper is Initializable {
         rewarded[_usr] = tBalance[_usr].fmulUp(share, 10**27);
     }
 
-    function exit(
-        address _feed,
-        uint256 _maturity,
-        address _usr,
-        uint256 val
-    ) public onlyDivider {
+    function exit(address _usr, uint256 val) public onlyDivider {
         _distribute(_usr);
-        (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
         if (val > 0) {
             totalTarget -= val;
             tBalance[_usr] -= val;
