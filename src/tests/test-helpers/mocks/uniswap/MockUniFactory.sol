@@ -5,7 +5,14 @@ pragma solidity ^0.8.6;
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 contract MockUniV3Pool {
-
+    function initialize(uint160 sqrtPriceX96) external {}
+    function observe(uint32[] calldata secondsAgos) external view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
+    {
+//        tickCumulatives[0] = 1;
+//        tickCumulatives[1] = 2;
+//        secondsPerLiquidityCumulativeX128s[0] = 1;
+//        secondsPerLiquidityCumulativeX128s[1] = 1;
+    }
 }
 
 contract MockUniFactory {

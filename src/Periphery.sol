@@ -10,18 +10,12 @@ import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
-//import { PoolManager } from "./fuse/PoolManager.sol";
+import { PoolManager } from "./fuse/PoolManager.sol";
 
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
-// TODO: to be removed when PoolManager is merged into here
-interface PoolManager {
-    function deployPool(string calldata name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) external;
-    function initTarget(address target) external;
-    function initSeries(address feed, uint256 maturity) external;
-}
 
 /**
  * @title BasePriceOracle
@@ -56,13 +50,13 @@ contract Periphery {
     GClaimManager public gClaimManager;
 
 
-    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter) {
+    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
         gClaimManager = new GClaimManager(_divider);
         uniFactory = IUniswapV3Factory(_uniFactory);
         uniSwapRouter = ISwapRouter(_uniSwapRouter);
-        // TODO: maybe call deployPool() here
+        poolManager.deployPool(name, whitelist, closeFactor, liqIncentive);
 
         // approve divider to withdraw stable assets
         ERC20(divider.stable()).approve(address(divider), type(uint256).max);
@@ -90,17 +84,19 @@ contract Periphery {
         address gclaim = address(gClaimManager.gclaims(claim));
         address unipool = IUniswapV3Factory(uniFactory).createPool(gclaim, zero, UNI_POOL_FEE); // deploy UNIV3 pool
         IUniswapV3Pool(unipool).initialize(sqrtPriceX96);
-//        poolManager.addSeries(feed, maturity);
+        poolManager.addSeries(feed, maturity);
+        emit SeriesSponsored(feed, maturity, msg.sender);
     }
 
     /// @notice Onboards a target
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
-    function onboardTarget(address factory, address target) external returns (address feedClone, address wtClone){
+    function onboardTarget(address feed, uint256 maturity, address factory, address target) external returns (address feedClone, address wtClone){
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
-        //        poolManager.addTarget(target); // TODO add when merging pool manager
+        poolManager.addTarget(target, feed, maturity);
+        emit TargetOnboarded(target);
     }
 
     /// @notice Mint Zeros and Claims of a specific Series
@@ -162,8 +158,8 @@ contract Periphery {
         uint256 rate = price(zero, gclaim);
 
         // swap some zeros for gclaims
-        uint256 zerosToSell = zBal / (rate + 1); // TODO: is this equation correct?
-        uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this));
+        uint256 zerosToSell = zBal / (rate + 1);
+            uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this));
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
@@ -193,8 +189,6 @@ contract Periphery {
         divider.combine(feed, maturity, swapped);
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
-
     /* ========== VIEWS ========== */
 
     function price(address tokenA, address tokenB) public view returns (uint) {
@@ -202,8 +196,7 @@ contract Periphery {
         address pool = IUniswapV3Factory(uniFactory).getPool(tokenA, tokenB, UNI_POOL_FEE);
         int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
         uint128 baseUnit = uint128(10) ** uint128(ERC20(tokenA).decimals());
-        uint256 quote = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
-        return quote * BasePriceOracle(msg.sender).price(tokenB) / (10 ** uint256(ERC20(tokenB).decimals())); // TODO: what's this
+        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
     }
 
     function _swap(address tokenIn, address tokenOut, uint256 amountIn, address recipient) internal returns (uint256 amountOut) {
@@ -218,7 +211,7 @@ contract Periphery {
                 recipient: recipient,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: 0, // TODO: use an oracle or other data source to choose a safer value for amountOutMinimum
+                amountOutMinimum: price(tokenIn, tokenOut),
                 sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
 
@@ -229,5 +222,7 @@ contract Periphery {
     /* ========== MODIFIERS ========== */
 
     /* ========== EVENTS ========== */
+    event SeriesSponsored(address indexed feed, uint256 indexed maturity, address indexed sponsor);
+    event TargetOnboarded(address target);
 
 }

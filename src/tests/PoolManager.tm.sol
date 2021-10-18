@@ -10,7 +10,7 @@ import { Token } from "../tokens/token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
-import { MockFactory } from "./test-helpers/MockFactory.sol";
+import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
@@ -25,7 +25,11 @@ contract AdminFeed {
     uint256 internal value = 1e18;
     uint256 public constant INITIAL_VALUE = 1e18;
 
-    constructor(address _target, string memory _name, string memory _symbol) {
+    constructor(
+        address _target,
+        string memory _name,
+        string memory _symbol
+    ) {
         target = _target;
         name = _name;
         symbol = _symbol;
@@ -77,7 +81,7 @@ contract PoolManagerTest is DSTest {
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 6 weeks);
         _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        divider.initSeries(address(adminFeed), _maturity);
+        divider.initSeries(address(adminFeed), _maturity, address(this));
     }
 
     function testDeployPool() public {
@@ -91,10 +95,10 @@ contract PoolManagerTest is DSTest {
 
     function testAddTarget() public {
         uint256 maturity = initSeries();
-         // Cannot add a Target before deploying a pool
+        // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(adminFeed), maturity) {
             fail();
-        } catch Error(string memory error) { 
+        } catch Error(string memory error) {
             assertEq(error, "Pool not yet deployed");
         }
 

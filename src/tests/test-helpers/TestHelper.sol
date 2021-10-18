@@ -4,12 +4,14 @@ pragma solidity ^0.8.6;
 // Internal references
 import {GClaimManager} from "../../modules/GClaimManager.sol";
 import { Divider } from "../../Divider.sol";
+//import { PoolManager } from "../src/fuse/PoolManager.sol";
 import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockFeed } from "./mocks/MockFeed.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 import { MockTWrapper } from "./mocks/MockTWrapper.sol";
+import { MockPoolManager } from "./mocks/MockPoolManager.sol";
 
 // Uniswap mocks
 import { MockUniFactory } from "./mocks/uniswap/MockUniFactory.sol";
@@ -26,6 +28,7 @@ contract TestHelper is DSTest {
     MockToken target;
     MockToken reward;
     MockFactory factory;
+    MockPoolManager poolManager;
 
     Divider internal divider;
     TWrapper internal twrapper;
@@ -66,14 +69,11 @@ contract TestHelper is DSTest {
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
         stable = new MockToken("Stable Token", "ST", tDecimals);
-        uint256 convertBase = 1;
-        if (tDecimals != 18) {
-            convertBase = tDecimals > 18 ? 10 ** (tDecimals - 18) : 10 ** (18 - tDecimals);
-        }
         target = new MockToken("Compound Dai", "cDAI", tDecimals);
         reward = new MockToken("Reward Token", "RT", tDecimals);
-        GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * convertBase : GROWTH_PER_SECOND / convertBase;
-        DELTA = tDecimals > 18 ? DELTA * convertBase : DELTA / convertBase;
+        uint256 base = convertBase(target.decimals());
+        GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * base : GROWTH_PER_SECOND / base;
+        DELTA = tDecimals > 18 ? DELTA * base : DELTA / base;
 
         // divider
         divider = new Divider(address(stable), address(this));
@@ -88,8 +88,8 @@ contract TestHelper is DSTest {
         // periphery
         uniFactory = new MockUniFactory();
         uniSwapRouter = new MockUniSwapRouter();
-        address poolManager = address(0); // TODO replace for new PoolManager();
-        periphery = new Periphery(address(divider), poolManager, address(uniFactory), address(uniSwapRouter));
+        poolManager = new MockPoolManager();
+        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter), "Sense Fuse Pool", false, 0, 0);
         divider.setPeriphery(address(periphery));
 
         // feed, target wrapper & factory
@@ -98,7 +98,7 @@ contract TestHelper is DSTest {
         factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
+        (address f, address wt) = periphery.onboardTarget(address(feed), 0, address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = TWrapper(wt);
 
@@ -162,6 +162,14 @@ contract TestHelper is DSTest {
         address gclaim = address(periphery.gClaimManager().gclaims(claim));
         alice.doTransfer(gclaim, address(uniSwapRouter), cBalIssued);
         alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
+    }
+
+    function convertBase(uint256 decimals) public returns (uint256) {
+        uint256 base = 1;
+        if (decimals != 18) {
+            base = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
+        }
+        return base;
     }
 
 }

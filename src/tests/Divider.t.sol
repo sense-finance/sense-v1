@@ -20,7 +20,7 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
         uint256 balance = stable.balanceOf(address(alice));
-        alice.doTransfer(address(stable), address(bob), balance - INIT_STAKE / 2);
+        alice.doTransfer(address(stable), address(bob), balance - INIT_STAKE / convertBase(stable.decimals()) / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(feed), maturity) {
             fail();
@@ -127,7 +127,7 @@ contract Dividers is TestHelper {
         assertTrue(address(zero) != address(0));
         assertTrue(address(claim) != address(0));
         uint256 afterBalance = stable.balanceOf(address(alice));
-        assertEq(afterBalance, beforeBalance - INIT_STAKE);
+        assertEq(afterBalance, beforeBalance - INIT_STAKE / convertBase(stable.decimals()));
     }
 
     function testInitThreeSeries() public {
@@ -284,7 +284,7 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
         bob.doSettleSeries(address(feed), maturity);
         uint256 afterBalance = stable.balanceOf(address(bob));
-        assertEq(afterBalance, beforeBalance + INIT_STAKE);
+        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stable.decimals()));
     }
 
     //    function testSettleSeriesFeesAreTransferredIfSponsor() public {
@@ -374,13 +374,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        uint256 convertBase = 1;
-        uint256 tDecimals = target.decimals();
-        if (tDecimals != 18) {
-            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
-        }
         uint256 tBase = 10**target.decimals();
-        uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase); // 1 target
+        uint256 fee = (ISSUANCE_FEE / convertBase(target.decimals())).fmul(tBal, tBase); // 1 target
         uint256 tBalanceBefore = target.balanceOf(address(alice));
         alice.doIssue(address(feed), maturity, tBal);
         // Formula = newBalance.fmul(scale)
@@ -936,14 +931,9 @@ contract Dividers is TestHelper {
         uint256 sponsorStableBalanceBefore = stable.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-
-        uint256 convertBase = 1;
         uint256 tDecimals = target.decimals();
-        if (target.decimals() != 18) {
-            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
-        }
         uint256 tBase = 10**tDecimals;
-        uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase); // 1 target
+        uint256 fee = (ISSUANCE_FEE / convertBase(tDecimals)).fmul(tBal, tBase); // 1 target
         bob.doIssue(address(feed), maturity, tBal);
 
         hevm.warp(maturity - SPONSOR_WINDOW);
@@ -969,13 +959,9 @@ contract Dividers is TestHelper {
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
 
-        uint256 convertBase = 1;
         uint256 tDecimals = target.decimals();
-        if (tDecimals != 18) {
-            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
-        }
         uint256 tBase = 10**tDecimals;
-        uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase); // 1 target
+        uint256 fee = (ISSUANCE_FEE / convertBase(tDecimals)).fmul(tBal, tBase); // 1 target
         bob.doIssue(address(feed), maturity, tBal);
 
         hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
@@ -987,11 +973,11 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
         uint256 sponsorStableBalanceAfter = stable.balanceOf(address(alice));
         assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
-        assertEq(sponsorStableBalanceAfter, sponsorStableBalanceBefore - INIT_STAKE);
+        assertEq(sponsorStableBalanceAfter, sponsorStableBalanceBefore - INIT_STAKE / convertBase(stable.decimals()));
         uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
         uint256 cupStableBalanceAfter = stable.balanceOf(address(this));
         assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
-        assertEq(cupStableBalanceAfter, cupStableBalanceBefore + INIT_STAKE);
+        assertEq(cupStableBalanceAfter, cupStableBalanceBefore + INIT_STAKE / convertBase(stable.decimals()));
     }
 
     /* ========== misc tests ========== */

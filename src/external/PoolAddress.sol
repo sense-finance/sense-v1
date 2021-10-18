@@ -23,7 +23,7 @@ library PoolAddress {
         uint24 fee
     ) internal pure returns (PoolKey memory) {
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
-        return PoolKey({token0: tokenA, token1: tokenB, fee: fee});
+        return PoolKey({ token0: tokenA, token1: tokenB, fee: fee });
     }
 
     /// @notice Deterministically computes the pool address given the factory and PoolKey
@@ -37,7 +37,7 @@ library PoolAddress {
                 uint256(
                     keccak256(
                         abi.encodePacked(
-                            hex'ff',
+                            hex"ff",
                             factory,
                             keccak256(abi.encode(key.token0, key.token1, key.fee)),
                             POOL_INIT_CODE_HASH

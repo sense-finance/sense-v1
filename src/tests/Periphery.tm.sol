@@ -40,7 +40,16 @@ contract PeripheryTestHelper is DSTest {
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
         address poolManager = address(0); // TODO replace for new PoolManager();
-        periphery = new Periphery(address(divider), poolManager, address(uniFactory), address(uniSwapRouter));
+        periphery = new Periphery(
+            address(divider),
+            poolManager,
+            address(uniFactory),
+            address(uniSwapRouter),
+            "Sense Fuse Pool",
+            false,
+            0,
+            0
+        );
 
         // divider
         divider = new Divider(cDAI, address(this));

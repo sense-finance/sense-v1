@@ -73,12 +73,7 @@ contract Divider is Trust {
         require(_isValid(maturity), Errors.InvalidMaturity);
 
         // Transfer stable asset stake from caller to this contract
-        uint256 convertBase = 1;
-        uint256 stableDecimals = ERC20(stable).decimals();
-        if (stableDecimals != 18) {
-            convertBase = stableDecimals > 18 ? 10 ** (stableDecimals - 18) : 10 ** (18 - stableDecimals);
-        }
-        ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE / convertBase);
+        ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = _split(feed, maturity);
@@ -122,7 +117,7 @@ contract Divider is Trust {
         // Reward the caller for doing the work of settling the Series at around the correct time
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
+        ERC20(stable).safeTransfer(msg.sender, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         emit SeriesSettled(feed, maturity, msg.sender);
     }
@@ -443,7 +438,8 @@ contract Divider is Trust {
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), cup, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
+
+        ERC20(stable).safeTransfer(rewardee, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         emit Backfilled(feed, maturity, mscale, backfills);
     }
@@ -492,6 +488,13 @@ contract Divider is Trust {
         string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
         string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
+    }
+
+    function _convertBase(uint256 decimals) internal returns (uint256 convertBase) {
+        convertBase = 1;
+        if (decimals != 18) {
+            convertBase = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
+        }
     }
 
     /* ========== MODIFIERS ========== */

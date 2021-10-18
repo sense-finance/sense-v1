@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.6;
 
-import './FullMath.sol';
-import './TickMath.sol';
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
-import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
-import './PoolAddress.sol';
-
+import "./FullMath.sol";
+import "./TickMath.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
+import "@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
+import "./PoolAddress.sol";
 
 /// @title Oracle library
 /// @notice Provides functions to integrate with V3 pool oracle
@@ -17,7 +16,7 @@ library OracleLibrary {
     /// @param period Number of seconds in the past to start calculating time-weighted average
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
     function consult(address pool, uint32 period) internal view returns (int24 timeWeightedAverageTick) {
-        require(period != 0, 'BP');
+        require(period != 0, "BP");
 
         uint32[] memory secondAgos = new uint32[](2);
         secondAgos[0] = period;
@@ -50,13 +49,13 @@ library OracleLibrary {
         if (sqrtRatioX96 <= type(uint128).max) {
             uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
             quoteAmount = baseToken < quoteToken
-            ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
-            : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+                ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
+                : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
         } else {
             uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
             quoteAmount = baseToken < quoteToken
-            ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
-            : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
+                ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
+                : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
         }
     }
 
@@ -65,10 +64,11 @@ library OracleLibrary {
     /// @return The number of seconds ago of the oldest observation stored for the pool
     function getOldestObservationSecondsAgo(address pool) internal view returns (uint32) {
         (, , uint16 observationIndex, uint16 observationCardinality, , , ) = IUniswapV3Pool(pool).slot0();
-        require(observationCardinality > 0, 'NI');
+        require(observationCardinality > 0, "NI");
 
-        (uint32 observationTimestamp, , , bool initialized) =
-        IUniswapV3Pool(pool).observations((observationIndex + 1) % observationCardinality);
+        (uint32 observationTimestamp, , , bool initialized) = IUniswapV3Pool(pool).observations(
+            (observationIndex + 1) % observationCardinality
+        );
 
         // The next index might not be initialized if the cardinality is in the process of increasing
         // In this case the oldest observation is always in index 0
@@ -86,7 +86,7 @@ library OracleLibrary {
         (, int24 tick, uint16 observationIndex, uint16 observationCardinality, , , ) = IUniswapV3Pool(pool).slot0();
 
         // 2 observations are needed to reliably calculate the block starting tick
-        require(observationCardinality > 1, 'NEO');
+        require(observationCardinality > 1, "NEO");
 
         // If the latest observation occurred in the past, then no tick-changing trades have happened in this block
         // therefore the tick in `slot0` is the same as at the beginning of the current block.
@@ -97,11 +97,14 @@ library OracleLibrary {
         }
 
         uint256 prevIndex = (uint256(observationIndex) + observationCardinality - 1) % observationCardinality;
-        (uint32 prevObservationTimestamp, int56 prevTickCumulative, , bool prevInitialized) =
-        IUniswapV3Pool(pool).observations(prevIndex);
+        (uint32 prevObservationTimestamp, int56 prevTickCumulative, , bool prevInitialized) = IUniswapV3Pool(pool)
+            .observations(prevIndex);
 
-        require(prevInitialized, 'ONI');
+        require(prevInitialized, "ONI");
 
-        return int24((tickCumulative - prevTickCumulative) / int56(int32(observationTimestamp - prevObservationTimestamp))); // TODO: check casting
+        return
+            int24(
+                (tickCumulative - prevTickCumulative) / int56(int32(observationTimestamp - prevObservationTimestamp))
+            ); // TODO: check casting
     }
 }
