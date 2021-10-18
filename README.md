@@ -145,13 +145,12 @@ The long-term goal of the Sense Protocol is to be as governance minimized as pos
 - `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs
 - `EmergencyStop.stop` - stop the Sense Protocol
 - `Divider.setGuard` - set the cap for the Guarded launch
-- `Divider.setPeriphery`
-- `Divider.setPeriphery`
-- `BaseFactory.setDivider`
-- `BaseFactory.setDelta`
-- `BaseFactory.setFeedImplementation`
-- `BaseFactory.setTWImplementation`
-- `BaseFactory.setProtocol`
+- `Divider.setPeriphery` - point to the Periphery
+- `BaseFactory.setDivider` - Feed Factory config
+- `BaseFactory.setDelta` - Feed Factory config
+- `BaseFactory.setFeedImplementation` - Feed Factory config
+- `BaseFactory.setTWImplementation` - Feed Factory config
+- `BaseFactory.setProtocol` - Feed Factory config
 - `PoolManager.deployPool` - deploy the Sense Fuse Pool
 - `PoolManager.setParams` - set parameters for the Sense Fuse Pool
 
