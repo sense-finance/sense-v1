@@ -41,7 +41,7 @@ interface CTokenLike {}
 /// @notice Consolidated Fuse interactions
 contract PoolManager is Trust {
     address public immutable comptrollerImpl;
-    address public immutable cERC20Iml;
+    address public immutable cERC20Impl;
     address public immutable fuseDirectory;
     address public immutable divider;
     address public immutable oracle;
@@ -79,13 +79,13 @@ contract PoolManager is Trust {
     constructor(
         address _fuseDirectory,
         address _comptrollerImpl,
-        address _cERC20Iml,
+        address _cERC20Impl,
         address _divider,
         address _oracle
     ) Trust(msg.sender) {
         fuseDirectory = _fuseDirectory;
         comptrollerImpl = _comptrollerImpl;
-        cERC20Iml = _cERC20Iml;
+        cERC20Impl = _cERC20Impl;
         divider = _divider;
         oracle = _oracle; // Master oracle contract
     }
@@ -144,7 +144,7 @@ contract PoolManager is Trust {
             targetParams.irModel,
             Token(target).name(),
             Token(target).symbol(),
-            cERC20Iml,
+            cERC20Impl,
             "0x00", // calldata sent to becomeImplementation (currently unused)
             targetParams.reserveFactor,
             adminFee
@@ -179,7 +179,7 @@ contract PoolManager is Trust {
             zeroParams.irModel,
             Token(zero).name(),
             Token(zero).symbol(),
-            cERC20Iml,
+            cERC20Impl,
             "0x00", // calldata sent to becomeImplementation (currently unused)
             zeroParams.reserveFactor,
             adminFee
@@ -191,7 +191,7 @@ contract PoolManager is Trust {
             claimParams.irModel,
             Token(claim).name(),
             Token(claim).symbol(),
-            cERC20Iml,
+            cERC20Impl,
             "0x00", // calldata sent to becomeImplementation (currently unused)
             claimParams.reserveFactor,
             adminFee
