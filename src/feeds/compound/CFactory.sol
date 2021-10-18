@@ -9,7 +9,6 @@ interface Comptroller {
 }
 
 contract CFactory is BaseFactory {
-
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
     constructor(

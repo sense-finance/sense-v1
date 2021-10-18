@@ -3,9 +3,8 @@ pragma solidity ^0.8.6;
 
 // External references
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { ERC20 } from "solmate/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
-import { Trust } from "solmate/auth/Trust.sol";
 
 // Internal
 import { Divider } from "../Divider.sol";

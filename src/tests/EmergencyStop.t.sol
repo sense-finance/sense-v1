@@ -5,7 +5,7 @@ import { Errors } from "../libs/errors.sol";
 import { EmergencyStop } from "../feeds/EmergencyStop.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { MockToken } from "./test-helpers/MockToken.sol";
+import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 
 contract Emergency is TestHelper {
     function testAllFeedsAreStopped() public {
