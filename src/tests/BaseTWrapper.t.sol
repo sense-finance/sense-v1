@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 import { Claim } from "../tokens/Claim.sol";
+import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { Errors } from "../libs/errors.sol";
 
@@ -38,6 +39,7 @@ contract Wrappers is TestHelper {
 
         alice.doIssue(address(feed), maturity, 0 * 1e18);
         bob.doIssue(address(feed), maturity, 0 * 1e18);
+
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
     }
@@ -90,6 +92,7 @@ contract Wrappers is TestHelper {
 
         alice.doIssue(address(feed), maturity, 0 * 1e18);
         bob.doIssue(address(feed), maturity, 0 * 1e18);
+
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
@@ -97,6 +100,7 @@ contract Wrappers is TestHelper {
 
         alice.doIssue(address(feed), maturity, 20 * 1e18);
         bob.doIssue(address(feed), maturity, 0 * 1e18);
+
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
@@ -153,7 +157,7 @@ contract Wrappers is TestHelper {
         // bob transfers all of his Claims to jim
         // now the pool is 70% jim and 30% alice
         bob.doTransfer(claim, address(jim), ERC20(claim).balanceOf(address(bob)));
-        // bob collected on transfer, so he should now 
+        // bob collected on transfer, so he should now
         // have his 24 rewards from the first drop, and 20 from the second
         assertEq(reward.balanceOf(address(bob)), 44 * 1e18);
 
@@ -173,5 +177,6 @@ contract Wrappers is TestHelper {
         assertEq(reward.balanceOf(address(jim)), 120 * 1e18);
         alice.doCollect(claim);
         assertEq(reward.balanceOf(address(alice)), 96 * 1e18);
+
     }
 }

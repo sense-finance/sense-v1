@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { DSTest } from "ds-test/test.sol";
-
 // Internal references
 import { CFeed } from "../feeds/compound/CFeed.sol";
 import { CFactory } from "../feeds/compound/CFactory.sol";
 import { Divider } from "../Divider.sol";
 
+import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "../libs/errors.sol";
@@ -9,8 +9,8 @@ import { BaseFeed } from "../feeds/BaseFeed.sol";
 import { Divider } from "../Divider.sol";
 import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 
-import { MockFeed } from "./test-helpers/MockFeed.sol";
-import { MockToken } from "./test-helpers/MockToken.sol";
+import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
+import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeFeed is BaseFeed {

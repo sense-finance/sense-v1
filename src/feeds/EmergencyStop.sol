@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { Trust } from "solmate/auth/Trust.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";

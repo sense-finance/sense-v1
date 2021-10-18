@@ -175,7 +175,7 @@ These are libraries we need as part of the protocol that we've imported from oth
 | `yarn lint`  | run linter |
 | `yarn fix`   | runs both prettier and solhint and automatically fix errors |
 
-* Testing on mainnet requires to have a ETH_RPC_URL set: make a copy of `.env.example`, rename it to `.env`  and set `ETH_RPC_URL` to your rpc provider.
+* Testing on mainnet requires to have a ALCHEMY_KEY set: make a copy of `.env.example`, rename it to `.env`  and set `ALCHEMY_KEY` to your alchemy api key.
 
 ## Branching (TBD)
 

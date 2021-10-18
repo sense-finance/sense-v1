@@ -32,11 +32,30 @@ library DateTime {
     uint256 constant SECONDS_PER_MINUTE = 60;
     int256 constant OFFSET19700101 = 2440588;
 
-    function timestampToDate(uint256 timestamp) internal pure returns (uint256 year, uint256 month, uint256 day) {
+    function timestampToDate(uint256 timestamp)
+        internal
+        pure
+        returns (
+            uint256 year,
+            uint256 month,
+            uint256 day
+        )
+    {
         (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);
     }
 
-    function timestampToDateTime(uint256 timestamp) internal pure returns (uint256 year, uint256 month, uint256 day, uint256 hour, uint256 minute, uint256 second) {
+    function timestampToDateTime(uint256 timestamp)
+        internal
+        pure
+        returns (
+            uint256 year,
+            uint256 month,
+            uint256 day,
+            uint256 hour,
+            uint256 minute,
+            uint256 second
+        )
+    {
         (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);
         uint256 secs = timestamp % SECONDS_PER_DAY;
         hour = secs / SECONDS_PER_HOUR;
@@ -45,7 +64,15 @@ library DateTime {
         second = secs % SECONDS_PER_MINUTE;
     }
 
-    function toDateString(uint256 _timestamp) internal pure returns (string memory d, string memory m, string memory y) {
+    function toDateString(uint256 _timestamp)
+        internal
+        pure
+        returns (
+            string memory d,
+            string memory m,
+            string memory y
+        )
+    {
         (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);
         d = uintToString(day);
         m = uintToString(month);
@@ -53,19 +80,19 @@ library DateTime {
     }
 
     /// Taken from https://stackoverflow.com/questions/47129173/how-to-convert-uint-to-string-in-solidity
-    function uintToString(uint _i) internal pure returns (string memory _uintAsString) {
+    function uintToString(uint256 _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) return "0";
-        uint j = _i;
-        uint len;
+        uint256 j = _i;
+        uint256 len;
         while (j != 0) {
             len++;
             j /= 10;
         }
         bytes memory bstr = new bytes(len);
-        uint k = len;
+        uint256 k = len;
         while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            k = k - 1;
+            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
             bytes1 b1 = bytes1(temp);
             bstr[k] = b1;
             _i /= 10;
@@ -86,22 +113,25 @@ library DateTime {
     //      - 3 * ((year + 4900 + (month - 14) / 12) / 100) / 4
     //      - offset
     // ------------------------------------------------------------------------
-    function _daysFromDate(uint256 year, uint256 month, uint256 day) internal pure returns (uint256 _days) {
+    function _daysFromDate(
+        uint256 year,
+        uint256 month,
+        uint256 day
+    ) internal pure returns (uint256 _days) {
         require(year >= 1970);
         int256 _year = int256(year);
         int256 _month = int256(month);
         int256 _day = int256(day);
 
-        int256 __days =
-        _day -
-        32075 +
-        (1461 * (_year + 4800 + (_month - 14) / 12)) /
-        4 +
-        (367 * (_month - 2 - ((_month - 14) / 12) * 12)) /
-        12 -
-        (3 * ((_year + 4900 + (_month - 14) / 12) / 100)) /
-        4 -
-        OFFSET19700101;
+        int256 __days = _day -
+            32075 +
+            (1461 * (_year + 4800 + (_month - 14) / 12)) /
+            4 +
+            (367 * (_month - 2 - ((_month - 14) / 12) * 12)) /
+            12 -
+            (3 * ((_year + 4900 + (_month - 14) / 12) / 100)) /
+            4 -
+            OFFSET19700101;
 
         _days = uint256(__days);
     }
@@ -123,7 +153,15 @@ library DateTime {
     // month = month + 2 - 12 * L
     // year = 100 * (N - 49) + year + L
     // ------------------------------------------------------------------------
-    function _daysToDate(uint256 _days) internal pure returns (uint256 year, uint256 month, uint256 day) {
+    function _daysToDate(uint256 _days)
+        internal
+        pure
+        returns (
+            uint256 year,
+            uint256 month,
+            uint256 day
+        )
+    {
         int256 __days = int256(_days);
 
         int256 L = __days + 68569 + OFFSET19700101;

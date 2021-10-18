@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { Token } from "../tokens/Token.sol";
-import { ERC20 } from "solmate/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
@@ -11,10 +11,9 @@ contract Claims is TestHelper {
 
     function testCollect(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
@@ -37,10 +36,9 @@ contract Claims is TestHelper {
 
     function testCollectOnTransfer(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
@@ -68,10 +66,9 @@ contract Claims is TestHelper {
 
     function testCollectOnTransferFrom(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBase = 10**target.decimals();
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { SafeERC20, ERC20 } from "solmate/erc20/SafeERC20.sol";
-import { Trust } from "solmate/auth/Trust.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 
@@ -36,6 +36,7 @@ contract Divider is Trust {
     string private constant CLAIM_NAME_PREFIX = "Claim";
 
     /// @notice Mutable program state
+    address public periphery;
     address public stable;
     address public    cup;
     mapping(address => bool   ) public feeds;  // feed -> approved
@@ -66,13 +67,13 @@ contract Divider is Trust {
     /// @dev Transfers some fixed amount of stable asset to this contract
     /// @param feed Feed to associate with the Series
     /// @param maturity Maturity date for the new Series, in units of unix time
-    function initSeries(address feed, uint256 maturity) external returns (address zero, address claim) {
+    function initSeries(address feed, uint256 maturity, address sponsor) external onlyPeriphery returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), Errors.DuplicateSeries);
         require(_isValid(maturity), Errors.InvalidMaturity);
 
         // Transfer stable asset stake from caller to this contract
-        ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE);
+        ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = _split(feed, maturity);
@@ -81,7 +82,7 @@ contract Divider is Trust {
         Series memory newSeries = Series({
             zero : zero,
             claim : claim,
-            sponsor : msg.sender,
+            sponsor : sponsor,
             issuance : block.timestamp,
             reward : 0,
             iscale : Feed(feed).scale(),
@@ -92,7 +93,7 @@ contract Divider is Trust {
 
         series[feed][maturity] = newSeries;
 
-        emit SeriesInitialized(feed, maturity, zero, claim, msg.sender);
+        emit SeriesInitialized(feed, maturity, zero, claim, sponsor);
     }
 
     /// @notice Settles a Series and transfer the settlement reward to the caller
@@ -115,8 +116,8 @@ contract Divider is Trust {
 
         // Reward the caller for doing the work of settling the Series at around the correct time
         ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransferFrom(address(this), msg.sender, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(msg.sender, INIT_STAKE);
+        target.safeTransfer(msg.sender, series[feed][maturity].reward);
+        ERC20(stable).safeTransfer(msg.sender, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         emit SeriesSettled(feed, maturity, msg.sender);
     }
@@ -126,7 +127,7 @@ contract Divider is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
     /// the amount of Zeros/Claims minted will be the equivelent value in units of underlying (less fees)
-    function issue(address feed, uint256 maturity, uint256 tBal) external {
+    function issue(address feed, uint256 maturity, uint256 tBal) external returns (uint256 uBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
@@ -166,7 +167,7 @@ contract Divider is Trust {
         }
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
-        uint256 uBal = tBalSubFee.fmul(scale, Zero(series[feed][maturity].zero).BASE_UNIT());
+        uBal = tBalSubFee.fmul(scale, Zero(series[feed][maturity].zero).BASE_UNIT());
 
         // Mint equal amounts of Zeros and Claims
         Zero(series[feed][maturity].zero  ).mint(msg.sender, uBal);
@@ -402,6 +403,13 @@ contract Divider is Trust {
         emit GuardChanged(target, cap);
     }
 
+    /// @notice Set periphery's contract
+    /// @param _periphery Target address
+    function setPeriphery(address _periphery) external requiresTrust {
+        periphery = _periphery;
+        emit PeripheryChanged(periphery);
+    }
+
     struct Backfill {
         address usr;    // Address of the user who's getting their lscale backfilled
         uint256 lscale; // Scale value to backfill for usr's lscale
@@ -439,7 +447,7 @@ contract Divider is Trust {
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransfer(cup, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(rewardee, INIT_STAKE);
+        ERC20(stable).safeTransfer(rewardee, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         emit Backfilled(feed, maturity, mscale, backfills);
     }
@@ -497,10 +505,22 @@ contract Divider is Trust {
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
     }
 
+    function _convertBase(uint256 decimals) internal returns (uint256 convertBase) {
+        convertBase = 1;
+        if (decimals != 18) {
+            convertBase = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
+        }
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address feed, uint256 maturity) {
         require(series[feed][maturity].claim == msg.sender, "Can only be invoked by the Claim contract");
+        _;
+    }
+
+    modifier onlyPeriphery() {
+        require(periphery == msg.sender, "Can only be invoked by the Periphery contract");
         _;
     }
 
@@ -513,6 +533,7 @@ contract Divider is Trust {
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
     event ZeroRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event ClaimRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
+    event PeripheryChanged(address indexed periphery);
     event SeriesInitialized(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
 }
