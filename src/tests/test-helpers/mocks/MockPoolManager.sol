@@ -15,11 +15,7 @@ contract MockPoolManager {
         return (0, address(1));
     }
 
-    function addTarget(
-        address target,
-        address feed,
-        uint256 maturity
-    ) external {
+    function addTarget(address target) external {
         tInits[target] = true;
     }
 
