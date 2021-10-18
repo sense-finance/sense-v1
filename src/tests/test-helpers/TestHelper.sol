@@ -27,6 +27,7 @@ contract TestHelper is DSTest {
     tWrapper internal twrapper;
     User internal alice;
     User internal bob;
+    User internal jim;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
@@ -85,6 +86,7 @@ contract TestHelper is DSTest {
         // users
         alice = createUser(2**96, 2**96);
         bob = createUser(2**96, 2**96);
+        jim = createUser(2**96, 2**96);
     }
 
     function createUser(uint256 tBal, uint256 sBal) public returns (User user) {

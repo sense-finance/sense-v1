@@ -319,7 +319,8 @@ contract Divider is Trust {
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
         // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
+        uint256 tBalNow = uBal.fdiv(cscale, claim.BASE_UNIT());
+        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
         target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
         BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
 
@@ -327,6 +328,8 @@ contract Divider is Trust {
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = cscale;
+            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow - collected);
+            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow - collected);
         }
 
         emit Collected(feed, maturity, collected);
