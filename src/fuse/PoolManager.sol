@@ -154,7 +154,7 @@ contract PoolManager is Trust {
         emit TargetAdded(target, target);
     }
 
-    function addSeries(address feed, uint256 maturity) external {
+    function addSeries(address feed, uint256 maturity) external onlyPeriphery {
         (address zero, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
 
         require(comptroller != address(0), "Pool not yet deployed");
