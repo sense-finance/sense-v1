@@ -10,7 +10,6 @@ import { BaseTWrapper as tWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { MockToken } from "./MockToken.sol";
 import { MockFeed } from "./MockFeed.sol";
 import { MockFactory } from "./MockFactory.sol";
-import { MockTWrapper } from "./MockTWrapper.sol";
 
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
@@ -72,7 +71,7 @@ contract TestHelper is DSTest {
 
         // feed, target wrapper & factory
         MockFeed feedImpl = new MockFeed(); // feed implementation
-        MockTWrapper twImpl = new MockTWrapper(); // feed implementation
+        tWrapper twImpl = new tWrapper(); // feed implementation
         factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // add support to target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -104,7 +103,7 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        MockTWrapper twImpl = new MockTWrapper();
+        tWrapper twImpl = new tWrapper();
         someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);

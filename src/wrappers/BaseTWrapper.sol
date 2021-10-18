@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { ERC20 } from "solmate/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
+import { Trust } from "solmate/auth/Trust.sol";
 
 // Internal
 import { Divider } from "../Divider.sol";
@@ -18,8 +19,11 @@ contract BaseTWrapper is Initializable {
     address public target;
     address public divider;
     address public reward;
-    uint256 totalClaims;
-    mapping(address => uint256) claimBalance;
+    uint256 public share; // accumulated reward token per collected target
+    uint256 public rewardBal; // last recorded balance of reward token
+    uint256 totalTarget;
+    mapping(address => uint256) tBalance;
+    mapping(address => uint256) public rewarded; // reward token per collected target per user
 
     function initialize(
         address _target,
@@ -34,37 +38,53 @@ contract BaseTWrapper is Initializable {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    uint256 public share; // accumulated reward token per collected target
-    uint256 public totalCollected; // total target collected
-    uint256 public lastRewardBal; // last recorded balance of reward token
 
-    mapping(address => uint256) public crops; // reward token per collected target per user
-    mapping(address => uint256) public collected; // collected target per user
+    function join(
+        address _feed,
+        uint256 _maturity,
+        address _usr,
+        uint256 val
+    ) public onlyDivider {
+        _distribute(_feed, _maturity, _usr);
+        (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
+        if (val > 0) {
+            totalTarget += val;
+            tBalance[_usr] += val;
+        }
+        rewarded[_usr] = tBalance[_usr].fmulUp(share, 10**27);
+    }
 
-    function crop() internal virtual returns (uint256) {
-        return ERC20(reward).balanceOf(address(this)) - lastRewardBal;
+    function exit(
+        address _feed,
+        uint256 _maturity,
+        address _usr,
+        uint256 val
+    ) public onlyDivider {
+        _distribute(_feed, _maturity, _usr);
+        (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
+        if (val > 0) {
+            totalTarget -= val;
+            tBalance[_usr] -= val;
+        }
+        rewarded[_usr] = tBalance[_usr].fmulUp(share, 10**27);
     }
 
     /// @notice Distributes rewarded tokens to Claim holders proportionally based on Claim balance
     /// @param _feed Feed to associate with the Series
     /// @param _maturity Maturity date
     /// @param _usr User to distribute reward tokens to
-    function distribute(
+    function _distribute(
         address _feed,
         uint256 _maturity,
         address _usr
-    ) external {
+    ) internal {
         _claimReward();
-        if (totalClaims > 0) share += (crop().fdiv(totalClaims, 10**27)); // TODO: fdiv()?
-        uint256 last = crops[_usr];
-        uint256 curr = claimBalance[_usr].fmul(share, 10**27); // TODO: fmul()?
+        uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
+        if (totalTarget > 0) share += (crop().fdiv(totalTarget, 10**27));
+        uint256 last = rewarded[_usr];
+        uint256 curr = tBalance[_usr].fmul(share, 10**27);
         if (curr > last) require(ERC20(reward).transfer(_usr, curr - last));
-        lastRewardBal = ERC20(reward).balanceOf(address(this));
-
-        (, address claim, , , , , , , ) = Divider(divider).series(_feed, _maturity);
-        crops[_usr] = ERC20(claim).balanceOf(_usr).fmulUp(share, 10**27); // TODO: fmulup()?
-        totalClaims = ERC20(claim).totalSupply();
-        claimBalance[_usr] = ERC20(claim).balanceOf(_usr);
+        rewardBal = ERC20(reward).balanceOf(address(this));
         emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
@@ -72,6 +92,13 @@ contract BaseTWrapper is Initializable {
     /// If so, must be overriden by child contracts
     function _claimReward() internal virtual {
         return;
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyDivider() {
+        require(divider == msg.sender, "Can only be invoked by the Divider contract");
+        _;
     }
 
     /* ========== EVENTS ========== */

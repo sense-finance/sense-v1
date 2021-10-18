@@ -706,8 +706,9 @@ contract Dividers is TestHelper {
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 rBalanceBefore = reward.balanceOf(address(bob));
 
+        uint256 airdrop = 1e18;
+        reward.mint(address(twrapper), airdrop);
         uint256 collected = bob.doCollect(claim);
-        collected = bob.doCollect(claim); // forcing distribution of reward // TODO: check this
 
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
@@ -722,7 +723,7 @@ contract Dividers is TestHelper {
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
-        assertClose(rBalanceAfter, 1e18);
+        assertClose(rBalanceAfter, airdrop);
     }
 
     //    function testCollectRewardMultipleUsers() public {

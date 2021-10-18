@@ -5,7 +5,6 @@ import { ERC20 } from "solmate/erc20/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 import { Claim } from "../tokens/Claim.sol";
-import { MockTWrapper } from "./test-helpers/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { Errors } from "../libs/errors.sol";
 
@@ -24,26 +23,21 @@ contract Wrappers is TestHelper {
         (, address claim) = initSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
-        BaseTWrapper twrapper = new BaseTWrapper();
-        twrapper.initialize(address(target), address(divider), address(reward));
-
         alice.doIssue(address(feed), maturity, 60 * 1e18);
         bob.doIssue(address(feed), maturity, 40 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
-        twrapper.distribute(address(feed), maturity, address(bob));
 
         reward.mint(address(twrapper), 50 * 1e18);
 
-        twrapper.distribute(address(feed), maturity, address(alice));
+        alice.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 0 * 1e18);
 
-        twrapper.distribute(address(feed), maturity, address(bob));
+        bob.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
-        twrapper.distribute(address(feed), maturity, address(alice));
-        twrapper.distribute(address(feed), maturity, address(bob));
+        alice.doIssue(address(feed), maturity, 0 * 1e18);
+        bob.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
     }
@@ -53,32 +47,26 @@ contract Wrappers is TestHelper {
         (, address claim) = initSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
-        BaseTWrapper twrapper = new BaseTWrapper();
-        twrapper.initialize(address(target), address(divider), address(reward));
-
         alice.doIssue(address(feed), maturity, 100 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
         assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
 
         reward.mint(address(twrapper), 10 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
+
+        alice.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
         alice.doIssue(address(feed), maturity, 100 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
         alice.doCombine(address(feed), maturity, ERC20(claim).balanceOf(address(alice)));
-        twrapper.distribute(address(feed), maturity, address(alice));
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
         alice.doIssue(address(feed), maturity, 50 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
         reward.mint(address(twrapper), 10 * 1e18);
+
         alice.doIssue(address(feed), maturity, 10 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
         assertClose(ERC20(reward).balanceOf(address(alice)), 20 * 1e18);
     }
 
@@ -87,47 +75,45 @@ contract Wrappers is TestHelper {
         (, address claim) = initSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
-        BaseTWrapper twrapper = new BaseTWrapper();
-        twrapper.initialize(address(target), address(divider), address(reward));
-
         alice.doIssue(address(feed), maturity, 60 * 1e18);
         bob.doIssue(address(feed), maturity, 40 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
-        twrapper.distribute(address(feed), maturity, address(bob));
 
         reward.mint(address(twrapper), 50 * 1e18);
 
-        twrapper.distribute(address(feed), maturity, address(alice));
+        alice.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 0);
 
-        twrapper.distribute(address(feed), maturity, address(bob));
+        bob.doIssue(address(feed), maturity, 0 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
+
+        alice.doIssue(address(feed), maturity, 0 * 1e18);
+        bob.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
         reward.mint(address(twrapper), 50e18);
 
         alice.doIssue(address(feed), maturity, 20 * 1e18);
-        twrapper.distribute(address(feed), maturity, address(alice));
-        twrapper.distribute(address(feed), maturity, address(bob));
+        bob.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
         reward.mint(address(twrapper), 30 * 1e18);
 
-        twrapper.distribute(address(feed), maturity, address(alice));
-        twrapper.distribute(address(feed), maturity, address(bob));
+        alice.doIssue(address(feed), maturity, 0 * 1e18);
+        bob.doIssue(address(feed), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 80 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 50 * 1e18);
+
+        alice.doCombine(address(feed), maturity, ERC20(claim).balanceOf(address(alice)));
     }
 
     function testDistributionCollectAndTransfer() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = initSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
-
-        BaseTWrapper twrapper = new BaseTWrapper();
-        twrapper.initialize(address(target), address(divider), address(reward));
 
         alice.doIssue(address(feed), maturity, 60 * 1e18);
         bob.doIssue(address(feed), maturity, 40 * 1e18);
@@ -137,7 +123,6 @@ contract Wrappers is TestHelper {
         reward.mint(address(twrapper), 60 * 1e18);
 
         bob.doCollect(claim);
-        // Bob should get 1/3 of the reward
-        assertEq(reward.balanceOf(address(bob)), 20 * 1e18);
+        assertEq(reward.balanceOf(address(bob)), 24 * 1e18);
     }
 }
