@@ -64,7 +64,6 @@ contract PoolManagerTest is DSTest {
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
-    
 
     function setUp() public {
         stable = new Token("Stable", "SBL", 18);
@@ -78,8 +77,9 @@ contract PoolManagerTest is DSTest {
         // Enable the feed
         divider.setFeed(address(adminFeed), true);
         // Give this address periphery access to the divider (so that it can create Series)
-        divider.setPeriphery(address(this)); 
+        divider.setPeriphery(address(this));
     }
+
     function initSeries() public returns (uint256 _maturity) {
         // Setup mock stable token
         stable.mint(address(this), 1000 ether);

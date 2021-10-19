@@ -331,8 +331,8 @@ contract Divider is Trust {
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = cscale;
-            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow - collected);
-            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow - collected);
+            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow);
+            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow);
         }
 
         emit Collected(feed, maturity, collected);

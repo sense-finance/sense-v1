@@ -159,14 +159,14 @@ contract Wrappers is TestHelper {
         bob.doTransfer(claim, address(jim), ERC20(claim).balanceOf(address(bob)));
         // bob collected on transfer, so he should now
         // have his 24 rewards from the first drop, and 20 from the second
-        assertEq(reward.balanceOf(address(bob)), 44 * 1e18);
+        assertClose(reward.balanceOf(address(bob)), 44 * 1e18);
 
         // jim should have those 50 from the second airdrop (collected automatically when bob transferred to him)
-        assertEq(reward.balanceOf(address(jim)), 50 * 1e18);
+        assertClose(reward.balanceOf(address(jim)), 50 * 1e18);
 
         // similarly, once alice collects, she should have her 36 fom the first airdrop and 30 from the second
         alice.doCollect(claim);
-        assertEq(reward.balanceOf(address(alice)), 66 * 1e18);
+        assertClose(reward.balanceOf(address(alice)), 66 * 1e18);
 
         // now if another airdop happens, jim should get shares proportional to his new claim balance
         hevm.warp(block.timestamp + 1 days);
@@ -174,8 +174,8 @@ contract Wrappers is TestHelper {
         // 30 should go to alice and 70 to jim
         reward.mint(address(twrapper), 100 * 1e18);
         jim.doCollect(claim);
-        assertEq(reward.balanceOf(address(jim)), 120 * 1e18);
+        assertClose(reward.balanceOf(address(jim)), 120 * 1e18);
         alice.doCollect(claim);
-        assertEq(reward.balanceOf(address(alice)), 96 * 1e18);
+        assertClose(reward.balanceOf(address(alice)), 96 * 1e18);
     }
 }
