@@ -10,7 +10,6 @@ import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockFeed } from "./mocks/MockFeed.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
-import { MockTWrapper } from "./mocks/MockTWrapper.sol";
 import { MockPoolManager } from "./mocks/MockPoolManager.sol";
 
 // Uniswap mocks
@@ -81,7 +80,7 @@ contract TestHelper is DSTest {
 
         // divider
         divider = new Divider(address(stable), address(this));
-        divider.setGuard(address(target), 2**96);
+        divider.setGuard(address(target), 10*2**96);
 
         ISSUANCE_FEE = divider.ISSUANCE_FEE();
         INIT_STAKE = divider.INIT_STAKE();
@@ -99,7 +98,7 @@ contract TestHelper is DSTest {
 
         // feed, target wrapper & factory
         MockFeed feedImpl = new MockFeed(); // feed implementation
-        MockTWrapper twImpl = new MockTWrapper(); // feed implementation
+        TWrapper twImpl = new TWrapper(); // feed implementation
         factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -132,7 +131,7 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        MockTWrapper twImpl = new MockTWrapper();
+        TWrapper twImpl = new TWrapper();
         someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);

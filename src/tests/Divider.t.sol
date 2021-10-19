@@ -290,7 +290,7 @@ contract Dividers is TestHelper {
     function testSettleSeriesFeesAreTransferredIfSponsor(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = target.balanceOf(address(alice));
-        initSampleSeries(address(alice), maturity);
+        sponsorSampleSeries(address(alice), maturity);
         alice.doIssue(address(feed), maturity, tBal);
         bob.doIssue(address(feed), maturity, tBal);
         hevm.warp(maturity);
