@@ -303,7 +303,7 @@ contract Dividers is TestHelper {
         }
         uint256 fee = (ISSUANCE_FEE / convertBase).fmul(tBal, tBase);
         uint256 afterBalance = target.balanceOf(address(alice));
-        assertEq(afterBalance, beforeBalance - tBal + fee * 2);
+        assertClose(afterBalance, beforeBalance - tBal + fee * 2);
     }
 
     //    function testSettleSeriesFeesAreTransferredIfNotSponsor() public {
