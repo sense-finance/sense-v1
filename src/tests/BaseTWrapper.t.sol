@@ -21,7 +21,7 @@ contract Wrappers is TestHelper {
 
     function testDistribution() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         alice.doIssue(address(feed), maturity, 60 * 1e18);
@@ -46,7 +46,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionSimple() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         alice.doIssue(address(feed), maturity, 100 * 1e18);
@@ -74,7 +74,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionProportionally() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         alice.doIssue(address(feed), maturity, 60 * 1e18);
@@ -116,7 +116,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionSimpleCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         alice.doIssue(address(feed), maturity, 60 * 1e18);
@@ -132,7 +132,7 @@ contract Wrappers is TestHelper {
 
     function testDistributionCollectAndTransferMultiStep() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = initSampleSeries(address(alice), maturity);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
         feed.setScale(1e18);
 
         alice.doIssue(address(feed), maturity, 60 * 1e18);

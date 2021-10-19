@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { MockToken } from "./MockToken.sol";
+import { MockToken } from "./mocks/MockToken.sol";
 
 // Internal
 import { BaseTWrapper } from "../../wrappers/BaseTWrapper.sol";
