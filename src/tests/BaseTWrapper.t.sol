@@ -177,6 +177,5 @@ contract Wrappers is TestHelper {
         assertEq(reward.balanceOf(address(jim)), 120 * 1e18);
         alice.doCollect(claim);
         assertEq(reward.balanceOf(address(alice)), 96 * 1e18);
-
     }
 }
