@@ -4,10 +4,10 @@ pragma solidity ^0.8.6;
 /// @notice Program error types
 library Errors {
     string constant AlreadySettled = "Series has already been settled";
-    string constant BurnAmountExceedsBalance = "ERC20: burn amount exceeds balance";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
-    string constant DuplicateSeries = "Series with given maturity already exists";
+    string constant DuplicateSeries = "Series has already been initialized";
     string constant ExistingValue = "New value must be different than previous";
+    string constant FactoryNotSupported = "Factory is not supported";
     string constant FeedAlreadyExists = "Feed already exists";
     string constant GuardCapReached = "Issuance cap reached";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
@@ -19,6 +19,7 @@ library Errors {
     string constant SeriesDoesntExists = "Series does not exist";
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
+    string constant OnlyPeriphery = "Can only be invoked by the Periphery contract";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";

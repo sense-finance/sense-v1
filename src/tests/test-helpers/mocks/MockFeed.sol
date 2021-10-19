@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { ERC20 } from "solmate/erc20/ERC20.sol";
-import { BaseFeed } from "../../feeds/BaseFeed.sol";
-import { FixedMath } from "../../external/FixedMath.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { BaseFeed } from "../../../feeds/BaseFeed.sol";
+import { FixedMath } from "../../../external/FixedMath.sol";
 
 contract MockFeed is BaseFeed {
     using FixedMath for uint256;
@@ -13,6 +13,7 @@ contract MockFeed is BaseFeed {
     uint256 public INITIAL_VALUE;
 
     function _scale() internal override virtual returns (uint256 _value) {
+        if (value > 0) return value;
         uint8 tDecimals = ERC20(target).decimals();
         if (INITIAL_VALUE == 0)  {
             if (tDecimals != 18) {
@@ -23,7 +24,6 @@ contract MockFeed is BaseFeed {
         }
         uint256 gps = delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
-        if (value > 0) return value;
         _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, 10**tDecimals) + lscale.value : INITIAL_VALUE;
     }
 

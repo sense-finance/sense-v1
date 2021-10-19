@@ -9,6 +9,6 @@ abstract contract IFeedFactory {
 
     function setImplementation(address _implementation) virtual public;
 
-    function deployFeed(address _target) public virtual returns (address clone);
+    function deployFeed(address _target) public virtual returns (address feedClone, address wtClone);
 
 }

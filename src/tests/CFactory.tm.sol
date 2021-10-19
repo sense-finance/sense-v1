@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { DSTest } from "ds-test/test.sol";
-
 // Internal references
 import { CFeed } from "../feeds/compound/CFeed.sol";
 import { CFactory } from "../feeds/compound/CFactory.sol";
 import { Divider } from "../Divider.sol";
 
+import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
@@ -22,25 +21,27 @@ contract CFeedTestHelper is DSTest {
 
     function setUp() public {
         divider = new Divider(DAI, address(this));
-        CFeed implementation = new CFeed(); // compound feed implementation
+        CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
-        factory = new CFactory(address(implementation), address(divider), DELTA);
+        factory = new CFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
 
 contract CFactories is CFeedTestHelper {
     function testDeployFactory() public {
-        CFeed implementation = new CFeed();
-        CFactory otherCFactory = new CFactory(address(implementation), address(divider), DELTA);
+        CFeed feedImpl = new CFeed();
+        CFactory otherCFactory = new CFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
+        // TODO: replace for a real one
         assertTrue(address(otherCFactory) != address(0));
-        assertEq(CFactory(otherCFactory).implementation(), address(implementation));
+        assertEq(CFactory(otherCFactory).feedImpl(), address(feedImpl));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
         assertEq(CFactory(otherCFactory).delta(), DELTA);
     }
 
     function testDeployFeed() public {
-        CFeed feed = CFeed(factory.deployFeed(cDAI));
+        (address f, ) = factory.deployFeed(cDAI);
+        CFeed feed = CFeed(f);
         assertTrue(address(feed) != address(0));
         assertEq(CFeed(feed).target(), address(cDAI));
         assertEq(CFeed(feed).divider(), address(divider));

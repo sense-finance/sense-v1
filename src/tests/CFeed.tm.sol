@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { DSTest } from "ds-test/test.sol";
-
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 
-import { MockFactory } from "./test-helpers/MockFactory.sol";
+import { DSTest } from "./test-helpers/DSTest.sol";
+import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
@@ -25,12 +24,14 @@ contract CFeedTestHelper is DSTest {
 
     function setUp() public {
         divider = new Divider(DAI, address(this));
-        CFeed implementation = new CFeed(); // compound feed implementation
+        CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
-        factory = new MockFactory(address(implementation), address(divider), DELTA);
+        factory = new MockFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
+        // TODO replace for a real reward token
         factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        feed = CFeed(factory.deployFeed(cDAI)); // deploy a cDAI feed
+        (address f, ) = factory.deployFeed(cDAI);
+        feed = CFeed(f); // deploy a cDAI feed
     }
 }
 
