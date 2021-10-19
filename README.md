@@ -62,21 +62,14 @@ yarn build
 
 ## Sense V1 Architecture
 
-The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims`, with the help of numerous auxilary contracts, including `Feeds`, `FeedFactories`, `tWrappers`, `Periphery`, and `Emergency Stop`. Each Target can have up to three instances, or `series`, of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+# <img src="contract-diagram.svg" alt="sense smart contract user/contract interaction diagram">
 
-The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal, such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversion for Claims or the management of a [Zero/Claim borrowing/lending pool](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
+The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Feeds`, `Feed Factories`, `Periphery`, `TWrappers` and `Emergency Stop`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+
+The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversions for Claims or the management of a [Zero/Claim borrowing/lending pool](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
 
 ### Divider
-The Divider contract contains the logic to `issue` ERC20 Zeros and Claims, re`combine` those assets into Target before their `maturity`, `collect` Target with Claim tokens, and `redeemZero` at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
-
-### External
-These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
-- DateTime.sol
-- FixedMath.sol
-- FullMath.sol
-- OracleLibrary.sol
-- PoolAddress.sol
-- TickMath.sol
+The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
 
 ### Feed
 Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
@@ -88,42 +81,41 @@ To create a feed implementation, the contract needs to inherit from `BaseFeed.so
 ### Feed factory
 The feed factory allows any person to deploy a feed for a given Target in a permissionless manner.
 
-Sense will deploy one Feed Factory for each protocol it wants to give support to (e.g cTokens Feed Factory, aTokens Feed Factory, etc) and will grant core access to the Divider. 
+Following a gradual expansion, Sense Finance will deploy one Feed Factory for each protocol (e.g cTokens Feed Factory, aTokens Feed Factory, etc).
 
-Most factories will be similar except for how they implement the `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the target passed is a supported asset of that protocol.
+Most factories will be similar except for how they implement `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the Target passed is a supported asset of that protocol.
 
-Users can deploy a feed by making a call to the `Periphery` contract, which has authority to call `deployFeed(_target)`. Only supported targets can be used. You can check if a target is supported by doing a call to `controller.targets()`.
+Users can deploy a Feed by making a call to the `Periphery` contract, which has authority to call `deployFeed(_target)` on the Feed Factory.
 
-To create a feed factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
-
-### Tokens
-This directory contains the tokens contracts. Sense protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
-- `Mintable.sol` as a token which has minting and burning public methods and is also warded,
-- `BaseToken.sol` as a `Mintable` token with the addition of `maturity`, `divider` and `feed` address variables and restriction of the `burn()` to only be called from the `wards` and
-- `Claim.sol` which inherits from `BaseToken` and defines a `collect()` (which calls `collect()` on `Divider.sol`) and overrides  `transfer()` and `transferFrom()` to also call `collect()`
-
-Note that Zeros are represented with the `BaseToken.sol` contract.
+To create a Feed Factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
 ### Periphery
 
-`Periphery` contains bundled actions for Series Actors and general users. 
+Periphery contains bundled actions for Series Actors and general users. 
 
 For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy feeds) and initialize new Series. The Target Sponsor calls `onboardTarget` which will deploy a Feed via a Feed Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/gClaim pool on UniswapV3.
 
-Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue` / `combine` and `wrap` / `unwrap` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interfact and perform the following operations atomically:
+Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue()` / `combine()` and `join()` / `exit()` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interface and perform the following operations atomically:
 - swapTargetForZeros
 - swapTargetForClaims
 - swapZerosForTarget
 - swapClaimsForTarget
 
+### Tokens
+This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
+- `Token.sol` as a minimalist ERC20 implementation with auth'd `burn()` and `mint()`. Used for Zeros.
+- `Claim.sol` as a minimalist yield token implementation that:
+    1. inherits from `Token`
+    2. adds `maturity`, `divider` and `feed` address variables
+    3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
 
 ### Target Wrappers
 
-`tWrappers` hold Target before a series' maturity and contain logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target.
+tWrappers hold Target before a series' maturity and contain logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target.
 
 ### Emergency Stop
 
-`Emergency Stop` is used by Sense Finance, Inc, to `stop` the operation of the Divider by pausing all `Feeds`. 
+Emergency Stop is used by Sense Finance, Inc, to `stop` the operation of the Divider by pausing all `Feeds`. 
 
 ### Modules
 
@@ -131,12 +123,12 @@ A Collection of Modules and Utilities for Sense V1
 
 #### G Claim Manager
 
-`GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims.
+`GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims. More information between Collect and Drag Claims can [be found here](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56).
 
 
 #### Pool Manager
 
-`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros & Claims and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget`) and Zeros/Claims (`addSeries`). 
+`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros & Claims and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`) and Zeros/Claims (`addSeries()`). 
 
 #### Recycling Module
 
@@ -147,11 +139,29 @@ We use `Trust.sol` to provide with access control via `requiresTrust` to contrac
 
 ### Admin
 
-The long-term goal of the Sense Protocol is to be as governance minimized as possible. However, out of caution, we’re taking a progressive decentralization approach, where we retain certain privileged permissions of v1 of the Protocol to ensure the system scales safely as well as pause the system in case of an emergency (vulnerability, hack, etc). The following list elaborates on these permissions:
+The long-term goal of the Sense Protocol is to be as governance minimized as possible. However, out of caution, we’re taking a progressive decentralization approach, where Sense Finance Inc retains certain privileged permissions of v1 of the Protocol to ensure the system scales safely as well as pause the system in case of an emergency (vulnerability, hack, etc). The following list elaborates on these permissions:
 - `Divider.setIsTrusted` - add a new Feed Factory
 - `Divider.setFeed` - pause a faulty feed
 - `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs
 - `EmergencyStop.stop` - stop the Sense Protocol
+- `Divider.setGuard` - set the cap for the Guarded launch
+- `Divider.setPeriphery` - point to the Periphery
+- `BaseFactory.setDivider` - Feed Factory config
+- `BaseFactory.setDelta` - Feed Factory config
+- `BaseFactory.setFeedImplementation` - Feed Factory config
+- `BaseFactory.setTWImplementation` - Feed Factory config
+- `BaseFactory.setProtocol` - Feed Factory config
+- `PoolManager.deployPool` - deploy the Sense Fuse Pool
+- `PoolManager.setParams` - set parameters for the Sense Fuse Pool
+
+### External
+These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
+- DateTime.sol
+- FixedMath.sol
+- FullMath.sol
+- OracleLibrary.sol
+- PoolAddress.sol
+- TickMath.sol
 
 
 ## Developing
