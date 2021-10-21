@@ -188,7 +188,7 @@ contract Divider is Trust {
         // Burn the Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
         // Collect whatever excess is due for accounting
-        _collect(msg.sender, feed, maturity, uBal, address(0));
+        _collect(msg.sender, feed, maturity, uBal, uBal, address(0));
 
         // We use lscale since the current scale was already stored there by the `_collect()` call
         uint256 cscale = series[feed][maturity].mscale;
@@ -254,12 +254,14 @@ contract Divider is Trust {
     }
 
     function collect(
-        address usr, address feed, uint256 maturity, address to
+        address usr, address feed, uint256 maturity, uint256 oBal, address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
+        uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             feed,
             maturity,
-            Claim(msg.sender).balanceOf(usr),
+            uBal,
+            oBal > 0 ? oBal : uBal,
             to
         );
     }
@@ -269,13 +271,15 @@ contract Divider is Trust {
     /// @param usr User who's collecting for their Claims
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param maturity Maturity date for the Series
+    /// @param uBal claim balance
+    /// @param oBal original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
         address usr,
         address feed,
         uint256 maturity,
         uint256 uBal,
+        uint256 oBal,
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
@@ -322,8 +326,7 @@ contract Divider is Trust {
         // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
         // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        uint256 tBalNow = uBal.fdiv(cscale, claim.BASE_UNIT());
-        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
+        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - uBal.fdiv(cscale, claim.BASE_UNIT());
         target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
         BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
 
@@ -331,6 +334,7 @@ contract Divider is Trust {
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = cscale;
+            uint256 tBalNow = oBal.fdiv(cscale, claim.BASE_UNIT());
             BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow);
             BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow);
         }

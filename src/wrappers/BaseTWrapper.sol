@@ -20,8 +20,8 @@ contract BaseTWrapper is Initializable {
     address public reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
-    uint256 totalTarget;
-    mapping(address => uint256) tBalance;
+    uint256 public totalTarget;
+    mapping(address => uint256) public tBalance;
     mapping(address => uint256) public rewarded; // reward token per collected target per user
 
     function initialize(

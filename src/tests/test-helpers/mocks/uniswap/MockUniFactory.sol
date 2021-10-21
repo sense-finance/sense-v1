@@ -8,10 +8,12 @@ contract MockUniV3Pool {
     function initialize(uint160 sqrtPriceX96) external {}
     function observe(uint32[] calldata secondsAgos) external view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
     {
-//        tickCumulatives[0] = 1;
-//        tickCumulatives[1] = 2;
-//        secondsPerLiquidityCumulativeX128s[0] = 1;
-//        secondsPerLiquidityCumulativeX128s[1] = 1;
+        tickCumulatives = new int56[](2);
+        secondsPerLiquidityCumulativeX128s = new uint160[](2);
+        tickCumulatives[0] = type(int56).max;
+        tickCumulatives[1] = type(int56).max;
+        secondsPerLiquidityCumulativeX128s[0] = type(uint160).max;
+        secondsPerLiquidityCumulativeX128s[1] = type(uint160).max;
     }
 }
 
