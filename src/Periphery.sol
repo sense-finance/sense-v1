@@ -185,11 +185,12 @@ contract Periphery is Trust {
         uint256 swapped = _swap(gclaim, zero, claimsToSell, address(this), minAccepted);
 
         // combine zeros & claims
+        ERC20 target = ERC20(Feed(feed).target());
         uint256 tBal = target.balanceOf(address(this));
         divider.combine(feed, maturity, swapped);
 
         // transfer target to msg.sender
-        ERC20(target).safeTransfer(msg.sender, target.balanceOf(address(this)) - tBal);
+        target.safeTransfer(msg.sender, target.balanceOf(address(this)) - tBal);
     }
 
     /* ========== VIEWS ========== */
