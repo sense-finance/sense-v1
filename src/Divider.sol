@@ -254,14 +254,14 @@ contract Divider is Trust {
     }
 
     function collect(
-        address usr, address feed, uint256 maturity, uint256 oBal, address to
+        address usr, address feed, uint256 maturity, uint256 tBalTransfer, address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             feed,
             maturity,
             uBal,
-            oBal > 0 ? oBal : uBal,
+            tBalTransfer > 0 ? tBalTransfer : uBal,
             to
         );
     }
@@ -272,14 +272,14 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal claim balance
-    /// @param oBal original transfer value
+    /// @param tBalTransfer original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
         address usr,
         address feed,
         uint256 maturity,
         uint256 uBal,
-        uint256 oBal,
+        uint256 tBalTransfer,
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
@@ -334,7 +334,7 @@ contract Divider is Trust {
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = cscale;
-            uint256 tBalNow = oBal.fdiv(cscale, claim.BASE_UNIT());
+            uint256 tBalNow = tBalTransfer.fdiv(cscale, claim.BASE_UNIT());
             BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow);
             BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow);
         }

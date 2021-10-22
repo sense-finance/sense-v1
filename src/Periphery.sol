@@ -24,6 +24,7 @@ import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswa
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Periphery is Trust {
     using FixedMath for uint256;
+    using FixedMath for uint128;
     using SafeERC20 for ERC20;
     using Errors for string;
 
@@ -139,7 +140,7 @@ contract Periphery is Trust {
         ERC20(claim).transfer(msg.sender, totalClaims);
     }
 
-    function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
+    function swapZerosForTarget(address feed, uint256 maturity, uint128 zBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
 
@@ -147,7 +148,7 @@ contract Periphery is Trust {
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal);
 
         // get rate from uniswap
-        uint256 rate = price(zero, gclaim);
+        uint256 rate = price(zero, gclaim, zBal);
 
         // swap some zeros for gclaims
         uint256 zerosToSell = zBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
@@ -165,7 +166,7 @@ contract Periphery is Trust {
         ERC20(target).safeTransfer(msg.sender, target.balanceOf(address(this)) - tBal);
     }
 
-    function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
+    function swapClaimsForTarget(address feed, uint256 maturity, uint128 cBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
         address gclaim = address(gClaimManager.gclaims(claim));
 
@@ -173,19 +174,22 @@ contract Periphery is Trust {
         ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
 
         // get rate from uniswap
-        uint256 rate = price(zero, gclaim);
+        uint256 rate = price(zero, gclaim, cBal);
 
         uint256 claimsToSell = cBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
 
         // convert some claims to gclaims
+        ERC20 target = ERC20(Feed(feed).target());
         ERC20(claim).approve(address(gClaimManager), claimsToSell);
+        uint256 excess = gClaimManager.excess(feed, maturity, claimsToSell);
+        target.safeTransferFrom(msg.sender, address(this), excess);
+        target.approve(address(gClaimManager), excess);
         gClaimManager.join(feed, maturity, claimsToSell);
 
         // swap gclaims for zeros
         uint256 swapped = _swap(gclaim, zero, claimsToSell, address(this), minAccepted);
 
         // combine zeros & claims
-        ERC20 target = ERC20(Feed(feed).target());
         uint256 tBal = target.balanceOf(address(this));
         divider.combine(feed, maturity, swapped);
 
@@ -195,12 +199,11 @@ contract Periphery is Trust {
 
     /* ========== VIEWS ========== */
 
-    function price(address tokenA, address tokenB) public view returns (uint) {
+    function price(address tokenA, address tokenB, uint128 baseAmount) public view returns (uint) {
         // Return tokenA/tokenB TWAP
         address pool = IUniswapV3Factory(uniFactory).getPool(tokenA, tokenB, UNI_POOL_FEE);
         int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
-        uint128 baseUnit = uint128(10) ** uint128(ERC20(tokenA).decimals());
-        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
+        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseAmount, tokenA, tokenB).fdiv(baseAmount, 10 ** ERC20(tokenA).decimals());
     }
 
     function _swap(address tokenIn, address tokenOut, uint256 amountIn, address recipient, uint256 minAccepted) internal returns (uint256 amountOut) {
