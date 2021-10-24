@@ -74,7 +74,8 @@ module.exports = {
   contractSizer: {
     alphaSort: true,
     runOnCompile: false,
-    disambiguatePaths: false,
+    disambiguatePaths: true,
+    strict: true,
   },
   //   tenderly: {
   //     project: process.env.TENDERLY_PROJECT,
