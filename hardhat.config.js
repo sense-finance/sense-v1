@@ -1,6 +1,7 @@
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 // require("@tenderly/hardhat-tenderly");
+require("hardhat-contract-sizer");
 require("hardhat-abi-exporter");
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
@@ -46,6 +47,10 @@ module.exports = {
       blockGasLimit: 21000000,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
+      mining: {
+        auto: false,
+        interval: 0,
+      },
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
@@ -62,17 +67,18 @@ module.exports = {
     deployments: "deployments",
   },
   solidity: {
-    compilers: [
-      {
-        version: "0.8.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100,
-          },
-        },
+    version: "0.8.6",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1500,
       },
-    ],
+    },
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: false,
+    disambiguatePaths: false,
   },
   //   tenderly: {
   //     project: process.env.TENDERLY_PROJECT,
