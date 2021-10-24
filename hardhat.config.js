@@ -12,7 +12,7 @@ const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
 };
 
-const config = {
+module.exports = {
   defaultNetwork: "hardhat",
   // etherscan: {
   //   apiKey: process.env.ETHERSCAN_API_KEY,
@@ -33,6 +33,7 @@ const config = {
       accounts,
       gasPrice: 120 * 1000000000, // 12 GWei
       chainId: 1,
+      saveDeployments: true,
     },
     hardhat: {
       forking: {
@@ -41,6 +42,7 @@ const config = {
       },
       chainId: 111,
       gas: 12000000,
+      saveDeployments: false,
       blockGasLimit: 21000000,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
@@ -56,6 +58,8 @@ const config = {
   },
   paths: {
     sources: "src",
+    deploy: "deploy",
+    deployments: "deployments",
   },
   solidity: {
     compilers: [
@@ -70,10 +74,6 @@ const config = {
       },
     ],
   },
-  spdxLicenseIdentifier: {
-    overwrite: false,
-    runOnCompile: true,
-  },
   //   tenderly: {
   //     project: process.env.TENDERLY_PROJECT,
   //     username: process.env.TENDERLY_USERNAME,
@@ -86,5 +86,3 @@ const config = {
     },
   },
 };
-
-module.exports = config;
