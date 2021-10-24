@@ -21,7 +21,7 @@ abstract contract BaseFactory is Trust {
     address public twImpl;   // wrapped target implementation
     address public divider;
     uint256 public delta;
-    address public reward;   // reward token
+    address public reward; // reward token
 
     constructor(
         address _protocol,

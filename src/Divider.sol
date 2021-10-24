@@ -20,7 +20,7 @@ import { BaseTWrapper } from "./wrappers/BaseTWrapper.sol";
 contract Divider is Trust {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
-    using Errors for   string;
+    using Errors for string;
 
     /// @notice Configuration
     uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%) [WAD] // TODO: TBD
@@ -39,20 +39,26 @@ contract Divider is Trust {
     address public periphery;
     address public immutable stable;
     address public immutable cup;
-    mapping(address => bool   ) public feeds;  // feed -> approved
-    mapping(address => uint256) public guards; // target -> max amount of Target allowed to be issued
-    mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
-    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
+
+    /// @notice feed -> is supported
+    mapping(address => bool   ) public feeds; 
+    /// @notice target -> max amount of Target allowed to be issued
+    mapping(address => uint256) public guards;
+    /// @notice feed -> maturity -> Series
+    mapping(address => mapping(uint256 => Series)) public series; 
+    /// @notice feed -> maturity -> user -> lscale
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
+
     struct Series {
-        address zero;     // Zero address for this Series (deployed on Series initialization)
-        address claim;    // Claim address for this Series (deployed on Series initialization)
-        address sponsor;  // Series initializer/sponsor
-        uint256 issuance; // Issuance date for this Series (needed for Zero redemption)
-        uint256 reward;   // Tracks the fees due to the settler on Settlement
-        uint256 iscale;   // Scale value at issuance
-        uint256 mscale;   // Scale value at maturity
-        uint256 maxscale; // Max scale from this Series' lifetime
-        uint256 tilt;     // % underlying principal to be reserved for Claims
+        address zero;     
+        address claim;  
+        address sponsor;
+        uint256 issuance;
+        uint256 reward; // tracks fees due to the series' settler
+        uint256 iscale; // scale at issuance
+        uint256 mscale; // scale at maturity
+        uint256 maxscale; // max scale value from this series' lifetime
+        uint256 tilt; // % of underlying principal initially reserved for Claims
     }
 
     constructor(address _stable, address _cup) Trust(msg.sender) {
@@ -98,7 +104,7 @@ contract Divider is Trust {
 
     /// @notice Settles a Series and transfer the settlement reward to the caller
     /// @dev The Series' sponsor has a buffer where only they can settle the Series
-    /// @dev After the buffer, the reward becomes MEV
+    /// @dev After that, the reward becomes MEV
     /// @param feed Feed to associate with the Series
     /// @param maturity Maturity date for the new Series
     function settleSeries(address feed, uint256 maturity) external {
@@ -126,7 +132,7 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
-    /// the amount of Zeros/Claims minted will be the equivelent value in units of underlying (less fees)
+    /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
     function issue(address feed, uint256 maturity, uint256 tBal) external returns (uint256 uBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
@@ -137,7 +143,7 @@ contract Divider is Trust {
         uint256 tBase = 10 ** tDecimals;
         uint256 fee;
 
-        // Take the issuance fee out of the deposited Target, and put it towards the settlement
+        // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         if (tDecimals != 18) {
             fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
         } else {
@@ -284,7 +290,6 @@ contract Divider is Trust {
         Series memory _series = series[feed][maturity];
 
         // Get the scale value from the last time this holder collected (default to maturity)
-        uint256 cscale = _series.maxscale;
         uint256 lscale = lscales[feed][maturity][usr];
         Claim claim = Claim(series[feed][maturity].claim);
         ERC20 target = ERC20(Feed(feed).target());
@@ -303,26 +308,28 @@ contract Divider is Trust {
                 revert(Errors.CollectNotSettled);
             // Otherwise, this is a valid pre-settlement collect and we need to determine the scale value
             } else {
-                uint256 maxscale = _series.maxscale;
-                cscale = Feed(feed).scale();
+                uint256 cscale = Feed(feed).scale();
                 // If this is larger than the largest scale we've seen for this Series, use it
-                if (cscale > maxscale) {
+                if (cscale > _series.maxscale) {
                     _series.maxscale = cscale;
                     lscales[feed][maturity][usr] = cscale;
                 // If not, use the previously noted max scale value
                 } else {
-                    lscales[feed][maturity][usr] = maxscale;
+                    lscales[feed][maturity][usr] = _series.maxscale;
                 }
             }
         }
 
         // Determine how much underlying has accrued since the last time this user collected, in units of Target.
         // (Or take the last time as issuance if they haven't yet)
-        // Reminder that `Underlying / Scale` = `Target`, so the following equation is saying, for some amount of Underlying `u`:
-        // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
-        // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
+        //
+        // Reminder: `Underlying / Scale = Target`
+        // So, the following equation is saying, for some amount of Underlying `u`:
+        // "Balance of Target that equaled `u` at the last collection _minus_ Target that equals `u` now"
+        //
+        // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        uint256 tBalNow = uBal.fdiv(cscale, claim.BASE_UNIT());
+        uint256 tBalNow = uBal.fdiv(_series.maxscale, claim.BASE_UNIT());
         collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
         target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
         BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
@@ -330,7 +337,7 @@ contract Divider is Trust {
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
-            lscales[feed][maturity][to] = cscale;
+            lscales[feed][maturity][to] = _series.maxscale;
             BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow);
             BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow);
         }
@@ -462,7 +469,7 @@ contract Divider is Trust {
     /* ========== INTERNAL VIEWS ========== */
 
     function _exists(address feed, uint256 maturity) internal view returns (bool exists) {
-        return address(series[feed][maturity].zero) != address(0);
+        return series[feed][maturity].zero != address(0);
     }
 
     function _settled(address feed, uint256 maturity) internal view returns (bool settled) {
@@ -518,13 +525,14 @@ contract Divider is Trust {
         require(series[feed][maturity].claim == msg.sender, "Can only be invoked by the Claim contract");
         _;
     }
-
     modifier onlyPeriphery() {
         require(periphery == msg.sender, "Can only be invoked by the Periphery contract");
         _;
     }
 
     /* ========== EVENTS ========== */
+
+    /// @notice 
     event Backfilled(address indexed feed, uint256 indexed maturity, uint256 mscale, Backfill[] backfills);
     event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);

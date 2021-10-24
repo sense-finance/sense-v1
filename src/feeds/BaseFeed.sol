@@ -68,7 +68,7 @@ abstract contract BaseFeed is Initializable {
     }
 
     /// @notice Tilt value getter that may be overriden by child contracts
-    /// @dev By default, it returns `0`, which means no principal is set aside for Claims
+    /// @dev Returns `0` by default, which means no principal is set aside for Claims
     function tilt() external virtual returns (uint256) {
         return 0;
     }

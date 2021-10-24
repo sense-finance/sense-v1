@@ -62,7 +62,7 @@ contract PeripheryTest is TestHelper {
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.onboardTarget(address(feed), 0, address(factory), address(newTarget));
+        periphery.onboardTarget(0, address(factory), address(newTarget));
         assertTrue(factory.feeds(address(newTarget)) != address(0));
         // assertTrue(poolManager.tInits(address(target))); // TODO: do when PoolManage ready
     }
