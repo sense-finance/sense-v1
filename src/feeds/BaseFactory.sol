@@ -7,7 +7,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { BaseFeed } from "./BaseFeed.sol";
 import { Divider } from "../Divider.sol";
 import { BaseTWrapper as TWrapper } from "../wrappers/BaseTWrapper.sol";

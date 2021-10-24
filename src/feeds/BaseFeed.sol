@@ -8,7 +8,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 
 /// @title Assign time-based value to target assets
 /// @dev In most cases, the only function that will be unique to each feed type is `scale`

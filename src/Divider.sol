@@ -8,7 +8,7 @@ import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 
 // Internal references
-import { Errors } from "./libs/errors.sol";
+import { Errors } from "./libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
@@ -417,21 +417,18 @@ contract Divider is Trust {
         emit PeripheryChanged(periphery);
     }
 
-    struct Backfill {
-        address usr;    // Address of the user who's getting their lscale backfilled
-        uint256 lscale; // Scale value to backfill for usr's lscale
-    }
-
     /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
     /// @param feed Feed's address
     /// @param maturity Maturity date for the Series
     /// @param mscale Value to set as the Series' Scale value at maturity
-    /// @param backfills Values to set on lscales mapping
+    /// @param _usrs Values to set on lscales mapping
+    /// @param _lscales Values to set on lscales mapping
     function backfillScale(
         address feed,
         uint256 maturity,
         uint256 mscale,
-        Backfill[] memory backfills
+        address[] calldata _usrs,
+        uint256[] calldata _lscales
     ) external requiresTrust {
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(mscale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
@@ -446,8 +443,8 @@ contract Divider is Trust {
             series[feed][maturity].maxscale = mscale;
         }
         // Set user's last scale values the Series (needed for the `collect` method)
-        for (uint i = 0; i < backfills.length; i++) {
-            lscales[feed][maturity][backfills[i].usr] = backfills[i].lscale;
+        for (uint i = 0; i < _usrs.length; i++) {
+            lscales[feed][maturity][_usrs[i]] = _lscales[i];
         }
 
         // Determine where the rewards should go depending on where we are relative to the maturity date
@@ -456,7 +453,7 @@ contract Divider is Trust {
         target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
-        emit Backfilled(feed, maturity, mscale, backfills);
+        emit Backfilled(feed, maturity, mscale, _usrs, _lscales);
     }
 
     /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
@@ -468,15 +465,15 @@ contract Divider is Trust {
 
     /* ========== INTERNAL VIEWS ========== */
 
-    function _exists(address feed, uint256 maturity) internal view returns (bool exists) {
+    function _exists(address feed, uint256 maturity) internal view returns (bool) {
         return series[feed][maturity].zero != address(0);
     }
 
-    function _settled(address feed, uint256 maturity) internal view returns (bool settled) {
+    function _settled(address feed, uint256 maturity) internal view returns (bool) {
         return series[feed][maturity].mscale > 0;
     }
 
-    function _canBeSettled(address feed, uint256 maturity) internal view returns (bool canBeSettled) {
+    function _canBeSettled(address feed, uint256 maturity) internal view returns (bool) {
         require(!_settled(feed, maturity), Errors.AlreadySettled);
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the sender is the sponsor for the Series
@@ -487,7 +484,7 @@ contract Divider is Trust {
         }
     }
 
-    function _isValid(uint256 maturity) internal view returns (bool valid) {
+    function _isValid(uint256 maturity) internal view returns (bool) {
         if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
 
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
@@ -512,11 +509,9 @@ contract Divider is Trust {
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
     }
 
-    function _convertBase(uint256 decimals) internal pure returns (uint256 convertBase) {
-        convertBase = 1;
-        if (decimals != 18) {
-            convertBase = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
-        }
+    function _convertBase(uint256 decimals) internal pure returns (uint256) {
+        if (decimals == 18) return 1;
+        return decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
     }
 
     /* ========== MODIFIERS ========== */
@@ -525,6 +520,7 @@ contract Divider is Trust {
         require(series[feed][maturity].claim == msg.sender, "Can only be invoked by the Claim contract");
         _;
     }
+
     modifier onlyPeriphery() {
         require(periphery == msg.sender, "Can only be invoked by the Periphery contract");
         _;
@@ -532,15 +528,33 @@ contract Divider is Trust {
 
     /* ========== EVENTS ========== */
 
-    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 mscale, Backfill[] backfills);
-    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
-    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    /// @notice admin
+    event Backfilled(
+        address indexed feed, 
+        uint256 indexed maturity, 
+        uint256 mscale, 
+        address[] _usrs,
+        uint256[] _lscales
+    );
     event GuardChanged(address indexed target, uint256 indexed cap);
     event FeedChanged(address indexed feed, bool isOn);
+    event PeripheryChanged(address indexed periphery);
+
+    /// @notice series lifecycle:
+    /// * beginning
+    event SeriesInitialized(
+        address indexed feed, 
+        uint256 indexed maturity, 
+        address zero, 
+        address claim, 
+        address indexed sponsor
+    );
+    /// * middle
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
+    /// * end
+    event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
     event ZeroRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event ClaimRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
-    event PeripheryChanged(address indexed periphery);
-    event SeriesInitialized(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
-    event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
 }

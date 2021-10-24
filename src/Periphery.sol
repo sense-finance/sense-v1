@@ -10,7 +10,7 @@ import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 // Internal references
-import { Errors } from "./libs/errors.sol";
+import { Errors } from "./libs/Errors.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";

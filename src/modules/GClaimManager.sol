@@ -7,7 +7,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";

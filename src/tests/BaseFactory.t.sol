@@ -8,7 +8,7 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { IFeed } from "./test-helpers/interfaces/IFeed.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {

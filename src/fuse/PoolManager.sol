@@ -7,7 +7,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 // Internal references
 import { Divider } from "../Divider.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { Token } from "../tokens/Token.sol";
 
 interface FuseDirectoryLike {
