@@ -81,9 +81,7 @@ contract Periphery is Trust {
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
-    function onboardTarget(
-        uint256 maturity, address factory, address target
-    ) external returns (address feedClone, address wtClone) {
+    function onboardTarget(address factory, address target) external returns (address feedClone, address wtClone) {
         require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
