@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-// internal references
+// Internal references
 import { BaseFactory } from "../BaseFactory.sol";
 
 interface ComptrollerLike {

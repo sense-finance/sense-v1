@@ -41,7 +41,7 @@ contract Divider is Trust {
     address public immutable cup;
 
     /// @notice feed -> is supported
-    mapping(address => bool   ) public feeds; 
+    mapping(address => bool) public feeds; 
     /// @notice target -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
     /// @notice feed -> maturity -> Series
@@ -532,7 +532,6 @@ contract Divider is Trust {
 
     /* ========== EVENTS ========== */
 
-    /// @notice 
     event Backfilled(address indexed feed, uint256 indexed maturity, uint256 mscale, Backfill[] backfills);
     event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
