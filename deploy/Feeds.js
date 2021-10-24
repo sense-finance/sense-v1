@@ -15,6 +15,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     from: deployer,
     args: [],
     log: true,
+    deterministicDeployment: true,
   });
 
   const divider = await ethers.getContract("Divider");
@@ -34,7 +35,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     from: deployer,
     args: [cFeedAddress, baseWrapperAddress, divider.address, DELTA, compAddress],
     log: true,
+    deterministicDeployment: true,
   });
+
   const cFactory = await ethers.getContract("CFactory");
 
   console.log("Trust cToken feed factory on the divider");
