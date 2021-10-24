@@ -18,10 +18,10 @@ abstract contract BaseFactory is Trust {
     mapping(address => address) public feeds; // target -> feed (to check if a feed for a given target is deployed)
     address public protocol; // protocol's data contract address
     address public feedImpl; // feed implementation
-    address public twImpl; // wrapped target implementation
+    address public twImpl;   // wrapped target implementation
     address public divider;
     uint256 public delta;
-    address public reward; // reward token
+    address public reward;   // reward token
 
     constructor(
         address _protocol,
@@ -33,10 +33,10 @@ abstract contract BaseFactory is Trust {
     ) Trust(msg.sender) {
         protocol = _protocol;
         feedImpl = _feedImpl;
-        twImpl = _twImpl;
-        divider = _divider;
-        delta = _delta;
-        reward = _reward;
+        twImpl   = _twImpl;
+        divider  = _divider;
+        delta    = _delta;
+        reward   = _reward;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

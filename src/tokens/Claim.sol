@@ -5,7 +5,8 @@ pragma solidity ^0.8.6;
 import { Divider } from "../Divider.sol";
 import { Token } from "./Token.sol";
 
-/// @title Claim token contract that allows excess collection pre-maturity
+/// @title Claim Token
+/// @notice Strips off excess before every transfer
 contract Claim is Token {
     uint256 public maturity;
     address public divider;
@@ -20,8 +21,8 @@ contract Claim is Token {
         uint8 _decimals
     ) Token(_name, _symbol, _decimals) {
         maturity = _maturity;
-        divider = _divider;
-        feed = _feed;
+        divider  = _divider;
+        feed     = _feed;
     }
 
     function collect() external returns (uint256 _collected) {
@@ -30,8 +31,7 @@ contract Claim is Token {
 
     function transfer(address to, uint256 value) public override returns (bool) {
         Divider(divider).collect(msg.sender, feed, maturity, to);
-        super.transfer(to, value);
-        return true;
+        return super.transfer(to, value);
     }
 
     function transferFrom(
@@ -40,7 +40,6 @@ contract Claim is Token {
         uint256 value
     ) public override returns (bool) {
         Divider(divider).collect(from, feed, maturity, to);
-        super.transferFrom(from, to, value);
-        return true;
+        return super.transferFrom(from, to, value);
     }
 }

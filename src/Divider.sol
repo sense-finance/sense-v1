@@ -35,10 +35,10 @@ contract Divider is Trust {
     string private constant CLAIM_SYMBOL_PREFIX = "c";
     string private constant CLAIM_NAME_PREFIX = "Claim";
 
-    /// @notice Mutable program state
+    /// @notice Program state
     address public periphery;
-    address public stable;
-    address public    cup;
+    address public immutable stable;
+    address public immutable cup;
     mapping(address => bool   ) public feeds;  // feed -> approved
     mapping(address => uint256) public guards; // target -> max amount of Target allowed to be issued
     mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
@@ -505,7 +505,7 @@ contract Divider is Trust {
         claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
     }
 
-    function _convertBase(uint256 decimals) internal returns (uint256 convertBase) {
+    function _convertBase(uint256 decimals) internal pure returns (uint256 convertBase) {
         convertBase = 1;
         if (decimals != 18) {
             convertBase = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);

@@ -112,7 +112,7 @@ contract Periphery is Trust {
         uint256 totalZeros = issued + swapped;
 
         // transfer issued + bought zeros to user
-        ERC20(zero).transfer(msg.sender, totalZeros);
+        ERC20(zero).safeTransfer(msg.sender, totalZeros);
 
     }
 
@@ -133,7 +133,7 @@ contract Periphery is Trust {
         uint256 totalClaims = issued + swapped;
 
         // transfer issued + bought claims to user
-        ERC20(claim).transfer(msg.sender, totalClaims);
+        ERC20(claim).safeTransfer(msg.sender, totalClaims);
     }
 
     function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal, uint256 minAccepted) external {

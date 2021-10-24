@@ -67,13 +67,13 @@ abstract contract BaseFeed is Initializable {
         }
     }
 
-    /// @notice Tilt value read that may be overriden by child contracts
-    /// @dev By default, it's implemented as `0`, which means no principal is set aside for Claims
+    /// @notice Tilt value getter that may be overriden by child contracts
+    /// @dev By default, it returns `0`, which means no principal is set aside for Claims
     function tilt() external virtual returns (uint256) {
         return 0;
     }
 
-    /// @notice Actual scale value check that must be overriden by child contracts
+    /// @notice Scale getter that must be overriden by child contracts
     function _scale() internal virtual returns (uint256 _value);
 
     event Initialized();
