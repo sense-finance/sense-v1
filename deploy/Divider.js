@@ -30,7 +30,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     from: deployer,
     args: [stable, cup],
     log: true,
-    deterministicDeployment: true,
   });
 
   const divider = await ethers.getContract("Divider");

@@ -7,7 +7,7 @@ require("hardhat-deploy");
 require("hardhat-deploy-ethers");
 require("hardhat-spdx-license-identifier");
 require("hardhat-watcher");
-// import "./tasks";
+require("./cli");
 
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
@@ -43,14 +43,10 @@ module.exports = {
       },
       chainId: 111,
       gas: 12000000,
-      saveDeployments: false,
+      saveDeployments: true,
       blockGasLimit: 21000000,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
-      mining: {
-        auto: false,
-        interval: 0,
-      },
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
