@@ -33,10 +33,10 @@ abstract contract BaseFactory is Trust {
     ) Trust(msg.sender) {
         protocol = _protocol;
         feedImpl = _feedImpl;
-        twImpl   = _twImpl;
-        divider  = _divider;
-        delta    = _delta;
-        reward   = _reward;
+        twImpl = _twImpl;
+        divider = _divider;
+        delta = _delta;
+        reward = _reward;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

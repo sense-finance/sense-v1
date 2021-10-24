@@ -20,7 +20,7 @@ contract BaseTWrapper is Initializable {
     address public target;
     address public divider;
     address public reward;
-    uint256 public share;     // accumulated reward token per collected target
+    uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget;
     mapping(address => uint256) public tBalance;
@@ -31,10 +31,10 @@ contract BaseTWrapper is Initializable {
         address _divider,
         address _reward
     ) external virtual initializer {
-        target  = _target;
+        target = _target;
         divider = _divider;
-        reward  = _reward;
-        ERC20(target).approve(_divider, type(uint256).max); 
+        reward = _reward;
+        ERC20(target).approve(_divider, type(uint256).max);
 
         emit Initialized();
     }

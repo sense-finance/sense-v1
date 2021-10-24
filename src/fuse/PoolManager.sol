@@ -27,6 +27,7 @@ interface ComptrollerLike {
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
     ) external returns (uint256);
+
     function _acceptAdmin() external returns (uint256);
 }
 
@@ -53,7 +54,7 @@ contract PoolManager is Trust {
     AssetParams public targetParams;
 
     /// @notice Target Inits: target -> target added to pool
-    mapping(address => bool) public tInits; 
+    mapping(address => bool) public tInits;
     /// @notice Series Inits: feed -> maturity -> series (zerosclaims) added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
 

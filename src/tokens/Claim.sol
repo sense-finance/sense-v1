@@ -21,8 +21,8 @@ contract Claim is Token {
         uint8 _decimals
     ) Token(_name, _symbol, _decimals) {
         maturity = _maturity;
-        divider  = _divider;
-        feed     = _feed;
+        divider = _divider;
+        feed = _feed;
     }
 
     function collect() external returns (uint256 _collected) {
