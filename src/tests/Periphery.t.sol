@@ -88,7 +88,7 @@ contract PeripheryTest is TestHelper {
         // calculate gclaims swapped to zeros amount
         zBalBefore += issued + issued.fdiv(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
 
-        alice.doSwapTargetForZeros(address(feed), maturity, uint128(tBal), backfill, 0);
+        alice.doSwapTargetForZeros(address(feed), maturity, tBal, backfill, 0);
 
         assertEq(cBalBefore, ERC20(claim).balanceOf(address(alice)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
@@ -116,7 +116,7 @@ contract PeripheryTest is TestHelper {
         // calculate zeros swapped to claims
         cBalBefore += issued + (issued.fdiv(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(claim).decimals()));
 
-        bob.doSwapTargetForClaims(address(feed), maturity, uint128(tBal), 0);
+        bob.doSwapTargetForClaims(address(feed), maturity, tBal, 0);
 
         assertEq(cBalBefore, ERC20(claim).balanceOf(address(bob)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
@@ -138,7 +138,7 @@ contract PeripheryTest is TestHelper {
 
         // calculate zeros to be sold for gclaims
         address gclaim = address(periphery.gClaimManager().gclaims(claim));
-        uint256 rate = periphery.price(zero, gclaim, uint128(zBalBefore));
+        uint256 rate = periphery.price(zero, gclaim);
         uint256 zerosToSell = zBalBefore.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
 
         // calculate zeros swapped to gclaims
@@ -149,7 +149,7 @@ contract PeripheryTest is TestHelper {
         uint256 tCombined = swapped.fdiv(cscale, 10**ERC20(target).decimals());
 
         alice.doApprove(zero, address(periphery), zBalBefore);
-        alice.doSwapZerosForTarget(address(feed), maturity, uint128(zBalBefore), 0);
+        alice.doSwapZerosForTarget(address(feed), maturity, zBalBefore, 0);
 
         assertEq(tBalBefore + tCombined, ERC20(target).balanceOf(address(alice)));
     }
@@ -170,7 +170,7 @@ contract PeripheryTest is TestHelper {
 
         // calculate claims to be converted to gclaims
         address gclaim = address(periphery.gClaimManager().gclaims(claim));
-        uint256 rate = periphery.price(zero, gclaim, uint128(cBalBefore));
+        uint256 rate = periphery.price(zero, gclaim);
         uint256 claimsToConvert = cBalBefore.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(claim).decimals());
 
         // calculate gclaims swapped to zeros
@@ -181,7 +181,7 @@ contract PeripheryTest is TestHelper {
         uint256 tCombined = swapped.fdiv(cscale, 10**ERC20(claim).decimals());
 
         bob.doApprove(claim, address(periphery), cBalBefore);
-        bob.doSwapClaimsForTarget(address(feed), maturity, uint128(cBalBefore), 0);
+        bob.doSwapClaimsForTarget(address(feed), maturity, cBalBefore, 0);
 
         assertEq(tBalBefore + tCombined, ERC20(target).balanceOf(address(bob)));
     }
@@ -205,7 +205,7 @@ contract PeripheryTest is TestHelper {
 
         // calculate claims to be converted to gclaims
         address gclaim = address(periphery.gClaimManager().gclaims(claim));
-        uint256 rate = periphery.price(zero, gclaim, uint128(cBalBefore));
+        uint256 rate = periphery.price(zero, gclaim);
         uint256 claimsToConvert = cBalBefore.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(claim).decimals());
 
         // calculate gclaims swapped to zeros
@@ -219,7 +219,7 @@ contract PeripheryTest is TestHelper {
         uint256 excess = periphery.gClaimManager().excess(address(feed), maturity, claimsToConvert);
 
         bob.doApprove(claim, address(periphery), cBalBefore);
-        bob.doSwapClaimsForTarget(address(feed), maturity, uint128(cBalBefore), 0);
+        bob.doSwapClaimsForTarget(address(feed), maturity, cBalBefore, 0);
 
         assertEq(tBalBefore + tCombined - excess, ERC20(target).balanceOf(address(bob)));
     }
