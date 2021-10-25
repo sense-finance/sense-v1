@@ -181,7 +181,7 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Zeros and Claims to burn
-    function combine(address feed, uint256 maturity, uint256 uBal) external {
+    function combine(address feed, uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
@@ -199,7 +199,7 @@ contract Divider is Trust {
         }
 
         // Convert from units of Underlying to units of Target
-        uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
+        tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
         BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal); // distribute reward tokens

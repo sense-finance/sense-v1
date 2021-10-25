@@ -158,12 +158,10 @@ contract Periphery is Trust {
         gClaimManager.exit(feed, maturity, swapped);
 
         // combine zeros & claims
-        ERC20 target = ERC20(Feed(feed).target());
-        uint256 tBal = target.balanceOf(address(this));
-        divider.combine(feed, maturity, swapped);
+        uint256 tBal = divider.combine(feed, maturity, swapped);
 
         // transfer target to msg.sender
-        ERC20(target).safeTransfer(msg.sender, target.balanceOf(address(this)) - tBal);
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
     }
 
     function swapClaimsForTarget(address feed, uint256 maturity, uint128 cBal, uint256 minAccepted) external {
@@ -190,11 +188,10 @@ contract Periphery is Trust {
         uint256 swapped = _swap(gclaim, zero, claimsToSell, address(this), minAccepted);
 
         // combine zeros & claims
-        uint256 tBal = target.balanceOf(address(this));
-        divider.combine(feed, maturity, swapped);
+        uint256 tBal = divider.combine(feed, maturity, swapped);
 
         // transfer target to msg.sender
-        target.safeTransfer(msg.sender, target.balanceOf(address(this)) - tBal);
+        target.safeTransfer(msg.sender, tBal);
     }
 
     /* ========== VIEWS ========== */
