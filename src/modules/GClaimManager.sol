@@ -7,12 +7,12 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 
-/// @title Gravity Claims (gClaims)
+/// @title Grounded Claims (gClaims)
 /// @notice The GClaim Manager contract turns Collect Claims into Drag Claims
 contract GClaimManager {
     using SafeERC20 for ERC20;
@@ -23,10 +23,10 @@ contract GClaimManager {
     /// @notice Total amount of interest collected separated by Claim address.
     mapping(address => uint256) public totals;
     mapping(address => Token) public gclaims;
-    Divider public divider;
+    address public divider;
 
     constructor(address _divider) {
-        divider = Divider(_divider);
+        divider = _divider;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -38,7 +38,7 @@ contract GClaimManager {
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
-        (, address claim, , , , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
         require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
@@ -53,7 +53,7 @@ contract GClaimManager {
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here
-            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals());
+            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals(), address(this));
         } else {
             uint256 gap = excess(feed, maturity, balance);
             if (gap > 0) {
@@ -77,7 +77,7 @@ contract GClaimManager {
         uint256 maturity,
         uint256 balance
     ) external {
-        (, address claim, , , , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
 
         require(claim != address(0), Errors.SeriesDoesntExists);
 
@@ -113,7 +113,7 @@ contract GClaimManager {
         uint256 maturity,
         uint256 balance
     ) public returns (uint256 amount) {
-        (, address claim, , , , , , , ) = divider.series(feed, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
         uint256 initScale = inits[claim];
         uint256 currScale = Feed(feed).scale();
         if (currScale - initScale > 0) {

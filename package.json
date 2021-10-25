@@ -12,6 +12,7 @@
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/*/*.sol",
     "fix": "prettier --ignore-path .gitignore --write src/*/*.sol && yarn lint --fix",
+    "size-contracts": "hardhat compile && hardhat size-contracts",
     "deploy:hardhat-fork": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:goerli": "hardhat --network goerli deploy",
