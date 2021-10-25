@@ -58,7 +58,7 @@ contract BaseTWrapper is Initializable {
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
-    /// @notice Distributes rewarded tokens to users based on their proportionally based on Claim balance
+    /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
     /// @param _usr User to distribute reward tokens to
     function _distribute(address _usr) internal {
         _claimReward();

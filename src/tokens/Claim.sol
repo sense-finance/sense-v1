@@ -34,8 +34,6 @@ contract Claim is Token {
         return super.transfer(to, value);
     }
 
-    event A(uint256);
-
     function transferFrom(
         address from,
         address to,
