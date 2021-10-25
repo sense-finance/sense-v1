@@ -68,101 +68,160 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSwapTargetForZeros() public {
-        //        uint256 tBal = 100e18;
-        //        uint256 backfill = 1e18; // TODO: calculate this properly
-        //        uint256 maturity = getValidMaturity(2021, 10);
-        //        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
-        //
-        //        // add liquidity to mockUniSwapRouter
-        //        addLiquidityToUniSwapRouter(maturity, zero, claim);
-        //
-        //        uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
-        //        uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
-        //
-        //        // calculate issuance fee in corresponding base
-        //        uint256 convertBase = 1;
-        //        uint256 tDecimals = target.decimals();
-        //        if (tDecimals != 18) {
-        //            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
-        //        }
-        //        uint256 fee = (divider.ISSUANCE_FEE() / convertBase).fmul(tBal, 10**target.decimals());
-        //
-        //        // calculate zeros to be issued
-        //        (, uint256 lscale) = feed.lscale();
-        //        uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
-        //
-        //        // calculate gclaims swapped to zeros amount
-        //        zBalBefore += issued + issued / uniSwapRouter.EXCHANGE_RATE();
-        //
-        //        alice.doSwapTargetForZeros(address(feed), maturity, tBal, backfill);
-        //
-        //        assertEq(cBalBefore, ERC20(claim).balanceOf(address(alice)));
-        //        assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
-        //        // TODO: assert backfill has been withdrawn
+        uint256 tBal = 100e18;
+        uint256 backfill = 1e18; // TODO: calculate this properly
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToUniSwapRouter(maturity, zero, claim);
+
+        uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
+        uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
+
+        // calculate issuance fee in corresponding base
+        uint256 fee = (divider.ISSUANCE_FEE() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
+
+        // calculate zeros to be issued
+        (, uint256 lscale) = feed.lscale();
+        uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        // calculate gclaims swapped to zeros amount
+        zBalBefore += issued + issued.fdiv(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
+
+        alice.doSwapTargetForZeros(address(feed), maturity, tBal, backfill, 0);
+
+        assertEq(cBalBefore, ERC20(claim).balanceOf(address(alice)));
+        assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
+        // TODO: assert backfill has been withdrawn
     }
 
     function testSwapTargetForClaims() public {
-        //        uint256 tBal = 100e18;
-        //        uint256 maturity = getValidMaturity(2021, 10);
-        //        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
-        //
-        //        // add liquidity to mockUniSwapRouter
-        //        addLiquidityToUniSwapRouter(maturity, zero, claim);
-        //
-        //        uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
-        //        uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
-        //
-        //        // calculate issuance fee in corresponding base
-        //        uint256 convertBase = 1;
-        //        uint256 tDecimals = target.decimals();
-        //        if (tDecimals != 18) {
-        //            convertBase = tDecimals < 18 ? 10**(18 - tDecimals) : 10**(tDecimals - 18);
-        //        }
-        //        uint256 fee = (divider.ISSUANCE_FEE() / convertBase).fmul(tBal, 10**target.decimals());
-        //
-        //        // calculate claims to be issued
-        //        (, uint256 lscale) = feed.lscale();
-        //        uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
-        //
-        //        // calculate zeros swapped to claims
-        //        cBalBefore += issued + (issued / uniSwapRouter.EXCHANGE_RATE());
-        //
-        //        bob.doSwapTargetForClaims(address(feed), maturity, tBal);
-        //
-        //        assertEq(cBalBefore, ERC20(claim).balanceOf(address(bob)));
-        //        assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToUniSwapRouter(maturity, zero, claim);
+
+        uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
+        uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
+
+        // calculate issuance fee in corresponding base
+        uint256 fee = (divider.ISSUANCE_FEE() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
+
+        // calculate claims to be issued
+        (, uint256 lscale) = feed.lscale();
+        uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+
+        // calculate zeros swapped to claims
+        cBalBefore += issued + (issued.fdiv(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(claim).decimals()));
+
+        bob.doSwapTargetForClaims(address(feed), maturity, tBal, 0);
+
+        assertEq(cBalBefore, ERC20(claim).balanceOf(address(bob)));
+        assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
     }
 
     function testSwapZerosForTarget() public {
-        //        uint256 tBal = 100e18;
-        //        uint256 backfill = 1e18; // TODO: calculate this properly
-        //        uint256 maturity = getValidMaturity(2021, 10);
-        //
-        //        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
-        //        alice.doIssue(address(feed), maturity, tBal);
-        //
-        //        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(alice));
-        //        uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
-        //
-        //        // calculate zeros to be sold for gclaims
-        //        uint256 rate = uniSwapRouter.EXCHANGE_RATE();
-        //        uint256 zerosToSell = zBalBefore / (rate + 1);
-        //
-        //        // calculate zeros swapped to gclaims
-        //        uint256 swapped = zerosToSell / uniSwapRouter.EXCHANGE_RATE();
-        //
-        //        // calculate target to receive after combining
-        //        uint256 cscale = feed.scale();
-        //        uint256 tBalAfterCombined = (zBalBefore - swapped).fdiv(cscale, 10**ERC20(target).decimals());
-        //
-        //        alice.doApprove(zero, address(periphery), zBalBefore);
-        //        // TODO: how can I stub the price() function?
-        //        alice.doSwapZerosForTarget(address(feed), maturity, zBalBefore);
-        //        assertEq(tBalBefore + tBalAfterCombined, ERC20(target).balanceOf(address(alice)));
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToUniSwapRouter(maturity, zero, claim);
+
+        alice.doIssue(address(feed), maturity, tBal);
+
+        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(alice));
+        uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
+
+        // calculate zeros to be sold for gclaims
+        address gclaim = address(periphery.gClaimManager().gclaims(claim));
+        uint256 rate = periphery.price(zero, gclaim);
+        uint256 zerosToSell = zBalBefore.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
+
+        // calculate zeros swapped to gclaims
+        uint256 swapped = zerosToSell.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
+
+        // calculate target to receive after combining
+        uint256 cscale = feed.scale();
+        uint256 tCombined = swapped.fdiv(cscale, 10**ERC20(target).decimals());
+
+        alice.doApprove(zero, address(periphery), zBalBefore);
+        alice.doSwapZerosForTarget(address(feed), maturity, zBalBefore, 0);
+
+        assertEq(tBalBefore + tCombined, ERC20(target).balanceOf(address(alice)));
     }
 
     function testSwapClaimsForTarget() public {
-        // TODO!
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToUniSwapRouter(maturity, zero, claim);
+
+        bob.doIssue(address(feed), maturity, tBal);
+
+        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(bob));
+        uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
+
+        // calculate claims to be converted to gclaims
+        address gclaim = address(periphery.gClaimManager().gclaims(claim));
+        uint256 rate = periphery.price(zero, gclaim);
+        uint256 claimsToConvert = cBalBefore.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(claim).decimals());
+
+        // calculate gclaims swapped to zeros
+        uint256 swapped = claimsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
+
+        // calculate target to receive after combining
+        uint256 cscale = feed.scale();
+        uint256 tCombined = swapped.fdiv(cscale, 10**ERC20(claim).decimals());
+
+        bob.doApprove(claim, address(periphery), cBalBefore);
+        bob.doSwapClaimsForTarget(address(feed), maturity, cBalBefore, 0);
+
+        assertEq(tBalBefore + tCombined, ERC20(target).balanceOf(address(bob)));
+    }
+
+    function testSwapClaimsForTargetWithGap() public {
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToUniSwapRouter(maturity, zero, claim);
+
+        alice.doIssue(address(feed), maturity, tBal);
+        hevm.warp(block.timestamp + 5 days);
+
+        bob.doIssue(address(feed), maturity, tBal);
+
+        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(bob));
+        uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
+
+        // calculate claims to be converted to gclaims
+        address gclaim = address(periphery.gClaimManager().gclaims(claim));
+        uint256 rate = periphery.price(zero, gclaim);
+        uint256 claimsToConvert = cBalBefore.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(claim).decimals());
+
+        // calculate gclaims swapped to zeros
+        uint256 swapped = claimsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
+
+        // calculate target to receive after combining
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        uint256 tCombined = swapped.fdiv(lscale, 10**ERC20(claim).decimals());
+
+        // calculate excess
+        uint256 excess = periphery.gClaimManager().excess(address(feed), maturity, claimsToConvert);
+
+        bob.doApprove(claim, address(periphery), cBalBefore);
+        bob.doSwapClaimsForTarget(address(feed), maturity, cBalBefore, 0);
+
+        assertEq(tBalBefore + tCombined - excess, ERC20(target).balanceOf(address(bob)));
     }
 
     function testQuotePrice() public {

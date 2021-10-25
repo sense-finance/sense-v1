@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { OracleLibrary } from "./external/OracleLibrary.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { FixedMath } from "./external/FixedMath.sol";
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
@@ -16,9 +17,11 @@ import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
+import { BaseTWrapper as TWrapper } from "./wrappers/BaseTWrapper.sol";
 
 /// @title Periphery
 contract Periphery is Trust {
+    using FixedMath for uint256;
     using SafeERC20 for ERC20;
     using Errors for string;
 
@@ -153,14 +156,17 @@ contract Periphery is Trust {
         uint256 rate = price(zero, gclaim);
 
         // swap some zeros for gclaims
-        uint256 zerosToSell = zBal / (rate + 1);
+        uint256 zerosToSell = zBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
         uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this), minAccepted);
 
         // convert gclaims to claims
         gClaimManager.exit(feed, maturity, swapped);
 
         // combine zeros & claims
-        divider.combine(feed, maturity, swapped);
+        uint256 tBal = divider.combine(feed, maturity, swapped);
+
+        // transfer target to msg.sender
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
     }
 
     function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
@@ -173,15 +179,24 @@ contract Periphery is Trust {
         // get rate from uniswap
         uint256 rate = price(zero, gclaim);
 
-        // convert some gclaims to claims
-        uint256 claimsToConvert = cBal / (rate + 1);
-        gClaimManager.exit(feed, maturity, claimsToConvert);
+        uint256 claimsToSell = cBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
+
+        // convert some claims to gclaims
+        ERC20 target = ERC20(Feed(feed).target());
+        ERC20(claim).approve(address(gClaimManager), claimsToSell);
+        uint256 excess = gClaimManager.excess(feed, maturity, claimsToSell);
+        target.safeTransferFrom(msg.sender, address(this), excess);
+        target.approve(address(gClaimManager), excess);
+        gClaimManager.join(feed, maturity, claimsToSell);
 
         // swap gclaims for zeros
-        uint256 swapped = _swap(gclaim, zero, claimsToConvert, address(this), minAccepted);
+        uint256 swapped = _swap(gclaim, zero, claimsToSell, address(this), minAccepted);
 
         // combine zeros & claims
-        divider.combine(feed, maturity, swapped);
+        uint256 tBal = divider.combine(feed, maturity, swapped);
+
+        // transfer target to msg.sender
+        target.safeTransfer(msg.sender, tBal);
     }
 
     /* ========== VIEWS ========== */

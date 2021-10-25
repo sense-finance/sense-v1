@@ -25,12 +25,12 @@ contract Claim is Token {
         feed = _feed;
     }
 
-    function collect() external returns (uint256) {
-        return Divider(divider).collect(msg.sender, feed, maturity, address(0));
+    function collect() external returns (uint256 _collected) {
+        return Divider(divider).collect(msg.sender, feed, maturity, 0, address(0));
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
-        Divider(divider).collect(msg.sender, feed, maturity, to);
+        Divider(divider).collect(msg.sender, feed, maturity, value, to);
         return super.transfer(to, value);
     }
 
@@ -39,7 +39,7 @@ contract Claim is Token {
         address to,
         uint256 value
     ) public override returns (bool) {
-        Divider(divider).collect(from, feed, maturity, to);
+        Divider(divider).collect(from, feed, maturity, value, to);
         return super.transferFrom(from, to, value);
     }
 }

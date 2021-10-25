@@ -184,14 +184,14 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Zeros and Claims to burn
-    function combine(address feed, uint256 maturity, uint256 uBal) external {
+    function combine(address feed, uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
         // Burn the Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
         // Collect whatever excess is due for accounting
-        _collect(msg.sender, feed, maturity, uBal, address(0));
+        _collect(msg.sender, feed, maturity, uBal, uBal, address(0));
 
         // We use lscale since the current scale was already stored there by the `_collect()` call
         uint256 cscale = series[feed][maturity].mscale;
@@ -202,7 +202,7 @@ contract Divider is Trust {
         }
 
         // Convert from units of Underlying to units of Target
-        uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
+        tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
         BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal); // distribute reward tokens
@@ -257,12 +257,14 @@ contract Divider is Trust {
     }
 
     function collect(
-        address usr, address feed, uint256 maturity, address to
+        address usr, address feed, uint256 maturity, uint256 tBalTransfer, address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
+        uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             feed,
             maturity,
-            Claim(msg.sender).balanceOf(usr),
+            uBal,
+            tBalTransfer > 0 ? tBalTransfer : uBal,
             to
         );
     }
@@ -272,13 +274,15 @@ contract Divider is Trust {
     /// @param usr User who's collecting for their Claims
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param maturity Maturity date for the Series
+    /// @param uBal claim balance
+    /// @param tBalTransfer original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
         address usr,
         address feed,
         uint256 maturity,
         uint256 uBal,
+        uint256 tBalTransfer,
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
