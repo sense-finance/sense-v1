@@ -25,7 +25,6 @@ contract CTWrapperTestHelper is DSTest {
         CFeed feed = new CFeed(); // compound feed implementation
         ctwrapper = new CTWrapper(); // compound target wrapper implementation
     }
-
 }
 
 contract CTWrappers is CTWrapperTestHelper {
