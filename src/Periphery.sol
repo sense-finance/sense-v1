@@ -6,9 +6,12 @@ import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 import { OracleLibrary } from "./external/OracleLibrary.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { FixedMath } from "./external/FixedMath.sol";
+import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 // Internal references
-import { Errors } from "./libs/errors.sol";
+import { Errors } from "./libs/Errors.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
@@ -16,12 +19,7 @@ import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
 import { BaseTWrapper as TWrapper } from "./wrappers/BaseTWrapper.sol";
 
-import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
-
-/// @title Periphery contract
-/// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
+/// @title Periphery
 contract Periphery is Trust {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
@@ -31,24 +29,27 @@ contract Periphery is Trust {
     uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
 
-    /// @notice Mutable program state
+    /// @notice Program state
     IUniswapV3Factory public immutable uniFactory;
     ISwapRouter public immutable uniSwapRouter;
-    Divider public divider;
-    PoolManager public poolManager;
-    GClaimManager public gClaimManager;
-    mapping(address => bool) public factories;  // feed factories -> supported
+    Divider public immutable divider;
+    PoolManager public immutable poolManager;
+    GClaimManager public immutable gClaimManager;
+    mapping(address => bool) public factories;  // feed factories -> is supported
 
-    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive) Trust(msg.sender) {
+    constructor(
+        address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, 
+        string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive
+    ) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
         gClaimManager = new GClaimManager(_divider);
         uniFactory = IUniswapV3Factory(_uniFactory);
         uniSwapRouter = ISwapRouter(_uniSwapRouter);
-        poolManager.deployPool(name, whitelist, closeFactor, liqIncentive);
+        PoolManager(_poolManager).deployPool(name, whitelist, closeFactor, liqIncentive);
 
         // approve divider to withdraw stable assets
-        ERC20(divider.stable()).approve(address(divider), type(uint256).max);
+        ERC20(Divider(_divider).stable()).approve(address(_divider), type(uint256).max);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -56,11 +57,13 @@ contract Periphery is Trust {
     /// @notice Sponsor a new Series
     /// @dev Calls divider to initalise a new series
     /// @dev Creates a UNIV3 pool for Zeros and Claims
-    /// @dev Onboards Zero and Claim to Sense Fuse pool
+    /// @dev Onboards Zero and Claim onto Sense Fuse pool
     /// @param feed Feed to associate with the Series
-    /// @param maturity Maturity date for the new Series, in units of unix time
+    /// @param maturity Maturity date for the Series, in units of unix time
     /// @param sqrtPriceX96 Initial price of the pool as a sqrt(token1/token0) Q64.96 value
-    function sponsorSeries(address feed, uint256 maturity, uint160 sqrtPriceX96) external returns (address zero, address claim) {
+    function sponsorSeries(
+        address feed, uint256 maturity, uint160 sqrtPriceX96
+    ) external returns (address zero, address claim) {
         // transfer INIT_STAKE from sponsor into this contract
         uint256 convertBase = 1;
         uint256 stableDecimals = ERC20(divider.stable()).decimals();
@@ -81,7 +84,7 @@ contract Periphery is Trust {
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
-    function onboardTarget(address feed, uint256 maturity, address factory, address target) external returns (address feedClone, address wtClone){
+    function onboardTarget(address factory, address target) external returns (address feedClone, address wtClone) {
         require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
@@ -96,7 +99,10 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
     /// @param backfill Amount in target to backfill gClaims
-    function swapTargetForZeros(address feed, uint256 maturity, uint256 tBal, uint256 backfill, uint256 minAccepted) external {
+    function swapTargetForZeros(
+        address feed, uint256 maturity, uint256 tBal, 
+        uint256 backfill, uint256 minAccepted
+    ) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
         // transfer target into this contract
@@ -115,7 +121,7 @@ contract Periphery is Trust {
         uint256 totalZeros = issued + swapped;
 
         // transfer issued + bought zeros to user
-        ERC20(zero).transfer(msg.sender, totalZeros);
+        ERC20(zero).safeTransfer(msg.sender, totalZeros);
 
     }
 
@@ -136,7 +142,7 @@ contract Periphery is Trust {
         uint256 totalClaims = issued + swapped;
 
         // transfer issued + bought claims to user
-        ERC20(claim).transfer(msg.sender, totalClaims);
+        ERC20(claim).safeTransfer(msg.sender, totalClaims);
     }
 
     function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
@@ -196,15 +202,18 @@ contract Periphery is Trust {
     /* ========== VIEWS ========== */
 
     function price(address tokenA, address tokenB) public view returns (uint) {
-        // Return tokenA/tokenB TWAP
+        // return tokenA/tokenB TWAP
         address pool = IUniswapV3Factory(uniFactory).getPool(tokenA, tokenB, UNI_POOL_FEE);
         int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
         uint128 baseUnit = uint128(10) ** uint128(ERC20(tokenA).decimals());
         return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
     }
 
-    function _swap(address tokenIn, address tokenOut, uint256 amountIn, address recipient, uint256 minAccepted) internal returns (uint256 amountOut) {
-        // approve router to spend tokenIn.
+    function _swap(
+        address tokenIn, address tokenOut, uint256 amountIn, 
+        address recipient, uint256 minAccepted
+    ) internal returns (uint256 amountOut) {
+        // approve router to spend tokenIn
         ERC20(tokenIn).safeApprove(address(uniSwapRouter), amountIn);
 
         ISwapRouter.ExactInputSingleParams memory params =
@@ -237,5 +246,4 @@ contract Periphery is Trust {
     event FactoryChanged(address indexed feed, bool isOn);
     event SeriesSponsored(address indexed feed, uint256 indexed maturity, address indexed sponsor);
     event TargetOnboarded(address target);
-
 }

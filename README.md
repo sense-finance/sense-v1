@@ -130,7 +130,7 @@ A Collection of Modules and Utilities for Sense V1
 
 `PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros & Claims and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`) and Zeros/Claims (`addSeries()`). 
 
-#### Recycling Module
+#### Recycling Module [WIP]
 
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 

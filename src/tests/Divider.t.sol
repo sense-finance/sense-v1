@@ -6,7 +6,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
 
@@ -14,7 +14,8 @@ contract Dividers is TestHelper {
     using FixedMath for uint256;
     using Errors for string;
 
-    Divider.Backfill[] backfills;
+    address[] public usrs;
+    uint256[] public lscales;
 
     /* ========== initSeries() tests ========== */
 
@@ -776,7 +777,7 @@ contract Dividers is TestHelper {
         bob.doIssue(address(feed), maturity, tBal);
         divider.setFeed(address(feed), false); // emergency stop
         uint256 newScale = 20e17;
-        divider.backfillScale(address(feed), maturity, newScale, backfills); // fix invalid scale value
+        divider.backfillScale(address(feed), maturity, newScale, usrs, lscales); // fix invalid scale value
         divider.setFeed(address(feed), true); // re-enable feed after emergency
         bob.doCollect(claim);
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
@@ -871,7 +872,7 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
-        try divider.backfillScale(address(feed), maturity, tBal, backfills) {
+        try divider.backfillScale(address(feed), maturity, tBal, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.SeriesDoesntExists);
@@ -883,7 +884,7 @@ contract Dividers is TestHelper {
         sponsorSampleSeries(address(alice), maturity);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
-        try divider.backfillScale(address(feed), maturity, tBal, backfills) {
+        try divider.backfillScale(address(feed), maturity, tBal, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.OutOfWindowBoundaries);
@@ -896,7 +897,7 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
-        try alice.doBackfillScale(address(feed), maturity, tBal, backfills) {
+        try alice.doBackfillScale(address(feed), maturity, tBal, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotAuthorized);
@@ -908,7 +909,7 @@ contract Dividers is TestHelper {
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 amount = 1 * (10**(target.decimals() - 2));
-        try divider.backfillScale(address(feed), maturity, amount, backfills) {
+        try divider.backfillScale(address(feed), maturity, amount, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidScaleValue);
@@ -920,17 +921,17 @@ contract Dividers is TestHelper {
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 newScale = 1e18;
-        Divider.Backfill memory aliceBackfill = Divider.Backfill(address(alice), 5e17);
-        Divider.Backfill memory bobBackfill = Divider.Backfill(address(bob), 4e17);
-        backfills.push(aliceBackfill);
-        backfills.push(bobBackfill);
-        divider.backfillScale(address(feed), maturity, newScale, backfills);
+        usrs.push(address(alice));
+        usrs.push(address(bob));
+        lscales.push(5e17);
+        lscales.push(4e17);
+        divider.backfillScale(address(feed), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         uint256 lscale = divider.lscales(address(feed), maturity, address(alice));
-        assertEq(lscale, aliceBackfill.lscale);
+        assertEq(lscale, lscales[0]);
         lscale = divider.lscales(address(feed), maturity, address(bob));
-        assertEq(lscale, bobBackfill.lscale);
+        assertEq(lscale, lscales[1]);
     }
 
     function testBackfillScaleBeforeCutoffAndFeedDisabled() public {
@@ -939,7 +940,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         divider.setFeed(address(feed), false);
         uint256 newScale = 1e18;
-        divider.backfillScale(address(feed), maturity, newScale, backfills);
+        divider.backfillScale(address(feed), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
     }
@@ -962,7 +963,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity - SPONSOR_WINDOW);
         divider.setFeed(address(feed), false);
         uint256 newScale = 1 * tBase;
-        divider.backfillScale(address(feed), maturity, newScale, backfills);
+        divider.backfillScale(address(feed), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
@@ -990,7 +991,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
         divider.setFeed(address(feed), false);
         uint256 newScale = 1 * tBase;
-        divider.backfillScale(address(feed), maturity, newScale, backfills);
+        divider.backfillScale(address(feed), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));

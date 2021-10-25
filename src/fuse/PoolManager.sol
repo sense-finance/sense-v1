@@ -7,7 +7,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 // Internal references
 import { Divider } from "../Divider.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 import { Token } from "../tokens/Token.sol";
 
 interface FuseDirectoryLike {
@@ -29,13 +29,7 @@ interface ComptrollerLike {
     ) external returns (uint256);
 
     function _acceptAdmin() external returns (uint256);
-
-    function admin() external returns (address);
-
-    function getAllMarkets() external returns (CTokenLike[] memory);
 }
-
-interface CTokenLike {}
 
 /// @title Fuse Pool Manager
 /// @notice Consolidated Fuse interactions
@@ -59,9 +53,10 @@ contract PoolManager is Trust {
     AssetParams public claimParams;
     AssetParams public targetParams;
 
-    mapping(address => bool) public tInits; // Target Inits: target -> target added to pool
+    /// @notice Target Inits: target -> target added to pool
+    mapping(address => bool) public tInits;
+    /// @notice Series Inits: feed -> maturity -> series (zerosclaims) added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
-    // Series Inits: feed -> maturity -> series (zerosclaims) added to pool
 
     event SetParams(bytes32 indexed what, AssetParams data);
     event PoolDeployed(
@@ -89,7 +84,7 @@ contract PoolManager is Trust {
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
         divider = _divider;
-        oracle = _oracle; // Master oracle contract
+        oracle = _oracle; // master oracle
     }
 
     function deployPool(
@@ -110,8 +105,8 @@ contract PoolManager is Trust {
 
         uint256 err = ComptrollerLike(_comptroller)._acceptAdmin();
         require(err == 0, "Failed to become admin");
-
         comptroller = _comptroller;
+
         emit PoolDeployed(
             name,
             comptrollerImpl,
@@ -162,6 +157,7 @@ contract PoolManager is Trust {
         require(tInits[target], "Target for this Series not yet added");
 
         uint256 adminFee = 0;
+
         bytes memory constructorDataZero = abi.encodePacked(
             zero,
             comptroller,
@@ -173,7 +169,6 @@ contract PoolManager is Trust {
             zeroParams.reserveFactor,
             adminFee
         );
-
         bytes memory constructorDataClaim = abi.encodePacked(
             claim,
             comptroller,

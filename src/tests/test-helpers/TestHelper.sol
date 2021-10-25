@@ -2,8 +2,8 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import {GClaimManager} from "../../modules/GClaimManager.sol";
-import { Divider } from "../../Divider.sol";
+import { GClaimManager } from "../../modules/GClaimManager.sol";
+import { Divider, AssetDeployer } from "../../Divider.sol";
 import { Token } from "../../tokens/Token.sol";
 import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { Periphery } from "../../Periphery.sol";
@@ -33,6 +33,7 @@ contract TestHelper is DSTest {
     MockPoolManager poolManager;
 
     Divider internal divider;
+    AssetDeployer internal assetDeployer;
     TWrapper internal twrapper;
     Periphery internal periphery;
 
@@ -79,7 +80,9 @@ contract TestHelper is DSTest {
         DELTA = tDecimals > 18 ? DELTA * base : DELTA / base;
 
         // divider
-        divider = new Divider(address(stable), address(this));
+        assetDeployer = new AssetDeployer();
+        divider = new Divider(address(stable), address(this), address(assetDeployer));
+        assetDeployer.init(address(divider));
         divider.setGuard(address(target), 10*2**96);
 
         ISSUANCE_FEE = divider.ISSUANCE_FEE();
@@ -103,7 +106,7 @@ contract TestHelper is DSTest {
         factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         periphery.setFactory(address(factory), true);
-        (address f, address wt) = periphery.onboardTarget(address(feed), 0, address(factory), address(target)); // onboard target through Periphery
+        (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = TWrapper(wt);
 

@@ -107,8 +107,8 @@ contract User {
         divider.combine(feed, maturity, balance);
     }
 
-    function doBackfillScale(address feed, uint256 maturity, uint256 scale, Divider.Backfill[] memory backfills) public {
-        divider.backfillScale(feed, maturity, scale, backfills);
+    function doBackfillScale(address feed, uint256 maturity, uint256 scale, address[] calldata usrs, uint256[] calldata lscales) public {
+        divider.backfillScale(feed, maturity, scale, usrs, lscales);
     }
 
     function doRedeemZero(address feed, uint256 maturity, uint256 balance) public {
