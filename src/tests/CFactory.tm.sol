@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 // Internal references
 import { CFeed } from "../feeds/compound/CFeed.sol";
 import { CFactory } from "../feeds/compound/CFactory.sol";
-import { Divider } from "../Divider.sol";
+import { Divider, AssetDeployer } from "../Divider.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
@@ -14,13 +14,16 @@ import { User } from "./test-helpers/User.sol";
 contract CFeedTestHelper is DSTest {
     CFactory internal factory;
     Divider internal divider;
+    AssetDeployer internal assetDeployer;
 
     uint256 public constant DELTA = 150;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     function setUp() public {
-        divider = new Divider(DAI, address(this));
+        assetDeployer = new AssetDeployer();
+        divider = new Divider(DAI, address(this), address(assetDeployer));
+        assetDeployer.init(address(divider));
         CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
         factory = new CFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);

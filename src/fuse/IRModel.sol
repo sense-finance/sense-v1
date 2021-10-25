@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 /// @title Compound's InterestRateModel Interface
 /// @author Compound
 /// @notice The minimum interface a contract must implement in order to work as an interest rate model in Fuse
+/// Taken from: https://github.com/Rari-Capital/compound-protocol/blob/fuse-final/contracts/InterestRateModel.sol
 abstract contract InterestRateModel {
     /// @notice Indicator that this is an InterestRateModel contract (for inspection)
     bool public constant isInterestRateModel = true;

@@ -3,15 +3,17 @@ pragma solidity ^0.8.6;
 
 // External references
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal
 import { Divider } from "../Divider.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
 
-/// @notice
+/// @notice Accumulate reward tokens and distribute them proportionally
+/// Inspired by: https://github.com/makerdao/dss-crop-join
 contract BaseTWrapper is Initializable {
+    using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
     /// @notice Program state
@@ -20,8 +22,8 @@ contract BaseTWrapper is Initializable {
     address public reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
-    uint256 totalTarget;
-    mapping(address => uint256) tBalance;
+    uint256 public totalTarget;
+    mapping(address => uint256) public tBalance;
     mapping(address => uint256) public rewarded; // reward token per collected target per user
 
     function initialize(
@@ -32,12 +34,12 @@ contract BaseTWrapper is Initializable {
         target = _target;
         divider = _divider;
         reward = _reward;
-        ERC20(target).approve(divider, type(uint256).max); // approve max int
+        ERC20(target).approve(_divider, type(uint256).max);
+
         emit Initialized();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
     function join(address _usr, uint256 val) public onlyDivider {
         _distribute(_usr);
         if (val > 0) {
@@ -56,27 +58,28 @@ contract BaseTWrapper is Initializable {
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
-    /// @notice Distributes rewarded tokens to Claim holders proportionally based on Claim balance
+    /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
     /// @param _usr User to distribute reward tokens to
     function _distribute(address _usr) internal {
         _claimReward();
+
         uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
         if (totalTarget > 0) share += (crop.fdiv(totalTarget, FixedMath.RAY));
+
         uint256 last = rewarded[_usr];
         uint256 curr = tBalance[_usr].fmul(share, FixedMath.RAY);
-        if (curr > last) require(ERC20(reward).transfer(_usr, curr - last));
+        if (curr > last) ERC20(reward).safeTransfer(_usr, curr - last);
         rewardBal = ERC20(reward).balanceOf(address(this));
         emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
-    /// @notice Some protocols do not airdrop the reward token but the user needs to make a call to claim them.
-    /// If so, must be overriden by child contracts
+    /// @notice Some protocols don't airdrop reward tokens, instead users must claim them –
+    /// this method may be overriden by child contracts to Claim a protocol's rewards
     function _claimReward() internal virtual {
         return;
     }
 
     /* ========== MODIFIERS ========== */
-
     modifier onlyDivider() {
         require(divider == msg.sender, "Can only be invoked by the Divider contract");
         _;
