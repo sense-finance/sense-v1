@@ -12,8 +12,9 @@ contract Token is ERC20, Trust {
     constructor(
         string memory _name,
         string memory _symbol,
-        uint8 _decimals
-    ) ERC20(_name, _symbol, _decimals) Trust(msg.sender) {
+        uint8 _decimals,
+        address _trusted
+    ) ERC20(_name, _symbol, _decimals) Trust(_trusted) {
         BASE_UNIT = 10**_decimals;
     }
 

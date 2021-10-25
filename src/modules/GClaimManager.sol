@@ -53,7 +53,7 @@ contract GClaimManager {
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here
-            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals());
+            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals(), address(this));
         } else {
             uint256 gap = excess(feed, maturity, balance);
             if (gap > 0) {

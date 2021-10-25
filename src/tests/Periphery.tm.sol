@@ -8,7 +8,7 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
-import { Divider } from "../Divider.sol";
+import { Divider, AssetDeployer } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 import { CFactory } from "../feeds/compound/CFactory.sol";
 import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
@@ -31,6 +31,7 @@ contract PeripheryTestHelper is DSTest {
     CFeed feed;
     CFactory internal factory;
     Divider internal divider;
+    AssetDeployer internal assetDeployer;
 
     IUniswapV3Factory uniFactory;
     ISwapRouter uniSwapRouter;
@@ -52,7 +53,9 @@ contract PeripheryTestHelper is DSTest {
         );
 
         // divider
-        divider = new Divider(cDAI, address(this));
+        assetDeployer = new AssetDeployer();
+        divider = new Divider(cDAI, address(this), address(assetDeployer));
+        assetDeployer.init(address(divider));
         divider.setPeriphery(address(periphery));
 
         // feed & factory

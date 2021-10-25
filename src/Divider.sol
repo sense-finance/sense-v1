@@ -30,15 +30,11 @@ contract Divider is Trust {
     uint256 public constant MIN_MATURITY = 2 weeks; // TODO: TBD
     uint256 public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
-    string private constant ZERO_SYMBOL_PREFIX = "z";
-    string private constant ZERO_NAME_PREFIX = "Zero";
-    string private constant CLAIM_SYMBOL_PREFIX = "c";
-    string private constant CLAIM_NAME_PREFIX = "Claim";
-
     /// @notice Program state
     address public periphery;
     address public immutable stable;
     address public immutable cup;
+    address public immutable deployer;
 
     /// @notice feed -> is supported
     mapping(address => bool) public feeds; 
@@ -61,9 +57,10 @@ contract Divider is Trust {
         uint256 tilt; // % of underlying principal initially reserved for Claims
     }
 
-    constructor(address _stable, address _cup) Trust(msg.sender) {
-        stable = _stable;
-        cup    = _cup;
+    constructor(address _stable, address _cup, address _deployer) Trust(msg.sender) {
+        stable   = _stable;
+        cup      = _cup;
+        deployer = _deployer;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -82,8 +79,8 @@ contract Divider is Trust {
         ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = _split(feed, maturity);
-
+        (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);
+        
         // Initialize the new Series struct
         Series memory newSeries = Series({
             zero : zero,
@@ -494,21 +491,6 @@ contract Divider is Trust {
 
     /* ========== INTERNAL HELPERS ========== */
 
-    function _split(address feed, uint256 maturity) internal returns (address zero, address claim) {
-        ERC20 target = ERC20(Feed(feed).target());
-        uint8 decimals = target.decimals();
-        (, string memory m, string memory y) = DateTime.toDateString(maturity);
-        string memory datestring = string(abi.encodePacked(m, "-", y));
-
-        string memory zname = string(abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense"));
-        string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        zero = address(new Zero(zname, zsymbol, decimals));
-
-        string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
-        string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
-    }
-
     function _convertBase(uint256 decimals) internal pure returns (uint256) {
         if (decimals == 18) return 1;
         return decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
@@ -528,7 +510,7 @@ contract Divider is Trust {
 
     /* ========== EVENTS ========== */
 
-    /// @notice admin
+    /// @notice Admin
     event Backfilled(
         address indexed feed, 
         uint256 indexed maturity, 
@@ -540,8 +522,8 @@ contract Divider is Trust {
     event FeedChanged(address indexed feed, bool isOn);
     event PeripheryChanged(address indexed periphery);
 
-    /// @notice series lifecycle:
-    /// * beginning
+    /// @notice Series lifecycle
+    /// *---- beginning
     event SeriesInitialized(
         address indexed feed, 
         uint256 indexed maturity, 
@@ -549,12 +531,58 @@ contract Divider is Trust {
         address claim, 
         address indexed sponsor
     );
-    /// * middle
+    /// -***- middle
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
     event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
     event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
-    /// * end
+    /// ----* end
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
     event ZeroRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event ClaimRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
+}
+
+contract AssetDeployer is Trust {
+    /// @notice Configuration
+    string private constant ZERO_SYMBOL_PREFIX = "z";
+    string private constant ZERO_NAME_PREFIX = "Zero";
+    string private constant CLAIM_SYMBOL_PREFIX = "c";
+    string private constant CLAIM_NAME_PREFIX = "Claim";
+
+    /// @notice Program state
+    bool public inited;
+    address public divider;
+
+    constructor() Trust(msg.sender) { }
+    function init(address _divider) external requiresTrust {
+        require(!inited, "Already initialized");
+        divider = _divider;
+        inited = true;
+    }
+
+    function deploy(address feed, uint256 maturity) external returns (address zero, address claim) {
+        require(inited, "Not yet initialized");
+        require(msg.sender == divider, "Must be called by the Divider");
+
+        ERC20 target = ERC20(Feed(feed).target());
+        uint8 decimals = target.decimals();
+        string memory name = target.name();
+        (, string memory m, string memory y) = DateTime.toDateString(maturity);
+        string memory datestring = string(abi.encodePacked(m, "-", y));
+
+        zero = address(new Zero(
+            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense")), 
+            string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring)), 
+            decimals, 
+            divider
+        ));
+
+        claim = address(new Claim(
+            maturity, 
+            divider, 
+            feed, 
+            string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense")), 
+            string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring)), 
+            decimals
+        ));
+    }
 }

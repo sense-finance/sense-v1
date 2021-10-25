@@ -19,13 +19,13 @@ contract Claim is Token {
         string memory _name,
         string memory _symbol,
         uint8 _decimals
-    ) Token(_name, _symbol, _decimals) {
+    ) Token(_name, _symbol, _decimals, _divider) {
         maturity = _maturity;
         divider = _divider;
         feed = _feed;
     }
 
-    function collect() external returns (uint256 _collected) {
+    function collect() external returns (uint256) {
         return Divider(divider).collect(msg.sender, feed, maturity, address(0));
     }
 
@@ -33,6 +33,8 @@ contract Claim is Token {
         Divider(divider).collect(msg.sender, feed, maturity, to);
         return super.transfer(to, value);
     }
+
+    event A(uint256);
 
     function transferFrom(
         address from,

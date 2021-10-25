@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
-import { Divider } from "../Divider.sol";
+import { Divider, AssetDeployer } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
@@ -56,6 +56,7 @@ contract PoolManagerTest is DSTest {
     Token internal stable;
     Token internal target;
     Divider internal divider;
+    AssetDeployer internal assetDeployer;
     AdminFeed internal adminFeed;
 
     PoolManager internal poolManager;
@@ -66,10 +67,12 @@ contract PoolManagerTest is DSTest {
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
-        stable = new Token("Stable", "SBL", 18);
-        divider = new Divider(address(stable), address(this));
+        stable = new Token("Stable", "SBL", 18, address(this));
+        assetDeployer = new AssetDeployer();
+        divider = new Divider(address(stable), address(this), address(assetDeployer));
+        assetDeployer.init(address(divider));
 
-        target = new Token("Target", "TGT", 18);
+        target = new Token("Target", "TGT", 18, address(this));
         adminFeed = new AdminFeed(address(target), "Admin", "ADM");
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
