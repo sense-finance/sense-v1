@@ -45,8 +45,8 @@ contract CFeeds is CFeedTestHelper {
         CTokenInterface underlying = CTokenInterface(DAI);
         CTokenInterface ctoken = CTokenInterface(cDAI);
 
-        uint256 decimals = 1 * 10**(18 - 8 + underlying.decimals());
-        uint256 scale = ctoken.exchangeRateCurrent().fdiv(decimals, 10**ctoken.decimals());
+        uint256 uDecimals = underlying.decimals();
+        uint256 scale = ctoken.exchangeRateCurrent().fdiv(10**(18 - 8 + uDecimals), 10**uDecimals);
         assertEq(feed.scale(), scale);
     }
 }

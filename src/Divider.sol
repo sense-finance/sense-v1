@@ -180,23 +180,23 @@ contract Divider is Trust {
     }
 
     /// @notice Reconstitute Target by burning Zeros and Claims
-    /// @dev Explicitly burns claims before maturity, and implicitly does it at/after maturity through collect()
+    /// @dev Explicitly burns claims before maturity, and implicitly does it at/after maturity through `_collect()`
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Balance of Zeros and Claims to burn
+    /// @param uBal Balance of Zeros and Claims to burn 
     function combine(address feed, uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
         // Burn the Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
-        // Collect whatever excess is due for accounting
+        // Collect whatever excess is due
         _collect(msg.sender, feed, maturity, uBal, uBal, address(0));
 
-        // We use lscale since the current scale was already stored there by the `_collect()` call
+        // We use lscale since the current scale was already stored there in `_collect()`
         uint256 cscale = series[feed][maturity].mscale;
         if (!_settled(feed, maturity)) {
-            // If it's not settled, then Claims won't be burned automatically by `_collect()`
+            // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[feed][maturity].claim).burn(msg.sender, uBal);
             cscale = lscales[feed][maturity][msg.sender];
         }
@@ -257,14 +257,14 @@ contract Divider is Trust {
     }
 
     function collect(
-        address usr, address feed, uint256 maturity, uint256 tBalTransfer, address to
+        address usr, address feed, uint256 maturity, uint256 uBalTransfer, address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
         uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             feed,
             maturity,
             uBal,
-            tBalTransfer > 0 ? tBalTransfer : uBal,
+            uBalTransfer > 0 ? uBalTransfer : uBal,
             to
         );
     }
@@ -275,14 +275,14 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal claim balance
-    /// @param tBalTransfer original transfer value
+    /// @param uBalTransfer original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
         address usr,
         address feed,
         uint256 maturity,
         uint256 uBal,
-        uint256 tBalTransfer,
+        uint256 uBalTransfer,
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
@@ -325,7 +325,7 @@ contract Divider is Trust {
         // (Or take the last time as issuance if they haven't yet)
         //
         // Reminder: `Underlying / Scale = Target`
-        // So, the following equation is saying, for some amount of Underlying `u`:
+        // So the following equation is saying, for some amount of Underlying `u`:
         // "Balance of Target that equaled `u` at the last collection _minus_ Target that equals `u` now"
         //
         // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
@@ -339,8 +339,9 @@ contract Divider is Trust {
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = _series.maxscale;
-            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow);
-            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow);
+            uint tBalTransfer = uBalTransfer.fdiv(_series.maxscale, claim.BASE_UNIT());
+            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalTransfer);
+            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalTransfer);
         }
 
         emit Collected(feed, maturity, collected);

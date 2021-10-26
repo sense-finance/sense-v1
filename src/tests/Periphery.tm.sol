@@ -8,6 +8,7 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
+import { PoolManager } from "../fuse/PoolManager.sol";
 import { Divider, AssetDeployer } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 import { CFactory } from "../feeds/compound/CFactory.sol";
@@ -26,11 +27,16 @@ contract PeripheryTestHelper is DSTest {
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant UNI_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
+    address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
+    address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
+    address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     Periphery periphery;
     CFeed feed;
     CFactory internal factory;
     Divider internal divider;
+    PoolManager internal poolManager;
     AssetDeployer internal assetDeployer;
 
     IUniswapV3Factory uniFactory;
@@ -40,10 +46,10 @@ contract PeripheryTestHelper is DSTest {
         // periphery
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
-        address poolManager = address(0); // TODO replace for new PoolManager();
+        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
         periphery = new Periphery(
             address(divider),
-            poolManager,
+            address(poolManager),
             address(uniFactory),
             address(uniSwapRouter),
             "Sense Fuse Pool",
@@ -51,6 +57,7 @@ contract PeripheryTestHelper is DSTest {
             0,
             0
         );
+        poolManager.setIsTrusted(address(periphery), true);
 
         // divider
         assetDeployer = new AssetDeployer();
