@@ -23,6 +23,6 @@ contract CFeed is BaseFeed {
     function _scale() internal virtual override returns (uint256) {
         CTokenInterface t = CTokenInterface(target);
         uint256 decimals = CTokenInterface(t.underlying()).decimals();
-        _value = t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10 ** decimals);
+        return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10 ** decimals);
     }
 }
