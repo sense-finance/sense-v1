@@ -6,8 +6,8 @@ import { GClaimManager } from "../../modules/GClaimManager.sol";
 import { Divider, AssetDeployer } from "../../Divider.sol";
 import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
-import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { Periphery } from "../../Periphery.sol";
+import { MockTWrapper } from "./mocks/MockTWrapper.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockFeed } from "./mocks/MockFeed.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
@@ -34,11 +34,11 @@ contract TestHelper is DSTest {
     MockToken target;
     MockToken reward;
     MockFactory factory;
+    MockTWrapper internal twrapper;
 
     PoolManager poolManager;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
-    TWrapper internal twrapper;
     Periphery internal periphery;
 
     User internal alice;
@@ -127,14 +127,14 @@ contract TestHelper is DSTest {
 
         // feed, target wrapper & factory
         MockFeed feedImpl = new MockFeed(); // feed implementation
-        TWrapper twImpl = new TWrapper(); // feed implementation
+        MockTWrapper twImpl = new MockTWrapper(); // feed implementation
         factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         periphery.setFactory(address(factory), true);
         (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
-        twrapper = TWrapper(wt);
+        twrapper = MockTWrapper(wt);
 
         // users
         alice = createUser(2**96, 2**96);
@@ -160,7 +160,7 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        TWrapper twImpl = new TWrapper();
+        MockTWrapper twImpl = new MockTWrapper();
         someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);

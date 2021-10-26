@@ -7,14 +7,18 @@ import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal
+import { Periphery } from "../Periphery.sol";
 import { Divider } from "../Divider.sol";
 import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { Errors } from "../libs/Errors.sol";
 
 /// @notice Accumulate reward tokens and distribute them proportionally
 /// Inspired by: https://github.com/makerdao/dss-crop-join
-contract BaseTWrapper is Initializable {
+abstract contract BaseTWrapper is Initializable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
+
+    bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     /// @notice Program state
     address public target;
@@ -58,6 +62,19 @@ contract BaseTWrapper is Initializable {
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
+    /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
+    /// @param receiver The contract receiving target, needs to implement the `onFlashLoan(address user, address feed, uint256 maturity, uint256 amount)` interface.
+    /// @param feed feed address
+    /// @param maturity maturity
+    /// @param amount The amount of target lent.
+    function flashLoan(address receiver, address feed, uint256 maturity, uint256 amount) onlyPeriphery external returns(bool, uint256) {
+        require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
+        (bytes32 keccak, uint256 issued) = Periphery(receiver).onFlashLoan(msg.sender, feed, maturity, amount);
+        require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
+        require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
+        return (true, issued);
+    }
+
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
     /// @param _usr User to distribute reward tokens to
     function _distribute(address _usr) internal {
@@ -79,9 +96,19 @@ contract BaseTWrapper is Initializable {
         return;
     }
 
+    /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts.
+    /// @param amount Underlying amount
+    /// @return amount of target returned
+    function wrapUnderlying(uint256 amount) external virtual returns (uint256   );
+
     /* ========== MODIFIERS ========== */
     modifier onlyDivider() {
         require(divider == msg.sender, "Can only be invoked by the Divider contract");
+        _;
+    }
+
+    modifier onlyPeriphery() {
+        require(Divider(divider).periphery() == msg.sender, Errors.OnlyPeriphery);
         _;
     }
 

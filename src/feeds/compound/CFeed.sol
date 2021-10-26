@@ -25,4 +25,10 @@ contract CFeed is BaseFeed {
         uint256 decimals = CTokenInterface(t.underlying()).decimals();
         return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10 ** decimals);
     }
+
+    function underlying() external virtual override returns (address) {
+        CTokenInterface t = CTokenInterface(target);
+        return t.underlying();
+    }
+
 }
