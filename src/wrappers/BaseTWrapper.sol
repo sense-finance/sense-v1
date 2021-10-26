@@ -48,7 +48,6 @@ contract BaseTWrapper is Initializable {
         }
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
-
     function exit(address _usr, uint256 val) public onlyDivider {
         _distribute(_usr);
         if (val > 0) {
@@ -86,6 +85,6 @@ contract BaseTWrapper is Initializable {
     }
 
     /* ========== EVENTS ========== */
-    event Distributed(address indexed usr, address indexed token, uint256 indexed amount);
+    event Distributed(address indexed usr, address indexed token, uint256 amount);
     event Initialized();
 }
