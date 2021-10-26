@@ -100,7 +100,7 @@ contract Periphery is Trust {
     /// @param tBal Balance of Target to deposit
     /// @param backfill Amount in target to backfill gClaims
     function swapTargetForZeros(
-        address feed, uint256 maturity, uint256 tBal, 
+        address feed, uint256 maturity, uint256 tBal,
         uint256 backfill, uint256 minAccepted
     ) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
@@ -126,23 +126,35 @@ contract Periphery is Trust {
     }
 
     function swapTargetForClaims(address feed, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
-        // transfer target into this contract
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal);
+        ERC20 target = ERC20(Feed(feed).target());
+        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
+        (, uint256 lvalue) = feed.lscale();
 
-        // issue zeros & claims with target
+        // transfer target into this contract
+        target.safeTransferFrom(msg.sender, address(this), tBal);
+
+        // (0) issue zeros & claims with target
         uint256 issued = divider.issue(feed, maturity, tBal);
 
-        // swap zeros to gclaims
-        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
-        address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(zero, gclaim, issued, address(this), minAccepted);
+        // (1) Sell zeros for underlying
+        uint256 swapped = _swap(zero, Feed(feed).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
 
-        // convert gclaims to claims
-        gClaimManager.exit(feed, maturity, swapped);
-        uint256 totalClaims = issued + swapped;
+        // (2) Convert underlying into target (on protocol)
+        uint256 targetAmount = TWrapper(Feed(feed).twrapper()).wrapUnderlying(swapped); // TODO: use method from protocol. Each TWrapper would know how to wrap underlying into target
 
-        // transfer issued + bought claims to user
-        ERC20(claim).safeTransfer(msg.sender, totalClaims);
+        // (3) Calculate target needed to borrow in order to re-issue and obtain the desired amount of claims
+        uint256 zPrice = swapped / issued;
+        uint256 cPrice = 1 - zPrice;
+        uint256 claimsAmount = swapped / cPrice;
+        uint256 targetToBorrow = (claimsAmount / lvalue) - targetAmount;
+        // TODO: refactor/consolidate all the above vars
+
+        // (4) Flash borrow target
+        (bool result, uint256 issuedClaims) = flashBorrow(feed, maturity, flashAmount);
+        require(result == true);
+
+        // transfer claims from step 0 + issued claims with borrowed target (step 4) to msg.sender
+        ERC20(claim).safeTransfer(msg.sender, issued + issuedClaims);
     }
 
     function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
@@ -210,7 +222,7 @@ contract Periphery is Trust {
     }
 
     function _swap(
-        address tokenIn, address tokenOut, uint256 amountIn, 
+        address tokenIn, address tokenOut, uint256 amountIn,
         address recipient, uint256 minAccepted
     ) internal returns (uint256 amountOut) {
         // approve router to spend tokenIn
@@ -240,6 +252,40 @@ contract Periphery is Trust {
         require(factories[factory] != isOn, Errors.ExistingValue);
         factories[factory] = isOn;
         emit FactoryChanged(factory, isOn);
+    }
+
+    /* ========== INTERNAL & HELPER FUNCTIONS ========== */
+
+    /// @notice Initiate a flash loan
+    /// @param feed feed
+    /// @param maturity maturity
+    /// @param amount target amount to borrow
+    /// @return claims issued with flashloan
+    function flashBorrow(address feed, uint256 maturity, uint256 amount) internal returns (bool, uint256) {
+        ERC20 target = ERC20(Feed(feed).target());
+        TWrapper twrapper = TWrapper(Feed(feed).twrapper());
+        uint256 _allowance = target.allowance(address(this), address(twrapper));
+        target.approve(address(twrapper), _allowance + amount);
+        return twrapper.flashLoan(address(this), feed, maturity, amount);
+    }
+
+    /// @dev ERC-3156 Flash loan callback
+    function onFlashLoan(address initiator, address feed, uint256 maturity, uint256 amount) external returns(bytes32, uint256) {
+        require(msg.sender == address(Feed(feed).twrapper()), Errors.FlashUntrustedBorrower);
+        require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
+
+        // (5) Issue
+        uint256 issued = divider.issue(feed, maturity, amount);
+
+        // (6) Sell Zeros for underlying
+        (address zero, , , , , , , ,) = divider.series(feed, maturity);
+        uint256 swapped = _swap(zero, Feed(feed).underlying(), issued, address(this), 0); // TODO: minAccepted
+//        uint256 swapped = _swap(zero, Feed(feed).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace
+
+        // (7) Convert underlying into target
+        TWrapper(Feed(feed).twrapper()).wrapUnderlying(swapped); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
+
+        return (keccak256("ERC3156FlashBorrower.onFlashLoan"), issued);
     }
 
     /* ========== EVENTS ========== */

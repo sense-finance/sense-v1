@@ -3,7 +3,6 @@ pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -11,7 +10,7 @@ import { Errors } from "../libs/Errors.sol";
 
 contract Wrappers is TestHelper {
     function testDeployWrapper() public {
-        BaseTWrapper twrapper = new BaseTWrapper();
+        MockTWrapper twrapper = new MockTWrapper();
         twrapper.initialize(address(target), address(divider), address(reward));
 
         assertEq(twrapper.target(), address(target));

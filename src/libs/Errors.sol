@@ -9,6 +9,11 @@ library Errors {
     string constant ExistingValue = "New value must be different than previous";
     string constant FactoryNotSupported = "Factory is not supported";
     string constant FeedAlreadyExists = "Feed already exists";
+    string constant FlashCallbackFailed = "FlashLender: Callback failed";
+    string constant FlashRepayFailed = "FlashLender: Repay failed";
+    string constant FlashTransferFailed = "FlashLender: Transfer failed";
+    string constant FlashUntrustedBorrower = "FlashBorrower: Untrusted lender";
+    string constant FlashUntrustedLoanInitiator = "FlashBorrower: Untrusted loan initiator";
     string constant GuardCapReached = "Issuance cap reached";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";

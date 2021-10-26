@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { BaseFeed } from "../../../feeds/BaseFeed.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
+import { MockToken } from "./MockToken.sol";
 
 contract MockFeed is BaseFeed {
     using FixedMath for uint256;
@@ -11,6 +12,7 @@ contract MockFeed is BaseFeed {
     uint256 internal value;
     uint256 internal _tilt = 0;
     uint256 public INITIAL_VALUE;
+    address public under;
 
     function _scale() internal override virtual returns (uint256 _value) {
         if (value > 0) return value;
@@ -25,6 +27,13 @@ contract MockFeed is BaseFeed {
         uint256 gps = delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, 10**tDecimals) + lscale.value : INITIAL_VALUE;
+    }
+
+    function underlying() external virtual override returns (address) {
+        if (under == address(0)) {
+            under = address(new MockToken("Underlying Token", "UT", ERC20(target).decimals()));
+        }
+        return under;
     }
 
     function tilt() external override virtual returns (uint256 _value) {
