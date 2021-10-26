@@ -12,7 +12,8 @@
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/*/*.sol",
     "fix": "prettier --ignore-path .gitignore --write src/*/*.sol && yarn lint --fix",
-    "deploy:hardhat-fork": "hardhat --network hardhat deploy",
+    "size-contracts": "hardhat compile && hardhat size-contracts",
+    "deploy:hardhat-fork": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:goerli": "hardhat --network goerli deploy",
     "deploy:arbitrum": "hardhat --network arbitrum deploy"
@@ -31,6 +32,7 @@
     "ethers": "^5.4.7",
     "hardhat": "^2.6.5",
     "hardhat-abi-exporter": "^2.3.0",
+    "hardhat-contract-sizer": "^2.1.1",
     "hardhat-deploy": "^0.9.3",
     "hardhat-deploy-ethers": "^0.3.0-beta.11",
     "hardhat-spdx-license-identifier": "^2.0.3",

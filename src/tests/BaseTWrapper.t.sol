@@ -7,7 +7,7 @@ import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { Errors } from "../libs/errors.sol";
+import { Errors } from "../libs/Errors.sol";
 
 contract Wrappers is TestHelper {
     function testDeployWrapper() public {

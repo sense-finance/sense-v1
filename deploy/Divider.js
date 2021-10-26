@@ -25,10 +25,16 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const stable = STABLE_TOKEN.get(chainId);
   const cup = DIVIDER_CUP.get(chainId);
 
+  const { address: assetDeployerAddress } = await deploy("AssetDeployer", {
+    from: deployer,
+    args: [],
+    log: true,
+  });
+
   console.log("Deploy the divider");
   await deploy("Divider", {
     from: deployer,
-    args: [stable, cup],
+    args: [stable, cup, assetDeployerAddress],
     log: true,
   });
 
@@ -36,6 +42,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   console.log("Trust the dev address on the divider");
   await (await divider.setIsTrusted(dev, true)).wait();
+
+  const assetDeployer = await ethers.getContract("AssetDeployer");
+  console.log("Add the divider to the asset deployer");
+  await (await assetDeployer.init(divider.address)).wait();
 };
 
 module.exports.tags = ["Divider"];

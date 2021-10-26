@@ -125,7 +125,7 @@ contract Recycler is Trust {
         // Only applies to future auctions
         string memory name = string(abi.encodePacked("R-", ERC20(claim).name(), "-R"));
         string memory symbol = string(abi.encodePacked("R-", ERC20(claim).symbol(), "-R"));
-        rclaims[claim].token = new Token(name, symbol, ERC20(Feed(feed).target()).decimals());
+        rclaims[claim].token = new Token(name, symbol, ERC20(Feed(feed).target()).decimals(), address(this));
         // NOTE: Default to mainnet chainId for now.
         rclaims[claim].config = params;
         rclaims[claim].lastKick = block.timestamp;

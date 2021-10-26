@@ -1,18 +1,19 @@
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 // require("@tenderly/hardhat-tenderly");
+require("hardhat-contract-sizer");
 require("hardhat-abi-exporter");
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
 require("hardhat-spdx-license-identifier");
 require("hardhat-watcher");
-// import "./tasks";
+require("./cli");
 
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
 };
 
-const config = {
+module.exports = {
   defaultNetwork: "hardhat",
   // etherscan: {
   //   apiKey: process.env.ETHERSCAN_API_KEY,
@@ -33,6 +34,7 @@ const config = {
       accounts,
       gasPrice: 120 * 1000000000, // 12 GWei
       chainId: 1,
+      saveDeployments: true,
     },
     hardhat: {
       forking: {
@@ -41,6 +43,7 @@ const config = {
       },
       chainId: 111,
       gas: 12000000,
+      saveDeployments: false,
       blockGasLimit: 21000000,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
@@ -56,23 +59,23 @@ const config = {
   },
   paths: {
     sources: "src",
+    deploy: "deploy",
+    deployments: "deployments",
   },
   solidity: {
-    compilers: [
-      {
-        version: "0.8.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100,
-          },
-        },
+    version: "0.8.6",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1500,
       },
-    ],
+    },
   },
-  spdxLicenseIdentifier: {
-    overwrite: false,
-    runOnCompile: true,
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: false,
+    disambiguatePaths: true,
+    strict: true,
   },
   //   tenderly: {
   //     project: process.env.TENDERLY_PROJECT,
@@ -86,5 +89,3 @@ const config = {
     },
   },
 };
-
-module.exports = config;

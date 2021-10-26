@@ -8,7 +8,7 @@ import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 
 // Internal references
-import { Errors } from "./libs/errors.sol";
+import { Errors } from "./libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
@@ -20,7 +20,7 @@ import { BaseTWrapper } from "./wrappers/BaseTWrapper.sol";
 contract Divider is Trust {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
-    using Errors for   string;
+    using Errors for string;
 
     /// @notice Configuration
     uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%) [WAD] // TODO: TBD
@@ -30,34 +30,37 @@ contract Divider is Trust {
     uint256 public constant MIN_MATURITY = 2 weeks; // TODO: TBD
     uint256 public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
-    string private constant ZERO_SYMBOL_PREFIX = "z";
-    string private constant ZERO_NAME_PREFIX = "Zero";
-    string private constant CLAIM_SYMBOL_PREFIX = "c";
-    string private constant CLAIM_NAME_PREFIX = "Claim";
-
-    /// @notice Mutable program state
+    /// @notice Program state
     address public periphery;
-    address public stable;
-    address public    cup;
-    mapping(address => bool   ) public feeds;  // feed -> approved
-    mapping(address => uint256) public guards; // target -> max amount of Target allowed to be issued
-    mapping(address => mapping(uint256 => Series)) public series; // feed -> maturity -> series
-    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales; // feed -> maturity -> account -> lscale
+    address public immutable stable;
+    address public immutable cup;
+    address public immutable deployer;
+
+    /// @notice feed -> is supported
+    mapping(address => bool) public feeds; 
+    /// @notice target -> max amount of Target allowed to be issued
+    mapping(address => uint256) public guards;
+    /// @notice feed -> maturity -> Series
+    mapping(address => mapping(uint256 => Series)) public series; 
+    /// @notice feed -> maturity -> user -> lscale
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
+
     struct Series {
-        address zero;     // Zero address for this Series (deployed on Series initialization)
-        address claim;    // Claim address for this Series (deployed on Series initialization)
-        address sponsor;  // Series initializer/sponsor
-        uint256 issuance; // Issuance date for this Series (needed for Zero redemption)
-        uint256 reward;   // Tracks the fees due to the settler on Settlement
-        uint256 iscale;   // Scale value at issuance
-        uint256 mscale;   // Scale value at maturity
-        uint256 maxscale; // Max scale from this Series' lifetime
-        uint256 tilt;     // % underlying principal to be reserved for Claims
+        address zero;     
+        address claim;  
+        address sponsor;
+        uint256 issuance;
+        uint256 reward; // tracks fees due to the series' settler
+        uint256 iscale; // scale at issuance
+        uint256 mscale; // scale at maturity
+        uint256 maxscale; // max scale value from this series' lifetime
+        uint256 tilt; // % of underlying principal initially reserved for Claims
     }
 
-    constructor(address _stable, address _cup) Trust(msg.sender) {
-        stable = _stable;
-        cup    = _cup;
+    constructor(address _stable, address _cup, address _deployer) Trust(msg.sender) {
+        stable   = _stable;
+        cup      = _cup;
+        deployer = _deployer;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -76,8 +79,8 @@ contract Divider is Trust {
         ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = _split(feed, maturity);
-
+        (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);
+        
         // Initialize the new Series struct
         Series memory newSeries = Series({
             zero : zero,
@@ -93,12 +96,12 @@ contract Divider is Trust {
 
         series[feed][maturity] = newSeries;
 
-        emit SeriesInitialized(feed, maturity, zero, claim, sponsor);
+        emit SeriesInitialized(feed, maturity, zero, claim, sponsor, Feed(feed).target());
     }
 
     /// @notice Settles a Series and transfer the settlement reward to the caller
     /// @dev The Series' sponsor has a buffer where only they can settle the Series
-    /// @dev After the buffer, the reward becomes MEV
+    /// @dev After that, the reward becomes MEV
     /// @param feed Feed to associate with the Series
     /// @param maturity Maturity date for the new Series
     function settleSeries(address feed, uint256 maturity) external {
@@ -126,7 +129,7 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
-    /// the amount of Zeros/Claims minted will be the equivelent value in units of underlying (less fees)
+    /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
     function issue(address feed, uint256 maturity, uint256 tBal) external returns (uint256 uBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
@@ -137,7 +140,7 @@ contract Divider is Trust {
         uint256 tBase = 10 ** tDecimals;
         uint256 fee;
 
-        // Take the issuance fee out of the deposited Target, and put it towards the settlement
+        // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         if (tDecimals != 18) {
             fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
         } else {
@@ -181,14 +184,14 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Zeros and Claims to burn
-    function combine(address feed, uint256 maturity, uint256 uBal) external {
+    function combine(address feed, uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
         // Burn the Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
         // Collect whatever excess is due for accounting
-        _collect(msg.sender, feed, maturity, uBal, address(0));
+        _collect(msg.sender, feed, maturity, uBal, uBal, address(0));
 
         // We use lscale since the current scale was already stored there by the `_collect()` call
         uint256 cscale = series[feed][maturity].mscale;
@@ -199,7 +202,7 @@ contract Divider is Trust {
         }
 
         // Convert from units of Underlying to units of Target
-        uint256 tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
+        tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
         BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal); // distribute reward tokens
@@ -254,12 +257,14 @@ contract Divider is Trust {
     }
 
     function collect(
-        address usr, address feed, uint256 maturity, address to
+        address usr, address feed, uint256 maturity, uint256 tBalTransfer, address to
     ) external onlyClaim(feed, maturity) returns (uint256 collected) {
+        uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             feed,
             maturity,
-            Claim(msg.sender).balanceOf(usr),
+            uBal,
+            tBalTransfer > 0 ? tBalTransfer : uBal,
             to
         );
     }
@@ -269,13 +274,15 @@ contract Divider is Trust {
     /// @param usr User who's collecting for their Claims
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param maturity Maturity date for the Series
+    /// @param uBal claim balance
+    /// @param tBalTransfer original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
         address usr,
         address feed,
         uint256 maturity,
         uint256 uBal,
+        uint256 tBalTransfer,
         address to
     ) internal returns (uint256 collected) {
         require(feeds[feed], Errors.InvalidFeed);
@@ -284,7 +291,6 @@ contract Divider is Trust {
         Series memory _series = series[feed][maturity];
 
         // Get the scale value from the last time this holder collected (default to maturity)
-        uint256 cscale = _series.maxscale;
         uint256 lscale = lscales[feed][maturity][usr];
         Claim claim = Claim(series[feed][maturity].claim);
         ERC20 target = ERC20(Feed(feed).target());
@@ -303,26 +309,28 @@ contract Divider is Trust {
                 revert(Errors.CollectNotSettled);
             // Otherwise, this is a valid pre-settlement collect and we need to determine the scale value
             } else {
-                uint256 maxscale = _series.maxscale;
-                cscale = Feed(feed).scale();
+                uint256 cscale = Feed(feed).scale();
                 // If this is larger than the largest scale we've seen for this Series, use it
-                if (cscale > maxscale) {
+                if (cscale > _series.maxscale) {
                     _series.maxscale = cscale;
                     lscales[feed][maturity][usr] = cscale;
                 // If not, use the previously noted max scale value
                 } else {
-                    lscales[feed][maturity][usr] = maxscale;
+                    lscales[feed][maturity][usr] = _series.maxscale;
                 }
             }
         }
 
         // Determine how much underlying has accrued since the last time this user collected, in units of Target.
         // (Or take the last time as issuance if they haven't yet)
-        // Reminder that `Underlying / Scale` = `Target`, so the following equation is saying, for some amount of Underlying `u`:
-        // "Target balance that equaled `u` at last collection _minus_ Target balance that equals `u` now".
-        // Because cscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
+        //
+        // Reminder: `Underlying / Scale = Target`
+        // So, the following equation is saying, for some amount of Underlying `u`:
+        // "Balance of Target that equaled `u` at the last collection _minus_ Target that equals `u` now"
+        //
+        // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        uint256 tBalNow = uBal.fdiv(cscale, claim.BASE_UNIT());
+        uint256 tBalNow = uBal.fdiv(_series.maxscale, claim.BASE_UNIT());
         collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
         target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
         BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
@@ -330,7 +338,7 @@ contract Divider is Trust {
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
-            lscales[feed][maturity][to] = cscale;
+            lscales[feed][maturity][to] = _series.maxscale;
             BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalNow);
             BaseTWrapper(Feed(feed).twrapper()).join(to, tBalNow);
         }
@@ -410,21 +418,18 @@ contract Divider is Trust {
         emit PeripheryChanged(periphery);
     }
 
-    struct Backfill {
-        address usr;    // Address of the user who's getting their lscale backfilled
-        uint256 lscale; // Scale value to backfill for usr's lscale
-    }
-
     /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
     /// @param feed Feed's address
     /// @param maturity Maturity date for the Series
     /// @param mscale Value to set as the Series' Scale value at maturity
-    /// @param backfills Values to set on lscales mapping
+    /// @param _usrs Values to set on lscales mapping
+    /// @param _lscales Values to set on lscales mapping
     function backfillScale(
         address feed,
         uint256 maturity,
         uint256 mscale,
-        Backfill[] memory backfills
+        address[] calldata _usrs,
+        uint256[] calldata _lscales
     ) external requiresTrust {
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(mscale > series[feed][maturity].iscale, Errors.InvalidScaleValue);
@@ -439,8 +444,8 @@ contract Divider is Trust {
             series[feed][maturity].maxscale = mscale;
         }
         // Set user's last scale values the Series (needed for the `collect` method)
-        for (uint i = 0; i < backfills.length; i++) {
-            lscales[feed][maturity][backfills[i].usr] = backfills[i].lscale;
+        for (uint i = 0; i < _usrs.length; i++) {
+            lscales[feed][maturity][_usrs[i]] = _lscales[i];
         }
 
         // Determine where the rewards should go depending on where we are relative to the maturity date
@@ -449,7 +454,7 @@ contract Divider is Trust {
         target.safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stable).safeTransfer(rewardee, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
 
-        emit Backfilled(feed, maturity, mscale, backfills);
+        emit Backfilled(feed, maturity, mscale, _usrs, _lscales);
     }
 
     /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
@@ -461,15 +466,15 @@ contract Divider is Trust {
 
     /* ========== INTERNAL VIEWS ========== */
 
-    function _exists(address feed, uint256 maturity) internal view returns (bool exists) {
-        return address(series[feed][maturity].zero) != address(0);
+    function _exists(address feed, uint256 maturity) internal view returns (bool) {
+        return series[feed][maturity].zero != address(0);
     }
 
-    function _settled(address feed, uint256 maturity) internal view returns (bool settled) {
+    function _settled(address feed, uint256 maturity) internal view returns (bool) {
         return series[feed][maturity].mscale > 0;
     }
 
-    function _canBeSettled(address feed, uint256 maturity) internal view returns (bool canBeSettled) {
+    function _canBeSettled(address feed, uint256 maturity) internal view returns (bool) {
         require(!_settled(feed, maturity), Errors.AlreadySettled);
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the sender is the sponsor for the Series
@@ -480,7 +485,7 @@ contract Divider is Trust {
         }
     }
 
-    function _isValid(uint256 maturity) internal view returns (bool valid) {
+    function _isValid(uint256 maturity) internal view returns (bool) {
         if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
 
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
@@ -490,26 +495,9 @@ contract Divider is Trust {
 
     /* ========== INTERNAL HELPERS ========== */
 
-    function _split(address feed, uint256 maturity) internal returns (address zero, address claim) {
-        ERC20 target = ERC20(Feed(feed).target());
-        uint8 decimals = target.decimals();
-        (, string memory m, string memory y) = DateTime.toDateString(maturity);
-        string memory datestring = string(abi.encodePacked(m, "-", y));
-
-        string memory zname = string(abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense"));
-        string memory zsymbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        zero = address(new Zero(zname, zsymbol, decimals));
-
-        string memory cname = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense"));
-        string memory csymbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring));
-        claim = address(new Claim(maturity, address(this), feed, cname, csymbol, decimals));
-    }
-
-    function _convertBase(uint256 decimals) internal returns (uint256 convertBase) {
-        convertBase = 1;
-        if (decimals != 18) {
-            convertBase = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
-        }
+    function _convertBase(uint256 decimals) internal pure returns (uint256) {
+        if (decimals == 18) return 1;
+        return decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
     }
 
     /* ========== MODIFIERS ========== */
@@ -525,15 +513,81 @@ contract Divider is Trust {
     }
 
     /* ========== EVENTS ========== */
-    event Backfilled(address indexed feed, uint256 indexed maturity, uint256 mscale, Backfill[] backfills);
-    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
-    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+
+    /// @notice Admin
+    event Backfilled(
+        address indexed feed, 
+        uint256 indexed maturity, 
+        uint256 mscale, 
+        address[] _usrs,
+        uint256[] _lscales
+    );
     event GuardChanged(address indexed target, uint256 indexed cap);
     event FeedChanged(address indexed feed, bool isOn);
+    event PeripheryChanged(address indexed periphery);
+
+    /// @notice Series lifecycle
+    /// *---- beginning
+    event SeriesInitialized(
+        address feed, 
+        uint256 indexed maturity, 
+        address zero, 
+        address claim, 
+        address indexed sponsor,
+        address indexed target
+    );
+    /// -***- middle
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Combined(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Collected(address indexed feed, uint256 indexed maturity, uint256 collected);
+    /// ----* end
+    event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
     event ZeroRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event ClaimRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
-    event PeripheryChanged(address indexed periphery);
-    event SeriesInitialized(address indexed feed, uint256 indexed maturity, address zero, address claim, address indexed sponsor);
-    event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
+}
+
+contract AssetDeployer is Trust {
+    /// @notice Configuration
+    string private constant ZERO_SYMBOL_PREFIX = "z";
+    string private constant ZERO_NAME_PREFIX = "Zero";
+    string private constant CLAIM_SYMBOL_PREFIX = "c";
+    string private constant CLAIM_NAME_PREFIX = "Claim";
+
+    /// @notice Program state
+    bool public inited;
+    address public divider;
+
+    constructor() Trust(msg.sender) { }
+    function init(address _divider) external requiresTrust {
+        require(!inited, "Already initialized");
+        divider = _divider;
+        inited = true;
+    }
+
+    function deploy(address feed, uint256 maturity) external returns (address zero, address claim) {
+        require(inited, "Not yet initialized");
+        require(msg.sender == divider, "Must be called by the Divider");
+
+        ERC20 target = ERC20(Feed(feed).target());
+        uint8 decimals = target.decimals();
+        string memory name = target.name();
+        (, string memory m, string memory y) = DateTime.toDateString(maturity);
+        string memory datestring = string(abi.encodePacked(m, "-", y));
+
+        zero = address(new Zero(
+            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense")), 
+            string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring)), 
+            decimals, 
+            divider
+        ));
+
+        claim = address(new Claim(
+            maturity, 
+            divider, 
+            feed, 
+            string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense")), 
+            string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring)), 
+            decimals
+        ));
+    }
 }

@@ -7,7 +7,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 // Internal references
 import { Divider } from "../Divider.sol";
 
-/// @title Stops all feeds from the divider
+/// @notice Unsets multiple feeds on the divider
 contract EmergencyStop is Trust {
     address public divider;
 

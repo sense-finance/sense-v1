@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
-import { Divider } from "../Divider.sol";
+import { Divider, AssetDeployer } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
@@ -17,13 +17,16 @@ contract CFeedTestHelper is DSTest {
     CFeed feed;
     MockFactory internal factory;
     Divider internal divider;
+    AssetDeployer internal assetDeployer;
 
     uint256 public constant DELTA = 150;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     function setUp() public {
-        divider = new Divider(DAI, address(this));
+        assetDeployer = new AssetDeployer();
+        divider = new Divider(DAI, address(this), address(assetDeployer));
+        assetDeployer.init(address(divider));
         CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
         factory = new MockFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
