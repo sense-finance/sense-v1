@@ -96,7 +96,7 @@ contract Divider is Trust {
 
         series[feed][maturity] = newSeries;
 
-        emit SeriesInitialized(feed, maturity, zero, claim, sponsor);
+        emit SeriesInitialized(feed, maturity, zero, claim, sponsor, Feed(feed).target());
     }
 
     /// @notice Settles a Series and transfer the settlement reward to the caller
@@ -529,11 +529,12 @@ contract Divider is Trust {
     /// @notice Series lifecycle
     /// *---- beginning
     event SeriesInitialized(
-        address indexed feed, 
+        address feed, 
         uint256 indexed maturity, 
         address zero, 
         address claim, 
-        address indexed sponsor
+        address indexed sponsor,
+        address indexed target
     );
     /// -***- middle
     event Issued(address indexed feed, uint256 indexed maturity, uint256 balance, address indexed sender);
