@@ -16,7 +16,6 @@ import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 
-
 contract PoolManagerTest is DSTest {
     using FixedMath for uint256;
 
