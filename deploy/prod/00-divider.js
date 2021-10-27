@@ -48,5 +48,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   await (await assetDeployer.init(divider.address)).wait();
 };
 
-module.exports.tags = ["Divider"];
+module.exports.tags = ["prod:divider", "scenario:prod"];
 module.exports.dependencies = [];

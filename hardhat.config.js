@@ -37,6 +37,9 @@ module.exports = {
       saveDeployments: true,
     },
     hardhat: {
+      mining: {
+        auto: true,
+      },
       forking: {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
@@ -45,6 +48,7 @@ module.exports = {
       gas: 12000000,
       saveDeployments: false,
       blockGasLimit: 21000000,
+      blockNumber: 13491969,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
     },
@@ -58,9 +62,11 @@ module.exports = {
     },
   },
   paths: {
-    sources: "src",
-    deploy: "deploy",
-    deployments: "deployments",
+    sources: "./src",
+    deploy: "./deploy",
+    deployments: "./deployments",
+    cache: "./cache",
+    artifacts: "./artifacts",
   },
   solidity: {
     version: "0.8.6",

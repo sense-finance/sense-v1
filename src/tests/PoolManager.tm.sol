@@ -11,44 +11,11 @@ import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
+import { SimpleAdminFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 
-contract AdminFeed {
-    using FixedMath for uint256;
-
-    address public owner;
-    address public target;
-    string public name;
-    string public symbol;
-    uint256 internal value = 1e18;
-    uint256 public constant INITIAL_VALUE = 1e18;
-
-    constructor(
-        address _target,
-        string memory _name,
-        string memory _symbol
-    ) {
-        target = _target;
-        name = _name;
-        symbol = _symbol;
-        owner = msg.sender;
-    }
-
-    function scale() external virtual returns (uint256 _value) {
-        return value;
-    }
-
-    function tilt() external virtual returns (uint256 _value) {
-        return 0;
-    }
-
-    function setScale(uint256 _value) external {
-        require(msg.sender == owner, "Only owner");
-        value = _value;
-    }
-}
 
 contract PoolManagerTest is DSTest {
     using FixedMath for uint256;
@@ -57,7 +24,7 @@ contract PoolManagerTest is DSTest {
     Token internal target;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
-    AdminFeed internal adminFeed;
+    SimpleAdminFeed internal adminFeed;
 
     PoolManager internal poolManager;
 
@@ -73,7 +40,7 @@ contract PoolManagerTest is DSTest {
         assetDeployer.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
-        adminFeed = new AdminFeed(address(target), "Admin", "ADM");
+        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stable));
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
 

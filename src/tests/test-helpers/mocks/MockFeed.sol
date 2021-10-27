@@ -40,3 +40,42 @@ contract MockFeed is BaseFeed {
     }
 
 }
+
+// used in simulated env deployment scripts
+contract SimpleAdminFeed {
+    using FixedMath for uint256;
+
+    address public owner;
+    address public target;
+    string public name;
+    string public symbol;
+    address public twrapper;
+    uint256 internal value = 1e18;
+    uint256 public constant INITIAL_VALUE = 1e18;
+
+    constructor(
+        address _target,
+        string memory _name,
+        string memory _symbol,
+        address _twrapper
+    ) {
+        target = _target;
+        name = _name;
+        symbol = _symbol;
+        twrapper = _twrapper;
+        owner = msg.sender;
+    }
+
+    function scale() external virtual returns (uint256 _value) {
+        return value;
+    }
+
+    function tilt() external virtual returns (uint256 _value) {
+        return 0;
+    }
+
+    function setScale(uint256 _value) external {
+        require(msg.sender == owner, "Only owner");
+        value = _value;
+    }
+}

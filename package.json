@@ -13,16 +13,17 @@
     "lint": "npx solhint -f table src/*/*.sol",
     "fix": "prettier --ignore-path .gitignore --write src/*/*.sol && yarn lint --fix",
     "size-contracts": "hardhat compile && hardhat size-contracts",
-    "deploy:hardhat-fork": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost",
-    "deploy:mainnet": "hardhat --network mainnet deploy",
-    "deploy:goerli": "hardhat --network goerli deploy",
-    "deploy:arbitrum": "hardhat --network arbitrum deploy"
+    "deploy:hardhat-fork": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:prod",
+    "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
+    "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
+    "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod"
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.3.2",
     "@rari-capital/solmate": "4.0.0",
     "@uniswap/v3-core": "^1.0.0",
-    "@uniswap/v3-periphery": "^1.2.1"
+    "@uniswap/v3-periphery": "^1.2.1",
+    "dayjs": "^1.10.7"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",

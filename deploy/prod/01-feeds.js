@@ -45,5 +45,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   await (await cFactory.setIsTrusted(dev, true)).wait();
 };
 
-module.exports.tags = ["Feeds"];
-module.exports.dependencies = ["Divider"];
+module.exports.tags = ["prod:feeds", "scenario:prod"];
+module.exports.dependencies = ["prod:divider"];
