@@ -1,22 +1,4 @@
 const dayjs = require("dayjs");
-const utc = require("dayjs/plugin/utc");
-
-dayjs.extend(utc);
-
-global.SERIES_MATURITIES = [
-  // beginning of the month falling between 1 and 2 months from now
-  dayjs
-    .utc()
-    .month(dayjs().month() + 2)
-    .startOf("month")
-    .unix(),
-  // beginning of the month falling between 2 and 3 months from now
-  dayjs
-    .utc()
-    .month(dayjs().month() + 3)
-    .startOf("month")
-    .unix(),
-];
 
 module.exports = async function ({ ethers, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");

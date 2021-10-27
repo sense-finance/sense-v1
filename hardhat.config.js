@@ -9,8 +9,33 @@ require("hardhat-spdx-license-identifier");
 require("hardhat-watcher");
 require("./cli");
 
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+
+// For dev scenarios ------------
+global.TARGETS = ["cDAI", "cETH", "stETH"];
+
+dayjs.extend(utc);
+global.SERIES_MATURITIES = [
+  // beginning of the month falling between 1 and 2 months from now
+  dayjs
+    .utc()
+    .month(dayjs().month() + 2)
+    .startOf("month")
+    .unix(),
+  // beginning of the month falling between 2 and 3 months from now
+  dayjs
+    .utc()
+    .month(dayjs().month() + 3)
+    .startOf("month")
+    .unix(),
+];
+// ------------------------------------
+
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+  // for the hardhat test network
+  accountsBalance: "10000000000000000000000000",
 };
 
 module.exports = {
@@ -40,6 +65,7 @@ module.exports = {
       mining: {
         auto: true,
       },
+      accounts,
       forking: {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,

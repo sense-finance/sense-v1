@@ -1,5 +1,3 @@
-global.TARGETS = ["cDAI", "cETH", "stETH"];
-
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();

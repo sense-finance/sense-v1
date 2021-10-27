@@ -1,4 +1,5 @@
 const { task } = require("hardhat/config");
+const fs = require("fs");
 
 task("accounts", "Prints the list of accounts", async (_, { ethers }) => {
   const signers = await ethers.getSigners();
@@ -8,21 +9,42 @@ task("accounts", "Prints the list of accounts", async (_, { ethers }) => {
   }
 });
 
-task("fill-eth", "Prints the list of accounts", async (_, { ethers, deploy }) => {
-  const [signer] = await ethers.getSigners();
+task("localhost-faucet", "Prints the list of accounts")
+  .addParam("port", "The port number to run against")
+  .addParam("contractsPath", "Path to the deployed contract export data")
+  .addParam("address", "The account's address")
+  .setAction(async ({ address, port, contractsPath }, { ethers }) => {
+    console.log(contractsPath, "contractPath");
+    const deployment = JSON.parse(fs.readFileSync(`${contractsPath}`, "utf8"));
+    const { contracts } = deployment;
 
-  const user = process.env.DEV_ADDRESS;
-  if (!user) {
-    console.log(`DEV_ADDRESS must be set with an address to fill`);
-    return;
-  }
-  console.log(`Minting ${user} 10 eth`);
-  const tx = await signer.sendTransaction({
-    to: user,
-    value: ethers.utils.parseEther("10.0"),
+    if (!contracts) {
+      throw new Error("Unable to find contracts at given path");
+    }
+
+    const testchainProvider = new ethers.providers.JsonRpcProvider(`http://localhost:${port}/`);
+    const signer = ethers.Wallet.fromMnemonic(process.env.MNEMONIC).connect(testchainProvider);
+
+    const ethToTransfer = ethers.utils.parseEther("5");
+
+    console.log(`Transferring ${ethToTransfer} ETH to ${address}`);
+    await signer
+      .sendTransaction({
+        to: address,
+        value: ethToTransfer,
+      })
+      .then(tx => tx.wait());
+
+    const targetToMint = ethers.utils.parseEther("100");
+
+    for (let targetName of global.TARGETS) {
+      const tokenContract = new ethers.Contract(
+        contracts[targetName].address,
+        ["function mint(address,uint256) external"],
+        signer,
+      );
+
+      console.log(`Minting ${targetToMint} ${targetName} to ${address}`);
+      await tokenContract.mint(address, targetToMint).then(tx => tx.wait());
+    }
   });
-
-  await tx.wait();
-
-  console.log("balance", await signer.getBalance(user));
-});
