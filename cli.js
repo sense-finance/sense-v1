@@ -9,7 +9,7 @@ task("accounts", "Prints the list of accounts", async (_, { ethers }) => {
   }
 });
 
-task("localhost-faucet", "Prints the list of accounts")
+task("localhost-faucet", "Sends the provided address ETH and Target")
   .addParam("port", "The port number to run against")
   .addParam("contractsPath", "Path to the deployed contract export data")
   .addParam("address", "The account's address")
