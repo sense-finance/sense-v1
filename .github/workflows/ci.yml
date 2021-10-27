@@ -31,6 +31,6 @@ jobs:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
 
     - name: Run deploy scripts on a local mainnet fork
-      run: yarn deploy:hardhat-fork
+      run: yarn deploy:hardhat-fork:prod
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
