@@ -127,8 +127,8 @@ contract User {
         gClaimManager.exit(feed, maturity, balance);
     }
 
-    function doSwapTargetForZeros(address feed, uint256 maturity, uint256 balance, uint256 backfill, uint256 minAccepted) public {
-        periphery.swapTargetForZeros(feed, maturity, balance, backfill, minAccepted);
+    function doSwapTargetForZeros(address feed, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+        periphery.swapTargetForZeros(feed, maturity, balance, minAccepted);
     }
     function doSwapTargetForClaims(address feed, uint256 maturity, uint256 balance, uint256 minAccepted) public {
         periphery.swapTargetForClaims(feed, maturity, balance, minAccepted);

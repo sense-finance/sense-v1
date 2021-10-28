@@ -63,16 +63,23 @@ abstract contract BaseTWrapper is Initializable {
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
-    /// @param receiver The contract receiving target, needs to implement the `onFlashLoan(address user, address feed, uint256 maturity, uint256 amount)` interface.
+    /// @param receiver The contract receiving target, needs to implement the
+    /// `onFlashLoan(address user, address feed, uint256 maturity, uint256 amount)` interface.
     /// @param feed feed address
     /// @param maturity maturity
     /// @param amount The amount of target lent.
-    function flashLoan(address receiver, address feed, uint256 maturity, uint256 amount) onlyPeriphery external returns(bool, uint256) {
+    function flashLoan(
+        bytes calldata data,
+        address receiver,
+        address feed,
+        uint256 maturity,
+        uint256 amount
+    ) external onlyPeriphery returns (bool, uint256) {
         require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
-        (bytes32 keccak, uint256 issued) = Periphery(receiver).onFlashLoan(msg.sender, feed, maturity, amount);
+        (bytes32 keccak, uint256 value) = Periphery(receiver).onFlashLoan(data, msg.sender, feed, maturity, amount);
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
         require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
-        return (true, issued);
+        return (true, value);
     }
 
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
@@ -99,7 +106,12 @@ abstract contract BaseTWrapper is Initializable {
     /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts.
     /// @param amount Underlying amount
     /// @return amount of target returned
-    function wrapUnderlying(uint256 amount) external virtual returns (uint256   );
+    function wrapUnderlying(uint256 amount) external virtual returns (uint256);
+
+    /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts.
+    /// @param amount Target amount
+    /// @return amount of underlying returned
+    function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
     /* ========== MODIFIERS ========== */
     modifier onlyDivider() {

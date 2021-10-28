@@ -60,7 +60,7 @@ contract PeripheryTestHelper is DSTest {
         // feed & factory
         CFeed implementation = new CFeed(); // compound feed implementation
         MockTWrapper twImpl = new MockTWrapper(); // TODO: remove when merging CTWrapper
-//        CTWrapper twImpl = new CTWrapper(); // feed implementation
+        //        CTWrapper twImpl = new CTWrapper(); // feed implementation
         // deploy compound feed factory
         factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI);
         //        factory.addTarget(cDAI, true);

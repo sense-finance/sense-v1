@@ -9,6 +9,7 @@ import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockTWrapper } from "./mocks/MockTWrapper.sol";
 import { MockToken } from "./mocks/MockToken.sol";
+import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockFeed } from "./mocks/MockFeed.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
@@ -31,7 +32,8 @@ contract TestHelper is DSTest {
 
     MockFeed feed;
     MockToken stable;
-    MockToken target;
+    MockToken underlying;
+    MockTarget target;
     MockToken reward;
     MockFactory factory;
     MockTWrapper internal twrapper;
@@ -81,7 +83,8 @@ contract TestHelper is DSTest {
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
         stable = new MockToken("Stable Token", "ST", tDecimals);
-        target = new MockToken("Compound Dai", "cDAI", tDecimals);
+        underlying = new MockToken("Dai Token", "DAI", tDecimals);
+        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals);
         reward = new MockToken("Reward Token", "RT", tDecimals);
         uint256 base = convertBase(target.decimals());
         GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * base : GROWTH_PER_SECOND / base;
@@ -135,6 +138,7 @@ contract TestHelper is DSTest {
         (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = MockTWrapper(wt);
+        twrapper.setFeed(f);
 
         // users
         alice = createUser(2**96, 2**96);
@@ -188,15 +192,13 @@ contract TestHelper is DSTest {
     function addLiquidityToUniSwapRouter(uint256 maturity, address zero, address claim) public {
         uint256 cBal = MockToken(claim).balanceOf(address(alice));
         uint256 zBal = MockToken(zero).balanceOf(address(alice));
-        alice.doIssue(address(feed), maturity, 100e18);
+        alice.doIssue(address(feed), maturity, 1000e18);
         uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
         uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
-        alice.doApprove(address(claim), address(periphery.gClaimManager()));
-        alice.doApprove(address(zero), address(periphery.gClaimManager()));
-        alice.doJoin(address(feed), maturity, cBalIssued);
-        address gclaim = address(periphery.gClaimManager().gclaims(claim));
-        alice.doTransfer(gclaim, address(uniSwapRouter), cBalIssued);
+        alice.doTransfer(claim, address(uniSwapRouter), cBalIssued); // we don't really need this but we transfer them
         alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
+        // we mint some random number of underlying
+        MockToken(feed.underlying()).mint(address(uniSwapRouter), 100000e18);
     }
 
     function convertBase(uint256 decimals) public returns (uint256) {
