@@ -84,6 +84,7 @@ contract Periphery is Trust {
         require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
+        ERC20(target).approve(wtClone, type(uint256).max); // for flashloans
         poolManager.addTarget(target);
         emit TargetOnboarded(target);
     }
@@ -183,7 +184,7 @@ contract Periphery is Trust {
             uint256 rate = price(Feed(feed).underlying(), zero); // price of underlying/zero from Yieldspace pool
             ERC20 target = ERC20(Feed(feed).target());
             uint256 tBase = 10**target.decimals();
-            uint256 zBal = cBal.fdiv(2**target.decimals(), tBase);
+            uint256 zBal = cBal.fdiv(2*tBase, tBase);
             uint256 uBal = zBal.fmul(rate, tBase);
             targetToBorrow = uBal.fmul(lscale, tBase); // amount of claims div 2 multiplied by rate gives me amount of underlying then multiplying by lscale gives me target
         }
@@ -246,10 +247,7 @@ contract Periphery is Trust {
     /// @param amount target amount to borrow
     /// @return claims issued with flashloan
     function flashBorrow(bytes memory data, address feed, uint256 maturity, uint256 amount) internal returns (uint256) {
-        ERC20 target = ERC20(Feed(feed).target());
         TWrapper twrapper = TWrapper(Feed(feed).twrapper());
-        uint256 _allowance = target.allowance(address(this), address(twrapper));
-        target.approve(address(twrapper), _allowance + amount);
         (bool result, uint256 value) = twrapper.flashLoan(data, address(this), feed, maturity, amount);
         require(result == true);
         return value;

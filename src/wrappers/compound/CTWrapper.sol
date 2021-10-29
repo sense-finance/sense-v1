@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 // External references
 import { FixedMath } from "../../external/FixedMath.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
 import { BaseTWrapper } from "../BaseTWrapper.sol";
@@ -39,6 +39,7 @@ interface CTokenInterfaces {
 // @title feed contract for cTokens
 contract CTWrapper is BaseTWrapper {
     using FixedMath for uint256;
+    using SafeERC20 for ERC20;
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
@@ -50,13 +51,18 @@ contract CTWrapper is BaseTWrapper {
         uint256 tBalBefore = ERC20(target).balanceOf(address(this));
         require(CTokenInterfaces(target).mint(uBal) == 0, "Mint failed");
         uint256 tBalAfter = ERC20(target).balanceOf(address(this));
-        return tBalAfter - tBalBefore;
+        uint256 tBal = tBalAfter - tBalBefore;
+        ERC20(target).safeTransfer(msg.sender, tBal);
+        return tBal;
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
-        uint256 uBalBefore = ERC20(CTokenInterfaces(target).underlying()).balanceOf(address(this));
+        ERC20 underlying = ERC20(CTokenInterfaces(target).underlying());
+        uint256 uBalBefore = underlying.balanceOf(address(this));
         require(CTokenInterfaces(target).redeem(tBal) == 0, "Redeem failed");
-        uint256 uBalAfter = ERC20(CTokenInterfaces(target).underlying()).balanceOf(address(this));
-        return uBalAfter - uBalBefore;
+        uint256 uBalAfter = underlying.balanceOf(address(this));
+        uint256 uBal = uBalAfter - uBalBefore;
+        underlying.safeTransfer(msg.sender, uBal);
+        return uBal;
     }
 }

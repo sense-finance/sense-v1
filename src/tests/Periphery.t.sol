@@ -94,11 +94,11 @@ contract PeripheryTest is TestHelper {
         // calculate issuance fee in corresponding base
         uint256 fee = (divider.ISSUANCE_FEE() / convertBase(target.decimals())).fmul(tBal, tBase);
 
-        // calculate claims to be issued
-        uint256 totalClaims = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        // calculate claims & zeros to be issued
+        uint256 issueBal = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
         // calculate zeros swapped to underlying
-        uint256 uBal = zBalBefore.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
+        uint256 uBal = issueBal.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
 
         uint256 targetToBorrow;
         {
@@ -115,11 +115,11 @@ contract PeripheryTest is TestHelper {
         fee = (divider.ISSUANCE_FEE() / convertBase(target.decimals())).fmul(targetToBorrow, tBase);
 
         // calculate claims to be issued
-        totalClaims += (targetToBorrow - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        cBalBefore += issueBal + (targetToBorrow - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
         bob.doSwapTargetForClaims(address(feed), maturity, tBal, 0);
 
-        assertEq(cBalBefore + totalClaims, ERC20(claim).balanceOf(address(bob)));
+        assertEq(cBalBefore, ERC20(claim).balanceOf(address(bob)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
     }
 
