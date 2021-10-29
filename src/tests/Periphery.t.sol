@@ -16,16 +16,7 @@ contract PeripheryTest is TestHelper {
         MockPoolManager poolManager = new MockPoolManager();
         address uniFactory = address(2);
         address uniSwapRouter = address(3);
-        Periphery somePeriphery = new Periphery(
-            address(divider),
-            address(poolManager),
-            uniFactory,
-            uniSwapRouter,
-            "Sense Fuse Pool",
-            false,
-            0,
-            0
-        );
+        Periphery somePeriphery = new Periphery(address(divider), address(poolManager), uniFactory, uniSwapRouter);
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
         assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
@@ -53,7 +44,7 @@ contract PeripheryTest is TestHelper {
         assertTrue(uniFactory.getPool(gclaim, zero, periphery.UNI_POOL_FEE()) != address(0));
 
         // check zeros and claims onboarded on PoolManager (Fuse)
-        //        assertTrue(poolManager.sInits(address(feed), maturity)); // TODO: do when PoolManage ready
+        assertTrue(poolManager.sInits(address(feed), maturity));
     }
 
     function testOnboardTarget() public {
@@ -64,7 +55,7 @@ contract PeripheryTest is TestHelper {
         // onboard target
         periphery.onboardTarget(address(factory), address(newTarget));
         assertTrue(factory.feeds(address(newTarget)) != address(0));
-        // assertTrue(poolManager.tInits(address(target))); // TODO: do when PoolManage ready
+        assertTrue(poolManager.tInits(address(target)));
     }
 
     function testSwapTargetForZeros() public {

@@ -47,16 +47,7 @@ contract PeripheryTestHelper is DSTest {
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
-        periphery = new Periphery(
-            address(divider),
-            address(poolManager),
-            address(uniFactory),
-            address(uniSwapRouter),
-            "Sense Fuse Pool",
-            false,
-            0,
-            0
-        );
+        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         poolManager.setIsTrusted(address(periphery), true);
 
         // divider

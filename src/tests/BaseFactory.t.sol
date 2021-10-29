@@ -50,13 +50,13 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        (address feed, ) = someFactory.deployFeed(address(someTarget));
-        assertTrue(feed != address(0));
-        uint256 scale = IFeed(feed).scale();
+        (address f, address wt) = periphery.onboardTarget(address(someFactory), address(someTarget));
+        assertTrue(f != address(0));
+        uint256 scale = IFeed(f).scale();
         assertEq(scale, 1e17);
         hevm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        (address zero, address claim) = alice.doSponsorSeries(feed, maturity);
+        (address zero, address claim) = alice.doSponsorSeries(f, maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
     }

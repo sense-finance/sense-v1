@@ -37,16 +37,12 @@ contract Periphery is Trust {
     GClaimManager public immutable gClaimManager;
     mapping(address => bool) public factories;  // feed factories -> is supported
 
-    constructor(
-        address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter, 
-        string memory name, bool whitelist, uint256 closeFactor, uint256 liqIncentive
-    ) Trust(msg.sender) {
+    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
         gClaimManager = new GClaimManager(_divider);
         uniFactory = IUniswapV3Factory(_uniFactory);
         uniSwapRouter = ISwapRouter(_uniSwapRouter);
-        PoolManager(_poolManager).deployPool(name, whitelist, closeFactor, liqIncentive);
 
         // approve divider to withdraw stable assets
         ERC20(Divider(_divider).stable()).approve(address(_divider), type(uint256).max);
