@@ -4,6 +4,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
   const stable = await ethers.getContract("STABLE");
   const periphery = await ethers.getContract("Periphery");
+  const factory = await ethers.getContract("MockFactory");
   const { deployer } = await getNamedAccounts();
 
   console.log("Enable the Periphery to move the Deployer's STABLE for Series sponsorship");
@@ -16,7 +17,9 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
     await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
     for (let seriesMaturity of global.SERIES_MATURITIES) {
-      const feed = await ethers.getContract(`${targetName}-AdminFeed`);
+      const feedAddress = await factory.feeds(target.address);
+      const mockFeedImpl = await ethers.getContract('MockFeed');
+      const feed = new ethers.Contract(feedAddress, mockFeedImpl.interface, ethers.provider);
 
       console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       await periphery.sponsorSeries(feed.address, seriesMaturity, 0).then(tx => tx.wait());

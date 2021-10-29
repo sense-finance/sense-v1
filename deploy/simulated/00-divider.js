@@ -41,12 +41,44 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Add the divider to the asset deployer");
   await (await assetDeployer.init(divider.address)).wait();
 
-  console.log("Deploy a mock pool manager");
-  const { address: poolManagerAddress } = await deploy("MockPoolManager", {
+  console.log("Deploy mocked fuse & comp dependencies");
+  const { address: mockComptrollerAddress } = await deploy("MockComptroller", {
     from: deployer,
     args: [],
     log: true,
   });
+  const { address: mockFuseDirectoryAddress } = await deploy("MockFuseDirectory", {
+    from: deployer,
+    args: [mockComptrollerAddress],
+    log: true,
+  });
+
+  console.log("Deploy a pool manager with mocked dependencies");
+  const { address: poolManagerAddress } = await deploy("PoolManager", {
+    from: deployer,
+    args: [
+      mockFuseDirectoryAddress,
+      mockComptrollerAddress,
+      "0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1",
+      divider.address,
+      "0x1887118E49e0F4A78Bd71B792a49dE03504A764D",
+    ],
+    log: true,
+  });
+  const poolManager = await ethers.getContract("PoolManager");
+
+  console.log("Deploy Sense Fuse pool via Pool Manager");
+  await (await poolManager.deployPool("Sense Fuse Pool", false, ethers.utils.parseEther("0.051"), ethers.utils.parseEther("1"))).wait();
+
+  console.log("Set target params via Pool Manager");
+  const params = {
+    irModel: "0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7",
+    reserveFactor: ethers.utils.parseEther("0.1"),
+    collateralFactor: ethers.utils.parseEther("0.5"),
+    closeFactor: ethers.utils.parseEther("0.051"),
+    liquidationIncentive: ethers.utils.parseEther("1")
+  };
+  await(await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
 
   console.log("Deploy mocked uni dependencies");
   const { address: mockUniFactoryAddress } = await deploy("MockUniFactory", {
@@ -68,16 +100,15 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
       poolManagerAddress,
       mockUniFactoryAddress,
       mockUniRouterAddress,
-      "Sense Fuse Pool",
-      false,
-      0,
-      0,
     ],
     log: true,
   });
 
   console.log("Set the periphery on the Divider");
   await (await divider.setPeriphery(peripheryAddress)).wait();
+
+  console.log("Set the periphery on the PoolManager");
+  await (await poolManager.setPeriphery(peripheryAddress)).wait();
 };
 
 module.exports.tags = ["simulated:divider", "scenario:simulated"];

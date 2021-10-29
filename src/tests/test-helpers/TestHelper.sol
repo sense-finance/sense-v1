@@ -110,7 +110,7 @@ contract TestHelper is DSTest {
 
         // pool manager
         poolManager = new PoolManager(address(fuseDirectory), address(comptroller), address(1), address(divider), address(1));
-        poolManager.deployPool("Sense Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Fuse Pool", false, 0.051 ether, 1 ether);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
