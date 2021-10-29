@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { PoolManager } from "../../../fuse/PoolManager.sol";
-
-
 contract MockPoolManager {
     mapping(address => bool) public tInits; // Target Inits: target -> target added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
