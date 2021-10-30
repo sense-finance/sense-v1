@@ -32,21 +32,15 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Deploy a mocked Factory with mocked dependencies");
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [
-      mockFeedImplAddress,
-      mockTwrapperImplAddress,
-      divider.address,
-      0,
-      airdrop.address
-    ],
+    args: [mockFeedImplAddress, mockTwrapperImplAddress, divider.address, 0, airdrop.address],
     log: true,
   });
 
   console.log("Add mocked Factory as trusted in Divider");
-  await(await divider.setIsTrusted(mockFactoryAddress, true)).wait();
+  await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
 
   console.log("Add mocked Factory support to Periphery");
-  await(await periphery.setFactory(mockFactoryAddress, true)).wait();
+  await (await periphery.setFactory(mockFactoryAddress, true)).wait();
 
   const factory = await ethers.getContract("MockFactory");
 
@@ -65,10 +59,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     await target.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
     console.log(`Add ${targetName} support for mocked Factory`);
-    await(await factory.addTarget(target.address, true)).wait();
+    await (await factory.addTarget(target.address, true)).wait();
 
+    const { wtClone } = await periphery.callStatic.onboardTarget(factory.address, target.address);
     console.log(`Onboard target ${target.address} via Periphery`);
-    await(await periphery.onboardTarget(factory.address, target.address)).wait();
+    await (await periphery.onboardTarget(factory.address, target.address)).wait();
+
+    console.log("Grant minting authority on the Reward token to the mock TWrapper");
+    await (await airdrop.setIsTrusted(wtClone, true)).wait();
 
     console.log(`Set ${targetName} issuance cap to max uint so we don't have to worry about it`);
     await divider.setGuard(target.address, ethers.constants.MaxUint256).then(tx => tx.wait());
