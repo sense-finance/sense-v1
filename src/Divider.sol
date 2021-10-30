@@ -87,7 +87,7 @@ contract Divider is Trust, ReentrancyGuard {
 
         // Transfer stake asset from caller to twrapper
         ERC20 stake = ERC20(Feed(feed).stake());
-        ERC20(stake).safeTransferFrom(msg.sender, Feed(feed).twrapper(), Feed(feed).stakeSize() / _convertBase(stake.decimals()));
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), Feed(feed).stakeSize() / _convertBase(stake.decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);

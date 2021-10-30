@@ -18,6 +18,7 @@ contract EmergencyStop is Trust {
     function stop(address[] memory feeds) external virtual requiresTrust {
         Divider(divider).setPermissionless(false);
         for (uint256 i = 0; i < feeds.length; i++) {
+            Divider(divider).setPermissionless(false);
             Divider(divider).setFeed(feeds[i], false);
             emit Stopped(feeds[i]);
         }
