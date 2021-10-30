@@ -5,6 +5,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
 
+  console.log("Deploy a simulated stake token named STAKE");
+  await deploy("STAKE", {
+    contract: "Token",
+    from: deployer,
+    args: ["STAKE", "STAKE", 18, deployer],
+    log: true,
+  });
+
+  const stake = await ethers.getContract("STAKE");
+
+  console.log("Mint the deployer a balance of 1,000,000 STAKE");
+  await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+
   console.log("Deploy a mocked Feed implementation");
   const { address: mockFeedImplAddress } = await deploy("MockFeed", {
     from: deployer,
@@ -30,9 +43,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const airdrop = await ethers.getContract("Airdrop");
 
   console.log("Deploy a mocked Factory with mocked dependencies");
+
+  const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
+  const INIT_STAKE = ethers.utils.parseEther("1");
+  const MIN_MATURITY = "1209600"; // 2 weeks
+  const MAX_MATURITY = "8467200"; // 14 weeks;
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [mockFeedImplAddress, mockTwrapperImplAddress, divider.address, 0, airdrop.address],
+    args: [mockFeedImplAddress, mockTwrapperImplAddress, divider.address, 0, airdrop.address, stake.address, ISSUANCE_FEE, INIT_STAKE, MIN_MATURITY, MAX_MATURITY ],
     log: true,
   });
 
@@ -61,9 +79,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();
 
-    const { wtClone } = await periphery.callStatic.onboardTarget(factory.address, target.address);
+    const { wtClone } = await periphery.callStatic.onboardFeed(factory.address, target.address);
     console.log(`Onboard target ${target.address} via Periphery`);
-    await (await periphery.onboardTarget(factory.address, target.address)).wait();
+    await (await periphery.onboardFeed(factory.address, target.address)).wait();
 
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
     await (await airdrop.setIsTrusted(wtClone, true)).wait();

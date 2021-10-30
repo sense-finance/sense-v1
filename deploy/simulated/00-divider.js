@@ -2,19 +2,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  console.log("Deploy a simulated stable token named STABLE");
-  await deploy("STABLE", {
-    contract: "Token",
-    from: deployer,
-    args: ["STABLE", "STABLE", 18, deployer],
-    log: true,
-  });
-
-  const stable = await ethers.getContract("STABLE");
-
-  console.log("Mint the deployer a balance of 1,000,000 STABLE");
-  await stable.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
-
   console.log("Deploy an asset deployer for the Divider will use");
   const { address: assetDeployerAddress } = await deploy("AssetDeployer", {
     from: deployer,
@@ -28,7 +15,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy the divider");
   await deploy("Divider", {
     from: deployer,
-    args: [stable.address, cup, assetDeployerAddress],
+    args: [cup, assetDeployerAddress],
     log: true,
   });
 

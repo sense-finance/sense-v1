@@ -20,7 +20,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const divider = await ethers.getContract("Divider");
   const DELTA = 150;
 
-  if (!COMP_TOKEN.has(chainId)) throw Error("No stable token found");
+  if (!COMP_TOKEN.has(chainId)) throw Error("No stake token found");
   const compAddress = COMP_TOKEN.get(chainId);
 
   const { address: baseWrapperAddress } = await deploy("BaseTWrapper", {
