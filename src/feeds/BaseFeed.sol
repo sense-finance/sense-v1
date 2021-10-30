@@ -38,8 +38,8 @@ abstract contract BaseFeed is Initializable {
         delta = _delta;
         target = _target;
         twrapper = _twrapper;
-        name = string(abi.encodePacked(ERC20(target).name(), " Yield"));
-        symbol = string(abi.encodePacked(ERC20(target).symbol(), "-yield"));
+        name = string(abi.encodePacked(ERC20(target).name(), " Feed"));
+        symbol = string(abi.encodePacked(ERC20(target).symbol(), "-feed"));
         emit Initialized();
     }
 

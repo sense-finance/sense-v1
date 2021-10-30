@@ -36,18 +36,22 @@ contract Divider is Trust {
     address public immutable cup;
     address public immutable deployer;
 
+    uint256 public feedCounter;
+
     /// @notice feed -> is supported
-    mapping(address => bool) public feeds; 
+    mapping(address => bool) public feeds;
+    /// @notice feed ID -> feed address
+    mapping(uint256 => address) public feedIDs;
     /// @notice target -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
     /// @notice feed -> maturity -> Series
-    mapping(address => mapping(uint256 => Series)) public series; 
+    mapping(address => mapping(uint256 => Series)) public series;
     /// @notice feed -> maturity -> user -> lscale
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
 
     struct Series {
-        address zero;     
-        address claim;  
+        address zero;
+        address claim;
         address sponsor;
         uint256 issuance;
         uint256 reward; // tracks fees due to the series' settler
@@ -80,7 +84,7 @@ contract Divider is Trust {
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);
-        
+
         // Initialize the new Series struct
         Series memory newSeries = Series({
             zero : zero,
@@ -183,7 +187,7 @@ contract Divider is Trust {
     /// @dev Explicitly burns claims before maturity, and implicitly does it at/after maturity through `_collect()`
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Balance of Zeros and Claims to burn 
+    /// @param uBal Balance of Zeros and Claims to burn
     function combine(address feed, uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
@@ -401,6 +405,8 @@ contract Divider is Trust {
     function setFeed(address feed, bool isOn) external requiresTrust {
         require(feeds[feed] != isOn, Errors.ExistingValue);
         feeds[feed] = isOn;
+        feedIDs[feedCounter] = feed;
+        feedCounter++;
         emit FeedChanged(feed, isOn);
     }
 
@@ -517,9 +523,9 @@ contract Divider is Trust {
 
     /// @notice Admin
     event Backfilled(
-        address indexed feed, 
-        uint256 indexed maturity, 
-        uint256 mscale, 
+        address indexed feed,
+        uint256 indexed maturity,
+        uint256 mscale,
         address[] _usrs,
         uint256[] _lscales
     );
@@ -530,10 +536,10 @@ contract Divider is Trust {
     /// @notice Series lifecycle
     /// *---- beginning
     event SeriesInitialized(
-        address feed, 
-        uint256 indexed maturity, 
-        address zero, 
-        address claim, 
+        address feed,
+        uint256 indexed maturity,
+        address zero,
+        address claim,
         address indexed sponsor,
         address indexed target
     );
@@ -576,18 +582,18 @@ contract AssetDeployer is Trust {
         string memory datestring = string(abi.encodePacked(m, "-", y));
 
         zero = address(new Zero(
-            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense")), 
-            string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring)), 
-            decimals, 
+            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense")),
+            string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring)),
+            decimals,
             divider
         ));
 
         claim = address(new Claim(
-            maturity, 
-            divider, 
-            feed, 
-            string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense")), 
-            string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring)), 
+            maturity,
+            divider,
+            feed,
+            string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense")),
+            string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring)),
             decimals
         ));
     }
