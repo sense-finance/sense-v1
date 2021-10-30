@@ -12,7 +12,7 @@ import { BaseFactory } from "../../feeds/BaseFactory.sol";
 contract User {
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
 
-    MockToken stable;
+    MockToken stake;
     MockToken target;
     Divider divider;
     Periphery periphery;
@@ -29,8 +29,8 @@ contract User {
         factory = _factory;
     }
 
-    function setStable(MockToken _token) public {
-        stable = _token;
+    function setStake(MockToken _token) public {
+        stake = _token;
     }
 
     function setTarget(MockToken _token) public {
@@ -89,6 +89,10 @@ contract User {
 
     function doSetFeed(address feed, bool isOn) public {
         divider.setFeed(feed, isOn);
+    }
+
+    function doAddFeed(address feed) public {
+        divider.addFeed(feed);
     }
 
     function doSponsorSeries(address feed, uint256 maturity) public returns (address zero, address claim) {

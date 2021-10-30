@@ -118,7 +118,7 @@ contract GClaimsManager is TestHelper {
         bob.setPeriphery(newPeriphery);
         periphery = newPeriphery;
         poolManager.setPeriphery(address(periphery));
-        alice.doApprove(address(stable), address(periphery));
+        alice.doApprove(address(stake), address(periphery));
 
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -218,7 +218,7 @@ contract GClaimsManager is TestHelper {
         bob.setPeriphery(newPeriphery);
         periphery = newPeriphery;
         poolManager.setPeriphery(address(periphery));
-        alice.doApprove(address(stable), address(periphery));
+        alice.doApprove(address(stake), address(periphery));
 
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);

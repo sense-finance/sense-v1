@@ -43,9 +43,6 @@ contract Periphery is Trust {
         gClaimManager = new GClaimManager(_divider);
         uniFactory = IUniswapV3Factory(_uniFactory);
         uniSwapRouter = ISwapRouter(_uniSwapRouter);
-
-        // approve divider to withdraw stable assets
-        ERC20(Divider(_divider).stable()).approve(address(_divider), type(uint256).max);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -60,13 +57,18 @@ contract Periphery is Trust {
     function sponsorSeries(
         address feed, uint256 maturity, uint160 sqrtPriceX96
     ) external returns (address zero, address claim) {
-        // transfer INIT_STAKE from sponsor into this contract
+        ERC20 stake = ERC20(Feed(feed).stake());
+        // transfer initStake from sponsor into this contract
         uint256 convertBase = 1;
-        uint256 stableDecimals = ERC20(divider.stable()).decimals();
-        if (stableDecimals != 18) {
-            convertBase = stableDecimals > 18 ? 10 ** (stableDecimals - 18) : 10 ** (18 - stableDecimals);
+        uint256 stakeDecimals = stake.decimals();
+        if (stakeDecimals != 18) {
+            convertBase = stakeDecimals > 18 ? 10 ** (stakeDecimals - 18) : 10 ** (18 - stakeDecimals);
         }
-        ERC20(divider.stable()).safeTransferFrom(msg.sender, address(this), divider.INIT_STAKE() / convertBase);
+        stake.safeTransferFrom(msg.sender, address(this), Feed(feed).initStake() / convertBase);
+
+        // approve divider to withdraw stake assets
+        stake.approve(address(divider), type(uint256).max);
+
         (zero, claim) = divider.initSeries(feed, maturity, msg.sender);
         gClaimManager.join(feed, maturity, 0); // we join just to force the gclaim deployment
         address gclaim = address(gClaimManager.gclaims(claim));
@@ -80,12 +82,12 @@ contract Periphery is Trust {
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
-    function onboardTarget(address factory, address target) external returns (address feedClone, address wtClone) {
+    function onboardFeed(address factory, address target) external returns (address feedClone, address wtClone) {
         require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
         poolManager.addTarget(target);
-        emit TargetOnboarded(target);
+        emit FeedOnboarded(feedClone);
     }
 
     /// @notice Mint Zeros and Claims of a specific Series
@@ -96,7 +98,7 @@ contract Periphery is Trust {
     /// @param tBal Balance of Target to deposit
     /// @param backfill Amount in target to backfill gClaims
     function swapTargetForZeros(
-        address feed, uint256 maturity, uint256 tBal, 
+        address feed, uint256 maturity, uint256 tBal,
         uint256 backfill, uint256 minAccepted
     ) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
@@ -206,7 +208,7 @@ contract Periphery is Trust {
     }
 
     function _swap(
-        address tokenIn, address tokenOut, uint256 amountIn, 
+        address tokenIn, address tokenOut, uint256 amountIn,
         address recipient, uint256 minAccepted
     ) internal returns (uint256 amountOut) {
         // approve router to spend tokenIn
@@ -241,5 +243,5 @@ contract Periphery is Trust {
     /* ========== EVENTS ========== */
     event FactoryChanged(address indexed feed, bool isOn);
     event SeriesSponsored(address indexed feed, uint256 indexed maturity, address indexed sponsor);
-    event TargetOnboarded(address target);
+    event FeedOnboarded(address feed);
 }

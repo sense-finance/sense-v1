@@ -19,7 +19,7 @@ import { User } from "./test-helpers/User.sol";
 contract PoolManagerTest is DSTest {
     using FixedMath for uint256;
 
-    Token internal stable;
+    Token internal stake;
     Token internal target;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
@@ -33,13 +33,13 @@ contract PoolManagerTest is DSTest {
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
-        stable = new Token("Stable", "SBL", 18, address(this));
+        stake = new Token("Stake", "SBL", 18, address(this));
         assetDeployer = new AssetDeployer();
-        divider = new Divider(address(stable), address(this), address(assetDeployer));
+        divider = new Divider(address(this), address(assetDeployer));
         assetDeployer.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
-        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stable));
+        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stake));
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
 
@@ -50,9 +50,9 @@ contract PoolManagerTest is DSTest {
     }
 
     function initSeries() public returns (uint256 _maturity) {
-        // Setup mock stable token
-        stable.mint(address(this), 1000 ether);
-        stable.approve(address(divider), 1000 ether);
+        // Setup mock stake token
+        stake.mint(address(this), 1000 ether);
+        stake.approve(address(divider), 1000 ether);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
         _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);

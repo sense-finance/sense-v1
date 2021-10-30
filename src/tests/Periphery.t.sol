@@ -47,13 +47,13 @@ contract PeripheryTest is TestHelper {
         assertTrue(poolManager.sInits(address(feed), maturity));
     }
 
-    function testOnboardTarget() public {
+    function testOnboardFeed() public {
         // add a new target to the factory supported targets
         MockToken newTarget = new MockToken("New Target", "NT", 18);
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.onboardTarget(address(factory), address(newTarget));
+        periphery.onboardFeed(address(factory), address(newTarget));
         assertTrue(factory.feeds(address(newTarget)) != address(0));
         assertTrue(poolManager.tInits(address(target)));
     }
@@ -71,7 +71,7 @@ contract PeripheryTest is TestHelper {
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
-        uint256 fee = (divider.ISSUANCE_FEE() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
+        uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate zeros to be issued
         (, uint256 lscale) = feed.lscale();
@@ -98,7 +98,7 @@ contract PeripheryTest is TestHelper {
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
-        uint256 fee = (divider.ISSUANCE_FEE() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
+        uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate claims to be issued
         (, uint256 lscale) = feed.lscale();

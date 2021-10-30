@@ -22,6 +22,11 @@ abstract contract BaseFactory is Trust {
     address public divider;
     uint256 public delta;
     address public reward; // reward token
+    address public stake;
+    uint256 public issuanceFee;
+    uint256 public initStake;
+    uint256 public minMaturity;
+    uint256 public maxMaturity;
 
     constructor(
         address _protocol,
@@ -29,14 +34,24 @@ abstract contract BaseFactory is Trust {
         address _twImpl,
         address _divider,
         uint256 _delta,
-        address _reward
+        address _reward,
+        address _stake,
+        uint256 _issuanceFee,
+        uint256 _initStake,
+        uint256 _minMaturity,
+        uint256 _maxMaturity
     ) Trust(msg.sender) {
         protocol = _protocol;
         feedImpl = _feedImpl;
         twImpl = _twImpl;
         divider = _divider;
         delta = _delta;
+        stake = _stake;
         reward = _reward;
+        issuanceFee = _issuanceFee;
+        initStake = _initStake;
+        minMaturity = _minMaturity;
+        maxMaturity = _maxMaturity;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -53,7 +68,17 @@ abstract contract BaseFactory is Trust {
 
         // feed deployment
         feedClone = feedImpl.clone();
-        BaseFeed(feedClone).initialize(_target, divider, delta, wtClone);
+        BaseFeed(feedClone).initialize(
+            stake,
+            _target,
+            divider,
+            delta,
+            wtClone,
+            issuanceFee,
+            initStake,
+            minMaturity,
+            maxMaturity
+        );
         Divider(divider).setFeed(feedClone, true);
         feeds[_target] = feedClone;
         emit FeedDeployed(feedClone);
