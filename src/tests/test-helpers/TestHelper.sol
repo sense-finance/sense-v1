@@ -4,17 +4,21 @@ pragma solidity ^0.8.6;
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
 import { Divider, AssetDeployer } from "../../Divider.sol";
+import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { BaseTWrapper as TWrapper } from "../../wrappers/BaseTWrapper.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockFeed } from "./mocks/MockFeed.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
-import { MockPoolManager } from "./mocks/MockPoolManager.sol";
 
 // Uniswap mocks
 import { MockUniFactory } from "./mocks/uniswap/MockUniFactory.sol";
 import { MockUniSwapRouter } from "./mocks/uniswap/MockUniSwapRouter.sol";
+
+// Fuse & compound mocks
+import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
+import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
 
 import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
@@ -30,8 +34,8 @@ contract TestHelper is DSTest {
     MockToken target;
     MockToken reward;
     MockFactory factory;
-    MockPoolManager poolManager;
 
+    PoolManager poolManager;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
     TWrapper internal twrapper;
@@ -45,6 +49,10 @@ contract TestHelper is DSTest {
     //uniswap
     MockUniFactory uniFactory;
     MockUniSwapRouter uniSwapRouter;
+
+    // fuse & compound
+    MockComptroller comptroller;
+    MockFuseDirectory fuseDirectory;
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
@@ -92,12 +100,30 @@ contract TestHelper is DSTest {
         MIN_MATURITY = divider.MIN_MATURITY();
         MAX_MATURITY = divider.MAX_MATURITY();
 
-        // periphery
+        // uniswap mocks
         uniFactory = new MockUniFactory();
         uniSwapRouter = new MockUniSwapRouter();
-        poolManager = new MockPoolManager();
-        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter), "Sense Fuse Pool", false, 0, 0);
+
+        // fuse & comp mocks
+        comptroller = new MockComptroller();
+        fuseDirectory = new MockFuseDirectory(address(comptroller));
+
+        // pool manager
+        poolManager = new PoolManager(address(fuseDirectory), address(comptroller), address(1), address(divider), address(1));
+        poolManager.deployPool("Sense Fuse Pool", false, 0.051 ether, 1 ether);
+        PoolManager.AssetParams memory params = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether,
+            closeFactor: 0.051 ether,
+            liquidationIncentive: 1 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", params);
+
+        // periphery
+        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         divider.setPeriphery(address(periphery));
+        poolManager.setPeriphery(address(periphery));
 
         // feed, target wrapper & factory
         MockFeed feedImpl = new MockFeed(); // feed implementation
@@ -138,6 +164,7 @@ contract TestHelper is DSTest {
         someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
+        periphery.setFactory(address(someFactory), true);
     }
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {

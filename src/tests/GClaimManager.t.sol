@@ -111,16 +111,13 @@ contract GClaimsManager is TestHelper {
             address(divider),
             address(poolManager),
             address(uniFactory),
-            address(uniSwapRouter),
-            "",
-            false,
-            0,
-            0
+            address(uniSwapRouter)
         );
         divider.setPeriphery(address(newPeriphery));
         alice.setPeriphery(newPeriphery);
         bob.setPeriphery(newPeriphery);
         periphery = newPeriphery;
+        poolManager.setPeriphery(address(periphery));
         alice.doApprove(address(stable), address(periphery));
 
         uint256 maturity = getValidMaturity(2021, 10);
@@ -214,16 +211,13 @@ contract GClaimsManager is TestHelper {
             address(divider),
             address(poolManager),
             address(uniFactory),
-            address(uniSwapRouter),
-            "",
-            false,
-            0,
-            0
+            address(uniSwapRouter)
         );
         divider.setPeriphery(address(newPeriphery));
         alice.setPeriphery(newPeriphery);
         bob.setPeriphery(newPeriphery);
         periphery = newPeriphery;
+        poolManager.setPeriphery(address(periphery));
         alice.doApprove(address(stable), address(periphery));
 
         uint256 maturity = getValidMaturity(2021, 10);
