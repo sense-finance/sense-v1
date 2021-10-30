@@ -68,7 +68,7 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        (address f, address wt) = periphery.onboardTarget(address(someFactory), address(someTarget));
+        (address f, address wt) = periphery.onboardFeed(address(someFactory), address(someTarget));
         assertTrue(f != address(0));
         uint256 scale = IFeed(f).scale();
         assertEq(scale, 1e17);

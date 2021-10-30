@@ -1,8 +1,8 @@
-const STABLE_TOKEN = new Map();
+const STAKE_TOKEN = new Map();
 // DAI Mainnet
-STABLE_TOKEN.set("1", "0x6b175474e89094c44da98b954eedeac495271d0f");
+STAKE_TOKEN.set("1", "0x6b175474e89094c44da98b954eedeac495271d0f");
 // DAI Local Mainnet fork
-STABLE_TOKEN.set("111", "0x6b175474e89094c44da98b954eedeac495271d0f");
+STAKE_TOKEN.set("111", "0x6b175474e89094c44da98b954eedeac495271d0f");
 // TODO: Arbitrum
 // UNISWAP_ROUTER.set("42161", "0x")
 
@@ -19,10 +19,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const { deployer, dev } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  if (!STABLE_TOKEN.has(chainId)) throw Error("No stable token found");
+  if (!STAKE_TOKEN.has(chainId)) throw Error("No stake token found");
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");
 
-  const stable = STABLE_TOKEN.get(chainId);
+  const stake = STAKE_TOKEN.get(chainId);
   const cup = DIVIDER_CUP.get(chainId);
 
   const { address: assetDeployerAddress } = await deploy("AssetDeployer", {
@@ -34,7 +34,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy the divider");
   await deploy("Divider", {
     from: deployer,
-    args: [stable, cup, assetDeployerAddress],
+    args: [stake, cup, assetDeployerAddress],
     log: true,
   });
 

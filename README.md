@@ -93,7 +93,7 @@ To create a Feed Factory, the contract needs to inherit from `BaseFactory.sol` a
 
 Periphery contains bundled actions for Series Actors and general users. 
 
-For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy feeds) and initialize new Series. The Target Sponsor calls `onboardTarget` which will deploy a Feed via a Feed Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/gClaim pool on UniswapV3.
+For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy feeds) and initialize new Series. The Target Sponsor calls `onboardFeed` which will deploy a Feed via a Feed Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/gClaim pool on UniswapV3.
 
 Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue()` / `combine()` and `join()` / `exit()` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interface and perform the following operations atomically:
 - swapTargetForZeros

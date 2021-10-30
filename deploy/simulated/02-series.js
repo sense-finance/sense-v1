@@ -2,13 +2,13 @@ const dayjs = require("dayjs");
 
 module.exports = async function ({ ethers, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
-  const stable = await ethers.getContract("STABLE");
+  const stake = await ethers.getContract("STAKE");
   const periphery = await ethers.getContract("Periphery");
   const factory = await ethers.getContract("MockFactory");
   const { deployer } = await getNamedAccounts();
 
-  console.log("Enable the Periphery to move the Deployer's STABLE for Series sponsorship");
-  await stable.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+  console.log("Enable the Periphery to move the Deployer's STAKE for Series sponsorship");
+  await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
   for (let targetName of global.TARGETS) {
     const target = await ethers.getContract(targetName);

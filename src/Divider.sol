@@ -65,7 +65,7 @@ contract Divider is Trust {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Enable or disable a feed
+    /// @notice Enable a feed
     /// @param feed Feed's address
     function addFeed(address feed) external whenPermissionless {
         _setFeed(feed, true);
