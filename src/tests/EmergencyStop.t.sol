@@ -24,6 +24,7 @@ contract Emergency is TestHelper {
         divider.setIsTrusted(address(e), true);
         e.stop(feeds);
 
+        assert(divider.permissionless() == false);
         for (uint256 i = 0; i < feeds.length; i++) {
             assert(divider.feeds(feeds[i]) == false);
         }

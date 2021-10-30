@@ -31,7 +31,7 @@ contract TestHelper is DSTest {
     using FixedMath for uint256;
 
     MockFeed feed;
-    MockToken stable;
+    MockToken stake;
     MockToken underlying;
     MockTarget target;
     MockToken reward;
@@ -59,12 +59,12 @@ contract TestHelper is DSTest {
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
-    uint256 public ISSUANCE_FEE;
-    uint256 public INIT_STAKE;
-    uint public SPONSOR_WINDOW;
-    uint public SETTLEMENT_WINDOW;
-    uint public MIN_MATURITY;
-    uint public MAX_MATURITY;
+    uint256 public ISSUANCE_FEE = 0.01e18;
+    uint256 public INIT_STAKE = 1e18;
+    uint256 public MIN_MATURITY = 2 weeks;
+    uint256 public MAX_MATURITY = 14 weeks;
+    uint256 public SPONSOR_WINDOW;
+    uint256 public SETTLEMENT_WINDOW;
 
     struct Series {
         address zero; // Zero address for this Series (deployed on Series initialization)
@@ -74,15 +74,15 @@ contract TestHelper is DSTest {
         uint256 reward; // Tracks the fees due to the settler on Settlement
         uint256 iscale; // Scale value at issuance
         uint256 mscale; // Scale value at maturity
-        uint256 stake; // Balance staked at initialisation TODO: do we want to keep this?
-        address stable; // Address of the stable stake token TODO: do we want to keep this?
+        uint256 stakeBal; // Balance staked at initialisation TODO: do we want to keep this?
+        address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
     }
 
     function setUp() public {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
-        stable = new MockToken("Stable Token", "ST", tDecimals);
+        stake = new MockToken("Stake Token", "ST", tDecimals);
         underlying = new MockToken("Dai Token", "DAI", tDecimals);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals);
         reward = new MockToken("Reward Token", "RT", tDecimals);
@@ -92,16 +92,12 @@ contract TestHelper is DSTest {
 
         // divider
         assetDeployer = new AssetDeployer();
-        divider = new Divider(address(stable), address(this), address(assetDeployer));
+        divider = new Divider(address(this), address(assetDeployer));
         assetDeployer.init(address(divider));
         divider.setGuard(address(target), 10*2**96);
 
-        ISSUANCE_FEE = divider.ISSUANCE_FEE();
-        INIT_STAKE = divider.INIT_STAKE();
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
-        MIN_MATURITY = divider.MIN_MATURITY();
-        MAX_MATURITY = divider.MAX_MATURITY();
 
         // uniswap mocks
         uniFactory = new MockUniFactory();
@@ -129,13 +125,8 @@ contract TestHelper is DSTest {
         poolManager.setPeriphery(address(periphery));
 
         // feed, target wrapper & factory
-        MockFeed feedImpl = new MockFeed(); // feed implementation
-        MockTWrapper twImpl = new MockTWrapper(); // feed implementation
-        factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
-        factory.addTarget(address(target), true); // make mock factory support target
-        divider.setIsTrusted(address(factory), true); // add factory as a ward
-        periphery.setFactory(address(factory), true);
-        (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
+        factory = createFactory(address(target), address(reward));
+        (address f, address wt) = periphery.onboardFeed(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = MockTWrapper(wt);
         twrapper.setFeed(f);
@@ -149,13 +140,13 @@ contract TestHelper is DSTest {
     function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
         user = new User();
         user.setFactory(factory);
-        user.setStable(stable);
+        user.setStake(stake);
         user.setTarget(target);
         user.setDivider(divider);
         user.setPeriphery(periphery);
-        user.doApprove(address(stable), address(periphery));
-        user.doApprove(address(stable), address(divider));
-        user.doMint(address(stable), sBal);
+        user.doApprove(address(stake), address(periphery));
+        user.doApprove(address(stake), address(divider));
+        user.doMint(address(stake), sBal);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
         user.doApprove(address(target), address(periphery.gClaimManager()));
@@ -165,7 +156,7 @@ contract TestHelper is DSTest {
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
         MockTWrapper twImpl = new MockTWrapper();
-        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward));
+        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, INIT_STAKE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);

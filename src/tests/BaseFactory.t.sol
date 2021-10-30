@@ -20,17 +20,31 @@ contract Factories is TestHelper {
             address(twImpl),
             address(divider),
             DELTA,
-            address(1)
+            address(reward),
+            address(stake),
+            ISSUANCE_FEE,
+            INIT_STAKE,
+            MIN_MATURITY,
+            MAX_MATURITY
         );
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).feedImpl(), address(feedImpl));
         assertEq(MockFactory(someFactory).twImpl(), address(twImpl));
         assertEq(MockFactory(someFactory).divider(), address(divider));
         assertEq(MockFactory(someFactory).delta(), DELTA);
-        assertEq(MockFactory(someFactory).reward(), address(1));
+        assertEq(MockFactory(someFactory).reward(), address(reward));
+        assertEq(MockFactory(someFactory).stake(), address(stake));
+        assertEq(MockFactory(someFactory).issuanceFee(), ISSUANCE_FEE);
+        assertEq(MockFactory(someFactory).initStake(), INIT_STAKE);
+        assertEq(MockFactory(someFactory).minMaturity(), MIN_MATURITY);
+        assertEq(MockFactory(someFactory).maxMaturity(), MAX_MATURITY);
     }
 
     function testDeployFeed() public {
+        uint256 issuanceFee = 0.01e18;
+        uint256 initStake = 1e18;
+        uint256 minMaturity = 2 weeks;
+        uint256 maxMaturity = 14 weeks;
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
@@ -42,7 +56,11 @@ contract Factories is TestHelper {
         assertEq(IFeed(feed).delta(), DELTA);
         assertEq(IFeed(feed).name(), "Some Target Feed");
         assertEq(IFeed(feed).symbol(), "ST-feed");
-        assertEq(IFeed(feed).symbol(), "ST-feed");
+        assertEq(IFeed(feed).stake(), address(stake));
+        assertEq(IFeed(feed).issuanceFee(), ISSUANCE_FEE);
+        assertEq(IFeed(feed).initStake(), INIT_STAKE);
+        assertEq(IFeed(feed).minMaturity(), MIN_MATURITY);
+        assertEq(IFeed(feed).maxMaturity(), MAX_MATURITY);
         uint256 scale = IFeed(feed).scale();
         assertEq(scale, 1e17);
     }

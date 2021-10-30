@@ -15,10 +15,18 @@ import { Errors } from "../libs/Errors.sol";
 abstract contract BaseFeed is Initializable {
     using FixedMath for uint256;
 
+    /// @notice Configuration
+    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
+
+    address public stake;
     address public target;
     address public divider;
-    address public twrapper;
     uint256 public delta;
+    address public twrapper;
+    uint256 public issuanceFee;
+    uint256 public initStake;
+    uint256 public minMaturity;
+    uint256 public maxMaturity;
     string public name;
     string public symbol;
     LScale public lscale;
@@ -29,17 +37,29 @@ abstract contract BaseFeed is Initializable {
     }
 
     function initialize(
+        address _stake,
         address _target,
         address _divider,
         uint256 _delta,
-        address _twrapper
+        address _twrapper,
+        uint256 _issuanceFee,
+        uint256 _initStake,
+        uint256 _minMaturity,
+        uint256 _maxMaturity
     ) external virtual initializer {
+        stake = _stake;
         divider = _divider;
         delta = _delta;
         target = _target;
         twrapper = _twrapper;
+        issuanceFee = _issuanceFee;
+        initStake = _initStake;
+        minMaturity = _minMaturity;
+        maxMaturity = _maxMaturity;
         name = string(abi.encodePacked(ERC20(target).name(), " Feed"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-feed"));
+        require(minMaturity < maxMaturity, "Invalid maturity values"); // TODO do we want to check for this?
+        require(issuanceFee <= ISSUANCE_FEE_CAP, "Issuance fee cannot exceed 10%");
         emit Initialized();
     }
 

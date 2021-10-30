@@ -20,8 +20,8 @@ contract Dividers is TestHelper {
     /* ========== initSeries() tests ========== */
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
-        uint256 balance = stable.balanceOf(address(alice));
-        alice.doTransfer(address(stable), address(bob), balance - INIT_STAKE / convertBase(stable.decimals()) / 2);
+        uint256 balance = stake.balanceOf(address(alice));
+        alice.doTransfer(address(stake), address(bob), balance - INIT_STAKE / convertBase(stake.decimals()) / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(feed), maturity) {
             fail();
@@ -31,7 +31,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
-        alice.doApprove(address(stable), address(periphery), 0);
+        alice.doApprove(address(stake), address(periphery), 0);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(feed), maturity) {
             fail();
@@ -115,20 +115,20 @@ contract Dividers is TestHelper {
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021");
-        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021");
+        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #0 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#0");
+        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #0 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#0");
     }
 
     function testInitSeriesWithdrawStake() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stable.balanceOf(address(alice));
+        uint256 beforeBalance = stake.balanceOf(address(alice));
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(address(zero) != address(0));
         assertTrue(address(claim) != address(0));
-        uint256 afterBalance = stable.balanceOf(address(alice));
-        assertEq(afterBalance, beforeBalance - INIT_STAKE / convertBase(stable.decimals()));
+        uint256 afterBalance = stake.balanceOf(address(alice));
+        assertEq(afterBalance, beforeBalance - INIT_STAKE / convertBase(stake.decimals()));
     }
 
     function testInitThreeSeries() public {
@@ -270,22 +270,22 @@ contract Dividers is TestHelper {
 
     function testSettleSeriesStakeIsTransferredIfSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stable.balanceOf(address(alice));
+        uint256 beforeBalance = stake.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(feed), maturity);
-        uint256 afterBalance = stable.balanceOf(address(alice));
+        uint256 afterBalance = stake.balanceOf(address(alice));
         assertEq(beforeBalance, afterBalance);
     }
 
     function testSettleSeriesStakeIsTransferredIfNotSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stable.balanceOf(address(bob));
+        uint256 beforeBalance = stake.balanceOf(address(bob));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
         bob.doSettleSeries(address(feed), maturity);
-        uint256 afterBalance = stable.balanceOf(address(bob));
-        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stable.decimals()));
+        uint256 afterBalance = stake.balanceOf(address(bob));
+        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stake.decimals()));
     }
 
     function testSettleSeriesFeesAreTransferredIfSponsor(uint96 tBal) public {
@@ -309,12 +309,12 @@ contract Dividers is TestHelper {
 
     //    function testSettleSeriesFeesAreTransferredIfNotSponsor() public {
     //        uint256 maturity = getValidMaturity(2021, 10);
-    //        uint256 beforeBalance = stable.balanceOf(address(bob));
+    //        uint256 beforeBalance = stake.balanceOf(address(bob));
     //        sponsorSampleSeries(address(alice), maturity);
     //        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
     //        bob.doSettleSeries(address(feed), maturity);
-    //        uint256 afterBalance = stable.balanceOf(address(bob));
-    //        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stable.decimals()));
+    //        uint256 afterBalance = stake.balanceOf(address(bob));
+    //        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stake.decimals()));
     //    }
 
     /* ========== issue() tests ========== */
@@ -945,14 +945,14 @@ contract Dividers is TestHelper {
         assertEq(mscale, newScale);
     }
 
-    // @notice if backfill happens before the maturity and sponsor window, stablecoin stake is transferred to the
+    // @notice if backfill happens before the maturity and sponsor window, stakecoin stake is transferred to the
     // sponsor and issuance fees are returned to Sense's cup multisig address
-    function testBackfillScaleBeforeSponsorWindowTransfersStablecoinStakeAndFees(uint96 tBal) public {
+    function testBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
-        uint256 cupStableBalanceBefore = stable.balanceOf(address(this));
+        uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
-        uint256 sponsorStableBalanceBefore = stable.balanceOf(address(alice));
+        uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tDecimals = target.decimals();
@@ -967,19 +967,19 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
-        assertEq(stable.balanceOf(address(alice)), sponsorStableBalanceBefore);
+        assertEq(stake.balanceOf(address(alice)), sponsorStakeBalanceBefore);
         assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore + fee);
-        assertEq(stable.balanceOf(address(this)), cupStableBalanceBefore);
+        assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore);
     }
 
     // @notice if backfill happens after issuance fees are returned to Sense's cup multisig address, both issuance fees
-    // and the stablecoin stake will go to Sense's cup multisig address
-    function testBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStablecoinStakeAndFees(uint96 tBal) public {
+    // and the stakecoin stake will go to Sense's cup multisig address
+    function testBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
-        uint256 sponsorStableBalanceBefore = stable.balanceOf(address(alice));
+        uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
-        uint256 cupStableBalanceBefore = stable.balanceOf(address(this));
+        uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
 
@@ -995,13 +995,72 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(feed), maturity);
         assertEq(mscale, newScale);
         uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
-        uint256 sponsorStableBalanceAfter = stable.balanceOf(address(alice));
+        uint256 sponsorStakeBalanceAfter = stake.balanceOf(address(alice));
         assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
-        assertEq(sponsorStableBalanceAfter, sponsorStableBalanceBefore - INIT_STAKE / convertBase(stable.decimals()));
+        assertEq(sponsorStakeBalanceAfter, sponsorStakeBalanceBefore - INIT_STAKE / convertBase(stake.decimals()));
         uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
-        uint256 cupStableBalanceAfter = stable.balanceOf(address(this));
+        uint256 cupStakeBalanceAfter = stake.balanceOf(address(this));
         assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
-        assertEq(cupStableBalanceAfter, cupStableBalanceBefore + INIT_STAKE / convertBase(stable.decimals()));
+        assertEq(cupStakeBalanceAfter, cupStakeBalanceBefore + INIT_STAKE / convertBase(stake.decimals()));
+    }
+
+    /* ========== setFeed() tests ========== */
+    function testCantSetFeedIfNotTrusted() public {
+        try bob.doSetFeed(address(feed), false) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotAuthorized);
+        }
+    }
+
+    function testCantSetFeedWithSameValue() public {
+        try divider.setFeed(address(feed), true) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.ExistingValue);
+        }
+    }
+
+    function testFeedID() public {
+        assertEq(divider.feedIDs(address(feed)), 0);
+        assertEq(divider.feedAddresses(0), address(feed));
+    }
+
+    function testSetFeed() public {
+        divider.setFeed(address(feed), false);
+        assert(divider.feeds(address(feed)) == false);
+        divider.setFeed(address(feed), true);
+        assertEq(divider.feedIDs(address(feed)), 1);
+        assertEq(divider.feedAddresses(1), address(feed));
+        assertTrue(divider.feeds(address(feed)));
+    }
+
+    /* ========== addFeed() tests ========== */
+    function testCantAddFeedWhenNotPermissionless() public {
+        divider.setFeed(address(feed), false);
+        try bob.doAddFeed(address(feed)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OnlyPermissionless);
+        }
+    }
+
+    function testCantAddFeedWithSameValue() public {
+        divider.setPermissionless(true);
+        try bob.doAddFeed(address(feed)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.ExistingValue);
+        }
+    }
+
+    function testAddFeed() public {
+        divider.setPermissionless(true);
+        divider.setFeed(address(feed), false);
+        bob.doAddFeed(address(feed));
+        assertEq(divider.feedIDs(address(feed)), 1);
+        assertEq(divider.feedAddresses(1), address(feed));
+        assertTrue(divider.feeds(address(feed)));
     }
 
     /* ========== misc tests ========== */

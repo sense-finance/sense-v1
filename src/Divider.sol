@@ -23,26 +23,22 @@ contract Divider is Trust {
     using Errors for string;
 
     /// @notice Configuration
-    uint256 public constant ISSUANCE_FEE = 0.01e18; // In percentage (1%) [WAD] // TODO: TBD
-    uint256 public constant INIT_STAKE = 1e18; // Series initialisation stablecoin stake [WAD] // TODO: TBD
     uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
     uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
-    uint256 public constant MIN_MATURITY = 2 weeks; // TODO: TBD
-    uint256 public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
     /// @notice Program state
-    bool public permissionless;
     address public periphery;
-    address public immutable stable;
     address public immutable cup;
     address public immutable deployer;
-
+    bool public permissionless;
     uint256 public feedCounter;
 
     /// @notice feed -> is supported
     mapping(address => bool) public feeds;
     /// @notice feed ID -> feed address
-    mapping(uint256 => address) public feedIDs;
+    mapping(uint256 => address) public feedAddresses;
+    /// @notice feed address -> feed ID
+    mapping(address => uint256) public feedIDs;
     /// @notice target -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
     /// @notice feed -> maturity -> Series
@@ -62,8 +58,7 @@ contract Divider is Trust {
         uint256 tilt; // % of underlying principal initially reserved for Claims
     }
 
-    constructor(address _stable, address _cup, address _deployer) Trust(msg.sender) {
-        stable   = _stable;
+    constructor(address _cup, address _deployer) Trust(msg.sender) {
         cup      = _cup;
         deployer = _deployer;
     }
@@ -72,23 +67,23 @@ contract Divider is Trust {
 
     /// @notice Enable or disable a feed
     /// @param feed Feed's address
-    /// @param isOn Flag setting this feed to enabled or disabled
-    function addFeed(address feed, bool isOn) external whenPermissionless {
-        _setFeed(feed, isOn);
+    function addFeed(address feed) external whenPermissionless {
+        _setFeed(feed, true);
     }
 
     /// @notice Initializes a new Series
     /// @dev Deploys two ERC20 contracts, one for each Zero type
-    /// @dev Transfers some fixed amount of stable asset to this contract
+    /// @dev Transfers some fixed amount of stake asset to this contract
     /// @param feed Feed to associate with the Series
     /// @param maturity Maturity date for the new Series, in units of unix time
     function initSeries(address feed, uint256 maturity, address sponsor) external onlyPeriphery returns (address zero, address claim) {
         require(feeds[feed], Errors.InvalidFeed);
         require(!_exists(feed, maturity), Errors.DuplicateSeries);
-        require(_isValid(maturity), Errors.InvalidMaturity);
+        require(_isValid(feed, maturity), Errors.InvalidMaturity);
 
-        // Transfer stable asset stake from caller to this contract
-        ERC20(stable).safeTransferFrom(msg.sender, address(this), INIT_STAKE / _convertBase(ERC20(stable).decimals()));
+        // Transfer stake asset stake from caller to this contract
+        ERC20 stake = ERC20(Feed(feed).stake());
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), Feed(feed).initStake() / _convertBase(stake.decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);
@@ -132,7 +127,9 @@ contract Divider is Trust {
         // Reward the caller for doing the work of settling the Series at around the correct time
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransfer(msg.sender, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(msg.sender, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
+
+        ERC20 stake = ERC20(Feed(feed).stake());
+        ERC20(stake).safeTransfer(msg.sender, Feed(feed).initStake() / _convertBase(ERC20(stake).decimals()));
 
         emit SeriesSettled(feed, maturity, msg.sender);
     }
@@ -153,10 +150,11 @@ contract Divider is Trust {
         uint256 fee;
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
+        uint256 issuanceFee = Feed(feed).issuanceFee();
         if (tDecimals != 18) {
-            fee = (tDecimals < 18 ? ISSUANCE_FEE / (10**(18 - tDecimals)) : ISSUANCE_FEE * 10**(tDecimals - 18)).fmul(tBal, tBase);
+            fee = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18)).fmul(tBal, tBase);
         } else {
-            fee = ISSUANCE_FEE.fmul(tBal, tBase);
+            fee = issuanceFee.fmul(tBal, tBase);
         }
 
         series[feed][maturity].reward += fee;
@@ -470,7 +468,8 @@ contract Divider is Trust {
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20 target = ERC20(Feed(feed).target());
         target.safeTransfer(cup, series[feed][maturity].reward);
-        ERC20(stable).safeTransfer(rewardee, INIT_STAKE / _convertBase(ERC20(stable).decimals()));
+        ERC20 stake = ERC20(Feed(feed).stake());
+        ERC20(stake).safeTransfer(rewardee, Feed(feed).initStake() / _convertBase(ERC20(stake).decimals()));
 
         emit Backfilled(feed, maturity, mscale, _usrs, _lscales);
     }
@@ -503,8 +502,8 @@ contract Divider is Trust {
         }
     }
 
-    function _isValid(uint256 maturity) internal view returns (bool) {
-        if (maturity < block.timestamp + MIN_MATURITY || maturity > block.timestamp + MAX_MATURITY) return false;
+    function _isValid(address feed, uint256 maturity) internal view returns (bool) {
+        if (maturity < block.timestamp + Feed(feed).minMaturity() || maturity > block.timestamp + Feed(feed).maxMaturity()) return false;
 
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
         if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
@@ -515,8 +514,11 @@ contract Divider is Trust {
     function _setFeed(address feed, bool isOn) internal {
         require(feeds[feed] != isOn, Errors.ExistingValue);
         feeds[feed] = isOn;
-        feedIDs[feedCounter++] = feed;
-        emit FeedChanged(feed, isOn);
+        if (isOn) {
+            feedAddresses[feedCounter] = feed;
+            feedIDs[feedCounter++] = feed;
+        }
+        emit FeedChanged(feed, feedCounter, isOn);
     }
 
     function _convertBase(uint256 decimals) internal pure returns (uint256) {
@@ -537,7 +539,7 @@ contract Divider is Trust {
     }
 
     modifier whenPermissionless() {
-        require(permissionless, "Can only be invoked if permissionless mode is neabled");
+        require(permissionless, Errors.OnlyPermissionless);
         _;
     }
 
@@ -552,7 +554,7 @@ contract Divider is Trust {
         uint256[] _lscales
     );
     event GuardChanged(address indexed target, uint256 indexed cap);
-    event FeedChanged(address indexed feed, bool isOn);
+    event FeedChanged(address indexed feed, uint256 indexed id, bool isOn);
     event PeripheryChanged(address indexed periphery);
 
     /// @notice Series lifecycle
@@ -606,9 +608,10 @@ contract AssetDeployer is Trust {
         (, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(m, "-", y));
 
+        string memory feedId = uint2str(Divider(divider).feedIDs(feed));
         zero = address(new Zero(
-            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " ", "by Sense")),
-            string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring)),
+            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", feedId, " by Sense")),
+            string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", feedId)),
             decimals,
             divider
         ));
@@ -617,9 +620,33 @@ contract AssetDeployer is Trust {
             maturity,
             divider,
             feed,
-            string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " ", "by Sense")),
-            string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring)),
+            string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " #", feedId, " by Sense")),
+            string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", feedId)),
             decimals
         ));
+    }
+
+    /// Taken from https://github.com/provable-things/ethereum-api/blob/master/provableAPI_0.6.sol
+    /// @dev modified to be compatible with 0.8
+    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len;
+        while (_i != 0) {
+            k = k-1;
+            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
     }
 }

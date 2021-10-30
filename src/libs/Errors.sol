@@ -25,6 +25,7 @@ library Errors {
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
     string constant OnlyPeriphery = "Can only be invoked by the Periphery contract";
+    string constant OnlyPermissionless = "Can only be invoked if permissionless mode is enabled";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
