@@ -33,8 +33,8 @@ contract Feeds is TestHelper {
         assertEq(feed.target(), address(target));
         assertEq(feed.divider(), address(divider));
         assertEq(feed.delta(), DELTA);
-        assertEq(feed.name(), "Compound Dai Yield");
-        assertEq(feed.symbol(), "cDAI-yield");
+        assertEq(feed.name(), "Compound Dai Feed");
+        assertEq(feed.symbol(), "cDAI-feed");
     }
 
     function testScale() public {

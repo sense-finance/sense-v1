@@ -405,8 +405,7 @@ contract Divider is Trust {
     function setFeed(address feed, bool isOn) external requiresTrust {
         require(feeds[feed] != isOn, Errors.ExistingValue);
         feeds[feed] = isOn;
-        feedIDs[feedCounter] = feed;
-        feedCounter++;
+        feedIDs[feedCounter++] = feed;
         emit FeedChanged(feed, isOn);
     }
 

@@ -39,9 +39,9 @@ contract Factories is TestHelper {
         assertEq(IFeed(feed).target(), address(someTarget));
         assertEq(IFeed(feed).divider(), address(divider));
         assertEq(IFeed(feed).delta(), DELTA);
-        assertEq(IFeed(feed).name(), "Some Target Yield");
-        assertEq(IFeed(feed).symbol(), "ST-yield");
-        assertEq(IFeed(feed).symbol(), "ST-yield");
+        assertEq(IFeed(feed).name(), "Some Target Feed");
+        assertEq(IFeed(feed).symbol(), "ST-feed");
+        assertEq(IFeed(feed).symbol(), "ST-feed");
         uint256 scale = IFeed(feed).scale();
         assertEq(scale, 1e17);
     }
