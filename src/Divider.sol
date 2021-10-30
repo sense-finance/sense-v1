@@ -31,6 +31,7 @@ contract Divider is Trust {
     uint256 public constant MAX_MATURITY = 14 weeks; // TODO: TBD
 
     /// @notice Program state
+    bool public permissionless;
     address public periphery;
     address public immutable stable;
     address public immutable cup;
@@ -68,6 +69,13 @@ contract Divider is Trust {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /// @notice Enable or disable a feed
+    /// @param feed Feed's address
+    /// @param isOn Flag setting this feed to enabled or disabled
+    function addFeed(address feed, bool isOn) external whenPermissionless {
+        _setFeed(feed, isOn);
+    }
 
     /// @notice Initializes a new Series
     /// @dev Deploys two ERC20 contracts, one for each Zero type
@@ -402,11 +410,8 @@ contract Divider is Trust {
     /// @notice Enable or disable a feed
     /// @param feed Feed's address
     /// @param isOn Flag setting this feed to enabled or disabled
-    function setFeed(address feed, bool isOn) external requiresTrust {
-        require(feeds[feed] != isOn, Errors.ExistingValue);
-        feeds[feed] = isOn;
-        feedIDs[feedCounter++] = feed;
-        emit FeedChanged(feed, isOn);
+    function setFeed(address feed, bool isOn) public requiresTrust {
+        _setFeed(feed, isOn);
     }
 
     /// @notice Set target's guard
@@ -422,6 +427,13 @@ contract Divider is Trust {
     function setPeriphery(address _periphery) external requiresTrust {
         periphery = _periphery;
         emit PeripheryChanged(periphery);
+    }
+
+    /// @notice Set permissioless mode
+    /// @param _permissionless bool
+    function setPermissionless(bool _permissionless) external requiresTrust {
+        permissionless = _permissionless;
+        emit PermissionlessChanged(permissionless);
     }
 
     /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
@@ -499,7 +511,13 @@ contract Divider is Trust {
         return true;
     }
 
-    /* ========== INTERNAL HELPERS ========== */
+    /* ========== INTERNAL FNCTIONS & HELPERS ========== */
+    function _setFeed(address feed, bool isOn) internal {
+        require(feeds[feed] != isOn, Errors.ExistingValue);
+        feeds[feed] = isOn;
+        feedIDs[feedCounter++] = feed;
+        emit FeedChanged(feed, isOn);
+    }
 
     function _convertBase(uint256 decimals) internal pure returns (uint256) {
         if (decimals == 18) return 1;
@@ -515,6 +533,11 @@ contract Divider is Trust {
 
     modifier onlyPeriphery() {
         require(periphery == msg.sender, "Can only be invoked by the Periphery contract");
+        _;
+    }
+
+    modifier whenPermissionless() {
+        require(permissionless, "Can only be invoked if permissionless mode is neabled");
         _;
     }
 
@@ -550,6 +573,9 @@ contract Divider is Trust {
     event SeriesSettled(address indexed feed, uint256 indexed maturity, address indexed settler);
     event ZeroRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event ClaimRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
+    /// *----* misc
+    event PermissionlessChanged(bool indexed permissionless);
+
 }
 
 contract AssetDeployer is Trust {
