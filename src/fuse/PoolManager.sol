@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 // External reference
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
 import { PriceOracle } from "./Oracle.sol";
 
 // Internal references
@@ -108,7 +109,7 @@ contract PoolManager is Trust {
     ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
         require(comptroller == address(0), "Pool already deployed");
 
-        masterOracle = Clones.clone(oracleImpl);
+        masterOracle = Clones.cloneDeterministic(oracleImpl, Bytes32AddressLib.fillLast12Bytes(address(this)));
         MasterOracleLike(masterOracle).initialize(
             new address[](0), 
             new PriceOracle[](0), 
