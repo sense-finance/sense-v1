@@ -46,7 +46,7 @@ contract User {
         gClaimManager = periphery.gClaimManager();
     }
 
-    function doDeployFeed(address _target) public returns (address clone, address twrapper){
+    function doDeployFeed(address _target) public returns (address clone) {
         return factory.deployFeed(_target);
     }
 

@@ -16,7 +16,7 @@ contract MockFeed is BaseFeed {
 
     function _scale() internal override virtual returns (uint256 _value) {
         if (value > 0) return value;
-        uint8 tDecimals = ERC20(target).decimals();
+        uint8 tDecimals = ERC20(feedParams.target).decimals();
         if (INITIAL_VALUE == 0)  {
             if (tDecimals != 18) {
                 INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18 * (10**(tDecimals - 18));
@@ -24,9 +24,9 @@ contract MockFeed is BaseFeed {
                 INITIAL_VALUE = 0.1e18;
             }
         }
-        uint256 gps = delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
-        uint256 timeDiff = block.timestamp - lscale.timestamp;
-        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, 10**tDecimals) + lscale.value : INITIAL_VALUE;
+        uint256 gps = feedParams.delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
+        uint256 timeDiff = block.timestamp - _lscale.timestamp;
+        _value = _lscale.value > 0 ? (gps * timeDiff).fmul(_lscale.value, 10**tDecimals) + _lscale.value : INITIAL_VALUE;
     }
 
     function underlying() external virtual override returns (address) {
@@ -58,7 +58,6 @@ contract SimpleAdminFeed {
     address public target;
     string public name;
     string public symbol;
-    address public twrapper;
     uint256 internal value = 1e18;
     uint256 public constant INITIAL_VALUE = 1e18;
 
@@ -66,12 +65,10 @@ contract SimpleAdminFeed {
         address _target,
         string memory _name,
         string memory _symbol,
-        address _twrapper
     ) {
         target = _target;
         name = _name;
         symbol = _symbol;
-        twrapper = _twrapper;
         owner = msg.sender;
     }
 

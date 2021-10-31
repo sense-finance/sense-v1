@@ -13,7 +13,6 @@ import { Errors } from "./libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
 import { Token as Zero } from "./tokens/Token.sol";
-import { BaseTWrapper } from "./wrappers/BaseTWrapper.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -85,9 +84,9 @@ contract Divider is Trust, ReentrancyGuard {
         require(!_exists(feed, maturity), Errors.DuplicateSeries);
         require(_isValid(feed, maturity), Errors.InvalidMaturity);
 
-        // Transfer stake asset from caller to twrapper
-        ERC20 stake = ERC20(Feed(feed).stake());
-        ERC20(stake).safeTransferFrom(msg.sender, address(this), Feed(feed).stakeSize() / _convertBase(stake.decimals()));
+        // Transfer stake asset stake from caller to adapter
+        (address target, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+        ERC20(stake).safeTransferFrom(msg.sender, Feed(feed).twrapper(), stakeSize / _convertBase(ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);
@@ -107,7 +106,7 @@ contract Divider is Trust, ReentrancyGuard {
 
         series[feed][maturity] = newSeries;
 
-        emit SeriesInitialized(feed, maturity, zero, claim, sponsor, Feed(feed).target());
+        emit SeriesInitialized(feed, maturity, zero, claim, sponsor, target);
     }
 
     /// @notice Settles a Series and transfer the settlement reward to the caller
@@ -129,11 +128,9 @@ contract Divider is Trust, ReentrancyGuard {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransfer(msg.sender, series[feed][maturity].reward);
-
-        ERC20 stake = ERC20(Feed(feed).stake());
-        ERC20(stake).safeTransferFrom(Feed(feed).twrapper(), msg.sender, Feed(feed).stakeSize() / _convertBase(ERC20(stake).decimals()));
+        (address target, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+        ERC20(target).safeTransfer(msg.sender, series[feed][maturity].reward);
+        ERC20(stake).safeTransferFrom(Feed(feed).twrapper(), msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         emit SeriesSettled(feed, maturity, msg.sender);
     }
@@ -148,7 +145,7 @@ contract Divider is Trust, ReentrancyGuard {
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
 
-        ERC20 target = ERC20(Feed(feed).target());
+        ERC20 target = ERC20(Feed(feed).getTarget());
         uint256 tDecimals = target.decimals();
         uint256 tBase = 10 ** tDecimals;
         uint256 fee;
@@ -173,7 +170,7 @@ contract Divider is Trust, ReentrancyGuard {
         target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
 
         // Update values on target wrapper
-        BaseTWrapper(Feed(feed).twrapper()).join(msg.sender, tBalSubFee);
+        Feed(feed).notify(msg.sender, tBalSubFee, true);
 
         // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
         // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
@@ -219,10 +216,10 @@ contract Divider is Trust, ReentrancyGuard {
         }
 
         // Convert from units of Underlying to units of Target
-        tBal = uBal.fdiv(cscale, 10**ERC20(Feed(feed).target()).decimals());
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
-        BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal); // distribute reward tokens
+        ERC20 target = ERC20(Feed(feed).getTarget());
+        tBal = uBal.fdiv(cscale, 10**target.decimals());
+        target.safeTransferFrom(feed, msg.sender, tBal);
+        Feed(feed).notify(msg.sender, tBal, false);
 
         emit Combined(feed, maturity, tBal, msg.sender);
     }
@@ -269,8 +266,8 @@ contract Divider is Trust, ReentrancyGuard {
             }
         }
 
-        ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), msg.sender, tBal);
-        BaseTWrapper(Feed(feed).twrapper()).exit(msg.sender, tBal);
+        target.safeTransferFrom(feed, msg.sender, tBal);
+        Feed(feed).notify(msg.sender, tBal, false);
         emit ZeroRedeemed(feed, maturity, tBal);
     }
 
@@ -311,7 +308,7 @@ contract Divider is Trust, ReentrancyGuard {
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[feed][maturity][usr];
         Claim claim = Claim(series[feed][maturity].claim);
-        ERC20 target = ERC20(Feed(feed).target());
+        ERC20 target = ERC20(Feed(feed).getTarget());
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
         // set the "last scale" value to the scale at issuance for this series
@@ -350,16 +347,16 @@ contract Divider is Trust, ReentrancyGuard {
         // is what Claim holders are collecting
         uint256 tBalNow = uBal.fdiv(_series.maxscale, claim.BASE_UNIT());
         collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
-        target.safeTransferFrom(Feed(feed).twrapper(), usr, collected);
-        BaseTWrapper(Feed(feed).twrapper()).exit(usr, collected); // distribute reward tokens
+        target.safeTransferFrom(feed, usr, collected);
+        Feed(feed).notify(usr, collected, false); // distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
             lscales[feed][maturity][to] = _series.maxscale;
             uint tBalTransfer = uBalTransfer.fdiv(_series.maxscale, claim.BASE_UNIT());
-            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBalTransfer);
-            BaseTWrapper(Feed(feed).twrapper()).join(to, tBalTransfer);
+            Feed(feed).notify(usr, tBalTransfer, false);
+            Feed(feed).notify(to,  tBalTransfer, true);
         }
 
         emit Collected(feed, maturity, collected);
@@ -375,22 +372,24 @@ contract Divider is Trust, ReentrancyGuard {
         // Burn the users's Claims
         Claim(_series.claim).burn(usr, uBal);
 
+        ERC20 target = ERC20(Feed(feed).getTarget());
+
         uint256 tBal = 0;
         // If there's some principal set aside for Claims, determine whether they get it all
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = uBal.fdiv(_series.maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                .fmul(_series.tilt, 10 ** ERC20(Feed(feed).target()).decimals());
+            tBal = uBal.fdiv(_series.maxscale, 10 ** target.decimals())
+                .fmul(_series.tilt, 10 ** target.decimals());
 
             // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
                 // Amount of Target we would ideally have set aside for Zero holders
-                uint256 tBalZeroIdeal = uBal.fdiv(_series.mscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals());
+                uint256 tBalZeroIdeal = uBal.fdiv(_series.mscale, 10 ** target.decimals())
+                    .fmul(FixedMath.WAD - _series.tilt, 10 ** target.decimals());
 
                 // Amount of Target we actually have set aside for them (after collections from Claim holders)
-                uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                    .fmul(FixedMath.WAD - _series.tilt, 10 ** ERC20(Feed(feed).target()).decimals());
+                uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, 10 ** target.decimals())
+                    .fmul(FixedMath.WAD - _series.tilt, 10 ** target.decimals());
 
                 // Calculate how much is getting taken from Claim's principal
                 uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
@@ -404,8 +403,8 @@ contract Divider is Trust, ReentrancyGuard {
                     tBal = 0;
                 }
             }
-            ERC20(Feed(feed).target()).safeTransferFrom(Feed(feed).twrapper(), usr, tBal);
-            BaseTWrapper(Feed(feed).twrapper()).exit(usr, tBal);
+            target.safeTransferFrom(feed, usr, tBal);
+            Feed(feed).notify(usr, tBal, false);
         }
 
         emit ClaimRedeemed(feed, maturity, tBal);
@@ -479,21 +478,20 @@ contract Divider is Trust, ReentrancyGuard {
             lscales[feed][maturity][_usrs[i]] = _lscales[i];
         }
 
+        (address target, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+
         // Determine where the rewards should go depending on where we are relative to the maturity date
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
-        ERC20 target = ERC20(Feed(feed).target());
-        target.safeTransfer(cup, series[feed][maturity].reward);
-        ERC20 stake = ERC20(Feed(feed).stake());
+        ERC20(target).safeTransfer(cup, series[feed][maturity].reward);
         ERC20(stake).safeTransferFrom(Feed(feed).twrapper(), rewardee, Feed(feed).stakeSize() / _convertBase(ERC20(stake).decimals()));
 
         emit Backfilled(feed, maturity, mscale, _usrs, _lscales);
     }
 
     /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
-    /// @param feed Feed's address
-    function withdrawFeesRewards(address feed) external requiresTrust {
-        ERC20 rewardToken = ERC20(BaseTWrapper(Feed(feed).twrapper()).reward());
-        rewardToken.safeTransfer(cup, rewardToken.balanceOf(address(this)));
+    /// @param reward Reward token
+    function withdrawFeesRewards(address reward) external requiresTrust {
+        ERC20(reward).safeTransfer(cup, ERC20(reward).balanceOf(address(this)));
     }
 
     /* ========== INTERNAL VIEWS ========== */
@@ -518,7 +516,8 @@ contract Divider is Trust, ReentrancyGuard {
     }
 
     function _isValid(address feed, uint256 maturity) internal view returns (bool) {
-        if (maturity < block.timestamp + Feed(feed).minMaturity() || maturity > block.timestamp + Feed(feed).maxMaturity()) return false;
+        (uint256 minm, uint256 maxm) = Feed(feed).getMaturityBounds();
+        if (maturity < block.timestamp + minm || maturity > block.timestamp + maxm) return false;
 
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
         if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
@@ -534,6 +533,7 @@ contract Divider is Trust, ReentrancyGuard {
             feedIDs[feed] = feedCounter;
             feedCounter++;
         }
+
         emit FeedChanged(feed, feedCounter, isOn);
     }
 
@@ -619,7 +619,7 @@ contract AssetDeployer is Trust {
         require(inited, "Not yet initialized");
         require(msg.sender == divider, "Must be called by the Divider");
 
-        ERC20 target = ERC20(Feed(feed).target());
+        ERC20 target = ERC20(Feed(feed).getTarget());
         uint8 decimals = target.decimals();
         string memory name = target.name();
         (, string memory m, string memory y) = DateTime.toDateString(maturity);

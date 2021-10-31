@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { FixedMath } from "../../external/FixedMath.sol";
 
 // Internal references
-import { BaseFeed } from "../BaseFeed.sol";
+import { CropFeed } from "../CropFeed.sol";
 
 interface CTokenInterface {
     /// @notice cToken is convertible into an ever increasing quantity of the underlying asset, as interest accrues in
@@ -16,12 +16,20 @@ interface CTokenInterface {
     function underlying() external returns (address);
 }
 
+interface ComptrollerInterface {
+    /// @notice Claim all the comp accrued by holder in all markets
+    /// @param holder The address to claim COMP for
+    function claimComp(address holder) external;
+}
+
 /// @notice Feed contract for cTokens
-contract CFeed is BaseFeed {
+contract CFeed is CropFeed {
     using FixedMath for uint256;
 
+    address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+
     function _scale() internal virtual override returns (uint256) {
-        CTokenInterface t = CTokenInterface(target);
+        CTokenInterface t = CTokenInterface(feedParams.target);
         uint256 decimals = CTokenInterface(t.underlying()).decimals();
         return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10 ** decimals);
     }
@@ -31,4 +39,7 @@ contract CFeed is BaseFeed {
         return t.underlying();
     }
 
+    function _claimReward() internal virtual override {
+        ComptrollerInterface(COMPTROLLER).claimComp(address(this));
+    }
 }

@@ -2,67 +2,54 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { FixedMath } from "../external/FixedMath.sol";
 
-// Internal
+// Internal references
 import { Periphery } from "../Periphery.sol";
-import { Divider } from "../Divider.sol";
-import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { BaseFeed } from "./BaseFeed.sol";
+import { FixedMath } from "../external/FixedMath.sol";
 import { Errors } from "../libs/Errors.sol";
 
-/// @notice Accumulate reward tokens and distribute them proportionally
-/// Inspired by: https://github.com/makerdao/dss-crop-join
-abstract contract BaseTWrapper is Initializable {
+abstract contract CropFeed is BaseFeed, Trust {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     /// @notice Program state
-    address public divider;
-    address public target;
-    address public stake;
     address public reward;
-    uint256 public share; // accumulated reward token per collected target
+    uint256 public share;     // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget;
     mapping(address => uint256) public tBalance;
     mapping(address => uint256) public rewarded; // reward token per collected target per user
 
-    function initialize(
-        address _divider,
-        address _target,
-        address _stake,
-        address _reward
-    ) external virtual initializer {
-        divider = _divider;
-        target = _target;
-        stake = _stake;
+    event Distributed(address indexed usr, address indexed token, uint256 amount);
+
+    constructor() Trust(address(0)) { }
+
+    function initialize(address _divider, FeedParams memory _feedParams, address _reward) public {
+        super.initialize(_divider, _feedParams);
+
+        setIsTrusted(_divider, true);
         reward = _reward;
-        ERC20(target).approve(_divider, type(uint256).max);
         ERC20(stake).approve(_divider, type(uint256).max);
-
-        emit Initialized();
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-    function join(address _usr, uint256 val) public onlyDivider {
+    function notify(address _usr, uint256 amt, bool join) public override requiresTrust {
         _distribute(_usr);
-        if (val > 0) {
-            totalTarget += val;
-            tBalance[_usr] += val;
+        if (amt > 0) {
+            if (join) {
+                totalTarget    += amt;
+                tBalance[_usr] += amt;
+            } else {
+                // else `exit`
+                totalTarget    -= amt;
+                tBalance[_usr] -= amt;
+            }
         }
-        rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
-    }
 
-    function exit(address _usr, uint256 val) public onlyDivider {
-        _distribute(_usr);
-        if (val > 0) {
-            totalTarget -= val;
-            tBalance[_usr] -= val;
-        }
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
@@ -118,17 +105,10 @@ abstract contract BaseTWrapper is Initializable {
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
     /* ========== MODIFIERS ========== */
-    modifier onlyDivider() {
-        require(divider == msg.sender, "Can only be invoked by the Divider contract");
-        _;
-    }
 
     modifier onlyPeriphery() {
         require(Divider(divider).periphery() == msg.sender, Errors.OnlyPeriphery);
         _;
     }
 
-    /* ========== EVENTS ========== */
-    event Distributed(address indexed usr, address indexed token, uint256 amount);
-    event Initialized();
 }

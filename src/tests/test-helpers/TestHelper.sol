@@ -127,10 +127,8 @@ contract TestHelper is DSTest {
 
         // feed, target wrapper & factory
         factory = createFactory(address(target), address(reward));
-        (address f, address wt) = periphery.onboardFeed(address(factory), address(target)); // onboard target through Periphery
+        address f = periphery.onboardFeed(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
-        twrapper = MockTWrapper(wt);
-        twrapper.setFeed(f);
 
         // users
         alice = createUser(2**96, 2**96);
@@ -156,7 +154,6 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        MockTWrapper twImpl = new MockTWrapper();
         someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
@@ -202,7 +199,7 @@ contract TestHelper is DSTest {
     }
 
     function calculateAmountToIssue(uint256 tBal, uint256 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
-        (, uint256 cscale) = feed.lscale();
+        (, uint256 cscale) = feed._lscale();
 //        uint256 cscale = divider.lscales(address(feed), maturity, address(bob));
         toIssue = tBal.fmul(cscale, baseUnit);
     }

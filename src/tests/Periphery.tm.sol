@@ -12,7 +12,6 @@ import { PoolManager } from "../fuse/PoolManager.sol";
 import { Divider, AssetDeployer } from "../Divider.sol";
 import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
 import { CFactory } from "../feeds/compound/CFactory.sol";
-import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
@@ -65,12 +64,10 @@ contract PeripheryTestHelper is DSTest {
 
         // feed & factory
         CFeed implementation = new CFeed(); // compound feed implementation
-        MockTWrapper twImpl = new MockTWrapper(); // TODO: remove when merging CTWrapper
-        //        CTWrapper twImpl = new CTWrapper(); // feed implementation
+
         // deploy compound feed factory
         factory = new CFactory(
             address(implementation),
-            address(twImpl),
             address(divider),
             DELTA,
             COMP,

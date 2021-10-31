@@ -38,7 +38,6 @@ contract Feeds is TestHelper {
             address(divider),
             ORACLE,
             DELTA,
-            address(twrapper),
             ISSUANCE_FEE,
             STAKE_SIZE,
             MIN_MATURITY,
@@ -50,7 +49,6 @@ contract Feeds is TestHelper {
         assertEq(feed.delta(), DELTA);
         assertEq(feed.name(), "Compound Dai Feed");
         assertEq(feed.symbol(), "cDAI-feed");
-        assertEq(feed.twrapper(), address(twrapper));
         assertEq(feed.issuanceFee(), ISSUANCE_FEE);
         assertEq(feed.stakeSize(), STAKE_SIZE);
         assertEq(feed.minMaturity(), MIN_MATURITY);
@@ -82,7 +80,6 @@ contract Feeds is TestHelper {
                 address(divider),
                 ORACLE,
                 DELTA,
-                address(twrapper),
                 ISSUANCE_FEE,
                 STAKE_SIZE,
                 MIN_MATURITY,
@@ -95,7 +92,7 @@ contract Feeds is TestHelper {
             localFeed.setScale(startingScale);
             // Set starting scale and store it as lscale
             localFeed.scale();
-            (uint256 ltimestamp, uint256 lvalue) = localFeed.lscale();
+            (uint256 ltimestamp, uint256 lvalue) = localFeed._lscale();
             assertEq(lvalue, startingScale);
 
             hevm.warp(1 days);
@@ -141,7 +138,6 @@ contract Feeds is TestHelper {
                 address(divider),
                 ORACLE,
                 DELTA,
-                address(twrapper),
                 ISSUANCE_FEE,
                 STAKE_SIZE,
                 MIN_MATURITY,
@@ -184,7 +180,6 @@ contract Feeds is TestHelper {
             address(divider),
             ORACLE,
             DELTA,
-            address(twrapper),
             ISSUANCE_FEE,
             STAKE_SIZE,
             MIN_MATURITY,

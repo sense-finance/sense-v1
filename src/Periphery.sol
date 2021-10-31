@@ -17,7 +17,6 @@ import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
-import { BaseTWrapper as TWrapper } from "./wrappers/BaseTWrapper.sol";
 
 /// @title Periphery
 contract Periphery is Trust {
@@ -59,17 +58,18 @@ contract Periphery is Trust {
     function sponsorSeries(
         address feed, uint256 maturity, uint160 sqrtPriceX96
     ) external returns (address zero, address claim) {
-        ERC20 stake = ERC20(Feed(feed).stake());
+        (, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+
         // transfer stakeSize from sponsor into this contract
         uint256 convertBase = 1;
-        uint256 stakeDecimals = stake.decimals();
+        uint256 stakeDecimals = ERC20(stake).decimals();
         if (stakeDecimals != 18) {
             convertBase = stakeDecimals > 18 ? 10 ** (stakeDecimals - 18) : 10 ** (18 - stakeDecimals);
         }
-        stake.safeTransferFrom(msg.sender, address(this), Feed(feed).stakeSize() / convertBase);
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize / convertBase);
 
         // approve divider to withdraw stake assets
-        stake.approve(address(divider), type(uint256).max);
+        ERC20(stake).approve(address(divider), type(uint256).max);
 
         (zero, claim) = divider.initSeries(feed, maturity, msg.sender);
         address unipool = IUniswapV3Factory(uniFactory).createPool(zero, Feed(feed).underlying(), UNI_POOL_FEE); // deploy UNIV3 pool
@@ -82,9 +82,9 @@ contract Periphery is Trust {
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
-    function onboardFeed(address factory, address target) external returns (address feedClone, address wtClone) {
+    function onboardFeed(address factory, address target) external returns (address feedClone) {
         require(factories[factory], Errors.FactoryNotSupported);
-        (feedClone, wtClone) = Factory(factory).deployFeed(target);
+        feedClone = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
         ERC20(target).approve(wtClone, type(uint256).max); // for flashloans
         poolManager.addTarget(target);
@@ -103,7 +103,7 @@ contract Periphery is Trust {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
         // transfer target directly to TWrapper for conversion
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBal); // TODO: remove backfill param?
+        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBal);
 
         // convert target to underlying
         uint256 uBal = TWrapper(Feed(feed).twrapper()).unwrapTarget(tBal);
@@ -120,7 +120,7 @@ contract Periphery is Trust {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
         // transfer target into this contract
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal);
+        ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
 
         uint256 issued = divider.issue(feed, maturity, tBal);
 
@@ -167,7 +167,7 @@ contract Periphery is Trust {
         uint256 tBal = TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal);
 
         // transfer target to msg.sender
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20(Feed(feed).getTarget()).safeTransfer(msg.sender, tBal);
     }
 
     function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
