@@ -19,6 +19,7 @@ abstract contract BaseFeed is Initializable {
     address public stake;
     address public target;
     address public divider;
+    address public oracle;
     uint256 public delta;
     address public twrapper;
     uint256 public issuanceFee;
@@ -38,6 +39,7 @@ abstract contract BaseFeed is Initializable {
         address _stake,
         address _target,
         address _divider,
+        address _oracle,
         uint256 _delta,
         address _twrapper,
         uint256 _issuanceFee,
@@ -47,6 +49,7 @@ abstract contract BaseFeed is Initializable {
     ) external virtual initializer {
         stake = _stake;
         divider = _divider;
+        oracle = _oracle;
         delta = _delta;
         target = _target;
         twrapper = _twrapper;
