@@ -11,7 +11,6 @@ contract MockFactory is BaseFactory {
 
     constructor(
         address _feedImpl,
-        address _twImpl,
         address _divider,
         uint256 _delta,
         address _reward,

@@ -16,7 +16,6 @@ contract Factories is TestHelper {
         MockFeed feedImpl = new MockFeed();
         MockFactory someFactory = new MockFactory(
             address(feedImpl),
-            address(twImpl),
             address(divider),
             DELTA,
             address(reward),
@@ -26,12 +25,11 @@ contract Factories is TestHelper {
             MIN_MATURITY,
             MAX_MATURITY
         );
+
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).feedImpl(), address(feedImpl));
-        assertEq(MockFactory(someFactory).twImpl(), address(twImpl));
         assertEq(MockFactory(someFactory).divider(), address(divider));
         assertEq(MockFactory(someFactory).delta(), DELTA);
-        assertEq(MockFactory(someFactory).reward(), address(reward));
         assertEq(MockFactory(someFactory).stake(), address(stake));
         assertEq(MockFactory(someFactory).issuanceFee(), ISSUANCE_FEE);
         assertEq(MockFactory(someFactory).stakeSize(), STAKE_SIZE);
@@ -69,7 +67,7 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        (address f, address wt) = periphery.onboardFeed(address(someFactory), address(someTarget));
+        address f = periphery.onboardFeed(address(someFactory), address(someTarget));
         assertTrue(f != address(0));
         uint256 scale = IFeed(f).scale();
         assertEq(scale, 1e17);

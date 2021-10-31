@@ -50,7 +50,6 @@ contract PeripheryTest is TestHelper {
 
         // onboard target
         periphery.onboardFeed(address(factory), address(newTarget));
-        assertTrue(factory.feeds(address(newTarget)) != address(0));
         assertTrue(poolManager.tInits(address(target)));
     }
 
@@ -92,7 +91,7 @@ contract PeripheryTest is TestHelper {
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
-        uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, tBase);
+        uint256 fee = (feed.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate claims & zeros to be issued
         uint256 issueBal = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
@@ -134,7 +133,7 @@ contract PeripheryTest is TestHelper {
 
         alice.doIssue(address(feed), maturity, tBal);
 
-        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(alice));
+        uint256 tBalBefore = ERC20(feed.getTarget()).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate zeros swapped to underlying

@@ -48,6 +48,10 @@ contract MockFeed is BaseFeed {
     function setTilt(uint256 _value) external {
         _tilt = _value;
     }
+
+    function underlying() external override returns (address) {
+        return address(0);
+    }
 }
 
 // used in simulated env deployment scripts
@@ -64,7 +68,7 @@ contract SimpleAdminFeed {
     constructor(
         address _target,
         string memory _name,
-        string memory _symbol,
+        string memory _symbol
     ) {
         target = _target;
         name = _name;

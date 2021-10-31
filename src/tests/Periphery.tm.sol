@@ -67,19 +67,20 @@ contract PeripheryTestHelper is DSTest {
 
         // deploy compound feed factory
         factory = new CFactory(
-            address(implementation),
             address(divider),
-            DELTA,
-            COMP,
+            address(0),
+            address(implementation),
             DAI,
-            ISSUANCE_FEE,
             STAKE_SIZE,
+            ISSUANCE_FEE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            DELTA,
+            COMP
         );
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, address wtClone) = factory.deployFeed(cDAI); // deploy a cDAI feed
+        address f = factory.deployFeed(cDAI); // deploy a cDAI feed
         feed = CFeed(f);
         // users
         //        alice = createUser(2**96, 2**96);

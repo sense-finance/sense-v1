@@ -42,4 +42,8 @@ contract CFeed is CropFeed {
     function _claimReward() internal virtual override {
         ComptrollerInterface(COMPTROLLER).claimComp(address(this));
     }
+
+    function underlying() external override returns (address) {
+        return CTokenInterface(feedParams.target).underlying();
+    }
 }

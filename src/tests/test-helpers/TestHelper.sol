@@ -154,7 +154,7 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
+        someFactory = new MockFactory(address(feedImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);

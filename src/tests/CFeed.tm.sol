@@ -36,20 +36,21 @@ contract CFeedTestHelper is DSTest {
         CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
         factory = new CFactory(
-            address(feedImpl),
-            address(0),
             address(divider),
-            DELTA,
-            COMP,
+            address(0),
+            address(feedImpl),
             DAI,
-            ISSUANCE_FEE,
             STAKE_SIZE,
+            ISSUANCE_FEE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            DELTA,
+            COMP
         );
+
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, ) = factory.deployFeed(cDAI);
+        address f = factory.deployFeed(cDAI);
         feed = CFeed(f); // deploy a cDAI feed
     }
 }
