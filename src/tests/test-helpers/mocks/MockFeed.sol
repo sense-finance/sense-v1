@@ -35,10 +35,13 @@ contract MockFeed is BaseFeed {
         value = _value;
     }
 
+    function setOracle(address _oracle) external {
+        oracle = _oracle;
+    }
+
     function setTilt(uint256 _value) external {
         _tilt = _value;
     }
-
 }
 
 // used in simulated env deployment scripts

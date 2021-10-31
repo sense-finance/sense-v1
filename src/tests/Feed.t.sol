@@ -32,6 +32,7 @@ contract Feeds is TestHelper {
             address(stake),
             address(target),
             address(divider),
+            ORACLE,
             DELTA,
             address(twrapper),
             ISSUANCE_FEE,
@@ -50,6 +51,7 @@ contract Feeds is TestHelper {
         assertEq(feed.stakeSize(), STAKE_SIZE);
         assertEq(feed.minMaturity(), MIN_MATURITY);
         assertEq(feed.maxMaturity(), MAX_MATURITY);
+        assertEq(feed.oracle(), ORACLE);
     }
 
     function testScale() public {
@@ -74,6 +76,7 @@ contract Feeds is TestHelper {
                 address(stake),
                 address(target),
                 address(divider),
+                ORACLE,
                 DELTA,
                 address(twrapper),
                 ISSUANCE_FEE,
@@ -132,6 +135,7 @@ contract Feeds is TestHelper {
                 address(stake),
                 address(target),
                 address(divider),
+                ORACLE,
                 DELTA,
                 address(twrapper),
                 ISSUANCE_FEE,
@@ -174,6 +178,7 @@ contract Feeds is TestHelper {
             address(stake),
             address(newTarget),
             address(divider),
+            ORACLE,
             DELTA,
             address(twrapper),
             ISSUANCE_FEE,

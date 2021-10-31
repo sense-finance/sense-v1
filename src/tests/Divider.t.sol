@@ -401,6 +401,7 @@ contract Dividers is TestHelper {
             address(stake),
             address(target),
             address(divider),
+            ORACLE,
             DELTA,
             address(twrapper),
             1e18, // issuance fee > 10%

@@ -20,6 +20,7 @@ abstract contract BaseFactory is Trust {
     address public feedImpl; // feed implementation
     address public twImpl; // wrapped target implementation
     address public divider;
+    address public oracle;
     uint256 public delta;
     address public reward; // reward token
     address public stake;
@@ -33,6 +34,7 @@ abstract contract BaseFactory is Trust {
         address _feedImpl,
         address _twImpl,
         address _divider,
+        address _oracle,
         uint256 _delta,
         address _reward,
         address _stake,
@@ -45,6 +47,7 @@ abstract contract BaseFactory is Trust {
         feedImpl = _feedImpl;
         twImpl = _twImpl;
         divider = _divider;
+        oracle = _oracle;
         delta = _delta;
         stake = _stake;
         reward = _reward;
@@ -72,6 +75,7 @@ abstract contract BaseFactory is Trust {
             stake,
             _target,
             divider,
+            oracle,
             delta,
             wtClone,
             issuanceFee,

@@ -57,6 +57,7 @@ contract TestHelper is DSTest {
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
+    address public ORACLE = address(123);
     uint256 public ISSUANCE_FEE = 0.01e18;
     uint256 public STAKE_SIZE = 1e18;
     uint256 public MIN_MATURITY = 2 weeks;
@@ -125,6 +126,7 @@ contract TestHelper is DSTest {
         factory = createFactory(address(target), address(reward));
         (address f, address wt) = periphery.onboardFeed(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
+        feed.setOracle(ORACLE);
         twrapper = TWrapper(wt);
 
         // users
