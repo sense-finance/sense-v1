@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { ReentrancyGuard } from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
 import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 
@@ -17,7 +18,7 @@ import { BaseTWrapper } from "./wrappers/BaseTWrapper.sol";
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
-contract Divider is Trust {
+contract Divider is Trust, ReentrancyGuard {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
     using Errors for string;
@@ -112,7 +113,7 @@ contract Divider is Trust {
     /// @dev After that, the reward becomes MEV
     /// @param feed Feed to associate with the Series
     /// @param maturity Maturity date for the new Series
-    function settleSeries(address feed, uint256 maturity) external {
+    function settleSeries(address feed, uint256 maturity) nonReentrant external {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(_canBeSettled(feed, maturity), Errors.OutOfWindowBoundaries);
@@ -140,7 +141,7 @@ contract Divider is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
     /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
-    function issue(address feed, uint256 maturity, uint256 tBal) external returns (uint256 uBal) {
+    function issue(address feed, uint256 maturity, uint256 tBal) nonReentrant external returns (uint256 uBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
         require(!_settled(feed, maturity), Errors.IssueOnSettled);
@@ -197,7 +198,7 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Zeros and Claims to burn
-    function combine(address feed, uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
+    function combine(address feed, uint256 maturity, uint256 uBal) nonReentrant external returns (uint256 tBal) {
         require(feeds[feed], Errors.InvalidFeed);
         require(_exists(feed, maturity), Errors.SeriesDoesntExists);
 
@@ -228,27 +229,28 @@ contract Divider is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Amount of Zeros to burn, which should be equivelent to the amount of Underlying owed to the caller
-    function redeemZero(address feed, uint256 maturity, uint256 uBal) external {
+    function redeemZero(address feed, uint256 maturity, uint256 uBal) nonReentrant external {
         require(feeds[feed], Errors.InvalidFeed);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(feed, maturity), Errors.NotSettled);
         // Burn the caller's Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
 
+        uint256 tBase = 10 ** ERC20(Feed(feed).target()).decimals();
         // Amount of Target Zeros would ideally have
-        uint256 tBal = uBal.fdiv(series[feed][maturity].mscale, 10 ** ERC20(Feed(feed).target()).decimals())
-            .fmul(FixedMath.WAD - series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals());
+        uint256 tBal = uBal.fdiv(series[feed][maturity].mscale, tBase)
+            .fmul(FixedMath.WAD - series[feed][maturity].tilt, tBase);
 
         if (series[feed][maturity].mscale < series[feed][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = uBal.fdiv(series[feed][maturity].maxscale, 10 ** ERC20(Feed(feed).target()).decimals())
-                .fmul(FixedMath.WAD - series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals());
+            uint256 tBalZeroActual = uBal.fdiv(series[feed][maturity].maxscale, tBase)
+                .fmul(FixedMath.WAD - series[feed][maturity].tilt, tBase);
 
             // Set our Target transfer value to the actual principal we have reserved for Zeros
             tBal = tBalZeroActual;
 
             // How much principal we have set aside for Claim holders
-            uint256 tBalClaimActual = tBalZeroActual.fmul(series[feed][maturity].tilt, 10 ** ERC20(Feed(feed).target()).decimals());
+            uint256 tBalClaimActual = tBalZeroActual.fmul(series[feed][maturity].tilt, tBase);
 
             // Cut from Claim holders to cover shortfall if we can
             if (tBalClaimActual != 0) {
@@ -271,7 +273,7 @@ contract Divider is Trust {
 
     function collect(
         address usr, address feed, uint256 maturity, uint256 uBalTransfer, address to
-    ) external onlyClaim(feed, maturity) returns (uint256 collected) {
+    ) nonReentrant external onlyClaim(feed, maturity) returns (uint256 collected) {
         uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             feed,
