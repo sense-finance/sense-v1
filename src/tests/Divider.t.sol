@@ -6,6 +6,8 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { User } from "./test-helpers/User.sol";
+import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { Errors } from "../libs/Errors.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
@@ -393,7 +395,28 @@ contract Dividers is TestHelper {
     }
 
     function testCantIssueIfIssuanceFeeExceedsCap() public {
-        // TODO
+        divider.setPermissionless(true);
+        MockFeed aFeed = new MockFeed();
+        aFeed.initialize(
+            address(stake),
+            address(target),
+            address(divider),
+            DELTA,
+            address(twrapper),
+            1e18, // issuance fee > 10%
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY
+        );
+        divider.addFeed(address(aFeed));
+        uint256 maturity = getValidMaturity(2021, 10);
+        User(address(alice)).doSponsorSeries(address(aFeed), maturity);
+        uint256 amount = target.balanceOf(address(alice));
+        try alice.doIssue(address(aFeed), maturity, amount) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssuanceFeeCapExceeded);
+        }
     }
 
     function testIssue(uint96 tBal) public {

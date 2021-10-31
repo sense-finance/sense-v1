@@ -15,6 +15,7 @@ library Errors {
     string constant FlashUntrustedBorrower = "FlashBorrower: Untrusted lender";
     string constant FlashUntrustedLoanInitiator = "FlashBorrower: Untrusted loan initiator";
     string constant GuardCapReached = "Issuance cap reached";
+    string constant IssuanceFeeCapExceeded = "Issuance fee cannot exceed 10%";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";
