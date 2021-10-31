@@ -76,6 +76,9 @@ abstract contract BaseFeed is Initializable {
     /// @notice Scale getter that must be overriden by child contracts
     function _scale() internal virtual returns (uint256 _value);
 
+    /// @notice Target's Underlying getter that must be overriden by child contracts
+    function underlying() external virtual returns (address);
+
     event Initialized();
     event WTargetAdded(address indexed twrapper);
 }

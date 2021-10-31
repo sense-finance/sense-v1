@@ -7,15 +7,19 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { Errors } from "../libs/Errors.sol";
 import { BaseFeed } from "../feeds/BaseFeed.sol";
 import { Divider } from "../Divider.sol";
-import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 
 import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeFeed is BaseFeed {
     function _scale() internal virtual override returns (uint256 _value) {
         _value = 100e18;
+    }
+
+    function underlying() external virtual override returns (address) {
+        return address(1);
     }
 
     function doSetFeed(Divider d, address _feed) public {
@@ -29,7 +33,7 @@ contract tWrappers is TestHelper {
     function testTWrapperHasParams() public {
         MockToken reward = new MockToken("Reward Airdrop Token", "RAT", 18);
         MockToken target = new MockToken("Compound Dai", "cDAI", 18);
-        BaseTWrapper tWrapper = new BaseTWrapper();
+        MockTWrapper tWrapper = new MockTWrapper();
         tWrapper.initialize(address(target), address(divider), address(reward));
 
         assertEq(tWrapper.target(), address(target));

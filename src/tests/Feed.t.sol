@@ -17,6 +17,10 @@ contract FakeFeed is BaseFeed {
         _value = 100e18;
     }
 
+    function underlying() external virtual override returns (address) {
+        return address(1);
+    }
+
     function doSetFeed(Divider d, address _feed) public {
         d.setFeed(_feed, true);
     }

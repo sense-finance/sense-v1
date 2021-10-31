@@ -5,6 +5,7 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { IFeed } from "./test-helpers/interfaces/IFeed.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -48,7 +49,8 @@ contract Factories is TestHelper {
 
     function testDeployFeedAndinitializeSeries() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someTarget = new MockToken("Some Target", "ST", 18);
+        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         (address f, address wt) = periphery.onboardTarget(address(someFactory), address(someTarget));
         assertTrue(f != address(0));

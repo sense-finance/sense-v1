@@ -25,6 +25,8 @@ contract Periphery is Trust {
     using SafeERC20 for ERC20;
     using Errors for string;
 
+    enum Action {ZERO_TO_CLAIM, CLAIM_TO_TARGET}
+
     /// @notice Configuration
     uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
@@ -68,9 +70,7 @@ contract Periphery is Trust {
         }
         ERC20(divider.stable()).safeTransferFrom(msg.sender, address(this), divider.INIT_STAKE() / convertBase);
         (zero, claim) = divider.initSeries(feed, maturity, msg.sender);
-        gClaimManager.join(feed, maturity, 0); // we join just to force the gclaim deployment
-        address gclaim = address(gClaimManager.gclaims(claim));
-        address unipool = IUniswapV3Factory(uniFactory).createPool(gclaim, zero, UNI_POOL_FEE); // deploy UNIV3 pool
+        address unipool = IUniswapV3Factory(uniFactory).createPool(zero, Feed(feed).underlying(), UNI_POOL_FEE); // deploy UNIV3 pool
         IUniswapV3Pool(unipool).initialize(sqrtPriceX96);
         poolManager.addSeries(feed, maturity);
         emit SeriesSponsored(feed, maturity, msg.sender);
@@ -84,6 +84,7 @@ contract Periphery is Trust {
         require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
+        ERC20(target).approve(wtClone, type(uint256).max); // for flashloans
         poolManager.addTarget(target);
         emit TargetOnboarded(target);
     }
@@ -94,72 +95,74 @@ contract Periphery is Trust {
     /// @param feed Feed address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
-    /// @param backfill Amount in target to backfill gClaims
     function swapTargetForZeros(
-        address feed, uint256 maturity, uint256 tBal, 
-        uint256 backfill, uint256 minAccepted
+        address feed, uint256 maturity, uint256 tBal, uint256 minAccepted
     ) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
-        // transfer target into this contract
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal + backfill);
+        // transfer target directly to TWrapper for conversion
+        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBal); // TODO: remove backfill param?
 
-        // issue zeros & claims with target
-        uint256 issued = divider.issue(feed, maturity, tBal);
+        // convert target to underlying
+        uint256 uBal = TWrapper(Feed(feed).twrapper()).unwrapTarget(tBal);
 
-        // convert claims to gclaims
-        ERC20(claim).approve(address(gClaimManager), issued);
-        gClaimManager.join(feed, maturity, issued);
+        // swap underlying for zeros
+        uint256 zBal = _swap(Feed(feed).underlying(), zero, uBal, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
 
-        // swap gclaims to zeros
-        address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(gclaim, zero, issued, address(this), minAccepted);
-        uint256 totalZeros = issued + swapped;
-
-        // transfer issued + bought zeros to user
-        ERC20(zero).safeTransfer(msg.sender, totalZeros);
+        // transfer bought zeros to user
+        ERC20(zero).safeTransfer(msg.sender, zBal);
 
     }
 
     function swapTargetForClaims(address feed, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
+        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
+
         // transfer target into this contract
         ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal);
 
-        // issue zeros & claims with target
         uint256 issued = divider.issue(feed, maturity, tBal);
 
-        // swap zeros to gclaims
-        (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
-        address gclaim = address(gClaimManager.gclaims(claim));
-        uint256 swapped = _swap(zero, gclaim, issued, address(this), minAccepted);
+        // (1) Sell zeros for underlying
+        uint256 uBal = _swap(zero, Feed(feed).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
 
-        // convert gclaims to claims
-        gClaimManager.exit(feed, maturity, swapped);
-        uint256 totalClaims = issued + swapped;
+        // (2) Convert underlying into target (on protocol)
+        ERC20(Feed(feed).underlying()).safeTransfer(Feed(feed).twrapper(), uBal);
+        uint256 wrappedTarget = TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal); // TODO: use method from protocol. Each TWrapper would know how to wrap underlying into target
 
-        // transfer issued + bought claims to user
-        ERC20(claim).safeTransfer(msg.sender, totalClaims);
+        // (3) Calculate target needed to borrow in order to re-issue and obtain the desired amount of claims
+        // Based on (1) we know the Zero price (uBal/issued) and we can infer the Claim price (1 - uBal/issued).
+        // We can then calculate how many claims we can get with the underlying uBal (uBal / Claim price) and
+        // finally, we get the target we need to borrow by doing a unit conversion from Claim to Target using the last
+        // scale value.
+        uint256 targetToBorrow;
+        { // block scope to avoid stack too deep error
+            uint256 lscale = divider.lscales(feed, maturity, address(this));
+            ERC20 target = ERC20(Feed(feed).target());
+            uint256 tBase = 10**target.decimals();
+            uint256 cPrice = 1*tBase - (uBal.fdiv(issued, tBase)); // TODO: what if cPrice is 0 (e.g at maturity)?
+            uint256 claimsAmount = uBal.fdiv(cPrice, tBase);
+            targetToBorrow = claimsAmount.fdiv(lscale, 10**target.decimals()) - wrappedTarget;
+        }
+
+        // (4) Flash borrow target
+        uint256 cBal = flashBorrow(abi.encode(Action.ZERO_TO_CLAIM), feed, maturity, targetToBorrow);
+
+        // transfer claims from issuance + issued claims from borrowed target (step 4) to msg.sender (if applicable)
+        ERC20(claim).safeTransfer(msg.sender, issued + cBal);
     }
 
     function swapZerosForTarget(address feed, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
-        address gclaim = address(gClaimManager.gclaims(claim));
 
         // transfer zeros into this contract
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal);
 
-        // get rate from uniswap
-        uint256 rate = price(zero, gclaim);
+        // swap zeros for underlying
+        uint256 uBal = _swap(zero, Feed(feed).underlying(), zBal, address(this), minAccepted); // TODO: swap on yieldspace pool
 
-        // swap some zeros for gclaims
-        uint256 zerosToSell = zBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
-        uint256 swapped = _swap(zero, gclaim, zerosToSell, address(this), minAccepted);
-
-        // convert gclaims to claims
-        gClaimManager.exit(feed, maturity, swapped);
-
-        // combine zeros & claims
-        uint256 tBal = divider.combine(feed, maturity, swapped);
+        // wrap underlying into target
+        ERC20(Feed(feed).underlying()).safeTransfer(Feed(feed).twrapper(), uBal);
+        uint256 tBal = TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal);
 
         // transfer target to msg.sender
         ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
@@ -167,32 +170,30 @@ contract Periphery is Trust {
 
     function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
-        address gclaim = address(gClaimManager.gclaims(claim));
+        uint256 lscale = divider.lscales(feed, maturity, address(this));
 
         // transfer claims into this contract
         ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
 
-        // get rate from uniswap
-        uint256 rate = price(zero, gclaim);
+        // (1) Calculate target needed to borrow in order to be able to buy as many Zeros as Claims passed
+        // On one hand, I get the price of the underlying/zero from Yieldspace pool
+        // On the other hand, I know that I would need to purchase `cBal/2` Zeros so as to end up with same amount of
+        // Zeros and Claims and be able to combine them into target
+        uint256 targetToBorrow;
+        {
+            uint256 rate = price(Feed(feed).underlying(), zero); // price of underlying/zero from Yieldspace pool
+            ERC20 target = ERC20(Feed(feed).target());
+            uint256 tBase = 10**target.decimals();
+            uint256 zBal = cBal.fdiv(2*tBase, tBase);
+            uint256 uBal = zBal.fmul(rate, tBase);
+            targetToBorrow = uBal.fmul(lscale, tBase); // amount of claims div 2 multiplied by rate gives me amount of underlying then multiplying by lscale gives me target
+        }
 
-        uint256 claimsToSell = cBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
+        // (2) Flash borrow target
+        uint256 tBal = flashBorrow(abi.encode(Action.CLAIM_TO_TARGET), feed, maturity, targetToBorrow);
 
-        // convert some claims to gclaims
-        ERC20 target = ERC20(Feed(feed).target());
-        ERC20(claim).approve(address(gClaimManager), claimsToSell);
-        uint256 excess = gClaimManager.excess(feed, maturity, claimsToSell);
-        target.safeTransferFrom(msg.sender, address(this), excess);
-        target.approve(address(gClaimManager), excess);
-        gClaimManager.join(feed, maturity, claimsToSell);
-
-        // swap gclaims for zeros
-        uint256 swapped = _swap(gclaim, zero, claimsToSell, address(this), minAccepted);
-
-        // combine zeros & claims
-        uint256 tBal = divider.combine(feed, maturity, swapped);
-
-        // transfer target to msg.sender
-        target.safeTransfer(msg.sender, tBal);
+        // (6) Part of the target repays the loan, part is transferred to msg.sender
+        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
     }
 
     /* ========== VIEWS ========== */
@@ -206,7 +207,7 @@ contract Periphery is Trust {
     }
 
     function _swap(
-        address tokenIn, address tokenOut, uint256 amountIn, 
+        address tokenIn, address tokenOut, uint256 amountIn,
         address recipient, uint256 minAccepted
     ) internal returns (uint256 amountOut) {
         // approve router to spend tokenIn
@@ -236,6 +237,54 @@ contract Periphery is Trust {
         require(factories[factory] != isOn, Errors.ExistingValue);
         factories[factory] = isOn;
         emit FactoryChanged(factory, isOn);
+    }
+
+    /* ========== INTERNAL & HELPER FUNCTIONS ========== */
+
+    /// @notice Initiate a flash loan
+    /// @param feed feed
+    /// @param maturity maturity
+    /// @param amount target amount to borrow
+    /// @return claims issued with flashloan
+    function flashBorrow(bytes memory data, address feed, uint256 maturity, uint256 amount) internal returns (uint256) {
+        TWrapper twrapper = TWrapper(Feed(feed).twrapper());
+        (bool result, uint256 value) = twrapper.flashLoan(data, address(this), feed, maturity, amount);
+        require(result == true);
+        return value;
+    }
+
+    /// @dev ERC-3156 Flash loan callback
+    function onFlashLoan(bytes calldata data, address initiator, address feed, uint256 maturity, uint256 amount) external returns(bytes32, uint256) {
+        require(msg.sender == address(Feed(feed).twrapper()), Errors.FlashUntrustedBorrower);
+        require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
+        (address zero, , , , , , , ,) = divider.series(feed, maturity);
+        (Action action) = abi.decode(data, (Action));
+        if (action == Action.ZERO_TO_CLAIM) {
+
+            // (5) Issue
+            uint256 issued = divider.issue(feed, maturity, amount);
+
+            // (6) Sell Zeros for underlying
+            uint256 uBal = _swap(zero, Feed(feed).underlying(), issued, address(this), 0); // TODO: minAccepted
+            // uint256 uBal = _swap(zero, Feed(feed).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace
+
+            // (7) Convert underlying into target
+            ERC20(Feed(feed).underlying()).safeTransfer(Feed(feed).twrapper(), uBal);
+            TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
+            return (keccak256("ERC3156FlashBorrower.onFlashLoan"), issued);
+
+        } else if (action == Action.CLAIM_TO_TARGET) {
+            // (3) Convert target into underlying (unwrap via protocol)
+            uint256 uBal = TWrapper(Feed(feed).twrapper()).unwrapTarget(amount); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
+
+            // (4) Swap underlying for Zeros on Yieldspace pool
+            uint256 zBal = _swap(Feed(feed).underlying(), zero, uBal, address(this), 0); // TODO: minAccepted param
+
+            // (5) Combine zeros and claim
+            uint256 tBal = divider.combine(feed, maturity, zBal);
+            return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
+        }
+        return (keccak256("ERC3156FlashBorrower.onFlashLoan"), 0);
     }
 
     /* ========== EVENTS ========== */

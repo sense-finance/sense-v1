@@ -17,6 +17,7 @@ import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
+import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
@@ -58,7 +59,8 @@ contract PeripheryTestHelper is DSTest {
 
         // feed & factory
         CFeed implementation = new CFeed(); // compound feed implementation
-        BaseTWrapper twImpl = new BaseTWrapper(); // feed implementation
+        MockTWrapper twImpl = new MockTWrapper(); // TODO: remove when merging CTWrapper
+        //        CTWrapper twImpl = new CTWrapper(); // feed implementation
         // deploy compound feed factory
         factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI);
         //        factory.addTarget(cDAI, true);
