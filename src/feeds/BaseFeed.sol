@@ -22,7 +22,7 @@ abstract contract BaseFeed is Initializable {
     uint256 public delta;
     address public twrapper;
     uint256 public issuanceFee;
-    uint256 public initStake;
+    uint256 public stakeSize;
     uint256 public minMaturity;
     uint256 public maxMaturity;
     string public name;
@@ -41,7 +41,7 @@ abstract contract BaseFeed is Initializable {
         uint256 _delta,
         address _twrapper,
         uint256 _issuanceFee,
-        uint256 _initStake,
+        uint256 _stakeSize,
         uint256 _minMaturity,
         uint256 _maxMaturity
     ) external virtual initializer {
@@ -51,7 +51,7 @@ abstract contract BaseFeed is Initializable {
         target = _target;
         twrapper = _twrapper;
         issuanceFee = _issuanceFee;
-        initStake = _initStake;
+        stakeSize = _stakeSize;
         minMaturity = _minMaturity;
         maxMaturity = _maxMaturity;
         name = string(abi.encodePacked(ERC20(target).name(), " Feed"));

@@ -22,7 +22,7 @@ contract Factories is TestHelper {
             address(reward),
             address(stake),
             ISSUANCE_FEE,
-            INIT_STAKE,
+            STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY
         );
@@ -34,14 +34,14 @@ contract Factories is TestHelper {
         assertEq(MockFactory(someFactory).reward(), address(reward));
         assertEq(MockFactory(someFactory).stake(), address(stake));
         assertEq(MockFactory(someFactory).issuanceFee(), ISSUANCE_FEE);
-        assertEq(MockFactory(someFactory).initStake(), INIT_STAKE);
+        assertEq(MockFactory(someFactory).stakeSize(), STAKE_SIZE);
         assertEq(MockFactory(someFactory).minMaturity(), MIN_MATURITY);
         assertEq(MockFactory(someFactory).maxMaturity(), MAX_MATURITY);
     }
 
     function testDeployFeed() public {
         uint256 issuanceFee = 0.01e18;
-        uint256 initStake = 1e18;
+        uint256 stakeSize = 1e18;
         uint256 minMaturity = 2 weeks;
         uint256 maxMaturity = 14 weeks;
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
@@ -57,7 +57,7 @@ contract Factories is TestHelper {
         assertEq(IFeed(feed).symbol(), "ST-feed");
         assertEq(IFeed(feed).stake(), address(stake));
         assertEq(IFeed(feed).issuanceFee(), ISSUANCE_FEE);
-        assertEq(IFeed(feed).initStake(), INIT_STAKE);
+        assertEq(IFeed(feed).stakeSize(), STAKE_SIZE);
         assertEq(IFeed(feed).minMaturity(), MIN_MATURITY);
         assertEq(IFeed(feed).maxMaturity(), MAX_MATURITY);
         uint256 scale = IFeed(feed).scale();

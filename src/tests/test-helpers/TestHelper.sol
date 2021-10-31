@@ -58,7 +58,7 @@ contract TestHelper is DSTest {
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
     uint256 public ISSUANCE_FEE = 0.01e18;
-    uint256 public INIT_STAKE = 1e18;
+    uint256 public STAKE_SIZE = 1e18;
     uint256 public MIN_MATURITY = 2 weeks;
     uint256 public MAX_MATURITY = 14 weeks;
     uint256 public SPONSOR_WINDOW;
@@ -152,7 +152,7 @@ contract TestHelper is DSTest {
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
         TWrapper twImpl = new TWrapper();
-        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, INIT_STAKE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
+        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);

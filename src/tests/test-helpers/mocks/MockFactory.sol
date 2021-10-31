@@ -15,10 +15,10 @@ contract MockFactory is BaseFactory {
         address _reward,
         address _stake,
         uint256 _issuanceFee,
-        uint256 _initStake,
+        uint256 _stakeSize,
         uint256 _minMaturity,
         uint256 _maxMaturity
-    ) BaseFactory(address(0), _feedImpl, _twImpl, _divider, _delta, _reward, _stake, _issuanceFee, _initStake, _minMaturity, _maxMaturity) {}
+    ) BaseFactory(address(0), _feedImpl, _twImpl, _divider, _delta, _reward, _stake, _issuanceFee, _stakeSize, _minMaturity, _maxMaturity) {}
 
     function _exists(address _target) internal override virtual returns (bool) {
         return targets[_target];

@@ -21,7 +21,7 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
         uint256 balance = stake.balanceOf(address(alice));
-        alice.doTransfer(address(stake), address(bob), balance - INIT_STAKE / convertBase(stake.decimals()) / 2);
+        alice.doTransfer(address(stake), address(bob), balance - STAKE_SIZE / convertBase(stake.decimals()) / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(feed), maturity) {
             fail();
@@ -128,7 +128,7 @@ contract Dividers is TestHelper {
         assertTrue(address(zero) != address(0));
         assertTrue(address(claim) != address(0));
         uint256 afterBalance = stake.balanceOf(address(alice));
-        assertEq(afterBalance, beforeBalance - INIT_STAKE / convertBase(stake.decimals()));
+        assertEq(afterBalance, beforeBalance - STAKE_SIZE / convertBase(stake.decimals()));
     }
 
     function testInitThreeSeries() public {
@@ -285,7 +285,7 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
         bob.doSettleSeries(address(feed), maturity);
         uint256 afterBalance = stake.balanceOf(address(bob));
-        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stake.decimals()));
+        assertEq(afterBalance, beforeBalance + STAKE_SIZE / convertBase(stake.decimals()));
     }
 
     function testSettleSeriesFeesAreTransferredIfSponsor(uint96 tBal) public {
@@ -314,7 +314,7 @@ contract Dividers is TestHelper {
     //        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
     //        bob.doSettleSeries(address(feed), maturity);
     //        uint256 afterBalance = stake.balanceOf(address(bob));
-    //        assertEq(afterBalance, beforeBalance + INIT_STAKE / convertBase(stake.decimals()));
+    //        assertEq(afterBalance, beforeBalance + STAKE_SIZE / convertBase(stake.decimals()));
     //    }
 
     /* ========== issue() tests ========== */
@@ -1001,11 +1001,11 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceAfter = stake.balanceOf(address(alice));
         assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
-        assertEq(sponsorStakeBalanceAfter, sponsorStakeBalanceBefore - INIT_STAKE / convertBase(stake.decimals()));
+        assertEq(sponsorStakeBalanceAfter, sponsorStakeBalanceBefore - STAKE_SIZE / convertBase(stake.decimals()));
         uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
         uint256 cupStakeBalanceAfter = stake.balanceOf(address(this));
         assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
-        assertEq(cupStakeBalanceAfter, cupStakeBalanceBefore + INIT_STAKE / convertBase(stake.decimals()));
+        assertEq(cupStakeBalanceAfter, cupStakeBalanceBefore + STAKE_SIZE / convertBase(stake.decimals()));
     }
 
     /* ========== setFeed() tests ========== */

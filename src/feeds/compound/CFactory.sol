@@ -23,10 +23,10 @@ contract CFactory is BaseFactory {
         address _reward,
         address _stake,
         uint256 _issuanceFee,
-        uint256 _initStake,
+        uint256 _stakeSize,
         uint256 _minMaturity,
         uint256 _maxMaturity
-    ) BaseFactory(COMPTROLLER, _feedImpl, _twImpl, _divider, _delta, _reward, _stake, _issuanceFee, _initStake, _minMaturity, _maxMaturity) {}
+    ) BaseFactory(COMPTROLLER, _feedImpl, _twImpl, _divider, _delta, _reward, _stake, _issuanceFee, _stakeSize, _minMaturity, _maxMaturity) {}
 
     function _exists(address _target) internal override virtual returns (bool isListed) {
         (isListed, , ) = ComptrollerLike(protocol).markets(_target);

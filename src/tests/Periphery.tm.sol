@@ -34,7 +34,7 @@ contract PeripheryTestHelper is DSTest {
 
     uint256 public constant DELTA = 1;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
-    uint256 public constant INIT_STAKE = 1e18;
+    uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
 
@@ -74,7 +74,7 @@ contract PeripheryTestHelper is DSTest {
             COMP,
             DAI,
             ISSUANCE_FEE,
-            INIT_STAKE,
+            STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY
         );
