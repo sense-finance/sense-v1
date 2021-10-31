@@ -39,7 +39,7 @@ contract PoolManagerTest is DSTest {
         assetDeployer.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
-        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stake));
+        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM");
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
 

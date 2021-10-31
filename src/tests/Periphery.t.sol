@@ -54,7 +54,6 @@ contract PeripheryTest is TestHelper {
 
         // onboard target
         periphery.onboardFeed(address(factory), address(newTarget));
-        assertTrue(factory.feeds(address(newTarget)) != address(0));
         assertTrue(poolManager.tInits(address(target)));
     }
 
@@ -71,7 +70,7 @@ contract PeripheryTest is TestHelper {
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
-        uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
+        uint256 fee = (feed.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate zeros to be issued
         (, uint256 lscale) = feed._lscale();
@@ -98,7 +97,7 @@ contract PeripheryTest is TestHelper {
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
-        uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
+        uint256 fee = (feed.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate claims to be issued
         (, uint256 lscale) = feed._lscale();
@@ -124,7 +123,7 @@ contract PeripheryTest is TestHelper {
 
         alice.doIssue(address(feed), maturity, tBal);
 
-        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(alice));
+        uint256 tBalBefore = ERC20(feed.getTarget()).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // calculate zeros to be sold for gclaims
@@ -156,7 +155,7 @@ contract PeripheryTest is TestHelper {
 
         bob.doIssue(address(feed), maturity, tBal);
 
-        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(feed.getTarget()).balanceOf(address(bob));
         uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
 
         // calculate claims to be converted to gclaims
@@ -191,7 +190,7 @@ contract PeripheryTest is TestHelper {
 
         bob.doIssue(address(feed), maturity, tBal);
 
-        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(feed.getTarget()).balanceOf(address(bob));
         uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
 
         // calculate claims to be converted to gclaims
@@ -203,7 +202,7 @@ contract PeripheryTest is TestHelper {
         uint256 swapped = claimsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
 
         // calculate target to receive after combining
-        uint256 lscale = divider._lscale(address(feed), maturity, address(bob));
+        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
         uint256 tCombined = swapped.fdiv(lscale, 10**ERC20(claim).decimals());
 
         // calculate excess

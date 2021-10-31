@@ -17,6 +17,10 @@ contract FakeFeed is BaseFeed {
         _value = 100e18;
     }
 
+    function underlying() external override returns (address) {
+        return address(0);
+    }
+
     function doSetFeed(Divider d, address _feed) public {
         d.setFeed(_feed, true);
     }
@@ -28,26 +32,29 @@ contract Feeds is TestHelper {
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI", 18);
         MockFeed feed = new MockFeed();
-        feed.initialize(
-            address(stake),
-            address(target),
-            address(divider),
-            DELTA,
-            ISSUANCE_FEE,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY
-        );
 
-        assertEq(feed.target(), address(target));
-        assertEq(feed.divider(), address(divider));
-        assertEq(feed.delta(), DELTA);
+        BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+            target: address(target),
+            stake: address(stake),
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY
+        });
+
+        feed.initialize(address(divider), feedParams);
+
         assertEq(feed.name(), "Compound Dai Feed");
         assertEq(feed.symbol(), "cDAI-feed");
-        assertEq(feed.issuanceFee(), ISSUANCE_FEE);
-        assertEq(feed.stakeSize(), STAKE_SIZE);
-        assertEq(feed.minMaturity(), MIN_MATURITY);
-        assertEq(feed.maxMaturity(), MAX_MATURITY);
+        (, uint256 delta, uint256 ifee, address stake, uint256 stakeSize, uint256 minm, uint256 maxm) = BaseFeed(feed).feedParams();
+        assertEq(feed.getTarget(), address(target));
+        assertEq(feed.divider(), address(divider));
+        assertEq(delta, DELTA);
+        assertEq(ifee, ISSUANCE_FEE);
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
     }
 
     function testScale() public {
@@ -68,16 +75,18 @@ contract Feeds is TestHelper {
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
             MockFeed localFeed = new MockFeed();
-            localFeed.initialize(
-                address(stake),
-                address(target),
-                address(divider),
-                DELTA,
-                ISSUANCE_FEE,
-                STAKE_SIZE,
-                MIN_MATURITY,
-                MAX_MATURITY
-            );
+
+            BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+                target: address(target),
+                stake: address(stake),
+                delta: DELTA,
+                ifee: ISSUANCE_FEE,
+                stakeSize: STAKE_SIZE,
+                minm: MIN_MATURITY,
+                maxm: MAX_MATURITY
+            });
+
+            localFeed.initialize(address(divider), feedParams);
 
             uint256 startingScale = startingScales[i];
 
@@ -101,7 +110,7 @@ contract Feeds is TestHelper {
             //         We are functionally doing `maxPercentIncrease * value`, which gets
             //         us the max *amount* that the value could have increased by.
             //      *  Then add that max increase to the original value to get the maximum possible.
-            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.getTarget()).decimals()) + lvalue;
 
             // Set max scale and ensure calling `scale` with it doesn't revert
             localFeed.setScale(maxScale);
@@ -109,9 +118,9 @@ contract Feeds is TestHelper {
 
             // add 1 more day
             hevm.warp(2 days);
-            (ltimestamp, lvalue) = localFeed.lscale();
+            (ltimestamp, lvalue) = localFeed._lscale();
             timeDiff = block.timestamp - ltimestamp;
-            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
+            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.getTarget()).decimals()) + lvalue;
             localFeed.setScale(maxScale);
             localFeed.scale();
         }
@@ -125,23 +134,24 @@ contract Feeds is TestHelper {
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
             MockFeed localFeed = new MockFeed();
-            localFeed.initialize(
-                address(stake),
-                address(target),
-                address(divider),
-                DELTA,
-                ISSUANCE_FEE,
-                STAKE_SIZE,
-                MIN_MATURITY,
-                MAX_MATURITY
-            );
+            BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+                target: address(target),
+                stake: address(stake),
+                delta: DELTA,
+                ifee: ISSUANCE_FEE,
+                stakeSize: STAKE_SIZE,
+                minm: MIN_MATURITY,
+                maxm: MAX_MATURITY
+            });
+
+            localFeed.initialize(address(divider), feedParams);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
             localFeed.setScale(startingScale);
             // Set starting scale and store it as lscale
             localFeed.scale();
-            (uint256 ltimestamp, uint256 lvalue) = localFeed.lscale();
+            (uint256 ltimestamp, uint256 lvalue) = localFeed._lscale();
             assertEq(lvalue, startingScale);
 
             hevm.warp(1 days);
@@ -149,11 +159,11 @@ contract Feeds is TestHelper {
             // 86400 (1 day)
             uint256 timeDiff = block.timestamp - ltimestamp;
             // find the scale value would bring us right up to the acceptable growth per second (delta)?
-            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.target()).decimals()) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localFeed.getTarget()).decimals()) + lvalue;
 
             // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded
             // away in wdivs)
-            localFeed.setScale(maxScale.fmul(1000001e12, 10**ERC20(localFeed.target()).decimals()));
+            localFeed.setScale(maxScale.fmul(1000001e12, 10**ERC20(localFeed.getTarget()).decimals()));
 
             try localFeed.scale() {
                 fail();
@@ -166,16 +176,17 @@ contract Feeds is TestHelper {
     function testCantAddCustomFeedToDivider() public {
         MockToken newTarget = new MockToken("Compound USDC", "cUSDC", 18);
         FakeFeed fakeFeed = new FakeFeed();
-        fakeFeed.initialize(
-            address(stake),
-            address(newTarget),
-            address(divider),
-            DELTA,
-            ISSUANCE_FEE,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY
-        );
+        BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+            target: address(target),
+            stake: address(stake),
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY
+        });
+
+        fakeFeed.initialize(address(divider), feedParams);
         try fakeFeed.doSetFeed(divider, address(fakeFeed)) {
             fail();
         } catch Error(string memory error) {

@@ -33,16 +33,16 @@ contract CFeedTestHelper is DSTest {
         CFeed feedImpl = new CFeed(); // compound feed implementation
         // deploy compound feed factory
         factory = new CFactory(
-            address(feedImpl),
-            address(0),
             address(divider),
-            DELTA,
-            COMP,
+            address(0),
+            address(feedImpl),
             DAI,
-            ISSUANCE_FEE,
             STAKE_SIZE,
+            ISSUANCE_FEE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            DELTA,
+            COMP
         );
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
@@ -52,17 +52,18 @@ contract CFactories is CFeedTestHelper {
     function testDeployFactory() public {
         CFeed feedImpl = new CFeed();
         CFactory otherCFactory = new CFactory(
-            address(feedImpl),
-            address(0),
             address(divider),
-            DELTA,
-            COMP,
+            address(0),
+            address(feedImpl),
             DAI,
-            ISSUANCE_FEE,
             STAKE_SIZE,
+            ISSUANCE_FEE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            DELTA,
+            COMP
         );
+        
         assertTrue(address(otherCFactory) != address(0));
         assertEq(CFactory(otherCFactory).feedImpl(), address(feedImpl));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
@@ -76,12 +77,13 @@ contract CFactories is CFeedTestHelper {
     }
 
     function testDeployFeed() public {
-        (address f, ) = factory.deployFeed(cDAI);
+        address f = factory.deployFeed(cDAI);
         CFeed feed = CFeed(f);
+        (, uint256 delta, , , , ,) = CFeed(feed).feedParams();
         assertTrue(address(feed) != address(0));
         assertEq(CFeed(feed).getTarget(), address(cDAI));
         assertEq(CFeed(feed).divider(), address(divider));
-        assertEq(CFeed(feed).delta(), DELTA);
+        assertEq(delta, DELTA);
         assertEq(CFeed(feed).name(), "Compound Dai Feed");
         assertEq(CFeed(feed).symbol(), "cDAI-feed");
 
