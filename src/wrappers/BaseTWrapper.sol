@@ -17,8 +17,9 @@ contract BaseTWrapper is Initializable {
     using FixedMath for uint256;
 
     /// @notice Program state
-    address public target;
     address public divider;
+    address public target;
+    address public stake;
     address public reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
@@ -27,14 +28,17 @@ contract BaseTWrapper is Initializable {
     mapping(address => uint256) public rewarded; // reward token per collected target per user
 
     function initialize(
-        address _target,
         address _divider,
+        address _target,
+        address _stake,
         address _reward
     ) external virtual initializer {
-        target = _target;
         divider = _divider;
+        target = _target;
+        stake = _stake;
         reward = _reward;
         ERC20(target).approve(_divider, type(uint256).max);
+        ERC20(stake).approve(_divider, type(uint256).max);
 
         emit Initialized();
     }

@@ -64,7 +64,7 @@ abstract contract BaseFactory is Trust {
 
         // wrapped target deployment
         wtClone = twImpl.clone();
-        TWrapper(wtClone).initialize(_target, divider, reward); // deploy Target Wrapper
+        TWrapper(wtClone).initialize(divider, _target, stake, reward); // deploy Target Wrapper
 
         // feed deployment
         feedClone = feedImpl.clone();

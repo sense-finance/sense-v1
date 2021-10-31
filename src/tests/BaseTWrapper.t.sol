@@ -12,10 +12,11 @@ import { Errors } from "../libs/Errors.sol";
 contract Wrappers is TestHelper {
     function testDeployWrapper() public {
         BaseTWrapper twrapper = new BaseTWrapper();
-        twrapper.initialize(address(target), address(divider), address(reward));
+        twrapper.initialize(address(divider), address(target), address(stake), address(reward));
 
-        assertEq(twrapper.target(), address(target));
         assertEq(twrapper.divider(), address(divider));
+        assertEq(twrapper.target(), address(target));
+        assertEq(twrapper.stake(), address(stake));
         assertEq(twrapper.reward(), address(reward));
     }
 
