@@ -34,7 +34,7 @@ contract tWrappers is TestHelper {
         MockToken reward = new MockToken("Reward Airdrop Token", "RAT", 18);
         MockToken target = new MockToken("Compound Dai", "cDAI", 18);
         MockTWrapper tWrapper = new MockTWrapper();
-        tWrapper.initialize(address(target), address(divider), address(reward));
+        tWrapper.initialize(address(divider), address(target), address(stake), address(reward));
 
         assertEq(tWrapper.target(), address(target));
         assertEq(tWrapper.divider(), address(divider));
