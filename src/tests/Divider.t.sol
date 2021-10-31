@@ -435,6 +435,16 @@ contract Dividers is TestHelper {
         assertEq(target.balanceOf(address(alice)), tBalanceBefore - tBal);
     }
 
+    function testIssueIfMoreThanCapButGuardedDisabled() public {
+        uint256 aliceBalance = target.balanceOf(address(alice));
+        divider.setGuard(address(target), aliceBalance - 1);
+        divider.setGuarded(false);
+        uint256 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+        uint256 amount = divider.guards(address(target)) + 1;
+        alice.doIssue(address(feed), maturity, amount);
+    }
+
     //    function testIssueTwoTimes() public {
     //        revert("IMPLEMENT");
     //    }

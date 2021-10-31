@@ -33,6 +33,7 @@ contract Divider is Trust, ReentrancyGuard {
     address public immutable cup;
     address public immutable deployer;
     bool public permissionless;
+    bool public guarded;
     uint256 public feedCounter;
 
     /// @notice feed -> is supported
@@ -63,6 +64,7 @@ contract Divider is Trust, ReentrancyGuard {
     constructor(address _cup, address _deployer) Trust(msg.sender) {
         cup      = _cup;
         deployer = _deployer;
+        guarded = true;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -165,7 +167,8 @@ contract Divider is Trust, ReentrancyGuard {
         uint256 tBalSubFee = tBal - fee;
 
         // Ensure the caller won't hit the issuance cap with this action
-        require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
+        if (guarded)
+            require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBalSubFee);
         target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
 
@@ -425,6 +428,13 @@ contract Divider is Trust, ReentrancyGuard {
         emit GuardChanged(target, cap);
     }
 
+    /// @notice Set guarded mode
+    /// @param _guarded bool
+    function setGuarded(bool _guarded) external requiresTrust {
+        guarded = _guarded;
+        emit GuardedChanged(guarded);
+    }
+
     /// @notice Set periphery's contract
     /// @param _periphery Target address
     function setPeriphery(address _periphery) external requiresTrust {
@@ -582,6 +592,7 @@ contract Divider is Trust, ReentrancyGuard {
     event ZeroRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     event ClaimRedeemed(address indexed feed, uint256 indexed maturity, uint256 redeemed);
     /// *----* misc
+    event GuardedChanged(bool indexed guarded);
     event PermissionlessChanged(bool indexed permissionless);
 
 }
