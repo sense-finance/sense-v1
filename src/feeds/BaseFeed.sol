@@ -16,8 +16,6 @@ abstract contract BaseFeed is Initializable {
     using FixedMath for uint256;
 
     /// @notice Configuration
-    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
-
     address public stake;
     address public target;
     address public divider;
@@ -58,8 +56,7 @@ abstract contract BaseFeed is Initializable {
         maxMaturity = _maxMaturity;
         name = string(abi.encodePacked(ERC20(target).name(), " Feed"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-feed"));
-        require(minMaturity < maxMaturity, "Invalid maturity values"); // TODO do we want to check for this?
-        require(issuanceFee <= ISSUANCE_FEE_CAP, "Issuance fee cannot exceed 10%");
+        require(minMaturity < maxMaturity, "Invalid maturity values");
         emit Initialized();
     }
 

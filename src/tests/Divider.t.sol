@@ -392,6 +392,10 @@ contract Dividers is TestHelper {
         }
     }
 
+    function testCantIssueIfIssuanceFeeExceedsCap() public {
+        // TODO
+    }
+
     function testIssue(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);

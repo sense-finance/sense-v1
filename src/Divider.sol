@@ -25,6 +25,7 @@ contract Divider is Trust {
     /// @notice Configuration
     uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
     uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
+    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
 
     /// @notice Program state
     address public periphery;
@@ -151,6 +152,8 @@ contract Divider is Trust {
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Feed(feed).issuanceFee();
+        require(issuanceFee <= ISSUANCE_FEE_CAP, "Issuance fee cannot exceed 10%");
+
         if (tDecimals != 18) {
             fee = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18)).fmul(tBal, tBase);
         } else {
@@ -516,7 +519,8 @@ contract Divider is Trust {
         feeds[feed] = isOn;
         if (isOn) {
             feedAddresses[feedCounter] = feed;
-            feedIDs[feedCounter++] = feed;
+            feedIDs[feed] = feedCounter;
+            feedCounter++;
         }
         emit FeedChanged(feed, feedCounter, isOn);
     }
