@@ -20,23 +20,41 @@ abstract contract BaseFactory is Trust {
     address public feedImpl; // feed implementation
     address public twImpl; // wrapped target implementation
     address public divider;
+    address public oracle;
     uint256 public delta;
     address public reward; // reward token
+    address public stake;
+    uint256 public issuanceFee;
+    uint256 public stakeSize;
+    uint256 public minMaturity;
+    uint256 public maxMaturity;
 
     constructor(
         address _protocol,
         address _feedImpl,
         address _twImpl,
         address _divider,
+        address _oracle,
         uint256 _delta,
-        address _reward
+        address _reward,
+        address _stake,
+        uint256 _issuanceFee,
+        uint256 _stakeSize,
+        uint256 _minMaturity,
+        uint256 _maxMaturity
     ) Trust(msg.sender) {
         protocol = _protocol;
         feedImpl = _feedImpl;
         twImpl = _twImpl;
         divider = _divider;
+        oracle = _oracle;
         delta = _delta;
+        stake = _stake;
         reward = _reward;
+        issuanceFee = _issuanceFee;
+        stakeSize = _stakeSize;
+        minMaturity = _minMaturity;
+        maxMaturity = _maxMaturity;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -49,11 +67,22 @@ abstract contract BaseFactory is Trust {
 
         // wrapped target deployment
         wtClone = twImpl.clone();
-        TWrapper(wtClone).initialize(_target, divider, reward); // deploy Target Wrapper
+        TWrapper(wtClone).initialize(divider, _target, stake, reward); // deploy Target Wrapper
 
         // feed deployment
         feedClone = feedImpl.clone();
-        BaseFeed(feedClone).initialize(_target, divider, delta, wtClone);
+        BaseFeed(feedClone).initialize(
+            stake,
+            _target,
+            divider,
+            oracle,
+            delta,
+            wtClone,
+            issuanceFee,
+            stakeSize,
+            minMaturity,
+            maxMaturity
+        );
         Divider(divider).setFeed(feedClone, true);
         feeds[_target] = feedClone;
         emit FeedDeployed(feedClone);

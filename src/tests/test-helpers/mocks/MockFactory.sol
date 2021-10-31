@@ -5,6 +5,8 @@ pragma solidity ^0.8.6;
 import { BaseFactory } from "../../../feeds/BaseFactory.sol";
 
 contract MockFactory is BaseFactory {
+    address public constant ORACLE = address(123);
+
     mapping(address => bool) public targets;
 
     constructor(
@@ -12,8 +14,13 @@ contract MockFactory is BaseFactory {
         address _twImpl,
         address _divider,
         uint256 _delta,
-        address _reward
-    ) BaseFactory(address(0), _feedImpl, _twImpl, _divider, _delta, _reward) {}
+        address _reward,
+        address _stake,
+        uint256 _issuanceFee,
+        uint256 _stakeSize,
+        uint256 _minMaturity,
+        uint256 _maxMaturity
+    ) BaseFactory(address(0), _feedImpl, _twImpl, _divider, ORACLE, _delta, _reward, _stake, _issuanceFee, _stakeSize, _minMaturity, _maxMaturity) {}
 
     function _exists(address _target) internal override virtual returns (bool) {
         return targets[_target];

@@ -23,15 +23,21 @@ import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract PeripheryTestHelper is DSTest {
-    uint256 public constant DELTA = 1;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address public constant UNI_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+
+    uint256 public constant DELTA = 1;
+    uint256 public constant ISSUANCE_FEE = 0.01e18;
+    uint256 public constant STAKE_SIZE = 1e18;
+    uint256 public constant MIN_MATURITY = 2 weeks;
+    uint256 public constant MAX_MATURITY = 14 weeks;
 
     Periphery periphery;
     CFeed feed;
@@ -53,7 +59,7 @@ contract PeripheryTestHelper is DSTest {
 
         // divider
         assetDeployer = new AssetDeployer();
-        divider = new Divider(cDAI, address(this), address(assetDeployer));
+        divider = new Divider(address(this), address(assetDeployer));
         assetDeployer.init(address(divider));
         divider.setPeriphery(address(periphery));
 
@@ -62,7 +68,18 @@ contract PeripheryTestHelper is DSTest {
         MockTWrapper twImpl = new MockTWrapper(); // TODO: remove when merging CTWrapper
         //        CTWrapper twImpl = new CTWrapper(); // feed implementation
         // deploy compound feed factory
-        factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI);
+        factory = new CFactory(
+            address(implementation),
+            address(twImpl),
+            address(divider),
+            DELTA,
+            COMP,
+            DAI,
+            ISSUANCE_FEE,
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY
+        );
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         (address f, address wtClone) = factory.deployFeed(cDAI); // deploy a cDAI feed

@@ -14,6 +14,18 @@ abstract contract IFeed {
 
     function scale() external virtual returns (uint256 _scale);
 
+    function stake() external virtual returns (address _stake);
+
+    function twrapper() external virtual returns (address _twrapper);
+
+    function issuanceFee() external virtual returns (uint256 _issuanceFee);
+
+    function stakeSize() external virtual returns (uint256 _stakeSize);
+
+    function minMaturity() external virtual returns (uint256 _minMaturity);
+
+    function maxMaturity() external virtual returns (uint256 _maxMaturity);
+
     function initialize(
         address _target,
         address _divider,

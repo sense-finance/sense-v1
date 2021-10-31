@@ -32,13 +32,30 @@ contract Feeds is TestHelper {
     function testFeedHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI", 18);
         MockFeed feed = new MockFeed();
-        feed.initialize(address(target), address(divider), DELTA, address(0));
+        feed.initialize(
+            address(stake),
+            address(target),
+            address(divider),
+            ORACLE,
+            DELTA,
+            address(twrapper),
+            ISSUANCE_FEE,
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY
+        );
 
         assertEq(feed.target(), address(target));
         assertEq(feed.divider(), address(divider));
         assertEq(feed.delta(), DELTA);
         assertEq(feed.name(), "Compound Dai Feed");
         assertEq(feed.symbol(), "cDAI-feed");
+        assertEq(feed.twrapper(), address(twrapper));
+        assertEq(feed.issuanceFee(), ISSUANCE_FEE);
+        assertEq(feed.stakeSize(), STAKE_SIZE);
+        assertEq(feed.minMaturity(), MIN_MATURITY);
+        assertEq(feed.maxMaturity(), MAX_MATURITY);
+        assertEq(feed.oracle(), ORACLE);
     }
 
     function testScale() public {
@@ -59,7 +76,19 @@ contract Feeds is TestHelper {
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
             MockFeed localFeed = new MockFeed();
-            localFeed.initialize(address(target), address(divider), DELTA, address(0));
+            localFeed.initialize(
+                address(stake),
+                address(target),
+                address(divider),
+                ORACLE,
+                DELTA,
+                address(twrapper),
+                ISSUANCE_FEE,
+                STAKE_SIZE,
+                MIN_MATURITY,
+                MAX_MATURITY
+            );
+
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -106,7 +135,18 @@ contract Feeds is TestHelper {
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
             MockFeed localFeed = new MockFeed();
-            localFeed.initialize(address(target), address(divider), DELTA, address(0));
+            localFeed.initialize(
+                address(stake),
+                address(target),
+                address(divider),
+                ORACLE,
+                DELTA,
+                address(twrapper),
+                ISSUANCE_FEE,
+                STAKE_SIZE,
+                MIN_MATURITY,
+                MAX_MATURITY
+            );
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -138,7 +178,18 @@ contract Feeds is TestHelper {
     function testCantAddCustomFeedToDivider() public {
         MockToken newTarget = new MockToken("Compound USDC", "cUSDC", 18);
         FakeFeed fakeFeed = new FakeFeed();
-        fakeFeed.initialize(address(newTarget), address(divider), 0, address(0));
+        fakeFeed.initialize(
+            address(stake),
+            address(newTarget),
+            address(divider),
+            ORACLE,
+            DELTA,
+            address(twrapper),
+            ISSUANCE_FEE,
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY
+        );
         try fakeFeed.doSetFeed(divider, address(fakeFeed)) {
             fail();
         } catch Error(string memory error) {

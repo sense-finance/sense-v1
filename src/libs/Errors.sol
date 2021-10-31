@@ -15,6 +15,7 @@ library Errors {
     string constant FlashUntrustedBorrower = "FlashBorrower: Untrusted lender";
     string constant FlashUntrustedLoanInitiator = "FlashBorrower: Untrusted loan initiator";
     string constant GuardCapReached = "Issuance cap reached";
+    string constant IssuanceFeeCapExceeded = "Issuance fee cannot exceed 10%";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";
@@ -25,6 +26,7 @@ library Errors {
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
     string constant OnlyPeriphery = "Can only be invoked by the Periphery contract";
+    string constant OnlyPermissionless = "Can only be invoked if permissionless mode is enabled";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";

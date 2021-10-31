@@ -15,10 +15,17 @@ import { Errors } from "../libs/Errors.sol";
 abstract contract BaseFeed is Initializable {
     using FixedMath for uint256;
 
+    /// @notice Configuration
+    address public stake;
     address public target;
     address public divider;
-    address public twrapper;
+    address public oracle;
     uint256 public delta;
+    address public twrapper;
+    uint256 public issuanceFee;
+    uint256 public stakeSize;
+    uint256 public minMaturity;
+    uint256 public maxMaturity;
     string public name;
     string public symbol;
     LScale public lscale;
@@ -29,17 +36,30 @@ abstract contract BaseFeed is Initializable {
     }
 
     function initialize(
+        address _stake,
         address _target,
         address _divider,
+        address _oracle,
         uint256 _delta,
-        address _twrapper
+        address _twrapper,
+        uint256 _issuanceFee,
+        uint256 _stakeSize,
+        uint256 _minMaturity,
+        uint256 _maxMaturity
     ) external virtual initializer {
+        stake = _stake;
         divider = _divider;
+        oracle = _oracle;
         delta = _delta;
         target = _target;
         twrapper = _twrapper;
+        issuanceFee = _issuanceFee;
+        stakeSize = _stakeSize;
+        minMaturity = _minMaturity;
+        maxMaturity = _maxMaturity;
         name = string(abi.encodePacked(ERC20(target).name(), " Feed"));
         symbol = string(abi.encodePacked(ERC20(target).symbol(), "-feed"));
+        require(minMaturity < maxMaturity, "Invalid maturity values");
         emit Initialized();
     }
 
