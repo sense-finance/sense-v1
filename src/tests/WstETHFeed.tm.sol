@@ -30,7 +30,6 @@ contract WstETHFeedTestHelper is DSTest {
         WstETHFeed feedImpl = new WstETHFeed(); // wstETH feed implementation
         // deploy wstETH feed factory
         factory = new MockFactory(address(feedImpl), address(0), address(divider), DELTA, DAI);
-        // TODO replace for a real reward token
         factory.addTarget(wstETH, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         (address f, ) = factory.deployFeed(wstETH);
