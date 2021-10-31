@@ -10,6 +10,7 @@ library Errors {
     string constant FactoryNotSupported = "Factory is not supported";
     string constant FeedAlreadyExists = "Feed already exists";
     string constant GuardCapReached = "Issuance cap reached";
+    string constant IssuanceFeeCapExceeded = "Issuance fee cannot exceed 10%";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
     string constant InvalidFeed = "Invalid feed address or feed is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";

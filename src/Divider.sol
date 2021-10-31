@@ -152,7 +152,7 @@ contract Divider is Trust {
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Feed(feed).issuanceFee();
-        require(issuanceFee <= ISSUANCE_FEE_CAP, "Issuance fee cannot exceed 10%");
+        require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
 
         if (tDecimals != 18) {
             fee = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18)).fmul(tBal, tBase);
