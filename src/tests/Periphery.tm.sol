@@ -30,7 +30,7 @@ contract PeripheryTestHelper is DSTest {
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
-    address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+    address public constant MASTER_ORACLE_FALLBACK = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     Periphery periphery;
     CFeed feed;
@@ -46,7 +46,7 @@ contract PeripheryTestHelper is DSTest {
         // periphery
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
-        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
+        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_FALLBACK);
         periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         poolManager.setIsTrusted(address(periphery), true);
 

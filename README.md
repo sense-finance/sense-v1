@@ -13,6 +13,8 @@ For the latest documentation see [docs.sense.finance](https://docs.sense.finance
 
 You can use Sense at: [app.sense.finance](https://v)
 
+Active development occurs in this repository, which means some contracts in it might not be production-ready. Proceed with caution.
+
 ### Community   
 
 [![Discord](https://img.shields.io/discord/790088877381517322.svg?color=768AD4&label=discord&logo=https%3A%2F%2Fdiscordapp.com%2Fassets%2F8c9701b98ad4372b58f13fd9f65f966e.svg)](https://discordapp.com/channels/790088877381517322/) [![Twitter Follow](https://img.shields.io/twitter/follow/senseprotocol.svg?label=senseprotocol&style=social)](https://twitter.com/senseprotocol)

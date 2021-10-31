@@ -18,6 +18,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   });
 
   const divider = await ethers.getContract("Divider");
+
+  // FIXME: placeholder to be replaced with the real delta value
   const DELTA = 150;
 
   if (!COMP_TOKEN.has(chainId)) throw Error("No stable token found");

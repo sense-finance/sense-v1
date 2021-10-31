@@ -6,6 +6,7 @@ import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
@@ -50,10 +51,11 @@ contract PeripheryTest is TestHelper {
     function testOnboardTarget() public {
         // add a new target to the factory supported targets
         MockToken newTarget = new MockToken("New Target", "NT", 18);
+        MockOracle newOracle = new MockOracle();
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.onboardTarget(address(factory), address(newTarget));
+        periphery.onboardTarget(address(factory), address(newTarget), address(newOracle));
         assertTrue(factory.feeds(address(newTarget)) != address(0));
         assertTrue(poolManager.tInits(address(target)));
     }

@@ -5,6 +5,7 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { IFeed } from "./test-helpers/interfaces/IFeed.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -49,8 +50,9 @@ contract Factories is TestHelper {
     function testDeployFeedAndinitializeSeries() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
+        MockOracle somOracle = new MockOracle();
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        (address f, address wt) = periphery.onboardTarget(address(someFactory), address(someTarget));
+        (address f, address wt) = periphery.onboardTarget(address(someFactory), address(someTarget), address(somOracle));
         assertTrue(f != address(0));
         uint256 scale = IFeed(f).scale();
         assertEq(scale, 1e17);

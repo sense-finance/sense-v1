@@ -119,5 +119,10 @@ module.exports = {
       files: ["./src"],
       verbose: true,
     },
+    test: {
+      tasks: [{ command: "test", params: { testFiles: ["{path}"] } }],
+      files: ["./test/**/*"],
+      verbose: true,
+    },
   },
 };

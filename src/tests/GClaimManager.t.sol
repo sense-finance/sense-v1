@@ -117,7 +117,7 @@ contract GClaimsManager is TestHelper {
         alice.setPeriphery(newPeriphery);
         bob.setPeriphery(newPeriphery);
         periphery = newPeriphery;
-        poolManager.setPeriphery(address(periphery));
+        poolManager.setIsTrusted(address(periphery), true);
         alice.doApprove(address(stable), address(periphery));
 
         uint256 maturity = getValidMaturity(2021, 10);
@@ -217,7 +217,7 @@ contract GClaimsManager is TestHelper {
         alice.setPeriphery(newPeriphery);
         bob.setPeriphery(newPeriphery);
         periphery = newPeriphery;
-        poolManager.setPeriphery(address(periphery));
+        poolManager.setIsTrusted(address(periphery), true);
         alice.doApprove(address(stable), address(periphery));
 
         uint256 maturity = getValidMaturity(2021, 10);

@@ -19,6 +19,7 @@ import { MockUniSwapRouter } from "./mocks/uniswap/MockUniSwapRouter.sol";
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
+import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
 import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
@@ -34,6 +35,7 @@ contract TestHelper is DSTest {
     MockToken target;
     MockToken reward;
     MockFactory factory;
+    MockOracle masterOracle;
 
     PoolManager poolManager;
     Divider internal divider;
@@ -107,10 +109,11 @@ contract TestHelper is DSTest {
         // fuse & comp mocks
         comptroller = new MockComptroller();
         fuseDirectory = new MockFuseDirectory(address(comptroller));
+        masterOracle = new MockOracle();
 
         // pool manager
         poolManager = new PoolManager(address(fuseDirectory), address(comptroller), address(1), address(divider), address(1));
-        poolManager.deployPool("Sense Fuse Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -123,16 +126,17 @@ contract TestHelper is DSTest {
         // periphery
         periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         divider.setPeriphery(address(periphery));
-        poolManager.setPeriphery(address(periphery));
+        poolManager.setIsTrusted(address(periphery), true);
 
         // feed, target wrapper & factory
         MockFeed feedImpl = new MockFeed(); // feed implementation
         TWrapper twImpl = new TWrapper(); // feed implementation
+        MockOracle mockOracle = new MockOracle();
         factory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(reward)); // deploy feed factory
         factory.addTarget(address(target), true); // make mock factory support target
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         periphery.setFactory(address(factory), true);
-        (address f, address wt) = periphery.onboardTarget(address(factory), address(target)); // onboard target through Periphery
+        (address f, address wt) = periphery.onboardTarget(address(factory), address(target), address(mockOracle)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = TWrapper(wt);
 

@@ -11,6 +11,7 @@ import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
+import { MockOracle } from "./test-helpers/mocks/MockFactory.sol";
 import { SimpleAdminFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -24,13 +25,14 @@ contract PoolManagerTest is DSTest {
     Divider internal divider;
     AssetDeployer internal assetDeployer;
     SimpleAdminFeed internal adminFeed;
+    MockOracle internal mockOracle;
 
     PoolManager internal poolManager;
 
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
-    address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+    address public constant MASTER_ORACLE_FALLBACK = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
         stable = new Token("Stable", "SBL", 18, address(this));
@@ -39,9 +41,10 @@ contract PoolManagerTest is DSTest {
         assetDeployer.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
+        mockOracle = new MockOracle();
         adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stable));
 
-        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
+        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_FALLBACK);
 
         // Enable the feed
         divider.setFeed(address(adminFeed), true);
@@ -63,7 +66,7 @@ contract PoolManagerTest is DSTest {
         initSeries();
 
         assertTrue(poolManager.comptroller() == address(0));
-        poolManager.deployPool("Sense Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE_FALLBACK);
 
         assertTrue(poolManager.comptroller() != address(0));
     }
@@ -71,14 +74,14 @@ contract PoolManagerTest is DSTest {
     function testAddTarget() public {
         uint256 maturity = initSeries();
         // Cannot add a Target before deploying a pool
-        try poolManager.addTarget(address(target)) {
+        try poolManager.addTarget(address(target), address(0)) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "Pool not yet deployed");
         }
 
         // Can add a Target after deploying a pool
-        poolManager.deployPool("Sense Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE_FALLBACK);
 
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
@@ -88,7 +91,7 @@ contract PoolManagerTest is DSTest {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        // poolManager.addTarget(address(target)) ;
+        poolManager.addTarget(address(target), mockOracle) ;
 
         // assert
         assertTrue(false);

@@ -79,12 +79,15 @@ contract Periphery is Trust {
     /// @notice Onboards a target
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
+    /// @param factory Factor to use for deployment
     /// @param target Target to onboard
-    function onboardTarget(address factory, address target) external returns (address feedClone, address wtClone) {
+    function onboardTarget(address factory, address target, address targetOracle) 
+        external returns (address feedClone, address wtClone) 
+    {
         require(factories[factory], Errors.FactoryNotSupported);
         (feedClone, wtClone) = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
-        poolManager.addTarget(target);
+        poolManager.addTarget(target, targetOracle);
         emit TargetOnboarded(target);
     }
 

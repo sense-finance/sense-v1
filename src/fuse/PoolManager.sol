@@ -2,7 +2,9 @@
 pragma solidity ^0.8.6;
 
 // External reference
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { PriceOracle } from "./Oracle.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -27,8 +29,21 @@ interface ComptrollerLike {
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
     ) external returns (uint256);
-
     function _acceptAdmin() external returns (uint256);
+}
+
+interface MasterOracleLike {
+    function initialize(
+        address[] memory underlyings, 
+        PriceOracle[] memory _oracles, 
+        PriceOracle _defaultOracle, 
+        address _admin, 
+        bool _canAdminOverwrite
+    ) external;
+    function add(
+        address[] calldata underlyings, 
+        PriceOracle[] calldata _oracles
+    ) external;
 }
 
 /// @title Fuse Pool Manager
@@ -38,9 +53,9 @@ contract PoolManager is Trust {
     address public immutable cERC20Impl;
     address public immutable fuseDirectory;
     address public immutable divider;
-    address public immutable oracle;
+    address public immutable oracleImpl;
     address public comptroller;
-    address public periphery;
+    address public masterOracle;
 
     struct AssetParams {
         address irModel;
@@ -49,8 +64,10 @@ contract PoolManager is Trust {
         uint256 closeFactor;
         uint256 liquidationIncentive;
     }
+
     AssetParams public zeroParams;
     AssetParams public claimParams;
+    AssetParams public lpShareParams;
     AssetParams public targetParams;
 
     /// @notice Target Inits: target -> target added to pool
@@ -61,68 +78,73 @@ contract PoolManager is Trust {
     event SetParams(bytes32 indexed what, AssetParams data);
     event PoolDeployed(
         string name,
-        address comptrollerImpl,
         address comptroller,
         uint256 poolIndex,
-        bool whitelist,
         uint256 closeFactor,
-        uint256 liqIncentive,
-        address oracle
+        uint256 liqIncentive
     );
-    event TargetAdded(address target, address cTarget);
-    event SeriesAdded(address zero, address claim, address cZero, address cClaim);
-    event PeripheryChanged(address periphery);
+    event TargetAdded(address target);
+    event SeriesAdded(address zero, address claim);
 
     constructor(
         address _fuseDirectory,
         address _comptrollerImpl,
         address _cERC20Impl,
         address _divider,
-        address _oracle
+        address _oracleImpl
     ) Trust(msg.sender) {
-        fuseDirectory = _fuseDirectory;
+        fuseDirectory   = _fuseDirectory;
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
-        divider = _divider;
-        oracle = _oracle; // master oracle
+        divider    = _divider;
+        oracleImpl = _oracleImpl; // master oracle
     }
 
     function deployPool(
         string calldata name,
-        bool whitelist,
         uint256 closeFactor,
-        uint256 liqIncentive
+        uint256 liqIncentive,
+        address fallbackOracle
     ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
         require(comptroller == address(0), "Pool already deployed");
+
+        masterOracle = Clones.clone(oracleImpl);
+        MasterOracleLike(masterOracle).initialize(
+            new address[](0), 
+            new PriceOracle[](0), 
+            PriceOracle(fallbackOracle), 
+            address(this),
+            true
+        );
+
         (_poolIndex, _comptroller) = FuseDirectoryLike(fuseDirectory).deployPool(
             name,
             comptrollerImpl,
-            whitelist,
+            false, // whitelist is always false
             closeFactor,
             liqIncentive,
-            oracle
+            masterOracle
         );
 
         uint256 err = ComptrollerLike(_comptroller)._acceptAdmin();
         require(err == 0, "Failed to become admin");
         comptroller = _comptroller;
 
-        emit PoolDeployed(
-            name,
-            comptrollerImpl,
-            _comptroller,
-            _poolIndex,
-            whitelist,
-            closeFactor,
-            liqIncentive,
-            oracle
-        );
+        emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target) external onlyPeriphery {
+    function addTarget(address target, address targetOracle) external requiresTrust {
         require(comptroller != address(0), "Pool not yet deployed");
         require(!tInits[target], "Target already added");
         require(targetParams.irModel != address(0), "Target asset params not set");
+
+        address[] memory underlyings = new address[](1);
+        underlyings[0] = target;
+
+        PriceOracle[] memory oracles = new PriceOracle[](1);
+        oracles[0] = PriceOracle(targetOracle);
+
+        MasterOracleLike(masterOracle).add(underlyings, oracles);
 
         uint256 adminFee = 0;
         bytes memory constructorData = abi.encode(
@@ -140,13 +162,13 @@ contract PoolManager is Trust {
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
         require(err == 0, "Failed to add market");
 
-        // Will use univ3 price oracle on underlying for the Target
+        // TODO: get actual cTarget address
 
         tInits[target] = true;
-        emit TargetAdded(target, target);
+        emit TargetAdded(target);
     }
 
-    function addSeries(address feed, uint256 maturity) external onlyPeriphery {
+    function addSeries(address feed, uint256 maturity) external requiresTrust {
         (address zero, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
 
         require(comptroller != address(0), "Pool not yet deployed");
@@ -156,8 +178,20 @@ contract PoolManager is Trust {
         address target = Feed(feed).target();
         require(tInits[target], "Target for this Series not yet added");
 
-        uint256 adminFee = 0;
+        // TODO: lp shares
 
+        address[] memory underlyings = new address[](2);
+        underlyings[0] = zero;
+        underlyings[1] = claim;
+
+        PriceOracle[] memory oracles = new PriceOracle[](2);
+        // TODO: proper oracles using lp shares
+        oracles[0] = PriceOracle(address(0));
+        oracles[1] = PriceOracle(address(0));
+
+        MasterOracleLike(masterOracle).add(underlyings, oracles);
+
+        uint256 adminFee = 0;
         bytes memory constructorDataZero = abi.encodePacked(
             zero,
             comptroller,
@@ -181,8 +215,6 @@ contract PoolManager is Trust {
             adminFee
         );
 
-        // Will use univ3 price oracle on these assets
-
         uint256 errZero = ComptrollerLike(comptroller)._deployMarket(
             false,
             constructorDataZero,
@@ -200,23 +232,13 @@ contract PoolManager is Trust {
         sInits[feed][maturity] = true;
     }
 
+
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;
         else if (what == "CLAIM_PARAMS") claimParams = data;
+        else if (what == "LP_SHARE_PARAMS") lpShareParams = data;
         else if (what == "TARGET_PARAMS") targetParams = data;
         else revert("Invalid param");
         emit SetParams(what, data);
-    }
-
-    function setPeriphery(address _periphery) external requiresTrust {
-        periphery = _periphery;
-        emit PeripheryChanged(_periphery);
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyPeriphery() {
-        require(periphery == msg.sender, Errors.OnlyPeriphery);
-        _;
     }
 }
