@@ -39,7 +39,7 @@ contract Feeds is TestHelper {
             DELTA,
             address(twrapper),
             ISSUANCE_FEE,
-            INIT_STAKE,
+            STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY
         );
@@ -51,7 +51,7 @@ contract Feeds is TestHelper {
         assertEq(feed.symbol(), "cDAI-feed");
         assertEq(feed.twrapper(), address(twrapper));
         assertEq(feed.issuanceFee(), ISSUANCE_FEE);
-        assertEq(feed.initStake(), INIT_STAKE);
+        assertEq(feed.stakeSize(), STAKE_SIZE);
         assertEq(feed.minMaturity(), MIN_MATURITY);
         assertEq(feed.maxMaturity(), MAX_MATURITY);
     }
@@ -81,7 +81,7 @@ contract Feeds is TestHelper {
                 DELTA,
                 address(twrapper),
                 ISSUANCE_FEE,
-                INIT_STAKE,
+                STAKE_SIZE,
                 MIN_MATURITY,
                 MAX_MATURITY
             );
@@ -139,7 +139,7 @@ contract Feeds is TestHelper {
                 DELTA,
                 address(twrapper),
                 ISSUANCE_FEE,
-                INIT_STAKE,
+                STAKE_SIZE,
                 MIN_MATURITY,
                 MAX_MATURITY
             );
@@ -181,7 +181,7 @@ contract Feeds is TestHelper {
             DELTA,
             address(twrapper),
             ISSUANCE_FEE,
-            INIT_STAKE,
+            STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY
         );

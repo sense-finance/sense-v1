@@ -60,13 +60,13 @@ contract Periphery is Trust {
         address feed, uint256 maturity, uint160 sqrtPriceX96
     ) external returns (address zero, address claim) {
         ERC20 stake = ERC20(Feed(feed).stake());
-        // transfer initStake from sponsor into this contract
+        // transfer stakeSize from sponsor into this contract
         uint256 convertBase = 1;
         uint256 stakeDecimals = stake.decimals();
         if (stakeDecimals != 18) {
             convertBase = stakeDecimals > 18 ? 10 ** (stakeDecimals - 18) : 10 ** (18 - stakeDecimals);
         }
-        stake.safeTransferFrom(msg.sender, address(this), Feed(feed).initStake() / convertBase);
+        stake.safeTransferFrom(msg.sender, address(this), Feed(feed).stakeSize() / convertBase);
 
         // approve divider to withdraw stake assets
         stake.approve(address(divider), type(uint256).max);

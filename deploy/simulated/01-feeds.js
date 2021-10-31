@@ -45,12 +45,23 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Deploy a mocked Factory with mocked dependencies");
 
   const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
-  const INIT_STAKE = ethers.utils.parseEther("1");
+  const STAKE_SIZE = ethers.utils.parseEther("1");
   const MIN_MATURITY = "1209600"; // 2 weeks
   const MAX_MATURITY = "8467200"; // 14 weeks;
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [mockFeedImplAddress, mockTwrapperImplAddress, divider.address, 0, airdrop.address, stake.address, ISSUANCE_FEE, INIT_STAKE, MIN_MATURITY, MAX_MATURITY ],
+    args: [
+      mockFeedImplAddress,
+      mockTwrapperImplAddress,
+      divider.address,
+      0,
+      airdrop.address,
+      stake.address,
+      ISSUANCE_FEE,
+      STAKE_SIZE,
+      MIN_MATURITY,
+      MAX_MATURITY,
+    ],
     log: true,
   });
 

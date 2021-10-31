@@ -24,7 +24,7 @@ abstract contract BaseFactory is Trust {
     address public reward; // reward token
     address public stake;
     uint256 public issuanceFee;
-    uint256 public initStake;
+    uint256 public stakeSize;
     uint256 public minMaturity;
     uint256 public maxMaturity;
 
@@ -37,7 +37,7 @@ abstract contract BaseFactory is Trust {
         address _reward,
         address _stake,
         uint256 _issuanceFee,
-        uint256 _initStake,
+        uint256 _stakeSize,
         uint256 _minMaturity,
         uint256 _maxMaturity
     ) Trust(msg.sender) {
@@ -49,7 +49,7 @@ abstract contract BaseFactory is Trust {
         stake = _stake;
         reward = _reward;
         issuanceFee = _issuanceFee;
-        initStake = _initStake;
+        stakeSize = _stakeSize;
         minMaturity = _minMaturity;
         maxMaturity = _maxMaturity;
     }
@@ -75,7 +75,7 @@ abstract contract BaseFactory is Trust {
             delta,
             wtClone,
             issuanceFee,
-            initStake,
+            stakeSize,
             minMaturity,
             maxMaturity
         );

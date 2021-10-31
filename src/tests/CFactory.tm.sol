@@ -22,7 +22,7 @@ contract CFeedTestHelper is DSTest {
 
     uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
-    uint256 public constant INIT_STAKE = 1e18;
+    uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
 
@@ -40,7 +40,7 @@ contract CFeedTestHelper is DSTest {
             COMP,
             DAI,
             ISSUANCE_FEE,
-            INIT_STAKE,
+            STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY
         );
@@ -59,7 +59,7 @@ contract CFactories is CFeedTestHelper {
             COMP,
             DAI,
             ISSUANCE_FEE,
-            INIT_STAKE,
+            STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY
         );
@@ -70,7 +70,7 @@ contract CFactories is CFeedTestHelper {
         assertEq(CFactory(otherCFactory).reward(), COMP);
         assertEq(CFactory(otherCFactory).stake(), DAI);
         assertEq(CFactory(otherCFactory).issuanceFee(), ISSUANCE_FEE);
-        assertEq(CFactory(otherCFactory).initStake(), INIT_STAKE);
+        assertEq(CFactory(otherCFactory).stakeSize(), STAKE_SIZE);
         assertEq(CFactory(otherCFactory).minMaturity(), MIN_MATURITY);
         assertEq(CFactory(otherCFactory).maxMaturity(), MAX_MATURITY);
     }

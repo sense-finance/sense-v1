@@ -20,7 +20,7 @@ abstract contract IFeed {
 
     function issuanceFee() external virtual returns (uint256 _issuanceFee);
 
-    function initStake() external virtual returns (uint256 _initStake);
+    function stakeSize() external virtual returns (uint256 _stakeSize);
 
     function minMaturity() external virtual returns (uint256 _minMaturity);
 
