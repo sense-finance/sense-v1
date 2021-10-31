@@ -79,7 +79,7 @@ contract CFactories is CFeedTestHelper {
         (address f, ) = factory.deployFeed(cDAI);
         CFeed feed = CFeed(f);
         assertTrue(address(feed) != address(0));
-        assertEq(CFeed(feed).target(), address(cDAI));
+        assertEq(CFeed(feed).getTarget(), address(cDAI));
         assertEq(CFeed(feed).divider(), address(divider));
         assertEq(CFeed(feed).delta(), DELTA);
         assertEq(CFeed(feed).name(), "Compound Dai Feed");

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { Errors } from "../libs/Errors.sol";
-import { EmergencyStop } from "../feeds/EmergencyStop.sol";
+import { EmergencyStop } from "../utils/EmergencyStop.sol";
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";

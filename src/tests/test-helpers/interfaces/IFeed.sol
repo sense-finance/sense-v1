@@ -16,7 +16,6 @@ abstract contract IFeed {
 
     function stake() external virtual returns (address _stake);
 
-    function twrapper() external virtual returns (address _twrapper);
 
     function issuanceFee() external virtual returns (uint256 _issuanceFee);
 

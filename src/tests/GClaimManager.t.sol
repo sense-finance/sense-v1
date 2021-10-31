@@ -184,7 +184,7 @@ contract GClaimsManager is TestHelper {
         uint256 aliceClaimBalance = Claim(claim).balanceOf(address(alice));
         uint256 aliceTargetBalBefore = target.balanceOf(address(alice));
         alice.doJoin(address(feed), maturity, aliceClaimBalance);
-        (, uint256 currScale) = feed.lscale();
+        (, uint256 currScale) = feed._lscale();
         uint256 initScale = periphery.gClaimManager().inits(address(claim));
         uint256 gap = (aliceClaimBalance * currScale) / (currScale - initScale) / 10**18;
         uint256 aliceTargetBalAfter = target.balanceOf(address(alice));

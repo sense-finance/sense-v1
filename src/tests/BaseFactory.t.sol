@@ -5,15 +5,14 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { IFeed } from "./test-helpers/interfaces/IFeed.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { BaseFeed } from "../feeds/BaseFeed.sol";
 import { Errors } from "../libs/Errors.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {
         MockFeed feedImpl = new MockFeed();
-        MockTWrapper twImpl = new MockTWrapper();
         MockFactory someFactory = new MockFactory(
             address(feedImpl),
             address(twImpl),
@@ -41,25 +40,25 @@ contract Factories is TestHelper {
 
     function testDeployFeed() public {
         uint256 issuanceFee = 0.01e18;
-        uint256 stakeSize = 1e18;
+        uint256 _stakeSize = 1e18;
         uint256 minMaturity = 2 weeks;
         uint256 maxMaturity = 14 weeks;
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        (address feed, address tWrapper) = someFactory.deployFeed(address(someTarget));
+        address feed = someFactory.deployFeed(address(someTarget));
         assertTrue(feed != address(0));
-        assertTrue(tWrapper != address(0));
-        assertEq(IFeed(feed).target(), address(someTarget));
+        (address target, uint256 delta, uint256 ifee, address stake, uint256 stakeSize, uint256 minm, uint256 maxm) = BaseFeed(feed).feedParams();
         assertEq(IFeed(feed).divider(), address(divider));
-        assertEq(IFeed(feed).delta(), DELTA);
+        assertEq(target, address(someTarget));
+        assertEq(delta, DELTA);
         assertEq(IFeed(feed).name(), "Some Target Feed");
         assertEq(IFeed(feed).symbol(), "ST-feed");
-        assertEq(IFeed(feed).stake(), address(stake));
-        assertEq(IFeed(feed).issuanceFee(), ISSUANCE_FEE);
-        assertEq(IFeed(feed).stakeSize(), STAKE_SIZE);
-        assertEq(IFeed(feed).minMaturity(), MIN_MATURITY);
-        assertEq(IFeed(feed).maxMaturity(), MAX_MATURITY);
+        assertEq(stake, address(stake));
+        assertEq(ifee, ISSUANCE_FEE);
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
         uint256 scale = IFeed(feed).scale();
         assertEq(scale, 1e17);
     }

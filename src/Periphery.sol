@@ -17,7 +17,6 @@ import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
-import { BaseTWrapper as TWrapper } from "./wrappers/BaseTWrapper.sol";
 
 /// @title Periphery
 contract Periphery is Trust {
@@ -57,17 +56,18 @@ contract Periphery is Trust {
     function sponsorSeries(
         address feed, uint256 maturity, uint160 sqrtPriceX96
     ) external returns (address zero, address claim) {
-        ERC20 stake = ERC20(Feed(feed).stake());
+        (, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+
         // transfer stakeSize from sponsor into this contract
         uint256 convertBase = 1;
-        uint256 stakeDecimals = stake.decimals();
+        uint256 stakeDecimals = ERC20(stake).decimals();
         if (stakeDecimals != 18) {
             convertBase = stakeDecimals > 18 ? 10 ** (stakeDecimals - 18) : 10 ** (18 - stakeDecimals);
         }
-        stake.safeTransferFrom(msg.sender, address(this), Feed(feed).stakeSize() / convertBase);
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize / convertBase);
 
         // approve divider to withdraw stake assets
-        stake.approve(address(divider), type(uint256).max);
+        ERC20(stake).approve(address(divider), type(uint256).max);
 
         (zero, claim) = divider.initSeries(feed, maturity, msg.sender);
         gClaimManager.join(feed, maturity, 0); // we join just to force the gclaim deployment
@@ -82,9 +82,9 @@ contract Periphery is Trust {
     /// @dev Deploys a new Feed via the FeedFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address.
     /// @param target Target to onboard
-    function onboardFeed(address factory, address target) external returns (address feedClone, address wtClone) {
+    function onboardFeed(address factory, address target) external returns (address feedClone) {
         require(factories[factory], Errors.FactoryNotSupported);
-        (feedClone, wtClone) = Factory(factory).deployFeed(target);
+        feedClone = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
         poolManager.addTarget(target);
         emit FeedOnboarded(feedClone);
@@ -104,7 +104,7 @@ contract Periphery is Trust {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
         // transfer target into this contract
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal + backfill);
+        ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, address(this), tBal + backfill);
 
         // issue zeros & claims with target
         uint256 issued = divider.issue(feed, maturity, tBal);
@@ -125,7 +125,7 @@ contract Periphery is Trust {
 
     function swapTargetForClaims(address feed, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
         // transfer target into this contract
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), tBal);
+        ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
 
         // issue zeros & claims with target
         uint256 issued = divider.issue(feed, maturity, tBal);
@@ -164,7 +164,7 @@ contract Periphery is Trust {
         uint256 tBal = divider.combine(feed, maturity, swapped);
 
         // transfer target to msg.sender
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20(Feed(feed).getTarget()).safeTransfer(msg.sender, tBal);
     }
 
     function swapClaimsForTarget(address feed, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
@@ -180,7 +180,7 @@ contract Periphery is Trust {
         uint256 claimsToSell = cBal.fdiv(rate + 1 * 10**ERC20(zero).decimals(), 10**ERC20(zero).decimals());
 
         // convert some claims to gclaims
-        ERC20 target = ERC20(Feed(feed).target());
+        ERC20 target = ERC20(Feed(feed).getTarget());
         ERC20(claim).approve(address(gClaimManager), claimsToSell);
         uint256 excess = gClaimManager.excess(feed, maturity, claimsToSell);
         target.safeTransferFrom(msg.sender, address(this), excess);

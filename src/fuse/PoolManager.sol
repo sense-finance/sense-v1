@@ -153,7 +153,7 @@ contract PoolManager is Trust {
         require(zero != address(0), Errors.SeriesDoesntExists);
         require(!sInits[feed][maturity], Errors.DuplicateSeries);
 
-        address target = Feed(feed).target();
+        address target = Feed(feed).getTarget();
         require(tInits[target], "Target for this Series not yet added");
 
         uint256 adminFee = 0;

@@ -74,7 +74,7 @@ contract PeripheryTest is TestHelper {
         uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate zeros to be issued
-        (, uint256 lscale) = feed.lscale();
+        (, uint256 lscale) = feed._lscale();
         uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
         // calculate gclaims swapped to zeros amount
         zBalBefore += issued + issued.fdiv(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
@@ -101,7 +101,7 @@ contract PeripheryTest is TestHelper {
         uint256 fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
 
         // calculate claims to be issued
-        (, uint256 lscale) = feed.lscale();
+        (, uint256 lscale) = feed._lscale();
         uint256 issued = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
         // calculate zeros swapped to claims
@@ -203,7 +203,7 @@ contract PeripheryTest is TestHelper {
         uint256 swapped = claimsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
 
         // calculate target to receive after combining
-        uint256 lscale = divider.lscales(address(feed), maturity, address(bob));
+        uint256 lscale = divider._lscale(address(feed), maturity, address(bob));
         uint256 tCombined = swapped.fdiv(lscale, 10**ERC20(claim).decimals());
 
         // calculate excess

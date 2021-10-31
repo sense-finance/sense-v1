@@ -125,7 +125,7 @@ contract Recycler is Trust {
         // Only applies to future auctions
         string memory name = string(abi.encodePacked("R-", ERC20(claim).name(), "-R"));
         string memory symbol = string(abi.encodePacked("R-", ERC20(claim).symbol(), "-R"));
-        rclaims[claim].token = new Token(name, symbol, ERC20(Feed(feed).target()).decimals(), address(this));
+        rclaims[claim].token = new Token(name, symbol, ERC20(Feed(feed).getTarget()).decimals(), address(this));
         // NOTE: Default to mainnet chainId for now.
         rclaims[claim].config = params;
         rclaims[claim].lastKick = block.timestamp;
@@ -170,7 +170,7 @@ contract Recycler is Trust {
 
         // Take the users Target
         uint256 discount = auctions[claim].discount;
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), balance - discount);
+        ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, address(this), balance - discount);
 
         // Use it plus the Target collected for this auction to issue new Zeros and Claims
         divider.issue(feed, maturity, balance);

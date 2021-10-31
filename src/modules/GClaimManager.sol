@@ -53,12 +53,12 @@ contract GClaimManager {
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here
-            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).target()).decimals(), address(this));
+            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).getTarget()).decimals(), address(this));
         } else {
             uint256 gap = excess(feed, maturity, balance);
             if (gap > 0) {
                 // Pull the amount of Target needed to backfill the excess
-                ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, address(this), gap);
+                ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, address(this), gap);
                 totals[claim] += gap;
             }
         }
@@ -95,7 +95,7 @@ contract GClaimManager {
         totals[claim] = total;
 
         // Send the excess Target back to the user
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, rights);
+        ERC20(Feed(feed).getTarget()).safeTransfer(msg.sender, rights);
         // Transfer Collect Claims back to the user
         ERC20(claim).safeTransfer(msg.sender, balance);
         // Burn the user's gclaims
