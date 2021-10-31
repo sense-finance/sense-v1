@@ -123,7 +123,6 @@ contract TestHelper is DSTest {
 
         // feed, target wrapper & factory
         factory = createFactory(address(target), address(reward));
-        periphery.setFactory(address(factory), true);
         (address f, address wt) = periphery.onboardFeed(address(factory), address(target)); // onboard target through Periphery
         feed = MockFeed(f);
         twrapper = TWrapper(wt);
