@@ -9,7 +9,7 @@ import { PriceOracle } from "../external/fuse/PriceOracle.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "../libs/Errors.sol";
 import { Token } from "../tokens/Token.sol";
 
@@ -54,7 +54,6 @@ contract PoolManager is Trust {
     address public immutable cERC20Impl;
     address public immutable fuseDirectory;
     address public immutable divider;
-    address public immutable gClaimManager;
     address public immutable oracleImpl;
     address public comptroller;
     address public masterOracle;
@@ -74,7 +73,7 @@ contract PoolManager is Trust {
 
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
-    /// @notice Series Inits: feed -> maturity -> series (zerosclaims) added to pool
+    /// @notice Series Inits: adapter -> maturity -> series (zeros/lp shares) hase been added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
 
     event SetParams(bytes32 indexed what, AssetParams data);
@@ -93,15 +92,13 @@ contract PoolManager is Trust {
         address _comptrollerImpl,
         address _cERC20Impl,
         address _divider,
-        address _oracleImpl,
-        address _gClaimManager
+        address _oracleImpl
     ) Trust(msg.sender) {
         fuseDirectory   = _fuseDirectory;
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
         divider    = _divider;
         oracleImpl = _oracleImpl; // master oracle
-        gClaimManager = _gClaimManager;
     }
 
     function deployPool(
@@ -137,7 +134,7 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target, address targetOracle) external requiresTrust {
+    function addTarget(address target) external requiresTrust {
         require(comptroller != address(0), "Pool not yet deployed");
         require(!tInits[target], "Target already added");
         require(targetParams.irModel != address(0), "Target asset params not set");
@@ -146,7 +143,7 @@ contract PoolManager is Trust {
         underlyings[0] = target;
 
         PriceOracle[] memory oracles = new PriceOracle[](1);
-        oracles[0] = PriceOracle(targetOracle);
+        oracles[0] = PriceOracle(address(0));
 
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
@@ -172,14 +169,14 @@ contract PoolManager is Trust {
         emit TargetAdded(target);
     }
 
-    function addSeries(address feed, uint256 maturity) external requiresTrust {
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
+    function addSeries(address adapter, uint256 maturity) external requiresTrust {
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         require(comptroller != address(0), "Pool not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(!sInits[feed][maturity], Errors.DuplicateSeries);
+        require(!sInits[adapter][maturity], Errors.DuplicateSeries);
 
-        address target = Feed(feed).target();
+        address target = Adapter(adapter).getTarget();
         require(tInits[target], "Target for this Series not yet added");
 
         // TODO: lp shares
@@ -233,7 +230,7 @@ contract PoolManager is Trust {
         );
         require(errClaim == 0, "Failed to add market");
 
-        sInits[feed][maturity] = true;
+        sInits[adapter][maturity] = true;
     }
 
     // TODO pause/delist

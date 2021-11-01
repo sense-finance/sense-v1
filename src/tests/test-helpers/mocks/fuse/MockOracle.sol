@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-import { PriceOracle, CTokenLike } from "../../../../fuse/Oracle.sol";
+import { PriceOracle, CTokenLike } from "../../../../external/fuse/PriceOracle.sol";
 
 contract MockOracle is PriceOracle {
     uint256 public price = 1e18;

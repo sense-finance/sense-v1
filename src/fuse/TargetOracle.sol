@@ -8,17 +8,17 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Token } from "../tokens/Token.sol";
-import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 
 contract TargetOracle is PriceOracle, Trust {
     using FixedMath for uint256;
     /// @notice target address -> feed address
-    mapping(address => address) public feeds;
+    mapping(address => address) public adapters;
 
     constructor() Trust(msg.sender) { }
 
-    function addTarget(address target, address feed) external requiresTrust {
-        feeds[target] = feed;
+    function addTarget(address target, address adapter) external requiresTrust {
+        adapters[target] = adapter;
     }
 
     function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
@@ -26,11 +26,12 @@ contract TargetOracle is PriceOracle, Trust {
             // confusing as we now have two layers of underlying, cToken -> Target -> Target's underlying
             Token target = Token(cToken.underlying());
             
-            Feed feed = Feed(feeds[address(target)]);
-            require(feed != Feed(address(0)), "Target must have a feed set");
+            Adapter adapter = Adapter(adapters[address(target)]);
+            require(adapter != Adapter(address(0)), "Target must have a adapter set");
             
             // Target / Target's underlying * price of Target's underlying = Price of Target
-            return feed.scale().fmul(feed.priceOfUnderlying(), target.decimals());
+            // adapter.scale().fmul(adapter.priceOfUnderlying(), target.decimals())
+            return 0;
     }
 }
 

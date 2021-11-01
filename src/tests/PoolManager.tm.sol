@@ -5,14 +5,14 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider, AssetDeployer } from "../Divider.sol";
-import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
+import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
-import { MockOracle } from "./test-helpers/mocks/MockFactory.sol";
-import { SimpleAdminFeed } from "./test-helpers/mocks/MockFeed.sol";
+import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
+import { SimpleAdminAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
@@ -20,11 +20,11 @@ import { User } from "./test-helpers/User.sol";
 contract PoolManagerTest is DSTest {
     using FixedMath for uint256;
 
-    Token internal stable;
+    Token internal stake;
     Token internal target;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
-    SimpleAdminFeed internal adminFeed;
+    SimpleAdminAdapter internal adminAdapter;
     MockOracle internal mockOracle;
 
     PoolManager internal poolManager;
@@ -35,31 +35,31 @@ contract PoolManagerTest is DSTest {
     address public constant MASTER_ORACLE_FALLBACK = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
-        stable = new Token("Stable", "SBL", 18, address(this));
+        stake = new Token("Stake", "SBL", 18, address(this));
         assetDeployer = new AssetDeployer();
-        divider = new Divider(address(stable), address(this), address(assetDeployer));
+        divider = new Divider(address(this), address(assetDeployer));
         assetDeployer.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
         mockOracle = new MockOracle();
-        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stable));
+        adminAdapter = new SimpleAdminAdapter(address(target), "Admin", "ADM");
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_FALLBACK);
 
-        // Enable the feed
-        divider.setFeed(address(adminFeed), true);
+        // Enable the adapter
+        divider.setAdapter(address(adminAdapter), true);
         // Give this address periphery access to the divider (so that it can create Series)
         divider.setPeriphery(address(this));
     }
 
     function initSeries() public returns (uint256 _maturity) {
-        // Setup mock stable token
-        stable.mint(address(this), 1000 ether);
-        stable.approve(address(divider), 1000 ether);
+        // Setup mock stake token
+        stake.mint(address(this), 1000 ether);
+        stake.approve(address(divider), 1000 ether);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
         _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        divider.initSeries(address(adminFeed), _maturity, address(this));
+        divider.initSeries(address(adminAdapter), _maturity, address(this));
     }
 
     function testDeployPool() public {
@@ -74,7 +74,7 @@ contract PoolManagerTest is DSTest {
     function testAddTarget() public {
         uint256 maturity = initSeries();
         // Cannot add a Target before deploying a pool
-        try poolManager.addTarget(address(target), address(0)) {
+        try poolManager.addTarget(address(target)) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "Pool not yet deployed");
@@ -91,7 +91,7 @@ contract PoolManagerTest is DSTest {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), mockOracle) ;
+        poolManager.addTarget(address(target)) ;
 
         // assert
         assertTrue(false);

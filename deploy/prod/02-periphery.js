@@ -48,4 +48,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 };
 
 module.exports.tags = ["prod:periphery", "scenario:prod"];
-module.exports.dependencies = ["prod:feeds"];
+module.exports.dependencies = ["prod:adapters"];

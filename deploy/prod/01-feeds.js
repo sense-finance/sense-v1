@@ -5,13 +5,20 @@ COMP_TOKEN.set("1", "0xc00e94cb662c3520282e6f5717214004a7f26888");
 COMP_TOKEN.set("111", "0xc00e94cb662c3520282e6f5717214004a7f26888");
 // TODO: Arbitrum
 
+const DAI_TOKEN = new Map();
+// DAI Mainnet
+DAI_TOKEN.set("1", "0x6b175474e89094c44da98b954eedeac495271d0f");
+// DAI Local Mainnet fork
+DAI_TOKEN.set("111", "0x6b175474e89094c44da98b954eedeac495271d0f");
+// TODO: Arbitrum
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
   const { deploy } = deployments;
   const { deployer, dev } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  console.log("Deploy a cFeed implementation");
-  const { address: cFeedAddress } = await deploy("CFeed", {
+  console.log("Deploy a cAdapter implementation");
+  const { address: cAdapterAddress } = await deploy("CAdapter", {
     from: deployer,
     args: [],
     log: true,
@@ -22,30 +29,40 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   // FIXME: placeholder to be replaced with the real delta value
   const DELTA = 150;
 
-  if (!COMP_TOKEN.has(chainId)) throw Error("No stable token found");
+  if (!DAI_TOKEN.has(chainId)) throw Error("No Dai token found");
+  if (!COMP_TOKEN.has(chainId)) throw Error("No Comp token found");
   const compAddress = COMP_TOKEN.get(chainId);
+  const daiAddress = DAI_TOKEN.get(chainId);
 
-  const { address: baseWrapperAddress } = await deploy("BaseTWrapper", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
-  console.log("Deploy cToken feed factory");
+  const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
+  const STAKE_SIZE = ethers.utils.parseEther("1");
+  const MIN_MATURITY = "1209600"; // 2 weeks
+  const MAX_MATURITY = "8467200"; // 14 weeks;
+  console.log("Deploy cToken adapter factory");
   await deploy("CFactory", {
     from: deployer,
-    args: [cFeedAddress, baseWrapperAddress, divider.address, DELTA, compAddress],
+    args: [
+      divider.address,
+      cAdapterAddress,
+      daiAddress,
+      STAKE_SIZE,
+      ISSUANCE_FEE,
+      MIN_MATURITY,
+      MAX_MATURITY,
+      DELTA,
+      compAddress,
+    ],
     log: true,
   });
 
   const cFactory = await ethers.getContract("CFactory");
 
-  console.log("Trust cToken feed factory on the divider");
+  console.log("Trust cToken adapter factory on the divider");
   await (await divider.setIsTrusted(cFactory.address, true)).wait();
 
-  console.log("Trust dev on the cToken feed factory");
+  console.log("Trust dev on the cToken adapter factory");
   await (await cFactory.setIsTrusted(dev, true)).wait();
 };
 
-module.exports.tags = ["prod:feeds", "scenario:prod"];
+module.exports.tags = ["prod:adapters", "scenario:prod"];
 module.exports.dependencies = ["prod:divider"];

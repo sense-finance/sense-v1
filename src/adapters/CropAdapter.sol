@@ -2,23 +2,21 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { FixedMath } from "../external/FixedMath.sol";
 
-// Internal
+// Internal references
+import { Periphery } from "../Periphery.sol";
 import { Divider } from "../Divider.sol";
-import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { BaseAdapter } from "./BaseAdapter.sol";
+import { FixedMath } from "../external/FixedMath.sol";
+import { Errors } from "../libs/Errors.sol";
 
-/// @notice Accumulate reward tokens and distribute them proportionally
-/// Inspired by: https://github.com/makerdao/dss-crop-join
-contract BaseTWrapper is Initializable {
+abstract contract CropAdapter is BaseAdapter {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
     /// @notice Program state
-    address public target;
-    address public divider;
     address public reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
@@ -26,35 +24,35 @@ contract BaseTWrapper is Initializable {
     mapping(address => uint256) public tBalance;
     mapping(address => uint256) public rewarded; // reward token per collected target per user
 
+    event Distributed(address indexed usr, address indexed token, uint256 amount);
+
     function initialize(
-        address _target,
         address _divider,
+        AdapterParams memory _adapterParams,
         address _reward
-    ) external virtual initializer {
-        target = _target;
-        divider = _divider;
+    ) public {
+        super.initialize(_divider, _adapterParams);
         reward = _reward;
-        ERC20(target).approve(_divider, type(uint256).max);
-
-        emit Initialized();
+        ERC20(_adapterParams.stake).approve(_divider, type(uint256).max);
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-    function join(address _usr, uint256 val) public onlyDivider {
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override onlyDivider {
         _distribute(_usr);
-        if (val > 0) {
-            totalTarget += val;
-            tBalance[_usr] += val;
+        if (amt > 0) {
+            if (join) {
+                totalTarget += amt;
+                tBalance[_usr] += amt;
+            } else {
+                // else `exit`
+                totalTarget -= amt;
+                tBalance[_usr] -= amt;
+            }
         }
-        rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
-    }
 
-    function exit(address _usr, uint256 val) public onlyDivider {
-        _distribute(_usr);
-        if (val > 0) {
-            totalTarget -= val;
-            tBalance[_usr] -= val;
-        }
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
@@ -80,12 +78,9 @@ contract BaseTWrapper is Initializable {
     }
 
     /* ========== MODIFIERS ========== */
+
     modifier onlyDivider() {
-        require(divider == msg.sender, "Can only be invoked by the Divider contract");
+        require(divider == msg.sender, Errors.OnlyDivider);
         _;
     }
-
-    /* ========== EVENTS ========== */
-    event Distributed(address indexed usr, address indexed token, uint256 amount);
-    event Initialized();
 }

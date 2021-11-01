@@ -10,9 +10,8 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 import { Divider, AssetDeployer } from "../Divider.sol";
-import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
-import { CFactory } from "../feeds/compound/CFactory.sol";
-import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
+import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
+import { CFactory } from "../adapters/compound/CFactory.sol";
 
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
@@ -22,9 +21,9 @@ import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract PeripheryTestHelper is DSTest {
-    uint256 public constant DELTA = 1;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address public constant UNI_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
@@ -32,8 +31,14 @@ contract PeripheryTestHelper is DSTest {
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
     address public constant MASTER_ORACLE_FALLBACK = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
+    uint256 public constant DELTA = 1;
+    uint256 public constant ISSUANCE_FEE = 0.01e18;
+    uint256 public constant STAKE_SIZE = 1e18;
+    uint256 public constant MIN_MATURITY = 2 weeks;
+    uint256 public constant MAX_MATURITY = 14 weeks;
+
     Periphery periphery;
-    CFeed feed;
+    CAdapter adapter;
     CFactory internal factory;
     Divider internal divider;
     PoolManager internal poolManager;
@@ -52,19 +57,29 @@ contract PeripheryTestHelper is DSTest {
 
         // divider
         assetDeployer = new AssetDeployer();
-        divider = new Divider(cDAI, address(this), address(assetDeployer));
+        divider = new Divider(address(this), address(assetDeployer));
         assetDeployer.init(address(divider));
         divider.setPeriphery(address(periphery));
 
-        // feed & factory
-        CFeed implementation = new CFeed(); // compound feed implementation
-        BaseTWrapper twImpl = new BaseTWrapper(); // feed implementation
-        // deploy compound feed factory
-        factory = new CFactory(address(implementation), address(twImpl), address(divider), DELTA, cDAI);
+        // adapter & factory
+        CAdapter implementation = new CAdapter(); // compound adapter implementation
+
+        // deploy compound adapter factory
+        factory = new CFactory(
+            address(divider),
+            address(implementation),
+            DAI,
+            STAKE_SIZE,
+            ISSUANCE_FEE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            DELTA,
+            COMP
+        );
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, address wtClone) = factory.deployFeed(cDAI); // deploy a cDAI feed
-        feed = CFeed(f);
+        address f = factory.deployAdapter(cDAI); // deploy a cDAI adapter
+        adapter = CAdapter(f);
         // users
         //        alice = createUser(2**96, 2**96);
         //        bob = createUser(2**96, 2**96);
@@ -82,7 +97,7 @@ contract PeripheryTests is PeripheryTestHelper {
             maturity = DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0);
         }
         ERC20(cDAI).approve(address(periphery), 2**256 - 1);
-        (address zero, address claim) = periphery.sponsorSeries(address(feed), maturity, 0);
+        (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity, 0);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));

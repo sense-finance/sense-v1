@@ -5,15 +5,21 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
 
-  console.log("Deploy a mocked Feed implementation");
-  const { address: mockFeedImplAddress } = await deploy("MockFeed", {
+  console.log("Deploy a simulated stake token named STAKE");
+  await deploy("STAKE", {
+    contract: "Token",
     from: deployer,
-    args: [],
+    args: ["STAKE", "STAKE", 18, deployer],
     log: true,
   });
 
-  console.log("Deploy a mocked TWrapper implementation");
-  const { address: mockTwrapperImplAddress } = await deploy("MockTWrapper", {
+  const stake = await ethers.getContract("STAKE");
+
+  console.log("Mint the deployer a balance of 1,000,000 STAKE");
+  await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+
+  console.log("Deploy a mocked Adapter implementation");
+  const { address: mockAdapterImplAddress } = await deploy("MockAdapter", {
     from: deployer,
     args: [],
     log: true,
@@ -30,9 +36,24 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const airdrop = await ethers.getContract("Airdrop");
 
   console.log("Deploy a mocked Factory with mocked dependencies");
+
+  const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
+  const STAKE_SIZE = ethers.utils.parseEther("1");
+  const MIN_MATURITY = "1209600"; // 2 weeks
+  const MAX_MATURITY = "8467200"; // 14 weeks;
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [mockFeedImplAddress, mockTwrapperImplAddress, divider.address, 0, airdrop.address],
+    args: [
+      mockAdapterImplAddress,
+      divider.address,
+      0,
+      stake.address,
+      ISSUANCE_FEE,
+      STAKE_SIZE,
+      MIN_MATURITY,
+      MAX_MATURITY,
+      airdrop.address,
+    ],
     log: true,
   });
 
@@ -46,10 +67,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
+    const underlyingAddress = "0x1111111111111111111111111111111111111111";
     await deploy(targetName, {
-      contract: "Token",
+      contract: "MockTarget",
       from: deployer,
-      args: [targetName, targetName, 18, deployer],
+      args: [underlyingAddress, targetName, targetName, 18],
       log: true,
     });
 
@@ -61,17 +83,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();
 
-    const { wtClone } = await periphery.callStatic.onboardTarget(factory.address, target.address);
+    const adapter = await periphery.callStatic.onboardAdapter(factory.address, target.address);
     console.log(`Onboard target ${target.address} via Periphery`);
-    await (await periphery.onboardTarget(factory.address, target.address)).wait();
+    await (await periphery.onboardAdapter(factory.address, target.address)).wait();
+    global.ADAPTERS[target.address] = adapter;
 
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
-    await (await airdrop.setIsTrusted(wtClone, true)).wait();
+    await (await airdrop.setIsTrusted(adapter, true)).wait();
 
     console.log(`Set ${targetName} issuance cap to max uint so we don't have to worry about it`);
     await divider.setGuard(target.address, ethers.constants.MaxUint256).then(tx => tx.wait());
   }
 };
 
-module.exports.tags = ["simulated:feeds", "scenario:simulated"];
+module.exports.tags = ["simulated:adapters", "scenario:simulated"];
 module.exports.dependencies = ["simulated:divider"];

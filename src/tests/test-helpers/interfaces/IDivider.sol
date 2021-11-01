@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 abstract contract IDivider {
-    function series(address feed, uint256 maturity)
+    function series(address adapter, uint256 maturity)
         external
         virtual
         returns (
@@ -12,39 +12,39 @@ abstract contract IDivider {
             address
         );
 
-    function initSeries(address feed, uint256 maturity) external virtual returns (address zero, address claim);
+    function initSeries(address adapter, uint256 maturity) external virtual returns (address zero, address claim);
 
-    function settleSeries(address feed, uint256 maturity) external virtual;
+    function settleSeries(address adapter, uint256 maturity) external virtual;
 
     function issue(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) external virtual;
 
     function combine(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) external virtual;
 
     function redeemZero(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) external virtual;
 
     function collect(
         address usr,
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) external virtual returns (uint256 _collected);
 
-    function setFeed(address feed, bool isOn) external virtual;
+    function setAdapter(address adapter, bool isOn) external virtual;
 
     function backfillScale(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 scale,
         bytes[] memory backfills

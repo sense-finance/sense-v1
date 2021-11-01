@@ -14,6 +14,7 @@ const utc = require("dayjs/plugin/utc");
 
 // For dev scenarios ------------
 global.TARGETS = ["cDAI", "cETH", "stETH"];
+global.ADAPTERS = {};
 
 dayjs.extend(utc);
 global.SERIES_MATURITIES = [
