@@ -246,7 +246,7 @@ contract Periphery is Trust {
     function flashBorrow(bytes memory data, address adapter, uint256 maturity, uint256 amount) internal returns (uint256) {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 _allowance = target.allowance(address(this), address(adapter));
-        if (_allowance < amount) target.approve(address(adapter), type(uint256).max);
+        if (_allowance < amount) target.safeApprove(address(adapter), type(uint256).max);
         (bool result, uint256 value) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, amount);
         require(result == true);
         return value;

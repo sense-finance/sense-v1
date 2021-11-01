@@ -239,13 +239,11 @@ contract Divider is Trust, ReentrancyGuard {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 tBase = 10 ** ERC20(Adapter(adapter).getTarget()).decimals();
         // Amount of Target Zeros would ideally have
-        uint256 tBal = uBal.fdiv(series[adapter][maturity].mscale, tBase)
-            .fmul(FixedMath.WAD - series[adapter][maturity].tilt, tBase);
+        uint256 tBal = uBal * (FixedMath.WAD - series[adapter][maturity].tilt) / series[adapter][maturity].mscale;
 
         if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = uBal.fdiv(series[adapter][maturity].maxscale, tBase)
-                .fmul(FixedMath.WAD - series[adapter][maturity].tilt, tBase);
+            uint256 tBalZeroActual = uBal * (FixedMath.WAD - series[adapter][maturity].tilt) / series[adapter][maturity].maxscale;
 
             // Set our Target transfer value to the actual principal we have reserved for Zeros
             tBal = tBalZeroActual;
@@ -379,17 +377,15 @@ contract Divider is Trust, ReentrancyGuard {
         // If there's some principal set aside for Claims, determine whether they get it all
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = uBal.fdiv(_series.maxscale, _series.tilt);
+            tBal = uBal * _series.tilt  / _series.maxscale;
 
             // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
                 // Amount of Target we would ideally have set aside for Zero holders
-                uint256 tBalZeroIdeal = uBal.fdiv(_series.mscale, 10 ** target.decimals())
-                    .fmul(FixedMath.WAD - _series.tilt, 10 ** target.decimals());
+                uint256 tBalZeroIdeal = uBal * (FixedMath.WAD - _series.tilt) / _series.mscale;
 
                 // Amount of Target we actually have set aside for them (after collections from Claim holders)
-                uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, 10 ** target.decimals())
-                    .fmul(FixedMath.WAD - _series.tilt, 10 ** target.decimals());
+                uint256 tBalZeroActual = uBal * (FixedMath.WAD - _series.tilt) / _series.maxscale;
 
                 // Calculate how much is getting taken from Claim's principal
                 uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
