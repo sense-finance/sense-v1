@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
-import { PriceOracle } from "./Oracle.sol";
+import { PriceOracle } from "../external/fuse/PriceOracle.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -54,6 +54,7 @@ contract PoolManager is Trust {
     address public immutable cERC20Impl;
     address public immutable fuseDirectory;
     address public immutable divider;
+    address public immutable gClaimManager;
     address public immutable oracleImpl;
     address public comptroller;
     address public masterOracle;
@@ -92,13 +93,15 @@ contract PoolManager is Trust {
         address _comptrollerImpl,
         address _cERC20Impl,
         address _divider,
-        address _oracleImpl
+        address _oracleImpl,
+        address _gClaimManager
     ) Trust(msg.sender) {
         fuseDirectory   = _fuseDirectory;
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
         divider    = _divider;
         oracleImpl = _oracleImpl; // master oracle
+        gClaimManager = _gClaimManager;
     }
 
     function deployPool(
@@ -233,6 +236,7 @@ contract PoolManager is Trust {
         sInits[feed][maturity] = true;
     }
 
+    // TODO pause/delist
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;
