@@ -17,18 +17,19 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
     await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
     for (let seriesMaturity of global.SERIES_MATURITIES) {
-      const feedAddress = await factory.feeds(target.address);
-      const mockFeedImpl = await ethers.getContract('MockFeed');
-      const feed = new ethers.Contract(feedAddress, mockFeedImpl.interface, ethers.provider);
+      const adapterAddress = global.ADAPTERS[target.address];
+      console.log('adapterAddress', adapterAddress);
+      const mockAdapterImpl = await ethers.getContract('MockAdapter');
+      const adapter = new ethers.Contract(adapterAddress, mockAdapterImpl.interface, ethers.provider);
 
       console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
-      await periphery.sponsorSeries(feed.address, seriesMaturity, 0).then(tx => tx.wait());
+      await periphery.sponsorSeries(adapter.address, seriesMaturity, 0).then(tx => tx.wait());
 
       console.log("Have the deployer issue the first Zeros/Claims for this Series");
-      await divider.issue(feed.address, seriesMaturity, ethers.utils.parseEther("10"));
+      await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("10"));
     }
   }
 };
 
 module.exports.tags = ["simulated:series", "scenario:simulated"];
-module.exports.dependencies = ["simulated:feeds"];
+module.exports.dependencies = ["simulated:adapters"];

@@ -5,16 +5,16 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider, AssetDeployer } from "../Divider.sol";
-import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
-import { CFactory } from "../feeds/compound/CFactory.sol";
+import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
+import { CFactory } from "../adapters/compound/CFactory.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 
-contract CFeedTestHelper is DSTest {
-    CFeed feed;
+contract CAdapterTestHelper is DSTest {
+    CAdapter adapter;
     CFactory internal factory;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
@@ -33,36 +33,36 @@ contract CFeedTestHelper is DSTest {
         assetDeployer = new AssetDeployer();
         divider = new Divider(address(this), address(assetDeployer));
         assetDeployer.init(address(divider));
-        CFeed feedImpl = new CFeed(); // compound feed implementation
-        // deploy compound feed factory
+        CAdapter adapterImpl = new CAdapter(); // compound adapter implementation
+        // deploy compound adapter factory
         factory = new CFactory(
-            address(feedImpl),
-            address(0),
             address(divider),
-            DELTA,
-            COMP,
+            address(adapterImpl),
             DAI,
-            ISSUANCE_FEE,
             STAKE_SIZE,
+            ISSUANCE_FEE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            DELTA,
+            COMP
         );
+
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, ) = factory.deployFeed(cDAI);
-        feed = CFeed(f); // deploy a cDAI feed
+        address f = factory.deployAdapter(cDAI);
+        adapter = CAdapter(f); // deploy a cDAI adapter
     }
 }
 
-contract CFeeds is CFeedTestHelper {
+contract CAdapters is CAdapterTestHelper {
     using FixedMath for uint256;
 
-    function testCFeedScale() public {
+    function testCAdapterScale() public {
         CTokenInterface underlying = CTokenInterface(DAI);
         CTokenInterface ctoken = CTokenInterface(cDAI);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent().fdiv(10**(18 - 8 + uDecimals), 10**uDecimals);
-        assertEq(feed.scale(), scale);
+        assertEq(adapter.scale(), scale);
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-abstract contract IFeedFactory {
+abstract contract IAdapterFactory {
 
     function setDivider(address _divider) virtual public;
 
@@ -9,6 +9,6 @@ abstract contract IFeedFactory {
 
     function setImplementation(address _implementation) virtual public;
 
-    function deployFeed(address _target) public virtual returns (address feedClone, address wtClone);
+    function deployAdapter(address _target) public virtual returns (address adapterClone, address wtClone);
 
 }

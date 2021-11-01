@@ -10,27 +10,27 @@ import { Token } from "./Token.sol";
 contract Claim is Token {
     uint256 public immutable maturity;
     address public immutable divider;
-    address public immutable feed;
+    address public immutable adapter;
 
     constructor(
         uint256 _maturity,
         address _divider,
-        address _feed,
+        address _adapter,
         string memory _name,
         string memory _symbol,
         uint8 _decimals
     ) Token(_name, _symbol, _decimals, _divider) {
         maturity = _maturity;
         divider = _divider;
-        feed = _feed;
+        adapter = _adapter;
     }
 
     function collect() external returns (uint256 _collected) {
-        return Divider(divider).collect(msg.sender, feed, maturity, 0, address(0));
+        return Divider(divider).collect(msg.sender, adapter, maturity, 0, address(0));
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
-        Divider(divider).collect(msg.sender, feed, maturity, value, to);
+        Divider(divider).collect(msg.sender, adapter, maturity, value, to);
         return super.transfer(to, value);
     }
 
@@ -39,7 +39,7 @@ contract Claim is Token {
         address to,
         uint256 value
     ) public override returns (bool) {
-        Divider(divider).collect(from, feed, maturity, value, to);
+        Divider(divider).collect(from, adapter, maturity, value, to);
         return super.transferFrom(from, to, value);
     }
 }

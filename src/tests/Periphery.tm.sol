@@ -10,14 +10,12 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 import { Divider, AssetDeployer } from "../Divider.sol";
-import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
-import { CFactory } from "../feeds/compound/CFactory.sol";
-import { BaseTWrapper } from "../wrappers/BaseTWrapper.sol";
+import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
+import { CFactory } from "../adapters/compound/CFactory.sol";
 
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
-import { MockTWrapper } from "./test-helpers/mocks/MockTWrapper.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
@@ -40,7 +38,7 @@ contract PeripheryTestHelper is DSTest {
     uint256 public constant MAX_MATURITY = 14 weeks;
 
     Periphery periphery;
-    CFeed feed;
+    CAdapter adapter;
     CFactory internal factory;
     Divider internal divider;
     PoolManager internal poolManager;
@@ -63,27 +61,25 @@ contract PeripheryTestHelper is DSTest {
         assetDeployer.init(address(divider));
         divider.setPeriphery(address(periphery));
 
-        // feed & factory
-        CFeed implementation = new CFeed(); // compound feed implementation
-        MockTWrapper twImpl = new MockTWrapper(); // TODO: remove when merging CTWrapper
-        //        CTWrapper twImpl = new CTWrapper(); // feed implementation
-        // deploy compound feed factory
+        // adapter & factory
+        CAdapter implementation = new CAdapter(); // compound adapter implementation
+
+        // deploy compound adapter factory
         factory = new CFactory(
-            address(implementation),
-            address(twImpl),
             address(divider),
-            DELTA,
-            COMP,
+            address(implementation),
             DAI,
-            ISSUANCE_FEE,
             STAKE_SIZE,
+            ISSUANCE_FEE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            DELTA,
+            COMP
         );
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
-        (address f, address wtClone) = factory.deployFeed(cDAI); // deploy a cDAI feed
-        feed = CFeed(f);
+        address f = factory.deployAdapter(cDAI); // deploy a cDAI adapter
+        adapter = CAdapter(f);
         // users
         //        alice = createUser(2**96, 2**96);
         //        bob = createUser(2**96, 2**96);
@@ -101,7 +97,7 @@ contract PeripheryTests is PeripheryTestHelper {
             maturity = DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0);
         }
         ERC20(cDAI).approve(address(periphery), 2**256 - 1);
-        (address zero, address claim) = periphery.sponsorSeries(address(feed), maturity, 0);
+        (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity, 0);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));
