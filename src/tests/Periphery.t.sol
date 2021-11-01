@@ -20,7 +20,6 @@ contract PeripheryTest is TestHelper {
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
         assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
-        assertTrue(address(Periphery(somePeriphery).gClaimManager()) != address(0));
         assertEq(address(Periphery(somePeriphery).uniFactory()), address(uniFactory));
         assertEq(address(Periphery(somePeriphery).uniSwapRouter()), address(uniSwapRouter));
     }

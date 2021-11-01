@@ -16,7 +16,7 @@ contract User {
     MockToken target;
     Divider divider;
     Periphery periphery;
-    GClaimManager gClaimManager;
+    GClaimManager public gClaimManager;
     BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -43,7 +43,7 @@ contract User {
 
     function setPeriphery(Periphery _periphery) public {
         periphery = _periphery;
-        gClaimManager = periphery.gClaimManager();
+        gClaimManager = new GClaimManager(address(divider));
     }
 
     function doDeployAdapter(address _target) public returns (address clone) {

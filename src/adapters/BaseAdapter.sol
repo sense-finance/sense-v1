@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 // External references
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
@@ -24,6 +24,7 @@ interface IPeriphery {
 /// @dev In most cases, the only method that will be unique to each adapter type is `_scale`
 abstract contract BaseAdapter is Initializable {
     using FixedMath for uint256;
+    using SafeERC20 for ERC20;
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
@@ -63,7 +64,7 @@ abstract contract BaseAdapter is Initializable {
         name = string(abi.encodePacked(ERC20(_adapterParams.target).name(), " Adapter"));
         symbol = string(abi.encodePacked(ERC20(_adapterParams.target).symbol(), "-adapter"));
 
-        ERC20(_adapterParams.target).approve(divider, type(uint256).max);
+        ERC20(_adapterParams.target).safeApprove(divider, type(uint256).max);
 
         emit Initialized();
     }

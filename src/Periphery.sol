@@ -14,7 +14,6 @@ import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswa
 import { Errors } from "./libs/Errors.sol";
 import { CropAdapter as Adapter } from "./adapters/CropAdapter.sol";
 import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
-import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
 
@@ -35,13 +34,11 @@ contract Periphery is Trust {
     ISwapRouter public immutable uniSwapRouter;
     Divider public immutable divider;
     PoolManager public immutable poolManager;
-    GClaimManager public immutable gClaimManager;
     mapping(address => bool) public factories;  // adapter factories -> is supported
 
     constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
-        gClaimManager = new GClaimManager(_divider);
         uniFactory = IUniswapV3Factory(_uniFactory);
         uniSwapRouter = ISwapRouter(_uniSwapRouter);
     }
@@ -69,7 +66,7 @@ contract Periphery is Trust {
         ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize / convertBase);
 
         // approve divider to withdraw stake assets
-        ERC20(stake).approve(address(divider), type(uint256).max);
+        ERC20(stake).safeApprove(address(divider), type(uint256).max);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
         address unipool = uniFactory.createPool(zero, Adapter(adapter).underlying(), UNI_POOL_FEE); // deploy UNIV3 pool
@@ -80,20 +77,18 @@ contract Periphery is Trust {
 
     /// @notice Onboards a target
     /// @dev Deploys a new Adapter via the AdapterFactory
-    /// @dev Onboards Target onto Fuse. Caller must know the factory address.
+    /// @dev Onboards Target onto Fuse. Caller must know the factory address
     /// @param target Target to onboard
     function onboardAdapter(address factory, address target) external returns (address adapterClone) {
         require(factories[factory], Errors.FactoryNotSupported);
         adapterClone = Factory(factory).deployAdapter(target);
-        ERC20(target).approve(address(divider), type(uint256).max);
-        ERC20(target).approve(address(adapterClone), type(uint256).max);
+        ERC20(target).safeApprove(address(divider), type(uint256).max);
+        ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
         poolManager.addTarget(target);
         emit AdapterOnboarded(adapterClone);
     }
 
     /// @notice Mint Zeros and Claims of a specific Series
-    /// @dev backfill amount refers to the excess that has accrued since the first Claim from a Series was deposited
-    /// @dev in next versions will be calculate here. Refer to GClaimManager.excess() for more details about this value.
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
