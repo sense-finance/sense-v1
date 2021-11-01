@@ -7,19 +7,18 @@ import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
+import { Divider } from "../Divider.sol";
 import { BaseFeed } from "./BaseFeed.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Errors } from "../libs/Errors.sol";
 
-abstract contract CropFeed is BaseFeed, Trust {
+abstract contract CropFeed is BaseFeed {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
-    bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
-
     /// @notice Program state
     address public reward;
-    uint256 public share;     // accumulated reward token per collected target
+    uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget;
     mapping(address => uint256) public tBalance;
@@ -27,50 +26,34 @@ abstract contract CropFeed is BaseFeed, Trust {
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
 
-    constructor() Trust(address(0)) { }
-
-    function initialize(address _divider, FeedParams memory _feedParams, address _reward) public {
+    function initialize(
+        address _divider,
+        FeedParams memory _feedParams,
+        address _reward
+    ) public {
         super.initialize(_divider, _feedParams);
-
-        setIsTrusted(_divider, true);
         reward = _reward;
-        ERC20(stake).approve(_divider, type(uint256).max);
+        ERC20(_feedParams.stake).approve(_divider, type(uint256).max);
     }
 
-    function notify(address _usr, uint256 amt, bool join) public override requiresTrust {
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override onlyDivider {
         _distribute(_usr);
         if (amt > 0) {
             if (join) {
-                totalTarget    += amt;
+                totalTarget += amt;
                 tBalance[_usr] += amt;
             } else {
                 // else `exit`
-                totalTarget    -= amt;
+                totalTarget -= amt;
                 tBalance[_usr] -= amt;
             }
         }
 
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
-    }
-
-    /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
-    /// @param receiver The contract receiving target, needs to implement the
-    /// `onFlashLoan(address user, address feed, uint256 maturity, uint256 amount)` interface.
-    /// @param feed feed address
-    /// @param maturity maturity
-    /// @param amount The amount of target lent.
-    function flashLoan(
-        bytes calldata data,
-        address receiver,
-        address feed,
-        uint256 maturity,
-        uint256 amount
-    ) external onlyPeriphery returns (bool, uint256) {
-        require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
-        (bytes32 keccak, uint256 value) = Periphery(receiver).onFlashLoan(data, msg.sender, feed, maturity, amount);
-        require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
-        require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
-        return (true, value);
     }
 
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
@@ -94,21 +77,10 @@ abstract contract CropFeed is BaseFeed, Trust {
         return;
     }
 
-    /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts.
-    /// @param amount Underlying amount
-    /// @return amount of target returned
-    function wrapUnderlying(uint256 amount) external virtual returns (uint256);
-
-    /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts.
-    /// @param amount Target amount
-    /// @return amount of underlying returned
-    function unwrapTarget(uint256 amount) external virtual returns (uint256);
-
     /* ========== MODIFIERS ========== */
 
-    modifier onlyPeriphery() {
-        require(Divider(divider).periphery() == msg.sender, Errors.OnlyPeriphery);
+    modifier onlyDivider() {
+        require(divider == msg.sender, Errors.OnlyDivider);
         _;
     }
-
 }

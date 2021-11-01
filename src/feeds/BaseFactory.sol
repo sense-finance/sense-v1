@@ -41,16 +41,16 @@ abstract contract BaseFactory is Trust {
         uint256 _maxMaturity,
         uint256 _delta
     ) Trust(msg.sender) {
-        divider  = _divider;
+        divider = _divider;
         protocol = _protocol;
         feedImpl = _feedImpl;
         oracle = _oracle;
-        stake  = _stake;
-        stakeSize   = _stakeSize;
+        stake = _stake;
+        stakeSize = _stakeSize;
         issuanceFee = _issuanceFee;
         minMaturity = _minMaturity;
         maxMaturity = _maxMaturity;
-        delta  = _delta;
+        delta = _delta;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

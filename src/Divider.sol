@@ -85,8 +85,8 @@ contract Divider is Trust, ReentrancyGuard {
         require(_isValid(feed, maturity), Errors.InvalidMaturity);
 
         // Transfer stake asset stake from caller to adapter
-        (address target, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
-        ERC20(stake).safeTransferFrom(msg.sender, Feed(feed).twrapper(), stakeSize / _convertBase(ERC20(stake).decimals()));
+        (address target, , , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+        ERC20(stake).safeTransferFrom(msg.sender, feed, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = AssetDeployer(deployer).deploy(feed, maturity);
@@ -128,9 +128,9 @@ contract Divider is Trust, ReentrancyGuard {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        (address target, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+        (address target, , , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
         ERC20(target).safeTransfer(msg.sender, series[feed][maturity].reward);
-        ERC20(stake).safeTransferFrom(Feed(feed).twrapper(), msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(feed, msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         emit SeriesSettled(feed, maturity, msg.sender);
     }
@@ -151,7 +151,7 @@ contract Divider is Trust, ReentrancyGuard {
         uint256 fee;
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
-        uint256 issuanceFee = Feed(feed).issuanceFee();
+        uint256 issuanceFee = Feed(feed).getIssuanceFee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
 
         if (tDecimals != 18) {
@@ -166,7 +166,7 @@ contract Divider is Trust, ReentrancyGuard {
         // Ensure the caller won't hit the issuance cap with this action
         if (guarded)
             require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
-        target.safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBalSubFee);
+        target.safeTransferFrom(msg.sender, feed, tBalSubFee);
         target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
 
         // Update values on target wrapper
@@ -236,7 +236,8 @@ contract Divider is Trust, ReentrancyGuard {
         // Burn the caller's Zeros
         Zero(series[feed][maturity].zero).burn(msg.sender, uBal);
 
-        uint256 tBase = 10 ** ERC20(Feed(feed).target()).decimals();
+        ERC20 target = ERC20(Feed(feed).getTarget());
+        uint256 tBase = 10 ** ERC20(Feed(feed).getTarget()).decimals();
         // Amount of Target Zeros would ideally have
         uint256 tBal = uBal.fdiv(series[feed][maturity].mscale, tBase)
             .fmul(FixedMath.WAD - series[feed][maturity].tilt, tBase);
@@ -478,12 +479,12 @@ contract Divider is Trust, ReentrancyGuard {
             lscales[feed][maturity][_usrs[i]] = _lscales[i];
         }
 
-        (address target, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+        (address target, , , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
 
         // Determine where the rewards should go depending on where we are relative to the maturity date
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[feed][maturity].sponsor : cup;
         ERC20(target).safeTransfer(cup, series[feed][maturity].reward);
-        ERC20(stake).safeTransferFrom(Feed(feed).twrapper(), rewardee, Feed(feed).stakeSize() / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(feed, rewardee, Feed(feed).getStakeSize() / _convertBase(ERC20(stake).decimals()));
 
         emit Backfilled(feed, maturity, mscale, _usrs, _lscales);
     }

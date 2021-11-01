@@ -65,7 +65,7 @@ contract PeripheryTest is TestHelper {
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
         // unwrap target into underlying
-        (, uint256 lvalue) = feed.lscale();
+        (, uint256 lvalue) = feed._lscale();
         uint256 uBal = tBal.fmul(lvalue, 10**target.decimals());
 
         // calculate underlying swapped to zeros
@@ -81,7 +81,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = feed.lscale();
+        (, uint256 lscale) = feed._lscale();
         uint256 tBase = 10**target.decimals();
 
         // add liquidity to mockUniSwapRouter
@@ -111,7 +111,7 @@ contract PeripheryTest is TestHelper {
         }
 
         // calculate issuance fee in corresponding base
-        fee = (feed.issuanceFee() / convertBase(target.decimals())).fmul(targetToBorrow, tBase);
+        fee = (feed.getIssuanceFee() / convertBase(target.decimals())).fmul(targetToBorrow, tBase);
 
         // calculate claims to be issued
         cBalBefore += issueBal + (targetToBorrow - fee).fmul(lscale, Token(zero).BASE_UNIT());
@@ -141,7 +141,7 @@ contract PeripheryTest is TestHelper {
         uint256 uBal = zBalBefore.fmul(rate, 10**target.decimals());
 
         // wrap underlying into target
-        (, uint256 lvalue) = feed.lscale();
+        (, uint256 lvalue) = feed._lscale();
         uint256 swapped = uBal.fdiv(lvalue, 10**target.decimals());
 
         alice.doApprove(zero, address(periphery), zBalBefore);
@@ -155,43 +155,43 @@ contract PeripheryTest is TestHelper {
          * FIXME!!
          * This test is failing. We think it could be due to a precision loss.
          */
-//        uint256 tBal = 100e18;
-//        uint256 maturity = getValidMaturity(2021, 10);
-//        uint256 tBase = 10**target.decimals();
-//        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
-//        (, uint256 lscale) = feed.lscale();
-//
-//        // add liquidity to mockUniSwapRouter
-//        addLiquidityToUniSwapRouter(maturity, zero, claim);
-//
-//        bob.doIssue(address(feed), maturity, tBal);
-//
-//        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(bob));
-//        uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
-//
-//        // calculate target to borrow
-//        uint256 targetToBorrow;
-//        {
-//            uint256 zBal = cBalBefore.fdiv(2 * tBase, tBase);
-//            uint256 uBal = zBal.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
-//            // amount of claims div 2 multiplied by rate gives me amount of underlying then multiplying
-//            // by lscale gives me target
-//            targetToBorrow = uBal.fmul(lscale, tBase);
-//        }
-//
-//        // convert target into underlying (unwrap via protocol)
-//        uint256 unwrappedUnderlying = targetToBorrow.fmul(lscale, tBase);
-//
-//        // swap underlying for Zeros on Yieldspace pool
-//        uint256 zSwapped = unwrappedUnderlying.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
-//
-//        // combine zeros and claim
-//        uint256 tCombined = zSwapped.fdiv(lscale, 10**ERC20(claim).decimals());
-//
-//        bob.doApprove(claim, address(periphery), cBalBefore);
-//        bob.doSwapClaimsForTarget(address(feed), maturity, cBalBefore, 0);
-//
-//        assertEq(tBalBefore + tCombined, ERC20(target).balanceOf(address(bob)));
+        //        uint256 tBal = 100e18;
+        //        uint256 maturity = getValidMaturity(2021, 10);
+        //        uint256 tBase = 10**target.decimals();
+        //        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        //        (, uint256 lscale) = feed._lscale();
+        //
+        //        // add liquidity to mockUniSwapRouter
+        //        addLiquidityToUniSwapRouter(maturity, zero, claim);
+        //
+        //        bob.doIssue(address(feed), maturity, tBal);
+        //
+        //        uint256 tBalBefore = ERC20(feed.target()).balanceOf(address(bob));
+        //        uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
+        //
+        //        // calculate target to borrow
+        //        uint256 targetToBorrow;
+        //        {
+        //            uint256 zBal = cBalBefore.fdiv(2 * tBase, tBase);
+        //            uint256 uBal = zBal.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
+        //            // amount of claims div 2 multiplied by rate gives me amount of underlying then multiplying
+        //            // by lscale gives me target
+        //            targetToBorrow = uBal.fmul(lscale, tBase);
+        //        }
+        //
+        //        // convert target into underlying (unwrap via protocol)
+        //        uint256 unwrappedUnderlying = targetToBorrow.fmul(lscale, tBase);
+        //
+        //        // swap underlying for Zeros on Yieldspace pool
+        //        uint256 zSwapped = unwrappedUnderlying.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
+        //
+        //        // combine zeros and claim
+        //        uint256 tCombined = zSwapped.fdiv(lscale, 10**ERC20(claim).decimals());
+        //
+        //        bob.doApprove(claim, address(periphery), cBalBefore);
+        //        bob.doSwapClaimsForTarget(address(feed), maturity, cBalBefore, 0);
+        //
+        //        assertEq(tBalBefore + tCombined, ERC20(target).balanceOf(address(bob)));
     }
 
     //    function testSwapClaimsForTargetWithGap() public {

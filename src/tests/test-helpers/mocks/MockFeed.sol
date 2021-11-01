@@ -2,11 +2,12 @@
 pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
-import { BaseFeed } from "../../../feeds/BaseFeed.sol";
+import { CropFeed } from "../../../feeds/CropFeed.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { MockTarget } from "./MockTarget.sol";
+import { MockToken } from "./MockTarget.sol";
 
-contract MockFeed is BaseFeed {
+contract MockFeed is CropFeed {
     using FixedMath for uint256;
 
     uint256 internal value;
@@ -29,8 +30,30 @@ contract MockFeed is BaseFeed {
         _value = _lscale.value > 0 ? (gps * timeDiff).fmul(_lscale.value, 10**tDecimals) + _lscale.value : INITIAL_VALUE;
     }
 
+    function _claimReward() internal override virtual {
+        //        MockToken(reward).mint(address(this), 1e18);
+    }
+
+    function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {
+        MockTarget target = MockTarget(feedParams.target);
+        MockToken(target.underlying()).burn(address(this), uBal); // this would be an approve call to the protocol to withdraw the underlying
+        uint256 tBase = 10**target.decimals();
+        uint256 mintAmount = uBal.fdiv(_lscale.value, tBase);
+        target.mint(msg.sender, mintAmount);
+        return mintAmount;
+    }
+
+    function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
+        MockTarget target = MockTarget(feedParams.target);
+        target.burn(address(this), tBal); // this would be an approve call to the protocol to withdraw the target
+        uint256 tBase = 10**target.decimals();
+        uint256 mintAmount = tBal.fmul(_lscale.value, tBase);
+        MockToken(target.underlying()).mint(msg.sender, mintAmount);
+        return mintAmount;
+    }
+
     function underlying() external virtual override returns (address) {
-        return MockTarget(target).underlying();
+        return MockTarget(feedParams.target).underlying();
     }
 
     function tilt() external override virtual returns (uint256 _value) {
@@ -42,15 +65,11 @@ contract MockFeed is BaseFeed {
     }
 
     function setOracle(address _oracle) external {
-        oracle = _oracle;
+        feedParams.oracle = _oracle;
     }
 
     function setTilt(uint256 _value) external {
         _tilt = _value;
-    }
-
-    function underlying() external override returns (address) {
-        return address(0);
     }
 }
 

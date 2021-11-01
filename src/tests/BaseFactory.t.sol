@@ -18,12 +18,12 @@ contract Factories is TestHelper {
             address(feedImpl),
             address(divider),
             DELTA,
-            address(reward),
             address(stake),
             ISSUANCE_FEE,
             STAKE_SIZE,
             MIN_MATURITY,
-            MAX_MATURITY
+            MAX_MATURITY,
+            address(reward)
         );
 
         assertTrue(address(someFactory) != address(0));
@@ -47,7 +47,16 @@ contract Factories is TestHelper {
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         address feed = someFactory.deployFeed(address(someTarget));
         assertTrue(feed != address(0));
-        (address target, uint256 delta, uint256 ifee, address stake, uint256 stakeSize, uint256 minm, uint256 maxm) = BaseFeed(feed).feedParams();
+        (
+            address target,
+            address oracle,
+            uint256 delta,
+            uint256 ifee,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm
+        ) = BaseFeed(feed).feedParams();
         assertEq(IFeed(feed).divider(), address(divider));
         assertEq(target, address(someTarget));
         assertEq(delta, DELTA);
@@ -103,7 +112,7 @@ contract Factories is TestHelper {
         try factory.deployFeed(address(target)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.FeedAlreadyExists);
+            assertEq(error, Errors.Create2Failed);
         }
     }
 }

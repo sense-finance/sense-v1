@@ -9,6 +9,7 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
 import { MockFeed } from "./test-helpers/mocks/MockFeed.sol";
 import { Errors } from "../libs/Errors.sol";
+import { BaseFeed } from "../feeds/BaseFeed.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
 
@@ -397,18 +398,17 @@ contract Dividers is TestHelper {
     function testCantIssueIfIssuanceFeeExceedsCap() public {
         divider.setPermissionless(true);
         MockFeed aFeed = new MockFeed();
-        aFeed.initialize(
-            address(stake),
-            address(target),
-            address(divider),
-            ORACLE,
-            DELTA,
-            address(twrapper),
-            1e18, // issuance fee > 10%
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY
-        );
+        BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+            target: address(target),
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: 1e18,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY
+        });
+        aFeed.initialize(address(divider), feedParams, address(reward));
         divider.addFeed(address(aFeed));
         uint256 maturity = getValidMaturity(2021, 10);
         User(address(alice)).doSponsorSeries(address(aFeed), maturity);

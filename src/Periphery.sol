@@ -12,7 +12,7 @@ import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswa
 
 // Internal references
 import { Errors } from "./libs/Errors.sol";
-import { BaseFeed as Feed } from "./feeds/BaseFeed.sol";
+import { CropFeed as Feed } from "./feeds/CropFeed.sol";
 import { BaseFactory as Factory } from "./feeds/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
@@ -58,7 +58,7 @@ contract Periphery is Trust {
     function sponsorSeries(
         address feed, uint256 maturity, uint160 sqrtPriceX96
     ) external returns (address zero, address claim) {
-        (, , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
+        (, , , , address stake, uint256 stakeSize, ,) = Feed(feed).feedParams();
 
         // transfer stakeSize from sponsor into this contract
         uint256 convertBase = 1;
@@ -86,7 +86,7 @@ contract Periphery is Trust {
         require(factories[factory], Errors.FactoryNotSupported);
         feedClone = Factory(factory).deployFeed(target);
         ERC20(target).approve(address(divider), type(uint256).max);
-        ERC20(target).approve(wtClone, type(uint256).max); // for flashloans
+        ERC20(target).approve(address(feedClone), type(uint256).max);
         poolManager.addTarget(target);
         emit FeedOnboarded(feedClone);
     }
@@ -102,11 +102,11 @@ contract Periphery is Trust {
     ) external {
         (address zero, address claim, , , , , , ,) = divider.series(feed, maturity);
 
-        // transfer target directly to TWrapper for conversion
-        ERC20(Feed(feed).target()).safeTransferFrom(msg.sender, Feed(feed).twrapper(), tBal);
+        // transfer target directly to feed for conversion
+        ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, feed, tBal);
 
         // convert target to underlying
-        uint256 uBal = TWrapper(Feed(feed).twrapper()).unwrapTarget(tBal);
+        uint256 uBal = Feed(feed).unwrapTarget(tBal);
 
         // swap underlying for zeros
         uint256 zBal = _swap(Feed(feed).underlying(), zero, uBal, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
@@ -128,8 +128,8 @@ contract Periphery is Trust {
         uint256 uBal = _swap(zero, Feed(feed).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
 
         // (2) Convert underlying into target (on protocol)
-        ERC20(Feed(feed).underlying()).safeTransfer(Feed(feed).twrapper(), uBal);
-        uint256 wrappedTarget = TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal); // TODO: use method from protocol. Each TWrapper would know how to wrap underlying into target
+        ERC20(Feed(feed).underlying()).safeTransfer(feed, uBal);
+        uint256 wrappedTarget = Feed(feed).wrapUnderlying(uBal); // TODO: use method from protocol. Each TWrapper would know how to wrap underlying into target
 
         // (3) Calculate target needed to borrow in order to re-issue and obtain the desired amount of claims
         // Based on (1) we know the Zero price (uBal/issued) and we can infer the Claim price (1 - uBal/issued).
@@ -139,7 +139,7 @@ contract Periphery is Trust {
         uint256 targetToBorrow;
         { // block scope to avoid stack too deep error
             uint256 lscale = divider.lscales(feed, maturity, address(this));
-            ERC20 target = ERC20(Feed(feed).target());
+            ERC20 target = ERC20(Feed(feed).getTarget());
             uint256 tBase = 10**target.decimals();
             uint256 cPrice = 1*tBase - (uBal.fdiv(issued, tBase)); // TODO: what if cPrice is 0 (e.g at maturity)?
             uint256 claimsAmount = uBal.fdiv(cPrice, tBase);
@@ -163,8 +163,8 @@ contract Periphery is Trust {
         uint256 uBal = _swap(zero, Feed(feed).underlying(), zBal, address(this), minAccepted); // TODO: swap on yieldspace pool
 
         // wrap underlying into target
-        ERC20(Feed(feed).underlying()).safeTransfer(Feed(feed).twrapper(), uBal);
-        uint256 tBal = TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal);
+        ERC20(Feed(feed).underlying()).safeTransfer(feed, uBal);
+        uint256 tBal = Feed(feed).wrapUnderlying(uBal);
 
         // transfer target to msg.sender
         ERC20(Feed(feed).getTarget()).safeTransfer(msg.sender, tBal);
@@ -184,7 +184,7 @@ contract Periphery is Trust {
         uint256 targetToBorrow;
         {
             uint256 rate = price(Feed(feed).underlying(), zero); // price of underlying/zero from Yieldspace pool
-            ERC20 target = ERC20(Feed(feed).target());
+            ERC20 target = ERC20(Feed(feed).getTarget());
             uint256 tBase = 10**target.decimals();
             uint256 zBal = cBal.fdiv(2*tBase, tBase);
             uint256 uBal = zBal.fmul(rate, tBase);
@@ -195,7 +195,7 @@ contract Periphery is Trust {
         uint256 tBal = flashBorrow(abi.encode(Action.CLAIM_TO_TARGET), feed, maturity, targetToBorrow);
 
         // (6) Part of the target repays the loan, part is transferred to msg.sender
-        ERC20(Feed(feed).target()).safeTransfer(msg.sender, tBal);
+        ERC20(Feed(feed).getTarget()).safeTransfer(msg.sender, tBal);
     }
 
     /* ========== VIEWS ========== */
@@ -249,15 +249,17 @@ contract Periphery is Trust {
     /// @param amount target amount to borrow
     /// @return claims issued with flashloan
     function flashBorrow(bytes memory data, address feed, uint256 maturity, uint256 amount) internal returns (uint256) {
-        TWrapper twrapper = TWrapper(Feed(feed).twrapper());
-        (bool result, uint256 value) = twrapper.flashLoan(data, address(this), feed, maturity, amount);
+        ERC20 target = ERC20(Feed(feed).getTarget());
+        uint256 _allowance = target.allowance(address(this), address(feed));
+        if (_allowance < amount) target.approve(address(feed), type(uint256).max);
+        (bool result, uint256 value) = Feed(feed).flashLoan(data, address(this), feed, maturity, amount);
         require(result == true);
         return value;
     }
 
     /// @dev ERC-3156 Flash loan callback
     function onFlashLoan(bytes calldata data, address initiator, address feed, uint256 maturity, uint256 amount) external returns(bytes32, uint256) {
-        require(msg.sender == address(Feed(feed).twrapper()), Errors.FlashUntrustedBorrower);
+        require(msg.sender == address(feed), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
         (address zero, , , , , , , ,) = divider.series(feed, maturity);
         (Action action) = abi.decode(data, (Action));
@@ -271,13 +273,13 @@ contract Periphery is Trust {
             // uint256 uBal = _swap(zero, Feed(feed).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace
 
             // (7) Convert underlying into target
-            ERC20(Feed(feed).underlying()).safeTransfer(Feed(feed).twrapper(), uBal);
-            TWrapper(Feed(feed).twrapper()).wrapUnderlying(uBal); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
+            ERC20(Feed(feed).underlying()).safeTransfer(feed, uBal);
+            Feed(feed).wrapUnderlying(uBal); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
             return (keccak256("ERC3156FlashBorrower.onFlashLoan"), issued);
 
         } else if (action == Action.CLAIM_TO_TARGET) {
             // (3) Convert target into underlying (unwrap via protocol)
-            uint256 uBal = TWrapper(Feed(feed).twrapper()).unwrapTarget(amount); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
+            uint256 uBal = Feed(feed).unwrapTarget(amount); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Feed or Wrapper?
 
             // (4) Swap underlying for Zeros on Yieldspace pool
             uint256 zBal = _swap(Feed(feed).underlying(), zero, uBal, address(this), 0); // TODO: minAccepted param

@@ -63,7 +63,7 @@ contract CFactories is CFeedTestHelper {
             DELTA,
             COMP
         );
-        
+
         assertTrue(address(otherCFactory) != address(0));
         assertEq(CFactory(otherCFactory).feedImpl(), address(feedImpl));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
@@ -79,7 +79,7 @@ contract CFactories is CFeedTestHelper {
     function testDeployFeed() public {
         address f = factory.deployFeed(cDAI);
         CFeed feed = CFeed(f);
-        (, uint256 delta, , , , ,) = CFeed(feed).feedParams();
+        (, , uint256 delta, , , , , ) = CFeed(feed).feedParams();
         assertTrue(address(feed) != address(0));
         assertEq(CFeed(feed).getTarget(), address(cDAI));
         assertEq(CFeed(feed).divider(), address(divider));

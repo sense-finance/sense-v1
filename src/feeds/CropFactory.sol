@@ -27,10 +27,20 @@ abstract contract CropFactory is BaseFactory {
         uint256 _maxMaturity,
         uint256 _delta,
         address _reward
-    ) BaseFactory(
-        _divider, _protocol, _feedImpl, _oracle, _stake, _stakeSize,
-        _issuanceFee, _minMaturity, _maxMaturity, _delta
-    ) {
+    )
+        BaseFactory(
+            _divider,
+            _protocol,
+            _feedImpl,
+            _oracle,
+            _stake,
+            _stakeSize,
+            _issuanceFee,
+            _minMaturity,
+            _maxMaturity,
+            _delta
+        )
+    {
         reward = _reward;
     }
 
@@ -41,6 +51,7 @@ abstract contract CropFactory is BaseFactory {
         BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
             target: _target,
             delta: delta,
+            oracle: oracle,
             ifee: issuanceFee,
             stake: stake,
             stakeSize: stakeSize,

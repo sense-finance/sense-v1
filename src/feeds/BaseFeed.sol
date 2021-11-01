@@ -10,20 +10,32 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";
 import { Errors } from "../libs/Errors.sol";
 
+interface IPeriphery {
+    function onFlashLoan(
+        bytes calldata data,
+        address initiator,
+        address feed,
+        uint256 maturity,
+        uint256 amount
+    ) external returns (bytes32, uint256);
+}
+
 /// @title Assign time-based value to Target tokens
 /// @dev In most cases, the only method that will be unique to each feed type is `_scale`
 abstract contract BaseFeed is Initializable {
     using FixedMath for uint256;
+
+    bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     /// Configuration --------
     address public divider;
     FeedParams public feedParams;
     struct FeedParams {
         address target; // Target token to divide
-        uint256 oracle;  // oracle address
-        uint256 delta;  // max growth per second allowed
-        uint256 ifee;   // issuance fee
-        address stake;  // token to stake at issuance
+        address oracle; // oracle address
+        uint256 delta; // max growth per second allowed
+        uint256 ifee; // issuance fee
+        address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance
         uint256 minm; // min maturity (seconds after block.timstamp)
         uint256 maxm; // max maturity (seconds after block.timstamp)
@@ -35,7 +47,7 @@ abstract contract BaseFeed is Initializable {
     LScale public _lscale;
     struct LScale {
         uint256 timestamp; // timestamp of the last scale value
-        uint256 value;     // last scale value
+        uint256 value; // last scale value
     }
 
     event Initialized();
@@ -44,16 +56,37 @@ abstract contract BaseFeed is Initializable {
 
     function initialize(address _divider, FeedParams memory _feedParams) public virtual initializer {
         // sanity check
-        require(_feedParams.minm < _feedParams.maxm, "Invalid maturity offsets");
+        require(_feedParams.minm < _feedParams.maxm, Errors.InvalidMaturityOffsets);
 
-        divider    = _divider;
+        divider = _divider;
         feedParams = _feedParams;
-        name   = string(abi.encodePacked(ERC20(_feedParams.target).name(), " Feed"));
+        name = string(abi.encodePacked(ERC20(_feedParams.target).name(), " Feed"));
         symbol = string(abi.encodePacked(ERC20(_feedParams.target).symbol(), "-feed"));
 
         ERC20(_feedParams.target).approve(divider, type(uint256).max);
 
         emit Initialized();
+    }
+
+    /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
+    /// @param receiver The contract receiving target, needs to implement the
+    /// `onFlashLoan(address user, address feed, uint256 maturity, uint256 amount)` interface.
+    /// @param feed feed address
+    /// @param maturity maturity
+    /// @param amount The amount of target lent.
+    function flashLoan(
+        bytes calldata data,
+        address receiver,
+        address feed,
+        uint256 maturity,
+        uint256 amount
+    ) external onlyPeriphery returns (bool, uint256) {
+        ERC20 target = ERC20(feedParams.target);
+        require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
+        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(data, msg.sender, feed, maturity, amount);
+        require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
+        require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
+        return (true, value);
     }
 
     /// @notice Calculate and return this feed's Scale value for the current timestamp
@@ -97,14 +130,23 @@ abstract contract BaseFeed is Initializable {
     }
 
     /// @notice Notification whenever the Divider adds or removes Target
-    function notify(address /* usr */, uint256 /* amt */, bool /* join */) public virtual {
+    function notify(
+        address, /* usr */
+        uint256, /* amt */
+        bool /* join */
+    ) public virtual {
         return;
     }
 
-    /// @notice Target's Underlying getter that must be overriden by child contracts
-    function underlying() external virtual returns (address);
+    /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts.
+    /// @param amount Underlying amount
+    /// @return amount of target returned
+    function wrapUnderlying(uint256 amount) external virtual returns (uint256);
 
-    event Initialized();
+    /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts.
+    /// @param amount Target amount
+    /// @return amount of underlying returned
+    function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
     /* ========== ACCESSORS ========== */
 
@@ -118,5 +160,16 @@ abstract contract BaseFeed is Initializable {
 
     function getMaturityBounds() external view returns (uint256, uint256) {
         return (feedParams.minm, feedParams.maxm);
+    }
+
+    function getStakeSize() external view returns (uint256) {
+        return feedParams.stakeSize;
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyPeriphery() {
+        require(Divider(divider).periphery() == msg.sender, Errors.OnlyPeriphery);
+        _;
     }
 }

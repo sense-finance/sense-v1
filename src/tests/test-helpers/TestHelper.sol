@@ -7,7 +7,6 @@ import { Divider, AssetDeployer } from "../../Divider.sol";
 import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
-import { MockTWrapper } from "./mocks/MockTWrapper.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockFeed } from "./mocks/MockFeed.sol";
@@ -36,7 +35,6 @@ contract TestHelper is DSTest {
     MockTarget target;
     MockToken reward;
     MockFactory factory;
-    MockTWrapper internal twrapper;
 
     PoolManager poolManager;
     Divider internal divider;
@@ -154,7 +152,7 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockFeed feedImpl = new MockFeed();
-        someFactory = new MockFactory(address(feedImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
+        someFactory = new MockFactory(address(feedImpl), address(divider), DELTA, address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, address(_reward)); // deploy feed factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
