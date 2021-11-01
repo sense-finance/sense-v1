@@ -103,9 +103,6 @@ contract PeripheryTests is PeripheryTestHelper {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // check gclaim deployed
-        assertTrue(address(periphery.gClaimManager().gclaims(claim)) != address(0));
-
         // check Uniswap pool deployed
         assertTrue(uniFactory.getPool(zero, claim, periphery.UNI_POOL_FEE()) != address(0));
 

@@ -37,6 +37,7 @@ contract TestHelper is DSTest {
     MockFactory factory;
 
     PoolManager poolManager;
+    GClaimManager gClaimManager;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
     Periphery internal periphery;
@@ -122,6 +123,7 @@ contract TestHelper is DSTest {
         periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         divider.setPeriphery(address(periphery));
         poolManager.setPeriphery(address(periphery));
+        gClaimManager = new GClaimManager(address(divider));
 
         // adapter, target wrapper & factory
         factory = createFactory(address(target), address(reward));
@@ -146,7 +148,7 @@ contract TestHelper is DSTest {
         user.doMint(address(stake), sBal);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
-        user.doApprove(address(target), address(periphery.gClaimManager()));
+        user.doApprove(address(target), address(user.gClaimManager()));
         user.doMint(address(target), tBal);
     }
 
@@ -204,7 +206,7 @@ contract TestHelper is DSTest {
 
     function calculateExcess(uint256 tBal, uint256 maturity, address claim) public returns (uint256 gap){
         uint256 toIssue = calculateAmountToIssue(tBal, maturity, Token(claim).BASE_UNIT());
-        gap = periphery.gClaimManager().excess(address(adapter), maturity, toIssue);
+        gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }
 
 }
