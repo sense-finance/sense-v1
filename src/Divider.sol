@@ -169,7 +169,7 @@ contract Divider is Trust, ReentrancyGuard {
         target.safeTransferFrom(msg.sender, adapter, tBalSubFee);
         target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
 
-        // Update values on target wrapper
+        // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
         // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
