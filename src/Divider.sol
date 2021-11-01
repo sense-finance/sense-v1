@@ -526,7 +526,7 @@ contract Divider is Trust, ReentrancyGuard {
         if (mode == 1) {
             return DateTime.getDayOfWeek(maturity) == 1;
         }
-        return true;
+        return false;
     }
 
     /* ========== INTERNAL FNCTIONS & HELPERS ========== */

@@ -113,6 +113,18 @@ contract Dividers is TestHelper {
         }
     }
 
+    function testCantInitSeriesIfModeInvalid() public {
+        adapter.setMode(4);
+        hevm.warp(1631664000);
+        // 15-09-21 00:00 UTC
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Tuesday
+        try alice.doSponsorSeries(address(adapter), maturity) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
+        }
+    }
+
     function testCantInitSeriesIfNotTopWeek() public {
         adapter.setMode(1);
         hevm.warp(1631664000);
