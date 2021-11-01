@@ -18,7 +18,6 @@ contract CFactory is CropFactory {
 
     constructor(
         address _divider,
-        address _protocol,
         address _adapterImpl,
         address _stake,
         uint256 _stakeSize,

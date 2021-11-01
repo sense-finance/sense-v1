@@ -72,7 +72,7 @@ contract Periphery is Trust {
         ERC20(stake).approve(address(divider), type(uint256).max);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
-        address unipool = IUniswapV3Factory(uniFactory).createPool(zero, Adapter(adapter).underlying(), UNI_POOL_FEE); // deploy UNIV3 pool
+        address unipool = uniFactory.createPool(zero, Adapter(adapter).underlying(), UNI_POOL_FEE); // deploy UNIV3 pool
         IUniswapV3Pool(unipool).initialize(sqrtPriceX96);
         poolManager.addSeries(adapter, maturity);
         emit SeriesSponsored(adapter, maturity, msg.sender);

@@ -67,7 +67,6 @@ contract PeripheryTestHelper is DSTest {
         // deploy compound adapter factory
         factory = new CFactory(
             address(divider),
-            address(0),
             address(implementation),
             DAI,
             STAKE_SIZE,

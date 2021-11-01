@@ -34,7 +34,6 @@ contract CAdapterTestHelper is DSTest {
         // deploy compound adapter factory
         factory = new CFactory(
             address(divider),
-            address(0),
             address(adapterImpl),
             DAI,
             STAKE_SIZE,
@@ -53,7 +52,6 @@ contract CFactories is CAdapterTestHelper {
         CAdapter adapterImpl = new CAdapter();
         CFactory otherCFactory = new CFactory(
             address(divider),
-            address(0),
             address(adapterImpl),
             DAI,
             STAKE_SIZE,
