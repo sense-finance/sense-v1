@@ -22,7 +22,7 @@ contract GClaimManager {
     mapping(address => uint256) public inits;
     /// @notice Total amount of interest collected separated by Claim address
     mapping(address => uint256) public totals;
-    /// @notice The max scale value of different Series 
+    /// @notice The max scale value of different Series
     mapping(address => uint256) public mscales;
     mapping(address => Token) public gclaims;
     address public divider;
@@ -51,10 +51,10 @@ contract GClaimManager {
             // NOTE: Because we're transferring Claims in this same TX, we could technically
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later
-            uint256 scale  = Adapter(adapter).scale();
+            uint256 scale = Adapter(adapter).scale();
             mscales[claim] = scale;
-            inits[claim]   = scale;
-            string memory name   = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
+            inits[claim] = scale;
+            string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).getTarget()).decimals(), address(this));
         } else {
