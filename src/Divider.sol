@@ -129,7 +129,7 @@ contract Divider is Trust, ReentrancyGuard {
 
         // Reward the caller for doing the work of settling the Series at around the correct time
         (address target, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
-        ERC20(target).safeTransfer(msg.sender, series[adapter][maturity].reward);
+        ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         emit SeriesSettled(adapter, maturity, msg.sender);
@@ -167,7 +167,7 @@ contract Divider is Trust, ReentrancyGuard {
         if (guarded)
             require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
         target.safeTransferFrom(msg.sender, adapter, tBalSubFee);
-        target.safeTransferFrom(msg.sender, address(this), fee); // we keep fees on divider
+        target.safeTransferFrom(msg.sender, adapter, fee);
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
@@ -483,8 +483,10 @@ contract Divider is Trust, ReentrancyGuard {
 
         // Determine where the rewards should go depending on where we are relative to the maturity date
         address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
-        ERC20(target).safeTransfer(cup, series[adapter][maturity].reward);
-        ERC20(stake).safeTransferFrom(adapter, rewardee, Adapter(adapter).getStakeSize() / _convertBase(ERC20(stake).decimals()));
+        uint256 reward = series[adapter][maturity].reward;
+
+        ERC20(target).safeTransferFrom(adapter, cup, reward);
+        ERC20(stake).safeTransferFrom(adapter, rewardee, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
     }
