@@ -19,7 +19,7 @@ contract CFactory is CropFactory {
     constructor(
         address _divider,
         address _protocol,
-        address _feedImpl,
+        address _adapterImpl,
         address _stake,
         uint256 _stakeSize,
         uint256 _issuanceFee,
@@ -28,7 +28,7 @@ contract CFactory is CropFactory {
         uint256 _delta,
         address _reward
     ) CropFactory(
-        _divider, COMPTROLLER, _feedImpl, ComptrollerLike(COMPTROLLER).oracle(), _stake, _stakeSize,
+        _divider, COMPTROLLER, _adapterImpl, ComptrollerLike(COMPTROLLER).oracle(), _stake, _stakeSize,
         _issuanceFee, _minMaturity, _maxMaturity, _delta, _reward
     ) { }
 

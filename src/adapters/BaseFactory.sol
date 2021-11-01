@@ -9,13 +9,13 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 
 // Internal references
 import { Errors } from "../libs/Errors.sol";
-import { BaseFeed } from "./BaseFeed.sol";
+import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
 abstract contract BaseFactory is Trust {
     address public immutable divider;
     address public immutable protocol; // protocol's data contract address
-    address public immutable feedImpl; // feed implementation
+    address public immutable adapterImpl; // adapter implementation
     address public immutable oracle;
     address public immutable stake;
     uint256 public immutable stakeSize;
@@ -24,15 +24,15 @@ abstract contract BaseFactory is Trust {
     uint256 public immutable maxMaturity;
     uint256 public delta;
 
-    event FeedDeployed(address addr);
+    event AdapterDeployed(address addr);
     event DeltaChanged(uint256 delta);
-    event FeedImplementationChanged(address implementation);
+    event AdapterImplementationChanged(address implementation);
     event ProtocolChanged(address protocol);
 
     constructor(
         address _divider,
         address _protocol,
-        address _feedImpl,
+        address _adapterImpl,
         address _oracle,
         address _stake,
         uint256 _stakeSize,
@@ -43,7 +43,7 @@ abstract contract BaseFactory is Trust {
     ) Trust(msg.sender) {
         divider = _divider;
         protocol = _protocol;
-        feedImpl = _feedImpl;
+        adapterImpl = _adapterImpl;
         oracle = _oracle;
         stake = _stake;
         stakeSize = _stakeSize;
@@ -55,17 +55,17 @@ abstract contract BaseFactory is Trust {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Deploys both a feed and a target wrapper for the given _target
+    /// @notice Deploys both a adapter and a target wrapper for the given _target
     /// @param _target Address of the Target token
-    function deployFeed(address _target) external virtual returns (address feedClone) {
+    function deployAdapter(address _target) external virtual returns (address adapterClone) {
         require(_exists(_target), Errors.NotSupported);
 
-        // clone the feed using the Target address as salt
+        // clone the adapter using the Target address as salt
         // note: duplicate Target addresses will revert
-        feedClone = Clones.cloneDeterministic(feedImpl, Bytes32AddressLib.fillLast12Bytes(_target));
+        adapterClone = Clones.cloneDeterministic(adapterImpl, Bytes32AddressLib.fillLast12Bytes(_target));
 
         // TODO: see if we can inline this
-        BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
             delta: delta,
             oracle: oracle,
@@ -75,14 +75,14 @@ abstract contract BaseFactory is Trust {
             minm: minMaturity,
             maxm: maxMaturity
         });
-        BaseFeed(feedClone).initialize(divider, feedParams);
+        BaseAdapter(adapterClone).initialize(divider, adapterParams);
 
-        // authd set feed since this feed factory is only for Sense-vetted feeds
-        Divider(divider).setFeed(feedClone, true);
+        // authd set adapter since this adapter factory is only for Sense-vetted adapters
+        Divider(divider).setAdapter(adapterClone, true);
 
-        emit FeedDeployed(feedClone);
+        emit AdapterDeployed(adapterClone);
 
-        return feedClone;
+        return adapterClone;
     }
 
     /* ========== ADMIN ========== */

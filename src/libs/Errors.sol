@@ -17,7 +17,7 @@ library Errors {
     string constant GuardCapReached = "Issuance cap reached";
     string constant IssuanceFeeCapExceeded = "Issuance fee cannot exceed 10%";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
-    string constant InvalidFeed = "Invalid feed address or feed is not enabled";
+    string constant InvalidAdapter = "Invalid adapter address or adapter is not enabled";
     string constant InvalidMaturity = "Maturity date is not valid";
     string constant InvalidMaturityOffsets = "Invalid maturity offsets";
     string constant InvalidScaleValue = "Scale value is invalid";

@@ -6,7 +6,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
-import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "../libs/Errors.sol";
 import { Token } from "../tokens/Token.sol";
 
@@ -55,7 +55,7 @@ contract PoolManager is Trust {
 
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
-    /// @notice Series Inits: feed -> maturity -> series (zerosclaims) added to pool
+    /// @notice Series Inits: adapter -> maturity -> series (zerosclaims) added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
 
     event SetParams(bytes32 indexed what, AssetParams data);
@@ -146,14 +146,14 @@ contract PoolManager is Trust {
         emit TargetAdded(target, target);
     }
 
-    function addSeries(address feed, uint256 maturity) external onlyPeriphery {
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
+    function addSeries(address adapter, uint256 maturity) external onlyPeriphery {
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         require(comptroller != address(0), "Pool not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(!sInits[feed][maturity], Errors.DuplicateSeries);
+        require(!sInits[adapter][maturity], Errors.DuplicateSeries);
 
-        address target = Feed(feed).getTarget();
+        address target = Adapter(adapter).getTarget();
         require(tInits[target], "Target for this Series not yet added");
 
         uint256 adminFee = 0;
@@ -197,7 +197,7 @@ contract PoolManager is Trust {
         );
         require(errClaim == 0, "Failed to add market");
 
-        sInits[feed][maturity] = true;
+        sInits[adapter][maturity] = true;
     }
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {

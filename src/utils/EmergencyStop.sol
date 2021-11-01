@@ -7,7 +7,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 // Internal references
 import { Divider } from "../Divider.sol";
 
-/// @notice Unsets multiple feeds on the divider
+/// @notice Unsets multiple adapters on the divider
 contract EmergencyStop is Trust {
     address public divider;
 
@@ -15,14 +15,14 @@ contract EmergencyStop is Trust {
         divider = _divider;
     }
 
-    function stop(address[] memory feeds) external virtual requiresTrust {
+    function stop(address[] memory adapters) external virtual requiresTrust {
         Divider(divider).setPermissionless(false);
-        for (uint256 i = 0; i < feeds.length; i++) {
+        for (uint256 i = 0; i < adapters.length; i++) {
             Divider(divider).setPermissionless(false);
-            Divider(divider).setFeed(feeds[i], false);
-            emit Stopped(feeds[i]);
+            Divider(divider).setAdapter(adapters[i], false);
+            emit Stopped(adapters[i]);
         }
     }
 
-    event Stopped(address indexed feed);
+    event Stopped(address indexed adapter);
 }

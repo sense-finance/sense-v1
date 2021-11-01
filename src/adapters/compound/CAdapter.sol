@@ -6,7 +6,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
-import { CropFeed } from "../CropFeed.sol";
+import { CropAdapter } from "../CropAdapter.sol";
 
 interface CTokenInterface {
     /// @notice cToken is convertible into an ever increasing quantity of the underlying asset, as interest accrues in
@@ -40,15 +40,15 @@ interface ComptrollerInterface {
     function claimComp(address holder) external;
 }
 
-/// @notice Feed contract for cTokens
-contract CFeed is CropFeed {
+/// @notice Adapter contract for cTokens
+contract CAdapter is CropAdapter {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
     function _scale() internal virtual override returns (uint256) {
-        CTokenInterface t = CTokenInterface(feedParams.target);
+        CTokenInterface t = CTokenInterface(adapterParams.target);
         uint256 decimals = CTokenInterface(t.underlying()).decimals();
         return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10 ** decimals);
     }
@@ -58,11 +58,11 @@ contract CFeed is CropFeed {
     }
 
     function underlying() external override returns (address) {
-        return CTokenInterface(feedParams.target).underlying();
+        return CTokenInterface(adapterParams.target).underlying();
     }
 
     function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {
-        ERC20 target = ERC20(feedParams.target);
+        ERC20 target = ERC20(adapterParams.target);
         uint256 tBalBefore = target.balanceOf(address(this));
         require(CTokenInterface(address(target)).mint(uBal) == 0, "Mint failed");
         uint256 tBalAfter = target.balanceOf(address(this));
@@ -72,7 +72,7 @@ contract CFeed is CropFeed {
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
-        address target = feedParams.target;
+        address target = adapterParams.target;
         ERC20 u = ERC20(CTokenInterface(target).underlying());
         uint256 uBalBefore = u.balanceOf(address(this));
         require(CTokenInterface(target).redeem(tBal) == 0, "Redeem failed");

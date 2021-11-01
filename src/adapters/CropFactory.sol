@@ -8,8 +8,8 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 // Internal references
 import { Divider } from "../Divider.sol";
 import { Errors } from "../libs/Errors.sol";
-import { CropFeed } from "./CropFeed.sol";
-import { BaseFeed } from "./BaseFeed.sol";
+import { CropAdapter } from "./CropAdapter.sol";
+import { BaseAdapter } from "./BaseAdapter.sol";
 import { BaseFactory } from "./BaseFactory.sol";
 
 abstract contract CropFactory is BaseFactory {
@@ -18,7 +18,7 @@ abstract contract CropFactory is BaseFactory {
     constructor(
         address _divider,
         address _protocol,
-        address _feedImpl,
+        address _adapterImpl,
         address _oracle,
         address _stake,
         uint256 _stakeSize,
@@ -31,7 +31,7 @@ abstract contract CropFactory is BaseFactory {
         BaseFactory(
             _divider,
             _protocol,
-            _feedImpl,
+            _adapterImpl,
             _oracle,
             _stake,
             _stakeSize,
@@ -44,11 +44,11 @@ abstract contract CropFactory is BaseFactory {
         reward = _reward;
     }
 
-    function deployFeed(address _target) external override returns (address feedClone) {
+    function deployAdapter(address _target) external override returns (address adapterClone) {
         require(_exists(_target), Errors.NotSupported);
 
-        feedClone = Clones.cloneDeterministic(feedImpl, Bytes32AddressLib.fillLast12Bytes(_target));
-        BaseFeed.FeedParams memory feedParams = BaseFeed.FeedParams({
+        adapterClone = Clones.cloneDeterministic(adapterImpl, Bytes32AddressLib.fillLast12Bytes(_target));
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
             delta: delta,
             oracle: oracle,
@@ -59,11 +59,11 @@ abstract contract CropFactory is BaseFactory {
             maxm: maxMaturity
         });
 
-        CropFeed(feedClone).initialize(divider, feedParams, reward);
-        Divider(divider).setFeed(feedClone, true);
+        CropAdapter(adapterClone).initialize(divider, adapterParams, reward);
+        Divider(divider).setAdapter(adapterClone, true);
 
-        emit FeedDeployed(feedClone);
+        emit AdapterDeployed(adapterClone);
 
-        return feedClone;
+        return adapterClone;
     }
 }

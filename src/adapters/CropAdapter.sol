@@ -8,11 +8,11 @@ import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 // Internal references
 import { Periphery } from "../Periphery.sol";
 import { Divider } from "../Divider.sol";
-import { BaseFeed } from "./BaseFeed.sol";
+import { BaseAdapter } from "./BaseAdapter.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Errors } from "../libs/Errors.sol";
 
-abstract contract CropFeed is BaseFeed {
+abstract contract CropAdapter is BaseAdapter {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
@@ -28,12 +28,12 @@ abstract contract CropFeed is BaseFeed {
 
     function initialize(
         address _divider,
-        FeedParams memory _feedParams,
+        AdapterParams memory _adapterParams,
         address _reward
     ) public {
-        super.initialize(_divider, _feedParams);
+        super.initialize(_divider, _adapterParams);
         reward = _reward;
-        ERC20(_feedParams.stake).approve(_divider, type(uint256).max);
+        ERC20(_adapterParams.stake).approve(_divider, type(uint256).max);
     }
 
     function notify(

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
-abstract contract IFeed {
+abstract contract IAdapter {
     function divider() external view virtual returns (address divider);
 
     function target() external view virtual returns (address target);

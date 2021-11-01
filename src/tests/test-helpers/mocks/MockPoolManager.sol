@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 contract MockPoolManager {
     mapping(address => bool) public tInits; // Target Inits: target -> target added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
-//     Series Inits: feed -> maturity -> series (zerosclaims) added to pool
+//     Series Inits: adapter -> maturity -> series (zerosclaims) added to pool
 
     function deployPool(
         string calldata name,
@@ -19,7 +19,7 @@ contract MockPoolManager {
         tInits[target] = true;
     }
 
-    function addSeries(address feed, uint256 maturity) external {
-        sInits[feed][maturity] = true;
+    function addSeries(address adapter, uint256 maturity) external {
+        sInits[adapter][maturity] = true;
     }
 }

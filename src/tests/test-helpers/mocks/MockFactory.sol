@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import { CropFactory } from "../../../feeds/CropFactory.sol";
+import { CropFactory } from "../../../adapters/CropFactory.sol";
 
 contract MockFactory is CropFactory {
     address public constant ORACLE = address(123);
@@ -10,7 +10,7 @@ contract MockFactory is CropFactory {
     mapping(address => bool) public targets;
 
     constructor(
-        address _feedImpl,
+        address _adapterImpl,
         address _divider,
         uint256 _delta,
         address _stake,
@@ -20,7 +20,7 @@ contract MockFactory is CropFactory {
         uint256 _maxMaturity,
         address _reward
     ) CropFactory(
-        _divider, address(0), _feedImpl, ORACLE, _stake, _stakeSize,
+        _divider, address(0), _adapterImpl, ORACLE, _stake, _stakeSize,
         _issuanceFee, _minMaturity, _maxMaturity, _delta, _reward
     ) { }
 

@@ -10,7 +10,7 @@ import { Divider } from "../Divider.sol";
 import { Errors } from "../libs/Errors.sol";
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
-import { BaseFeed as Feed } from "../feeds/BaseFeed.sol";
+import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 
 /// @title Grounded Claims (gClaims)
 /// @notice The GClaim Manager contract turns Collect Claims into Drag Claims
@@ -32,13 +32,13 @@ contract GClaimManager {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function join(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
-        (, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
         require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
@@ -49,16 +49,16 @@ contract GClaimManager {
             // NOTE: Because we're transferring Claims in this same TX, we could technically
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later
-            inits[claim] = Feed(feed).scale();
+            inits[claim] = Adapter(adapter).scale();
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
             // NOTE: Consider the benefits of using Create2 here
-            gclaims[claim] = new Token(name, symbol, ERC20(Feed(feed).getTarget()).decimals(), address(this));
+            gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).getTarget()).decimals(), address(this));
         } else {
-            uint256 gap = excess(feed, maturity, balance);
+            uint256 gap = excess(adapter, maturity, balance);
             if (gap > 0) {
                 // Pull the amount of Target needed to backfill the excess
-                ERC20(Feed(feed).getTarget()).safeTransferFrom(msg.sender, address(this), gap);
+                ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), gap);
                 totals[claim] += gap;
             }
         }
@@ -69,15 +69,15 @@ contract GClaimManager {
         // Mint the user Drag Claims
         gclaims[claim].mint(msg.sender, balance);
 
-        emit Join(feed, maturity, msg.sender, balance);
+        emit Join(adapter, maturity, msg.sender, balance);
     }
 
     function exit(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) external {
-        (, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         require(claim != address(0), Errors.SeriesDoesntExists);
 
@@ -95,27 +95,27 @@ contract GClaimManager {
         totals[claim] = total;
 
         // Send the excess Target back to the user
-        ERC20(Feed(feed).getTarget()).safeTransfer(msg.sender, rights);
+        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, rights);
         // Transfer Collect Claims back to the user
         ERC20(claim).safeTransfer(msg.sender, balance);
         // Burn the user's gclaims
         ERC20(gclaims[claim]).balanceOf(msg.sender);
         gclaims[claim].burn(msg.sender, balance);
 
-        emit Exit(feed, maturity, msg.sender, balance);
+        emit Exit(adapter, maturity, msg.sender, balance);
     }
 
     /* ========== VIEWS ========== */
 
     /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
     function excess(
-        address feed,
+        address adapter,
         uint256 maturity,
         uint256 balance
     ) public returns (uint256 amount) {
-        (, address claim, , , , , , , ) = Divider(divider).series(feed, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
         uint256 initScale = inits[claim];
-        uint256 currScale = Feed(feed).scale();
+        uint256 currScale = Adapter(adapter).scale();
         if (currScale - initScale > 0) {
             amount = (balance * currScale) / (currScale - initScale) / 10**18;
         }
@@ -126,6 +126,6 @@ contract GClaimManager {
 
     /* ========== EVENTS ========== */
 
-    event Join(address indexed feed, uint256 maturity, address indexed guy, uint256 balance);
-    event Exit(address indexed feed, uint256 maturity, address indexed guy, uint256 balance);
+    event Join(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
+    event Exit(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
 }

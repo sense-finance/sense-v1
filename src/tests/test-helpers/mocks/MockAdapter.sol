@@ -2,12 +2,12 @@
 pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
-import { CropFeed } from "../../../feeds/CropFeed.sol";
+import { CropAdapter } from "../../../adapters/CropAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockTarget.sol";
 
-contract MockFeed is CropFeed {
+contract MockAdapter is CropAdapter {
     using FixedMath for uint256;
 
     uint256 internal value;
@@ -17,7 +17,7 @@ contract MockFeed is CropFeed {
 
     function _scale() internal override virtual returns (uint256 _value) {
         if (value > 0) return value;
-        uint8 tDecimals = ERC20(feedParams.target).decimals();
+        uint8 tDecimals = ERC20(adapterParams.target).decimals();
         if (INITIAL_VALUE == 0)  {
             if (tDecimals != 18) {
                 INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18 * (10**(tDecimals - 18));
@@ -25,7 +25,7 @@ contract MockFeed is CropFeed {
                 INITIAL_VALUE = 0.1e18;
             }
         }
-        uint256 gps = feedParams.delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
+        uint256 gps = adapterParams.delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
         uint256 timeDiff = block.timestamp - _lscale.timestamp;
         _value = _lscale.value > 0 ? (gps * timeDiff).fmul(_lscale.value, 10**tDecimals) + _lscale.value : INITIAL_VALUE;
     }
@@ -35,7 +35,7 @@ contract MockFeed is CropFeed {
     }
 
     function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {
-        MockTarget target = MockTarget(feedParams.target);
+        MockTarget target = MockTarget(adapterParams.target);
         MockToken(target.underlying()).burn(address(this), uBal); // this would be an approve call to the protocol to withdraw the underlying
         uint256 tBase = 10**target.decimals();
         uint256 mintAmount = uBal.fdiv(_lscale.value, tBase);
@@ -44,7 +44,7 @@ contract MockFeed is CropFeed {
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
-        MockTarget target = MockTarget(feedParams.target);
+        MockTarget target = MockTarget(adapterParams.target);
         target.burn(address(this), tBal); // this would be an approve call to the protocol to withdraw the target
         uint256 tBase = 10**target.decimals();
         uint256 mintAmount = tBal.fmul(_lscale.value, tBase);
@@ -53,7 +53,7 @@ contract MockFeed is CropFeed {
     }
 
     function underlying() external virtual override returns (address) {
-        return MockTarget(feedParams.target).underlying();
+        return MockTarget(adapterParams.target).underlying();
     }
 
     function tilt() external override virtual returns (uint256 _value) {
@@ -65,7 +65,7 @@ contract MockFeed is CropFeed {
     }
 
     function setOracle(address _oracle) external {
-        feedParams.oracle = _oracle;
+        adapterParams.oracle = _oracle;
     }
 
     function setTilt(uint256 _value) external {
@@ -74,7 +74,7 @@ contract MockFeed is CropFeed {
 }
 
 // used in simulated env deployment scripts
-contract SimpleAdminFeed {
+contract SimpleAdminAdapter {
     using FixedMath for uint256;
 
     address public owner;
