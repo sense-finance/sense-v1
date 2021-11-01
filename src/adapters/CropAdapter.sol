@@ -33,7 +33,7 @@ abstract contract CropAdapter is BaseAdapter {
     ) public {
         super.initialize(_divider, _adapterParams);
         reward = _reward;
-        ERC20(_adapterParams.stake).approve(_divider, type(uint256).max);
+        ERC20(_adapterParams.stake).safeApprove(_divider, type(uint256).max);
     }
 
     function notify(

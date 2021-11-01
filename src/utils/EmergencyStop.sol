@@ -9,7 +9,7 @@ import { Divider } from "../Divider.sol";
 
 /// @notice Unsets multiple adapters on the divider
 contract EmergencyStop is Trust {
-    address public divider;
+    address public immutable divider;
 
     constructor(address _divider) Trust(msg.sender) {
         divider = _divider;

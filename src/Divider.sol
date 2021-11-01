@@ -379,8 +379,7 @@ contract Divider is Trust, ReentrancyGuard {
         // If there's some principal set aside for Claims, determine whether they get it all
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = uBal.fdiv(_series.maxscale, 10 ** target.decimals())
-                .fmul(_series.tilt, 10 ** target.decimals());
+            tBal = uBal.fdiv(_series.maxscale, _series.tilt);
 
             // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
@@ -481,12 +480,12 @@ contract Divider is Trust, ReentrancyGuard {
 
         (address target, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
 
-        // Determine where the rewards should go depending on where we are relative to the maturity date
-        address rewardee = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
+        // Determine where the stake should go depending on where we are relative to the maturity date
+        address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
         uint256 reward = series[adapter][maturity].reward;
 
         ERC20(target).safeTransferFrom(adapter, cup, reward);
-        ERC20(stake).safeTransferFrom(adapter, rewardee, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
     }
