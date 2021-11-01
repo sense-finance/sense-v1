@@ -40,6 +40,7 @@ abstract contract BaseAdapter is Initializable {
         uint256 stakeSize; // amount to stake at issuance
         uint256 minm; // min maturity (seconds after block.timstamp)
         uint256 maxm; // max maturity (seconds after block.timstamp)
+        uint8 mode; // 0 for monthly, 1 for weekly
     }
 
     /// Program state --------
@@ -165,6 +166,10 @@ abstract contract BaseAdapter is Initializable {
 
     function getStakeSize() external view returns (uint256) {
         return adapterParams.stakeSize;
+    }
+
+    function getMode() external view returns (uint8) {
+        return adapterParams.mode;
     }
 
     /* ========== MODIFIERS ========== */

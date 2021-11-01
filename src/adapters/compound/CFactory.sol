@@ -19,16 +19,10 @@ contract CFactory is CropFactory {
     constructor(
         address _divider,
         address _adapterImpl,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _issuanceFee,
-        uint256 _minMaturity,
-        uint256 _maxMaturity,
-        uint256 _delta,
+        FactoryParams memory _factoryParams,
         address _reward
     ) CropFactory(
-        _divider, COMPTROLLER, _adapterImpl, ComptrollerLike(COMPTROLLER).oracle(), _stake, _stakeSize,
-        _issuanceFee, _minMaturity, _maxMaturity, _delta, _reward
+        _divider, COMPTROLLER, _adapterImpl, _factoryParams, _reward
     ) { }
 
     function _exists(address _target) internal override virtual returns (bool isListed) {

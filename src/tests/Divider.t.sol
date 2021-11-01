@@ -113,6 +113,31 @@ contract Dividers is TestHelper {
         }
     }
 
+    function testCantInitSeriesIfNotTopWeek() public {
+        adapter.setMode(1);
+        hevm.warp(1631664000);
+        // 15-09-21 00:00 UTC
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0); // Tuesday
+        try alice.doSponsorSeries(address(adapter), maturity) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
+        }
+    }
+
+    function testInitSeriesWeekly() public {
+        adapter.setMode(1);
+        hevm.warp(1631664000); // 15-09-21 00:00 UTC
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        assertTrue(zero != address(0));
+        assertTrue(claim != address(0));
+        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #0 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#0");
+        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #0 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#0");
+    }
+
     function testInitSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -406,7 +431,8 @@ contract Dividers is TestHelper {
             ifee: 1e18,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: MAX_MATURITY
+            maxm: MAX_MATURITY,
+            mode: MODE
         });
         aAdapter.initialize(address(divider), adapterParams, address(reward));
         divider.addAdapter(address(aAdapter));

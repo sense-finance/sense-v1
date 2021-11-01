@@ -85,7 +85,7 @@ contract Divider is Trust, ReentrancyGuard {
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);
 
         // Transfer stake asset stake from caller to adapter
-        (address target, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
+        (address target, , , , address stake, uint256 stakeSize, , ,) = Adapter(adapter).adapterParams();
         ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
@@ -128,7 +128,7 @@ contract Divider is Trust, ReentrancyGuard {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        (address target, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
+        (address target, , , , address stake, uint256 stakeSize, , ,) = Adapter(adapter).adapterParams();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
 
@@ -474,7 +474,7 @@ contract Divider is Trust, ReentrancyGuard {
             lscales[adapter][maturity][_usrs[i]] = _lscales[i];
         }
 
-        (address target, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
+        (address target, , , , address stake, uint256 stakeSize, , ,) = Adapter(adapter).adapterParams();
 
         // Determine where the stake should go depending on where we are relative to the maturity date
         address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
@@ -516,9 +516,16 @@ contract Divider is Trust, ReentrancyGuard {
     function _isValid(address adapter, uint256 maturity) internal view returns (bool) {
         (uint256 minm, uint256 maxm) = Adapter(adapter).getMaturityBounds();
         if (maturity < block.timestamp + minm || maturity > block.timestamp + maxm) return false;
-
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
-        if (day != 1 || hour != 0 || minute != 0 || second != 0) return false;
+
+        if (hour != 0 || minute != 0 || second != 0) return false;
+        uint8 mode = Adapter(adapter).getMode();
+        if (mode == 0) {
+            return day == 1;
+        }
+        if (mode == 1) {
+            return DateTime.getDayOfWeek(maturity) == 1;
+        }
         return true;
     }
 
@@ -623,7 +630,7 @@ contract AssetDeployer is Trust {
         (, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(m, "-", y));
 
-        string memory adapterId = uint2str(Divider(divider).adapterIDs(adapter));
+        string memory adapterId = DateTime.uintToString(Divider(divider).adapterIDs(adapter));
         zero = address(new Zero(
             string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
             string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
@@ -639,29 +646,5 @@ contract AssetDeployer is Trust {
             string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
             decimals
         ));
-    }
-
-    /// Taken from https://github.com/provable-things/ethereum-api/blob/master/provableAPI_0.6.sol
-    /// @dev modified to be compatible with 0.8
-    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint j = _i;
-        uint len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint k = len;
-        while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
     }
 }

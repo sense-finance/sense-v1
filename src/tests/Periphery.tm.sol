@@ -10,6 +10,7 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 import { Divider, AssetDeployer } from "../Divider.sol";
+import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
 
@@ -31,6 +32,7 @@ contract PeripheryTestHelper is DSTest {
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
+    uint8 public constant MODE = 0;
     uint256 public constant DELTA = 1;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -65,17 +67,17 @@ contract PeripheryTestHelper is DSTest {
         CAdapter implementation = new CAdapter(); // compound adapter implementation
 
         // deploy compound adapter factory
-        factory = new CFactory(
-            address(divider),
-            address(implementation),
-            DAI,
-            STAKE_SIZE,
-            ISSUANCE_FEE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            DELTA,
-            COMP
-        );
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: DAI,
+            oracle: MASTER_ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+        factory = new CFactory(address(divider), address(implementation), factoryParams, COMP);
         //        factory.addTarget(cDAI, true);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         address f = factory.deployAdapter(cDAI); // deploy a cDAI adapter

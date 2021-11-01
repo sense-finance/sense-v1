@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 // Internal references
 import { CAdapter } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
+import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { Divider, AssetDeployer } from "../Divider.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
@@ -19,7 +20,9 @@ contract CAdapterTestHelper is DSTest {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address public constant ORACLE = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
+    uint8 public constant MODE = 0;
     uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -32,17 +35,17 @@ contract CAdapterTestHelper is DSTest {
         assetDeployer.init(address(divider));
         CAdapter adapterImpl = new CAdapter(); // compound adapter implementation
         // deploy compound adapter factory
-        factory = new CFactory(
-            address(divider),
-            address(adapterImpl),
-            DAI,
-            STAKE_SIZE,
-            ISSUANCE_FEE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            DELTA,
-            COMP
-        );
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: DAI,
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+        factory = new CFactory(address(divider), address(adapterImpl), factoryParams, COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -50,34 +53,45 @@ contract CAdapterTestHelper is DSTest {
 contract CFactories is CAdapterTestHelper {
     function testDeployFactory() public {
         CAdapter adapterImpl = new CAdapter();
-        CFactory otherCFactory = new CFactory(
-            address(divider),
-            address(adapterImpl),
-            DAI,
-            STAKE_SIZE,
-            ISSUANCE_FEE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            DELTA,
-            COMP
-        );
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: DAI,
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+        CFactory otherCFactory = new CFactory(address(divider), address(adapterImpl), factoryParams, COMP);
 
         assertTrue(address(otherCFactory) != address(0));
+        (
+            address oracle,
+            uint256 delta,
+            uint256 ifee,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm,
+            uint8 mode
+        ) = CFactory(otherCFactory).factoryParams();
         assertEq(CFactory(otherCFactory).adapterImpl(), address(adapterImpl));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
-        assertEq(CFactory(otherCFactory).delta(), DELTA);
+        assertEq(delta, DELTA);
         assertEq(CFactory(otherCFactory).reward(), COMP);
-        assertEq(CFactory(otherCFactory).stake(), DAI);
-        assertEq(CFactory(otherCFactory).issuanceFee(), ISSUANCE_FEE);
-        assertEq(CFactory(otherCFactory).stakeSize(), STAKE_SIZE);
-        assertEq(CFactory(otherCFactory).minMaturity(), MIN_MATURITY);
-        assertEq(CFactory(otherCFactory).maxMaturity(), MAX_MATURITY);
+        assertEq(stake, DAI);
+        assertEq(ifee, ISSUANCE_FEE);
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(mode, MODE);
     }
 
     function testDeployAdapter() public {
         address f = factory.deployAdapter(cDAI);
         CAdapter adapter = CAdapter(f);
-        (, , uint256 delta, , , , , ) = CAdapter(adapter).adapterParams();
+        (, , uint256 delta, , , , , , ) = CAdapter(adapter).adapterParams();
         assertTrue(address(adapter) != address(0));
         assertEq(CAdapter(adapter).getTarget(), address(cDAI));
         assertEq(CAdapter(adapter).divider(), address(divider));

@@ -49,7 +49,8 @@ contract Adapters is TestHelper {
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: MAX_MATURITY
+            maxm: MAX_MATURITY,
+            mode: MODE
         });
 
         adapter.initialize(address(divider), adapterParams);
@@ -64,7 +65,8 @@ contract Adapters is TestHelper {
             address stake,
             uint256 stakeSize,
             uint256 minm,
-            uint256 maxm
+            uint256 maxm,
+            uint8 mode
         ) = BaseAdapter(adapter).adapterParams();
         assertEq(adapter.getTarget(), address(target));
         assertEq(adapter.divider(), address(divider));
@@ -74,6 +76,7 @@ contract Adapters is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
+        assertEq(mode, MODE);
     }
 
     function testScale() public {
@@ -103,7 +106,8 @@ contract Adapters is TestHelper {
                 ifee: ISSUANCE_FEE,
                 stakeSize: STAKE_SIZE,
                 minm: MIN_MATURITY,
-                maxm: MAX_MATURITY
+                maxm: MAX_MATURITY,
+                mode: MODE
             });
 
             localAdapter.initialize(address(divider), adapterParams);
@@ -162,7 +166,8 @@ contract Adapters is TestHelper {
                 ifee: ISSUANCE_FEE,
                 stakeSize: STAKE_SIZE,
                 minm: MIN_MATURITY,
-                maxm: MAX_MATURITY
+                maxm: MAX_MATURITY,
+                mode: MODE
             });
 
             localAdapter.initialize(address(divider), adapterParams);
@@ -205,7 +210,8 @@ contract Adapters is TestHelper {
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: MAX_MATURITY
+            maxm: MAX_MATURITY,
+            mode: MODE
         });
 
         fakeAdapter.initialize(address(divider), adapterParams);
