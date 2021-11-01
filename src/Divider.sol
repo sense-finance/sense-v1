@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { ReentrancyGuard } from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
@@ -17,7 +18,7 @@ import { Token as Zero } from "./tokens/Token.sol";
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
-contract Divider is Trust, ReentrancyGuard {
+contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
     using Errors for string;
@@ -70,7 +71,7 @@ contract Divider is Trust, ReentrancyGuard {
 
     /// @notice Enable a adapter
     /// @param adapter Adapter's address
-    function addAdapter(address adapter) external whenPermissionless {
+    function addAdapter(address adapter) external whenPermissionless whenNotPaused {
         _setAdapter(adapter, true);
     }
 
@@ -79,7 +80,7 @@ contract Divider is Trust, ReentrancyGuard {
     /// @dev Transfers some fixed amount of stake asset to this contract
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series, in units of unix time
-    function initSeries(address adapter, uint256 maturity, address sponsor) external onlyPeriphery returns (address zero, address claim) {
+    function initSeries(address adapter, uint256 maturity, address sponsor) external onlyPeriphery whenNotPaused returns (address zero, address claim) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(!_exists(adapter, maturity), Errors.DuplicateSeries);
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);
@@ -114,7 +115,7 @@ contract Divider is Trust, ReentrancyGuard {
     /// @dev After that, the reward becomes MEV
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series
-    function settleSeries(address adapter, uint256 maturity) nonReentrant external {
+    function settleSeries(address adapter, uint256 maturity) nonReentrant whenNotPaused external {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(_canBeSettled(adapter, maturity), Errors.OutOfWindowBoundaries);
@@ -140,7 +141,7 @@ contract Divider is Trust, ReentrancyGuard {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
     /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
-    function issue(address adapter, uint256 maturity, uint256 tBal) nonReentrant external returns (uint256 uBal) {
+    function issue(address adapter, uint256 maturity, uint256 tBal) nonReentrant whenNotPaused external returns (uint256 uBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
@@ -198,7 +199,7 @@ contract Divider is Trust, ReentrancyGuard {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Zeros and Claims to burn
-    function combine(address adapter, uint256 maturity, uint256 uBal) nonReentrant external returns (uint256 tBal) {
+    function combine(address adapter, uint256 maturity, uint256 uBal) nonReentrant whenNotPaused external returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
 
@@ -229,7 +230,7 @@ contract Divider is Trust, ReentrancyGuard {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Amount of Zeros to burn, which should be equivelent to the amount of Underlying owed to the caller
-    function redeemZero(address adapter, uint256 maturity, uint256 uBal) nonReentrant external {
+    function redeemZero(address adapter, uint256 maturity, uint256 uBal) nonReentrant whenNotPaused external {
         require(adapters[adapter], Errors.InvalidAdapter);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
@@ -272,7 +273,7 @@ contract Divider is Trust, ReentrancyGuard {
 
     function collect(
         address usr, address adapter, uint256 maturity, uint256 uBalTransfer, address to
-    ) nonReentrant external onlyClaim(adapter, maturity) returns (uint256 collected) {
+    ) nonReentrant external onlyClaim(adapter, maturity) whenNotPaused returns (uint256 collected) {
         uint256 uBal = Claim(msg.sender).balanceOf(usr);
         return _collect(usr,
             adapter,
@@ -437,6 +438,12 @@ contract Divider is Trust, ReentrancyGuard {
         emit PeripheryChanged(periphery);
     }
 
+    /// @notice Set paused flag
+    /// @param _paused boolean
+    function setPaused(bool _paused) external requiresTrust {
+        _paused ? _pause() : _unpause();
+    }
+
     /// @notice Set permissioless mode
     /// @param _permissionless bool
     function setPermissionless(bool _permissionless) external requiresTrust {
@@ -484,12 +491,6 @@ contract Divider is Trust, ReentrancyGuard {
         ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
-    }
-
-    /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
-    /// @param reward Reward token
-    function withdrawFeesRewards(address reward) external requiresTrust {
-        ERC20(reward).safeTransfer(cup, ERC20(reward).balanceOf(address(this)));
     }
 
     /* ========== INTERNAL VIEWS ========== */
