@@ -8,6 +8,7 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 import { PriceOracle } from "../external/fuse/PriceOracle.sol";
 
 // Internal references
+import { TargetOracle } from "./TargetOracle.sol";
 import { Divider } from "../Divider.sol";
 import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "../libs/Errors.sol";
@@ -55,6 +56,7 @@ contract PoolManager is Trust {
     address public immutable fuseDirectory;
     address public immutable divider;
     address public immutable oracleImpl;
+    address public immutable targetOracle;
     address public comptroller;
     address public masterOracle;
 
@@ -99,6 +101,7 @@ contract PoolManager is Trust {
         cERC20Impl = _cERC20Impl;
         divider    = _divider;
         oracleImpl = _oracleImpl; // master oracle
+        targetOracle = address(new TargetOracle());
     }
 
     function deployPool(
@@ -134,7 +137,7 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target) external requiresTrust {
+    function addTarget(address target, address adapter) external requiresTrust {
         require(comptroller != address(0), "Pool not yet deployed");
         require(!tInits[target], "Target already added");
         require(targetParams.irModel != address(0), "Target asset params not set");
@@ -143,8 +146,9 @@ contract PoolManager is Trust {
         underlyings[0] = target;
 
         PriceOracle[] memory oracles = new PriceOracle[](1);
-        oracles[0] = PriceOracle(address(0));
+        oracles[0] = PriceOracle(targetOracle);
 
+        TargetOracle(targetOracle).addTarget(target, adapter);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
         uint256 adminFee = 0;

@@ -29,9 +29,8 @@ contract TargetOracle is PriceOracle, Trust {
             Adapter adapter = Adapter(adapters[address(target)]);
             require(adapter != Adapter(address(0)), "Target must have a adapter set");
             
+            (, uint256 scale) = adapter._lscale();
             // Target / Target's underlying * price of Target's underlying = Price of Target
-            // adapter.scale().fmul(adapter.priceOfUnderlying(), target.decimals())
-            return 0;
+            return scale.fmul(adapter.getUnderlyingPrice(), FixedMath.WAD);
     }
 }
-
