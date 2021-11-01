@@ -18,10 +18,12 @@ contract GClaimManager {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
-    /// @notice "Issuance" scale value all claims of the same Series must backfill to separated by Claim address.
+    /// @notice "Issuance" scale value all claims of the same Series must backfill to separated by Claim address
     mapping(address => uint256) public inits;
-    /// @notice Total amount of interest collected separated by Claim address.
+    /// @notice Total amount of interest collected separated by Claim address
     mapping(address => uint256) public totals;
+    /// @notice The max scale value of different Series
+    mapping(address => uint256) public mscales;
     mapping(address => Token) public gclaims;
     address public divider;
 
@@ -34,7 +36,7 @@ contract GClaimManager {
     function join(
         address adapter,
         uint256 maturity,
-        uint256 balance
+        uint256 uBal
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
@@ -49,60 +51,56 @@ contract GClaimManager {
             // NOTE: Because we're transferring Claims in this same TX, we could technically
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later
-            inits[claim] = Adapter(adapter).scale();
+            uint256 scale = Adapter(adapter).scale();
+            mscales[claim] = scale;
+            inits[claim] = scale;
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
-            // NOTE: Consider the benefits of using Create2 here
             gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).getTarget()).decimals(), address(this));
         } else {
-            uint256 gap = excess(adapter, maturity, balance);
-            if (gap > 0) {
-                // Pull the amount of Target needed to backfill the excess
-                ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), gap);
-                totals[claim] += gap;
+            uint256 tBal = excess(adapter, maturity, uBal);
+            if (tBal > 0) {
+                // Pull the amount of Target needed to backfill the excess back to issuance
+                ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
+                totals[claim] += tBal;
             }
         }
-        // NOTE: Is there any way to drag inits up for everyone after a certain about of time has passed?
 
         // Pull Collect Claims to this contract
-        ERC20(claim).safeTransferFrom(msg.sender, address(this), balance);
+        ERC20(claim).safeTransferFrom(msg.sender, address(this), uBal);
         // Mint the user Drag Claims
-        gclaims[claim].mint(msg.sender, balance);
+        gclaims[claim].mint(msg.sender, uBal);
 
-        emit Join(adapter, maturity, msg.sender, balance);
+        emit Join(adapter, maturity, msg.sender, uBal);
     }
 
     function exit(
         address adapter,
         uint256 maturity,
-        uint256 balance
+        uint256 uBal
     ) external {
         (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         require(claim != address(0), Errors.SeriesDoesntExists);
 
-        // Collect excess for all Claims from this Series in this contract holds
+        // Collect excess for all Claims from this Series this contract holds
         uint256 collected = Claim(claim).collect();
         // Track the total Target collected manually so that that we don't get
         // mixed up when multiple Series have the same Target
         uint256 total = totals[claim] + collected;
 
-        // Determine the percent of the excess this caller has a right to
-        uint256 rights = (
-            balance.fdiv(gclaims[claim].totalSupply(), Token(claim).BASE_UNIT()).fmul(total, Token(claim).BASE_UNIT())
-        );
-        total -= rights;
-        totals[claim] = total;
+        // Determine how much of stored excess this caller has a right to
+        uint256 tBal = uBal.fdiv(gclaims[claim].totalSupply(), total);
+        totals[claim] = total - tBal;
 
         // Send the excess Target back to the user
-        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, rights);
+        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
         // Transfer Collect Claims back to the user
-        ERC20(claim).safeTransfer(msg.sender, balance);
+        ERC20(claim).safeTransfer(msg.sender, uBal);
         // Burn the user's gclaims
-        ERC20(gclaims[claim]).balanceOf(msg.sender);
-        gclaims[claim].burn(msg.sender, balance);
+        gclaims[claim].burn(msg.sender, uBal);
 
-        emit Exit(adapter, maturity, msg.sender, balance);
+        emit Exit(adapter, maturity, msg.sender, uBal);
     }
 
     /* ========== VIEWS ========== */
@@ -111,18 +109,22 @@ contract GClaimManager {
     function excess(
         address adapter,
         uint256 maturity,
-        uint256 balance
-    ) public returns (uint256 amount) {
+        uint256 uBal
+    ) public returns (uint256 tBal) {
         (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
         uint256 initScale = inits[claim];
-        uint256 currScale = Adapter(adapter).scale();
-        if (currScale - initScale > 0) {
-            amount = (balance * currScale) / (currScale - initScale) / 10**18;
+        uint256 scale = Adapter(adapter).scale();
+        uint256 mscale = mscales[claim];
+        if (scale <= mscale) {
+            scale = mscale;
+        } else {
+            mscales[claim] = scale;
+        }
+
+        if (scale - initScale > 0) {
+            tBal = (uBal * scale) / (scale - initScale) / 10**18;
         }
     }
-
-    // NOTE: Admin pull up issuance?
-    // NOTE: Admin approved claims?
 
     /* ========== EVENTS ========== */
 
