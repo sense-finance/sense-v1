@@ -62,7 +62,7 @@ yarn build
 
 ## Sense V1 Architecture
 
-# <img src="contract-diagram.svg" alt="sense smart contract user/contract interaction diagram">
+# <img src="21.10.31-v1-contract-diagram.png" alt="sense smart contract user/contract interaction diagram">
 
 The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Feeds`, `Feed Factories`, `Periphery`, `TWrappers` and `Emergency Stop`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
