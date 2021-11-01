@@ -493,12 +493,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
     }
 
-    /// @notice Allows admin to withdraw the reward (airdropped) tokens accrued from fees
-    /// @param reward Reward token
-    function withdrawFeesRewards(address reward) external requiresTrust {
-        ERC20(reward).safeTransfer(cup, ERC20(reward).balanceOf(address(this)));
-    }
-
     /* ========== INTERNAL VIEWS ========== */
 
     function _exists(address adapter, uint256 maturity) internal view returns (bool) {
