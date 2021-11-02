@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
 import { Divider, AssetDeployer } from "../../Divider.sol";
+import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
@@ -58,6 +59,7 @@ contract TestHelper is DSTest {
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
+    uint8 public MODE = 0;
     address public ORACLE = address(123);
     uint256 public ISSUANCE_FEE = 0.1e18;
     uint256 public STAKE_SIZE = 1e18;
@@ -154,7 +156,17 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockAdapter adapterImpl = new MockAdapter();
-        someFactory = new MockFactory(address(adapterImpl), address(divider), DELTA, address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, address(_reward)); // deploy adapter factory
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+        someFactory = new MockFactory(address(adapterImpl), address(divider), factoryParams, address(_reward)); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
