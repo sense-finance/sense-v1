@@ -13,10 +13,8 @@ interface CTokenInterface {
     /// the market. This function returns the exchange rate between a cToken and the underlying asset.
     /// @dev returns the current exchange rate as an uint, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals).
     function exchangeRateCurrent() external returns (uint256);
-
     function decimals() external returns (uint256);
-
-    function underlying() external returns (address);
+    function underlying() external view returns (address);
 
     /// The mint function transfers an asset into the protocol, which begins accumulating interest based
     /// on the current Supply Rate for the asset. The user receives a quantity of cTokens equal to the
@@ -55,7 +53,7 @@ contract CAdapter is CropAdapter {
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
-    function _scale() internal virtual override returns (uint256) {
+    function _scale() internal override returns (uint256) {
         CTokenInterface t = CTokenInterface(adapterParams.target);
         uint256 decimals = CTokenInterface(t.underlying()).decimals();
         return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10 ** decimals);
@@ -65,17 +63,17 @@ contract CAdapter is CropAdapter {
         ComptrollerInterface(COMPTROLLER).claimComp(address(this));
     }
 
-    function underlying() external override returns (address) {
+    function underlying() external view override returns (address) {
         return CTokenInterface(adapterParams.target).underlying();
     }
 
-    function getUnderlyingPrice() external virtual view override returns (uint256) {
+    function getUnderlyingPrice() external view override returns (uint256) {
         return PriceOracleInterface(adapterParams.oracle).getUnderlyingPrice(
             CTokenInterface(adapterParams.target)
         );
     }
 
-    function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {
+    function wrapUnderlying(uint256 uBal) external override returns (uint256) {
         ERC20 target = ERC20(adapterParams.target);
         uint256 tBalBefore = target.balanceOf(address(this));
         require(CTokenInterface(address(target)).mint(uBal) == 0, "Mint failed");
@@ -85,7 +83,7 @@ contract CAdapter is CropAdapter {
         return tBal;
     }
 
-    function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
+    function unwrapTarget(uint256 tBal) external override returns (uint256) {
         address target = adapterParams.target;
         ERC20 u = ERC20(CTokenInterface(target).underlying());
         uint256 uBalBefore = u.balanceOf(address(this));

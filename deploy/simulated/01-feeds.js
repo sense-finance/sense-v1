@@ -1,3 +1,6 @@
+const fs = require("fs");
+const { exec } = require("child_process");
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -46,12 +49,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const factoryParams = [ORACLE, 0, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [
-      mockAdapterImplAddress,
-      divider.address,
-      factoryParams,
-      airdrop.address,
-    ],
+    args: [mockAdapterImplAddress, divider.address, factoryParams, airdrop.address],
     log: true,
   });
 
@@ -63,13 +61,20 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const factory = await ethers.getContract("MockFactory");
 
+  console.log("Deploying Targets & Adapters");
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
-    const underlyingAddress = "0x1111111111111111111111111111111111111111";
+    const { address: mockUnderlyingAddress } = await deploy(targetName, {
+      contract: "MockToken",
+      from: deployer,
+      args: [`UNDERLYING-${targetName}`, `UNDERLYING-${targetName}`, 18],
+      log: true,
+    });
+
     await deploy(targetName, {
       contract: "MockTarget",
       from: deployer,
-      args: [underlyingAddress, targetName, targetName, 18],
+      args: [mockUnderlyingAddress, targetName, targetName, 18],
       log: true,
     });
 
@@ -81,17 +86,34 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();
 
-    const adapter = await periphery.callStatic.onboardAdapter(factory.address, target.address);
+    const adapterAddress = await periphery.callStatic.onboardAdapter(factory.address, target.address);
     console.log(`Onboard target ${target.address} via Periphery`);
     await (await periphery.onboardAdapter(factory.address, target.address)).wait();
-    global.ADAPTERS[target.address] = adapter;
+    global.ADAPTERS[target.address] = adapterAddress;
 
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
-    await (await airdrop.setIsTrusted(adapter, true)).wait();
+    await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
 
     console.log(`Set ${targetName} issuance cap to max uint so we don't have to worry about it`);
     await divider.setGuard(target.address, ethers.constants.MaxUint256).then(tx => tx.wait());
   }
+
+  const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
+  const currentTag = await new Promise((resolve, reject) => {
+    exec("git describe --abbrev=0", (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(stdout ? stdout : stderr);
+    });
+  });
+
+  const deploymentDir = `./deployments/${currentTag}/`;
+  fs.mkdirSync(deploymentDir, { recursive: true });
+  fs.writeFileSync(
+    `./${deploymentDir}/adapter-deployments.json`,
+    JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }),
+  );
 };
 
 module.exports.tags = ["simulated:adapters", "scenario:simulated"];

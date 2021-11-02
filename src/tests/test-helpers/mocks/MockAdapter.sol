@@ -56,7 +56,7 @@ contract MockAdapter is CropAdapter {
         return 1e18;
     }
 
-    function underlying() external virtual override returns (address) {
+    function underlying() external view override returns (address) {
         return MockTarget(adapterParams.target).underlying();
     }
 

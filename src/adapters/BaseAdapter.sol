@@ -123,7 +123,7 @@ abstract contract BaseAdapter is Initializable {
     function _scale() internal virtual returns (uint256);
 
     /// @notice Underlying token address getter that must be overriden by child contracts
-    function underlying() external virtual returns (address);
+    function underlying() external view virtual returns (address);
 
     /// @notice Tilt value getter that may be overriden by child contracts
     /// @dev Returns `0` by default, which means no principal is set aside for Claims

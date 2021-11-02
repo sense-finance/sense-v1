@@ -9,4 +9,5 @@ hevm.libs.*
 abi/
 artifacts/
 cache/
+deployments/
 exports/

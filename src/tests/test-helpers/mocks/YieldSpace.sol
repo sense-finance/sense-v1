@@ -59,24 +59,18 @@ contract MockYieldSpaceFactory {
     constructor(address _vault) {
         vault = MockBalancerVault(_vault);
     }
-    event A(uint);
 
     function create(
         address _divider,
         address _adapter,
         uint256 _maturity
     ) external returns (address) {
-        emit A(1);
         (address _zero, , , , , , , , ) = Divider(_divider).series(_adapter, uint48(_maturity));
-        emit A(2);
         address _target = Adapter(_adapter).getTarget();
-        emit A(3);
 
         pool = new MockYieldSpacePool(address(vault));
-        emit A(4);
 
         vault.setYieldSpace(address(pool));
-        emit A(5);
 
         return address(pool);
     }

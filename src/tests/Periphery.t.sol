@@ -7,6 +7,7 @@ import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";

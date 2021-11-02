@@ -1,9 +1,14 @@
+const MASTER_ORACLE_IMPL = "0xb3c8ee7309be658c186f986388c2377da436d8fb";
+const FUSE_CERC20_IMPL = "0x67db14e73c2dce786b5bbbfa4d010deab4bbfcf9";
+
+const RARI_MASTER_ORACLE = "0x1887118E49e0F4A78Bd71B792a49dE03504A764D";
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
   console.log("Deploy a token hanlder for the Divider will use");
-  const { address: tokenHandlerAddress } = await deploy("TokenHanlder", {
+  const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
     args: [],
     log: true,
@@ -20,7 +25,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   });
 
   const divider = await ethers.getContract("Divider");
-  const tokenHandler = await ethers.getContract("TokenHanlder");
+  const tokenHandler = await ethers.getContract("TokenHandler");
 
   // console.log("Trust the dev address on the divider");
   // await divider.setIsTrusted(dev, true).then(tx => tx.wait());
@@ -43,13 +48,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy a pool manager with mocked dependencies");
   const { address: poolManagerAddress } = await deploy("PoolManager", {
     from: deployer,
-    args: [
-      mockFuseDirectoryAddress,
-      mockComptrollerAddress,
-      "0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1",
-      divider.address,
-      "0x1887118E49e0F4A78Bd71B792a49dE03504A764D",
-    ],
+    args: [mockFuseDirectoryAddress, mockComptrollerAddress, FUSE_CERC20_IMPL, divider.address, MASTER_ORACLE_IMPL],
     log: true,
   });
   const poolManager = await ethers.getContract("PoolManager");
@@ -57,10 +56,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy Sense Fuse pool via Pool Manager");
   await (
     await poolManager.deployPool(
-      "Sense Fuse Pool",
-      false,
+      "Sense Pool",
       ethers.utils.parseEther("0.051"),
       ethers.utils.parseEther("1"),
+      RARI_MASTER_ORACLE,
     )
   ).wait();
 
@@ -74,30 +73,31 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
 
-  console.log("Deploy mocked uni dependencies");
-  const { address: mockUniFactoryAddress } = await deploy("MockUniFactory", {
+  console.log("Deploy mocked balancer/yield space dependencies");
+  const { address: mockBalancerVault } = await deploy("MockBalancerVault", {
     from: deployer,
     args: [],
     log: true,
   });
-  const { address: mockUniRouterAddress } = await deploy("MockUniSwapRouter", {
+
+  const { address: mockYieldSpaceFactory } = await deploy("MockYieldSpaceFactory", {
     from: deployer,
-    args: [],
+    args: [mockBalancerVault],
     log: true,
   });
 
   console.log("Deploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [divider.address, poolManagerAddress, mockUniFactoryAddress, mockUniRouterAddress],
+    args: [divider.address, poolManagerAddress, mockYieldSpaceFactory, mockBalancerVault],
     log: true,
   });
 
   console.log("Set the periphery on the Divider");
   await (await divider.setPeriphery(peripheryAddress)).wait();
 
-  console.log("Set the periphery on the PoolManager");
-  await (await poolManager.setPeriphery(peripheryAddress)).wait();
+  console.log("Give the periphery auth over the pool manager");
+  await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
 };
 
 module.exports.tags = ["simulated:divider", "scenario:simulated"];
