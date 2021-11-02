@@ -26,8 +26,8 @@ contract Periphery is Trust {
     enum Action {ZERO_TO_CLAIM, CLAIM_TO_TARGET}
 
     /// @notice Configuration
-    uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
-    uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
+    uint24 public constant UNI_POOL_FEE = 10000;      // denominated in hundredths of a bip
+    uint32 public constant TWAP_PERIOD = 10 minutes;  // ideal TWAP interval.
 
     /// @notice Program state
     IUniswapV3Factory public immutable uniFactory;
@@ -88,10 +88,10 @@ contract Periphery is Trust {
         emit AdapterOnboarded(adapterClone);
     }
 
-    /// @notice Mint Zeros and Claims of a specific Series
+    /// @notice Swap Target to Zeros of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param tBal Balance of Target to deposit
+    /// @param tBal Balance of Target to sell
     function swapTargetForZeros(
         address adapter, uint256 maturity, uint256 tBal, uint256 minAccepted
     ) external {
@@ -111,6 +111,10 @@ contract Periphery is Trust {
 
     }
 
+    /// @notice Swap Target to Claims of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param tBal Balance of Target to sell
     function swapTargetForClaims(address adapter, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
 
@@ -148,6 +152,11 @@ contract Periphery is Trust {
         ERC20(claim).safeTransfer(msg.sender, issued + cBal);
     }
 
+    /// @notice Swap Zeros for Target of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param zBal Balance of Zeros to sell
+    /// @param minAccepted Min accepted amount of Target
     function swapZerosForTarget(address adapter, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
 
@@ -165,6 +174,11 @@ contract Periphery is Trust {
         ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
     }
 
+    /// @notice Swap Claims for Target of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param cBal Balance of Zeros to sell
+    /// @param minAccepted Min accepted amount of Target
     function swapClaimsForTarget(address adapter, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
         uint256 lscale = divider.lscales(adapter, maturity, address(this));
