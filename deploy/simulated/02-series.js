@@ -21,7 +21,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
     await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
     for (let seriesMaturity of global.SERIES_MATURITIES) {
-      const adapterAddress = global.ADAPTERS[target.address];
+      const adapterAddress = global.ADAPTERS[targetName];
       const mockAdapterImpl = await ethers.getContract("MockAdapter");
       const adapter = new ethers.Contract(adapterAddress, mockAdapterImpl.interface, signer);
 

@@ -17,7 +17,7 @@ abstract contract BaseFactory {
     address public immutable protocol; // protocol's data contract address
     address public immutable adapterImpl; // adapter implementation
 
-    event AdapterDeployed(address addr);
+    event AdapterDeployed(address addr, address indexed target);
     event DeltaChanged(uint256 delta);
     event AdapterImplementationChanged(address implementation);
     event ProtocolChanged(address protocol);
@@ -74,7 +74,7 @@ abstract contract BaseFactory {
         // authd set adapter since this adapter factory is only for Sense-vetted adapters
         Divider(divider).setAdapter(adapterClone, true);
 
-        emit AdapterDeployed(adapterClone);
+        emit AdapterDeployed(adapterClone, _target);
 
         return adapterClone;
     }

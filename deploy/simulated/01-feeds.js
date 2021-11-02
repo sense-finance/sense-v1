@@ -89,7 +89,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     const adapterAddress = await periphery.callStatic.onboardAdapter(factory.address, target.address);
     console.log(`Onboard target ${target.address} via Periphery`);
     await (await periphery.onboardAdapter(factory.address, target.address)).wait();
-    global.ADAPTERS[target.address] = adapterAddress;
+    global.ADAPTERS[targetName] = adapterAddress;
 
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
     await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
@@ -108,12 +108,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     });
   });
 
-  const deploymentDir = `./deployments/${currentTag}/`;
+  const deploymentDir = `./adapter-deployments/${currentTag.trim().replace(/(\r\n|\n|\r)/gm, "")}/`;
   fs.mkdirSync(deploymentDir, { recursive: true });
-  fs.writeFileSync(
-    `./${deploymentDir}/adapter-deployments.json`,
-    JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }),
-  );
+  fs.writeFileSync(`./${deploymentDir}/adapters.json`, JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }));
 };
 
 module.exports.tags = ["simulated:adapters", "scenario:simulated"];

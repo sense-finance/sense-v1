@@ -44,7 +44,7 @@ abstract contract CropFactory is BaseFactory {
         CropAdapter(adapterClone).initialize(divider, adapterParams, reward);
         Divider(divider).setAdapter(adapterClone, true);
 
-        emit AdapterDeployed(adapterClone);
+        emit AdapterDeployed(adapterClone, _target);
 
         return adapterClone;
     }
