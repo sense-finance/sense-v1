@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../../external/fuse/PriceOracle.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-import { Vault } from "../../external/balancer/Vault.sol";
+import { BalancerVault } from "../../external/balancer/Vault.sol";
 
 // Internal references
 import { Token } from "../../tokens/Token.sol";
@@ -55,7 +55,7 @@ contract LPOracle is PriceOracle, Trust {
     function _price(address _pool) internal view returns (uint256) {
         BalancerOracleLike pool = BalancerOracleLike(_pool);
 
-        (address[] memory tokens, uint256[] memory balances, ) = Vault(pool.getVault()).getPoolTokens(pool.getPoolId());
+        (address[] memory tokens, uint256[] memory balances, ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
 
         uint256 balanceA = balances[0];
         address tokenA   = tokens[0];

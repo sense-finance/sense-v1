@@ -52,6 +52,10 @@ contract MockAdapter is CropAdapter {
         return mintAmount;
     }
 
+    function getUnderlyingPrice() external virtual override view returns (uint256) {
+        return 1e18;
+    }
+
     function underlying() external virtual override returns (address) {
         return MockTarget(adapterParams.target).underlying();
     }

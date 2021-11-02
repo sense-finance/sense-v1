@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../../external/fuse/PriceOracle.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-import { Vault } from "../../external/balancer/Vault.sol";
+import { BalancerVault } from "../../external/balancer/Vault.sol";
 
 // Internal references
 import { Token } from "../../tokens/Token.sol";
@@ -80,7 +80,7 @@ contract ZeroOracle is PriceOracle, Trust {
         uint256 zeroPrice = results[0];
 
 
-        (address[] memory tokens, ,) = Vault(pool.getVault()).getPoolTokens(pool.getPoolId());
+        (address[] memory tokens, ,) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address target;
         if (address(zero) == tokens[0]) {
             target = tokens[0];

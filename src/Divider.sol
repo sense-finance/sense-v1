@@ -80,7 +80,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @dev Transfers some fixed amount of stake asset to this contract
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series, in units of unix time
-    function initSeries(address adapter, uint256 maturity, address sponsor) external onlyPeriphery whenNotPaused returns (address zero, address claim) {
+    function initSeries(
+        address adapter, uint256 maturity, address sponsor
+    ) external onlyPeriphery whenNotPaused returns (address zero, address claim) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(!_exists(adapter, maturity), Errors.DuplicateSeries);
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);

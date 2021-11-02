@@ -74,7 +74,7 @@ contract PoolManagerTest is DSTest {
     function testAddTarget() public {
         uint256 maturity = initSeries();
         // Cannot add a Target before deploying a pool
-        try poolManager.addTarget(address(target)) {
+        try poolManager.addTarget(address(target), address(adminAdapter)) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "Pool not yet deployed");
@@ -91,7 +91,7 @@ contract PoolManagerTest is DSTest {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target)) ;
+        poolManager.addTarget(address(target), address(adminAdapter));
 
         // assert
         assertTrue(false);

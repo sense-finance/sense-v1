@@ -4,13 +4,17 @@ pragma solidity ^0.8.6;
 import { PriceOracle, CTokenLike } from "../../../../external/fuse/PriceOracle.sol";
 
 contract MockOracle is PriceOracle {
-    uint256 public price = 1e18;
+    uint256 public _price = 1e18;
     
     function getUnderlyingPrice(CTokenLike) external view override returns (uint256) {
-        return price;
+        return _price;
     }
 
-    function setPrice(uint256 _price) external {
-        price = _price;
+    function price(address) external view override returns (uint256) {
+        return _price;
+    }
+
+    function setPrice(uint256 price_) external {
+        _price = price_;
     }
 }

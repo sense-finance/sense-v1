@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 interface IAsset { }
 
-interface Vault {
+interface BalancerVault {
     struct JoinPoolRequest {
         IAsset[] assets;
         uint256[] maxAmountsIn;
@@ -31,10 +31,15 @@ interface Vault {
         address payable recipient;
         bool toInternalBalance;
     }
-
     function getPoolTokens(bytes32 poolId) external view returns (
         address[] memory tokens,
         uint256[] memory balances,
         uint256 maxBlockNumber
     );
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    ) external payable returns (uint256);
 }

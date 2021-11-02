@@ -5,6 +5,8 @@ pragma solidity ^0.8.6;
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { FixedMath } from "./external/FixedMath.sol";
+import { BalancerVault, IAsset } from "./external/balancer/Vault.sol";
+import { BalancerPool } from "./external/balancer/Pool.sol";
 
 // Internal references
 import { Errors } from "./libs/Errors.sol";
@@ -14,9 +16,8 @@ import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
 import { Token } from "./tokens/Token.sol";
 
-
-interface YieldSpaceLike {
-
+interface YieldSpaceFactoryLike {
+    function create(address,address,uint256) external returns (address);
 }
 
 /// @title Periphery
@@ -32,16 +33,19 @@ contract Periphery is Trust {
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
 
     /// @notice Program state
-    YieldSpaceLike public immutable yieldSpaceFactory;
     Divider public immutable divider;
     PoolManager public immutable poolManager;
+    YieldSpaceFactoryLike public immutable yieldSpaceFactory;
+    BalancerVault public immutable balancerVault;
+
+    mapping(address => mapping(uint256 => bytes32)) poolIds;
     mapping(address => bool) public factories;  // adapter factories -> is supported
 
     constructor(address _divider, address _poolManager, address _ysFactory, address _balancerVault) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
-        yieldSpaceFactory = YieldSpaceLike(_ysFactory);
-        balancerVault = YieldSpaceLike(_balancerVault);
+        yieldSpaceFactory = YieldSpaceFactoryLike(_ysFactory);
+        balancerVault = BalancerVault(_balancerVault);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -63,7 +67,8 @@ contract Periphery is Trust {
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
         address pool = yieldSpaceFactory.create(address(divider), adapter, maturity);
-        poolManager.addSeries(adapter, maturity, pool);
+        poolIds[adapter][maturity] = BalancerPool(pool).getPoolId();
+        poolManager.queueSeries(adapter, maturity, pool);
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
@@ -78,7 +83,7 @@ contract Periphery is Trust {
         adapterClone = Factory(factory).deployAdapter(target);
         ERC20(target).safeApprove(address(divider), type(uint256).max);
         ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
-        poolManager.addTarget(target);
+        poolManager.addTarget(target, adapterClone);
         emit AdapterOnboarded(adapterClone);
     }
 
@@ -98,7 +103,14 @@ contract Periphery is Trust {
         uint256 uBal = Adapter(adapter).unwrapTarget(tBal);
 
         // swap underlying for zeros
-        uint256 zBal = _swap(Adapter(adapter).underlying(), zero, uBal, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
+        uint256 zBal = _swap(
+            Adapter(adapter).underlying(), 
+            zero, 
+            uBal,
+            poolIds[adapter][maturity],
+            address(this), 
+            minAccepted
+        ); // TODO: swap on yieldspace not uniswap
 
         // transfer bought zeros to user
         ERC20(zero).safeTransfer(msg.sender, zBal);
@@ -140,7 +152,14 @@ contract Periphery is Trust {
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal);
 
         // swap zeros for underlying
-        uint256 uBal = _swap(zero, Adapter(adapter).underlying(), zBal, address(this), minAccepted); // TODO: swap on yieldspace pool
+        uint256 uBal = _swap(
+            zero, 
+            Adapter(adapter).underlying(), 
+            zBal,
+            poolIds[adapter][maturity],
+            address(this), 
+            minAccepted
+        );
 
         // wrap underlying into target
         ERC20(Adapter(adapter).underlying()).safeTransfer(adapter, uBal);
@@ -181,35 +200,36 @@ contract Periphery is Trust {
     /* ========== VIEWS ========== */
 
     function price(address tokenA, address tokenB) public view returns (uint) {
-        // return tokenA/tokenB TWAP
-//        address pool = IUniswapV3Factory(uniFactory).getPool(tokenA, tokenB, UNI_POOL_FEE);
-//        int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
-//        uint128 baseUnit = uint128(10) ** uint128(ERC20(tokenA).decimals());
-//        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
-        // TODO: i'm commenting this here because I don't realise how to make it work with this but it should not be commented.
+        // TODO: unimplemented – solve this with the yield space for the optimal swap
         return 0.95e18;
     }
 
     function _swap(
-        address tokenIn, address tokenOut, uint256 amountIn,
-        address recipient, uint256 minAccepted
+        address assetIn, address assetOut, uint256 amountIn,
+        bytes32 poolId, address recipient, uint256 minAccepted
     ) internal returns (uint256 amountOut) {
-        // approve router to spend tokenIn
-        ERC20(tokenIn).safeApprove(address(uniSwapRouter), amountIn);
+        // approve vault to spend tokenIn
+        ERC20(assetIn).safeApprove(address(balancerVault), amountIn);
 
-        ISwapRouter.ExactInputSingleParams memory params =
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
-                fee: UNI_POOL_FEE,
-                recipient: recipient,
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: minAccepted,
-                sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
-        });
+        BalancerVault.SingleSwap memory request =
+            BalancerVault.SingleSwap({
+                poolId: poolId,
+                kind: BalancerVault.SwapKind.GIVEN_IN,
+                assetIn: IAsset(assetIn),
+                assetOut: IAsset(assetOut),
+                amount: amountIn,
+                userData : "0x"
+            });
 
-        amountOut = uniSwapRouter.exactInputSingle(params); // executes the swap
+        BalancerVault.FundManagement memory funds =
+            BalancerVault.FundManagement({
+                sender: msg.sender,
+                fromInternalBalance: false,
+                recipient: payable(address(this)),
+                toInternalBalance: false
+            });
+
+        amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max); 
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
@@ -250,7 +270,14 @@ contract Periphery is Trust {
             uint256 issued = divider.issue(adapter, maturity, amount);
 
             // (3) Sell Zeros for underlying
-            uint256 uBal = _swap(zero, Adapter(adapter).underlying(), issued, address(this), 0); // TODO: minAccepted
+            uint256 uBal = _swap(
+                zero, 
+                Adapter(adapter).underlying(), 
+                issued, 
+                poolIds[adapter][maturity], 
+                address(this), 
+                0
+            ); // TODO: minAccepted
 
             // (4) Convert underlying into target
             ERC20(Adapter(adapter).underlying()).safeTransfer(adapter, uBal);
@@ -261,7 +288,14 @@ contract Periphery is Trust {
             uint256 uBal = Adapter(adapter).unwrapTarget(amount);
 
             // (4) Swap underlying for Zeros on Yieldspace pool
-            uint256 zBal = _swap(Adapter(adapter).underlying(), zero, uBal, address(this), 0); // TODO: minAccepted
+            uint256 zBal = _swap(
+                Adapter(adapter).underlying(), 
+                zero, 
+                uBal, 
+                poolIds[adapter][maturity],
+                address(this), 
+                0
+            ); // TODO: minAccepted
 
             // (5) Combine zeros and claim
             uint256 tBal = divider.combine(adapter, maturity, zBal);

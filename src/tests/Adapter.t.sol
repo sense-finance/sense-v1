@@ -29,6 +29,10 @@ contract FakeAdapter is BaseAdapter {
         return 0;
     }
 
+    function getUnderlyingPrice() external override view returns (uint256) {
+        return 1e18;
+    }
+
     function doSetAdapter(Divider d, address _adapter) public {
         d.setAdapter(_adapter, true);
     }

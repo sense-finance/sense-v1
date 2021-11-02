@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
+import { PoolManager } from "../fuse/PoolManager.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
@@ -15,14 +16,14 @@ contract PeripheryTest is TestHelper {
 
     function testDeployPeriphery() public {
         MockPoolManager poolManager = new MockPoolManager();
-        address uniFactory = address(2);
-        address uniSwapRouter = address(3);
-        Periphery somePeriphery = new Periphery(address(divider), address(poolManager), uniFactory, uniSwapRouter);
+        address yieldSpaceFactory = address(2);
+        address balancerVault = address(3);
+        Periphery somePeriphery = new Periphery(address(divider), address(poolManager), yieldSpaceFactory, balancerVault);
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
         assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
-        assertEq(address(Periphery(somePeriphery).uniFactory()), address(uniFactory));
-        assertEq(address(Periphery(somePeriphery).uniSwapRouter()), address(uniSwapRouter));
+        assertEq(address(Periphery(somePeriphery).yieldSpaceFactory()), address(yieldSpaceFactory));
+        assertEq(address(Periphery(somePeriphery).balancerVault()), address(balancerVault));
     }
 
     /* ========== () tests ========== */
@@ -40,7 +41,7 @@ contract PeripheryTest is TestHelper {
         assertTrue(uniFactory.getPool(address(underlying), zero, periphery.UNI_POOL_FEE()) != address(0));
 
         // check zeros and claims onboarded on PoolManager (Fuse)
-        assertTrue(poolManager.sInits(address(adapter), maturity));
+        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testOnboardAdapter() public {
