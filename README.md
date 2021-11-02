@@ -108,7 +108,7 @@ To create an Adapter Factory, the contract needs to inherit from `BaseFactory.so
 
 The Periphery contract contains bundled actions for Series Actors and general users. 
 
-For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy adapters) and initialize new Series. The Target Sponsor calls `onboardAdapter` which will deploy an Adapter via an Adapter Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/Underlying, [Yieldspace](https://yield.is/YieldSpace.pdf) pool implementation on BalancerV2.
+For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy adapters) and initialize new Series. The Target Sponsor calls `onboardAdapter` which will deploy an Adapter via an Adapter Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Space for Zero / Underlying trading.
 
 Because the BalancerV2 only holds Zeros & the Target's Underlying, users need to execute additional steps to `issue()` and `combine()` in order to enter/exit into/from a Claim position. The Periphery allows users to bundle the necessary calls behind a single function interface and perform the following operations atomically, flashloaning Target from an Adapter when need be:
 - swapTargetForZeros
@@ -131,7 +131,10 @@ A Collection of Modules and Utilities for Sense V1
 
 #### Pool Manager
 
-`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`) and Zeros (`queueSeries()` & `addSeries()`). 
+`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros, the Zero/Underlying LP Shares their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`), Zeros, and their Space LP shares (`queueSeries()` & `addSeries()`). Once new assets are onboarded, the Sense Fuse Pool will query price data from the `Master Oracle` which exposes a mapping, linking token addresses to oracle addresses. 
+
+#### Space [WIP]
+`Space` is a Zero/Underlying AMM pool that conforms to the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant and lives on BalancerV2. Because it's TWAP price is utilized in the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol). Each Series will have a unique `Space` for Zero/Underlying trading, which will be deployed and initialized through a `Space Factory`.
 
 #### G Claim Manager [WIP]
 
@@ -141,6 +144,7 @@ A Collection of Modules and Utilities for Sense V1
 #### Recycling Module [WIP]
 
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
+
 
 ### Access
 We use `Trust.sol` to provide with access control via `requiresTrust` to contracts inheriting from it.
