@@ -62,23 +62,28 @@ yarn build
 
 ## Sense V1 Architecture
 
-# <img src="21.10.31-v1-contract-diagram.png" alt="sense smart contract user/contract interaction diagram">
+# <img src="21.11.01-v1-contract-diagram.png" alt="sense smart contract user/contract interaction diagram">
 
-The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Feeds`, `Feed Factories`, `Periphery`, `TWrappers` and `Emergency Stop`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Feeds to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and `Periphery`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
-The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversions for Claims or the management of a [Zero/Claim borrowing/lending pool](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
+The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversions for Claims or the management of the [Sense Fuse Lending Facility](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
 
 ### Divider
 The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
 
-### Feed
-Feed contracts contain only the logic needed to calculate Scale values. The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
+### Adapter
+Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application. Once onboarded, Adapters have the authority to initialize/settle series, issue Zeros/Claims, and collect/redeem Target.
+
+
+Adapter contracts are . The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
 
 Each feed has a `delta` that represents the maximum growth per second a scale can be when retrieving a value from the protocol's scale method. This delta value is the same across all the targets within the same target type and is defined on the feed factory which then sets it to the feed on initialization.
 
 To create a feed implementation, the contract needs to inherit from `BaseFeed.sol` and override `_scale()` which is a function that calls the external protocol to get the current scale value.
 
-### Feed factory
+tWrappers hold Target before a series' maturity and contain logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target.
+
+### Adapter factory
 The feed factory allows any person to deploy a feed for a given Target in a permissionless manner.
 
 Following a gradual expansion, Sense Finance will deploy one Feed Factory for each protocol (e.g cTokens Feed Factory, aTokens Feed Factory, etc).
@@ -109,13 +114,6 @@ This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 
     2. adds `maturity`, `divider` and `feed` address variables
     3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
 
-### Target Wrappers
-
-tWrappers hold Target before a series' maturity and contain logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target.
-
-### Emergency Stop
-
-Emergency Stop is used by Sense Finance, Inc, to `stop` the operation of the Divider by pausing all `Feeds`. 
 
 ### Modules
 
