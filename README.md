@@ -4,8 +4,7 @@
 
 [comment]: <> ([![codecov]&#40;https://codecov.io/gh/Sense/sense-v1/branch/develop/graph/badge.svg&#41;]&#40;https://codecov.io/gh/Sensefinance/sense;)
 [comment]: <> ([![npm version]&#40;https://badge.fury.io/js/sense-finance.svg&#41;]&#40;https://badge.fury.io/js/sense-finance&#41;)
-[![Discord](https://img.shields.io/discord/790088877381517322.svg?color=768AD4&label=discord&logo=https%3A%2F%2Fdiscordapp.com%2Fassets%2F8c9701b98ad4372b58f13fd9f65f966e.svg)](https://discordapp.com/channels/790088877381517322/)
-[![Twitter Follow](https://img.shields.io/twitter/follow/senseprotocol.svg?label=senseprotocol&style=social)](https://twitter.com/senseprotocol)
+
 
 The Sense Protocol is a decentralized fixed-income protocol on Ethereum, allowing users to manage risk through fixed rates and future yield trading on existing yield bearing-assets.
 
@@ -64,43 +63,54 @@ yarn build
 
 # <img src="21.11.01-v1-contract-diagram.png" alt="sense smart contract user/contract interaction diagram">
 
-The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and `Periphery`. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and the `Periphery` contract. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
 The core is surrounded by `modules` that build atop and/or leverage its functionality to achieve a certain goal such as [Collect to Drag](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56) conversions for Claims or the management of the [Sense Fuse Lending Facility](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4).
 
 ### Divider
-The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity. The goal is to have the Sense Divider be the home for all yield-bearing asset liquidity in DeFi.
+The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity.
 
 ### Adapter
-Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application. Once onboarded, Adapters have the authority to initialize/settle series, issue Zeros/Claims, and collect/redeem Target.
+Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application. Once onboarded, Adapters have the authority to initialize/settle series, issue Zeros/Claims, and collect/redeem their Target via the Divider.
 
+The Adapter holds the Target before a series' maturity and contains logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target. In addition to asset custody, Adapters store parameters related to their individual applications, which gives guidance to the Divider when performing the above-mentioned operations. The parameters include:
 
-Adapter contracts are . The protocol will have several Feeds, each with similar code, that are granted core access to the Divider by authorized actors. In most cases, the only difference between Feeds will be how they calculate their Scale value.
+1. `target` - address to the Target 
+2. `oracle` - address to the Oracle of the Target's Underlying
+3. `delta` - max growth per second allowed in the scale, as retrieved from the Target's protocol
+4. `ifee` - issuance fee
+5. `stake` - token to stake at issuance
+6. `stakeSize` - amount to stake at issuance
+7. `minm` - min maturity
+8. `maxm` - max maturity
+9. `mode` - maturity date type (0 for monthly, 1 for weekly)
 
-Each feed has a `delta` that represents the maximum growth per second a scale can be when retrieving a value from the protocol's scale method. This delta value is the same across all the targets within the same target type and is defined on the feed factory which then sets it to the feed on initialization.
+To create an Adapter implementation, the contract needs to inherit from `BaseAdapter.sol` and override `_scale()`, `underlying()`, `wrapUnderlying()`, and `unwrapTarget()`. 
 
-To create a feed implementation, the contract needs to inherit from `BaseFeed.sol` and override `_scale()` which is a function that calls the external protocol to get the current scale value.
+There are two types of Adapters:
+1. Sense Sponsored Adapters - these are verified by the Sense team and can be permissionessly deployed by Adapter Factories
+2. Unverified Adapters - there are unverified by the Sense team and could be controlled by malicious actors
 
-tWrappers hold Target before a series' maturity and contain logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target.
+At the time of launch, the Divider will interface only with the Sense Sponsored Adapters. However, once the `permissionless` flag is enabled, users can permissionessly onboard Adapters via `Divider.addAdapter()` and leverage Sense's infrastructure to build new fixed-income products, structured products, and yield primitives never before seen in DeFi.
 
 ### Adapter factory
-The feed factory allows any person to deploy a feed for a given Target in a permissionless manner.
+The Adapter factory allows any person to deploy a Sense Sponsored Adapter for a given Target in a permissionless manner.
 
-Following a gradual expansion, Sense Finance will deploy one Feed Factory for each protocol (e.g cTokens Feed Factory, aTokens Feed Factory, etc).
+Following a gradual expansion, Sense Finance will deploy one Adapter Factory for each protocol (e.g cTokens Adapter Factory, Curve LP Share Adapter Factory, etc).
 
-Most factories will be similar except for how they implement `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the Target passed is a supported asset of that protocol.
+Most factories will be similar except for how they wrap/upwrap the Target and implement `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the Target passed is a supported asset of that protocol.
 
-Users can deploy a Feed by making a call to the `Periphery` contract, which has authority to call `deployFeed(_target)` on the Feed Factory.
+Users can deploy an Adapter by making a call to the `Periphery` contract, which has authority to call `deployAdapter(_target)` on the Adapter Factory.
 
-To create a Feed Factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
+To create an Adapter Factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
 ### Periphery
 
-Periphery contains bundled actions for Series Actors and general users. 
+The Periphery contract contains bundled actions for Series Actors and general users. 
 
-For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy feeds) and initialize new Series. The Target Sponsor calls `onboardFeed` which will deploy a Feed via a Feed Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/gClaim pool on UniswapV3.
+For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy adapters) and initialize new Series. The Target Sponsor calls `onboardAdapter` which will deploy an Adapter via an Adapter Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Zero/Underlying, [Yieldspace](https://yield.is/YieldSpace.pdf) pool implementation on BalancerV2.
 
-Because the UniswapV3 pool holds Zeros/gClaims, users need to execute additional steps to `issue()` / `combine()` and `join()` / `exit()` gClaims in order to enter/exit into/from a Zero/Claim position. The Periphery allows general users bundle the necessary calls behind a single function interface and perform the following operations atomically:
+Because the BalancerV2 only holds Zeros & the Target's Underlying, users need to execute additional steps to `issue()` and `combine()` in order to enter/exit into/from a Claim position. The Periphery allows users to bundle the necessary calls behind a single function interface and perform the following operations atomically, flashloaning Target from an Adapter when need be:
 - swapTargetForZeros
 - swapTargetForClaims
 - swapZerosForTarget
@@ -111,7 +121,7 @@ This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 
 - `Token.sol` as a minimalist ERC20 implementation with auth'd `burn()` and `mint()`. Used for Zeros.
 - `Claim.sol` as a minimalist yield token implementation that:
     1. inherits from `Token`
-    2. adds `maturity`, `divider` and `feed` address variables
+    2. adds `maturity`, `divider` and `adapter` address variables
     3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
 
 
@@ -119,14 +129,14 @@ This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 
 
 A Collection of Modules and Utilities for Sense V1
 
-#### G Claim Manager
-
-`GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims. More information between Collect and Drag Claims can [be found here](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56).
-
-
 #### Pool Manager
 
-`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros & Claims and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`) and Zeros/Claims (`addSeries()`). 
+`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`) and Zeros (`queueSeries()` & `addSeries()`). 
+
+#### G Claim Manager [WIP]
+
+`GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims. More information between Collect and Drag Claims can [be found here](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56). Note that some Claims within Sense have PY composed of native yield as well as airdrop rewards, the latter of which can balloon and shrink in value, causing wide fluctuations in the gClaim valuation. 
+
 
 #### Recycling Module [WIP]
 
@@ -138,19 +148,15 @@ We use `Trust.sol` to provide with access control via `requiresTrust` to contrac
 ### Admin
 
 The long-term goal of the Sense Protocol is to be as governance minimized as possible. However, out of caution, we’re taking a progressive decentralization approach, where Sense Finance Inc retains certain privileged permissions of v1 of the Protocol to ensure the system scales safely as well as pause the system in case of an emergency (vulnerability, hack, etc). The following list elaborates on these permissions:
-- `Divider.setIsTrusted` - add a new Feed Factory
-- `Divider.setFeed` - pause a faulty feed
-- `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs
-- `EmergencyStop.stop` - stop the Sense Protocol
-- `Divider.setGuard` - set the cap for the Guarded launch
-- `Divider.setPeriphery` - point to the Periphery
-- `BaseFactory.setDivider` - Feed Factory config
-- `BaseFactory.setDelta` - Feed Factory config
-- `BaseFactory.setFeedImplementation` - Feed Factory config
-- `BaseFactory.setTWImplementation` - Feed Factory config
-- `BaseFactory.setProtocol` - Feed Factory config
-- `PoolManager.deployPool` - deploy the Sense Fuse Pool
-- `PoolManager.setParams` - set parameters for the Sense Fuse Pool
+1. `Divider.setIsTrusted` - add a new Adapter Factory
+2. `Divider.setAdapter` - pause a faulty adapter
+3. `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs
+4. `Divider.setPause` - pause the Divider (emergencies only)
+5. `Divider.setGuard` - set the cap for the Guarded launch
+6. `Divider.setGuarded` - release the Guards
+7. `Divider.setPeriphery` - point to the Periphery
+8. `PoolManager.deployPool` - deploy the Sense Fuse Pool
+9. `PoolManager.setParams` - set parameters for the Sense Fuse Pool
 
 ### External
 These are libraries we need as part of the protocol that we've imported from other projects and modified for our needs.
