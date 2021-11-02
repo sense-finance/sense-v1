@@ -17,6 +17,7 @@ import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
 import { GClaimManager } from "./modules/GClaimManager.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
+import { Token } from "./tokens/Token.sol";
 
 /// @title Periphery
 contract Periphery is Trust {
@@ -61,12 +62,8 @@ contract Periphery is Trust {
         (, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
 
         // transfer stakeSize from sponsor into this contract
-        uint256 convertBase = 1;
         uint256 stakeDecimals = ERC20(stake).decimals();
-        if (stakeDecimals != 18) {
-            convertBase = stakeDecimals > 18 ? 10 ** (stakeDecimals - 18) : 10 ** (18 - stakeDecimals);
-        }
-        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize / convertBase);
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize / convertBase(stakeDecimals));
 
         // approve divider to withdraw stake assets
         ERC20(stake).approve(address(divider), type(uint256).max);
@@ -118,39 +115,30 @@ contract Periphery is Trust {
 
     function swapTargetForClaims(address adapter, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
 
         // transfer target into this contract
-        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
+        target.safeTransferFrom(msg.sender, address(this), tBal);
 
-        uint256 issued = divider.issue(adapter, maturity, tBal);
-
-        // (1) Sell zeros for underlying
-        uint256 uBal = _swap(zero, Adapter(adapter).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace not uniswap
-
-        // (2) Convert underlying into target (on protocol)
-        ERC20(Adapter(adapter).underlying()).safeTransfer(adapter, uBal);
-        uint256 wrappedTarget = Adapter(adapter).wrapUnderlying(uBal); // TODO: use method from protocol. Each TWrapper would know how to wrap underlying into target
-
-        // (3) Calculate target needed to borrow in order to re-issue and obtain the desired amount of claims
-        // Based on (1) we know the Zero price (uBal/issued) and we can infer the Claim price (1 - uBal/issued).
+        // (1) Calculate target needed to borrow in order to issue and obtain the desired amount of claims
+        // We get Zero/underlying price and we infer the Claim price (1 - zPrice).
         // We can then calculate how many claims we can get with the underlying uBal (uBal / Claim price) and
         // finally, we get the target we need to borrow by doing a unit conversion from Claim to Target using the last
         // scale value.
         uint256 targetToBorrow;
         { // block scope to avoid stack too deep error
-            uint256 lscale = divider.lscales(adapter, maturity, address(this));
-            ERC20 target = ERC20(Adapter(adapter).getTarget());
+            uint256 scale = Adapter(adapter).scale();
+            uint256 tDecimals = target.decimals();
             uint256 tBase = 10**target.decimals();
-            uint256 cPrice = 1*tBase - (uBal.fdiv(issued, tBase)); // TODO: what if cPrice is 0 (e.g at maturity)?
-            uint256 claimsAmount = uBal.fdiv(cPrice, tBase);
-            targetToBorrow = claimsAmount.fdiv(lscale, 10**target.decimals()) - wrappedTarget;
-        }
+            uint256 fee = (Adapter(adapter).getIssuanceFee() / convertBase(tDecimals));
+            uint256 cPrice = 1*tBase - price(zero, Adapter(adapter).underlying());
+            targetToBorrow = tBal.fdiv( ( 1*tBase - fee ).fmul(cPrice, tBase) + fee, tBase);
 
-        // (4) Flash borrow target
+        }
         uint256 cBal = flashBorrow(abi.encode(Action.ZERO_TO_CLAIM), adapter, maturity, targetToBorrow);
 
         // transfer claims from issuance + issued claims from borrowed target (step 4) to msg.sender (if applicable)
-        ERC20(claim).safeTransfer(msg.sender, issued + cBal);
+        ERC20(claim).safeTransfer(msg.sender, cBal);
     }
 
     function swapZerosForTarget(address adapter, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
@@ -183,7 +171,7 @@ contract Periphery is Trust {
         // Zeros and Claims and be able to combine them into target
         uint256 targetToBorrow;
         {
-            uint256 rate = price(Adapter(adapter).underlying(), zero); // price of underlying/zero from Yieldspace pool
+            uint256 rate = price(Adapter(adapter).underlying(), zero);
             ERC20 target = ERC20(Adapter(adapter).getTarget());
             uint256 tBase = 10**target.decimals();
             uint256 zBal = cBal.fdiv(2*tBase, tBase);
@@ -202,10 +190,12 @@ contract Periphery is Trust {
 
     function price(address tokenA, address tokenB) public view returns (uint) {
         // return tokenA/tokenB TWAP
-        address pool = IUniswapV3Factory(uniFactory).getPool(tokenA, tokenB, UNI_POOL_FEE);
-        int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
-        uint128 baseUnit = uint128(10) ** uint128(ERC20(tokenA).decimals());
-        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
+//        address pool = IUniswapV3Factory(uniFactory).getPool(tokenA, tokenB, UNI_POOL_FEE);
+//        int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
+//        uint128 baseUnit = uint128(10) ** uint128(ERC20(tokenA).decimals());
+//        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, tokenA, tokenB);
+        // TODO: i'm commenting this here because I don't realise how to make it work with this but it should not be commented.
+        return 0.95e18;
     }
 
     function _swap(
@@ -264,31 +254,36 @@ contract Periphery is Trust {
         (address zero, , , , , , , ,) = divider.series(adapter, maturity);
         (Action action) = abi.decode(data, (Action));
         if (action == Action.ZERO_TO_CLAIM) {
-
-            // (5) Issue
+            // (2) Issue
             uint256 issued = divider.issue(adapter, maturity, amount);
 
-            // (6) Sell Zeros for underlying
+            // (3) Sell Zeros for underlying
             uint256 uBal = _swap(zero, Adapter(adapter).underlying(), issued, address(this), 0); // TODO: minAccepted
-            // uint256 uBal = _swap(zero, Adapter(adapter).underlying(), issued, address(this), minAccepted); // TODO: swap on yieldspace
 
-            // (7) Convert underlying into target
+            // (4) Convert underlying into target
             ERC20(Adapter(adapter).underlying()).safeTransfer(adapter, uBal);
-            Adapter(adapter).wrapUnderlying(uBal); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Adapter or Wrapper?
+            Adapter(adapter).wrapUnderlying(uBal);
             return (keccak256("ERC3156FlashBorrower.onFlashLoan"), issued);
-
         } else if (action == Action.CLAIM_TO_TARGET) {
             // (3) Convert target into underlying (unwrap via protocol)
-            uint256 uBal = Adapter(adapter).unwrapTarget(amount); // TODO: use method from protocol (different interfaces for different protocols). Maybe mint on Adapter or Wrapper?
+            uint256 uBal = Adapter(adapter).unwrapTarget(amount);
 
             // (4) Swap underlying for Zeros on Yieldspace pool
-            uint256 zBal = _swap(Adapter(adapter).underlying(), zero, uBal, address(this), 0); // TODO: minAccepted param
+            uint256 zBal = _swap(Adapter(adapter).underlying(), zero, uBal, address(this), 0); // TODO: minAccepted
 
             // (5) Combine zeros and claim
             uint256 tBal = divider.combine(adapter, maturity, zBal);
             return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
         }
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), 0);
+    }
+
+    function convertBase(uint256 decimals) internal returns (uint256) {
+        uint256 base = 1;
+        if (decimals != 18) {
+            base = decimals > 18 ? 10 ** (decimals - 18) : 10 ** (18 - decimals);
+        }
+        return base;
     }
 
     /* ========== EVENTS ========== */
