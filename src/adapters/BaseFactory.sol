@@ -12,7 +12,7 @@ import { Errors } from "../libs/Errors.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
-abstract contract BaseFactory is Trust {
+abstract contract BaseFactory {
     address public immutable divider;
     address public immutable protocol; // protocol's data contract address
     address public immutable adapterImpl; // adapter implementation
@@ -39,7 +39,7 @@ abstract contract BaseFactory is Trust {
         address _protocol,
         address _adapterImpl,
         FactoryParams memory _factoryParams
-    ) Trust(msg.sender) {
+    ) {
         divider = _divider;
         protocol = _protocol;
         adapterImpl = _adapterImpl;
@@ -77,13 +77,6 @@ abstract contract BaseFactory is Trust {
         emit AdapterDeployed(adapterClone);
 
         return adapterClone;
-    }
-
-    /* ========== ADMIN ========== */
-
-    function setDelta(uint256 _delta) external requiresTrust {
-        factoryParams.delta = _delta;
-        emit DeltaChanged(_delta);
     }
 
     /* ========== INTERNAL ========== */

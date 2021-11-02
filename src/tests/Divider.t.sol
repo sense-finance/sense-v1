@@ -113,7 +113,6 @@ contract Dividers is TestHelper {
         }
     }
 
-<<<<<<< HEAD
     function testCantInitSeriesIfModeInvalid() public {
         adapter.setMode(4);
         hevm.warp(1631664000);
@@ -151,7 +150,6 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#0");
     }
 
-=======
     function testCantInitSeriesIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -162,7 +160,6 @@ contract Dividers is TestHelper {
         }
     }
 
->>>>>>> origin/dev
     function testInitSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
