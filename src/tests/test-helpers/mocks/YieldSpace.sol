@@ -45,9 +45,9 @@ contract MockBalancerVault {
     function swap(
         BalancerVault.SingleSwap memory singleSwap, BalancerVault.FundManagement memory funds, uint256 limit, uint256 deadline
     ) external payable returns (uint256) {
-        Token(address(singleSwap.assetIn)).burn(msg.sender, singleSwap.amount);
+        Token(address(singleSwap.assetIn)).transferFrom(msg.sender, address(this), singleSwap.amount);
         uint256 amountOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 10**Token(address(singleSwap.assetIn)).decimals());
-        Token(address(singleSwap.assetOut)).mint(msg.sender, amountOut);
+        Token(address(singleSwap.assetOut)).transfer(msg.sender, amountOut);
         return amountOut;
     }
 }

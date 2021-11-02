@@ -54,10 +54,13 @@ contract PeripheryTest is TestHelper {
         assertTrue(poolManager.tInits(address(target)));
     }
 
-    function testSwapTargetForZeros() public {
+   function testSwapTargetForZeros() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockBalancerVault
+        addLiquidityToBalancerVault(maturity, zero, claim);
 
         uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
@@ -85,6 +88,10 @@ contract PeripheryTest is TestHelper {
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals()));
 
+        // add liquidity to mockBalancerVault
+        target.mint(address(adapter), 100000e18);
+        addLiquidityToBalancerVault(maturity, zero, claim);
+
         uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
@@ -102,6 +109,9 @@ contract PeripheryTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
 
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockBalancerVault
+        addLiquidityToBalancerVault(maturity, zero, claim);
 
         alice.doIssue(address(adapter), maturity, tBal);
 
@@ -134,7 +144,7 @@ contract PeripheryTest is TestHelper {
         //        (, uint256 lscale) = adapter._lscale();
         //
         //        // add liquidity to mockUniSwapRouter
-        //        addLiquidityToUniSwapRouter(maturity, zero, claim);
+        //        addLiquidityToBalancerVault(maturity, zero, claim);
         //
         //        bob.doIssue(address(adapter), maturity, tBal);
         //
@@ -173,7 +183,7 @@ contract PeripheryTest is TestHelper {
     //        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
     //
     //        // add liquidity to mockUniSwapRouter
-    //        addLiquidityToUniSwapRouter(maturity, zero, claim);
+    //        addLiquidityToBalancerVault(maturity, zero, claim);
     //
     //        alice.doIssue(address(adapter), maturity, tBal);
     //        hevm.warp(block.timestamp + 5 days);

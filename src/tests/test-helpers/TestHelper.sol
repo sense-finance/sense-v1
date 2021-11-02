@@ -192,17 +192,17 @@ contract TestHelper is DSTest {
         DSTest.assertTrue(actual <= (expected + variance));
     }
 
-    // function addLiquidityToBalancerPool(uint256 maturity, address zero, address claim) public {
-    //     uint256 cBal = MockToken(claim).balanceOf(address(alice));
-    //     uint256 zBal = MockToken(zero).balanceOf(address(alice));
-    //     alice.doIssue(address(adapter), maturity, 1000e18);
-    //     uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
-    //     uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
-    //     alice.doTransfer(claim, address(uniSwapRouter), cBalIssued); // we don't really need this but we transfer them
-    //     alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
-    //     // we mint some random number of underlying
-    //     MockToken(adapter.underlying()).mint(address(uniSwapRouter), 100000e18);
-    // }
+    function addLiquidityToBalancerVault(uint256 maturity, address zero, address claim) public {
+        uint256 cBal = MockToken(claim).balanceOf(address(alice));
+        uint256 zBal = MockToken(zero).balanceOf(address(alice));
+        alice.doIssue(address(adapter), maturity, 1000e18);
+        uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
+        uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
+        alice.doTransfer(claim, address(balancerVault), cBalIssued); // we don't really need this but we transfer them
+        alice.doTransfer(zero, address(balancerVault), zBalIssued);
+        // we mint some random number of underlying
+        MockToken(adapter.underlying()).mint(address(balancerVault), 100000e18);
+    }
 
     function convertBase(uint256 decimals) public returns (uint256) {
         uint256 base = 1;
