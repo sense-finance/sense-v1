@@ -134,7 +134,7 @@ A Collection of Modules and Utilities for Sense V1
 `PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros, the Zero/Underlying LP Shares their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`), Zeros, and their Space LP shares (`queueSeries()` & `addSeries()`). Once new assets are onboarded, the Sense Fuse Pool will query price data from the `Master Oracle` which exposes a mapping, linking token addresses to oracle addresses. 
 
 #### Space [WIP]
-`Space` is a Zero/Underlying AMM pool that conforms to the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant and lives on BalancerV2. Because it's TWAP price is utilized in the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol). Each Series will have a unique `Space` for Zero/Underlying trading, which will be deployed and initialized through a `Space Factory`.
+`Space` is a Zero/Underlying AMM pool that conforms to the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant and lives on BalancerV2. Because its TWAP price is utilized by the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol) and its oracle functionality. Each Series will have a unique `Space` for Zero/Underlying trading, which will be deployed and initialized through the `Space Factory`.
 
 #### G Claim Manager [WIP]
 
