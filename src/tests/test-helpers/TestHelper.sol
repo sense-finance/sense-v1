@@ -13,8 +13,7 @@ import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
 // Uniswap mocks
-import { MockUniFactory } from "./mocks/uniswap/MockUniFactory.sol";
-import { MockUniSwapRouter } from "./mocks/uniswap/MockUniSwapRouter.sol";
+import { MockYieldSpaceFactory, MockBalancerVault } from "./mocks/YieldSpace.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
@@ -49,9 +48,9 @@ contract TestHelper is DSTest {
     User internal jim;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    //uniswap
-    MockUniFactory uniFactory;
-    MockUniSwapRouter uniSwapRouter;
+    // balancer/yield space
+    MockYieldSpaceFactory yieldSpaceFactory;
+    MockBalancerVault balancerVault;
 
     // fuse & compound
     MockComptroller comptroller;
@@ -101,9 +100,9 @@ contract TestHelper is DSTest {
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
 
-        // uniswap mocks
-        uniFactory = new MockUniFactory();
-        uniSwapRouter = new MockUniSwapRouter();
+        // balancer/yield space mocks
+        balancerVault = new MockBalancerVault();
+        yieldSpaceFactory = new MockYieldSpaceFactory(address(balancerVault));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
@@ -123,7 +122,7 @@ contract TestHelper is DSTest {
         poolManager.setParams("TARGET_PARAMS", params);
 
         // periphery
-        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
+        periphery = new Periphery(address(divider), address(poolManager), address(yieldSpaceFactory), address(balancerVault));
         divider.setPeriphery(address(periphery));
         poolManager.setIsTrusted(address(periphery), true);
         gClaimManager = new GClaimManager(address(divider));
@@ -157,7 +156,17 @@ contract TestHelper is DSTest {
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         MockAdapter adapterImpl = new MockAdapter();
-        someFactory = new MockFactory(address(adapterImpl), address(divider), DELTA, address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, address(_reward)); // deploy adapter factory
+        someFactory = new MockFactory(
+            address(adapterImpl), 
+            address(divider), 
+            DELTA, 
+            address(stake), 
+            ISSUANCE_FEE, 
+            STAKE_SIZE, 
+            MIN_MATURITY, 
+            MAX_MATURITY, 
+            address(_reward)
+        ); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -181,17 +190,17 @@ contract TestHelper is DSTest {
         DSTest.assertTrue(actual <= (expected + variance));
     }
 
-    function addLiquidityToUniSwapRouter(uint256 maturity, address zero, address claim) public {
-        uint256 cBal = MockToken(claim).balanceOf(address(alice));
-        uint256 zBal = MockToken(zero).balanceOf(address(alice));
-        alice.doIssue(address(adapter), maturity, 1000e18);
-        uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
-        uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
-        alice.doTransfer(claim, address(uniSwapRouter), cBalIssued); // we don't really need this but we transfer them
-        alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
-        // we mint some random number of underlying
-        MockToken(adapter.underlying()).mint(address(uniSwapRouter), 100000e18);
-    }
+    // function addLiquidityToBalancerPool(uint256 maturity, address zero, address claim) public {
+    //     uint256 cBal = MockToken(claim).balanceOf(address(alice));
+    //     uint256 zBal = MockToken(zero).balanceOf(address(alice));
+    //     alice.doIssue(address(adapter), maturity, 1000e18);
+    //     uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
+    //     uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
+    //     alice.doTransfer(claim, address(uniSwapRouter), cBalIssued); // we don't really need this but we transfer them
+    //     alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
+    //     // we mint some random number of underlying
+    //     MockToken(adapter.underlying()).mint(address(uniSwapRouter), 100000e18);
+    // }
 
     function convertBase(uint256 decimals) public returns (uint256) {
         uint256 base = 1;
