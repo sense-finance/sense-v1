@@ -31,7 +31,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Program state
     address public periphery;                            
     address public immutable cup;        // sense team multisig
-    address public immutable deployer;   // sense team deployer
+    address public immutable deployer;   // asset deployer
     bool public permissionless;          // permissionless flag
     bool public guarded;                 // guarded launch flag
     uint256 public adapterCounter;       // total # of adapters
