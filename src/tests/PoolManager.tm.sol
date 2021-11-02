@@ -5,13 +5,13 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider, AssetDeployer } from "../Divider.sol";
-import { CFeed, CTokenInterface } from "../feeds/compound/CFeed.sol";
+import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
-import { SimpleAdminFeed } from "./test-helpers/mocks/MockFeed.sol";
+import { SimpleAdminAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
@@ -23,7 +23,7 @@ contract PoolManagerTest is DSTest {
     Token internal target;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
-    SimpleAdminFeed internal adminFeed;
+    SimpleAdminAdapter internal adminAdapter;
 
     PoolManager internal poolManager;
 
@@ -39,12 +39,12 @@ contract PoolManagerTest is DSTest {
         assetDeployer.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
-        adminFeed = new SimpleAdminFeed(address(target), "Admin", "ADM", address(stake));
+        adminAdapter = new SimpleAdminAdapter(address(target), "Admin", "ADM");
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
 
-        // Enable the feed
-        divider.setFeed(address(adminFeed), true);
+        // Enable the adapter
+        divider.setAdapter(address(adminAdapter), true);
         // Give this address periphery access to the divider (so that it can create Series)
         divider.setPeriphery(address(this));
     }
@@ -56,7 +56,7 @@ contract PoolManagerTest is DSTest {
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
         _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        divider.initSeries(address(adminFeed), _maturity, address(this));
+        divider.initSeries(address(adminAdapter), _maturity, address(this));
     }
 
     function testDeployPool() public {

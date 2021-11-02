@@ -105,7 +105,6 @@ Users can deploy an Adapter by making a call to the `Periphery` contract, which 
 To create an Adapter Factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
 ### Periphery
-
 The Periphery contract contains bundled actions for Series Actors and general users. 
 
 For Series Actors, the Periphery exposes the public entry points to onboard new Targets (i.e. deploy adapters) and initialize new Series. The Target Sponsor calls `onboardAdapter` which will deploy an Adapter via an Adapter Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Space for Zero / Underlying trading.
@@ -124,25 +123,20 @@ This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 
     2. adds `maturity`, `divider` and `adapter` address variables
     3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
 
-
 ### Modules
-
 A Collection of Modules and Utilities for Sense V1
 
 #### Pool Manager
-
 `PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros, the Zero/Underlying LP Shares their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`), Zeros, and their Space LP shares (`queueSeries()` & `addSeries()`). Once new assets are onboarded, the Sense Fuse Pool will query price data from the `Master Oracle` which exposes a mapping, linking token addresses to oracle addresses. 
 
 #### Space [WIP]
 `Space` is a Zero/Underlying AMM pool that conforms to the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant and lives on BalancerV2. Because its TWAP price is utilized by the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol) and its oracle functionality. Each Series will have a unique `Space` for Zero/Underlying trading, which will be deployed and initialized through the `Space Factory`.
 
 #### G Claim Manager [WIP]
-
 `GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims. More information between Collect and Drag Claims can [be found here](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56). Note that some Claims within Sense have PY composed of native yield as well as airdrop rewards, the latter of which can balloon and shrink in value, causing wide fluctuations in the gClaim valuation. 
 
 
 #### Recycling Module [WIP]
-
 The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
 
 
@@ -152,6 +146,7 @@ We use `Trust.sol` to provide with access control via `requiresTrust` to contrac
 ### Admin
 
 The long-term goal of the Sense Protocol is to be as governance minimized as possible. However, out of caution, we’re taking a progressive decentralization approach, where Sense Finance Inc retains certain privileged permissions of v1 of the Protocol to ensure the system scales safely as well as pause the system in case of an emergency (vulnerability, hack, etc). The following list elaborates on these permissions:
+
 1. `Divider.setIsTrusted` - add a new Adapter Factory
 2. `Divider.setAdapter` - pause a faulty adapter
 3. `Divider.backfillScale` - fix a faulty scale value / pass in a scale if no settlement occurs

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 // Internal references
-import { BaseFactory } from "../BaseFactory.sol";
+import { CropFactory } from "../CropFactory.sol";
 
 interface ComptrollerLike {
     function markets(
@@ -13,21 +13,17 @@ interface ComptrollerLike {
     function oracle() external returns (address);
 }
 
-contract CFactory is BaseFactory {
+contract CFactory is CropFactory {
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
     constructor(
-        address _feedImpl,
-        address _twImpl,
         address _divider,
-        uint256 _delta,
-        address _reward,
-        address _stake,
-        uint256 _issuanceFee,
-        uint256 _stakeSize,
-        uint256 _minMaturity,
-        uint256 _maxMaturity
-    ) BaseFactory(COMPTROLLER, _feedImpl, _twImpl, _divider, ComptrollerLike(COMPTROLLER).oracle(), _delta, _reward, _stake, _issuanceFee, _stakeSize, _minMaturity, _maxMaturity) {}
+        address _adapterImpl,
+        FactoryParams memory _factoryParams,
+        address _reward
+    ) CropFactory(
+        _divider, COMPTROLLER, _adapterImpl, _factoryParams, _reward
+    ) { }
 
     function _exists(address _target) internal override virtual returns (bool isListed) {
         (isListed, , ) = ComptrollerLike(protocol).markets(_target);

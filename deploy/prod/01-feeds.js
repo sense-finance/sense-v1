@@ -17,8 +17,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const { deployer, dev } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  console.log("Deploy a cFeed implementation");
-  const { address: cFeedAddress } = await deploy("CFeed", {
+  console.log("Deploy a cAdapter implementation");
+  const { address: cAdapterAddress } = await deploy("CAdapter", {
     from: deployer,
     args: [],
     log: true,
@@ -32,42 +32,25 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const compAddress = COMP_TOKEN.get(chainId);
   const daiAddress = DAI_TOKEN.get(chainId);
 
-  const { address: baseWrapperAddress } = await deploy("BaseTWrapper", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
   const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
   const STAKE_SIZE = ethers.utils.parseEther("1");
   const MIN_MATURITY = "1209600"; // 2 weeks
   const MAX_MATURITY = "8467200"; // 14 weeks;
-  console.log("Deploy cToken feed factory");
+  const MODE = 0; // 0 monthly, 1 weekly;
+  const ORACLE = "0x6d2299c48a8dd07a872fdd0f8233924872ad1071"; // oracle address
+  console.log("Deploy cToken adapter factory");
+  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, daiAddress, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
   await deploy("CFactory", {
     from: deployer,
-    args: [
-      cFeedAddress,
-      baseWrapperAddress,
-      divider.address,
-      DELTA,
-      compAddress,
-      daiAddress,
-      ISSUANCE_FEE,
-      STAKE_SIZE,
-      MIN_MATURITY,
-      MAX_MATURITY,
-    ],
+    args: [divider.address, cAdapterAddress, factoryParams, compAddress],
     log: true,
   });
 
   const cFactory = await ethers.getContract("CFactory");
 
-  console.log("Trust cToken feed factory on the divider");
+  console.log("Trust cToken adapter factory on the divider");
   await (await divider.setIsTrusted(cFactory.address, true)).wait();
-
-  console.log("Trust dev on the cToken feed factory");
-  await (await cFactory.setIsTrusted(dev, true)).wait();
 };
 
-module.exports.tags = ["prod:feeds", "scenario:prod"];
+module.exports.tags = ["prod:adapters", "scenario:prod"];
 module.exports.dependencies = ["prod:divider"];

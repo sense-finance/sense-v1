@@ -4,13 +4,13 @@ pragma solidity ^0.8.6;
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
 import { Divider, AssetDeployer } from "../../Divider.sol";
+import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
-import { MockTWrapper } from "./mocks/MockTWrapper.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
-import { MockFeed } from "./mocks/MockFeed.sol";
+import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
 // Uniswap mocks
@@ -30,15 +30,15 @@ import { FixedMath } from "../../external/FixedMath.sol";
 contract TestHelper is DSTest {
     using FixedMath for uint256;
 
-    MockFeed feed;
+    MockAdapter adapter;
     MockToken stake;
     MockToken underlying;
     MockTarget target;
     MockToken reward;
     MockFactory factory;
-    MockTWrapper internal twrapper;
 
     PoolManager poolManager;
+    GClaimManager gClaimManager;
     Divider internal divider;
     AssetDeployer internal assetDeployer;
     Periphery internal periphery;
@@ -59,6 +59,7 @@ contract TestHelper is DSTest {
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
+    uint8 public MODE = 0;
     address public ORACLE = address(123);
     uint256 public ISSUANCE_FEE = 0.01e18;
     uint256 public STAKE_SIZE = 1e18;
@@ -124,13 +125,12 @@ contract TestHelper is DSTest {
         periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         divider.setPeriphery(address(periphery));
         poolManager.setPeriphery(address(periphery));
+        gClaimManager = new GClaimManager(address(divider));
 
-        // feed, target wrapper & factory
+        // adapter, target wrapper & factory
         factory = createFactory(address(target), address(reward));
-        (address f, address wt) = periphery.onboardFeed(address(factory), address(target)); // onboard target through Periphery
-        feed = MockFeed(f);
-        twrapper = MockTWrapper(wt);
-        twrapper.setFeed(f);
+        address f = periphery.onboardAdapter(address(factory), address(target)); // onboard target through Periphery
+        adapter = MockAdapter(f);
 
         // users
         alice = createUser(2**96, 2**96);
@@ -150,14 +150,23 @@ contract TestHelper is DSTest {
         user.doMint(address(stake), sBal);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
-        user.doApprove(address(target), address(periphery.gClaimManager()));
+        user.doApprove(address(target), address(user.gClaimManager()));
         user.doMint(address(target), tBal);
     }
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
-        MockFeed feedImpl = new MockFeed();
-        MockTWrapper twImpl = new MockTWrapper();
-        someFactory = new MockFactory(address(feedImpl), address(twImpl), address(divider), DELTA, address(_reward), address(stake), ISSUANCE_FEE, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY); // deploy feed factory
+        MockAdapter adapterImpl = new MockAdapter();
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+        someFactory = new MockFactory(address(adapterImpl), address(divider), factoryParams, address(_reward)); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -169,7 +178,7 @@ contract TestHelper is DSTest {
     }
 
     function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = User(sponsor).doSponsorSeries(address(feed), maturity);
+        (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
     function assertClose(uint256 actual, uint256 expected) public {
@@ -184,13 +193,13 @@ contract TestHelper is DSTest {
     function addLiquidityToUniSwapRouter(uint256 maturity, address zero, address claim) public {
         uint256 cBal = MockToken(claim).balanceOf(address(alice));
         uint256 zBal = MockToken(zero).balanceOf(address(alice));
-        alice.doIssue(address(feed), maturity, 1000e18);
+        alice.doIssue(address(adapter), maturity, 1000e18);
         uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
         uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
         alice.doTransfer(claim, address(uniSwapRouter), cBalIssued); // we don't really need this but we transfer them
         alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
         // we mint some random number of underlying
-        MockToken(feed.underlying()).mint(address(uniSwapRouter), 100000e18);
+        MockToken(adapter.underlying()).mint(address(uniSwapRouter), 100000e18);
     }
 
     function convertBase(uint256 decimals) public returns (uint256) {
@@ -202,14 +211,14 @@ contract TestHelper is DSTest {
     }
 
     function calculateAmountToIssue(uint256 tBal, uint256 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
-        (, uint256 cscale) = feed.lscale();
-//        uint256 cscale = divider.lscales(address(feed), maturity, address(bob));
+        (, uint256 cscale) = adapter._lscale();
+//        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
         toIssue = tBal.fmul(cscale, baseUnit);
     }
 
     function calculateExcess(uint256 tBal, uint256 maturity, address claim) public returns (uint256 gap){
         uint256 toIssue = calculateAmountToIssue(tBal, maturity, Token(claim).BASE_UNIT());
-        gap = periphery.gClaimManager().excess(address(feed), maturity, toIssue);
+        gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }
 
 }
