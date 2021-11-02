@@ -12,45 +12,38 @@ import { Errors } from "../libs/Errors.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
-abstract contract BaseFactory is Trust {
+abstract contract BaseFactory {
     address public immutable divider;
     address public immutable protocol; // protocol's data contract address
     address public immutable adapterImpl; // adapter implementation
-    address public immutable oracle;
-    address public immutable stake;
-    uint256 public immutable stakeSize;
-    uint256 public immutable issuanceFee;
-    uint256 public immutable minMaturity;
-    uint256 public immutable maxMaturity;
-    uint256 public delta;
 
     event AdapterDeployed(address addr);
     event DeltaChanged(uint256 delta);
     event AdapterImplementationChanged(address implementation);
     event ProtocolChanged(address protocol);
 
+    FactoryParams public factoryParams;
+    struct FactoryParams {
+        address oracle; // oracle address
+        uint256 delta; // max growth per second allowed
+        uint256 ifee; // issuance fee
+        address stake; // token to stake at issuance
+        uint256 stakeSize; // amount to stake at issuance
+        uint256 minm; // min maturity (seconds after block.timstamp)
+        uint256 maxm; // max maturity (seconds after block.timstamp)
+        uint8 mode; // 0 for monthly, 1 for weekly
+    }
+
     constructor(
         address _divider,
         address _protocol,
         address _adapterImpl,
-        address _oracle,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _issuanceFee,
-        uint256 _minMaturity,
-        uint256 _maxMaturity,
-        uint256 _delta
-    ) Trust(msg.sender) {
+        FactoryParams memory _factoryParams
+    ) {
         divider = _divider;
         protocol = _protocol;
         adapterImpl = _adapterImpl;
-        oracle = _oracle;
-        stake = _stake;
-        stakeSize = _stakeSize;
-        issuanceFee = _issuanceFee;
-        minMaturity = _minMaturity;
-        maxMaturity = _maxMaturity;
-        delta = _delta;
+        factoryParams = _factoryParams;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -67,13 +60,14 @@ abstract contract BaseFactory is Trust {
         // TODO: see if we can inline this
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
-            delta: delta,
-            oracle: oracle,
-            ifee: issuanceFee,
-            stake: stake,
-            stakeSize: stakeSize,
-            minm: minMaturity,
-            maxm: maxMaturity
+            delta: factoryParams.delta,
+            oracle: factoryParams.oracle,
+            ifee: factoryParams.ifee,
+            stake: factoryParams.stake,
+            stakeSize: factoryParams.stakeSize,
+            minm: factoryParams.minm,
+            maxm: factoryParams.maxm,
+            mode: factoryParams.mode
         });
         BaseAdapter(adapterClone).initialize(divider, adapterParams);
 
@@ -83,13 +77,6 @@ abstract contract BaseFactory is Trust {
         emit AdapterDeployed(adapterClone);
 
         return adapterClone;
-    }
-
-    /* ========== ADMIN ========== */
-
-    function setDelta(uint256 _delta) external requiresTrust {
-        delta = _delta;
-        emit DeltaChanged(_delta);
     }
 
     /* ========== INTERNAL ========== */

@@ -55,7 +55,7 @@ contract Periphery is Trust {
     function sponsorSeries(
         address adapter, uint256 maturity, uint160 sqrtPriceX96
     ) external returns (address zero, address claim) {
-        (, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
+        (, , , , address stake, uint256 stakeSize, , ,) = Adapter(adapter).adapterParams();
 
         // transfer stakeSize from sponsor into this contract
         uint256 convertBase = 1;

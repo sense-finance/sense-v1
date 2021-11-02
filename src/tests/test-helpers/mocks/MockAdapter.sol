@@ -71,6 +71,10 @@ contract MockAdapter is CropAdapter {
     function setTilt(uint256 _value) external {
         _tilt = _value;
     }
+
+    function setMode(uint8 _mode) external {
+        adapterParams.mode = _mode;
+    }
 }
 
 // used in simulated env deployment scripts

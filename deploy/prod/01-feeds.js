@@ -36,20 +36,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const STAKE_SIZE = ethers.utils.parseEther("1");
   const MIN_MATURITY = "1209600"; // 2 weeks
   const MAX_MATURITY = "8467200"; // 14 weeks;
+  const MODE = 0; // 0 monthly, 1 weekly;
+  const ORACLE = "0x6d2299c48a8dd07a872fdd0f8233924872ad1071"; // oracle address
   console.log("Deploy cToken adapter factory");
+  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, daiAddress, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
   await deploy("CFactory", {
     from: deployer,
-    args: [
-      divider.address,
-      cAdapterAddress,
-      daiAddress,
-      STAKE_SIZE,
-      ISSUANCE_FEE,
-      MIN_MATURITY,
-      MAX_MATURITY,
-      DELTA,
-      compAddress,
-    ],
+    args: [divider.address, cAdapterAddress, factoryParams, compAddress],
     log: true,
   });
 
@@ -57,9 +50,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   console.log("Trust cToken adapter factory on the divider");
   await (await divider.setIsTrusted(cFactory.address, true)).wait();
-
-  console.log("Trust dev on the cToken adapter factory");
-  await (await cFactory.setIsTrusted(dev, true)).wait();
 };
 
 module.exports.tags = ["prod:adapters", "scenario:prod"];
