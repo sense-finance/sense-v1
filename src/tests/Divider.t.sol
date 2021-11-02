@@ -1022,7 +1022,7 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        uint256 newScale = 1e18;
+        uint256 newScale = 1.1e18;
         usrs.push(address(alice));
         usrs.push(address(bob));
         lscales.push(5e17);
@@ -1041,7 +1041,7 @@ contract Dividers is TestHelper {
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         divider.setAdapter(address(adapter), false);
-        uint256 newScale = 1e18;
+        uint256 newScale = 1.5e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
@@ -1064,7 +1064,7 @@ contract Dividers is TestHelper {
 
         hevm.warp(maturity - SPONSOR_WINDOW);
         divider.setAdapter(address(adapter), false);
-        uint256 newScale = 1 * tBase;
+        uint256 newScale = 2 * tBase;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
@@ -1092,7 +1092,7 @@ contract Dividers is TestHelper {
 
         hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
         divider.setAdapter(address(adapter), false);
-        uint256 newScale = 1 * tBase;
+        uint256 newScale = 2 * tBase;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
