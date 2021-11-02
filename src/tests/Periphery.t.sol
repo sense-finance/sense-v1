@@ -83,41 +83,22 @@ contract PeripheryTest is TestHelper {
         (, uint256 lscale) = adapter._lscale();
         uint256 tBase = 10**target.decimals();
 
+        // calculate issuance fee in corresponding base
+        uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals()));
+
         // add liquidity to mockUniSwapRouter
+        target.mint(address(adapter), 100000e18);
         addLiquidityToUniSwapRouter(maturity, zero, claim);
 
         uint256 cBalBefore = ERC20(claim).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
-        // calculate issuance fee in corresponding base
-        uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, 10**target.decimals());
-
-        // calculate claims & zeros to be issued
-        uint256 issueBal = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
-
-        // calculate zeros swapped to underlying
-        uint256 uBal = issueBal.fmul(uniSwapRouter.EXCHANGE_RATE(), tBase);
-
-        uint256 targetToBorrow;
-        {
-            // wrap underlying into target (on protocol)
-            uint256 wrappedTarget = uBal.fdiv(lscale, tBase);
-
-            // calculate target to borrow
-            uint256 cPrice = 1 * tBase - uniSwapRouter.EXCHANGE_RATE();
-            uint256 claimsAmount = uBal.fdiv(cPrice, tBase);
-            targetToBorrow = claimsAmount.fdiv(lscale, tBase) - wrappedTarget;
-        }
-
-        // calculate issuance fee in corresponding base
-        fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(targetToBorrow, tBase);
-
-        // calculate claims to be issued
-        cBalBefore += issueBal + (targetToBorrow - fee).fmul(lscale, Token(zero).BASE_UNIT());
-
+        uint256 cPrice = 1 * tBase - periphery.price(zero, target.underlying());
+        uint256 targetToBorrow = tBal.fdiv((1 * tBase - fee).fmul(cPrice, tBase) + fee, tBase);
+        uint256 claimsAmount = targetToBorrow.fmul(lscale.fmul(1 * tBase - fee, tBase), tBase);
         bob.doSwapTargetForClaims(address(adapter), maturity, tBal, 0);
 
-        assertEq(cBalBefore, ERC20(claim).balanceOf(address(bob)));
+        assertClose(cBalBefore + claimsAmount, ERC20(claim).balanceOf(address(bob)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
     }
 
@@ -165,7 +146,7 @@ contract PeripheryTest is TestHelper {
         //
         //        bob.doIssue(address(adapter), maturity, tBal);
         //
-        //        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
+        //        uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
         //        uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
         //
         //        // calculate target to borrow

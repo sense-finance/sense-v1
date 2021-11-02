@@ -8,7 +8,7 @@ import { FixedMath } from "../../../../external/FixedMath.sol";
 contract MockUniSwapRouter {
     using FixedMath for uint256;
 
-    uint256 public constant EXCHANGE_RATE = 0.095e18;
+    uint256 public constant EXCHANGE_RATE = 0.95e18;
 
     struct ExactInputSingleParams {
         address tokenIn;
