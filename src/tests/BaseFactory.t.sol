@@ -10,32 +10,50 @@ import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { IAdapter } from "./test-helpers/interfaces/IAdapter.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
+import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { Errors } from "../libs/Errors.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {
         MockAdapter adapterImpl = new MockAdapter();
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
         MockFactory someFactory = new MockFactory(
             address(adapterImpl),
             address(divider),
-            DELTA,
-            address(stake),
-            ISSUANCE_FEE,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
+            factoryParams,
             address(reward)
         );
 
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).adapterImpl(), address(adapterImpl));
         assertEq(MockFactory(someFactory).divider(), address(divider));
-        assertEq(MockFactory(someFactory).delta(), DELTA);
-        assertEq(MockFactory(someFactory).stake(), address(stake));
-        assertEq(MockFactory(someFactory).issuanceFee(), ISSUANCE_FEE);
-        assertEq(MockFactory(someFactory).stakeSize(), STAKE_SIZE);
-        assertEq(MockFactory(someFactory).minMaturity(), MIN_MATURITY);
-        assertEq(MockFactory(someFactory).maxMaturity(), MAX_MATURITY);
+        (
+            address oracle,
+            uint256 delta,
+            uint256 ifee,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm,
+            uint8 mode
+        ) = MockFactory(someFactory).factoryParams();
+        assertEq(oracle, ORACLE);
+        assertEq(delta, DELTA);
+        assertEq(stake, address(stake));
+        assertEq(ifee, ISSUANCE_FEE);
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(mode, MODE);
     }
 
     function testDeployAdapter() public {
@@ -56,7 +74,8 @@ contract Factories is TestHelper {
             address stake,
             uint256 stakeSize,
             uint256 minm,
-            uint256 maxm
+            uint256 maxm,
+            uint8 mode
         ) = BaseAdapter(adapter).adapterParams();
         assertEq(IAdapter(adapter).divider(), address(divider));
         assertEq(target, address(someTarget));

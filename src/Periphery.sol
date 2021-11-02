@@ -55,7 +55,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
     function sponsorSeries(address adapter, uint256 maturity) external returns (address zero, address claim) {
-        (, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
+        (, , , , address stake, uint256 stakeSize, , ,) = Adapter(adapter).adapterParams();
 
         // transfer stakeSize from sponsor into this contract
         uint256 stakeDecimals = ERC20(stake).decimals();

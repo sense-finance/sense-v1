@@ -79,6 +79,11 @@ library DateTime {
         y = uintToString(year);
     }
 
+    function getDayOfWeek(uint256 timestamp) internal pure returns (uint256 dayOfWeek) {
+        uint256 _days = timestamp / SECONDS_PER_DAY;
+        dayOfWeek = ((_days + 3) % 7) + 1;
+    }
+
     /// Taken from https://stackoverflow.com/questions/47129173/how-to-convert-uint-to-string-in-solidity
     function uintToString(uint256 _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) return "0";

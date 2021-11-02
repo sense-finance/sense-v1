@@ -19,28 +19,9 @@ abstract contract CropFactory is BaseFactory {
         address _divider,
         address _protocol,
         address _adapterImpl,
-        address _oracle,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _issuanceFee,
-        uint256 _minMaturity,
-        uint256 _maxMaturity,
-        uint256 _delta,
+        FactoryParams memory _factoryParams,
         address _reward
-    )
-        BaseFactory(
-            _divider,
-            _protocol,
-            _adapterImpl,
-            _oracle,
-            _stake,
-            _stakeSize,
-            _issuanceFee,
-            _minMaturity,
-            _maxMaturity,
-            _delta
-        )
-    {
+    ) BaseFactory(_divider, _protocol, _adapterImpl, _factoryParams) {
         reward = _reward;
     }
 
@@ -50,13 +31,14 @@ abstract contract CropFactory is BaseFactory {
         adapterClone = Clones.cloneDeterministic(adapterImpl, Bytes32AddressLib.fillLast12Bytes(_target));
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
-            delta: delta,
-            oracle: oracle,
-            ifee: issuanceFee,
-            stake: stake,
-            stakeSize: stakeSize,
-            minm: minMaturity,
-            maxm: maxMaturity
+            delta: factoryParams.delta,
+            oracle: factoryParams.oracle,
+            ifee: factoryParams.ifee,
+            stake: factoryParams.stake,
+            stakeSize: factoryParams.stakeSize,
+            minm: factoryParams.minm,
+            maxm: factoryParams.maxm,
+            mode: factoryParams.mode
         });
 
         CropAdapter(adapterClone).initialize(divider, adapterParams, reward);
