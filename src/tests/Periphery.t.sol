@@ -50,9 +50,10 @@ contract PeripheryTest is TestHelper {
 
     function testOnboardAdapter() public {
         // add a new target to the factory supported targets
-        MockToken newTarget = new MockToken("New Target", "NT", 18);
-        MockOracle newOracle = new MockOracle();
+        MockToken underlying = new MockToken("New Underlying", "NT", 18);
+        MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
         factory.addTarget(address(newTarget), true);
+
 
         // onboard target
         periphery.onboardAdapter(address(factory), address(newTarget));
