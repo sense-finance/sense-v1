@@ -40,6 +40,14 @@ interface ComptrollerInterface {
     function claimComp(address holder) external;
 }
 
+abstract contract PriceOracleInterface {
+    /// @notice Get the underlying price of a cToken asset
+    /// @param cToken The cToken to get the underlying price of
+    /// @return The underlying asset price mantissa (scaled by 1e18).
+    /// Zero means the price is unavailable.
+    function getUnderlyingPrice(CTokenInterface cToken) external view virtual returns (uint256);
+}
+
 /// @notice Adapter contract for cTokens
 contract CAdapter is CropAdapter {
     using FixedMath for uint256;
@@ -59,6 +67,12 @@ contract CAdapter is CropAdapter {
 
     function underlying() external override returns (address) {
         return CTokenInterface(adapterParams.target).underlying();
+    }
+
+    function getUnderlyingPrice() external virtual view override returns (uint256) {
+        return PriceOracleInterface(adapterParams.oracle).getUnderlyingPrice(
+            CTokenInterface(adapterParams.target)
+        );
     }
 
     function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {

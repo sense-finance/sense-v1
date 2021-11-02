@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
-import { Divider, AssetDeployer } from "../../Divider.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
@@ -14,12 +14,12 @@ import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
 // Uniswap mocks
-import { MockUniFactory } from "./mocks/uniswap/MockUniFactory.sol";
-import { MockUniSwapRouter } from "./mocks/uniswap/MockUniSwapRouter.sol";
+import { MockYieldSpaceFactory, MockBalancerVault } from "./mocks/YieldSpace.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
+import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
 import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
@@ -36,11 +36,12 @@ contract TestHelper is DSTest {
     MockTarget target;
     MockToken reward;
     MockFactory factory;
+    MockOracle masterOracle;
 
     PoolManager poolManager;
     GClaimManager gClaimManager;
     Divider internal divider;
-    AssetDeployer internal assetDeployer;
+    TokenHandler internal tokenHandler;
     Periphery internal periphery;
 
     User internal alice;
@@ -48,9 +49,9 @@ contract TestHelper is DSTest {
     User internal jim;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    //uniswap
-    MockUniFactory uniFactory;
-    MockUniSwapRouter uniSwapRouter;
+    // balancer/yield space
+    MockYieldSpaceFactory yieldSpaceFactory;
+    MockBalancerVault balancerVault;
 
     // fuse & compound
     MockComptroller comptroller;
@@ -93,25 +94,26 @@ contract TestHelper is DSTest {
         DELTA = tDecimals > 18 ? DELTA * base : DELTA / base;
 
         // divider
-        assetDeployer = new AssetDeployer();
-        divider = new Divider(address(this), address(assetDeployer));
-        assetDeployer.init(address(divider));
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
         divider.setGuard(address(target), 10*2**96);
 
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
 
-        // uniswap mocks
-        uniFactory = new MockUniFactory();
-        uniSwapRouter = new MockUniSwapRouter();
+        // balancer/yield space mocks
+        balancerVault = new MockBalancerVault();
+        yieldSpaceFactory = new MockYieldSpaceFactory(address(balancerVault));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
         fuseDirectory = new MockFuseDirectory(address(comptroller));
+        masterOracle = new MockOracle();
 
         // pool manager
         poolManager = new PoolManager(address(fuseDirectory), address(comptroller), address(1), address(divider), address(1));
-        poolManager.deployPool("Sense Fuse Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -122,9 +124,9 @@ contract TestHelper is DSTest {
         poolManager.setParams("TARGET_PARAMS", params);
 
         // periphery
-        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
+        periphery = new Periphery(address(divider), address(poolManager), address(yieldSpaceFactory), address(balancerVault));
         divider.setPeriphery(address(periphery));
-        poolManager.setPeriphery(address(periphery));
+        poolManager.setIsTrusted(address(periphery), true);
         gClaimManager = new GClaimManager(address(divider));
 
         // adapter, target wrapper & factory
@@ -172,12 +174,12 @@ contract TestHelper is DSTest {
         periphery.setFactory(address(someFactory), true);
     }
 
-    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
-        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+    function getValidMaturity(uint256 year, uint256 month) public view returns (uint48 maturity) {
+        maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
     }
 
-    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
+    function sponsorSampleSeries(address sponsor, uint48 maturity) public returns (address zero, address claim) {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
@@ -190,16 +192,16 @@ contract TestHelper is DSTest {
         DSTest.assertTrue(actual <= (expected + variance));
     }
 
-    function addLiquidityToUniSwapRouter(uint256 maturity, address zero, address claim) public {
+    function addLiquidityToBalancerVault(uint48 maturity, address zero, address claim) public {
         uint256 cBal = MockToken(claim).balanceOf(address(alice));
         uint256 zBal = MockToken(zero).balanceOf(address(alice));
         alice.doIssue(address(adapter), maturity, 1000e18);
         uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
         uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
-        alice.doTransfer(claim, address(uniSwapRouter), cBalIssued); // we don't really need this but we transfer them
-        alice.doTransfer(zero, address(uniSwapRouter), zBalIssued);
+        alice.doTransfer(claim, address(balancerVault), cBalIssued); // we don't really need this but we transfer them
+        alice.doTransfer(zero, address(balancerVault), zBalIssued);
         // we mint some random number of underlying
-        MockToken(adapter.underlying()).mint(address(uniSwapRouter), 100000e18);
+        MockToken(adapter.underlying()).mint(address(balancerVault), 100000e18);
     }
 
     function convertBase(uint256 decimals) public returns (uint256) {
@@ -210,13 +212,13 @@ contract TestHelper is DSTest {
         return base;
     }
 
-    function calculateAmountToIssue(uint256 tBal, uint256 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
+    function calculateAmountToIssue(uint256 tBal, uint48 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
         (, uint256 cscale) = adapter._lscale();
 //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
         toIssue = tBal.fmul(cscale, baseUnit);
     }
 
-    function calculateExcess(uint256 tBal, uint256 maturity, address claim) public returns (uint256 gap){
+    function calculateExcess(uint256 tBal, uint48 maturity, address claim) public returns (uint256 gap){
         uint256 toIssue = calculateAmountToIssue(tBal, maturity, Token(claim).BASE_UNIT());
         gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }

@@ -2,8 +2,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  console.log("Deploy an asset deployer for the Divider will use");
-  const { address: assetDeployerAddress } = await deploy("AssetDeployer", {
+  console.log("Deploy a token hanlder for the Divider will use");
+  const { address: tokenHandlerAddress } = await deploy("TokenHanlder", {
     from: deployer,
     args: [],
     log: true,
@@ -15,18 +15,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy the divider");
   await deploy("Divider", {
     from: deployer,
-    args: [cup, assetDeployerAddress],
+    args: [cup, tokenHandlerAddress],
     log: true,
   });
 
   const divider = await ethers.getContract("Divider");
-  const assetDeployer = await ethers.getContract("AssetDeployer");
+  const tokenHandler = await ethers.getContract("TokenHanlder");
 
   // console.log("Trust the dev address on the divider");
   // await divider.setIsTrusted(dev, true).then(tx => tx.wait());
 
   console.log("Add the divider to the asset deployer");
-  await (await assetDeployer.init(divider.address)).wait();
+  await (await tokenHandler.init(divider.address)).wait();
 
   console.log("Deploy mocked fuse & comp dependencies");
   const { address: mockComptrollerAddress } = await deploy("MockComptroller", {
@@ -55,7 +55,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const poolManager = await ethers.getContract("PoolManager");
 
   console.log("Deploy Sense Fuse pool via Pool Manager");
-  await (await poolManager.deployPool("Sense Fuse Pool", false, ethers.utils.parseEther("0.051"), ethers.utils.parseEther("1"))).wait();
+  await (
+    await poolManager.deployPool(
+      "Sense Fuse Pool",
+      false,
+      ethers.utils.parseEther("0.051"),
+      ethers.utils.parseEther("1"),
+    )
+  ).wait();
 
   console.log("Set target params via Pool Manager");
   const params = {
@@ -63,9 +70,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     reserveFactor: ethers.utils.parseEther("0.1"),
     collateralFactor: ethers.utils.parseEther("0.5"),
     closeFactor: ethers.utils.parseEther("0.051"),
-    liquidationIncentive: ethers.utils.parseEther("1")
+    liquidationIncentive: ethers.utils.parseEther("1"),
   };
-  await(await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
+  await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
 
   console.log("Deploy mocked uni dependencies");
   const { address: mockUniFactoryAddress } = await deploy("MockUniFactory", {
@@ -82,12 +89,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [
-      divider.address,
-      poolManagerAddress,
-      mockUniFactoryAddress,
-      mockUniRouterAddress,
-    ],
+    args: [divider.address, poolManagerAddress, mockUniFactoryAddress, mockUniRouterAddress],
     log: true,
   });
 

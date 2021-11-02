@@ -95,27 +95,27 @@ contract User {
         divider.addAdapter(adapter);
     }
 
-    function doSponsorSeries(address adapter, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = periphery.sponsorSeries(adapter, maturity, 0);
+    function doSponsorSeries(address adapter, uint48 maturity) public returns (address zero, address claim) {
+        (zero, claim) = periphery.sponsorSeries(adapter, maturity);
     }
 
-    function doSettleSeries(address adapter, uint256 maturity) public {
+    function doSettleSeries(address adapter, uint48 maturity) public {
         divider.settleSeries(adapter, maturity);
     }
 
-    function doIssue(address adapter, uint256 maturity, uint256 balance) public {
+    function doIssue(address adapter, uint48 maturity, uint256 balance) public {
         divider.issue(adapter, maturity, balance);
     }
 
-    function doCombine(address adapter, uint256 maturity, uint256 balance) public {
+    function doCombine(address adapter, uint48 maturity, uint256 balance) public {
         divider.combine(adapter, maturity, balance);
     }
 
-    function doBackfillScale(address adapter, uint256 maturity, uint256 scale, address[] calldata usrs, uint256[] calldata lscales) public {
+    function doBackfillScale(address adapter, uint48 maturity, uint256 scale, address[] calldata usrs, uint256[] calldata lscales) public {
         divider.backfillScale(adapter, maturity, scale, usrs, lscales);
     }
 
-    function doRedeemZero(address adapter, uint256 maturity, uint256 balance) public {
+    function doRedeemZero(address adapter, uint48 maturity, uint256 balance) public {
         return divider.redeemZero(adapter, maturity, balance);
     }
 
@@ -123,24 +123,24 @@ contract User {
         collected = Claim(claim).collect();
     }
 
-    function doJoin(address adapter, uint256 maturity, uint256 balance) public {
+    function doJoin(address adapter, uint48 maturity, uint256 balance) public {
         gClaimManager.join(adapter, maturity, balance);
     }
 
-    function doExit(address adapter, uint256 maturity, uint256 balance) public {
+    function doExit(address adapter, uint48 maturity, uint256 balance) public {
         gClaimManager.exit(adapter, maturity, balance);
     }
 
-    function doSwapTargetForZeros(address adapter, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+    function doSwapTargetForZeros(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
         periphery.swapTargetForZeros(adapter, maturity, balance, minAccepted);
     }
-    function doSwapTargetForClaims(address adapter, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+    function doSwapTargetForClaims(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
         periphery.swapTargetForClaims(adapter, maturity, balance, minAccepted);
     }
-    function doSwapZerosForTarget(address adapter, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+    function doSwapZerosForTarget(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
         periphery.swapZerosForTarget(adapter, maturity, balance, minAccepted);
     }
-    function doSwapClaimsForTarget(address adapter, uint256 maturity, uint256 balance, uint256 minAccepted) public {
+    function doSwapClaimsForTarget(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
         periphery.swapClaimsForTarget(adapter, maturity, balance, minAccepted);
     }
 

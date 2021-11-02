@@ -25,6 +25,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   });
 
   const divider = await ethers.getContract("Divider");
+
+  // FIXME: placeholder to be replaced with the real delta value once determined
   const DELTA = 150;
 
   if (!DAI_TOKEN.has(chainId)) throw Error("No Dai token found");

@@ -11,7 +11,7 @@ contract MockAdapter is CropAdapter {
     using FixedMath for uint256;
 
     uint256 internal value;
-    uint256 internal _tilt = 0;
+    uint128 internal _tilt = 0;
     uint256 public INITIAL_VALUE;
     address public under;
 
@@ -52,11 +52,15 @@ contract MockAdapter is CropAdapter {
         return mintAmount;
     }
 
+    function getUnderlyingPrice() external virtual override view returns (uint256) {
+        return 1e18;
+    }
+
     function underlying() external virtual override returns (address) {
         return MockTarget(adapterParams.target).underlying();
     }
 
-    function tilt() external override virtual returns (uint256 _value) {
+    function tilt() external override virtual returns (uint128) {
         return _tilt;
     }
 
@@ -68,7 +72,7 @@ contract MockAdapter is CropAdapter {
         adapterParams.oracle = _oracle;
     }
 
-    function setTilt(uint256 _value) external {
+    function setTilt(uint128 _value) external {
         _tilt = _value;
     }
 
@@ -103,7 +107,7 @@ contract SimpleAdminAdapter {
         return value;
     }
 
-    function tilt() external virtual returns (uint256 _value) {
+    function tilt() external virtual returns (uint128) {
         return 0;
     }
 

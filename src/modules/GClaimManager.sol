@@ -35,7 +35,7 @@ contract GClaimManager {
 
     function join(
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 uBal
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
@@ -76,7 +76,7 @@ contract GClaimManager {
 
     function exit(
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 uBal
     ) external {
         (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
@@ -108,7 +108,7 @@ contract GClaimManager {
     /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
     function excess(
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
         (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
@@ -128,6 +128,6 @@ contract GClaimManager {
 
     /* ========== EVENTS ========== */
 
-    event Join(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
-    event Exit(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
+    event Join(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
+    event Exit(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
 }

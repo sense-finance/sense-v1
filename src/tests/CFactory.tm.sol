@@ -5,7 +5,7 @@ pragma solidity ^0.8.6;
 import { CAdapter } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
-import { Divider, AssetDeployer } from "../Divider.sol";
+import { Divider, TokenHandler } from "../Divider.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
@@ -15,7 +15,7 @@ import { User } from "./test-helpers/User.sol";
 contract CAdapterTestHelper is DSTest {
     CFactory internal factory;
     Divider internal divider;
-    AssetDeployer internal assetDeployer;
+    TokenHandler internal tokenHandler;
 
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -30,9 +30,9 @@ contract CAdapterTestHelper is DSTest {
     uint256 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
-        assetDeployer = new AssetDeployer();
-        divider = new Divider(address(this), address(assetDeployer));
-        assetDeployer.init(address(divider));
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
         CAdapter adapterImpl = new CAdapter(); // compound adapter implementation
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({

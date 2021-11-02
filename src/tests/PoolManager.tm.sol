@@ -4,13 +4,14 @@ pragma solidity ^0.8.6;
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
-import { Divider, AssetDeployer } from "../Divider.sol";
+import { Divider, TokenHandler } from "../Divider.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
+import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 import { SimpleAdminAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -22,8 +23,9 @@ contract PoolManagerTest is DSTest {
     Token internal stake;
     Token internal target;
     Divider internal divider;
-    AssetDeployer internal assetDeployer;
+    TokenHandler internal tokenHandler;
     SimpleAdminAdapter internal adminAdapter;
+    MockOracle internal mockOracle;
 
     PoolManager internal poolManager;
 
@@ -34,11 +36,12 @@ contract PoolManagerTest is DSTest {
 
     function setUp() public {
         stake = new Token("Stake", "SBL", 18, address(this));
-        assetDeployer = new AssetDeployer();
-        divider = new Divider(address(this), address(assetDeployer));
-        assetDeployer.init(address(divider));
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
+        mockOracle = new MockOracle();
         adminAdapter = new SimpleAdminAdapter(address(target), "Admin", "ADM");
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
@@ -49,13 +52,13 @@ contract PoolManagerTest is DSTest {
         divider.setPeriphery(address(this));
     }
 
-    function initSeries() public returns (uint256 _maturity) {
+    function initSeries() public returns (uint48 _maturity) {
         // Setup mock stake token
         stake.mint(address(this), 1000 ether);
         stake.approve(address(divider), 1000 ether);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
-        _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+        _maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         divider.initSeries(address(adminAdapter), _maturity, address(this));
     }
 
@@ -63,22 +66,22 @@ contract PoolManagerTest is DSTest {
         initSeries();
 
         assertTrue(poolManager.comptroller() == address(0));
-        poolManager.deployPool("Sense Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
 
         assertTrue(poolManager.comptroller() != address(0));
     }
 
     function testAddTarget() public {
-        uint256 maturity = initSeries();
+        uint48 maturity = initSeries();
         // Cannot add a Target before deploying a pool
-        try poolManager.addTarget(address(target)) {
+        try poolManager.addTarget(address(target), address(adminAdapter)) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "Pool not yet deployed");
         }
 
         // Can add a Target after deploying a pool
-        poolManager.deployPool("Sense Pool", false, 0.051 ether, 1 ether);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
 
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
@@ -88,7 +91,7 @@ contract PoolManagerTest is DSTest {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        // poolManager.addTarget(address(target)) ;
+        poolManager.addTarget(address(target), address(adminAdapter));
 
         // assert
         assertTrue(false);

@@ -29,6 +29,10 @@ contract FakeAdapter is BaseAdapter {
         return 0;
     }
 
+    function getUnderlyingPrice() external view override returns (uint256) {
+        return 1e18;
+    }
+
     function doSetAdapter(Divider d, address _adapter) public {
         d.setAdapter(_adapter, true);
     }
@@ -224,7 +228,7 @@ contract Adapters is TestHelper {
 
     // distribution tests
     function testDistribution() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -249,7 +253,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionSimple() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -277,7 +281,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionProportionally() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -319,7 +323,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionSimpleCollect() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -335,7 +339,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionCollectAndTransferMultiStep() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 

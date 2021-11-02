@@ -15,7 +15,7 @@ interface IPeriphery {
         bytes calldata data,
         address initiator,
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 amount
     ) external returns (bytes32, uint256);
 }
@@ -72,7 +72,7 @@ abstract contract BaseAdapter is Initializable {
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
     /// @param receiver The contract receiving target, needs to implement the
-    /// `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.
+    /// `onFlashLoan(address user, address adapter, uint48 maturity, uint256 amount)` interface.
     /// @param adapter adapter address
     /// @param maturity maturity
     /// @param amount The amount of target lent.
@@ -80,7 +80,7 @@ abstract contract BaseAdapter is Initializable {
         bytes calldata data,
         address receiver,
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
         ERC20 target = ERC20(adapterParams.target);
@@ -127,7 +127,7 @@ abstract contract BaseAdapter is Initializable {
 
     /// @notice Tilt value getter that may be overriden by child contracts
     /// @dev Returns `0` by default, which means no principal is set aside for Claims
-    function tilt() external virtual returns (uint256) {
+    function tilt() external virtual returns (uint128) {
         return 0;
     }
 
@@ -140,15 +140,18 @@ abstract contract BaseAdapter is Initializable {
         return;
     }
 
-    /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts.
+    /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts
     /// @param amount Underlying amount
     /// @return amount of target returned
     function wrapUnderlying(uint256 amount) external virtual returns (uint256);
 
-    /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts.
+    /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts
     /// @param amount Target amount
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
+
+    /// @notice Returns the current price of the underlying in ETH terms
+    function getUnderlyingPrice() external view virtual returns (uint256);
 
     /* ========== ACCESSORS ========== */
 
