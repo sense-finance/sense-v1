@@ -87,7 +87,7 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         uint256 scale = IAdapter(adapter).scale();
-        assertEq(scale, 1e17);
+        assertEq(scale, 1e18);
     }
 
     function testDeployAdapterAndinitializeSeries() public {
@@ -98,7 +98,7 @@ contract Factories is TestHelper {
         address f = periphery.onboardAdapter(address(someFactory), address(someTarget));
         assertTrue(f != address(0));
         uint256 scale = IAdapter(f).scale();
-        assertEq(scale, 1e17);
+        assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         (address zero, address claim) = alice.doSponsorSeries(f, maturity);

@@ -22,7 +22,7 @@ contract MockAdapter is CropAdapter {
             if (tDecimals != 18) {
                 INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18 * (10**(tDecimals - 18));
             } else {
-                INITIAL_VALUE = 0.1e18;
+                INITIAL_VALUE = 1e18;
             }
         }
         uint256 gps = adapterParams.delta.fmul(99 * (10 ** (tDecimals - 2)), 10**tDecimals); // delta - 1%;
