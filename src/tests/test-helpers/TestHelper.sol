@@ -174,12 +174,12 @@ contract TestHelper is DSTest {
         periphery.setFactory(address(someFactory), true);
     }
 
-    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
-        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+    function getValidMaturity(uint256 year, uint256 month) public view returns (uint48 maturity) {
+        maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
     }
 
-    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
+    function sponsorSampleSeries(address sponsor, uint48 maturity) public returns (address zero, address claim) {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
@@ -192,7 +192,7 @@ contract TestHelper is DSTest {
         DSTest.assertTrue(actual <= (expected + variance));
     }
 
-    function addLiquidityToBalancerVault(uint256 maturity, address zero, address claim) public {
+    function addLiquidityToBalancerVault(uint48 maturity, address zero, address claim) public {
         uint256 cBal = MockToken(claim).balanceOf(address(alice));
         uint256 zBal = MockToken(zero).balanceOf(address(alice));
         alice.doIssue(address(adapter), maturity, 1000e18);
@@ -212,13 +212,13 @@ contract TestHelper is DSTest {
         return base;
     }
 
-    function calculateAmountToIssue(uint256 tBal, uint256 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
+    function calculateAmountToIssue(uint256 tBal, uint48 maturity, uint256 baseUnit) public returns (uint256 toIssue) {
         (, uint256 cscale) = adapter._lscale();
 //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
         toIssue = tBal.fmul(cscale, baseUnit);
     }
 
-    function calculateExcess(uint256 tBal, uint256 maturity, address claim) public returns (uint256 gap){
+    function calculateExcess(uint256 tBal, uint48 maturity, address claim) public returns (uint256 gap){
         uint256 toIssue = calculateAmountToIssue(tBal, maturity, Token(claim).BASE_UNIT());
         gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }

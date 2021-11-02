@@ -19,7 +19,7 @@ contract MockPoolManager {
         tInits[target] = true;
     }
 
-    function addSeries(address adapter, uint256 maturity) external {
+    function addSeries(address adapter, uint48 maturity) external {
         sInits[adapter][maturity] = true;
     }
 }

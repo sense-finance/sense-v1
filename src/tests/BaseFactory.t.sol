@@ -102,7 +102,7 @@ contract Factories is TestHelper {
         uint256 scale = IAdapter(f).scale();
         assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
         (address zero, address claim) = alice.doSponsorSeries(f, maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));

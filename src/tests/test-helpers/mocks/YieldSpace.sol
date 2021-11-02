@@ -63,7 +63,7 @@ contract MockYieldSpaceFactory {
     function create(
         address _divider,
         address _adapter,
-        uint256 _maturity
+        uint48 _maturity
     ) external returns (address) {
         (address _zero, , , , , , , , ) = Divider(_divider).series(_adapter, _maturity);
         address _target = Adapter(_adapter).getTarget();

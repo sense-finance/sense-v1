@@ -21,7 +21,7 @@ contract GClaimsManager is TestHelper {
     /* ========== join() tests ========== */
 
     function testCantJoinIfInvalidMaturity(uint96 balance) public {
-        uint256 maturity = block.timestamp - 1 days;
+        uint48 maturity = uint48(block.timestamp - 1 days);
         //        uint256 balance = 1e18;
         try alice.doJoin(address(adapter), maturity, balance) {
             fail();
@@ -31,7 +31,7 @@ contract GClaimsManager is TestHelper {
     }
 
     function testCantJoinIfSeriesDoesntExists(uint96 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 10e18;
         try alice.doJoin(address(adapter), maturity, balance) {
             fail();
@@ -41,7 +41,7 @@ contract GClaimsManager is TestHelper {
     }
 
     function testCantJoinIfNotEnoughClaim(uint96 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
@@ -55,7 +55,7 @@ contract GClaimsManager is TestHelper {
     }
 
     function testCantJoinIfNotEnoughClaimAllowance(uint96 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
         uint256 claimBaseUnit = 10**Claim(claim).decimals();
@@ -74,7 +74,7 @@ contract GClaimsManager is TestHelper {
         divider.setGuard(address(target), 10000000000000000000000 * tBase);
 
         adapter.setScale(0.1e18); // freeze scale so no excess is generated
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // bob issues and joins
@@ -120,7 +120,7 @@ contract GClaimsManager is TestHelper {
         poolManager.setIsTrusted(address(periphery), true);
         alice.doApprove(address(stake), address(periphery));
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
 
@@ -198,7 +198,7 @@ contract GClaimsManager is TestHelper {
     /* ========== exit() tests ========== */
 
     function testCantExitIfSeriesDoesntExists(uint96 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 1e18;
         try alice.doExit(address(adapter), maturity, balance) {
             fail();
@@ -222,7 +222,7 @@ contract GClaimsManager is TestHelper {
         poolManager.setIsTrusted(address(periphery), true);
         alice.doApprove(address(stake), address(periphery));
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
 
@@ -243,7 +243,7 @@ contract GClaimsManager is TestHelper {
     }
 
     function testExitGClaimWithCollected(uint96 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         // avoid fuzz tests in which nothing is issued
         if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;

@@ -33,21 +33,20 @@ interface ComptrollerLike {
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
     ) external returns (uint256);
+
     function _acceptAdmin() external returns (uint256);
 }
 
 interface MasterOracleLike {
     function initialize(
-        address[] memory underlyings, 
-        PriceOracle[] memory _oracles, 
-        PriceOracle _defaultOracle, 
-        address _admin, 
+        address[] memory underlyings,
+        PriceOracle[] memory _oracles,
+        PriceOracle _defaultOracle,
+        address _admin,
         bool _canAdminOverwrite
     ) external;
-    function add(
-        address[] calldata underlyings, 
-        PriceOracle[] calldata _oracles
-    ) external;
+
+    function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external;
 }
 
 /// @title Fuse Pool Manager
@@ -64,7 +63,11 @@ contract PoolManager is Trust {
     address public comptroller;
     address public masterOracle;
 
-    enum SeriesStatus { NONE, QUEUED, ADDED }
+    enum SeriesStatus {
+        NONE,
+        QUEUED,
+        ADDED
+    }
 
     struct AssetParams {
         address irModel;
@@ -86,16 +89,10 @@ contract PoolManager is Trust {
     mapping(address => mapping(uint256 => address)) public sPools;
 
     event SetParams(bytes32 indexed what, AssetParams data);
-    event PoolDeployed(
-        string name,
-        address comptroller,
-        uint256 poolIndex,
-        uint256 closeFactor,
-        uint256 liqIncentive
-    );
+    event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
     event TargetAdded(address target);
     event SeriesAdded(address zero, address lpToken);
-    event SeriesQueued(address adapter, uint256 maturity, address pool);
+    event SeriesQueued(address adapter, uint48 maturity, address pool);
 
     constructor(
         address _fuseDirectory,
@@ -104,14 +101,14 @@ contract PoolManager is Trust {
         address _divider,
         address _oracleImpl
     ) Trust(msg.sender) {
-        fuseDirectory   = _fuseDirectory;
+        fuseDirectory = _fuseDirectory;
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
-        divider    = _divider;
+        divider = _divider;
         oracleImpl = _oracleImpl; // master oracle from Fuse
         targetOracle = address(new TargetOracle());
-        zeroOracle   = address(new ZeroOracle());
-        lpOracle     = address(new LPOracle());
+        zeroOracle = address(new ZeroOracle());
+        lpOracle = address(new LPOracle());
     }
 
     function deployPool(
@@ -124,9 +121,9 @@ contract PoolManager is Trust {
 
         masterOracle = Clones.cloneDeterministic(oracleImpl, Bytes32AddressLib.fillLast12Bytes(address(this)));
         MasterOracleLike(masterOracle).initialize(
-            new address[](0), 
-            new PriceOracle[](0), 
-            PriceOracle(fallbackOracle), 
+            new address[](0),
+            new PriceOracle[](0),
+            PriceOracle(fallbackOracle),
             address(this),
             true
         );
@@ -183,7 +180,11 @@ contract PoolManager is Trust {
         emit TargetAdded(target);
     }
 
-    function queueSeries(address adapter, uint256 maturity, address pool) external requiresTrust {
+    function queueSeries(
+        address adapter,
+        uint48 maturity,
+        address pool
+    ) external requiresTrust {
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         require(comptroller != address(0), "Fuse pool not yet deployed");
@@ -199,7 +200,7 @@ contract PoolManager is Trust {
         emit SeriesQueued(adapter, maturity, pool);
     }
 
-    function addSeries(address adapter, uint256 maturity) external {
+    function addSeries(address adapter, uint48 maturity) external {
         require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, "Series must be queued");
 
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);

@@ -54,7 +54,7 @@ contract Periphery is Trust {
     /// @dev Calls divider to initalise a new series
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
-    function sponsorSeries(address adapter, uint256 maturity) external returns (address zero, address claim) {
+    function sponsorSeries(address adapter, uint48 maturity) external returns (address zero, address claim) {
         (, , , , address stake, uint256 stakeSize, , ,) = Adapter(adapter).adapterParams();
 
         // transfer stakeSize from sponsor into this contract
@@ -92,7 +92,7 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to deposit
     function swapTargetForZeros(
-        address adapter, uint256 maturity, uint256 tBal, uint256 minAccepted
+        address adapter, uint48 maturity, uint256 tBal, uint256 minAccepted
     ) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
 
@@ -117,7 +117,7 @@ contract Periphery is Trust {
 
     }
 
-    function swapTargetForClaims(address adapter, uint256 maturity, uint256 tBal, uint256 minAccepted) external {
+    function swapTargetForClaims(address adapter, uint48 maturity, uint256 tBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
         ERC20 target = ERC20(Adapter(adapter).getTarget());
 
@@ -145,7 +145,7 @@ contract Periphery is Trust {
         ERC20(claim).safeTransfer(msg.sender, cBal);
     }
 
-    function swapZerosForTarget(address adapter, uint256 maturity, uint256 zBal, uint256 minAccepted) external {
+    function swapZerosForTarget(address adapter, uint48 maturity, uint256 zBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
 
         // transfer zeros into this contract
@@ -169,7 +169,7 @@ contract Periphery is Trust {
         ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
     }
 
-    function swapClaimsForTarget(address adapter, uint256 maturity, uint256 cBal, uint256 minAccepted) external {
+    function swapClaimsForTarget(address adapter, uint48 maturity, uint256 cBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
         uint256 lscale = divider.lscales(adapter, maturity, address(this));
 
@@ -250,7 +250,7 @@ contract Periphery is Trust {
     /// @param maturity maturity
     /// @param amount target amount to borrow
     /// @return claims issued with flashloan
-    function flashBorrow(bytes memory data, address adapter, uint256 maturity, uint256 amount) internal returns (uint256) {
+    function flashBorrow(bytes memory data, address adapter, uint48 maturity, uint256 amount) internal returns (uint256) {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 _allowance = target.allowance(address(this), address(adapter));
         if (_allowance < amount) target.safeApprove(address(adapter), type(uint256).max);
@@ -260,7 +260,7 @@ contract Periphery is Trust {
     }
 
     /// @dev ERC-3156 Flash loan callback
-    function onFlashLoan(bytes calldata data, address initiator, address adapter, uint256 maturity, uint256 amount) external returns(bytes32, uint256) {
+    function onFlashLoan(bytes calldata data, address initiator, address adapter, uint48 maturity, uint256 amount) external returns(bytes32, uint256) {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
         (address zero, , , , , , , ,) = divider.series(adapter, maturity);

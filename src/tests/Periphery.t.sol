@@ -18,7 +18,12 @@ contract PeripheryTest is TestHelper {
         MockPoolManager poolManager = new MockPoolManager();
         address yieldSpaceFactory = address(2);
         address balancerVault = address(3);
-        Periphery somePeriphery = new Periphery(address(divider), address(poolManager), yieldSpaceFactory, balancerVault);
+        Periphery somePeriphery = new Periphery(
+            address(divider),
+            address(poolManager),
+            yieldSpaceFactory,
+            balancerVault
+        );
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
         assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
@@ -29,7 +34,7 @@ contract PeripheryTest is TestHelper {
     /* ========== () tests ========== */
 
     function testSponsorSeries() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // check zeros and claim deployed
@@ -54,9 +59,9 @@ contract PeripheryTest is TestHelper {
         assertTrue(poolManager.tInits(address(target)));
     }
 
-   function testSwapTargetForZeros() public {
+    function testSwapTargetForZeros() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockBalancerVault
@@ -80,7 +85,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapTargetForClaims() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter._lscale();
         uint256 tBase = 10**target.decimals();
@@ -106,7 +111,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapZerosForTarget() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
 
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 

@@ -10,7 +10,7 @@ contract Claims is TestHelper {
     using FixedMath for uint256;
 
     function testCollect(uint96 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
@@ -35,7 +35,7 @@ contract Claims is TestHelper {
     }
 
     function testCollectOnTransfer(uint96 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
@@ -65,7 +65,7 @@ contract Claims is TestHelper {
     }
 
     function testCollectOnTransferFrom(uint96 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);

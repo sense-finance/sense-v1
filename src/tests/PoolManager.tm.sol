@@ -32,7 +32,7 @@ contract PoolManagerTest is DSTest {
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
-    address public constant MASTER_ORACLE= 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+    address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
         stake = new Token("Stake", "SBL", 18, address(this));
@@ -52,13 +52,13 @@ contract PoolManagerTest is DSTest {
         divider.setPeriphery(address(this));
     }
 
-    function initSeries() public returns (uint256 _maturity) {
+    function initSeries() public returns (uint48 _maturity) {
         // Setup mock stake token
         stake.mint(address(this), 1000 ether);
         stake.approve(address(divider), 1000 ether);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
-        _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+        _maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         divider.initSeries(address(adminAdapter), _maturity, address(this));
     }
 
@@ -72,7 +72,7 @@ contract PoolManagerTest is DSTest {
     }
 
     function testAddTarget() public {
-        uint256 maturity = initSeries();
+        uint48 maturity = initSeries();
         // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(adminAdapter)) {
             fail();

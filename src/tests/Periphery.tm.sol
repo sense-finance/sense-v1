@@ -94,9 +94,9 @@ contract PeripheryTests is PeripheryTestHelper {
     function testSponsorSeries() public {
         TestHelper th = new TestHelper();
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        uint256 maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         if (maturity >= block.timestamp + 2 weeks) {
-            maturity = DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0);
+            maturity = uint48(DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0));
         }
         ERC20(cDAI).approve(address(periphery), 2**256 - 1);
         (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity);
