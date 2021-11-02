@@ -76,20 +76,20 @@ contract ZeroOracle is PriceOracle, Trust {
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
-        // get the price of Zeros in terms of Target
+        // get the price of Zeros in terms of underlying
         uint256 zeroPrice = results[0];
 
 
         (address[] memory tokens, ,) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
-        address target;
+        address underlying;
         if (address(zero) == tokens[0]) {
-            target = tokens[0];
+            underlying = tokens[0];
         } else {
-            target = tokens[1];
+            underlying = tokens[1];
         }
 
-        // `Zero/Target` * `Target/ETH` = `Price of Target in ETH`
-        // assumes the caller is the maser oracle, which will have its own way to get the Target price
-        return zeroPrice.fmul(PriceOracle(msg.sender).price(target), FixedMath.WAD);
+        // `Zero/underlying` * `underlying/ETH` = `Price of Zero in ETH`
+        // assumes the caller is the maser oracle, which will have its own way to get the underlying price
+        return zeroPrice.fmul(PriceOracle(msg.sender).price(underlying), FixedMath.WAD);
     }
 }

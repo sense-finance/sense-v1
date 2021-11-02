@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
-import { Divider, AssetDeployer } from "../Divider.sol";
+import { Divider, TokenHandler } from "../Divider.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
@@ -23,7 +23,7 @@ contract PoolManagerTest is DSTest {
     Token internal stake;
     Token internal target;
     Divider internal divider;
-    AssetDeployer internal assetDeployer;
+    TokenHandler internal tokenHandler;
     SimpleAdminAdapter internal adminAdapter;
     MockOracle internal mockOracle;
 
@@ -36,9 +36,9 @@ contract PoolManagerTest is DSTest {
 
     function setUp() public {
         stake = new Token("Stake", "SBL", 18, address(this));
-        assetDeployer = new AssetDeployer();
-        divider = new Divider(address(this), address(assetDeployer));
-        assetDeployer.init(address(divider));
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
 
         target = new Token("Target", "TGT", 18, address(this));
         mockOracle = new MockOracle();

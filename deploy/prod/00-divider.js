@@ -14,7 +14,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");
   const cup = DIVIDER_CUP.get(chainId);
 
-  const { address: assetDeployerAddress } = await deploy("AssetDeployer", {
+  const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
     args: [],
     log: true,
@@ -23,7 +23,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Deploy the divider");
   await deploy("Divider", {
     from: deployer,
-    args: [cup, assetDeployerAddress],
+    args: [cup, tokenHandlerAddress],
     log: true,
   });
 
@@ -32,9 +32,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   console.log("Trust the dev address on the divider");
   await (await divider.setIsTrusted(dev, true)).wait();
 
-  const assetDeployer = await ethers.getContract("AssetDeployer");
-  console.log("Add the divider to the asset deployer");
-  await (await assetDeployer.init(divider.address)).wait();
+  const tokenHandler = await ethers.getContract("TokenHandler");
+  console.log("Add the divider to the token hanlder");
+  await (await tokenHandler.init(divider.address)).wait();
 };
 
 module.exports.tags = ["prod:divider", "scenario:prod"];

@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
-import { Divider, AssetDeployer } from "../../Divider.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { PoolManager } from "../../fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
@@ -41,7 +41,7 @@ contract TestHelper is DSTest {
     PoolManager poolManager;
     GClaimManager gClaimManager;
     Divider internal divider;
-    AssetDeployer internal assetDeployer;
+    TokenHandler internal tokenHandler;
     Periphery internal periphery;
 
     User internal alice;
@@ -94,9 +94,9 @@ contract TestHelper is DSTest {
         DELTA = tDecimals > 18 ? DELTA * base : DELTA / base;
 
         // divider
-        assetDeployer = new AssetDeployer();
-        divider = new Divider(address(this), address(assetDeployer));
-        assetDeployer.init(address(divider));
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
         divider.setGuard(address(target), 10*2**96);
 
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();

@@ -91,7 +91,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize / _convertBase(ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = AssetDeployer(tokenHandler).deploy(adapter, maturity);
+        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
 
         // Initialize the new Series struct
         Series memory newSeries = Series({
@@ -604,7 +604,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
 }
 
-contract AssetDeployer is Trust {
+contract TokenHandler is Trust {
     /// @notice Configuration
     string private constant ZERO_SYMBOL_PREFIX = "z";
     string private constant ZERO_NAME_PREFIX = "Zero";

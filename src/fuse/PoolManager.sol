@@ -8,6 +8,7 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 import { PriceOracle } from "../external/fuse/PriceOracle.sol";
 
 // Internal references
+import { UnderlyingOracle } from "./oracles/Underlying.sol";
 import { TargetOracle } from "./oracles/Target.sol";
 import { ZeroOracle } from "./oracles/Zero.sol";
 import { LPOracle } from "./oracles/LP.sol";
@@ -56,10 +57,13 @@ contract PoolManager is Trust {
     address public immutable cERC20Impl;
     address public immutable fuseDirectory;
     address public immutable divider;
-    address public immutable oracleImpl;
+
+    address public immutable oracleImpl; // master oracle from Fuse
     address public immutable targetOracle;
     address public immutable zeroOracle;
     address public immutable lpOracle;
+    address public immutable underlyingOracle;
+
     address public comptroller;
     address public masterOracle;
 
@@ -105,10 +109,12 @@ contract PoolManager is Trust {
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
         divider = _divider;
-        oracleImpl = _oracleImpl; // master oracle from Fuse
+        oracleImpl = _oracleImpl;
+
         targetOracle = address(new TargetOracle());
         zeroOracle = address(new ZeroOracle());
         lpOracle = address(new LPOracle());
+        underlyingOracle = address(new UnderlyingOracle());
     }
 
     function deployPool(
@@ -149,12 +155,17 @@ contract PoolManager is Trust {
         require(!tInits[target], "Target already added");
         require(targetParams.irModel != address(0), "Target asset params not set");
 
-        address[] memory underlyings = new address[](1);
+        address underlying = Adapter(adapter).underlying();
+
+        address[] memory underlyings = new address[](2);
         underlyings[0] = target;
+        underlyings[1] = underlying;
 
-        PriceOracle[] memory oracles = new PriceOracle[](1);
+        PriceOracle[] memory oracles = new PriceOracle[](2);
         oracles[0] = PriceOracle(targetOracle);
+        oracles[1] = PriceOracle(underlyingOracle);
 
+        UnderlyingOracle(underlyingOracle).setUnderlying(underlying, adapter);
         TargetOracle(targetOracle).setTarget(target, adapter);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
@@ -180,6 +191,8 @@ contract PoolManager is Trust {
         emit TargetAdded(target);
     }
 
+    /// @notice queues a set of (Zero,LPShare) for Fuse pool once the TWAP is ready
+    /// @dev called by the periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
         uint48 maturity,
@@ -200,6 +213,8 @@ contract PoolManager is Trust {
         emit SeriesQueued(adapter, maturity, pool);
     }
 
+    /// @notice open method to add queued Zeros and LPShares to Fuse pool
+    /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint48 maturity) external {
         require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, "Series must be queued");
 
@@ -226,7 +241,7 @@ contract PoolManager is Trust {
             Token(zero).name(),
             Token(zero).symbol(),
             cERC20Impl,
-            "0x00", // calldata sent to becomeImplementation (currently unused)
+            "0x00",
             zeroParams.reserveFactor,
             adminFee
         );
@@ -246,7 +261,7 @@ contract PoolManager is Trust {
             Token(pool).name(),
             Token(pool).symbol(),
             cERC20Impl,
-            "0x00", // calldata sent to becomeImplementation (currently unused)
+            "0x00",
             lpTokenParams.reserveFactor,
             adminFee
         );
@@ -262,8 +277,6 @@ contract PoolManager is Trust {
 
         emit SeriesAdded(zero, pool);
     }
-
-    // TODO pause/delist
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;

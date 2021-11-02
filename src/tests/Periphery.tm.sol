@@ -9,7 +9,7 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 // Internal references
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "../fuse/PoolManager.sol";
-import { Divider, AssetDeployer } from "../Divider.sol";
+import { Divider, TokenHandler } from "../Divider.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
@@ -44,7 +44,7 @@ contract PeripheryTestHelper is DSTest {
     CFactory internal factory;
     Divider internal divider;
     PoolManager internal poolManager;
-    AssetDeployer internal assetDeployer;
+    TokenHandler internal tokenHandler;
 
     IUniswapV3Factory uniFactory;
     ISwapRouter uniSwapRouter;
@@ -58,9 +58,9 @@ contract PeripheryTestHelper is DSTest {
         poolManager.setIsTrusted(address(periphery), true);
 
         // divider
-        assetDeployer = new AssetDeployer();
-        divider = new Divider(address(this), address(assetDeployer));
-        assetDeployer.init(address(divider));
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
         divider.setPeriphery(address(periphery));
 
         // adapter & factory
