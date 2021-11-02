@@ -59,9 +59,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   console.log("Trust cToken adapter factory on the divider");
   await (await divider.setIsTrusted(cFactory.address, true)).wait();
-
-  console.log("Trust dev on the cToken adapter factory");
-  await (await cFactory.setIsTrusted(dev, true)).wait();
 };
 
 module.exports.tags = ["prod:adapters", "scenario:prod"];

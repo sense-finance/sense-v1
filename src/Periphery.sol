@@ -3,12 +3,8 @@ pragma solidity ^0.8.6;
 
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { OracleLibrary } from "./external/OracleLibrary.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { FixedMath } from "./external/FixedMath.sol";
-import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 // Internal references
 import { Errors } from "./libs/Errors.sol";
@@ -17,44 +13,43 @@ import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "./fuse/PoolManager.sol";
 
+
+interface YieldSpaceLike {
+
+}
+
 /// @title Periphery
 contract Periphery is Trust {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
     using Errors for string;
 
-    enum Action {ZERO_TO_CLAIM, CLAIM_TO_TARGET}
+    enum Action { ZERO_TO_CLAIM, CLAIM_TO_TARGET }
 
     /// @notice Configuration
     uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
 
     /// @notice Program state
-    IUniswapV3Factory public immutable uniFactory;
-    ISwapRouter public immutable uniSwapRouter;
+    YieldSpaceLike public immutable yieldSpaceFactory;
     Divider public immutable divider;
     PoolManager public immutable poolManager;
     mapping(address => bool) public factories;  // adapter factories -> is supported
 
-    constructor(address _divider, address _poolManager, address _uniFactory, address _uniSwapRouter) Trust(msg.sender) {
+    constructor(address _divider, address _poolManager, address _ysFactory, address _balancerVault) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
-        uniFactory = IUniswapV3Factory(_uniFactory);
-        uniSwapRouter = ISwapRouter(_uniSwapRouter);
+        yieldSpaceFactory = YieldSpaceLike(_ysFactory);
+        balancerVault = YieldSpaceLike(_balancerVault);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// @notice Sponsor a new Series
     /// @dev Calls divider to initalise a new series
-    /// @dev Creates a UNIV3 pool for Zeros and Claims
-    /// @dev Onboards Zero and Claim onto Sense Fuse pool
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
-    /// @param sqrtPriceX96 Initial price of the pool as a sqrt(token1/token0) Q64.96 value
-    function sponsorSeries(
-        address adapter, uint256 maturity, uint160 sqrtPriceX96
-    ) external returns (address zero, address claim) {
+    function sponsorSeries(address adapter, uint256 maturity) external returns (address zero, address claim) {
         (, , , , address stake, uint256 stakeSize, ,) = Adapter(adapter).adapterParams();
 
         // transfer stakeSize from sponsor into this contract
@@ -69,9 +64,9 @@ contract Periphery is Trust {
         ERC20(stake).safeApprove(address(divider), type(uint256).max);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
-        address unipool = uniFactory.createPool(zero, Adapter(adapter).underlying(), UNI_POOL_FEE); // deploy UNIV3 pool
-        IUniswapV3Pool(unipool).initialize(sqrtPriceX96);
-        poolManager.addSeries(adapter, maturity);
+
+        address pool = yieldSpaceFactory.create(address(divider), adapter, maturity);
+        poolManager.addSeries(adapter, maturity, pool);
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 

@@ -149,7 +149,7 @@ abstract contract BaseAdapter is Initializable {
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
-    /// @notice Returns the current price of the underlying
+    /// @notice Returns the current price of the underlying in ETH terms
     function getUnderlyingPrice() external virtual view returns (uint256);
 
     /* ========== ACCESSORS ========== */

@@ -8,7 +8,9 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 import { PriceOracle } from "../external/fuse/PriceOracle.sol";
 
 // Internal references
-import { TargetOracle } from "./TargetOracle.sol";
+import { TargetOracle } from "./oracles/Target.sol";
+import { ZeroOracle } from "./oracles/Zero.sol";
+import { LPOracle } from "./oracles/LP.sol";
 import { Divider } from "../Divider.sol";
 import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "../libs/Errors.sol";
@@ -57,8 +59,12 @@ contract PoolManager is Trust {
     address public immutable divider;
     address public immutable oracleImpl;
     address public immutable targetOracle;
+    address public immutable zeroOracle;
+    address public immutable lpOracle;
     address public comptroller;
     address public masterOracle;
+
+    enum SeriesStatus { NONE, QUEUED, ADDED }
 
     struct AssetParams {
         address irModel;
@@ -68,15 +74,16 @@ contract PoolManager is Trust {
         uint256 liquidationIncentive;
     }
 
-    AssetParams public zeroParams;
-    AssetParams public claimParams;
-    AssetParams public lpShareParams;
     AssetParams public targetParams;
+    AssetParams public zeroParams;
+    AssetParams public lpTokenParams;
 
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
-    /// @notice Series Inits: adapter -> maturity -> series (zeros/lp shares) hase been added to pool
-    mapping(address => mapping(uint256 => bool)) public sInits;
+    /// @notice Series Status: adapter -> maturity -> series status (zeros/lp shares)
+    mapping(address => mapping(uint256 => SeriesStatus)) public sStatus;
+    /// @notice Series Pools: adapter -> maturity -> AMM pool
+    mapping(address => mapping(uint256 => SeriesStatus)) public sPools;
 
     event SetParams(bytes32 indexed what, AssetParams data);
     event PoolDeployed(
@@ -87,7 +94,7 @@ contract PoolManager is Trust {
         uint256 liqIncentive
     );
     event TargetAdded(address target);
-    event SeriesAdded(address zero, address claim);
+    event SeriesAdded(address zero, address lpToken);
 
     constructor(
         address _fuseDirectory,
@@ -100,8 +107,10 @@ contract PoolManager is Trust {
         comptrollerImpl = _comptrollerImpl;
         cERC20Impl = _cERC20Impl;
         divider    = _divider;
-        oracleImpl = _oracleImpl; // master oracle
+        oracleImpl = _oracleImpl; // master oracle from Fuse
         targetOracle = address(new TargetOracle());
+        zeroOracle   = address(new ZeroOracle());
+        lpOracle     = address(new LPOracle());
     }
 
     function deployPool(
@@ -148,7 +157,7 @@ contract PoolManager is Trust {
         PriceOracle[] memory oracles = new PriceOracle[](1);
         oracles[0] = PriceOracle(targetOracle);
 
-        TargetOracle(targetOracle).addTarget(target, adapter);
+        TargetOracle(targetOracle).setTarget(target, adapter);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
         uint256 adminFee = 0;
@@ -173,27 +182,38 @@ contract PoolManager is Trust {
         emit TargetAdded(target);
     }
 
-    function addSeries(address adapter, uint256 maturity) external requiresTrust {
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+    function queueSeries(address adapter, uint256 maturity, address pool) external requiresTrust {
+        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
-        require(comptroller != address(0), "Pool not yet deployed");
+        require(comptroller != address(0), "Fuse pool not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(!sInits[adapter][maturity], Errors.DuplicateSeries);
+        require(sInits[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
 
         address target = Adapter(adapter).getTarget();
-        require(tInits[target], "Target for this Series not yet added");
+        require(tInits[target], "Target for this Series not yet added to Fuse");
 
-        // TODO: lp shares
+        sInits[adapter][maturity] = SeriesStatus.QUEUED;
+        sPools[adapter][maturity] = pool;
+
+        emit SeriesQueued(adapter, maturity, pool);
+    }
+
+    function addSeries(address adapter, uint256 maturity) external {
+        require(sInits[adapter][maturity] == SeriesStatus.QUEUED, "Series must be queued");
+
+        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+
+        address pool = sPools[adapter][maturity];
 
         address[] memory underlyings = new address[](2);
         underlyings[0] = zero;
-        underlyings[1] = claim;
+        underlyings[1] = pool;
 
         PriceOracle[] memory oracles = new PriceOracle[](2);
-        // TODO: proper oracles using lp shares
-        oracles[0] = PriceOracle(address(0));
-        oracles[1] = PriceOracle(address(0));
+        oracles[0] = PriceOracle(zeroOracle);
+        oracles[1] = PriceOracle(lpOracle);
 
+        zeroOracle(zeroOracle).setZero(zero, pool);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
         uint256 adminFee = 0;
@@ -208,41 +228,44 @@ contract PoolManager is Trust {
             zeroParams.reserveFactor,
             adminFee
         );
-        bytes memory constructorDataClaim = abi.encodePacked(
-            claim,
-            comptroller,
-            claimParams.irModel,
-            Token(claim).name(),
-            Token(claim).symbol(),
-            cERC20Impl,
-            "0x00", // calldata sent to becomeImplementation (currently unused)
-            claimParams.reserveFactor,
-            adminFee
-        );
 
         uint256 errZero = ComptrollerLike(comptroller)._deployMarket(
             false,
             constructorDataZero,
             zeroParams.collateralFactor
         );
-        require(errZero == 0, "Failed to add market");
+        require(errZero == 0, "Failed to add Zero market");
 
-        uint256 errClaim = ComptrollerLike(comptroller)._deployMarket(
-            false,
-            constructorDataClaim,
-            claimParams.collateralFactor
+        // LP Share pool token
+        bytes memory constructorDataLpToken = abi.encodePacked(
+            poolToken,
+            comptroller,
+            lpTokenParams.irModel,
+            Token(lpToken).name(),
+            Token(lpToken).symbol(),
+            cERC20Impl,
+            "0x00", // calldata sent to becomeImplementation (currently unused)
+            lpTokenParams.reserveFactor,
+            adminFee
         );
-        require(errClaim == 0, "Failed to add market");
 
-        sInits[adapter][maturity] = true;
+        uint256 errLpToken = ComptrollerLike(comptroller)._deployMarket(
+            false,
+            constructorDataLpToken,
+            lpTokenParams.collateralFactor
+        );
+        require(errLpToken == 0, "Failed to add LP market");
+
+        sInits[adapter][maturity] = SeriesStatus.ADDED;
+
+        emit SeriesAdded(zero, lpToken);
     }
 
     // TODO pause/delist
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;
-        else if (what == "CLAIM_PARAMS") claimParams = data;
-        else if (what == "LP_SHARE_PARAMS") lpShareParams = data;
+        else if (what == "LP_TOKEN_PARAMS") lpTokenParams = data;
         else if (what == "TARGET_PARAMS") targetParams = data;
         else revert("Invalid param");
         emit SetParams(what, data);
