@@ -113,6 +113,7 @@ contract Dividers is TestHelper {
         }
     }
 
+<<<<<<< HEAD
     function testCantInitSeriesIfModeInvalid() public {
         adapter.setMode(4);
         hevm.warp(1631664000);
@@ -150,6 +151,18 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#0");
     }
 
+=======
+    function testCantInitSeriesIfPaused() public {
+        divider.setPaused(true);
+        uint256 maturity = getValidMaturity(2021, 10);
+        try alice.doSponsorSeries(address(adapter), maturity) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
+        }
+    }
+
+>>>>>>> origin/dev
     function testInitSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -263,6 +276,16 @@ contract Dividers is TestHelper {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.OutOfWindowBoundaries);
+        }
+    }
+
+    function testCantSettleSeriesIfPaused() public {
+        divider.setPaused(true);
+        uint256 maturity = getValidMaturity(2021, 10);
+        try alice.doSettleSeries(address(adapter), maturity) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
         }
     }
 
@@ -458,6 +481,16 @@ contract Dividers is TestHelper {
         }
     }
 
+    function testCantIssueSeriesIfPaused() public {
+        divider.setPaused(true);
+        uint256 maturity = getValidMaturity(2021, 10);
+        try alice.doIssue(address(adapter), maturity, 100e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
+        }
+    }
+
     function testIssue(uint96 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -511,6 +544,16 @@ contract Dividers is TestHelper {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.SeriesDoesntExists);
+        }
+    }
+
+    function testCantCombineSeriesIfPaused() public {
+        divider.setPaused(true);
+        uint256 maturity = getValidMaturity(2021, 10);
+        try alice.doCombine(address(adapter), maturity, 100e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
         }
     }
 
@@ -621,6 +664,16 @@ contract Dividers is TestHelper {
             fail();
         } catch (bytes memory error) {
             // Does not return any error message
+        }
+    }
+
+    function testCantRedeemZeroIfPaused() public {
+        divider.setPaused(true);
+        uint256 maturity = getValidMaturity(2021, 10);
+        try alice.doRedeemZero(address(adapter), maturity, 100e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
         }
     }
 
@@ -753,6 +806,20 @@ contract Dividers is TestHelper {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.CollectNotSettled);
+        }
+    }
+
+    function testCantCollectIfPaused(uint96 tBal) public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        bob.doIssue(address(adapter), maturity, tBal);
+        hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
+        divider.setPaused(true);
+        try bob.doCollect(claim) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
         }
     }
 
@@ -1127,6 +1194,16 @@ contract Dividers is TestHelper {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.ExistingValue);
+        }
+    }
+
+    function testCantAddAdapterIfPaused() public {
+        divider.setPermissionless(true);
+        divider.setPaused(true);
+        try bob.doAddAdapter(address(adapter)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.Paused);
         }
     }
 
