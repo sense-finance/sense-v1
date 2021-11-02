@@ -24,17 +24,17 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     using Errors for string;
 
     /// @notice Configuration
-    uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
+    uint256 public constant SPONSOR_WINDOW = 4 hours;    // TODO: TBD
     uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
-    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
+    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18;   // 10% issuance fee cap
 
     /// @notice Program state
     address public periphery;
-    address public immutable cup;
-    address public immutable tokenHandler;
-    uint256 public adapterCounter;
-    bool public permissionless;
-    bool public guarded = true;
+    address public immutable cup;          // sense team multisig
+    address public immutable tokenHandler; // zero/claim deployer
+    bool public permissionless;            // permissionless flag
+    bool public guarded = true;            // guarded launch flag
+    uint256 public adapterCounter;         // total # of adapters
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
@@ -45,20 +45,20 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice target -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
     /// @notice adapter -> maturity -> Series
-    mapping(address => mapping(uint48 => Series)) public series;
-    /// @notice adapter -> maturity -> user -> lscale
-    mapping(address => mapping(uint48 => mapping(address => uint256))) public lscales;
+    mapping(address => mapping(uint256 => Series)) public series;
+    /// @notice adapter -> maturity -> user -> lscale (last scale)
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
 
     struct Series {
-        address zero;
-        address claim;
-        address sponsor;
-        uint256 reward; // tracks fees due to the series' settler
-        uint256 iscale; // scale at issuance
-        uint256 mscale; // scale at maturity
-        uint256 maxscale; // max scale value from this series' lifetime
-        uint128 issuance; // issuance timestamp
-        uint128 tilt; // % of underlying principal initially reserved for Claims
+        address zero;      // Zero ERC20 token
+        address claim;     // Claim ERC20 token
+        address sponsor;   // actor who initialized the Series
+        uint256 reward;    // tracks fees due to the series' settler
+        uint256 iscale;    // scale at issuance
+        uint256 mscale;    // scale at maturity
+        uint256 maxscale;  // max scale value from this series' lifetime
+        uint128 issuance;  // timestamp of series initialization
+        uint128 tilt;      // % of underlying principal initially reserved for Claims
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -68,7 +68,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Enable a adapter
+    /// @notice Enable an adapter
     /// @param adapter Adapter's address
     function addAdapter(address adapter) external whenPermissionless whenNotPaused {
         _setAdapter(adapter, true);
@@ -112,7 +112,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     }
 
     /// @notice Settles a Series and transfer the settlement reward to the caller
-    /// @dev The Series' sponsor has a buffer where only they can settle the Series
+    /// @dev The Series' sponsor has a grace period where only they can settle the Series
     /// @dev After that, the reward becomes MEV
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series
@@ -139,7 +139,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /// @notice Mint Zeros and Claims of a specific Series
     /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
+    /// @param maturity Maturity date for the Series [unix time]
     /// @param tBal Balance of Target to deposit
     /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
     function issue(address adapter, uint48 maturity, uint256 tBal) nonReentrant whenNotPaused external returns (uint256 uBal) {
