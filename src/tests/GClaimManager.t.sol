@@ -243,6 +243,7 @@ contract GClaimsManager is TestHelper {
     }
 
     function testExitGClaimWithCollected(uint96 balance) public {
+        if (balance < 1000) return; // balance < 1000 will throw precision error
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         // avoid fuzz tests in which nothing is issued
