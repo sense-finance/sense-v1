@@ -76,8 +76,8 @@ contract Periphery is Trust {
     /// @dev Deploys a new Adapter via the AdapterFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address
     /// @param target Target to onboard
-    function onboardAdapter(address factory, address target) 
-        external returns (address adapterClone) 
+    function onboardAdapter(address factory, address target)
+        external returns (address adapterClone)
     {
         require(factories[factory], Errors.FactoryNotSupported);
         adapterClone = Factory(factory).deployAdapter(target);
@@ -104,11 +104,11 @@ contract Periphery is Trust {
 
         // swap underlying for zeros
         uint256 zBal = _swap(
-            Adapter(adapter).underlying(), 
-            zero, 
+            Adapter(adapter).underlying(),
+            zero,
             uBal,
             poolIds[adapter][maturity],
-            address(this), 
+            address(this),
             minAccepted
         ); // TODO: swap on yieldspace not uniswap
 
@@ -134,7 +134,7 @@ contract Periphery is Trust {
         // finally, we get the target we need to borrow by doing a unit conversion from Claim to Target using the last
         // scale value.
         uint256 targetToBorrow;
-        { 
+        {
             uint256 tDecimals = target.decimals();
             uint256 tBase = 10**target.decimals();
             uint256 fee = (Adapter(adapter).getIssuanceFee() / convertBase(tDecimals));
@@ -161,11 +161,11 @@ contract Periphery is Trust {
 
         // swap zeros for underlying
         uint256 uBal = _swap(
-            zero, 
-            Adapter(adapter).underlying(), 
+            zero,
+            Adapter(adapter).underlying(),
             zBal,
             poolIds[adapter][maturity],
-            address(this), 
+            address(this),
             minAccepted
         );
 
@@ -180,7 +180,7 @@ contract Periphery is Trust {
     /// @notice Swap Claims for Target of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param cBal Balance of Zeros to sell
+    /// @param cBal Balance of Claims to swap
     /// @param minAccepted Min accepted amount of Target
     function swapClaimsForTarget(address adapter, uint48 maturity, uint256 cBal, uint256 minAccepted) external {
         (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
@@ -242,7 +242,7 @@ contract Periphery is Trust {
                 toInternalBalance: false
             });
 
-        amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max); 
+        amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
@@ -284,11 +284,11 @@ contract Periphery is Trust {
 
             // (3) Sell Zeros for underlying
             uint256 uBal = _swap(
-                zero, 
-                Adapter(adapter).underlying(), 
-                issued, 
-                poolIds[adapter][maturity], 
-                address(this), 
+                zero,
+                Adapter(adapter).underlying(),
+                issued,
+                poolIds[adapter][maturity],
+                address(this),
                 0
             ); // TODO: minAccepted
 
@@ -302,14 +302,14 @@ contract Periphery is Trust {
 
             // (4) Swap underlying for Zeros on Yieldspace pool
             uint256 zBal = _swap(
-                Adapter(adapter).underlying(), 
-                zero, 
-                uBal, 
+                Adapter(adapter).underlying(),
+                zero,
+                uBal,
                 poolIds[adapter][maturity],
-                address(this), 
+                address(this),
                 0
             ); // TODO: minAccepted
-            
+
             // (5) Combine zeros and claim
             uint256 tBal = divider.combine(adapter, maturity, zBal);
             return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
