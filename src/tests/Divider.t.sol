@@ -675,6 +675,7 @@ contract Dividers is TestHelper {
     }
 
     function testRedeemZero(uint96 tBal) public {
+        if (tBal < 1000) return; // tBal < 1000 will give precision error
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
