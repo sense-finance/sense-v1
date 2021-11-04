@@ -55,7 +55,6 @@ contract PeripheryTest is TestHelper {
         MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
         factory.addTarget(address(newTarget), true);
 
-
         // onboard target
         periphery.onboardAdapter(address(factory), address(newTarget));
         assertTrue(poolManager.tInits(address(target)));
