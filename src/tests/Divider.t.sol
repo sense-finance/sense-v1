@@ -675,7 +675,7 @@ contract Dividers is TestHelper {
     }
 
     function testRedeemZero(uint96 tBal) public {
-        if (tBal < 1000) return; // tBal < 1000 will give precision error
+        tBal = fuzzWithBounds(tBal, 1000);
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -851,7 +851,7 @@ contract Dividers is TestHelper {
     }
 
     function testCollectReward(uint96 tBal) public {
-        if (tBal == 0) return;
+        tBal = fuzzWithBounds(tBal, 1000);
         adapter.setScale(1e18);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
