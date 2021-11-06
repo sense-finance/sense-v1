@@ -92,7 +92,6 @@ contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
     function testSponsorSeries() public {
-        TestHelper th = new TestHelper();
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         if (maturity >= block.timestamp + 2 weeks) {

@@ -135,13 +135,13 @@ contract User {
         periphery.swapTargetForZeros(adapter, maturity, balance, minAccepted);
     }
     function doSwapTargetForClaims(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
-        periphery.swapTargetForClaims(adapter, maturity, balance, minAccepted);
+        periphery.swapTargetForClaims(adapter, maturity, balance);
     }
     function doSwapZerosForTarget(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
         periphery.swapZerosForTarget(adapter, maturity, balance, minAccepted);
     }
     function doSwapClaimsForTarget(address adapter, uint48 maturity, uint256 balance, uint256 minAccepted) public {
-        periphery.swapClaimsForTarget(adapter, maturity, balance, minAccepted);
+        periphery.swapClaimsForTarget(adapter, maturity, balance);
     }
 
 }

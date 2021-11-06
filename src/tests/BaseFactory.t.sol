@@ -57,10 +57,6 @@ contract Factories is TestHelper {
     }
 
     function testDeployAdapter() public {
-        uint256 issuanceFee = 0.01e18;
-        uint256 _stakeSize = 1e18;
-        uint256 minMaturity = 2 weeks;
-        uint256 maxMaturity = 14 weeks;
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
@@ -87,6 +83,7 @@ contract Factories is TestHelper {
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
+        assertEq(oracle, ORACLE);
         uint256 scale = IAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }
@@ -95,7 +92,6 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        MockOracle somOracle = new MockOracle();
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         address f = periphery.onboardAdapter(address(someFactory), address(someTarget));
         assertTrue(f != address(0));

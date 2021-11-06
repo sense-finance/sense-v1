@@ -72,7 +72,6 @@ contract PoolManagerTest is DSTest {
     }
 
     function testAddTarget() public {
-        uint48 maturity = initSeries();
         // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(adminAdapter)) {
             fail();
