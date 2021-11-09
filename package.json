@@ -8,7 +8,7 @@
     "build": "dapp build",
     "debug": "dapp debug",
     "test": "dapp test -m \".t.sol\"",
-    "test:mainnet": "sh -c 'dapp test --rpc-url $(grep ALCHEMY_KEY .env | cut -d '=' -f2 | (printf 'https://eth-mainnet.alchemyapi.io/v2/' && cat))' -m \".tm.sol\" --verbose",
+    "test:mainnet": "sh -c 'dapp test --rpc-url $(grep ALCHEMY_KEY .env | cut -d '=' -f2 | (printf 'https://eth-mainnet.alchemyapi.io/v2/' && cat)) -m \".tm.sol\" --verbose'",
     "testcov": "dapp test --coverage",
     "lint": "npx solhint -f table src/*/*.sol",
     "fix": "prettier --ignore-path .gitignore --write src/*/*.sol && yarn lint --fix",

@@ -12,7 +12,7 @@ import { BaseAdapter as Adapter } from "../../adapters/BaseAdapter.sol";
 
 contract TargetOracle is PriceOracle, Trust {
     using FixedMath for uint256;
-    /// @notice target address -> feed address
+    /// @notice target address -> adapter address
     mapping(address => address) public adapters;
 
     constructor() Trust(msg.sender) { }
