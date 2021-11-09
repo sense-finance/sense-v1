@@ -27,7 +27,7 @@ contract WstETHAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
-    address public constant ORACLE = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5; // compound's oracle
+    address public constant ORACLE = 0x6D2299C48a8dD07a872FDd0F8233924872Ad1071; // compound's oracle
 
     function setUp() public {
         tokenHandler = new TokenHandler();
