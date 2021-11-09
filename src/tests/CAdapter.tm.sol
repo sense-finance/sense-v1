@@ -68,4 +68,19 @@ contract CAdapters is CAdapterTestHelper {
         uint256 scale = ctoken.exchangeRateCurrent().fdiv(10**(18 - 8 + uDecimals), 10**uDecimals);
         assertEq(adapter.scale(), scale);
     }
+
+    function testGetUnderlyingPrice() public {
+        return;
+        // TODO: to be implemented on tests refactors
+    }
+
+    function testUnwrapTarget() public {
+        return;
+        // TODO: to be implemented on tests refactors
+    }
+
+    function testWrapUnderlying() public {
+        return;
+        // TODO: to be implemented on tests refactors
+    }
 }

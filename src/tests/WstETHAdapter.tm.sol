@@ -78,4 +78,19 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 scale = wstETH.stEthPerToken();
         assertEq(adapter.scale(), scale);
     }
+
+    function testGetUnderlyingPrice() public {
+        return;
+        // TODO: to be implemented on tests refactors
+    }
+
+    function testUnwrapTarget() public {
+        return;
+        // TODO: to be implemented on tests refactors
+    }
+
+    function testWrapUnderlying() public {
+        return;
+        // TODO: to be implemented on tests refactors
+    }
 }
