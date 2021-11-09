@@ -49,6 +49,7 @@ interface CTokenInterface {}
 contract WstETHAdapter is BaseAdapter {
     using FixedMath for uint256;
 
+    address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant STETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -66,7 +67,7 @@ contract WstETHAdapter is BaseAdapter {
 
     function getUnderlyingPrice() external view override returns (uint256) {
         return PriceOracleInterface(adapterParams.oracle).getUnderlyingPrice(
-            CTokenInterface(adapterParams.target)
+            CTokenInterface(CETH)
         );
     }
 
