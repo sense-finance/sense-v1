@@ -7,7 +7,6 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { Divider, TokenHandler } from "../Divider.sol";
 import { WstETHAdapter, WstETHInterface } from "../adapters/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-//import { LFactory } from "../adapters/lido/LFactory.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
@@ -17,7 +16,6 @@ import { User } from "./test-helpers/User.sol";
 
 contract WstETHAdapterTestHelper is DSTest {
     WstETHAdapter adapter;
-    //LFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
 
@@ -35,24 +33,6 @@ contract WstETHAdapterTestHelper is DSTest {
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
-        /*
-        WstETHAdapter adapterImpl = new WstETHAdapter(); // wstETH feed implementation
-        // deploy Lido feed factory
-        factory = new LFactory(
-            address(divider),
-            address(adapterImpl),
-            DAI,
-            STAKE_SIZE,
-            ISSUANCE_FEE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            DELTA
-        );
-        divider.setIsTrusted(address(factory), true); // add factory as a ward
-        address a = factory.deployAdapter(wstETH);
-        
-        adapter = WstETHAdapter(a); // deploy a wstETH feed
-        */
         adapter = new WstETHAdapter(); // wstETH adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: WSTETH,
