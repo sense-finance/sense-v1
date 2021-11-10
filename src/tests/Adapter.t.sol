@@ -76,6 +76,7 @@ contract Adapters is TestHelper {
         assertEq(adapter.divider(), address(divider));
         assertEq(delta, DELTA);
         assertEq(ifee, ISSUANCE_FEE);
+        assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
@@ -204,7 +205,6 @@ contract Adapters is TestHelper {
     }
 
     function testCantAddCustomAdapterToDivider() public {
-        MockToken newTarget = new MockToken("Compound USDC", "cUSDC", 18);
         FakeAdapter fakeAdapter = new FakeAdapter();
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: address(target),
@@ -229,7 +229,7 @@ contract Adapters is TestHelper {
     // distribution tests
     function testDistribution() public {
         uint48 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);

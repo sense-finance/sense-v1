@@ -43,8 +43,7 @@ contract GClaimsManager is TestHelper {
     function testCantJoinIfNotEnoughClaim(uint96 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
         hevm.warp(block.timestamp + 1 days);
         bob.doApprove(address(claim), address(bob.gClaimManager()));
         try bob.doJoin(address(adapter), maturity, balance) {
@@ -57,8 +56,7 @@ contract GClaimsManager is TestHelper {
     function testCantJoinIfNotEnoughClaimAllowance(uint96 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
+        if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, balance);
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
@@ -122,9 +120,8 @@ contract GClaimsManager is TestHelper {
 
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
+        if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
 
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
         bob.doIssue(address(adapter), maturity, balance);
         bob.doApprove(address(claim), address(bob.gClaimManager()));
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
@@ -224,9 +221,8 @@ contract GClaimsManager is TestHelper {
 
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
+        if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
 
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
         bob.doIssue(address(adapter), maturity, balance);
         bob.doApprove(address(claim), address(bob.gClaimManager()));
         uint256 claimBalanceBefore = Claim(claim).balanceOf(address(bob));
@@ -243,12 +239,11 @@ contract GClaimsManager is TestHelper {
     }
 
     function testExitGClaimWithCollected(uint96 balance) public {
+        balance = fuzzWithBounds(balance, 1000);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         // avoid fuzz tests in which nothing is issued
-        if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
-        uint256 claimBaseUnit = 10**Claim(claim).decimals();
-        //        uint256 balance = 10 * claimBaseUnit;
+        if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
         hevm.warp(block.timestamp + 1 days);
         balance = balance - uint96(calculateExcess(balance, maturity, claim));
         bob.doIssue(address(adapter), maturity, balance);
@@ -273,7 +268,7 @@ contract GClaimsManager is TestHelper {
     //     uint256 maturity = getValidMaturity(2021, 10);
     //     (, address claim) = sponsorSampleSeries(address(alice), maturity);
     //     // avoid fuzz tests in which nothing is issued
-    //     if (calculateAmountToIssue(balance, maturity, Claim(claim).BASE_UNIT()) == 0) return;
+    //     if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
 
     //     // bob issues and joins
     //     bob.doIssue(address(adapter), maturity, balance);
