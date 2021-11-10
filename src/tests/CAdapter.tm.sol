@@ -5,7 +5,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider, TokenHandler } from "../Divider.sol";
-import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
+import { CAdapter, CTokenInterface, PriceOracleInterface } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
 
@@ -23,7 +23,7 @@ contract CAdapterTestHelper is DSTest {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address public constant ORACLE = 0x6D2299C48a8dD07a872FDd0F8233924872Ad1071;
+    address public constant ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
 
     uint8 public constant MODE = 0;
     uint256 public constant DELTA = 150;
@@ -70,8 +70,9 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testGetUnderlyingPrice() public {
-        return;
-        // TODO: to be implemented on tests refactors
+        PriceOracleInterface oracle = PriceOracleInterface(ORACLE);
+        uint256 price = oracle.price(DAI);
+        assertEq(adapter.getUnderlyingPrice(), price);
     }
 
     function testUnwrapTarget() public {

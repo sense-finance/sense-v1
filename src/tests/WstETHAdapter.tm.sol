@@ -5,7 +5,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider, TokenHandler } from "../Divider.sol";
-import { WstETHAdapter, WstETHInterface } from "../adapters/lido/WstETHAdapter.sol";
+import { WstETHAdapter, WstETHInterface, PriceOracleInterface } from "../adapters/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
@@ -27,7 +27,8 @@ contract WstETHAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
-    address public constant ORACLE = 0x6D2299C48a8dD07a872FDd0F8233924872Ad1071; // compound's oracle
+    address public constant ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -60,8 +61,9 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testGetUnderlyingPrice() public {
-        return;
-        // TODO: to be implemented on tests refactors
+        PriceOracleInterface oracle = PriceOracleInterface(ORACLE);
+        uint256 price = oracle.price(WETH);
+        assertEq(adapter.getUnderlyingPrice(), price);
     }
 
     function testUnwrapTarget() public {

@@ -36,14 +36,12 @@ interface IWETH {
 
 
 interface PriceOracleInterface {
-    /// @notice Get the underlying price of a cToken asset
-    /// @param cToken The cToken to get the underlying price of
-    /// @return The underlying asset price mantissa (scaled by 1e18).
+    /// @notice Get the price of an underlying asset.
+    /// @param underlying The underlying asset to get the price of.
+    /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
     /// Zero means the price is unavailable.
-    function getUnderlyingPrice(CTokenInterface cToken) external view returns (uint256);
+    function price(address underlying) external view virtual returns (uint256);
 }
-
-interface CTokenInterface {}
 
 /// @notice Adapter contract for wstETH
 contract WstETHAdapter is BaseAdapter {
@@ -66,9 +64,7 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {
-        return PriceOracleInterface(adapterParams.oracle).getUnderlyingPrice(
-            CTokenInterface(CETH)
-        );
+        return PriceOracleInterface(adapterParams.oracle).price(WETH);
     }
 
     function unwrapTarget(uint256 amount) external override returns (uint256) {
