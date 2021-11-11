@@ -194,7 +194,7 @@ contract Periphery is Trust {
 
         // approve adapter to pull zBal
         ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
-        
+
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
 
         // transfer target to msg.sender

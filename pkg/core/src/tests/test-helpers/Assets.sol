@@ -3,7 +3,6 @@ pragma solidity ^0.8.6;
 
 /// @notice Program error types
 library Assets {
-
     // assets
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -20,5 +19,4 @@ library Assets {
     address public constant RARI_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant UNISWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
 }

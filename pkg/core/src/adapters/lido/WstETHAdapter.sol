@@ -60,9 +60,9 @@ contract WstETHAdapter is BaseAdapter {
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
 
     function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
-        // approve wstETH contract to pull stETH (used on wrapUnderlying()) 
+        // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
-        // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget()) 
+        // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
         ERC20(STETH).safeApprove(CURVESINGLESWAP, type(uint256).max);
         super.initialize(_divider, _adapterParams);
     }
@@ -83,14 +83,14 @@ contract WstETHAdapter is BaseAdapter {
 
     function unwrapTarget(uint256 amount) external override onlyPeriphery returns (uint256) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
-        uint256 stETH = WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH 
-        
+        uint256 stETH = WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
+
         // exchange stETH to ETH exchange on Curve
         uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
-        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy); 
-        
+        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy);
+
         // deposit ETH into WETH contract
-        (bool success, ) = WETH.call{value: eth}(""); 
+        (bool success, ) = WETH.call{ value: eth }("");
         require(success, "Transfer failed.");
 
         ERC20(WETH).safeTransfer(msg.sender, eth); // transfer WETH back to sender (periphery)
@@ -100,7 +100,7 @@ contract WstETHAdapter is BaseAdapter {
     function wrapUnderlying(uint256 amount) external override onlyPeriphery returns (uint256) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
-        uint256 stETH = StETHInterface(STETH).submit{value: amount}(address(0)); // stake ETH (returns wstETH)
+        uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
         uint256 wstETH = WstETHInterface(WSTETH).wrap(stETH); // wrap stETH into wstETH
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH); // transfer wstETH to msg.sender
     }
