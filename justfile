@@ -52,7 +52,7 @@ debug: && timer
 
 # default test scripts
 test: test-local
-turbo-test: turbo-test-local
+# turbo-test: turbo-test-local
 
 # run dapp tests
 test-local *commands="": && timer
