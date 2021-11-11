@@ -46,9 +46,9 @@ build: && timer
 	cd {{ invocation_directory() }}; dapp build
 debug: && timer
 	cd {{ invocation_directory() }}; dapp debug
-turbo-build: && timer
-	cd {{ invocation_directory() }}; cargo r --manifest-path /Users/joshlevine/dev/dapptools-rs/Cargo.toml --bin dapp \
-		build --lib-paths {{ lib-paths-from-pkg-deps }}
+# turbo-build: && timer
+# 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp \
+# 		build --lib-paths {{ lib-paths-from-pkg-deps }}
 
 # default test scripts
 test: test-local
@@ -60,20 +60,14 @@ test-local *commands="": && timer
 test-mainnet *commands="": && timer
 	cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ commands }}
 
-
 # run turbo dapp tests
-turbo-test-local *commands="": && timer
-	cd {{ invocation_directory() }}; cargo r --manifest-path /Users/joshlevine/dev/dapptools-rs/Cargo.toml --bin dapp test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 {{ commands }}
-turbo-test-mainnet *commands="": && timer
-	cd {{ invocation_directory() }}; cargo r --manifest-path /Users/joshlevine/dev/dapptools-rs/Cargo.toml --bin dapp test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		--fork-url {{ MAINNET_RPC }} {{ commands }}
-
-
-# commit, chainid
-
-# hardhat
+# turbo-test-local *commands="": && timer
+# 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp test \
+# 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 {{ commands }}
+# turbo-test-mainnet *commands="": && timer
+# 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp test \
+# 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+# 		--fork-url {{ MAINNET_RPC }} {{ commands }}
 
 ## ---- Appendix ----
 

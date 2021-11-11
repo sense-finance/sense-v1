@@ -28,3 +28,4 @@ node_modules/
 .idea/
 yarn-error.log
 .DS_Store
+adapter-deployments/
