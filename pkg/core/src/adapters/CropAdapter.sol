@@ -30,7 +30,7 @@ abstract contract CropAdapter is BaseAdapter {
         address _divider,
         AdapterParams memory _adapterParams,
         address _reward
-    ) public {
+    ) public virtual initializer {
         super.initialize(_divider, _adapterParams);
         reward = _reward;
         ERC20(_adapterParams.stake).safeApprove(_divider, type(uint256).max);

@@ -55,7 +55,11 @@ contract CAdapter is CropAdapter {
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
-    function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
+    function initialize(
+        address _divider,
+        AdapterParams memory _adapterParams,
+        address _reward
+    ) public virtual override initializer {
         // approve underlying contract to pull target (used on wrapUnderlying())
         ERC20 u = ERC20(CTokenInterface(_adapterParams.target).underlying());
         u.safeApprove(_adapterParams.target, type(uint256).max);
