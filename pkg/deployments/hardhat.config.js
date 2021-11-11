@@ -11,24 +11,28 @@ require("./cli");
 
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const weekOfYear = require("dayjs/plugin/weekOfYear");
 
 // For dev scenarios ------------
 global.TARGETS = ["cDAI", "cETH", "stETH"];
 global.ADAPTERS = {};
 
+dayjs.extend(weekOfYear);
 dayjs.extend(utc);
 global.SERIES_MATURITIES = [
-  // beginning of the month falling between 1 and 2 months from now
+  // beginning of the week falling between 0 and 1 weeks from now
   dayjs
     .utc()
-    .month(dayjs().month() + 2)
-    .startOf("month")
+    .week(dayjs().week() + 2)
+    .startOf("week")
+    .add(1, "day")
     .unix(),
-  // beginning of the month falling between 2 and 3 months from now
+  // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
-    .month(dayjs().month() + 3)
-    .startOf("month")
+    .week(dayjs().week() + 3)
+    .startOf("week")
+    .add(1, "day")
     .unix(),
 ];
 // ------------------------------------
@@ -71,7 +75,7 @@ module.exports = {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       },
-      chainId: process.env.CHAIN_ID || 111,
+      chainId: process.env.CHAIN_ID !== undefined ? parseInt(process.env.CHAIN_ID) : 111,
       gas: 12000000,
       saveDeployments: false,
       blockGasLimit: 21000000,

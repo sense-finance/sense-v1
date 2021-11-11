@@ -42,11 +42,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
   const STAKE_SIZE = ethers.utils.parseEther("1");
-  const MIN_MATURITY = "1209600"; // 2 weeks
-  const MAX_MATURITY = "8467200"; // 14 weeks;
+  const MIN_MATURITY = "0";
+  const MAX_MATURITY = "4838400"; // 4 weeks;
   const ORACLE = "0x6D2299C48a8dD07a872FDd0F8233924872Ad1071";
-  const MODE = 0;
-  const factoryParams = [ORACLE, 0, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
+  const MODE = 1; // 1 for weekly
+  const DELTA = ethers.utils.parseEther("1");
+  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
     args: [mockAdapterImplAddress, divider.address, factoryParams, airdrop.address],
