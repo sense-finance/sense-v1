@@ -19,7 +19,7 @@
         "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
         "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
         "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod",
-        "prepare": "mkdir -p exports && cp ../../.env ./.env"
+        "prepare": "mkdir -p exports && [[ -e ../../.env ]] && cp ../../.env ./.env"
     },
     "dependencies": {
         "@openzeppelin/contracts": "4.3.2",
