@@ -1,52 +1,18 @@
 {
   "name": "sense-v1",
-  "version": "1.0.0",
-  "description": "Sense V1 smart contracts",
+  "private": true,
+  "description": "Sense V1 Contracts",
   "author": "Federico M. Alconada Verzini",
-  "license": "UNLICENSED",
+  "homepage": "https://github.com/sense-finance/sense-v1#readme",
+  "repository": "git@github.com:sense-finance/sense-v1.git",
+  "workspaces": [
+    "pkg/*"
+  ],
   "scripts": {
-    "build": "dapp build",
-    "debug": "dapp debug",
-    "test": "dapp test -m \".t.sol\"",
-    "test:mainnet": "sh -c 'dapp test --rpc-url $(grep ALCHEMY_KEY .env | cut -d '=' -f2 | (printf 'https://eth-mainnet.alchemyapi.io/v2/' && cat)) -m \".tm.sol\" --verbose'",
-    "testcov": "dapp test --coverage",
-    "lint": "npx solhint -f table src/*/*.sol",
-    "fix": "prettier --ignore-path .gitignore --write src/*/*.sol && yarn lint --fix",
-    "size-contracts": "hardhat compile && hardhat size-contracts",
-    "deploy:hardhat-fork:prod": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:prod",
-    "deploy:hardhat-fork:sim": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:simulated",
-    "node:hardhat-fork:prod": "mkdir -p exports && hardhat --network hardhat node --export exports/localhost --tags scenario:prod",
-    "node:hardhat-fork:sim": "mkdir -p exports && hardhat --network hardhat node --export exports/localhost --tags scenario:simulated",
-    "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
-    "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
-    "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod"
+    "build": "yarn workspaces foreach --parallel --verbose run build",
+    "test": "yarn workspaces foreach --parallel --verbose --interlaced run test",
+    "lint": "yarn workspaces foreach --parallel --verbose run lint",
+    "fix": "yarn workspaces foreach --parallel --verbose run fix"
   },
-  "dependencies": {
-    "@openzeppelin/contracts": "4.3.2",
-    "@rari-capital/solmate": "4.0.0",
-    "@uniswap/v3-core": "^1.0.0",
-    "@uniswap/v3-periphery": "^1.2.1",
-    "chai": "^4.3.4",
-    "chai-ethers": "^0.0.1"
-  },
-  "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.6",
-    "@tenderly/hardhat-tenderly": "^1.0.12",
-    "dayjs": "^1.10.7",
-    "dotenv": "^10.0.0",
-    "ethers": "^5.5.1",
-    "hardhat": "^2.6.7",
-    "hardhat-abi-exporter": "^2.3.0",
-    "hardhat-contract-sizer": "^2.1.1",
-    "hardhat-deploy": "^0.9.4",
-    "hardhat-deploy-ethers": "^0.3.0-beta.11",
-    "hardhat-spdx-license-identifier": "^2.0.3",
-    "hardhat-watcher": "^2.1.1",
-    "husky": "^7.0.2",
-    "prettier": "^2.3.2",
-    "prettier-plugin-solidity": "^1.0.0-beta.17",
-    "solhint": "^3.3.6",
-    "solhint-plugin-prettier": "^0.0.5"
-  }
+  "packageManager": "yarn@3.1.0"
 }

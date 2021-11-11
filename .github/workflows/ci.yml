@@ -15,6 +15,7 @@ jobs:
         curl -L https://nixos.org/nix/install | sh
         . "$HOME/.nix-profile/etc/profile.d/nix.sh"
         curl https://dapp.tools/install | sh
+        nix-env -f '<nixpkgs>' -iA just
         yarn install
 
     - name: Run linter
@@ -29,8 +30,10 @@ jobs:
         # Only fuzz deeply if we're pushing to main or this is a PR to main:
         DEEP_FUZZ: ${{ github.ref == 'refs/heads/main' || github.base_ref == 'main' }}
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Run deploy scripts on a local mainnet fork
-      run: yarn deploy:hardhat-fork:prod
+      run: cd pkg/deployments; yarn deploy:hardhat-fork:prod
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}

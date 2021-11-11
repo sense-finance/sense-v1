@@ -1,0 +1,45 @@
+{
+    "name": "@sense-finance/v1-core",
+    "version": "0.2.1",
+    "description": "Sense V1 Core Contracts",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sense-finance/sense-v1.git",
+        "directory": "pkg/core"
+    },
+    "files": [
+        "src/**/*",
+        "!src/tests/*"
+    ],
+    "scripts": {
+        "build": "just build",
+        "debug": "just debug",
+        "test": "just test-local",
+        "test:mainnet": "just test-mainnet",
+        "testcov": "just test-local --coverage",
+        "lint": "solhint -f table src/**/*.sol",
+        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "4.3.2",
+        "@rari-capital/solmate": "5.0.2",
+        "@sense-finance/v1-fuse": "workspace:pkg/fuse",
+        "@sense-finance/v1-utils": "workspace:pkg/utils",
+        "@uniswap/v3-core": "^1.0.0",
+        "@uniswap/v3-periphery": "^1.2.1"
+    },
+    "devDependencies": {
+        "dotenv": "^10.0.0",
+        "husky": "^7.0.2",
+        "prettier": "^2.3.2",
+        "prettier-plugin-solidity": "^1.0.0-beta.17",
+        "solhint": "^3.3.6",
+        "solhint-plugin-prettier": "^0.0.5"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "yarn fix"
+        }
+    }
+}
