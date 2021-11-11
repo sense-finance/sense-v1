@@ -12,3 +12,5 @@ import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+
+import "./Versioning.sol";

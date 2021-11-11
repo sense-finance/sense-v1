@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 const MASTER_ORACLE_IMPL = "0xb3c8ee7309be658c186f986388c2377da436d8fb";
 const FUSE_CERC20_IMPL = "0x67db14e73c2dce786b5bbbfa4d010deab4bbfcf9";
 const RARI_MASTER_ORACLE = "0x1887118E49e0F4A78Bd71B792a49dE03504A764D";
@@ -5,6 +7,18 @@ const RARI_MASTER_ORACLE = "0x1887118E49e0F4A78Bd71B792a49dE03504A764D";
 module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+
+  // IMPORTANT: this must be run *first*, so that it has the same address across deployments
+  // (has the same deployment address and nonce)
+  const pkgjson = JSON.parse(fs.readFileSync(`${__dirname}/../../package.json`, "utf-8"));
+  await deploy("Versioning", {
+    from: deployer,
+    args: [pkgjson.version],
+    log: true,
+  });
+
+  const versioning = await ethers.getContract("Versioning");
+  console.log("Deploying Sense version", await versioning.version());
 
   console.log("Deploy a token hanlder for the Divider will use");
   const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
