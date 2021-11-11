@@ -12,15 +12,18 @@
         "deploy/**/*"
     ],
     "scripts": {
-        "deploy:hardhat-fork:prod": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:prod",
-        "deploy:hardhat-fork:sim": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:simulated",
-        "node:hardhat-fork:prod": "mkdir -p exports && hardhat --network hardhat node --export exports/localhost --tags scenario:prod",
-        "node:hardhat-fork:sim": "mkdir -p exports && hardhat --network hardhat node --export exports/localhost --tags scenario:simulated",
+        "deploy:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat deploy --export exports/localhost --tags scenario:prod",
+        "deploy:hardhat-fork:sim": "yarn prepare && hardhat --network hardhat deploy --export exports/localhost --tags scenario:simulated",
+        "node:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat node --export exports/localhost --tags scenario:prod",
+        "node:hardhat-fork:sim": "yarn prepare && hardhat --network hardhat node --export exports/localhost --tags scenario:simulated",
         "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
         "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
-        "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod"
+        "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod",
+        "prepare": "mkdir -p exports && cp ../../.env ./.env"
     },
     "dependencies": {
+        "@openzeppelin/contracts": "4.3.2",
+        "@rari-capital/solmate": "5.0.2",
         "@sense-finance/v1-core": "workspace:pkg/core",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
     },

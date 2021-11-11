@@ -71,7 +71,7 @@ module.exports = {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       },
-      chainId: process.env.ALCHEMY_KEY || 111,
+      chainId: process.env.CHAIN_ID || 111,
       gas: 12000000,
       saveDeployments: false,
       blockGasLimit: 21000000,
@@ -89,7 +89,7 @@ module.exports = {
     },
   },
   paths: {
-    sources: "../../",
+    sources: "src/",
   },
   solidity: {
     version: "0.8.6",
