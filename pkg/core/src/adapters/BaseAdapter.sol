@@ -54,8 +54,6 @@ abstract contract BaseAdapter is Initializable {
 
     event Initialized();
 
-    /* ========== GETTERS ========== */
-
     function initialize(address _divider, AdapterParams memory _adapterParams) public virtual initializer {
         // sanity check
         require(_adapterParams.minm < _adapterParams.maxm, Errors.InvalidMaturityOffsets);
@@ -141,11 +139,13 @@ abstract contract BaseAdapter is Initializable {
     }
 
     /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts
+    /// @dev MUST have onlyPeriphery modifier
     /// @param amount Underlying amount
     /// @return amount of target returned
     function wrapUnderlying(uint256 amount) external virtual returns (uint256);
 
     /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts
+    /// @dev MUST have onlyPeriphery modifier
     /// @param amount Target amount
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
