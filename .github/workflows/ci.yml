@@ -33,7 +33,7 @@ jobs:
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Run deploy scripts on a local mainnet fork
-      run: yarn deploy:hardhat-fork:prod
+      run: cd pkg/deployments; yarn deploy:hardhat-fork:prod
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
