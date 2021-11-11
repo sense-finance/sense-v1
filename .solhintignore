@@ -2,4 +2,4 @@
 .yarn/
 out/
 node_modules/
-src/external/
+pkg/*/tests/**

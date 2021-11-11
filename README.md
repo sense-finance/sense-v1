@@ -63,7 +63,7 @@ yarn build
 
 ## Sense V1 Architecture
 
-# <img src="21.11.01-v1-contract-diagram.png" alt="sense smart contract user/contract interaction diagram">
+# <img src="contracts-diagram.png" alt="sense smart contract user/contract interaction diagram">
 
 The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and the `Periphery` contract. Each Target can have up to three instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
@@ -180,7 +180,12 @@ These are libraries we need as part of the protocol that we've imported from oth
 | `yarn lint`  | run linter |
 | `yarn fix`   | runs both prettier and solhint and automatically fix errors |
 
-* Testing on mainnet requires to have a ALCHEMY_KEY set: make a copy of `.env.example`, rename it to `.env`  and set `ALCHEMY_KEY` to your alchemy api key.
+
+### Environment
+
+1. Create a local `.env` file in the root directory of this project
+2. Set `ALCHEMY_KEY` to a valid Alchemy API key
+3. Set `MNEMONIC` to a valid seed phrase for deployments
 
 ## Branching (TBD)
 

@@ -1,13 +1,30 @@
-out/
-node_modules/
-.idea/
-yarn-error.log
-.DS_Store
+# environment
 .env
+
+# hevm
 .hevm.libs.*
 hevm.libs.*
+
+# hardhat
 abi/
 artifacts/
 cache/
-deployments/
 exports/
+
+# node
+out/
+node_modules/
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# misc
+.idea/
+yarn-error.log
+.DS_Store

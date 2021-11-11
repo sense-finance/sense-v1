@@ -1,0 +1,29 @@
+{
+    "name": "@sense-finance/v1-utils",
+    "version": "0.2.1",
+    "description": "Sense V1 Contract Utils",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sense-finance/sense-v1.git",
+        "directory": "pkg/utils"
+    },
+    "files": [
+        "src/**/*"
+    ],
+    "dependencies": {
+        "@sense-finance/v1-core": "workspace:pkg/core"
+    },
+    "devDependencies": {
+        "husky": "^7.0.2",
+        "prettier": "^2.3.2",
+        "prettier-plugin-solidity": "^1.0.0-beta.17",
+        "solhint": "^3.3.6",
+        "solhint-plugin-prettier": "^0.0.5"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "yarn fix"
+        }
+    }
+}
