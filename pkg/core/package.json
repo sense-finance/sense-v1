@@ -19,15 +19,7 @@
         "test:mainnet": "just test-mainnet",
         "testcov": "just test-local --coverage",
         "lint": "solhint -f table src/**/*.sol",
-        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
-        "size-contracts": "hardhat compile && hardhat size-contracts",
-        "deploy:hardhat-fork:prod": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:prod",
-        "deploy:hardhat-fork:sim": "mkdir -p exports && hardhat --network hardhat deploy --export exports/localhost --tags scenario:simulated",
-        "node:hardhat-fork:prod": "mkdir -p exports && hardhat --network hardhat node --export exports/localhost --tags scenario:prod",
-        "node:hardhat-fork:sim": "mkdir -p exports && hardhat --network hardhat node --export exports/localhost --tags scenario:simulated",
-        "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
-        "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
-        "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod"
+        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix"
     },
     "dependencies": {
         "@openzeppelin/contracts": "4.3.2",
@@ -38,21 +30,7 @@
         "@uniswap/v3-periphery": "^1.2.1"
     },
     "devDependencies": {
-        "@nomiclabs/hardhat-ethers": "^2.0.2",
-        "@nomiclabs/hardhat-etherscan": "^2.1.6",
-        "@tenderly/hardhat-tenderly": "^1.0.12",
-        "chai": "^4.3.4",
-        "chai-ethers": "^0.0.1",
-        "dayjs": "^1.10.7",
         "dotenv": "^10.0.0",
-        "ethers": "^5.5.1",
-        "hardhat": "^2.6.7",
-        "hardhat-abi-exporter": "^2.3.0",
-        "hardhat-contract-sizer": "^2.1.1",
-        "hardhat-deploy": "^0.9.4",
-        "hardhat-deploy-ethers": "^0.3.0-beta.11",
-        "hardhat-spdx-license-identifier": "^2.0.3",
-        "hardhat-watcher": "^2.1.1",
         "husky": "^7.0.2",
         "prettier": "^2.3.2",
         "prettier-plugin-solidity": "^1.0.0-beta.17",
