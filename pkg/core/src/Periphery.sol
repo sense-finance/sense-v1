@@ -77,7 +77,7 @@ contract Periphery is Trust {
         ERC20(stake).safeApprove(address(divider), type(uint256).max);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
- 
+
         address pool = yieldSpaceFactory.create(address(divider), adapter, uint256(maturity));
         poolIds[adapter][maturity] = BalancerPool(pool).getPoolId();
         poolManager.queueSeries(adapter, maturity, pool);
@@ -107,7 +107,7 @@ contract Periphery is Trust {
         uint256 tBal,
         uint256 minAccepted
     ) external {
-        (address zero, , , , , , , ,) = divider.series(adapter, maturity);
+        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
 
         // transfer target directly to adapter for conversion
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, adapter, tBal);
@@ -133,8 +133,12 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to sell
-    function swapTargetForClaims(address adapter, uint48 maturity, uint256 tBal) external {
-        (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
+    function swapTargetForClaims(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal
+    ) external {
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         ERC20 target = ERC20(Adapter(adapter).getTarget());
 
         // transfer target into this contract
@@ -164,8 +168,13 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param zBal Balance of Zeros to sell
     /// @param minAccepted Min accepted amount of Target
-    function swapZerosForTarget(address adapter, uint48 maturity, uint256 zBal, uint256 minAccepted) external {
-        (address zero, , , , , , , ,) = divider.series(adapter, maturity);
+    function swapZerosForTarget(
+        address adapter,
+        uint48 maturity,
+        uint256 zBal,
+        uint256 minAccepted
+    ) external {
+        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
 
         // transfer zeros into this contract
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal);
@@ -192,8 +201,12 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param cBal Balance of Claims to swap
-    function swapClaimsForTarget(address adapter, uint48 maturity, uint256 cBal) external {
-        (address zero, address claim, , , , , , ,) = divider.series(adapter, maturity);
+    function swapClaimsForTarget(
+        address adapter,
+        uint48 maturity,
+        uint256 cBal
+    ) external {
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         uint256 lscale = divider.lscales(adapter, maturity, address(this));
 
         // transfer claims into this contract

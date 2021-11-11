@@ -51,6 +51,14 @@ Version: 0.8.6+commit.11564f7e.Darwin.appleclang
 hevm 0.48.1
 ```
 
+Install just:
+
+```sh
+brew install just
+# or
+cargo install just
+```
+
 
 ## Project setup
 Clone this repo & install dependencies

@@ -242,12 +242,15 @@ contract TestHelper is DSTest {
         gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }
 
-    function fuzzWithBounds(uint96 number, uint96 lBound, uint96 uBound) public returns (uint96){
-        return lBound + number % (uBound - lBound);
+    function fuzzWithBounds(
+        uint96 number,
+        uint96 lBound,
+        uint96 uBound
+    ) public returns (uint96) {
+        return lBound + (number % (uBound - lBound));
     }
 
-    function fuzzWithBounds(uint96 number, uint96 lBound) public returns (uint96){
-        return lBound + number % (type(uint96).max - lBound);
+    function fuzzWithBounds(uint96 number, uint96 lBound) public returns (uint96) {
+        return lBound + (number % (type(uint96).max - lBound));
     }
-    
 }
