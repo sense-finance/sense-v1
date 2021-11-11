@@ -1,6 +1,5 @@
 const MASTER_ORACLE_IMPL = "0xb3c8ee7309be658c186f986388c2377da436d8fb";
 const FUSE_CERC20_IMPL = "0x67db14e73c2dce786b5bbbfa4d010deab4bbfcf9";
-
 const RARI_MASTER_ORACLE = "0x1887118E49e0F4A78Bd71B792a49dE03504A764D";
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {

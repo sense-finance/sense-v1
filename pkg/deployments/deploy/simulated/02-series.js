@@ -4,7 +4,6 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
   const stake = await ethers.getContract("STAKE");
   const periphery = await ethers.getContract("Periphery");
-  const factory = await ethers.getContract("MockFactory");
   const { deployer } = await getNamedAccounts();
 
   const signer = await ethers.getSigner(deployer);

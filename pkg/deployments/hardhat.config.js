@@ -14,7 +14,7 @@ const utc = require("dayjs/plugin/utc");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 
 // For dev scenarios ------------
-global.TARGETS = ["cDAI", "cETH", "stETH"];
+global.TARGETS = ["cDAI", "cETH", "cUSDT", "f6-DAI", "f8-DAI"];
 global.ADAPTERS = {};
 
 dayjs.extend(weekOfYear);

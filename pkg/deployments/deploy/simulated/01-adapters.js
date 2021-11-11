@@ -5,6 +5,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
+  const signer = await ethers.getSigner(deployer);
+
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
 
@@ -97,6 +99,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
     console.log(`Set ${targetName} issuance cap to max uint so we don't have to worry about it`);
     await divider.setGuard(target.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+
+    console.log(`Can call scale value`);
+    const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
+    const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
+    const scale = await adapter.callStatic.scale();
+    console.log(scale.toString(), "scale");
+    await adapter.setScale(ethers.utils.parseEther("1.1")).then(tx => tx.wait());
   }
 
   const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
