@@ -2,28 +2,24 @@
 pragma solidity ^0.8.6;
 
 import { FixedMath } from "../external/FixedMath.sol";
+import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
 import { Divider, TokenHandler } from "../Divider.sol";
 import { CAdapter, CTokenInterface, PriceOracleInterface } from "../adapters/compound/CAdapter.sol";
-import { CFactory } from "../adapters/compound/CFactory.sol";
-import { BaseFactory } from "../adapters/BaseFactory.sol";
+import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 
+import { Assets } from "./test-helpers/Assets.sol";
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
+import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
 
-contract CAdapterTestHelper is DSTest {
+contract CAdapterTestHelper is LiquidityHelper, DSTest {
     CAdapter adapter;
-    CFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
-
-    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
-    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address public constant ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
 
     uint8 public constant MODE = 0;
     uint256 public constant DELTA = 150;
@@ -33,27 +29,26 @@ contract CAdapterTestHelper is DSTest {
     uint256 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
+        address[] memory assets = new address[](1);
+        assets[0] = Assets.cDAI;
+        addLiquidity(assets);
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
+        divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
-        CAdapter adapterImpl = new CAdapter(); // compound adapter implementation
-        // deploy compound adapter factory
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: DAI,
-            oracle: ORACLE,
+        adapter = new CAdapter(); // compound adapter
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: Assets.cDAI,
             delta: DELTA,
+            oracle: Assets.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
+            stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: 0
         });
-        factory = new CFactory(address(divider), address(adapterImpl), factoryParams, COMP);
-
-        //        factory.addTarget(cDAI, true);
-        divider.setIsTrusted(address(factory), true); // add factory as a ward
-        address f = factory.deployAdapter(cDAI);
-        adapter = CAdapter(f); // deploy a cDAI adapter
+        adapter.initialize(address(divider), adapterParams, Assets.COMP);
     }
 }
 
@@ -61,8 +56,8 @@ contract CAdapters is CAdapterTestHelper {
     using FixedMath for uint256;
 
     function testCAdapterScale() public {
-        CTokenInterface underlying = CTokenInterface(DAI);
-        CTokenInterface ctoken = CTokenInterface(cDAI);
+        CTokenInterface underlying = CTokenInterface(Assets.DAI);
+        CTokenInterface ctoken = CTokenInterface(Assets.cDAI);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent().fdiv(10**(18 - 8 + uDecimals), 10**uDecimals);
@@ -70,18 +65,44 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testGetUnderlyingPrice() public {
-        PriceOracleInterface oracle = PriceOracleInterface(ORACLE);
-        uint256 price = oracle.price(DAI);
+        PriceOracleInterface oracle = PriceOracleInterface(Assets.RARI_ORACLE);
+        uint256 price = oracle.price(Assets.DAI);
         assertEq(adapter.getUnderlyingPrice(), price);
     }
 
     function testUnwrapTarget() public {
-        return;
-        // TODO: to be implemented on tests refactors
+        uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
+        uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
+
+        ERC20(Assets.cDAI).approve(address(adapter), tBalanceBefore);
+        uint256 rate = CTokenInterface(Assets.cDAI).exchangeRateCurrent();
+        uint256 uDecimals = ERC20(Assets.DAI).decimals();
+
+        uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
+        adapter.unwrapTarget(tBalanceBefore);
+
+        uint256 tBalanceAfter = ERC20(Assets.cDAI).balanceOf(address(this));
+        uint256 uBalanceAfter = ERC20(Assets.DAI).balanceOf(address(this));
+
+        assertEq(tBalanceAfter, 0);
+        assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
     }
 
     function testWrapUnderlying() public {
-        return;
-        // TODO: to be implemented on tests refactors
+        uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
+        uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
+
+        ERC20(Assets.DAI).approve(address(adapter), uBalanceBefore);
+        uint256 rate = CTokenInterface(Assets.cDAI).exchangeRateCurrent();
+        uint256 uDecimals = ERC20(Assets.DAI).decimals();
+
+        uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
+        adapter.wrapUnderlying(uBalanceBefore);
+
+        uint256 tBalanceAfter = ERC20(Assets.cDAI).balanceOf(address(this));
+        uint256 uBalanceAfter = ERC20(Assets.DAI).balanceOf(address(this));
+
+        assertEq(uBalanceAfter, 0);
+        assertEq(tBalanceBefore + wrapped, tBalanceAfter);
     }
 }

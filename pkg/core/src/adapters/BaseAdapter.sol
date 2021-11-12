@@ -54,8 +54,6 @@ abstract contract BaseAdapter is Initializable {
 
     event Initialized();
 
-    /* ========== GETTERS ========== */
-
     function initialize(address _divider, AdapterParams memory _adapterParams) public virtual initializer {
         // sanity check
         require(_adapterParams.minm < _adapterParams.maxm, Errors.InvalidMaturityOffsets);

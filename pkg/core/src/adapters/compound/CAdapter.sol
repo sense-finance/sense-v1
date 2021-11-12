@@ -55,6 +55,17 @@ contract CAdapter is CropAdapter {
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 
+    function initialize(
+        address _divider,
+        AdapterParams memory _adapterParams,
+        address _reward
+    ) public virtual override initializer {
+        // approve underlying contract to pull target (used on wrapUnderlying())
+        ERC20 u = ERC20(CTokenInterface(_adapterParams.target).underlying());
+        u.safeApprove(_adapterParams.target, type(uint256).max);
+        super.initialize(_divider, _adapterParams);
+    }
+
     function _scale() internal override returns (uint256) {
         CTokenInterface t = CTokenInterface(adapterParams.target);
         uint256 decimals = CTokenInterface(t.underlying()).decimals();
@@ -74,22 +85,33 @@ contract CAdapter is CropAdapter {
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256) {
+        ERC20 u = ERC20(CTokenInterface(adapterParams.target).underlying());
         ERC20 target = ERC20(adapterParams.target);
+        u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+
+        // mint target
         uint256 tBalBefore = target.balanceOf(address(this));
-        require(CTokenInterface(address(target)).mint(uBal) == 0, "Mint failed");
+        require(CTokenInterface(adapterParams.target).mint(uBal) == 0, "Mint failed");
         uint256 tBalAfter = target.balanceOf(address(this));
         uint256 tBal = tBalAfter - tBalBefore;
-        target.safeTransfer(msg.sender, tBal);
+
+        // transfer target to sender
+        ERC20(target).safeTransfer(msg.sender, tBal);
         return tBal;
     }
 
     function unwrapTarget(uint256 tBal) external override returns (uint256) {
-        address target = adapterParams.target;
-        ERC20 u = ERC20(CTokenInterface(target).underlying());
+        ERC20 u = ERC20(CTokenInterface(adapterParams.target).underlying());
+        ERC20 target = ERC20(adapterParams.target);
+        target.safeTransferFrom(msg.sender, address(this), tBal); // pull target
+
+        // redeem target for underlying
         uint256 uBalBefore = u.balanceOf(address(this));
-        require(CTokenInterface(target).redeem(tBal) == 0, "Redeem failed");
+        require(CTokenInterface(adapterParams.target).redeem(tBal) == 0, "Redeem failed");
         uint256 uBalAfter = u.balanceOf(address(this));
         uint256 uBal = uBalAfter - uBalBefore;
+
+        // transfer underlying to sender
         u.safeTransfer(msg.sender, uBal);
         return uBal;
     }

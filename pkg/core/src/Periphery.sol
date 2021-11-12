@@ -109,8 +109,11 @@ contract Periphery is Trust {
     ) external {
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
 
-        // transfer target directly to adapter for conversion
-        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, adapter, tBal);
+        // transfer target to periphery
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
+
+        // approve adapter to pull tBal
+        ERC20(Adapter(adapter).getTarget()).safeApprove(adapter, tBal);
 
         // convert target to underlying
         uint256 uBal = Adapter(adapter).unwrapTarget(tBal);
@@ -189,8 +192,9 @@ contract Periphery is Trust {
             minAccepted
         );
 
-        // wrap underlying into target
-        ERC20(Adapter(adapter).underlying()).safeTransfer(adapter, uBal);
+        // approve adapter to pull zBal
+        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
+
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
 
         // transfer target to msg.sender
@@ -329,7 +333,7 @@ contract Periphery is Trust {
             ); // TODO: minAccepted
 
             // (4) Convert underlying into target
-            ERC20(Adapter(adapter).underlying()).safeTransfer(adapter, uBal);
+            ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
             Adapter(adapter).wrapUnderlying(uBal);
             return (keccak256("ERC3156FlashBorrower.onFlashLoan"), issued);
         } else if (action == Action.CLAIM_TO_TARGET) {

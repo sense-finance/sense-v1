@@ -6,6 +6,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 // Internal references
 import { BaseAdapter } from "../BaseAdapter.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 interface WstETHInterface {
     /// @notice https://github.com/lidofinance/lido-dao/blob/master/contracts/0.6.12/WstETH.sol
@@ -17,7 +18,7 @@ interface WstETHInterface {
     function wrap(uint256 _stETHAmount) external returns (uint256);
 }
 
-interface stETHInterface {
+interface StETHInterface {
     /**
      * @notice Send funds to the pool with optional _referral parameter
      * @dev This function is alternative way to submit funds. Supports optional referral address.
@@ -47,23 +48,24 @@ interface IWETH {
     function withdraw(uint256 wad) external;
 }
 
-interface PriceOracleInterface {
-    /// @notice Get the price of an underlying asset.
-    /// @param underlying The underlying asset to get the price of.
-    /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
-    /// Zero means the price is unavailable.
-    function price(address underlying) external view virtual returns (uint256);
-}
-
 /// @notice Adapter contract for wstETH
 contract WstETHAdapter is BaseAdapter {
     using FixedMath for uint256;
+    using SafeERC20 for ERC20;
 
     address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address public constant STETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
+
+    function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
+        // approve wstETH contract to pull stETH (used on wrapUnderlying())
+        ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
+        // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
+        ERC20(STETH).safeApprove(CURVESINGLESWAP, type(uint256).max);
+        super.initialize(_divider, _adapterParams);
+    }
 
     /// @return scale in wei (18 decimals)
     function _scale() internal virtual override returns (uint256) {
@@ -76,22 +78,32 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {
-        return PriceOracleInterface(adapterParams.oracle).price(WETH);
+        return 1e18;
     }
 
     function unwrapTarget(uint256 amount) external override returns (uint256) {
-        uint256 stETH = WstETHInterface(WSTETH).unwrap(amount);
+        ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
+        uint256 stETH = WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
+
+        // exchange stETH to ETH exchange on Curve
         uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
         uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy);
+
+        // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
         require(success, "Transfer failed.");
+
+        ERC20(WETH).safeTransfer(msg.sender, eth); // transfer WETH back to sender (periphery)
         return eth;
     }
 
     function wrapUnderlying(uint256 amount) external override returns (uint256) {
-        IWETH(WETH).withdraw(amount);
-        (bool success, ) = STETH.call{ value: amount }("");
-        require(success, "Transfer failed.");
-        return WstETHInterface(WSTETH).wrap(amount);
+        ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
+        IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
+        uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
+        uint256 wstETH = WstETHInterface(WSTETH).wrap(stETH); // wrap stETH into wstETH
+        ERC20(WSTETH).safeTransfer(msg.sender, wstETH); // transfer wstETH to msg.sender
     }
+
+    fallback() external payable {}
 }
