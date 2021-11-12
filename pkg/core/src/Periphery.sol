@@ -348,7 +348,7 @@ contract Periphery is Trust {
 
             // (5) Combine zeros and claim
             uint256 tBal = divider.combine(adapter, maturity, zBal);
-            return (keccak256("ERC3156FlashBorrower.onFlashLoan"), amount - tBal);
+            return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
         }
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), 0);
     }

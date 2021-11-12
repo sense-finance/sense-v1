@@ -24,10 +24,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       const mockAdapterImpl = await ethers.getContract("MockAdapter");
       const adapter = new ethers.Contract(adapterAddress, mockAdapterImpl.interface, signer);
 
-      const { zero: zeroAddress, claim: claimAddress } = await periphery.callStatic.sponsorSeries(
-        adapter.address,
-        seriesMaturity,
-      );
+      const { zero: zeroAddress } = await periphery.callStatic.sponsorSeries(adapter.address, seriesMaturity);
       console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       await periphery.sponsorSeries(adapter.address, seriesMaturity).then(tx => tx.wait());
 
@@ -36,7 +33,6 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
 
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const zero = new ethers.Contract(zeroAddress, tokenAbi, signer);
-      const claim = new ethers.Contract(claimAddress, tokenAbi, signer);
 
       const zeroBalance = await zero.balanceOf(deployer);
 
@@ -48,29 +44,11 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       console.log("Minting Underyling for the Balancer Vault");
       await underlying.mint(mockBalancerVault.address, zeroBalance).then(tx => tx.wait());
 
-      console.log(`--- Sanity check swap ---`);
+      console.log(`Sanity check swap`);
       await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
-      console.log("swapping target for zeros");
       await periphery
         .swapTargetForZeros(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
-        .then(tx => tx.wait());
-
-      console.log("swapping target for claims");
-      await periphery
-        .swapTargetForClaims(adapter.address, seriesMaturity, ethers.utils.parseEther("1"))
-        .then(tx => tx.wait());
-
-      console.log("swapping zeros for target");
-      await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await periphery
-        .swapZerosForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"), 0)
-        .then(tx => tx.wait());
-
-      console.log("swapping claims for target");
-      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await periphery
-        .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
         .then(tx => tx.wait());
     }
   }
