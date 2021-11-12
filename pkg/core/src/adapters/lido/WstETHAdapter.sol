@@ -81,7 +81,7 @@ contract WstETHAdapter is BaseAdapter {
         return 1e18;
     }
 
-    function unwrapTarget(uint256 amount) external override onlyPeriphery returns (uint256) {
+    function unwrapTarget(uint256 amount) external override returns (uint256) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
         uint256 stETH = WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
@@ -97,7 +97,7 @@ contract WstETHAdapter is BaseAdapter {
         return eth;
     }
 
-    function wrapUnderlying(uint256 amount) external override onlyPeriphery returns (uint256) {
+    function wrapUnderlying(uint256 amount) external override returns (uint256) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
         uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)

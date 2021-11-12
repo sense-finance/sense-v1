@@ -84,7 +84,7 @@ contract CAdapter is CropAdapter {
         return PriceOracleInterface(adapterParams.oracle).price(CTokenInterface(adapterParams.target).underlying());
     }
 
-    function wrapUnderlying(uint256 uBal) external override onlyPeriphery returns (uint256) {
+    function wrapUnderlying(uint256 uBal) external override returns (uint256) {
         ERC20 u = ERC20(CTokenInterface(adapterParams.target).underlying());
         ERC20 target = ERC20(adapterParams.target);
         u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
@@ -100,7 +100,7 @@ contract CAdapter is CropAdapter {
         return tBal;
     }
 
-    function unwrapTarget(uint256 tBal) external override onlyPeriphery returns (uint256) {
+    function unwrapTarget(uint256 tBal) external override returns (uint256) {
         ERC20 u = ERC20(CTokenInterface(adapterParams.target).underlying());
         ERC20 target = ERC20(adapterParams.target);
         target.safeTransferFrom(msg.sender, address(this), tBal); // pull target
