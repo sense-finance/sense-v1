@@ -30,34 +30,46 @@ set export
 
 ## ---- Recipes ----
 
-## dependencies
-install: npm svm solc
+_default:
+  just --list
+
+
+# install dependencies
+install: npm dapp
+
+# install npm dependencies
 npm:
 	yarn install
 
-# install solc version manager
-svm:
-	cargo install svm-rs
-solc:
-	svm use {{ DAPP_SOLC_VERSION }}
+# install dapptools
+dapp:
+	curl -L https://nixos.org/nix/install | sh
+	curl https://dapp.tools/install | sh
 
-## build & debug
-build: && timer
+# build using dapp
+build: && _timer
 	cd {{ invocation_directory() }}; dapp build
-debug: && timer
+
+# debug and open TTY debugger using dapp
+debug:
 	cd {{ invocation_directory() }}; dapp debug
+
+
 # turbo-build: && timer
 # 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp \
 # 		build --lib-paths {{ lib-paths-from-pkg-deps }}
 
 # default test scripts
 test: test-local
+
 # turbo-test: turbo-test-local
 
-# run dapp tests
-test-local *commands="": && timer
+# run local dapp tests (all files with the extension .t.sol)
+test-local *commands="": && _timer
 	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ commands }}
-test-mainnet *commands="": && timer
+
+# run mainnet fork dapp tests (all files with the extension .tm.sol)
+test-mainnet *commands="": && _timer
 	cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ commands }}
 
 # run turbo dapp tests
@@ -69,30 +81,42 @@ test-mainnet *commands="": && timer
 # 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
 # 		--fork-url {{ MAINNET_RPC }} {{ commands }}
 
+
+# default gas snapshot script
+gas-snapshot: gas-snapshot-local
+
+# get gas snapshot from local tests and save it to a file
+gas-snapshot-local:
+	cd {{ invocation_directory() }}; \
+	dapp test --fuzz-runs 0 | grep 'gas:' | cut -d " " -f 2-4 >> \
+	{{ justfile_directory() }}/.gas-snapshot-$( \
+		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
+	)
+
+# get gas snapshot from mainnet tests and save it to a file
+gas-snapshot-mainnet:
+	cd {{ invocation_directory() }}; \
+	dapp test --rpc-url {{ MAINNET_RPC }} --fuzz-runs 0 | grep 'gas:' | cut -d " " -f 2-4 >> \
+	{{ justfile_directory() }}/.gas-snapshot-$( \
+		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
+	)
+
+
 ## ---- Appendix ----
 
 start_time := `date +%s`
-timer:
+_timer:
 	@echo "Task executed in $(($(date +%s) - {{ start_time }})) seconds"
 
+
 remappings-from-pkg-deps := ```
-	for dir in ./pkg/*; do
-		cat "$dir"/package.json  | 
-		jq 'select(.dependencies != null) | .dependencies | to_entries | map([.key + "/", "../../node_modules/" + .key + "/"] | join("="))' | \
-		tr -d '[],"' | xargs | tr ' ' '\n' >> tmp
-	done
-	remappings=$(cat tmp | sort | uniq)
-	rm tmp
-	echo "$remappings"
+	cat pkg/*/package.json  |
+	jq 'select(.dependencies != null) | .dependencies | to_entries | map([.key + "/", "../../node_modules/" + .key + "/"] | join("="))' |
+	tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq
 ```
 
 lib-paths-from-pkg-deps := ```
-	for dir in ./pkg/*; do
-		cat "$dir"/package.json | \
-		jq 'select(.dependencies != null) | .dependencies | to_entries | map("../../node_modules/" + .key + "/")' | \
-		tr -d '[],"' | xargs >> tmp
-	done
-	lib_paths=$(cat tmp | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
-	rm tmp
-	echo "$lib_paths"
+	cat pkg/*/package.json |
+	jq 'select(.dependencies != null) | .dependencies | to_entries | map("../../node_modules/" + .key + "/")' |
+	tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | tr '\n' ' '
   ```
