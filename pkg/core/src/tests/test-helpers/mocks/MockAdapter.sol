@@ -41,7 +41,7 @@ contract MockAdapter is CropAdapter {
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
         uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = uBal.fdiv(_lscale.value, tBase);
+        uint256 mintAmount = uBal.fdivUp(_lscale.value, tBase);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
