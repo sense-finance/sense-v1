@@ -40,7 +40,7 @@ contract MockAdapter is CropAdapter {
         MockTarget target = MockTarget(adapterParams.target);
         MockToken(target.underlying()).burn(address(this), uBal); // this would be an approve call to the protocol to withdraw the underlying
         uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = uBal.fdiv(_lscale.value, tBase);
+        uint256 mintAmount = uBal.fdivUp(_lscale.value, tBase);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }

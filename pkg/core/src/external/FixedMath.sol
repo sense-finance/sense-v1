@@ -39,4 +39,16 @@ library FixedMath {
     ) internal pure returns (uint256 z) {
         z = (x * baseUnit) / y;
     }
+
+    function fdivUp(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256 z) {
+        z = x * baseUnit + y; // 101 (1.01) / 1000 (10) -> (101 * 100 + 1000 - 1) / 1000 -> 11 (0.11 = 0.101 rounded up).
+        unchecked {
+            z -= 1;
+        } // Can do unchecked subtraction since division in next line will catch y = 0 case anyway
+        z /= y;
+    }
 }
