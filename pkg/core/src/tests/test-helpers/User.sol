@@ -150,7 +150,7 @@ contract User {
         uint48 maturity,
         uint256 balance
     ) public {
-        return divider.redeemZero(adapter, maturity, balance);
+        divider.redeemZero(adapter, maturity, balance);
     }
 
     function doCollect(address claim) public returns (uint256 collected) {
@@ -203,9 +203,27 @@ contract User {
     function doSwapClaimsForTarget(
         address adapter,
         uint48 maturity,
-        uint256 balance,
-        uint256 minAccepted
+        uint256 balance
     ) public {
         periphery.swapClaimsForTarget(adapter, maturity, balance);
+    }
+
+    function doAddLiquidity(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint8 mode
+    ) public {
+        periphery.addLiquidity(adapter, maturity, tBal, mode);
+    }
+
+    function doRemoveLiquidity(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint256[] memory minAmountsOut,
+        uint256 minAmount
+    ) public {
+        periphery.removeLiquidity(adapter, maturity, tBal, minAmountsOut, minAmount);
     }
 }
