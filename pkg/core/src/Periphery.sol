@@ -211,7 +211,7 @@ contract Periphery is Trust {
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         uint256 lscale = divider.lscales(adapter, maturity, sender);
 
-        // transfer claims into this contract if ne
+        // transfer claims into this contract if needed
         if (sender != address(this)) ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
 
         // (1) Calculate target needed to borrow in order to be able to buy as many Zeros as Claims passed
