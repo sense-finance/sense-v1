@@ -337,7 +337,6 @@ contract Periphery is Trust {
         }
 
         // (3) Wrap Underlying into Target
-        ERC20(underlying).safeTransfer(adapter, uBal);
         tBal += Adapter(adapter).wrapUnderlying(uBal);
         return tBal;
     }
