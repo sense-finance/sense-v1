@@ -85,7 +85,7 @@ abstract contract BaseAdapter is Initializable {
         require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
         (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(data, msg.sender, adapter, maturity, amount);
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
-        require(target.transferFrom(address(receiver), address(this), amount - 1), Errors.FlashRepayFailed);
+        require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);
     }
 

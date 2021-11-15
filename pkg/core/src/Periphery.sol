@@ -180,9 +180,8 @@ contract Periphery is Trust {
         // swap zeros for underlying
         uint256 uBal = _swap(zero, Adapter(adapter).underlying(), zBal, poolIds[adapter][maturity], minAccepted);
 
-        // approve adapter to pull zBal
+        // approve adapter to pull underlying
         ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
-
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
 
         // transfer target to msg.sender
@@ -337,6 +336,7 @@ contract Periphery is Trust {
         }
 
         // (3) Wrap Underlying into Target
+        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
         tBal += Adapter(adapter).wrapUnderlying(uBal);
         return tBal;
     }
@@ -465,7 +465,7 @@ contract Periphery is Trust {
 
             // (5) Combine zeros and claim
             uint256 tBal = divider.combine(adapter, maturity, zBal);
-            return (keccak256("ERC3156FlashBorrower.onFlashLoan"), amount - tBal);
+            return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
         }
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), 0);
     }

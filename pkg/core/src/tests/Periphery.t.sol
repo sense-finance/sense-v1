@@ -75,7 +75,7 @@ contract PeripheryTest is TestHelper {
         uint256 uBal = tBal.fmul(lvalue, 10**target.decimals());
 
         // calculate underlying swapped to zeros
-        uint256 zBal = uBal.fmul(balancerVault.EXCHANGE_RATE(), 10**target.decimals());
+        uint256 zBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), 10**target.decimals());
 
         alice.doSwapTargetForZeros(address(adapter), maturity, tBal, 0);
 
@@ -91,7 +91,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBase = 10**target.decimals();
 
         // calculate issuance fee in corresponding base
-        uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, tBase);
+        uint256 fee = adapter.getIssuanceFee() / convertBase(target.decimals());
 
         // add liquidity to mockBalancerVault
         target.mint(address(adapter), 100000e18);
@@ -166,11 +166,11 @@ contract PeripheryTest is TestHelper {
         uint256 unwrappedUnderlying = targetToBorrow.fmul(lscale, tBase);
 
         // swap underlying for Zeros on Yieldspace pool
-        uint256 zSwapped = unwrappedUnderlying.fmul(balancerVault.EXCHANGE_RATE(), tBase);
+        uint256 zSwapped = unwrappedUnderlying.fdiv(balancerVault.EXCHANGE_RATE(), tBase);
 
         // combine zeros and claim
         uint256 tCombined = zSwapped.fdiv(lscale, 10**ERC20(claim).decimals());
-        uint256 remainingClaimsInTarget = targetToBorrow - tCombined;
+        uint256 remainingClaimsInTarget = tCombined - targetToBorrow;
 
         bob.doApprove(claim, address(periphery), cBalBefore);
         bob.doSwapClaimsForTarget(address(adapter), maturity, cBalBefore);
@@ -252,11 +252,11 @@ contract PeripheryTest is TestHelper {
             uint256 unwrappedUnderlying = targetToBorrow.fmul(lscale, tBase);
 
             // swap underlying for Zeros on Yieldspace pool
-            uint256 zSwapped = unwrappedUnderlying.fmul(balancerVault.EXCHANGE_RATE(), tBase);
+            uint256 zSwapped = unwrappedUnderlying.fdiv(balancerVault.EXCHANGE_RATE(), tBase);
 
             // combine zeros and claim
             uint256 tCombined = zSwapped.fdiv(lscale, 10**ERC20(claim).decimals());
-            remainingClaimsInTarget = targetToBorrow - tCombined;
+            remainingClaimsInTarget = tCombined - targetToBorrow;
         }
 
         bob.doAddLiquidity(address(adapter), maturity, tBal, 0);

@@ -61,7 +61,12 @@ contract MockBalancerVault {
         uint256 deadline
     ) external payable returns (uint256) {
         Token(address(singleSwap.assetIn)).transferFrom(msg.sender, address(this), singleSwap.amount);
-        uint256 amountOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 10**Token(address(singleSwap.assetIn)).decimals());
+        uint256 amountOut;
+        if (address(singleSwap.assetIn) == yieldSpacePool.zero()) {
+            amountOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 10**Token(address(singleSwap.assetIn)).decimals());
+        } else {
+            amountOut = (singleSwap.amount).fdiv(EXCHANGE_RATE, 10**Token(address(singleSwap.assetIn)).decimals());
+        }
         Token(address(singleSwap.assetOut)).transfer(msg.sender, amountOut);
         return amountOut;
     }
