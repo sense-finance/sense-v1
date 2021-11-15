@@ -262,21 +262,24 @@ contract Periphery is Trust {
         // (0) Pull target from sender
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
-        // (1) Convert half target into underlying (unwrap via protocol)
-        uint256 tBase = 10**target.decimals();
-        uint256 half = tBal.fdiv(2 * tBase, tBase);
-        uint256 uBal = Adapter(adapter).unwrapTarget(half);
+        // (1) Based on zeros:underlying ratio from current pool reserves and tBal passed
+        // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
+        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+        uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
 
-        // (2) With other half, issue Zeros & Claim
-        uint256 issued = divider.issue(adapter, maturity, half);
+        // (2) Issue Zeros & Claim
+        uint256 issued = divider.issue(adapter, maturity, zBalInTarget);
 
-        // (3) Add liquidity to Space & send the LP Shares
+        // (3) Convert remaining target into underlying (unwrap via protocol)
+        uint256 uBal = Adapter(adapter).unwrapTarget(tBal > zBalInTarget ? tBal - zBalInTarget : zBalInTarget - tBal);
+
+        // (4) Add liquidity to Space & send the LP Shares to recipient
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = uBal;
         amounts[1] = issued;
 
         // address[] tokens = [target.underlying(), zero];
-        _addLiquidityToSpace(poolId, amounts);
+        _addLiquidityToSpace(poolId, tokens, amounts);
 
         if (mode == 0) {
             // (4) Sell claims
@@ -470,12 +473,15 @@ contract Periphery is Trust {
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), 0);
     }
 
-    function _addLiquidityToSpace(bytes32 poolId, uint256[] memory amounts) internal returns (uint256, uint256) {
-        (ERC20[] memory tokens, , ) = balancerVault.getPoolTokens(poolId);
+    function _addLiquidityToSpace(
+        bytes32 poolId,
+        ERC20[] memory tokens,
+        uint256[] memory amounts
+    ) internal {
+        // (ERC20[] memory tokens, , ) = balancerVault.getPoolTokens(poolId);
         IAsset[] memory assets = _convertERC20sToAssets(tokens);
         for (uint8 i; i < tokens.length; i++) {
             // tokens and amounts must be in same order
-            // tokens[i].safeTransferFrom(msg.sender, address(this), amounts[i]);
             tokens[i].safeApprove(address(balancerVault), amounts[i]);
         }
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({

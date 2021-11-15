@@ -111,6 +111,10 @@ contract MockBalancerVault {
         tokens = new ERC20[](2);
         tokens[0] = ERC20(yieldSpacePool.underlying());
         tokens[1] = ERC20(yieldSpacePool.zero());
+
+        balances = new uint256[](2);
+        balances[0] = ERC20(yieldSpacePool.underlying()).balanceOf(address(this));
+        balances[1] = ERC20(yieldSpacePool.zero()).balanceOf(address(this));
     }
 
     function getPool(bytes32 poolId) external view returns (address, BalancerVault.PoolSpecialization) {
