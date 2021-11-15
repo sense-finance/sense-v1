@@ -256,7 +256,7 @@ contract Periphery is Trust {
         uint8 mode
     ) internal {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
-        (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         bytes32 poolId = poolIds[adapter][maturity];
 
         // (0) Pull target from sender
@@ -278,16 +278,25 @@ contract Periphery is Trust {
         amounts[0] = uBal;
         amounts[1] = issued;
 
-        // address[] tokens = [target.underlying(), zero];
+        uint256 uBalBefore = ERC20(Adapter(adapter).underlying()).balanceOf(address(this));
+        uint256 zBalBefore = ERC20(zero).balanceOf(address(this));
         _addLiquidityToSpace(poolId, tokens, amounts);
+        uint256 uBalAfter = ERC20(Adapter(adapter).underlying()).balanceOf(address(this));
+        uint256 zBalAfter = ERC20(zero).balanceOf(address(this));
+        uint256 uDiff = uBalBefore - uBalAfter;
+        uint256 zDiff = zBalBefore - zBalAfter;
+
+        // (5) Send any leftover underlying or zeros back to the user
+        if (uDiff != uBal) ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal - uDiff);
+        if (zDiff != issued) ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, issued - zDiff);
 
         if (mode == 0) {
-            // (4) Sell claims
+            // (6) Sell claims
             uint256 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-            // (5) Send remaining Target back to the User
+            // (7) Send remaining Target back to the User
             target.safeTransfer(msg.sender, tAmount);
         } else {
-            // (4) Send Claims back to the User
+            // (5) Send Claims back to the User
             ERC20(claim).safeTransfer(msg.sender, issued);
         }
     }
