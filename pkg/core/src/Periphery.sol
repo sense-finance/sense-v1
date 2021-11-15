@@ -329,7 +329,7 @@ contract Periphery is Trust {
         uint256 tBal;
         if (block.timestamp >= maturity) {
             // (2) Redeem Zeros for Target
-            tBal += divider.redeemZero(adapter, maturity, zBal);
+            tBal += divider.redeemZero(adapter, maturity, zBal, false);
         } else {
             // (2) Sell Zeros for Underlying
             uBal += _swap(zero, underlying, zBal, poolId, minAccepted);

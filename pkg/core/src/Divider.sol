@@ -243,10 +243,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Amount of Zeros to burn, which should be equivelent to the amount of Underlying owed to the caller
+    /// @param notify Whether to call notify() or not
     function redeemZero(
         address adapter,
         uint48 maturity,
-        uint256 uBal
+        uint256 uBal,
+        bool notify
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
@@ -285,7 +287,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         target.safeTransferFrom(adapter, msg.sender, tBal);
-        Adapter(adapter).notify(msg.sender, tBal, false);
+        if (notify) Adapter(adapter).notify(msg.sender, tBal, false);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 

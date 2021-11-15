@@ -373,20 +373,22 @@ contract PeripheryTest is TestHelper {
         // settle series
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
+        (, lscale) = adapter._lscale();
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
 
-        // calculate liquidity added and convert to target (which would be the liquidity withdrawn)
+        // convert liquidity added to target (which would be the liquidity withdrawn)
         {
             (, , , , , , uint256 mscale, , uint256 tilt) = divider.series(address(adapter), maturity);
             // minAmountsOut to target
-            uint256 uBal = minAmountsOut[1].fmul(balancerVault.EXCHANGE_RATE(), 10**target.decimals()); // redeem zeros
-            tBal = (minAmountsOut[1] * (FixedMath.WAD - tilt)) / mscale;
+            tBal = (minAmountsOut[1] * (FixedMath.WAD - tilt)) / mscale; // redeem zeros (target)
             tBal += minAmountsOut[0].fdiv(lscale, tBase); // zeros redeemed (in target) + underlying to target
         }
 
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+
+        (, , , , , , uint256 mscale, uint256 maxscale, uint256 tilt) = divider.series(address(adapter), maturity);
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
         bob.doRemoveLiquidity(address(adapter), maturity, lpBal, minAmountsOut, 0);

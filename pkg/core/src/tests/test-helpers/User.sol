@@ -148,9 +148,10 @@ contract User {
     function doRedeemZero(
         address adapter,
         uint48 maturity,
-        uint256 balance
+        uint256 balance,
+        bool notify
     ) public {
-        divider.redeemZero(adapter, maturity, balance);
+        divider.redeemZero(adapter, maturity, balance, notify);
     }
 
     function doCollect(address claim) public returns (uint256 collected) {
