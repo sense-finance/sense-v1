@@ -257,14 +257,13 @@ contract Periphery is Trust {
     ) internal {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        bytes32 poolId = poolIds[adapter][maturity];
 
         // (0) Pull target from sender
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // (1) Based on zeros:underlying ratio from current pool reserves and tBal passed
         // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
-        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolIds[adapter][maturity]);
         uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
 
         // (2) Issue Zeros & Claim
@@ -278,22 +277,20 @@ contract Periphery is Trust {
         amounts[0] = uBal;
         amounts[1] = issued;
 
-        uint256 uBalBefore = ERC20(Adapter(adapter).underlying()).balanceOf(address(this));
-        uint256 zBalBefore = ERC20(zero).balanceOf(address(this));
-        _addLiquidityToSpace(poolId, tokens, amounts);
-        uint256 uBalAfter = ERC20(Adapter(adapter).underlying()).balanceOf(address(this));
-        uint256 zBalAfter = ERC20(zero).balanceOf(address(this));
-        uint256 uDiff = uBalBefore - uBalAfter;
-        uint256 zDiff = zBalBefore - zBalAfter;
-
-        // (5) Send any leftover underlying or zeros back to the user
-        if (uDiff != uBal) ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal - uDiff);
-        if (zDiff != issued) ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, issued - zDiff);
+        {
+            _addLiquidityToSpace(poolIds[adapter][maturity], tokens, amounts);
+            // Send any leftover underlying or zeros back to the user
+            ERC20 underlying = ERC20(Adapter(adapter).underlying());
+            uint256 uBal = underlying.balanceOf(address(this));
+            uint256 zBal = ERC20(zero).balanceOf(address(this));
+            if (uBal > 0) underlying.safeTransfer(msg.sender, uBal);
+            if (zBal > 0) ERC20(zero).safeTransfer(msg.sender, zBal);
+        }
 
         if (mode == 0) {
-            // (6) Sell claims
+            // (5) Sell claims
             uint256 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-            // (7) Send remaining Target back to the User
+            // (6) Send remaining Target back to the User
             target.safeTransfer(msg.sender, tAmount);
         } else {
             // (5) Send Claims back to the User
