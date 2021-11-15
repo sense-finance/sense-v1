@@ -107,23 +107,24 @@ contract Periphery is Trust {
         uint256 tBal,
         uint256 minAccepted
     ) external returns (uint256) {
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal); // pull target
+        ERC20(Adapter(adapter).getTarget()).safeApprove(adapter, tBal); // approve adapter to pull tBal
+        uint256 uBal = Adapter(adapter).unwrapTarget(tBal); // convert target to underlying
+        return _swapUnderlyingForZeros(adapter, maturity, uBal, minAccepted);
+    }
 
-        // transfer target to periphery
-        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
-
-        // approve adapter to pull tBal
-        ERC20(Adapter(adapter).getTarget()).safeApprove(adapter, tBal);
-
-        // convert target to underlying
-        uint256 uBal = Adapter(adapter).unwrapTarget(tBal);
-
-        // swap underlying for zeros
-        uint256 zBal = _swap(Adapter(adapter).underlying(), zero, uBal, poolIds[adapter][maturity], minAccepted); // TODO: swap on yieldspace not uniswap
-
-        // transfer bought zeros to user
-        ERC20(zero).safeTransfer(msg.sender, zBal);
-        return zBal;
+    /// @notice Swap Underlying to Zeros of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param uBal Balance of Underlying to sell
+    function swapUnderlyingForZeros(
+        address adapter,
+        uint48 maturity,
+        uint256 uBal,
+        uint256 minAccepted
+    ) external returns (uint256) {
+        ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        return _swapUnderlyingForZeros(adapter, maturity, uBal, minAccepted);
     }
 
     /// @notice Swap Target to Claims of a particular series
@@ -135,30 +136,39 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 tBal
     ) external returns (uint256) {
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
+        return _swapTargetForClaims(adapter, maturity, tBal);
+    }
 
-        // transfer target into this contract
-        target.safeTransferFrom(msg.sender, address(this), tBal);
+    /// @notice Swap Underlying to Claims of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param uBal Balance of Underlying to sell
+    function swapUnderlyingForClaims(
+        address adapter,
+        uint48 maturity,
+        uint256 uBal
+    ) external returns (uint256) {
+        ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), uBal); // pull target
+        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal); // approve adapter to pull underlying
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
+        return _swapTargetForClaims(adapter, maturity, tBal);
+    }
 
-        // (1) Calculate target needed to borrow in order to issue and obtain the desired amount of claims
-        // We get Zero/underlying price and we infer the Claim price (1 - zPrice).
-        // We can then calculate how many claims we can get with the underlying uBal (uBal / Claim price) and
-        // finally, we get the target we need to borrow by doing a unit conversion from Claim to Target using the last
-        // scale value.
-        uint256 targetToBorrow;
-        {
-            uint256 tDecimals = target.decimals();
-            uint256 tBase = 10**target.decimals();
-            uint256 fee = (Adapter(adapter).getIssuanceFee() / convertBase(tDecimals));
-            uint256 cPrice = tBase - price(zero, Adapter(adapter).underlying());
-            targetToBorrow = tBal.fdiv((tBase - fee).fmul(cPrice, tBase) + fee, tBase);
-        }
-        uint256 cBal = flashBorrow(abi.encode(Action.ZERO_TO_CLAIM), adapter, maturity, targetToBorrow);
-
-        // transfer claims from issuance + issued claims from borrowed target (step 4) to msg.sender (if applicable)
-        ERC20(claim).safeTransfer(msg.sender, cBal);
-        return cBal;
+    /// @notice Swap Zeros for Underlying of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param zBal Balance of Zeros to sell
+    /// @param minAccepted Min accepted amount of Target
+    function swapZerosForUnderlying(
+        address adapter,
+        uint48 maturity,
+        uint256 zBal,
+        uint256 minAccepted
+    ) external returns (uint256) {
+        uint256 uBal = _swapZerosForUnderlying(adapter, maturity, zBal, minAccepted); // swap zeros for underlying
+        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // transfer underlying to msg.sender
+        return uBal;
     }
 
     /// @notice Swap Zeros for Target of a particular series
@@ -172,20 +182,10 @@ contract Periphery is Trust {
         uint256 zBal,
         uint256 minAccepted
     ) external returns (uint256) {
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-
-        // transfer zeros into this contract
-        ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal);
-
-        // swap zeros for underlying
-        uint256 uBal = _swap(zero, Adapter(adapter).underlying(), zBal, poolIds[adapter][maturity], minAccepted);
-
-        // approve adapter to pull underlying
-        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
-
-        // transfer target to msg.sender
-        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
+        uint256 uBal = _swapZerosForUnderlying(adapter, maturity, zBal, minAccepted); // swap zeros for underlying
+        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal); // approve adapter to pull underlying
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying to target
+        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal); // transfer target to msg.sender
         return tBal;
     }
 
@@ -198,41 +198,24 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 cBal
     ) external returns (uint256) {
-        return _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
+        uint256 tBal = _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
+        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
+        return tBal;
     }
 
-    function _swapClaimsForTarget(
-        address sender,
+    /// @notice Swap Claims for Underlying of a particular series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param cBal Balance of Claims to swap
+    function swapClaimsForUnderlying(
         address adapter,
         uint48 maturity,
         uint256 cBal
-    ) internal returns (uint256) {
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        uint256 lscale = divider.lscales(adapter, maturity, sender);
-
-        // transfer claims into this contract if needed
-        if (sender != address(this)) ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
-
-        // (1) Calculate target needed to borrow in order to be able to buy as many Zeros as Claims passed
-        // On one hand, I get the price of the underlying/zero from Yieldspace pool
-        // On the other hand, I know that I would need to purchase `cBal/2` Zeros so as to end up with same amount of
-        // Zeros and Claims and be able to combine them into target
-        uint256 targetToBorrow;
-        {
-            uint256 rate = price(Adapter(adapter).underlying(), zero);
-            ERC20 target = ERC20(Adapter(adapter).getTarget());
-            uint256 tBase = 10**target.decimals();
-            uint256 zBal = cBal.fdiv(2 * tBase, tBase);
-            uint256 uBal = zBal.fmul(rate, tBase);
-            targetToBorrow = uBal.fmul(lscale, tBase); // amount of claims div 2 multiplied by rate gives me amount of underlying then multiplying by lscale gives me target
-        }
-
-        // (2) Flash borrow target
-        uint256 tBal = flashBorrow(abi.encode(Action.CLAIM_TO_TARGET), adapter, maturity, targetToBorrow);
-
-        // (6) Part of the target repays the loan, part is transferred to msg.sender if needed
-        if (sender != address(this)) ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
-        return tBal;
+    ) external returns (uint256) {
+        uint256 tBal = _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
+        uint256 uBal = Adapter(adapter).unwrapTarget(tBal);
+        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal);
+        return uBal;
     }
 
     /// @notice Adds liquidity providing target
@@ -240,7 +223,7 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to provide
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
-    function addLiquidity(
+    function addLiquidityFromTarget(
         address adapter,
         uint48 maturity,
         uint256 tBal,
@@ -249,106 +232,61 @@ contract Periphery is Trust {
         _addLiquidity(adapter, maturity, tBal, mode);
     }
 
-    function _addLiquidity(
+    /// @notice Adds liquidity providing underlying
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param uBal Balance of Underlying to provide
+    /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
+    function addLiquidityFromUnderlying(
         address adapter,
         uint48 maturity,
-        uint256 tBal,
+        uint256 uBal,
         uint8 mode
-    ) internal {
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-
-        // (0) Pull target from sender
-        target.safeTransferFrom(msg.sender, address(this), tBal);
-
-        // (1) Based on zeros:underlying ratio from current pool reserves and tBal passed
-        // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
-        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolIds[adapter][maturity]);
-        uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
-
-        // (2) Issue Zeros & Claim
-        uint256 issued = divider.issue(adapter, maturity, zBalInTarget);
-
-        // (3) Convert remaining target into underlying (unwrap via protocol)
-        uint256 uBal = Adapter(adapter).unwrapTarget(tBal > zBalInTarget ? tBal - zBalInTarget : zBalInTarget - tBal);
-
-        // (4) Add liquidity to Space & send the LP Shares to recipient
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = uBal;
-        amounts[1] = issued;
-
-        _addLiquidityToSpace(poolIds[adapter][maturity], tokens, amounts);
-
-        {
-            // Send any leftover underlying or zeros back to the user
-            ERC20 underlying = ERC20(Adapter(adapter).underlying());
-            uint256 uBal = underlying.balanceOf(address(this));
-            uint256 zBal = ERC20(zero).balanceOf(address(this));
-            if (uBal > 0) underlying.safeTransfer(msg.sender, uBal);
-            if (zBal > 0) ERC20(zero).safeTransfer(msg.sender, zBal);
-        }
-
-        if (mode == 0) {
-            // (5) Sell claims
-            uint256 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-            // (6) Send remaining Target back to the User
-            target.safeTransfer(msg.sender, tAmount);
-        } else {
-            // (5) Send Claims back to the User
-            ERC20(claim).safeTransfer(msg.sender, issued);
-        }
+    ) external {
+        // Wrap Underlying into Target
+        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
+        _addLiquidity(adapter, maturity, tBal, mode);
     }
 
-    /// @notice Removes liquidity providing an amount of LP tokens
+    /// @notice Removes liquidity providing an amount of LP tokens and returns target
     /// @dev More info on `minAmountsOut`: https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-exits.md#minamountsout
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
     /// @param minAmountsOut lower limits for the tokens to receive (useful to account for slippage)
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
-    function removeLiquidity(
+    function removeLiquidityToTarget(
         address adapter,
         uint48 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
     ) external {
-        uint256 tBal = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
-        // Send Target back to the User
-        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
+        (uint256 uBal, uint256 tBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
+        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
+        tBal += Adapter(adapter).wrapUnderlying(uBal);
+        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal); // Send Target back to the User
     }
 
-    function _removeLiquidity(
+    /// @notice Removes liquidity providing an amount of LP tokens and returns underlying
+    /// @dev More info on `minAmountsOut`: https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-exits.md#minamountsout
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param lpBal Balance of LP tokens to provide
+    /// @param minAmountsOut lower limits for the tokens to receive (useful to account for slippage)
+    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
+    function removeLiquidityToUnderlying(
         address adapter,
         uint48 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
-    ) internal returns (uint256) {
-        address underlying = Adapter(adapter).underlying();
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        bytes32 poolId = poolIds[adapter][maturity];
-        (address pool, ) = balancerVault.getPool(poolId);
-
-        // (0) Pull LP tokens from sender
-        ERC20(pool).safeTransferFrom(msg.sender, address(this), lpBal);
-
-        // (1) Remove liquidity from Space
-        (uint256 uBal, uint256 zBal) = _removeLiquidityFromSpace(poolId, zero, underlying, minAmountsOut, lpBal);
-
-        uint256 tBal;
-        if (block.timestamp >= maturity) {
-            // (2) Redeem Zeros for Target
-            tBal += divider.redeemZero(adapter, maturity, zBal);
-        } else {
-            // (2) Sell Zeros for Underlying
-            uBal += _swap(zero, underlying, zBal, poolId, minAccepted);
-        }
-
-        // (3) Wrap Underlying into Target
-        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
-        tBal += Adapter(adapter).wrapUnderlying(uBal);
-        return tBal;
+    ) external {
+        (uint256 uBal, uint256 tBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
+        ERC20(Adapter(adapter).getTarget()).safeApprove(adapter, tBal);
+        uBal += Adapter(adapter).unwrapTarget(tBal);
+        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // Send Underlying back to the User
     }
 
     /// @notice Migrates liquidity position from one series to another
@@ -371,7 +309,9 @@ contract Periphery is Trust {
         uint256 minAccepted,
         uint8 mode
     ) external {
-        uint256 tBal = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted);
+        (uint256 uBal, uint256 tBal) = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted);
+        ERC20(Adapter(srcAdapter).underlying()).safeApprove(srcAdapter, uBal); // Wrap Underlying into Target
+        tBal += Adapter(srcAdapter).wrapUnderlying(uBal);
         _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
 
@@ -423,6 +363,170 @@ contract Periphery is Trust {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _swapUnderlyingForZeros(
+        address adapter,
+        uint48 maturity,
+        uint256 uBal,
+        uint256 minAccepted
+    ) internal returns (uint256) {
+        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        uint256 zBal = _swap(Adapter(adapter).underlying(), zero, uBal, poolIds[adapter][maturity], minAccepted); // swap underlying for zeros
+        ERC20(zero).safeTransfer(msg.sender, zBal); // transfer bought zeros to user
+        return zBal;
+    }
+
+    function _swapTargetForClaims(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal
+    ) internal returns (uint256) {
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
+
+        // (1) Calculate target needed to borrow in order to issue and obtain the desired amount of claims
+        // We get Zero/underlying price and we infer the Claim price (1 - zPrice).
+        // We can then calculate how many claims we can get with the underlying uBal (uBal / Claim price) and
+        // finally, we get the target we need to borrow by doing a unit conversion from Claim to Target using the last
+        // scale value.
+        uint256 targetToBorrow;
+        {
+            uint256 tDecimals = target.decimals();
+            uint256 tBase = 10**target.decimals();
+            uint256 fee = (Adapter(adapter).getIssuanceFee() / convertBase(tDecimals));
+            uint256 cPrice = tBase - price(zero, Adapter(adapter).underlying());
+            targetToBorrow = tBal.fdiv((tBase - fee).fmul(cPrice, tBase) + fee, tBase);
+        }
+
+        // (2) Flash borrow target (steps continued in `onFlashLoan`)
+        uint256 cBal = flashBorrow(abi.encode(Action.ZERO_TO_CLAIM), adapter, maturity, targetToBorrow);
+
+        // (6) transfer claims from issuance + issued claims from borrowed target (step 4) to msg.sender (if applicable)
+        ERC20(claim).safeTransfer(msg.sender, cBal);
+        return cBal;
+    }
+
+    function _swapZerosForUnderlying(
+        address adapter,
+        uint48 maturity,
+        uint256 zBal,
+        uint256 minAccepted
+    ) internal returns (uint256) {
+        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal); // pull zeros
+        return _swap(zero, Adapter(adapter).underlying(), zBal, poolIds[adapter][maturity], minAccepted); // swap zeros for underlying
+    }
+
+    function _swapClaimsForTarget(
+        address sender,
+        address adapter,
+        uint48 maturity,
+        uint256 cBal
+    ) internal returns (uint256) {
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        uint256 lscale = divider.lscales(adapter, maturity, sender);
+
+        // transfer claims into this contract if needed
+        if (sender != address(this)) ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
+
+        // (1) Calculate target needed to borrow in order to be able to buy as many Zeros as Claims passed
+        // On one hand, I get the price of the underlying/zero from Yieldspace pool
+        // On the other hand, I know that I would need to purchase `cBal/2` Zeros so as to end up with same amount of
+        // Zeros and Claims and be able to combine them into target
+        uint256 targetToBorrow;
+        {
+            uint256 rate = price(Adapter(adapter).underlying(), zero);
+            ERC20 target = ERC20(Adapter(adapter).getTarget());
+            uint256 tBase = 10**target.decimals();
+            uint256 zBal = cBal.fdiv(2 * tBase, tBase);
+            uint256 uBal = zBal.fmul(rate, tBase);
+            targetToBorrow = uBal.fmul(lscale, tBase); // amount of claims div 2 multiplied by rate gives me amount of underlying then multiplying by lscale gives me target
+        }
+
+        // (2) Flash borrow target (steps continued in `onFlashLoan`)
+        return flashBorrow(abi.encode(Action.CLAIM_TO_TARGET), adapter, maturity, targetToBorrow);
+    }
+
+    function _addLiquidity(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint8 mode
+    ) internal {
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        bytes32 poolId = poolIds[adapter][maturity];
+
+        // (0) Pull target from sender
+        target.safeTransferFrom(msg.sender, address(this), tBal);
+
+        // (1) Based on zeros:underlying ratio from current pool reserves and tBal passed
+        // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
+        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+        uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
+
+        // (2) Issue Zeros & Claim
+        uint256 issued = divider.issue(adapter, maturity, zBalInTarget);
+
+        // (3) Convert remaining target into underlying (unwrap via protocol)
+        uint256 uBal = Adapter(adapter).unwrapTarget(tBal > zBalInTarget ? tBal - zBalInTarget : zBalInTarget - tBal);
+
+        // (4) Add liquidity to Space & send the LP Shares to recipient
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = uBal;
+        amounts[1] = issued;
+
+        _addLiquidityToSpace(poolId, tokens, amounts);
+
+        {
+            // Send any leftover underlying or zeros back to the user
+            ERC20 underlying = ERC20(Adapter(adapter).underlying());
+            uint256 uBal = underlying.balanceOf(address(this));
+            uint256 zBal = ERC20(zero).balanceOf(address(this));
+            if (uBal > 0) underlying.safeTransfer(msg.sender, uBal);
+            if (zBal > 0) ERC20(zero).safeTransfer(msg.sender, zBal);
+        }
+
+        if (mode == 0) {
+            // (5) Sell claims
+            uint256 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
+            // (6) Send remaining Target back to the User
+            target.safeTransfer(msg.sender, tAmount);
+        } else {
+            // (5) Send Claims back to the User
+            ERC20(claim).safeTransfer(msg.sender, issued);
+        }
+    }
+
+    function _removeLiquidity(
+        address adapter,
+        uint48 maturity,
+        uint256 lpBal,
+        uint256[] memory minAmountsOut,
+        uint256 minAccepted
+    ) internal returns (uint256, uint256) {
+        address underlying = Adapter(adapter).underlying();
+        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        bytes32 poolId = poolIds[adapter][maturity];
+        (address pool, ) = balancerVault.getPool(poolId);
+
+        // (0) Pull LP tokens from sender
+        ERC20(pool).safeTransferFrom(msg.sender, address(this), lpBal);
+
+        // (1) Remove liquidity from Space
+        (uint256 uBal, uint256 zBal) = _removeLiquidityFromSpace(poolId, zero, underlying, minAmountsOut, lpBal);
+
+        uint256 tBal;
+        if (block.timestamp >= maturity) {
+            // (2) Redeem Zeros for Target
+            tBal += divider.redeemZero(adapter, maturity, zBal);
+        } else {
+            // (2) Sell Zeros for Underlying
+            uBal += _swap(zero, underlying, zBal, poolId, minAccepted);
+        }
+
+        return (uBal, tBal);
+    }
 
     /// @notice Initiate a flash loan
     /// @param adapter adapter
@@ -528,7 +632,7 @@ contract Periphery is Trust {
 
     /* ========== HELPER FUNCTIONS ========== */
 
-    function convertBase(uint256 decimals) internal returns (uint256) {
+    function convertBase(uint256 decimals) internal pure returns (uint256) {
         uint256 base = 1;
         if (decimals != 18) {
             base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);

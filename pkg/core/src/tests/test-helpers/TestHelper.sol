@@ -158,6 +158,9 @@ contract TestHelper is DSTest {
         user.setTarget(target);
         user.setDivider(divider);
         user.setPeriphery(periphery);
+        user.doApprove(address(underlying), address(periphery));
+        user.doApprove(address(underlying), address(divider));
+        user.doMint(address(underlying), tBal);
         user.doApprove(address(stake), address(periphery));
         user.doApprove(address(stake), address(divider));
         user.doMint(address(stake), sBal);
@@ -205,21 +208,18 @@ contract TestHelper is DSTest {
 
     function addLiquidityToBalancerVault(
         uint48 maturity,
-        address zero,
-        address claim
+        uint256 tBal,
+        uint256 uBal
     ) public {
-        uint256 cBal = MockToken(claim).balanceOf(address(alice));
-        uint256 zBal = MockToken(zero).balanceOf(address(alice));
-        alice.doIssue(address(adapter), maturity, 1000e18);
-        uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
-        uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
-        alice.doTransfer(claim, address(balancerVault), cBalIssued); // we don't really need this but we transfer them
-        alice.doTransfer(zero, address(balancerVault), zBalIssued);
-        // we mint some random number of underlying
-        MockToken(adapter.underlying()).mint(address(balancerVault), 100000e18);
+        (address zero, address claim, , , , , , , ) = divider.series(address(adapter), maturity);
+        uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
+        alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
+        alice.doTransfer(zero, address(balancerVault), issued);
+        // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
+        MockToken(adapter.underlying()).mint(address(balancerVault), uBal);
     }
 
-    function convertBase(uint256 decimals) public returns (uint256) {
+    function convertBase(uint256 decimals) public pure returns (uint256) {
         uint256 base = 1;
         if (decimals != 18) {
             base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
