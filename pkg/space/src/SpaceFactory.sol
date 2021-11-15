@@ -7,7 +7,6 @@ import { IVault } from "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol"
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 import { Space } from "./Space.sol";
-// TODO: trust
 
 contract SpaceFactory is Trust {
     // Immutables

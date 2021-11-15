@@ -369,8 +369,6 @@ contract Space is
         }
     }
 
-    // TODO: too much out/ eat up all the reserves?
-    // TODO: make view again?
     function _onSwapGivenIn(
         bool _zeroIn,
         uint256 _amountIn,
