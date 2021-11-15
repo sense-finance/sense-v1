@@ -18,7 +18,11 @@ import { Space } from "../Space.sol";
 
 // base DSTest plus testing utilities
 contract Test is DSTest {
-    function _assertClose(uint256 a, uint256 b, uint256 _tolerance) internal {
+    function _assertClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) internal {
         uint256 diff = a < b ? b - a : a - b;
         if (diff > _tolerance) {
             emit log("Error: abs(a, b) < threshold not satisfied [uint]");
@@ -26,11 +30,12 @@ contract Test is DSTest {
             emit log_named_uint("    Actual", a);
             fail();
         }
-     }
+    }
 }
 
 contract User {
     IVault vault;
+
     constructor(IVault _vault) public {
         vault = _vault;
     }
@@ -39,7 +44,7 @@ contract User {
 contract SpaceTest is Test {
     using FixedPoint for uint256;
 
-    Hevm internal constant hevm  = Hevm(HEVM_ADDRESS);
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
     IWETH internal constant weth = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     Vault internal vault;
@@ -72,18 +77,18 @@ contract SpaceTest is Test {
         spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2);
 
         space = Space(spaceFactory.create(address(adapter), maturity));
-        
+
         (address _zero, ) = Divider(divider).series(address(adapter), maturity);
-        zero   = ERC20Mintable(_zero);
+        zero = ERC20Mintable(_zero);
         target = ERC20Mintable(adapter.getTarget());
 
         // mint this address Zeros and Target
-        zero.mint(  address(this), 100e18);
+        zero.mint(address(this), 100e18);
         target.mint(address(this), 100e18);
         // max approve the balancer vault to move this addresses tokens
         target.approve(address(vault), type(uint256).max);
-        zero.approve(  address(vault), type(uint256).max);
-     }
+        zero.approve(address(vault), type(uint256).max);
+    }
 
     function _join() public {
         _join(1e18, 1e18);
@@ -100,7 +105,7 @@ contract SpaceTest is Test {
 
         (uint8 zeroi, uint8 targeti) = space.getIndices();
         uint256[] memory amountsIn = new uint256[](2);
-        amountsIn[zeroi  ] = reqZeroIn;
+        amountsIn[zeroi] = reqZeroIn;
         amountsIn[targeti] = reqTargetIn;
 
         uint256[] memory dueProtocolFeeAmounts = new uint256[](2);
@@ -109,15 +114,12 @@ contract SpaceTest is Test {
 
         vault.joinPool(
             space.getPoolId(),
-            address(this), 
-            address(this), 
+            address(this),
+            address(this),
             IVault.JoinPoolRequest({
                 assets: assets,
                 maxAmountsIn: maxAmountsIn,
-                userData: abi.encode(
-                    amountsIn,
-                    dueProtocolFeeAmounts
-                ),
+                userData: abi.encode(amountsIn, dueProtocolFeeAmounts),
                 fromInternalBalance: false
             })
         );
@@ -132,17 +134,17 @@ contract SpaceTest is Test {
             IVault.SingleSwap({
                 poolId: space.getPoolId(),
                 kind: IVault.SwapKind.GIVEN_IN,
-                assetIn: IAsset(zeroIn  ? address(zero) : address(target)),
+                assetIn: IAsset(zeroIn ? address(zero) : address(target)),
                 assetOut: IAsset(zeroIn ? address(target) : address(zero)),
                 amount: amount,
-                userData: "0x" 
+                userData: "0x"
             }),
             IVault.FundManagement({
                 sender: address(this),
                 fromInternalBalance: false,
                 recipient: payable(address(this)),
                 toInternalBalance: false
-            }), 
+            }),
             0, // `limit` – no min expectations of return for testing GIVEN_IN
             type(uint256).max // `deadline` – no deadline
         );
@@ -166,7 +168,7 @@ contract SpaceTest is Test {
     function test_join_multi_no_swaps() public {
         // join once
         _join();
-        // join again after no swaps 
+        // join again after no swaps
         _join();
 
         // if the pool has been joined a second time and no swaps have occured –--
@@ -205,7 +207,7 @@ contract SpaceTest is Test {
         (uint8 zeroi, uint8 targeti) = space.getIndices();
 
         // pool balances reflect the user's balances
-        assertEq(balances[zeroi  ], 1e18);
+        assertEq(balances[zeroi], 1e18);
         assertEq(balances[targeti], 1e18 - expectedTargetOut);
 
         // can not swap a full Target in
@@ -228,15 +230,15 @@ contract SpaceTest is Test {
     // }
 
     // function test_join_multi_swaps() public {
-        // // if the pool has been joined a second time and no swaps have occured –--
-        // // it moved more Target out of this account
-        // assertEq(target.balanceOf(address(this)), 98e18);
+    // // if the pool has been joined a second time and no swaps have occured –--
+    // // it moved more Target out of this account
+    // assertEq(target.balanceOf(address(this)), 98e18);
 
-        // // and it minted this account more BPT tokens
-        // _assertClose(space.balanceOf(address(this)), 2e18, 1e6);
+    // // and it minted this account more BPT tokens
+    // _assertClose(space.balanceOf(address(this)), 2e18, 1e6);
 
-        // // but it still did not move any Zeros
-        // assertEq(zero.balanceOf(address(this)), 100e18);
+    // // but it still did not move any Zeros
+    // assertEq(zero.balanceOf(address(this)), 100e18);
     // }
 
     // buy_slippage_limit

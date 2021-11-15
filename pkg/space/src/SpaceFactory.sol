@@ -16,18 +16,18 @@ contract SpaceFactory is Trust {
     mapping(address => mapping(uint256 => address)) public pools;
 
     // Pool config ---
-    uint public ts;
-    uint public g1;
-    uint public g2;
+    uint256 public ts;
+    uint256 public g1;
+    uint256 public g2;
 
     constructor(
-        IVault _vault, 
-        address _divider, 
-        uint256 _ts, 
-        uint256 _g1, 
+        IVault _vault,
+        address _divider,
+        uint256 _ts,
+        uint256 _g1,
         uint256 _g2
     ) Trust(msg.sender) {
-        vault   = _vault;
+        vault = _vault;
         divider = _divider;
         ts = _ts;
         g1 = _g1;
@@ -35,32 +35,30 @@ contract SpaceFactory is Trust {
     }
 
     /// @dev Deploys a new `Space` contract
-    function create(
-        address _adapter,
-        uint48  _maturity
-        // uint256 swapFeePercentage,
-        // bool oracleEnabled,
-        // address owner
-    ) external returns (address) {
+    function create(address _adapter, uint48 _maturity)
+        external
+        returns (
+            // uint256 swapFeePercentage,
+            // bool oracleEnabled,
+            // address owner
+            address
+        )
+    {
         require(pools[_adapter][_maturity] == address(0), "Space already exists for this Series");
 
-        address pool = address(
-            new Space(
-                vault,
-                _adapter,
-                _maturity,
-                divider,
-                ts,
-                g1,
-                g2
-            )
-        );
+        address pool = address(new Space(vault, _adapter, _maturity, divider, ts, g1, g2));
 
         pools[_adapter][_maturity] = pool;
         return pool;
     }
 
-    function setParams(uint256 _ts, uint256 _g1, uint256 _g2) public requiresTrust {
-        ts = _ts; g1 = _g1; g2 = _g2;
+    function setParams(
+        uint256 _ts,
+        uint256 _g1,
+        uint256 _g2
+    ) public requiresTrust {
+        ts = _ts;
+        g1 = _g1;
+        g2 = _g2;
     }
 }
