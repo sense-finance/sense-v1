@@ -277,8 +277,9 @@ contract Periphery is Trust {
         amounts[0] = uBal;
         amounts[1] = issued;
 
+        _addLiquidityToSpace(poolIds[adapter][maturity], tokens, amounts);
+
         {
-            _addLiquidityToSpace(poolIds[adapter][maturity], tokens, amounts);
             // Send any leftover underlying or zeros back to the user
             ERC20 underlying = ERC20(Adapter(adapter).underlying());
             uint256 uBal = underlying.balanceOf(address(this));
