@@ -38,6 +38,15 @@ contract MockYieldSpacePool is MockToken {
         return address(vault);
     }
 
+    function onSwapGivenOut(
+        bool _zeroIn,
+        uint256 _amountOut,
+        uint256 _reservesInAmount,
+        uint256 _reservesOutAmount
+    ) external view returns (uint256) {
+        return 10e18;
+    }
+
     // function totalSupply() external view returns (uint256) {
     //     return 1e18;
     // }

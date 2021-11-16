@@ -205,17 +205,13 @@ contract TestHelper is DSTest {
         DSTest.assertTrue(actual <= (expected + variance));
     }
 
-    function addLiquidityToBalancerVault(
-        uint48 maturity,
-        uint256 tBal,
-        uint256 uBal
-    ) public {
+    function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
         (address zero, address claim, , , , , , , ) = divider.series(address(adapter), maturity);
         uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
         alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
         alice.doTransfer(zero, address(balancerVault), issued);
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
-        MockToken(adapter.underlying()).mint(address(balancerVault), uBal);
+        MockToken(adapter.getTarget()).mint(address(balancerVault), tBal);
     }
 
     function convertBase(uint256 decimals) public pure returns (uint256) {
