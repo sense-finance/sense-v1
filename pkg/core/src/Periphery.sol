@@ -455,14 +455,13 @@ contract Periphery is Trust {
     ) internal {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        bytes32 poolId = poolIds[adapter][maturity];
 
         // (0) Pull target from sender
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // (1) Based on zeros:underlying ratio from current pool reserves and tBal passed
         // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
-        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolIds[adapter][maturity]);
         uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
 
         // (2) Issue Zeros & Claim
@@ -476,7 +475,7 @@ contract Periphery is Trust {
         amounts[0] = uBal;
         amounts[1] = issued;
 
-        _addLiquidityToSpace(poolId, tokens, amounts);
+        _addLiquidityToSpace(poolIds[adapter][maturity], tokens, amounts);
 
         {
             // Send any leftover underlying or zeros back to the user
