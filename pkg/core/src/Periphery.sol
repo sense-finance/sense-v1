@@ -71,7 +71,7 @@ contract Periphery is Trust {
 
         // transfer stakeSize from sponsor into this contract
         uint256 stakeDecimals = ERC20(stake).decimals();
-        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize / convertBase(stakeDecimals));
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), convertToBase(stakeSize, stakeDecimals));
 
         // approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), type(uint256).max);
@@ -393,7 +393,7 @@ contract Periphery is Trust {
         {
             uint256 tDecimals = target.decimals();
             uint256 tBase = 10**target.decimals();
-            uint256 fee = (Adapter(adapter).getIssuanceFee() / convertBase(tDecimals));
+            uint256 fee = convertToBase(Adapter(adapter).getIssuanceFee(), tDecimals);
             uint256 cPrice = tBase - price(zero, Adapter(adapter).underlying());
             targetToBorrow = tBal.fdiv((tBase - fee).fmul(cPrice, tBase) + fee, tBase);
         }
@@ -631,12 +631,11 @@ contract Periphery is Trust {
 
     /* ========== HELPER FUNCTIONS ========== */
 
-    function convertBase(uint256 decimals) internal pure returns (uint256) {
-        uint256 base = 1;
+    function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
         if (decimals != 18) {
-            base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
+            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
         }
-        return base;
+        return amount;
     }
 
     // @author https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
