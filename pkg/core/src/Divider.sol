@@ -247,7 +247,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address adapter,
         uint48 maturity,
         uint256 uBal
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
@@ -257,7 +257,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 tBase = 10**ERC20(Adapter(adapter).getTarget()).decimals();
         // Amount of Target Zeros would ideally have
-        uint256 tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
+        tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
 
         if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
@@ -285,7 +285,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         target.safeTransferFrom(adapter, msg.sender, tBal);
-        Adapter(adapter).notify(msg.sender, tBal, false);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 

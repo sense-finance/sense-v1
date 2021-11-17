@@ -40,9 +40,8 @@ contract MockAdapter is CropAdapter {
         MockTarget target = MockTarget(adapterParams.target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
-        MockToken(target.underlying()).burn(address(this), uBal); // this would be an approve call to the protocol to withdraw the underlying
         uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = uBal.fdiv(_lscale.value, tBase);
+        uint256 mintAmount = uBal.fdivUp(_lscale.value, tBase);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
@@ -50,7 +49,6 @@ contract MockAdapter is CropAdapter {
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
         MockTarget target = MockTarget(adapterParams.target);
         target.transferFrom(msg.sender, address(this), tBal); // pull target
-        target.burn(address(this), tBal); // this would be an approve call to the protocol to withdraw the target
         uint256 tBase = 10**target.decimals();
         uint256 mintAmount = tBal.fmul(_lscale.value, tBase);
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
