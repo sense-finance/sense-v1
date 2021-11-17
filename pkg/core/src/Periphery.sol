@@ -422,7 +422,7 @@ contract Periphery is Trust {
         uint256 targetToBorrow = YieldSpacePoolLike(pool).onSwapGivenOut(false, cBal, balances[0], balances[1]);
 
         // flash borrow target (following actions in `onFlashLoan`)
-        return _flashBorrow(abi.encode(), adapter, maturity, targetToBorrow);
+        return _flashBorrow("0x", adapter, maturity, targetToBorrow);
     }
 
     function _addLiquidity(
