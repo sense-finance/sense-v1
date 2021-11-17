@@ -135,6 +135,8 @@ contract MockYieldSpaceFactory {
     MockBalancerVault public vault;
     MockYieldSpacePool public pool;
 
+    mapping(address => mapping(uint256 => address)) public pools;
+
     constructor(address _vault) {
         vault = MockBalancerVault(_vault);
     }
@@ -148,6 +150,7 @@ contract MockYieldSpaceFactory {
         address _underlying = Adapter(_adapter).underlying();
 
         pool = new MockYieldSpacePool(address(vault), _underlying, _zero);
+        pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));
 
