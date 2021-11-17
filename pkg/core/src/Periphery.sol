@@ -393,7 +393,7 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256) {
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        
+
         // issue zeros and claims & swap zeros for target
         uint256 issued = divider.issue(adapter, maturity, tBal);
         tBal = _swap(zero, Adapter(adapter).getTarget(), issued, poolIds[adapter][maturity], 0);
