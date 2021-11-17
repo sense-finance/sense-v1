@@ -90,7 +90,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Transfer stake asset stake from caller to adapter
         (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
-        ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
@@ -134,7 +134,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Reward the caller for doing the work of settling the Series at around the correct time
         (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
-        ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
@@ -508,7 +508,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 reward = series[adapter][maturity].reward;
 
         ERC20(target).safeTransferFrom(adapter, cup, reward);
-        ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
     }
@@ -551,6 +551,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     }
 
     /* ========== INTERNAL FNCTIONS & HELPERS ========== */
+
     function _setAdapter(address adapter, bool isOn) internal {
         require(adapters[adapter] != isOn, Errors.ExistingValue);
         adapters[adapter] = isOn;
@@ -563,9 +564,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit AdapterChanged(adapter, adapterCounter, isOn);
     }
 
-    function _convertBase(uint256 decimals) internal pure returns (uint256) {
-        if (decimals == 18) return 1;
-        return decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
+    function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals != 18) {
+            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
+        }
+        return amount;
     }
 
     /* ========== MODIFIERS ========== */

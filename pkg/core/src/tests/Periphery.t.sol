@@ -316,7 +316,7 @@ contract PeripheryTest is TestHelper {
             uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
 
             // calculate claims to be issued
-            uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(proportionalTarget, tBase);
+            uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
             uint256 zBal = toBeIssued.fdiv(2 * tBase, tBase);
@@ -367,7 +367,7 @@ contract PeripheryTest is TestHelper {
             // calculate claims to be issued
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
-            uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(proportionalTarget, tBase);
+            uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT()); // TODO: sub fee??
         }
 
@@ -396,7 +396,7 @@ contract PeripheryTest is TestHelper {
             // calculate zeros to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
-            uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(proportionalTarget, tBase);
+            uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
             // prepare minAmountsOut for removing liquidity
@@ -443,7 +443,7 @@ contract PeripheryTest is TestHelper {
             // calculate zeros to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
-            uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(proportionalTarget, tBase);
+            uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
             // prepare minAmountsOut for removing liquidity

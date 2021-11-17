@@ -89,9 +89,8 @@ contract TestHelper is DSTest {
         underlying = new MockToken("Dai Token", "DAI", tDecimals);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals);
         reward = new MockToken("Reward Token", "RT", tDecimals);
-        uint256 base = convertBase(target.decimals());
-        GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * base : GROWTH_PER_SECOND / base;
-        DELTA = tDecimals > 18 ? DELTA * base : DELTA / base;
+        GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
+        DELTA = convertToBase(DELTA, target.decimals());
 
         // divider
         tokenHandler = new TokenHandler();
@@ -221,10 +220,15 @@ contract TestHelper is DSTest {
 
     function convertBase(uint256 decimals) public pure returns (uint256) {
         uint256 base = 1;
-        if (decimals != 18) {
-            base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
-        }
+        base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
         return base;
+    }
+
+    function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals != 18) {
+            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
+        }
+        return amount;
     }
 
     function calculateAmountToIssue(uint256 tBal, uint256 baseUnit) public returns (uint256 toIssue) {

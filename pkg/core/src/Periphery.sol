@@ -71,7 +71,7 @@ contract Periphery is Trust {
 
         // transfer stakeSize from sponsor into this contract
         uint256 stakeDecimals = ERC20(stake).decimals();
-        ERC20(stake).safeTransferFrom(msg.sender, address(this), convertToBase(stakeSize, stakeDecimals));
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), _convertToBase(stakeSize, stakeDecimals));
 
         // approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), type(uint256).max);
@@ -393,7 +393,7 @@ contract Periphery is Trust {
         {
             uint256 tDecimals = target.decimals();
             uint256 tBase = 10**target.decimals();
-            uint256 fee = convertToBase(Adapter(adapter).getIssuanceFee(), tDecimals);
+            uint256 fee = _convertToBase(Adapter(adapter).getIssuanceFee(), tDecimals);
             uint256 cPrice = tBase - price(zero, Adapter(adapter).underlying());
             targetToBorrow = tBal.fdiv((tBase - fee).fmul(cPrice, tBase) + fee, tBase);
         }
@@ -631,7 +631,7 @@ contract Periphery is Trust {
 
     /* ========== HELPER FUNCTIONS ========== */
 
-    function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+    function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
         if (decimals != 18) {
             amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
         }
