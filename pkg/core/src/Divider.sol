@@ -163,10 +163,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
 
         if (tDecimals != 18) {
-            fee = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18)).fmul(
-                tBal,
-                tBase
-            );
+            uint256 base = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18));
+            fee = base.fmul(tBal, tBase);
         } else {
             fee = issuanceFee.fmul(tBal, tBase);
         }
