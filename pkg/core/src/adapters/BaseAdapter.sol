@@ -12,6 +12,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 interface IPeriphery {
     function onFlashLoan(
+        bytes calldata data,
         address initiator,
         address adapter,
         uint48 maturity,
@@ -74,6 +75,7 @@ abstract contract BaseAdapter is Initializable {
     /// @param maturity maturity
     /// @param amount The amount of target lent.
     function flashLoan(
+        bytes calldata data,
         address receiver,
         address adapter,
         uint48 maturity,
@@ -81,7 +83,7 @@ abstract contract BaseAdapter is Initializable {
     ) external onlyPeriphery returns (bool, uint256) {
         ERC20 target = ERC20(adapterParams.target);
         require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
-        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(msg.sender, adapter, maturity, amount);
+        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(data, msg.sender, adapter, maturity, amount);
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
         require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);

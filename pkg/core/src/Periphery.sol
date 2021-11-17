@@ -327,6 +327,19 @@ contract Periphery is Trust {
         return 0.95e18;
     }
 
+    /* ========== ADMIN FUNCTIONS ========== */
+
+    /// @notice Enable or disable a factory
+    /// @param factory Factory's address
+    /// @param isOn Flag setting this factory to enabled or disabled
+    function setFactory(address factory, bool isOn) external requiresTrust {
+        require(factories[factory] != isOn, Errors.ExistingValue);
+        factories[factory] = isOn;
+        emit FactoryChanged(factory, isOn);
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
     function _swap(
         address assetIn,
         address assetOut,
@@ -356,18 +369,6 @@ contract Periphery is Trust {
         amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
-
-    /// @notice Enable or disable a factory
-    /// @param factory Factory's address
-    /// @param isOn Flag setting this factory to enabled or disabled
-    function setFactory(address factory, bool isOn) external requiresTrust {
-        require(factories[factory] != isOn, Errors.ExistingValue);
-        factories[factory] = isOn;
-        emit FactoryChanged(factory, isOn);
-    }
-
-    /* ========== INTERNAL FUNCTIONS ========== */
     function _swapZerosForTarget(
         address adapter,
         uint48 maturity,
@@ -426,7 +427,7 @@ contract Periphery is Trust {
         uint256 targetToBorrow = YieldSpacePoolLike(pool).onSwapGivenOut(false, cBal, balances[0], balances[1]);
 
         // flash borrow target (following actions in `onFlashLoan`)
-        return _flashBorrow(adapter, maturity, targetToBorrow);
+        return _flashBorrow(abi.encode(), adapter, maturity, targetToBorrow);
     }
 
     function _addLiquidity(
@@ -513,6 +514,7 @@ contract Periphery is Trust {
     /// @param amount target amount to borrow
     /// @return claims issued with flashloan
     function _flashBorrow(
+        bytes memory data,
         address adapter,
         uint48 maturity,
         uint256 amount
@@ -520,13 +522,14 @@ contract Periphery is Trust {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 _allowance = target.allowance(address(this), address(adapter));
         if (_allowance < amount) target.safeApprove(address(adapter), type(uint256).max);
-        (bool result, uint256 value) = Adapter(adapter).flashLoan(address(this), adapter, maturity, amount);
+        (bool result, uint256 value) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, amount);
         require(result == true);
         return value;
     }
 
     /// @dev ERC-3156 Flash loan callback
     function onFlashLoan(
+        bytes calldata,
         address initiator,
         address adapter,
         uint48 maturity,
