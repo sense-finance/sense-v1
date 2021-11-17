@@ -39,11 +39,6 @@ contract Periphery is Trust {
     using SafeERC20 for ERC20;
     using Errors for string;
 
-    enum Action {
-        ZERO_TO_CLAIM,
-        CLAIM_TO_TARGET
-    }
-
     /// @notice Configuration
     uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
