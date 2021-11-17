@@ -618,7 +618,7 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         divider.setAdapter(address(adapter), false);
         uint256 balance = ERC20(zero).balanceOf(address(alice));
-        try alice.doRedeemZero(address(adapter), maturity, balance, true) {
+        try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidAdapter);
@@ -628,7 +628,7 @@ contract Dividers is TestHelper {
     function testCantRedeemZeroSeriesDoesntExists() public {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
-        try alice.doRedeemZero(address(adapter), maturity, balance, true) {
+        try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
         } catch Error(string memory error) {
             // The settled check will fail if the Series does not exist
@@ -645,7 +645,7 @@ contract Dividers is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 balance = ERC20(zero).balanceOf(address(bob));
-        try bob.doRedeemZero(address(adapter), maturity, balance, true) {
+        try bob.doRedeemZero(address(adapter), maturity, balance) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.NotSettled);
@@ -658,7 +658,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
         uint256 balance = ERC20(zero).balanceOf(address(alice)) + 1e18;
-        try alice.doRedeemZero(address(adapter), maturity, balance, true) {
+        try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
         } catch (bytes memory error) {
             // Does not return any error message
@@ -668,7 +668,7 @@ contract Dividers is TestHelper {
     function testCantRedeemZeroIfPaused() public {
         divider.setPaused(true);
         uint48 maturity = getValidMaturity(2021, 10);
-        try alice.doRedeemZero(address(adapter), maturity, 100e18, true) {
+        try alice.doRedeemZero(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.Paused);
@@ -686,7 +686,7 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
         uint256 balanceToRedeem = zBalanceBefore;
-        bob.doRedeemZero(address(adapter), maturity, balanceToRedeem, true);
+        bob.doRedeemZero(address(adapter), maturity, balanceToRedeem);
         uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
 
         // Formula: tBal = balance / mscale
@@ -704,7 +704,7 @@ contract Dividers is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         uint256 tBalanceBefore = target.balanceOf(address(alice));
         uint256 balance = 0;
-        alice.doRedeemZero(address(adapter), maturity, balance, true);
+        alice.doRedeemZero(address(adapter), maturity, balance);
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         assertEq(tBalanceAfter, tBalanceBefore);
     }
