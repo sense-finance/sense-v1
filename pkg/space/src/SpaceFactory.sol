@@ -36,13 +36,7 @@ contract SpaceFactory is Trust {
 
     /// @dev Deploys a new `Space` contract
     function create(address _adapter, uint48 _maturity)
-        external
-        returns (
-            // uint256 swapFeePercentage,
-            // bool oracleEnabled,
-            // address owner
-            address
-        )
+        external returns (address)
     {
         require(pools[_adapter][_maturity] == address(0), "Space already exists for this Series");
 

@@ -2,9 +2,13 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
+// External references
 import { Vault, IVault, IWETH, IAuthorizer, IAsset } from "@balancer-labs/v2-vault/contracts/Vault.sol";
 import { Authorizer } from "@balancer-labs/v2-vault/contracts/Authorizer.sol";
 import { ERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/ERC20.sol";
+
+// Internal references
+import { DividerLike } from "../Space.sol";
 
 contract ERC20Mintable is ERC20 {
     constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
@@ -36,7 +40,7 @@ contract Adapter {
     }
 }
 
-contract Divider {
+contract Divider is DividerLike {
     address public zero;
     address public claim;
 
@@ -50,8 +54,28 @@ contract Divider {
 
     function series(
         address, // adapter
-        uint48 // maturity
-    ) external returns (address, address) {
-        return (zero, claim);
+        uint48   // maturity
+    ) external override returns (
+        address, 
+        address, 
+        address, 
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint128,
+        uint128
+    ) {
+        return (
+            zero, 
+            claim, 
+            address(0), 
+            uint256(0), 
+            uint256(0), 
+            uint256(0), 
+            uint256(0), 
+            uint128(0), 
+            uint128(0)
+        );
     }
 }
