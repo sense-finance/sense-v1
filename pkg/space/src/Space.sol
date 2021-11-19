@@ -336,7 +336,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         internal
         returns (uint256, uint256[] memory)
     {
-        uint256 scale = AdapterLike(adapter).scale();
+        uint256 _scale = AdapterLike(adapter).scale();
         uint256[] memory amountsIn = new uint256[](2);
 
         (uint8 _zeroi, uint8 _targeti) = getIndices();
@@ -344,16 +344,16 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         (uint256 _reqZerosIn, uint256 _reqTargetIn) = (_reqAmountsIn[_zeroi], _reqAmountsIn[_targeti]);
 
         // Calculate the excess Target, remove it from the requested amount in, then convert the remaining Target into Underlying
-        uint256 _reqUnderlyingIn = (2 * _reqTargetIn - (_reqTargetIn * scale) / _initScale).mulDown(scale);
+        uint256 _reqUnderlyingIn = (2 * _reqTargetIn - (_reqTargetIn * _scale) / _initScale).mulDown(_scale);
 
         // If we pulled all the requested Underlying, what pct of the pool do we get?
         // note: Current balance of Target will always be > 1 by the time this is called
-        uint256 pctUnderlying = _reqUnderlyingIn.divDown((_targetReserves * _initScale) / scale);
+        uint256 pctUnderlying = _reqUnderlyingIn.divDown((_targetReserves * _initScale) / _scale);
 
         // If the pool has been initialized, but there aren't yet any Zeros in it,
         // we pull the entire offered Target and mint lp shares proportionally
         if (_zeroReserves == 0) {
-            uint256 bptToMint = (totalSupply() * _reqUnderlyingIn) / ((_targetReserves * _initScale) / scale);
+            uint256 bptToMint = (totalSupply() * _reqUnderlyingIn) / ((_targetReserves * _initScale) / _scale);
             amountsIn[_targeti] = _reqTargetIn;
 
             return (bptToMint, amountsIn);

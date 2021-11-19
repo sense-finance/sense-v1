@@ -375,7 +375,7 @@ contract SpaceTest is Test {
         jim.join();
         ava.join();
 
-        // swap out 1 Zero in
+        // swap 1 Zero in
         sid.swapIn(true);
 
         // jim and ava exit
@@ -390,7 +390,39 @@ contract SpaceTest is Test {
     }
 
     // function test_space_fees() public {
+    //     // Target in
+    //     jim.join(0, 10e18);
 
+    //     // Init some Zeros in
+    //     sid.swapIn(true, 9e18);
+
+    //     // Try both in
+    //     jim.join(10e18, 10e18);
+
+    //     (, uint256[] memory balances, ) = vault.getPoolTokens(space.getPoolId());
+    //     (uint8 zeroi, uint8 targeti) = space.getIndices();
+
+    //     // pool balances reflect the user's balances
+    //     log_uint(balances[zeroi]);
+    //     log_uint(balances[targeti]);
+
+    //     // Lots of swaps
+    //     sid.swapIn(false, 2e18);
+    //     sid.swapIn(true, 2e18);
+    //     sid.swapIn(false, 2e18);
+    //     sid.swapIn(true, 2e18);
+    //     sid.swapIn(false, 2e18);
+    //     sid.swapIn(true, 2e18);
+    //     sid.swapIn(false, 2e18);
+    //     sid.swapIn(true, 2e18);
+    //     sid.swapIn(false, 2e18);
+    //     sid.swapIn(true, 2e18);
+    //     sid.swapIn(false, 2e18);
+
+    //     jim.exit(space.balanceOf(address(jim)));
+    //     log_uint(target.balanceOf(address(jim)));
+    //     log_uint(zero.balanceOf(address(jim)));
+    //     assertTrue(false);
     // }
 
 
