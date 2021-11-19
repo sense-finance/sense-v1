@@ -371,7 +371,30 @@ contract SpaceTest is Test {
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
-    // test_multi_party_swap_exit
+    function test_multi_party_join_swap_exit() public {
+        jim.join();
+        ava.join();
+
+        // swap out 1 Zero in
+        sid.swapIn(true);
+
+        // jim and ava exit
+        jim.exit(space.balanceOf(address(jim)));
+        ava.exit(space.balanceOf(address(ava)));
+
+        // Can pull around half the Target from sid's swap
+        assertClose(target.balanceOf(address(jim)), 99.5e18, 1e12);
+        assertClose(target.balanceOf(address(ava)), 99.5e18, 1e12);
+        assertClose(zero.balanceOf(address(jim)), 100.5e18, 1e12);
+        assertClose(zero.balanceOf(address(ava)), 100.5e18, 1e12);
+    }
+
+    // function test_space_fees() public {
+
+    // }
+
+
+    // test_protocol_fees
     // test_join_multi_swaps
     // test_buy_slippage_limit
     // test_join_slippage

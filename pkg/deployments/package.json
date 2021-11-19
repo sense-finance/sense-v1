@@ -31,6 +31,7 @@
         "@nomiclabs/hardhat-ethers": "^2.0.2",
         "@nomiclabs/hardhat-etherscan": "^2.1.6",
         "@tenderly/hardhat-tenderly": "^1.0.12",
+        "dayjs": "^1.10.7",
         "ethers": "^5.4.7",
         "hardhat": "^2.6.5",
         "hardhat-abi-exporter": "^2.3.0",
