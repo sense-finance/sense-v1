@@ -35,9 +35,7 @@ contract SpaceFactory is Trust {
     }
 
     /// @dev Deploys a new `Space` contract
-    function create(address _adapter, uint48 _maturity)
-        external returns (address)
-    {
+    function create(address _adapter, uint48 _maturity) external returns (address) {
         require(pools[_adapter][_maturity] == address(0), "Space already exists for this Series");
 
         address pool = address(new Space(vault, _adapter, _maturity, divider, ts, g1, g2));

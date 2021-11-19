@@ -54,28 +54,22 @@ contract Divider is DividerLike {
 
     function series(
         address, // adapter
-        uint48   // maturity
-    ) external override returns (
-        address, 
-        address, 
-        address, 
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint128,
-        uint128
-    ) {
-        return (
-            zero, 
-            claim, 
-            address(0), 
-            uint256(0), 
-            uint256(0), 
-            uint256(0), 
-            uint256(0), 
-            uint128(0), 
-            uint128(0)
-        );
+        uint48 // maturity
+    )
+        external
+        override
+        returns (
+            address,
+            address,
+            address,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint128,
+            uint128
+        )
+    {
+        return (zero, claim, address(0), uint256(0), uint256(0), uint256(0), uint256(0), uint128(0), uint128(0));
     }
 }

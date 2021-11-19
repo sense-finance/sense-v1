@@ -34,8 +34,8 @@ contract Test is DSTest {
     }
 
     function fuzzWithBounds(
-        uint256 amount, 
-        uint256 lBound, 
+        uint256 amount,
+        uint256 lBound,
         uint256 uBound
     ) internal returns (uint256) {
         return lBound + (amount % (uBound - lBound));
@@ -48,10 +48,15 @@ contract User {
     ERC20Mintable zero;
     ERC20Mintable target;
 
-    constructor(IVault _vault, Space _space, ERC20Mintable _zero, ERC20Mintable _target) public {
-        vault  = _vault;
-        space  = _space;
-        zero   = _zero;
+    constructor(
+        IVault _vault,
+        Space _space,
+        ERC20Mintable _zero,
+        ERC20Mintable _target
+    ) public {
+        vault = _vault;
+        space = _space;
+        zero = _zero;
         target = _target;
         zero.approve(address(vault), type(uint256).max);
         target.approve(address(vault), type(uint256).max);
@@ -74,7 +79,7 @@ contract User {
 
         (uint8 zeroi, uint8 targeti) = space.getIndices();
         uint256[] memory amountsIn = new uint256[](2);
-        amountsIn[zeroi  ] = reqZeroIn;
+        amountsIn[zeroi] = reqZeroIn;
         amountsIn[targeti] = reqTargetIn;
 
         vault.joinPool(
@@ -158,7 +163,7 @@ contract User {
                 toInternalBalance: false
             }),
             type(uint256).max, // `limit` – no max expectations around tokens out for testing GIVEN_OUT
-            type(uint256).max  // `deadline` – no deadline
+            type(uint256).max // `deadline` – no deadline
         );
     }
 }
@@ -171,7 +176,7 @@ contract User {
 contract SpaceTest is Test {
     using FixedPoint for uint256;
 
-    Hevm internal constant hevm  = Hevm(HEVM_ADDRESS);
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
     IWETH internal constant weth = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     Vault internal vault;
@@ -216,24 +221,24 @@ contract SpaceTest is Test {
         // mint this address Zeros and Target
         // max approve the balancer vault to move this addresses tokens
 
-        zero.mint(address(this  ), 100e18);
+        zero.mint(address(this), 100e18);
         target.mint(address(this), 100e18);
         target.approve(address(vault), type(uint256).max);
-        zero.approve(address(vault  ), type(uint256).max);
+        zero.approve(address(vault), type(uint256).max);
 
         jim = new User(vault, space, zero, target);
         {
-            zero.mint(address(jim  ), 100e18);
+            zero.mint(address(jim), 100e18);
             target.mint(address(jim), 100e18);
         }
         ava = new User(vault, space, zero, target);
         {
-            zero.mint(address(ava  ), 100e18);
+            zero.mint(address(ava), 100e18);
             target.mint(address(ava), 100e18);
         }
         sid = new User(vault, space, zero, target);
         {
-            zero.mint(address(sid  ), 100e18);
+            zero.mint(address(sid), 100e18);
             target.mint(address(sid), 100e18);
         }
     }
@@ -313,7 +318,6 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 99e18 + expectedZeroOut);
     }
 
-
     function test_simple_swaps_out() public {
         jim.join();
 
@@ -321,7 +325,7 @@ contract SpaceTest is Test {
         try jim.swapOut(false, 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Too few reserves"); 
+            assertEq(error, "Too few reserves");
         }
 
         // can successfully swap Target out
@@ -357,7 +361,7 @@ contract SpaceTest is Test {
 
         // max exit
         jim.exit(space.balanceOf(address(jim)));
-        
+
         // for the pool's first exit –--
         // it moved Zeros back to jim's account (less rounding losses)
         assertClose(zero.balanceOf(address(jim)), 100e18, 1e6);
