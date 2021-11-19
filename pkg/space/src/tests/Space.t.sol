@@ -372,22 +372,11 @@ contract SpaceTest is Test {
     }
 
     // test_multi_party_swap_exit
-
-    // function test_join_multi_swaps() public {
-    // // if the pool has been joined a second time and no swaps have occured –--
-    // // it moved more Target out of this account
-    // assertEq(target.balanceOf(address(this)), 98e18);
-
-    // // and it minted this account more BPT tokens
-    // assertClose(space.balanceOf(address(this)), 2e18, 1e6);
-
-    // // but it still did not move any Zeros
-    // assertEq(zero.balanceOf(address(this)), 100e18);
-    // }
-
-    // buy_slippage_limit
-    // max base_in
-
+    // test_join_multi_swaps
+    // test_buy_slippage_limit
+    // test_join_slippage
+    // test_exit_slippage
+    // test_max_base_in
     // test_join_multi
     // test_join_exit_once
     // test_join_exit_multi
