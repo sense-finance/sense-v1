@@ -50,6 +50,9 @@ dapp:
 build: && _timer
 	cd {{ invocation_directory() }}; dapp build
 
+build-solc7: && _timer
+	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
+
 # debug and open TTY debugger using dapp
 debug:
 	cd {{ invocation_directory() }}; dapp debug
@@ -61,12 +64,16 @@ debug:
 
 # default test scripts
 test: test-local
+test-solc7: test-local-solc7
 
 # turbo-test: turbo-test-local
 
 # run local dapp tests (all files with the extension .t.sol)
 test-local *commands="": && _timer
 	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ commands }}
+
+test-local-solc7 *commands="": && _timer
+	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ commands }}
 
 # run mainnet fork dapp tests (all files with the extension .tm.sol)
 test-mainnet *commands="": && _timer
@@ -76,16 +83,22 @@ test-mainnet *commands="": && _timer
 # turbo-test-local *commands="": && timer
 # 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp test \
 # 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 {{ commands }}
+
 # turbo-test-mainnet *commands="": && timer
 # 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp test \
 # 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
 # 		--fork-url {{ MAINNET_RPC }} {{ commands }}
 
+#   run a local version of dapptools-rs – NOTE: replace `<path-to-dapptools-rs>` with the actual path
+# 	cd {{ invocation_directory() }}; cargo -r \
+#		--manifest-path <path-to-dapptools-rs>/Cargo.toml --bin dapp test \
+# 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+# 		--fork-url {{ MAINNET_RPC }} {{ commands }}
 
 # default gas snapshot script
 gas-snapshot: gas-snapshot-local
 
-# get gas snapshot from local tests and save it to a file
+# get gas snapshot from local tests using dapp and save it to a file
 gas-snapshot-local:
 	cd {{ invocation_directory() }}; \
 	dapp test --fuzz-runs 0 | grep 'gas:' | cut -d " " -f 2-4 >> \
@@ -93,7 +106,7 @@ gas-snapshot-local:
 		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
 	)
 
-# get gas snapshot from mainnet tests and save it to a file
+# get gas snapshot from mainnet tests using dapp and save it to a file
 gas-snapshot-mainnet:
 	cd {{ invocation_directory() }}; \
 	dapp test --rpc-url {{ MAINNET_RPC }} --fuzz-runs 0 | grep 'gas:' | cut -d " " -f 2-4 >> \

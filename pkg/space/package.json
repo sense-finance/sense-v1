@@ -1,21 +1,20 @@
 {
-    "name": "@sense-finance/v1-fuse",
+    "name": "@sense-finance/v1-space",
     "version": "0.2.2",
-    "description": "Sense V1 Fuse Contracts",
+    "description": "Sense V1 Space Contract",
     "license": "UNLICENSED",
     "repository": {
         "type": "git",
         "url": "https://github.com/sense-finance/sense-v1.git",
-        "directory": "pkg/fuse"
+        "directory": "pkg/space"
     },
     "files": [
         "src/**/*",
         "!src/tests/*"
     ],
     "scripts": {
-        "build": "just build",
-        "debug": "just debug",
-        "test": "just test",
+        "build": "just build-solc7",
+        "test": "just test-solc7",
         "test:mainnet": "just test-mainnet",
         "testcov": "just test --coverage",
         "lint": "solhint -f table src/**/*.sol",
@@ -23,10 +22,13 @@
         "size-contracts": "hardhat compile && hardhat size-contracts"
     },
     "dependencies": {
+        "@balancer-labs/v2-pool-utils": "^2.0.1",
+        "@balancer-labs/v2-pool-weighted": "^2.0.1",
+        "@balancer-labs/v2-solidity-utils": "^2.0.0",
+        "@balancer-labs/v2-vault": "^2.0.0",
         "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "5.0.2",
-        "@sense-finance/v1-core": "workspace:pkg/core",
-        "@sense-finance/v1-utils": "workspace:pkg/utils"
+        "@sense-finance/v1-core": "workspace:pkg/core"
     },
     "devDependencies": {
         "dotenv": "^10.0.0",

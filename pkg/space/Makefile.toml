@@ -1,0 +1,4 @@
+extend = "../../Makefile.toml"
+
+[env]
+DAPP_SOLC_VERSION = "0.7.6"
