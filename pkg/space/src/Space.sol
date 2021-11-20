@@ -48,7 +48,7 @@ interface AdapterLike {
 }
 
 /*
-                    YIELD SPACE
+                    SPACE
         *   '*
                 *
                         *
@@ -62,9 +62,9 @@ interface AdapterLike {
 
 */
 
-/// @notice A Yield Space implementation extended such that it allows LPs to deposit
-/// (Zero, Yield-bearing asset) – rather than [Zero, Underlying] – while keeping the benefits of
-/// standard yield space invariant accounting (ex: [Zero, cDAI] rather than [Zero, DAI])
+/// @notice A Yieldspace implementation extended such that it allows LPs to deposit
+/// [Zero, Yield-bearing asset] – rather than [Zero, Underlying] – while keeping the benefits of
+/// standard yieldspace invariant accounting (ex: [Zero, cDAI] rather than [Zero, DAI])
 contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     using FixedPoint for uint256;
 
@@ -190,7 +190,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             _mintPoolTokens(_recipient, bptAmountOut);
 
             // For the first join, we don't pull any Zeros, regardless of what the caller requested –
-            // this starts this pool off as "Underlying" only, as speified in the yield space paper
+            // this starts this pool off as "Underlying" only, as speified in the yieldspace paper
             delete _reqAmountsIn[_zeroi];
 
             // Amounts entering the Pool, so we round up
@@ -283,7 +283,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 scale = AdapterLike(adapter).scale();
 
         if (zeroIn) {
-            // Add LP supply to Zero reserves as suggested by the yield space paper
+            // Add LP supply to Zero reserves as suggested by the yieldspace paper
             _reservesTokenIn += totalSupply();
             // Remove all new underlying accured while the Target has been in this pool from Target reserve accounting,
             // then convert the remaining Target into Underlying.
@@ -393,7 +393,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // After maturity, still allow users to transfer using a constant sum pool
         uint256 ttm = _maturity > block.timestamp ? uint256(_maturity - block.timestamp) * FixedPoint.ONE : 0;
 
-        // `t` from the yield space paper (`ttm` adjusted by some factor `ts`)
+        // `t` from the yieldspace paper (`ttm` adjusted by some factor `ts`)
         uint256 t = ts.mulDown(ttm);
 
         // `t` with fees baked in
