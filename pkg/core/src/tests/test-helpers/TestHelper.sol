@@ -13,8 +13,8 @@ import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
-// Uniswap mocks
-import { MockYieldSpaceFactory, MockBalancerVault } from "./mocks/YieldSpace.sol";
+// Space & Balanacer V2 mock
+import { MockSpaceFactory, MockBalancerVault } from "./mocks/Space.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
@@ -49,8 +49,8 @@ contract TestHelper is DSTest {
     User internal jim;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    // balancer/yield space
-    MockYieldSpaceFactory yieldSpaceFactory;
+    // balancer/space
+    MockSpaceFactory spaceFactory;
     MockBalancerVault balancerVault;
 
     // fuse & compound
@@ -101,9 +101,9 @@ contract TestHelper is DSTest {
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
 
-        // balancer/yield space mocks
+        // balancer/space mocks
         balancerVault = new MockBalancerVault();
-        yieldSpaceFactory = new MockYieldSpaceFactory(address(balancerVault));
+        spaceFactory = new MockSpaceFactory(address(balancerVault));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
@@ -132,7 +132,7 @@ contract TestHelper is DSTest {
         periphery = new Periphery(
             address(divider),
             address(poolManager),
-            address(yieldSpaceFactory),
+            address(spaceFactory),
             address(balancerVault)
         );
         divider.setPeriphery(address(periphery));

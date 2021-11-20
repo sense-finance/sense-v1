@@ -16,7 +16,7 @@ import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "./tokens/Token.sol";
 
-interface YieldSpaceFactoryLike {
+interface SpaceFactoryLike {
     function create(
         address,
         address,
@@ -26,7 +26,7 @@ interface YieldSpaceFactoryLike {
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
 
-interface YieldSpacePoolLike {
+interface SpaceLike {
     function onSwapGivenOut(
         bool _zeroIn,
         uint256 _amountOut,
@@ -50,7 +50,7 @@ contract Periphery is Trust {
     /// @notice Program state
     Divider public immutable divider;
     PoolManager public immutable poolManager;
-    YieldSpaceFactoryLike public immutable yieldSpaceFactory;
+    SpaceFactoryLike public immutable spaceFactory;
     BalancerVault public immutable balancerVault;
 
     mapping(address => bool) public factories; // adapter factories -> is supported
@@ -63,7 +63,7 @@ contract Periphery is Trust {
     ) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
-        yieldSpaceFactory = YieldSpaceFactoryLike(_ysFactory);
+        spaceFactory = SpaceFactoryLike(_ysFactory);
         balancerVault = BalancerVault(_balancerVault);
     }
 
@@ -85,7 +85,7 @@ contract Periphery is Trust {
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        address pool = yieldSpaceFactory.create(address(divider), adapter, uint256(maturity));
+        address pool = spaceFactory.create(address(divider), adapter, uint256(maturity));
         poolManager.queueSeries(adapter, maturity, pool);
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
@@ -320,7 +320,7 @@ contract Periphery is Trust {
     /* ========== VIEWS ========== */
 
     function price(address tokenA, address tokenB) public view returns (uint256) {
-        // TODO: unimplemented – solve this with the yield space for the optimal swap
+        // TODO: unimplemented – solve this with the space for the optimal swap
         return 0.95e18;
     }
 
@@ -374,7 +374,7 @@ contract Periphery is Trust {
     ) internal returns (uint256) {
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal); // pull zeros
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
         return _swap(zero, Adapter(adapter).getTarget(), zBal, pool.getPoolId(), minAccepted); // swap zeros for underlying
     }
 
@@ -385,7 +385,7 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) internal returns (uint256) {
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
         uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, tBal, pool.getPoolId(), minAccepted); // swap target for zeros
         ERC20(zero).safeTransfer(msg.sender, zBal); // transfer bought zeros to user
         return zBal;
@@ -397,7 +397,7 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256) {
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
 
         // issue zeros and claims & swap zeros for target
         uint256 issued = divider.issue(adapter, maturity, tBal);
@@ -416,7 +416,7 @@ contract Periphery is Trust {
         uint256 cBal
     ) internal returns (uint256) {
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
 
         // transfer claims into this contract if needed
         if (sender != address(this)) ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
@@ -424,7 +424,7 @@ contract Periphery is Trust {
         // calculate target to borrow by calling AMM
         bytes32 poolId = pool.getPoolId();
         (, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
-        uint256 targetToBorrow = YieldSpacePoolLike(pool).onSwapGivenOut(false, cBal, balances[0], balances[1]);
+        uint256 targetToBorrow = SpaceLike(pool).onSwapGivenOut(false, cBal, balances[0], balances[1]);
 
         // flash borrow target (following actions in `onFlashLoan`)
         return _flashBorrow("0x", adapter, maturity, targetToBorrow);
@@ -438,7 +438,7 @@ contract Periphery is Trust {
     ) internal {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
 
         uint256 issued;
         {
@@ -492,7 +492,7 @@ contract Periphery is Trust {
     ) internal returns (uint256) {
         address target = Adapter(adapter).getTarget();
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
         bytes32 poolId = pool.getPoolId();
 
         // (0) Pull LP tokens from sender
@@ -542,7 +542,7 @@ contract Periphery is Trust {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        YieldSpacePoolLike pool = YieldSpacePoolLike(yieldSpaceFactory.pools(adapter, maturity));
+        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
 
         // swap Target for Zeros
         uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), 0); // TODO: minAccepted
