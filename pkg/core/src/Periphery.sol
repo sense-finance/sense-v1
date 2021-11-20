@@ -54,6 +54,7 @@ contract Periphery is Trust {
     BalancerVault public immutable balancerVault;
 
     mapping(address => bool) public factories; // adapter factories -> is supported
+    mapping(address => address) public factory; // adapter -> factory
 
     constructor(
         address _divider,
@@ -85,8 +86,11 @@ contract Periphery is Trust {
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        address pool = spaceFactory.create(address(divider), adapter, uint256(maturity));
-        poolManager.queueSeries(adapter, maturity, pool);
+        // if it is a Sense verified adapter
+        if (factory[adapter] != address(0)) {
+            address pool = spaceFactory.create(address(divider), adapter, uint256(maturity));
+            poolManager.queueSeries(adapter, maturity, pool);
+        }
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
@@ -94,12 +98,13 @@ contract Periphery is Trust {
     /// @dev Deploys a new Adapter via the AdapterFactory
     /// @dev Onboards Target onto Fuse. Caller must know the factory address
     /// @param target Target to onboard
-    function onboardAdapter(address factory, address target) external returns (address adapterClone) {
-        require(factories[factory], Errors.FactoryNotSupported);
-        adapterClone = Factory(factory).deployAdapter(target);
+    function onboardAdapter(address f, address target) external returns (address adapterClone) {
+        require(factories[f], Errors.FactoryNotSupported);
+        adapterClone = Factory(f).deployAdapter(target);
         ERC20(target).safeApprove(address(divider), type(uint256).max);
         ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
         poolManager.addTarget(target, adapterClone);
+        factory[adapterClone] = f;
         emit AdapterOnboarded(adapterClone);
     }
 
