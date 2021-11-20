@@ -5,9 +5,11 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
+import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
@@ -46,6 +48,37 @@ contract PeripheryTest is TestHelper {
 
         // check zeros and claims onboarded on PoolManager (Fuse)
         assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
+    }
+
+    function testSponsorSeriesWhenUnverifiedAdapter() public {
+        divider.setPermissionless(true);
+        MockAdapter adapter = new MockAdapter();
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: address(target),
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: 1e18,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+        adapter.initialize(address(divider), adapterParams, address(reward));
+        divider.addAdapter(address(adapter));
+
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = alice.doSponsorSeries(address(adapter), maturity);
+
+        // check zeros and claim deployed
+        assertTrue(zero != address(0));
+        assertTrue(claim != address(0));
+
+        // check Balancer pool is NOT deployed
+        assertTrue(address(yieldSpaceFactory.pool()) == address(0));
+
+        // check zeros and claims NOT onboarded on PoolManager (Fuse)
+        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.NONE);
     }
 
     function testOnboardAdapter() public {
