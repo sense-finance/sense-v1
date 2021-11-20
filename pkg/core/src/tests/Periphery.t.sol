@@ -20,18 +20,13 @@ contract PeripheryTest is TestHelper {
 
     function testDeployPeriphery() public {
         MockPoolManager poolManager = new MockPoolManager();
-        address yieldSpaceFactory = address(2);
+        address spaceFactory = address(2);
         address balancerVault = address(3);
-        Periphery somePeriphery = new Periphery(
-            address(divider),
-            address(poolManager),
-            yieldSpaceFactory,
-            balancerVault
-        );
+        Periphery somePeriphery = new Periphery(address(divider), address(poolManager), spaceFactory, balancerVault);
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
         assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
-        assertEq(address(Periphery(somePeriphery).yieldSpaceFactory()), address(yieldSpaceFactory));
+        assertEq(address(Periphery(somePeriphery).spaceFactory()), address(spaceFactory));
         assertEq(address(Periphery(somePeriphery).balancerVault()), address(balancerVault));
     }
 
@@ -44,7 +39,7 @@ contract PeripheryTest is TestHelper {
         assertTrue(claim != address(0));
 
         // check Balancer pool deployed
-        assertTrue(address(yieldSpaceFactory.pool()) != address(0));
+        assertTrue(address(spaceFactory.pool()) != address(0));
 
         // check zeros and claims onboarded on PoolManager (Fuse)
         assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
@@ -75,7 +70,7 @@ contract PeripheryTest is TestHelper {
         assertTrue(claim != address(0));
 
         // check Balancer pool is NOT deployed
-        assertTrue(address(yieldSpaceFactory.pool()) == address(0));
+        assertTrue(address(spaceFactory.pool()) == address(0));
 
         // check zeros and claims NOT onboarded on PoolManager (Fuse)
         assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.NONE);

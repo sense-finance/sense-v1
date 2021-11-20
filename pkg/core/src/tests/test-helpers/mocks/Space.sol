@@ -14,7 +14,7 @@ import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
 
 import { MockToken } from "./MockToken.sol";
 
-contract MockYieldSpacePool is MockToken {
+contract MockSpacePool is MockToken {
     using FixedMath for uint256;
     MockBalancerVault public vault;
     address public zero;
@@ -54,13 +54,13 @@ contract MockYieldSpacePool is MockToken {
 
 contract MockBalancerVault {
     using FixedMath for uint256;
-    MockYieldSpacePool public yieldSpacePool;
+    MockSpacePool public yieldSpacePool;
     uint256 public constant EXCHANGE_RATE = 0.95e18;
 
     constructor() {}
 
     function setYieldSpace(address _yieldSapcePool) external {
-        yieldSpacePool = MockYieldSpacePool(_yieldSapcePool);
+        yieldSpacePool = MockSpacePool(_yieldSapcePool);
     }
 
     function swap(
@@ -131,9 +131,9 @@ contract MockBalancerVault {
     }
 }
 
-contract MockYieldSpaceFactory {
+contract MockSpaceFactory {
     MockBalancerVault public vault;
-    MockYieldSpacePool public pool;
+    MockSpacePool public pool;
 
     mapping(address => mapping(uint256 => address)) public pools;
 
@@ -149,7 +149,7 @@ contract MockYieldSpaceFactory {
         (address _zero, , , , , , , , ) = Divider(_divider).series(_adapter, uint48(_maturity));
         address _underlying = Adapter(_adapter).underlying();
 
-        pool = new MockYieldSpacePool(address(vault), _underlying, _zero);
+        pool = new MockSpacePool(address(vault), _underlying, _zero);
         pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));
