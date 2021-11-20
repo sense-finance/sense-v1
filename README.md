@@ -180,7 +180,6 @@ These are libraries we need as part of the protocol that we've imported from oth
 - FixedMath.sol
 - FullMath.sol
 - OracleLibrary.sol
-- PoolAddress.sol
 
 
 ## Developing
