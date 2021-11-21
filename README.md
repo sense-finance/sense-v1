@@ -73,6 +73,8 @@ yarn build
 
 # <img src="contracts-diagram.png" alt="sense smart contract user/contract interaction diagram">
 
+[User Journey & Interaction Matrix](https://docs.google.com/spreadsheets/d/1u--kIr18av6RPTyTZbs_ryMVv2maSsd-NxDFpUkF-Uo/edit?usp=sharing)
+
 The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and the `Periphery` contract. Each Target can have an arbitrary numnber of active instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
 The core is surrounded by the following `modules`:
@@ -100,19 +102,19 @@ The Adapter holds the Target before a series' maturity and contains logic to han
 To create an Adapter implementation without airdrops, the contract needs to inherit from `BaseAdapter.sol` and override `_scale()`, `underlying()`, `wrapUnderlying()`, `unwrapTarget()`, `getUnderlyingPrice()`, and `notify()`. 
 
 There are two types of Adapters:
-1. Sense Sponsored Adapters - these are verified by the Sense team and can be permissionessly deployed by Adapter Factories
+1. Verified Adapters - these are verified by the Sense team and can be permissionessly deployed by Adapter Factories
 2. Unverified Adapters - there are unverified by the Sense team and could be controlled by malicious actors
 
-At the time of launch, the Divider will interface only with the Sense Sponsored Adapters. However, once the `permissionless` flag is enabled, users can permissionessly onboard Adapters via `Divider.addAdapter()` and leverage Sense's infrastructure to build new fixed-income products, structured products, and yield primitives never before seen in DeFi.
+At the time of launch, the Divider will interface only with the Verified Adapters. However, once the `permissionless` flag is enabled, users can permissionessly onboard Adapters via `Divider.addAdapter()` and leverage Sense's infrastructure to build new fixed-income products, structured products, and yield primitives never before seen in DeFi.
 
 ### Adapter factory
-The Adapter factory allows any person to deploy a Sense Sponsored Adapter for a given Target in a permissionless manner.
+The Adapter factory allows any person to deploy a Verified Adapter for a given Target in a permissionless manner.
 
 Following a gradual expansion, Sense Finance will deploy one Adapter Factory for each protocol (e.g cTokens Adapter Factory, Curve LP Share Adapter Factory, etc).
 
 Most factories will be similar except for how they implement `_exists(target)`, a method that communicates to a data contract from the external protocol (e.g the Comptroller on Compound Finance) to check whether the Target passed is a supported asset of that protocol.
 
-Users can deploy a Sense Sponsored Adapter by making a call to the `Periphery` contract, which has authority to call `deployAdapter(_target)` on the Adapter Factory.
+Users can deploy a Verified Adapter by making a call to the `Periphery` contract, which has authority to call `deployAdapter(_target)` on the Adapter Factory.
 
 To create an Adapter Factory, the contract needs to inherit from `BaseFactory.sol` and override `_exists()`.
 
