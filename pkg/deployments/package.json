@@ -25,7 +25,8 @@
         "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "5.0.2",
         "@sense-finance/v1-core": "workspace:pkg/core",
-        "@sense-finance/v1-utils": "workspace:pkg/utils"
+        "@sense-finance/v1-utils": "workspace:pkg/utils",
+        "@sense-finance/v1-space": "workspace:pkg/space"
     },
     "devDependencies": {
         "@nomiclabs/hardhat-ethers": "^2.0.2",
