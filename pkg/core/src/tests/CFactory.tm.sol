@@ -86,6 +86,7 @@ contract CFactories is CAdapterTestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
+        assertEq(oracle, ORACLE);
     }
 
     function testDeployAdapter() public {

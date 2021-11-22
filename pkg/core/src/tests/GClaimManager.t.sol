@@ -16,11 +16,11 @@ contract DividerMock {}
 
 contract GClaimsManager is TestHelper {
     using FixedMath for uint256;
-    using FixedMath for uint96;
+    using FixedMath for uint128;
 
     /* ========== join() tests ========== */
 
-    function testCantJoinIfInvalidMaturity(uint96 balance) public {
+    function testCantJoinIfInvalidMaturity(uint128 balance) public {
         uint48 maturity = uint48(block.timestamp - 1 days);
         //        uint256 balance = 1e18;
         try alice.doJoin(address(adapter), maturity, balance) {
@@ -30,7 +30,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfSeriesDoesntExists(uint96 balance) public {
+    function testCantJoinIfSeriesDoesntExists(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 10e18;
         try alice.doJoin(address(adapter), maturity, balance) {
@@ -40,7 +40,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfNotEnoughClaim(uint96 balance) public {
+    function testCantJoinIfNotEnoughClaim(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
@@ -53,7 +53,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfNotEnoughClaimAllowance(uint96 balance) public {
+    function testCantJoinIfNotEnoughClaimAllowance(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
@@ -103,7 +103,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testJoinFirstGClaim(uint96 balance) public {
+    function testJoinFirstGClaim(uint128 balance) public {
         // creating new periphery as the one from test helper already had a first gclaim call
         Periphery newPeriphery = new Periphery(
             address(divider),
@@ -131,7 +131,7 @@ contract GClaimsManager is TestHelper {
     }
 
     // TODO: re-add this test once we use glcaims again
-    // function testJoinAfterFirstGClaim(uint96 balance) public {
+    // function testJoinAfterFirstGClaim(uint128 balance) public {
     //     uint256 maturity = getValidMaturity(2021, 10);
     //     (, address claim) = sponsorSampleSeries(address(alice), maturity);
     //     uint256 claimBaseUnit = 10**Claim(claim).decimals();
@@ -159,7 +159,7 @@ contract GClaimsManager is TestHelper {
     // }
 
     // TODO: re-add this test once we use glcaims again
-    // function testJoinAfterFirstGClaimWithdrawsGap(uint96 balance) public {
+    // function testJoinAfterFirstGClaimWithdrawsGap(uint128 balance) public {
     //     uint256 maturity = getValidMaturity(2021, 10);
     //     (, address claim) = sponsorSampleSeries(address(alice), maturity);
     //     uint256 claimBaseUnit = 10**Claim(claim).decimals();
@@ -175,7 +175,7 @@ contract GClaimsManager is TestHelper {
     //     // alice issues and joins
     //     hevm.warp(block.timestamp + 1 days);
     //     adapter.scale();
-    //     uint256 balanceMinusExcess = uint96(balance - calculateExcess(balance, maturity, claim));
+    //     uint256 balanceMinusExcess = uint128(balance - calculateExcess(balance, maturity, claim));
     //     target.balanceOf(address(alice));
     //     alice.doIssue(address(adapter), maturity, balanceMinusExcess);
     //     alice.doApprove(address(claim), address(alice.gClaimManager()));
@@ -194,7 +194,7 @@ contract GClaimsManager is TestHelper {
 
     /* ========== exit() tests ========== */
 
-    function testCantExitIfSeriesDoesntExists(uint96 balance) public {
+    function testCantExitIfSeriesDoesntExists(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 1e18;
         try alice.doExit(address(adapter), maturity, balance) {
@@ -204,7 +204,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testExitFirstGClaim(uint96 balance) public {
+    function testExitFirstGClaim(uint128 balance) public {
         // creating new periphery as the one from test helper already had a first gclaim call
         Periphery newPeriphery = new Periphery(
             address(divider),
@@ -238,14 +238,14 @@ contract GClaimsManager is TestHelper {
         assertEq(tBalanceBefore, tBalanceAfter);
     }
 
-    function testExitGClaimWithCollected(uint96 balance) public {
+    function testExitGClaimWithCollected(uint128 balance) public {
         balance = fuzzWithBounds(balance, 1000);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         // avoid fuzz tests in which nothing is issued
         if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
         hevm.warp(block.timestamp + 1 days);
-        balance = balance - uint96(calculateExcess(balance, maturity, claim));
+        balance = balance - uint128(calculateExcess(balance, maturity, claim));
         bob.doIssue(address(adapter), maturity, balance);
         bob.doApprove(address(claim), address(bob.gClaimManager()));
         hevm.warp(block.timestamp + 1 days);
@@ -264,7 +264,7 @@ contract GClaimsManager is TestHelper {
     }
 
     // TODO: re-add this test once we use glcaims again
-    // function testExitAfterFirstGClaim(uint96 balance) public {
+    // function testExitAfterFirstGClaim(uint128 balance) public {
     //     uint256 maturity = getValidMaturity(2021, 10);
     //     (, address claim) = sponsorSampleSeries(address(alice), maturity);
     //     // avoid fuzz tests in which nothing is issued
@@ -281,7 +281,7 @@ contract GClaimsManager is TestHelper {
     //     // alice issues and joins
     //     hevm.warp(block.timestamp + 1 days);
     //     adapter.scale();
-    //     uint256 balanceMinusExcess = uint96(balance - calculateExcess(balance, maturity, claim));
+    //     uint256 balanceMinusExcess = uint128(balance - calculateExcess(balance, maturity, claim));
     //     alice.doIssue(address(adapter), maturity, balanceMinusExcess);
     //     alice.doApprove(address(claim), address(bob.gClaimManager()));
     //     alice.doApprove(address(target), address(bob.gClaimManager()));

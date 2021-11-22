@@ -83,6 +83,7 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
+        assertEq(mode, MODE);
         uint256 scale = IAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }

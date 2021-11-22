@@ -124,7 +124,7 @@ contract PoolManager is Trust {
         uint256 liqIncentive,
         address fallbackOracle
     ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
-        require(comptroller == address(0), "Pool already deployed");
+        require(comptroller == address(0), Errors.PoolAlreadyDeployed);
 
         masterOracle = Clones.cloneDeterministic(oracleImpl, Bytes32AddressLib.fillLast12Bytes(address(this)));
         MasterOracleLike(masterOracle).initialize(
@@ -145,16 +145,16 @@ contract PoolManager is Trust {
         );
 
         uint256 err = ComptrollerLike(_comptroller)._acceptAdmin();
-        require(err == 0, "Failed to become admin");
+        require(err == 0, Errors.FailedBecomeAdmin);
         comptroller = _comptroller;
 
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
     function addTarget(address target, address adapter) external requiresTrust {
-        require(comptroller != address(0), "Pool not yet deployed");
-        require(!tInits[target], "Target already added");
-        require(targetParams.irModel != address(0), "Target asset params not set");
+        require(comptroller != address(0), Errors.PoolNotDeployed);
+        require(!tInits[target], Errors.TargetExists);
+        require(targetParams.irModel != address(0), Errors.TargetParamNotSet);
 
         address underlying = Adapter(adapter).underlying();
 
@@ -184,7 +184,7 @@ contract PoolManager is Trust {
         );
 
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
-        require(err == 0, "Failed to add market");
+        require(err == 0, Errors.FailedAddMarket);
 
         // TODO: get actual cTarget address
 
@@ -192,7 +192,7 @@ contract PoolManager is Trust {
         emit TargetAdded(target);
     }
 
-    /// @notice queues a set of (Zero,LPShare) for Fuse pool once the TWAP is ready
+    /// @notice queues a set of (Zero, LPShare) for Fuse pool once the TWAP is ready
     /// @dev called by the periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
@@ -201,12 +201,12 @@ contract PoolManager is Trust {
     ) external requiresTrust {
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
-        require(comptroller != address(0), "Fuse pool not yet deployed");
+        require(comptroller != address(0), Errors.PoolNotDeployed);
         require(zero != address(0), Errors.SeriesDoesntExists);
         require(sStatus[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
 
         address target = Adapter(adapter).getTarget();
-        require(tInits[target], "Target for this Series not yet added to Fuse");
+        require(tInits[target], Errors.TargetNotInFuse);
 
         sStatus[adapter][maturity] = SeriesStatus.QUEUED;
         sPools[adapter][maturity] = pool;
@@ -217,7 +217,7 @@ contract PoolManager is Trust {
     /// @notice open method to add queued Zeros and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint48 maturity) external {
-        require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, "Series must be queued");
+        require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
 
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
@@ -252,7 +252,7 @@ contract PoolManager is Trust {
             constructorDataZero,
             zeroParams.collateralFactor
         );
-        require(errZero == 0, "Failed to add Zero market");
+        require(errZero == 0, Errors.FailedAddZeroMarket);
 
         // LP Share pool token
         bytes memory constructorDataLpToken = abi.encodePacked(
@@ -272,7 +272,7 @@ contract PoolManager is Trust {
             constructorDataLpToken,
             lpTokenParams.collateralFactor
         );
-        require(errLpToken == 0, "Failed to add LP market");
+        require(errLpToken == 0, Errors.FailedAddLPMarket);
 
         sStatus[adapter][maturity] = SeriesStatus.ADDED;
 

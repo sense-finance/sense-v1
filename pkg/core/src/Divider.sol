@@ -572,12 +572,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address adapter, uint48 maturity) {
-        require(series[adapter][maturity].claim == msg.sender, "Can only be invoked by the Claim contract");
+        require(series[adapter][maturity].claim == msg.sender, Errors.OnlyClaim);
         _;
     }
 
     modifier onlyPeriphery() {
-        require(periphery == msg.sender, "Can only be invoked by the Periphery contract");
+        require(periphery == msg.sender, Errors.OnlyPeriphery);
         _;
     }
 

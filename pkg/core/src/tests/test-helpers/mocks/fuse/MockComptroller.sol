@@ -9,11 +9,27 @@ contract MockComptroller {
         bool isCEther,
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
-    ) external returns (uint256) {
+    ) external virtual returns (uint256) {
         return 0;
     }
 
-    function _acceptAdmin() external returns (uint256) {
+    function _acceptAdmin() external virtual returns (uint256) {
         return 0;
+    }
+}
+
+contract MockComptrollerRejectAdmin is MockComptroller {
+    function _acceptAdmin() external override returns (uint256) {
+        return 1;
+    }
+}
+
+contract MockComptrollerFailAddMarket is MockComptroller {
+    function _deployMarket(
+        bool isCEther,
+        bytes calldata constructorData,
+        uint256 collateralFactorMantissa
+    ) external override returns (uint256) {
+        return 1;
     }
 }
