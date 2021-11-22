@@ -84,7 +84,7 @@ contract SpaceTest is Test {
         uint256 g1 = (FixedPoint.ONE * 950).divDown(FixedPoint.ONE * 1000);
         // 1 / 0.95 for selling Zeros
         uint256 g2 = (FixedPoint.ONE * 1000).divDown(FixedPoint.ONE * 950);
-        
+
         maturity = 15811200; // 6 months in seconds
 
         authorizer = new Authorizer(address(this));
@@ -287,7 +287,7 @@ contract SpaceTest is Test {
 
         // price execution is getting worse for zero out
         uint256 targetInFor1ZeroOut = 0;
-        for (uint i = 0; i < 20; i++) {
+        for (uint256 i = 0; i < 20; i++) {
             uint256 _targetInFor1ZeroOut = ava.swapOut(false);
             assertGt(_targetInFor1ZeroOut, targetInFor1ZeroOut);
             targetInFor1ZeroOut = _targetInFor1ZeroOut;
@@ -297,7 +297,7 @@ contract SpaceTest is Test {
 
         // price execution is getting worse for target out
         uint256 zeroInFor1TargetOut = 0;
-        for (uint i = 0; i < 20; i++) {
+        for (uint256 i = 0; i < 20; i++) {
             // price execution is getting worse
             uint256 _zeroInFor1TargetOut = ava.swapOut(true);
             assertGt(_zeroInFor1TargetOut, zeroInFor1TargetOut);
@@ -308,7 +308,7 @@ contract SpaceTest is Test {
 
         // price execution is getting worse for zero in
         uint256 targetOutFor1ZeroIn = type(uint256).max;
-        for (uint i = 0; i < 20; i++) {
+        for (uint256 i = 0; i < 20; i++) {
             // price execution is getting worse
             uint256 _targetOutFor1ZeroIn = ava.swapIn(true);
             assertLt(_targetOutFor1ZeroIn, targetOutFor1ZeroIn);
@@ -319,7 +319,7 @@ contract SpaceTest is Test {
 
         // price execution is getting worse for target in
         uint256 zeroOutFor1TargetIn = type(uint256).max;
-        for (uint i = 0; i < 20; i++) {
+        for (uint256 i = 0; i < 20; i++) {
             // price execution is getting worse
             uint256 _zeroOutFor1TargetIn = ava.swapIn(false);
             assertLt(_zeroOutFor1TargetIn, zeroOutFor1TargetIn);
@@ -360,9 +360,8 @@ contract SpaceTest is Test {
     //     authorizer.grantRolesGlobally(roles, address(this));
     //     protocolFeesCollector.setSwapFeePercentage(0.1e18);
 
-        // jim.join();
+    // jim.join();
     // }
-
 
     // test_join_diff_scale_values
     // test_space_fees_magnitude

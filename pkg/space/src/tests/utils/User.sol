@@ -90,24 +90,25 @@ contract User {
     }
 
     function swapIn(bool zeroIn, uint256 amountIn) public returns (uint256) {
-        return vault.swap(
-            IVault.SingleSwap({
-                poolId: space.getPoolId(),
-                kind: IVault.SwapKind.GIVEN_IN,
-                assetIn: IAsset(zeroIn ? address(zero) : address(target)),
-                assetOut: IAsset(zeroIn ? address(target) : address(zero)),
-                amount: amountIn,
-                userData: "0x"
-            }),
-            IVault.FundManagement({
-                sender: address(this),
-                fromInternalBalance: false,
-                recipient: payable(address(this)),
-                toInternalBalance: false
-            }),
-            0, // `limit` – no min expectations of return around tokens out testing GIVEN_IN
-            type(uint256).max // `deadline` – no deadline
-        );
+        return
+            vault.swap(
+                IVault.SingleSwap({
+                    poolId: space.getPoolId(),
+                    kind: IVault.SwapKind.GIVEN_IN,
+                    assetIn: IAsset(zeroIn ? address(zero) : address(target)),
+                    assetOut: IAsset(zeroIn ? address(target) : address(zero)),
+                    amount: amountIn,
+                    userData: "0x"
+                }),
+                IVault.FundManagement({
+                    sender: address(this),
+                    fromInternalBalance: false,
+                    recipient: payable(address(this)),
+                    toInternalBalance: false
+                }),
+                0, // `limit` – no min expectations of return around tokens out testing GIVEN_IN
+                type(uint256).max // `deadline` – no deadline
+            );
     }
 
     function swapOut(bool zeroIn) public returns (uint256) {
@@ -115,23 +116,24 @@ contract User {
     }
 
     function swapOut(bool zeroIn, uint256 amountOut) public returns (uint256) {
-        return vault.swap(
-            IVault.SingleSwap({
-                poolId: space.getPoolId(),
-                kind: IVault.SwapKind.GIVEN_OUT,
-                assetIn: IAsset(zeroIn ? address(zero) : address(target)),
-                assetOut: IAsset(zeroIn ? address(target) : address(zero)),
-                amount: amountOut,
-                userData: "0x"
-            }),
-            IVault.FundManagement({
-                sender: address(this),
-                fromInternalBalance: false,
-                recipient: payable(address(this)),
-                toInternalBalance: false
-            }),
-            type(uint256).max, // `limit` – no max expectations around tokens out for testing GIVEN_OUT
-            type(uint256).max // `deadline` – no deadline
-        );
+        return
+            vault.swap(
+                IVault.SingleSwap({
+                    poolId: space.getPoolId(),
+                    kind: IVault.SwapKind.GIVEN_OUT,
+                    assetIn: IAsset(zeroIn ? address(zero) : address(target)),
+                    assetOut: IAsset(zeroIn ? address(target) : address(zero)),
+                    amount: amountOut,
+                    userData: "0x"
+                }),
+                IVault.FundManagement({
+                    sender: address(this),
+                    fromInternalBalance: false,
+                    recipient: payable(address(this)),
+                    toInternalBalance: false
+                }),
+                type(uint256).max, // `limit` – no max expectations around tokens out for testing GIVEN_OUT
+                type(uint256).max // `deadline` – no deadline
+            );
     }
 }

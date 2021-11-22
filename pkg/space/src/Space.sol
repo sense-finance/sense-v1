@@ -47,7 +47,6 @@ interface AdapterLike {
     function name() external returns (string memory);
 }
 
-
 /*
                     YIELD SPACE
         *   '*
