@@ -39,7 +39,7 @@ contract PoolManagerTest is TestHelper {
         assertTrue(pm.lpOracle() != address(0));
         assertTrue(pm.underlyingOracle() != address(0));
     }
-    
+
     /* ========== deployPool() tests ========== */
 
     function testCantDeployPoolIfFailToBecomeAdmin() public {
@@ -81,9 +81,9 @@ contract PoolManagerTest is TestHelper {
         assertTrue(poolManager.masterOracle() != address(0));
         assertTrue(poolManager.comptroller() != address(0));
     }
-    
+
     /* ========== addTarget() tests ========== */
-    
+
     function testCantAddTargetIfPooledNotDeployed() public {
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
@@ -167,7 +167,6 @@ contract PoolManagerTest is TestHelper {
         } catch Error(string memory error) {
             assertEq(error, Errors.FailedAddMarket);
         }
-        
     }
 
     function testAddTarget() public {
@@ -268,11 +267,9 @@ contract PoolManagerTest is TestHelper {
 
     /* ========== addSeries() tests ========== */
 
-    function testAddSeries() public {
-    }
+    function testAddSeries() public {}
 
     /* ========== setParams() tests ========== */
 
-    function testSetParams() public {
-    }
+    function testSetParams() public {}
 }
