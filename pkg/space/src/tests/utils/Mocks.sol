@@ -8,7 +8,7 @@ import { Authorizer } from "@balancer-labs/v2-vault/contracts/Authorizer.sol";
 import { ERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/ERC20.sol";
 
 // Internal references
-import { DividerLike } from "../Space.sol";
+import { DividerLike } from "../../Space.sol";
 
 contract ERC20Mintable is ERC20 {
     constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
@@ -32,7 +32,7 @@ contract Adapter {
 
     function scale() external returns (uint256) {
         // grow by 0.01 every second after initialization
-        return 1e18 + (block.timestamp - start) * 1e16;
+        return 1e18 + (block.timestamp - start) * 1e12;
     }
 
     function getTarget() external view returns (address) {

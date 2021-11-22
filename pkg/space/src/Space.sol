@@ -47,6 +47,7 @@ interface AdapterLike {
     function name() external returns (string memory);
 }
 
+
 /*
                     YIELD SPACE
         *   '*
@@ -207,7 +208,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             // Calculate fees due before updating reserves to determine invariant growth from just swap fees
             if (_protocolSwapFeePercentage != 0) {
-                // Balancer fealty
                 _mintPoolTokens(_protocolFeesCollector, _dueBptFee(_reserves, _protocolSwapFeePercentage));
             }
 
@@ -279,7 +279,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         _reservesTokenIn = _upscale(_reservesTokenIn, scalingFactorTokenIn);
         _reservesTokenOut = _upscale(_reservesTokenOut, scalingFactorTokenOut);
 
-        // Sense Adapter Scale value (Underyling per Target)
+        // Sense Adapter's Scale value (Underyling per one Target)
         uint256 scale = AdapterLike(adapter).scale();
 
         if (zeroIn) {
@@ -291,9 +291,18 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // `adjustedTargetReserves = targetReserves - excess`
             // `adjustedUnderlyingReserves = adjustedTargetReserves * scale`
             // simplified to: `(2 * targetReserves - target reserves * scale / initScale) * scale`
-            _reservesTokenOut = (2 * _reservesTokenOut - (_reservesTokenOut * scale) / _initScale).mulDown(scale);
+            if (scale > _initScale) {
+                _reservesTokenOut = (2 * _reservesTokenOut - _reservesTokenOut / (scale - _initScale)).mulDown(scale);
+            } else {
+                _reservesTokenOut = _reservesTokenOut.mulDown(scale);
+            }
         } else {
-            _reservesTokenIn = (2 * _reservesTokenIn - (_reservesTokenIn * scale) / _initScale).mulDown(scale);
+            if (scale > _initScale) {
+                _reservesTokenIn = (2 * _reservesTokenIn - _reservesTokenIn / (scale - _initScale)).mulDown(scale);
+            } else {
+                _reservesTokenIn = _reservesTokenIn.mulDown(scale);
+            }
+
             _reservesTokenOut += totalSupply();
         }
 
@@ -316,6 +325,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /// @notice Internal helpers ----
 
+    // Balancer fee accounting
     function _dueBptFee(uint256[] memory _reserves, uint256 _protocolSwapFeePercentage) internal returns (uint256) {
         uint256 ttm = _maturity > block.timestamp ? uint256(_maturity - block.timestamp) * FixedPoint.ONE : 0;
         uint256 a = ts.mulDown(ttm).complement();
@@ -332,6 +342,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             );
     }
 
+    // Calculate the max amount BPT that can be minted from the requested amounts in, if there are no swaps
     function _tokensInForBptOut(uint256[] memory _reqAmountsIn, uint256[] memory _reserves)
         internal
         returns (uint256, uint256[] memory)
@@ -379,13 +390,14 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         }
     }
 
+    // Calculate the missing variable in the yield space equation given the direction (in vs. out) and starting state of the pool
     function _onSwap(
         bool _zeroIn,
         bool _givenIn,
         uint256 _amountDelta,
         uint256 _reservesTokenIn,
         uint256 _reservesTokenOut
-    ) internal view returns (uint256) {
+    ) internal returns (uint256) {
         // x_pre = token in reserves pre swap
         // y_pre = token out reserves pre swap
 
@@ -420,6 +432,15 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         return _givenIn ? _reservesTokenOut.sub(post) : post.sub(_reservesTokenIn);
     }
 
+    function _cacheInvariantAndReserves(uint256[] memory _reserves) internal {
+        uint256 ttm = _maturity > block.timestamp ? uint256(_maturity - block.timestamp) * FixedPoint.ONE : 0;
+        uint256 a = ts.mulDown(ttm).complement();
+
+        _lastInvariant = _reserves[0].powDown(a) + _reserves[1].powDown(a);
+        _lastToken0Reserve = _reserves[0];
+        _lastToken1Reserve = _reserves[1];
+    }
+
     /// @notice Public getter ----
 
     // Get token indices for Zero and Target
@@ -436,15 +457,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     function getVault() public view returns (IVault) {
         return _vault;
-    }
-
-    function _cacheInvariantAndReserves(uint256[] memory _reserves) internal {
-        uint256 ttm = _maturity > block.timestamp ? uint256(_maturity - block.timestamp) * FixedPoint.ONE : 0;
-        uint256 a = ts.mulDown(ttm).complement();
-
-        _lastInvariant = _reserves[0].powDown(a) + _reserves[1].powDown(a);
-        _lastToken0Reserve = _reserves[0];
-        _lastToken1Reserve = _reserves[1];
     }
 
     /// @notice Fixed point decimal shifting methods from Balancer ----
