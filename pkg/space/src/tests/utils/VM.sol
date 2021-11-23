@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-abstract contract Hevm {
+abstract contract VM {
     // Sets the block timestamp to x
     function warp(uint256 x) public virtual;
 

@@ -8,7 +8,7 @@ import { Authorizer } from "@balancer-labs/v2-vault/contracts/Authorizer.sol";
 import { ERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/ERC20.sol";
 
 // Internal references
-import { DividerLike } from "../Space.sol";
+import { DividerLike } from "../../Space.sol";
 
 contract ERC20Mintable is ERC20 {
     constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
@@ -18,7 +18,8 @@ contract ERC20Mintable is ERC20 {
     }
 }
 
-contract Adapter {
+// named Space to avoid name collision
+contract MockAdapterSpace {
     address public target;
     uint256 public start;
     string public symbol = "ADP";
@@ -32,7 +33,7 @@ contract Adapter {
 
     function scale() external returns (uint256) {
         // grow by 0.01 every second after initialization
-        return 1e18 + (block.timestamp - start) * 1e16;
+        return 1e18 + (block.timestamp - start) * 1e12;
     }
 
     function getTarget() external view returns (address) {
@@ -40,7 +41,8 @@ contract Adapter {
     }
 }
 
-contract Divider is DividerLike {
+// named Space to avoid name collision
+contract MockDividerSpace is DividerLike {
     address public zero;
     address public claim;
 
@@ -54,7 +56,7 @@ contract Divider is DividerLike {
 
     function series(
         address, // adapter
-        uint48 // maturity
+        uint256 // maturity
     )
         external
         override

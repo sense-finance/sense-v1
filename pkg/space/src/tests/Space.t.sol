@@ -4,11 +4,12 @@ pragma experimental ABIEncoderV2;
 
 // Testing utils
 import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
-import { Divider, Adapter, ERC20Mintable } from "./Mocks.sol";
-import { Hevm } from "./Hevm.sol";
+import { MockDividerSpace, MockAdapterSpace, ERC20Mintable } from "./utils/Mocks.sol";
+import { VM } from "./utils/VM.sol";
+import { User } from "./utils/User.sol";
 
 // External references
-import { Vault, IVault, IWETH, IAuthorizer, IAsset } from "@balancer-labs/v2-vault/contracts/Vault.sol";
+import { Vault, IVault, IWETH, IAuthorizer, IAsset, IProtocolFeesCollector } from "@balancer-labs/v2-vault/contracts/Vault.sol";
 import { IERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/IERC20.sol";
 import { Authorizer } from "@balancer-labs/v2-vault/contracts/Authorizer.sol";
 import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
@@ -17,7 +18,7 @@ import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/Fixe
 import { SpaceFactory } from "../SpaceFactory.sol";
 import { Space } from "../Space.sol";
 
-// base DSTest plus testing utilities
+// Base DSTest plus testing utilities
 contract Test is DSTest {
     function assertClose(
         uint256 a,
@@ -28,6 +29,7 @@ contract Test is DSTest {
         if (diff > _tolerance) {
             emit log("Error: abs(a, b) < threshold not satisfied [uint]");
             emit log_named_uint("  Expected", b);
+            emit log_named_uint("  Threshold", _tolerance);
             emit log_named_uint("    Actual", a);
             fail();
         }
@@ -42,132 +44,6 @@ contract Test is DSTest {
     }
 }
 
-contract User {
-    Space space;
-    IVault vault;
-    ERC20Mintable zero;
-    ERC20Mintable target;
-
-    constructor(
-        IVault _vault,
-        Space _space,
-        ERC20Mintable _zero,
-        ERC20Mintable _target
-    ) public {
-        vault = _vault;
-        space = _space;
-        zero = _zero;
-        target = _target;
-        zero.approve(address(vault), type(uint256).max);
-        target.approve(address(vault), type(uint256).max);
-    }
-
-    function join() public {
-        join(1e18, 1e18);
-    }
-
-    function join(uint256 reqZeroIn, uint256 reqTargetIn) public {
-        (IERC20[] memory _assets, , ) = vault.getPoolTokens(space.getPoolId());
-
-        IAsset[] memory assets = new IAsset[](2);
-        assets[0] = IAsset(address(_assets[0]));
-        assets[1] = IAsset(address(_assets[1]));
-
-        uint256[] memory maxAmountsIn = new uint256[](2);
-        maxAmountsIn[0] = type(uint256).max;
-        maxAmountsIn[1] = type(uint256).max;
-
-        (uint8 zeroi, uint8 targeti) = space.getIndices();
-        uint256[] memory amountsIn = new uint256[](2);
-        amountsIn[zeroi] = reqZeroIn;
-        amountsIn[targeti] = reqTargetIn;
-
-        vault.joinPool(
-            space.getPoolId(),
-            address(this),
-            address(this),
-            IVault.JoinPoolRequest({
-                assets: assets,
-                maxAmountsIn: maxAmountsIn,
-                userData: abi.encode(amountsIn),
-                fromInternalBalance: false
-            })
-        );
-    }
-
-    function exit(uint256 bptAmountIn) public {
-        (IERC20[] memory _assets, , ) = vault.getPoolTokens(space.getPoolId());
-
-        IAsset[] memory assets = new IAsset[](2);
-        assets[0] = IAsset(address(_assets[0]));
-        assets[1] = IAsset(address(_assets[1]));
-
-        uint256[] memory minAmountsOut = new uint256[](2); // implicit zeros
-
-        vault.exitPool(
-            space.getPoolId(),
-            address(this),
-            payable(address(this)),
-            IVault.ExitPoolRequest({
-                assets: assets,
-                minAmountsOut: minAmountsOut,
-                userData: abi.encode(bptAmountIn),
-                toInternalBalance: false
-            })
-        );
-    }
-
-    function swapIn(bool zeroIn) public {
-        swapIn(zeroIn, 1e18);
-    }
-
-    function swapIn(bool zeroIn, uint256 amountIn) public {
-        vault.swap(
-            IVault.SingleSwap({
-                poolId: space.getPoolId(),
-                kind: IVault.SwapKind.GIVEN_IN,
-                assetIn: IAsset(zeroIn ? address(zero) : address(target)),
-                assetOut: IAsset(zeroIn ? address(target) : address(zero)),
-                amount: amountIn,
-                userData: "0x"
-            }),
-            IVault.FundManagement({
-                sender: address(this),
-                fromInternalBalance: false,
-                recipient: payable(address(this)),
-                toInternalBalance: false
-            }),
-            0, // `limit` – no min expectations of return around tokens out testing GIVEN_IN
-            type(uint256).max // `deadline` – no deadline
-        );
-    }
-
-    function swapOut(bool zeroIn) public {
-        swapIn(zeroIn, 1e18);
-    }
-
-    function swapOut(bool zeroIn, uint256 amountOut) public {
-        vault.swap(
-            IVault.SingleSwap({
-                poolId: space.getPoolId(),
-                kind: IVault.SwapKind.GIVEN_OUT,
-                assetIn: IAsset(zeroIn ? address(zero) : address(target)),
-                assetOut: IAsset(zeroIn ? address(target) : address(zero)),
-                amount: amountOut,
-                userData: "0x"
-            }),
-            IVault.FundManagement({
-                sender: address(this),
-                fromInternalBalance: false,
-                recipient: payable(address(this)),
-                toInternalBalance: false
-            }),
-            type(uint256).max, // `limit` – no max expectations around tokens out for testing GIVEN_OUT
-            type(uint256).max // `deadline` – no deadline
-        );
-    }
-}
-
 // Balancer errors –---
 // 007: Y_OUT_OF_BOUNDS
 // 004: ZERO_DIVISION
@@ -176,18 +52,19 @@ contract User {
 contract SpaceTest is Test {
     using FixedPoint for uint256;
 
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+    VM internal constant vm = VM(HEVM_ADDRESS);
     IWETH internal constant weth = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     Vault internal vault;
     Space internal space;
     SpaceFactory internal spaceFactory;
 
-    Divider internal divider;
-    Adapter internal adapter;
+    MockDividerSpace internal divider;
+    MockAdapterSpace internal adapter;
     uint48 internal maturity;
     ERC20Mintable internal zero;
     ERC20Mintable internal target;
+    Authorizer internal authorizer;
 
     User internal jim;
     User internal ava;
@@ -195,26 +72,28 @@ contract SpaceTest is Test {
 
     function setUp() public {
         // init normalized starting conditions
-        hevm.warp(0);
-        hevm.roll(0);
+        vm.warp(0);
+        vm.roll(0);
 
         // create mocks
-        divider = new Divider();
-        adapter = new Adapter();
+        divider = new MockDividerSpace();
+        adapter = new MockAdapterSpace();
 
-        uint256 ts = FixedPoint.ONE.divDown(FixedPoint.ONE * 315576000);
+        uint256 ts = FixedPoint.ONE.divDown(FixedPoint.ONE * 31622400); // 1 / 1 year in seconds
         // 0.95 for selling underlying
-        uint256 g1 = (FixedPoint.ONE * 95).divDown(FixedPoint.ONE * 100);
+        uint256 g1 = (FixedPoint.ONE * 950).divDown(FixedPoint.ONE * 1000);
         // 1 / 0.95 for selling Zeros
         uint256 g2 = (FixedPoint.ONE * 1000).divDown(FixedPoint.ONE * 950);
-        maturity = 100;
 
-        vault = new Vault(new Authorizer(address(this)), weth, 0, 0);
+        maturity = 15811200; // 6 months in seconds
+
+        authorizer = new Authorizer(address(this));
+        vault = new Vault(authorizer, weth, 0, 0);
         spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2);
 
         space = Space(spaceFactory.create(address(adapter), maturity));
 
-        (address _zero, , , , , , , , ) = Divider(divider).series(address(adapter), maturity);
+        (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         zero = ERC20Mintable(_zero);
         target = ERC20Mintable(adapter.getTarget());
 
@@ -227,23 +106,19 @@ contract SpaceTest is Test {
         zero.approve(address(vault), type(uint256).max);
 
         jim = new User(vault, space, zero, target);
-        {
-            zero.mint(address(jim), 100e18);
-            target.mint(address(jim), 100e18);
-        }
+        zero.mint(address(jim), 100e18);
+        target.mint(address(jim), 100e18);
+
         ava = new User(vault, space, zero, target);
-        {
-            zero.mint(address(ava), 100e18);
-            target.mint(address(ava), 100e18);
-        }
+        zero.mint(address(ava), 100e18);
+        target.mint(address(ava), 100e18);
+
         sid = new User(vault, space, zero, target);
-        {
-            zero.mint(address(sid), 100e18);
-            target.mint(address(sid), 100e18);
-        }
+        zero.mint(address(sid), 100e18);
+        target.mint(address(sid), 100e18);
     }
 
-    function test_join_once() public {
+    function testJoinOnce() public {
         jim.join();
 
         // for the pool's first join –--
@@ -258,7 +133,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 100e18);
     }
 
-    function test_join_multi_no_swaps() public {
+    function testJoinMultiNoSwaps() public {
         // join once
         jim.join();
         // join again after no swaps
@@ -275,7 +150,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 100e18);
     }
 
-    function test_simple_swap_in() public {
+    function testSimpleSwapIn() public {
         // join once (first join is always Target-only)
         jim.join();
 
@@ -289,7 +164,7 @@ contract SpaceTest is Test {
         // can successfully swap Zeros in
         jim.swapIn(true);
         // fixed amount in, variable amount out
-        uint256 expectedTargetOut = 999999537591593384;
+        uint256 expectedTargetOut = 646139118808709566;
 
         // swapped one Zero in
         assertEq(zero.balanceOf(address(jim)), 99e18);
@@ -312,13 +187,13 @@ contract SpaceTest is Test {
 
         // can successfully swap a partial Target in
         jim.swapIn(false, 0.5e18);
-        uint256 expectedZeroOut = 500000338565261923;
+        uint256 expectedZeroOut = 804788983856909903;
 
         assertEq(target.balanceOf(address(jim)), 99e18 + expectedTargetOut - 0.5e18);
         assertEq(zero.balanceOf(address(jim)), 99e18 + expectedZeroOut);
     }
 
-    function test_simple_swaps_out() public {
+    function testSimpleSwapsOut() public {
         jim.join();
 
         // can't swap any Zeros out b/c there aren't any Zeros to get out after the first join
@@ -331,7 +206,7 @@ contract SpaceTest is Test {
         // can successfully swap Target out
         jim.swapOut(true, 0.1e18);
         // fixed amount out, variable amount in
-        uint256 expectedZerosIn = 100000003341147966;
+        uint256 expectedZerosIn = 105559160849361394; // 0.1055
 
         // received 0.1 Target
         assertEq(target.balanceOf(address(jim)), 99e18 + 0.1e18);
@@ -339,7 +214,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 100e18 - expectedZerosIn);
     }
 
-    function test_exit_once() public {
+    function testExitOnce() public {
         jim.join();
         // max exit
         jim.exit(space.balanceOf(address(jim)));
@@ -353,7 +228,7 @@ contract SpaceTest is Test {
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
-    function test_join_swap_exit() public {
+    function testJoinSwapExit() public {
         jim.join();
 
         // swap out 0.1 Target
@@ -371,7 +246,7 @@ contract SpaceTest is Test {
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
-    function test_multi_party_join_swap_exit() public {
+    function testMultiPartyJoinSwapExit() public {
         jim.join();
         ava.join();
 
@@ -382,67 +257,135 @@ contract SpaceTest is Test {
         jim.exit(space.balanceOf(address(jim)));
         ava.exit(space.balanceOf(address(ava)));
 
-        // Can pull around half the Target from sid's swap
-        assertClose(target.balanceOf(address(jim)), 99.5e18, 1e12);
-        assertClose(target.balanceOf(address(ava)), 99.5e18, 1e12);
+        // Can Target out comensurate with a value for Zeros that's slightly below 1 Underlying
+        assertClose(target.balanceOf(address(jim)), 99.605e18, 1e15);
+        assertClose(target.balanceOf(address(ava)), 99.605e18, 1e15);
         assertClose(zero.balanceOf(address(jim)), 100.5e18, 1e12);
         assertClose(zero.balanceOf(address(ava)), 100.5e18, 1e12);
     }
 
-    // function test_space_fees() public {
-    //     // Target in
-    //     jim.join(0, 10e18);
+    function testSpaceFees() public {
+        // Target in
+        jim.join(0, 20e18);
 
-    //     // Init some Zeros in
-    //     sid.swapIn(true, 9e18);
+        // Init some Zeros in via swap
+        sid.swapIn(true, 4e18);
 
-    //     // Try both in
-    //     jim.join(10e18, 10e18);
+        // Try as much of both in as possible
+        jim.join(20e18, 20e18);
 
-    //     (, uint256[] memory balances, ) = vault.getPoolTokens(space.getPoolId());
-    //     (uint8 zeroi, uint8 targeti) = space.getIndices();
+        // We can determine the implied price of Zeros in Target by making a very small swap
+        uint256 zeroPrice = sid.swapIn(true, 0.0001e18).divDown(0.0001e18);
 
-    //     // pool balances reflect the user's balances
-    //     log_uint(balances[zeroi]);
-    //     log_uint(balances[targeti]);
+        uint256 balance = 100e18;
+        uint256 startingPosValue = balance + balance.mulDown(zeroPrice);
 
-    //     // Lots of swaps
-    //     sid.swapIn(false, 2e18);
-    //     sid.swapIn(true, 2e18);
-    //     sid.swapIn(false, 2e18);
-    //     sid.swapIn(true, 2e18);
-    //     sid.swapIn(false, 2e18);
-    //     sid.swapIn(true, 2e18);
-    //     sid.swapIn(false, 2e18);
-    //     sid.swapIn(true, 2e18);
-    //     sid.swapIn(false, 2e18);
-    //     sid.swapIn(true, 2e18);
-    //     sid.swapIn(false, 2e18);
+        // price execution is getting worse for zero out
+        uint256 targetInFor1ZeroOut = 0;
+        for (uint256 i = 0; i < 20; i++) {
+            uint256 _targetInFor1ZeroOut = ava.swapOut(false);
+            assertGt(_targetInFor1ZeroOut, targetInFor1ZeroOut);
+            targetInFor1ZeroOut = _targetInFor1ZeroOut;
+            // swap the zeros back in
+            ava.swapIn(true, 1e18);
+        }
 
-    //     jim.exit(space.balanceOf(address(jim)));
-    //     log_uint(target.balanceOf(address(jim)));
-    //     log_uint(zero.balanceOf(address(jim)));
-    //     assertTrue(false);
-    // }
+        // price execution is getting worse for target out
+        uint256 zeroInFor1TargetOut = 0;
+        for (uint256 i = 0; i < 20; i++) {
+            // price execution is getting worse
+            uint256 _zeroInFor1TargetOut = ava.swapOut(true);
+            assertGt(_zeroInFor1TargetOut, zeroInFor1TargetOut);
+            zeroInFor1TargetOut = _zeroInFor1TargetOut;
+            // swap the target back in
+            ava.swapIn(false, 1e18);
+        }
 
-    // test_protocol_fees
-    // test_join_multi_swaps
-    // test_buy_slippage_limit
-    // test_join_slippage
-    // test_exit_slippage
-    // test_max_base_in
-    // test_join_multi
-    // test_join_exit_once
-    // test_join_exit_multi
+        // price execution is getting worse for zero in
+        uint256 targetOutFor1ZeroIn = type(uint256).max;
+        for (uint256 i = 0; i < 20; i++) {
+            // price execution is getting worse
+            uint256 _targetOutFor1ZeroIn = ava.swapIn(true);
+            assertLt(_targetOutFor1ZeroIn, targetOutFor1ZeroIn);
+            targetOutFor1ZeroIn = _targetOutFor1ZeroIn;
+            // swap the target back in
+            ava.swapIn(false, _targetOutFor1ZeroIn);
+        }
+
+        // price execution is getting worse for target in
+        uint256 zeroOutFor1TargetIn = type(uint256).max;
+        for (uint256 i = 0; i < 20; i++) {
+            // price execution is getting worse
+            uint256 _zeroOutFor1TargetIn = ava.swapIn(false);
+            assertLt(_zeroOutFor1TargetIn, zeroOutFor1TargetIn);
+            zeroOutFor1TargetIn = _zeroOutFor1TargetIn;
+            // swap the zeros back in
+            ava.swapIn(true, _zeroOutFor1TargetIn);
+        }
+
+        jim.exit(space.balanceOf(address(jim)));
+        uint256 currentPosValue = target.balanceOf(address(jim)) + zero.balanceOf(address(jim)).mulDown(zeroPrice);
+        assertGt(currentPosValue, startingPosValue);
+    }
+
+    function testApproachesOne() public {
+        // Target in
+        jim.join(0, 10e18);
+
+        // Init some Zeros in
+        sid.swapIn(true, 5.5e18);
+
+        // Try as much of both in as possible
+        jim.join(10e18, 10e18);
+
+        vm.warp(maturity - 1);
+
+        assertClose(sid.swapIn(true), 1e18, 1e12);
+        assertClose(sid.swapIn(false), 1e18, 1e12);
+    }
+
+    function testProtocolFees() public {
+        IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
+
+        bytes32 action = vault.getActionId(protocolFeesCollector.setSwapFeePercentage.selector);
+
+        // grant protocolFeesCollector.setSwapFeePercentage role
+        authorizer.grantRole(0x2ca923ad9126ab6630c61857852bece415a85e2baa0fb5e8c2cb0939bde66db0, address(this));
+        protocolFeesCollector.setSwapFeePercentage(0.1e18);
+
+        jim.join(0, 10e18);
+
+        sid.swapIn(true, 5.5e18);
+
+        jim.join(10e18, 10e18);
+
+        log_uint(space.balanceOf(address(protocolFeesCollector)));
+        log_uint(space.balanceOf(address(jim)));
+
+        ava.swapOut(false);
+        ava.swapIn(true);
+        ava.swapOut(false);
+        ava.swapIn(true);
+        ava.swapOut(false);
+        ava.swapIn(true);
+
+        // no additional lp shares extracted until somebody joins or exits
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 7209445462227991794);
+        jim.exit(space.balanceOf(address(jim)));
+
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 7834356990251230156);
+    }
+
     // test_join_diff_scale_values
-    // test_simple_swap_zero_in
-    // test_simple_swap_target_in
-    // test_simple_swap_zero_out
-    // test_simple_swap_target_out
-    // test_ts_g1_g2
-    // test_ys_invariant_constant_scale
+
+    // #nice-to-have:
+    // test_space_fees_magnitude
+    // test_buy_slippage_limit
+    // test_join_relative_share
+    // test_max_base_in
+    // test_ts_g1_g2_variations
     // test_ys_invariant_changing_scale
+    // test_negative_scale
     // test_ys_invariant_low_liq
-    // test_ys_invariant_ex_reference
-    // test_exit
+    // test_ys_invariant_external_reference
 }
