@@ -13,8 +13,8 @@ import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
-// Uniswap mocks
-import { MockYieldSpaceFactory, MockBalancerVault } from "./mocks/YieldSpace.sol";
+// Space & Balanacer V2 mock
+import { MockSpaceFactory, MockBalancerVault } from "./mocks/Space.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
@@ -49,8 +49,8 @@ contract TestHelper is DSTest {
     User internal jim;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    // balancer/yield space
-    MockYieldSpaceFactory yieldSpaceFactory;
+    // balancer/space
+    MockSpaceFactory spaceFactory;
     MockBalancerVault balancerVault;
 
     // fuse & compound
@@ -89,9 +89,8 @@ contract TestHelper is DSTest {
         underlying = new MockToken("Dai Token", "DAI", tDecimals);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals);
         reward = new MockToken("Reward Token", "RT", tDecimals);
-        uint256 base = convertBase(target.decimals());
-        GROWTH_PER_SECOND = tDecimals > 18 ? GROWTH_PER_SECOND * base : GROWTH_PER_SECOND / base;
-        DELTA = tDecimals > 18 ? DELTA * base : DELTA / base;
+        GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
+        DELTA = convertToBase(DELTA, target.decimals());
 
         // divider
         tokenHandler = new TokenHandler();
@@ -102,9 +101,9 @@ contract TestHelper is DSTest {
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
 
-        // balancer/yield space mocks
+        // balancer/space mocks
         balancerVault = new MockBalancerVault();
-        yieldSpaceFactory = new MockYieldSpaceFactory(address(balancerVault));
+        spaceFactory = new MockSpaceFactory(address(balancerVault));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
@@ -133,7 +132,7 @@ contract TestHelper is DSTest {
         periphery = new Periphery(
             address(divider),
             address(poolManager),
-            address(yieldSpaceFactory),
+            address(spaceFactory),
             address(balancerVault)
         );
         divider.setPeriphery(address(periphery));
@@ -158,6 +157,9 @@ contract TestHelper is DSTest {
         user.setTarget(target);
         user.setDivider(divider);
         user.setPeriphery(periphery);
+        user.doApprove(address(underlying), address(periphery));
+        user.doApprove(address(underlying), address(divider));
+        user.doMint(address(underlying), tBal);
         user.doApprove(address(stake), address(periphery));
         user.doApprove(address(stake), address(divider));
         user.doMint(address(stake), sBal);
@@ -203,28 +205,26 @@ contract TestHelper is DSTest {
         DSTest.assertTrue(actual <= (expected + variance));
     }
 
-    function addLiquidityToBalancerVault(
-        uint48 maturity,
-        address zero,
-        address claim
-    ) public {
-        uint256 cBal = MockToken(claim).balanceOf(address(alice));
-        uint256 zBal = MockToken(zero).balanceOf(address(alice));
-        alice.doIssue(address(adapter), maturity, 1000e18);
-        uint256 cBalIssued = MockToken(claim).balanceOf(address(alice)) - cBal;
-        uint256 zBalIssued = MockToken(zero).balanceOf(address(alice)) - zBal;
-        alice.doTransfer(claim, address(balancerVault), cBalIssued); // we don't really need this but we transfer them
-        alice.doTransfer(zero, address(balancerVault), zBalIssued);
-        // we mint some random number of underlying
-        MockToken(adapter.underlying()).mint(address(balancerVault), 100000e18);
+    function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
+        (address zero, address claim, , , , , , , ) = divider.series(address(adapter), maturity);
+        uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
+        alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
+        alice.doTransfer(zero, address(balancerVault), issued);
+        // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
+        MockToken(adapter.getTarget()).mint(address(balancerVault), tBal);
     }
 
-    function convertBase(uint256 decimals) public returns (uint256) {
+    function convertBase(uint256 decimals) public pure returns (uint256) {
         uint256 base = 1;
-        if (decimals != 18) {
-            base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
-        }
+        base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
         return base;
+    }
+
+    function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals != 18) {
+            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
+        }
+        return amount;
     }
 
     function calculateAmountToIssue(uint256 tBal, uint256 baseUnit) public returns (uint256 toIssue) {

@@ -90,7 +90,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Transfer stake asset stake from caller to adapter
         (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
-        ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
@@ -134,7 +134,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Reward the caller for doing the work of settling the Series at around the correct time
         (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
-        ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
@@ -163,10 +163,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
 
         if (tDecimals != 18) {
-            fee = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18)).fmul(
-                tBal,
-                tBase
-            );
+            uint256 base = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18));
+            fee = base.fmul(tBal, tBase);
         } else {
             fee = issuanceFee.fmul(tBal, tBase);
         }
@@ -247,7 +245,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address adapter,
         uint48 maturity,
         uint256 uBal
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
@@ -257,7 +255,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 tBase = 10**ERC20(Adapter(adapter).getTarget()).decimals();
         // Amount of Target Zeros would ideally have
-        uint256 tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
+        tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
 
         if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
             // Amount of Target we actually have set aside for them (after collections from Claim holders)
@@ -285,7 +283,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         target.safeTransferFrom(adapter, msg.sender, tBal);
-        Adapter(adapter).notify(msg.sender, tBal, false);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 
@@ -509,7 +506,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 reward = series[adapter][maturity].reward;
 
         ERC20(target).safeTransferFrom(adapter, cup, reward);
-        ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize / _convertBase(ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
     }
@@ -552,6 +549,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     }
 
     /* ========== INTERNAL FNCTIONS & HELPERS ========== */
+
     function _setAdapter(address adapter, bool isOn) internal {
         require(adapters[adapter] != isOn, Errors.ExistingValue);
         adapters[adapter] = isOn;
@@ -564,9 +562,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit AdapterChanged(adapter, adapterCounter, isOn);
     }
 
-    function _convertBase(uint256 decimals) internal pure returns (uint256) {
-        if (decimals == 18) return 1;
-        return decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
+    function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals != 18) {
+            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
+        }
+        return amount;
     }
 
     /* ========== MODIFIERS ========== */

@@ -8,7 +8,6 @@ import "@sense-finance/v1-core/src/adapters/compound/CFactory.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockFuseDirectory.sol";
-import "@sense-finance/v1-core/src/tests/test-helpers/mocks/YieldSpace.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";

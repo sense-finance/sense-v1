@@ -95,23 +95,6 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       await periphery
         .swapTargetForZeros(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
         .then(tx => tx.wait());
-
-      console.log("swapping target for claims");
-      await periphery
-        .swapTargetForClaims(adapter.address, seriesMaturity, ethers.utils.parseEther("1"))
-        .then(tx => tx.wait());
-
-      console.log("swapping zeros for target");
-      await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await periphery
-        .swapZerosForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"), 0)
-        .then(tx => tx.wait());
-
-      console.log("swapping claims for target");
-      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await periphery
-        .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
-        .then(tx => tx.wait());
     }
   }
 };

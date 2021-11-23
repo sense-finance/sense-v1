@@ -108,7 +108,7 @@ contract GClaimsManager is TestHelper {
         Periphery newPeriphery = new Periphery(
             address(divider),
             address(poolManager),
-            address(yieldSpaceFactory),
+            address(spaceFactory),
             address(balancerVault)
         );
         divider.setPeriphery(address(newPeriphery));
@@ -209,7 +209,7 @@ contract GClaimsManager is TestHelper {
         Periphery newPeriphery = new Periphery(
             address(divider),
             address(poolManager),
-            address(yieldSpaceFactory),
+            address(spaceFactory),
             address(balancerVault)
         );
         divider.setPeriphery(address(newPeriphery));

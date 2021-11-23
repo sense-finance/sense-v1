@@ -123,8 +123,8 @@ contract User {
         address adapter,
         uint48 maturity,
         uint256 balance
-    ) public {
-        divider.issue(adapter, maturity, balance);
+    ) public returns (uint256) {
+        return divider.issue(adapter, maturity, balance);
     }
 
     function doCombine(
@@ -150,7 +150,7 @@ contract User {
         uint48 maturity,
         uint256 balance
     ) public {
-        return divider.redeemZero(adapter, maturity, balance);
+        divider.redeemZero(adapter, maturity, balance);
     }
 
     function doCollect(address claim) public returns (uint256 collected) {
@@ -182,13 +182,29 @@ contract User {
         periphery.swapTargetForZeros(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapTargetForClaims(
+    function doSwapUnderlyingForZeros(
         address adapter,
         uint48 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
+        periphery.swapUnderlyingForZeros(adapter, maturity, balance, minAccepted);
+    }
+
+    function doSwapTargetForClaims(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public {
         periphery.swapTargetForClaims(adapter, maturity, balance);
+    }
+
+    function doSwapUnderlyingForClaims(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public {
+        periphery.swapUnderlyingForClaims(adapter, maturity, balance);
     }
 
     function doSwapZerosForTarget(
@@ -200,12 +216,47 @@ contract User {
         periphery.swapZerosForTarget(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapClaimsForTarget(
+    function doSwapZerosForUnderlying(
         address adapter,
         uint48 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
+        periphery.swapZerosForUnderlying(adapter, maturity, balance, minAccepted);
+    }
+
+    function doSwapClaimsForTarget(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public {
         periphery.swapClaimsForTarget(adapter, maturity, balance);
+    }
+
+    function doSwapClaimsForUnderlying(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public {
+        periphery.swapClaimsForUnderlying(adapter, maturity, balance);
+    }
+
+    function doAddLiquidityFromTarget(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint8 mode
+    ) public {
+        periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
+    }
+
+    function doRemoveLiquidityToTarget(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint256[] memory minAmountsOut,
+        uint256 minAmount
+    ) public {
+        periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
     }
 }

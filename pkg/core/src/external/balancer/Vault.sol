@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+
 interface IAsset {}
 
 interface BalancerVault {
@@ -15,6 +17,11 @@ interface BalancerVault {
         uint256[] minAmountsOut;
         bytes userData;
         bool toInternalBalance;
+    }
+    enum PoolSpecialization {
+        GENERAL,
+        MINIMAL_SWAP_INFO,
+        TWO_TOKEN
     }
     enum SwapKind {
         GIVEN_IN,
@@ -39,10 +46,12 @@ interface BalancerVault {
         external
         view
         returns (
-            address[] memory tokens,
+            ERC20[] memory tokens,
             uint256[] memory balances,
             uint256 maxBlockNumber
         );
+
+    function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
 
     function swap(
         SingleSwap memory singleSwap,
@@ -50,4 +59,18 @@ interface BalancerVault {
         uint256 limit,
         uint256 deadline
     ) external payable returns (uint256);
+
+    function joinPool(
+        bytes32 poolId,
+        address sender,
+        address recipient,
+        JoinPoolRequest memory request
+    ) external payable;
+
+    function exitPool(
+        bytes32 poolId,
+        address sender,
+        address payable recipient,
+        ExitPoolRequest memory request
+    ) external;
 }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
@@ -92,12 +93,12 @@ contract ZeroOracle is PriceOracle, Trust {
         // get the price of Zeros in terms of underlying
         uint256 zeroPrice = results[0];
 
-        (address[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
+        (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying;
-        if (address(zero) == tokens[0]) {
-            underlying = tokens[0];
+        if (address(zero) == address(tokens[0])) {
+            underlying = address(tokens[0]);
         } else {
-            underlying = tokens[1];
+            underlying = address(tokens[1]);
         }
 
         // `Zero/underlying` * `underlying/ETH` = `Price of Zero in ETH`

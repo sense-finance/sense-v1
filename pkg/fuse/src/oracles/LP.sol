@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
@@ -70,15 +71,15 @@ contract LPOracle is PriceOracle, Trust {
     function _price(address _pool) internal view returns (uint256) {
         BalancerOracleLike pool = BalancerOracleLike(_pool);
 
-        (address[] memory tokens, uint256[] memory balances, ) = BalancerVault(pool.getVault()).getPoolTokens(
+        (ERC20[] memory tokens, uint256[] memory balances, ) = BalancerVault(pool.getVault()).getPoolTokens(
             pool.getPoolId()
         );
 
         uint256 balanceA = balances[0];
-        address tokenA = tokens[0];
+        address tokenA = address(tokens[0]);
 
         uint256 balanceB = balances[1];
-        address tokenB = tokens[1];
+        address tokenB = address(tokens[1]);
 
         uint256 totalSupply = pool.totalSupply();
 
