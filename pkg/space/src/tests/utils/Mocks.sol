@@ -18,7 +18,8 @@ contract ERC20Mintable is ERC20 {
     }
 }
 
-contract Adapter {
+// named Space to avoid name collision
+contract MockAdapterSpace {
     address public target;
     uint256 public start;
     string public symbol = "ADP";
@@ -40,7 +41,8 @@ contract Adapter {
     }
 }
 
-contract Divider is DividerLike {
+// named Space to avoid name collision
+contract MockDividerSpace is DividerLike {
     address public zero;
     address public claim;
 
@@ -54,7 +56,7 @@ contract Divider is DividerLike {
 
     function series(
         address, // adapter
-        uint48 // maturity
+        uint256 // maturity
     )
         external
         override

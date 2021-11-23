@@ -18,7 +18,7 @@ import { Errors, _require } from "@balancer-labs/v2-solidity-utils/contracts/hel
 interface DividerLike {
     function series(
         address, /* adapter */
-        uint48 /* maturity */
+        uint256 /* maturity */
     )
         external
         virtual
@@ -122,7 +122,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     ) BalancerPoolToken(AdapterLike(_adapter).name(), AdapterLike(_adapter).symbol()) {
         bytes32 poolId = vault_.registerPool(IVault.PoolSpecialization.TWO_TOKEN);
 
-        (address zero, , , , , , , , ) = DividerLike(_divider).series(_adapter, maturity_);
+        (address zero, , , , , , , , ) = DividerLike(_divider).series(_adapter, uint256(maturity_));
         address target = AdapterLike(_adapter).getTarget();
         IERC20[] memory tokens = new IERC20[](2);
 
@@ -180,6 +180,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Convert target balance into Underlying
             // note: We can assume scale values will always be 18 decimals
             uint256 underlyingIn = (_reqAmountsIn[_targeti] * _initScale) / 1e18;
+
             // Initial BPT minted is equal to the vaule of Target in Underlying terms deposited
             uint256 bptAmountOut = underlyingIn - MINIMUM_BPT;
 
@@ -195,6 +196,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             // Amounts entering the Pool, so we round up
             _downscaleUp(_reqAmountsIn[_targeti], _scalingFactor(false));
+
+            // Cache new invariant and reserves
+            _cacheInvariantAndReserves(_reserves);
 
             return (_reqAmountsIn, new uint256[](2));
         } else {
@@ -237,10 +241,10 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         _upscaleArray(_reserves);
 
-        uint256[] memory _amountsOut = new uint256[](2);
-
         uint256 _bptAmountIn = abi.decode(_userData, (uint256));
         uint256 _pctPool = _bptAmountIn.divDown(totalSupply());
+
+        uint256[] memory _amountsOut = new uint256[](2);
 
         _amountsOut[0] = _reserves[0].mulDown(_pctPool);
         _amountsOut[1] = _reserves[1].mulDown(_pctPool);
@@ -259,6 +263,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         _reserves[0] -= _amountsOut[0];
         _reserves[1] -= _amountsOut[1];
 
+        // Cache new invariant and reserves
         _cacheInvariantAndReserves(_reserves);
 
         return (_amountsOut, new uint256[](2));
@@ -331,14 +336,22 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         // Invariant growth from time only
         uint256 _currentAdjInvariant = _lastToken0Reserve.powDown(a) + _lastToken1Reserve.powDown(a);
-        // Actual invariant
-        uint256 _currentInvariant = _reserves[0].powDown(a) + _reserves[1].powDown(a);
 
-        uint256 denom = _lastInvariant.mulDown(_currentAdjInvariant.divUp(_lastInvariant));
+        uint256 _scale = AdapterLike(adapter).scale();
+        (uint8 _zeroi, uint8 _targeti) = getIndices();
+
+        // Actual invariant
+        uint256 x = (_reserves[_zeroi] + totalSupply()).powDown(a);
+        uint256 y = _scale > _initScale
+            ? (2 * _reserves[_targeti] - _reserves[_targeti] / (_scale - _initScale)).mulDown(_scale)
+            : _reserves[_targeti].mulDown(_scale);
+
         return
-            _currentInvariant.divDown(denom).sub(FixedPoint.ONE).mulDown(totalSupply()).mulDown(
-                _protocolSwapFeePercentage
-            );
+            (x + y)
+                .divDown(_lastInvariant.mulDown(_currentAdjInvariant.divUp(_lastInvariant)))
+                .sub(FixedPoint.ONE)
+                .mulDown(totalSupply())
+                .mulDown(_protocolSwapFeePercentage);
     }
 
     // Calculate the max amount BPT that can be minted from the requested amounts in, if there are no swaps
@@ -397,8 +410,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 _reservesTokenIn,
         uint256 _reservesTokenOut
     ) internal returns (uint256) {
-        // x_pre = token in reserves pre swap
-        // y_pre = token out reserves pre swap
+        // xPre = token in reserves pre swap
+        // yPre = token out reserves pre swap
 
         // Seconds until maturity
         // After maturity, still allow users to transfer using a constant sum pool
@@ -410,34 +423,42 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // `t` with fees baked in
         uint256 a = (_zeroIn ? g2 : g1).mulUp(t).complement();
 
-        // x1 = x_pre ^ a
+        // x1 = xPre ^ a
         uint256 x1 = _reservesTokenIn.powDown(a);
 
-        // y1 = y_pre ^ a
+        // y1 = yPre ^ a
         uint256 y1 = _reservesTokenOut.powDown(a);
 
-        // y2 = x_post ^ a
-        // x2 = y_post ^ a
+        // y2 = xPost ^ a
+        // x2 = yPost ^ a
         uint256 xOrY2 = (_givenIn ? _reservesTokenIn + _amountDelta : _reservesTokenOut - _amountDelta).powDown(a);
 
-        // x1 + y1 = xOrY2 + post ^ a
-        // -> post ^ a = x1 + y1 - x2
-        // -> post = (x1 + y1 - xOrY2) ^ (1 / a)
-        uint256 post = (x1 + y1 - xOrY2).powDown(FixedPoint.ONE.divDown(a));
-        require(_givenIn ? _reservesTokenOut > post : post > _reservesTokenIn, "Too few reserves");
+        // x1 + y1 = xOrY2 + xOrYPost ^ a
+        // -> xOrYPost ^ a = x1 + y1 - x2
+        // -> xOrYPost = (x1 + y1 - xOrY2) ^ (1 / a)
+        uint256 xOrYPost = (x1 + y1 - xOrY2).powDown(FixedPoint.ONE.divDown(a));
+        require(_givenIn ? _reservesTokenOut > xOrYPost : xOrYPost > _reservesTokenIn, "Too few reserves");
 
-        // amount out given in = y_pre - y_post
-        // amount in given out = x_post - x_pre
-        return _givenIn ? _reservesTokenOut.sub(post) : post.sub(_reservesTokenIn);
+        // amount out given in = yPre - yPost
+        // amount in given out = xPost - xPre
+        return _givenIn ? _reservesTokenOut.sub(xOrYPost) : xOrYPost.sub(_reservesTokenIn);
     }
 
     function _cacheInvariantAndReserves(uint256[] memory _reserves) internal {
         uint256 ttm = _maturity > block.timestamp ? uint256(_maturity - block.timestamp) * FixedPoint.ONE : 0;
         uint256 a = ts.mulDown(ttm).complement();
 
-        _lastInvariant = _reserves[0].powDown(a) + _reserves[1].powDown(a);
-        _lastToken0Reserve = _reserves[0];
-        _lastToken1Reserve = _reserves[1];
+        (uint8 _zeroi, uint8 _targeti) = getIndices();
+        uint256 _scale = AdapterLike(adapter).scale();
+
+        uint256 reserveZero = _reserves[_zeroi] + totalSupply();
+        uint256 reserveTarget = _scale > _initScale
+            ? (2 * _reserves[_targeti] - _reserves[_targeti] / (_scale - _initScale)).mulDown(_scale)
+            : _reserves[_targeti].mulDown(_scale);
+
+        _lastInvariant = reserveZero.powDown(a) + reserveTarget.powDown(a);
+        _lastToken0Reserve = _zeroi == 0 ? reserveZero : reserveTarget;
+        _lastToken1Reserve = _zeroi == 0 ? reserveTarget : reserveZero;
     }
 
     /// @notice Public getter ----

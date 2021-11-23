@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 // Testing utils
 import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
-import { Divider, Adapter, ERC20Mintable } from "./utils/Mocks.sol";
+import { MockDividerSpace, MockAdapterSpace, ERC20Mintable } from "./utils/Mocks.sol";
 import { VM } from "./utils/VM.sol";
 import { User } from "./utils/User.sol";
 
@@ -59,8 +59,8 @@ contract SpaceTest is Test {
     Space internal space;
     SpaceFactory internal spaceFactory;
 
-    Divider internal divider;
-    Adapter internal adapter;
+    MockDividerSpace internal divider;
+    MockAdapterSpace internal adapter;
     uint48 internal maturity;
     ERC20Mintable internal zero;
     ERC20Mintable internal target;
@@ -76,8 +76,8 @@ contract SpaceTest is Test {
         vm.roll(0);
 
         // create mocks
-        divider = new Divider();
-        adapter = new Adapter();
+        divider = new MockDividerSpace();
+        adapter = new MockAdapterSpace();
 
         uint256 ts = FixedPoint.ONE.divDown(FixedPoint.ONE * 31622400); // 1 / 1 year in seconds
         // 0.95 for selling underlying
@@ -93,7 +93,7 @@ contract SpaceTest is Test {
 
         space = Space(spaceFactory.create(address(adapter), maturity));
 
-        (address _zero, , , , , , , , ) = Divider(divider).series(address(adapter), maturity);
+        (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         zero = ERC20Mintable(_zero);
         target = ERC20Mintable(adapter.getTarget());
 
@@ -118,7 +118,7 @@ contract SpaceTest is Test {
         target.mint(address(sid), 100e18);
     }
 
-    function test_join_once() public {
+    function testJoinOnce() public {
         jim.join();
 
         // for the pool's first join –--
@@ -133,7 +133,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 100e18);
     }
 
-    function test_join_multi_no_swaps() public {
+    function testJoinMultiNoSwaps() public {
         // join once
         jim.join();
         // join again after no swaps
@@ -150,7 +150,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 100e18);
     }
 
-    function test_simple_swap_in() public {
+    function testSimpleSwapIn() public {
         // join once (first join is always Target-only)
         jim.join();
 
@@ -193,7 +193,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 99e18 + expectedZeroOut);
     }
 
-    function test_simple_swaps_out() public {
+    function testSimpleSwapsOut() public {
         jim.join();
 
         // can't swap any Zeros out b/c there aren't any Zeros to get out after the first join
@@ -214,7 +214,7 @@ contract SpaceTest is Test {
         assertEq(zero.balanceOf(address(jim)), 100e18 - expectedZerosIn);
     }
 
-    function test_exit_once() public {
+    function testExitOnce() public {
         jim.join();
         // max exit
         jim.exit(space.balanceOf(address(jim)));
@@ -228,7 +228,7 @@ contract SpaceTest is Test {
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
-    function test_join_swap_exit() public {
+    function testJoinSwapExit() public {
         jim.join();
 
         // swap out 0.1 Target
@@ -246,7 +246,7 @@ contract SpaceTest is Test {
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
-    function test_multi_party_join_swap_exit() public {
+    function testMultiPartyJoinSwapExit() public {
         jim.join();
         ava.join();
 
@@ -264,7 +264,7 @@ contract SpaceTest is Test {
         assertClose(zero.balanceOf(address(ava)), 100.5e18, 1e12);
     }
 
-    function test_space_fees() public {
+    function testSpaceFees() public {
         // Target in
         jim.join(0, 20e18);
 
@@ -275,12 +275,7 @@ contract SpaceTest is Test {
         jim.join(20e18, 20e18);
 
         // We can determine the implied price of Zeros in Target by making a very small swap
-        uint256 zeroPrice;
-        {
-            uint256 targetOut = sid.swapIn(true, 0.0001e18);
-            // How many Target is 1 Zero worth?
-            zeroPrice = targetOut.divDown(0.0001e18);
-        }
+        uint256 zeroPrice = sid.swapIn(true, 0.0001e18).divDown(0.0001e18);
 
         uint256 balance = 100e18;
         uint256 startingPosValue = balance + balance.mulDown(zeroPrice);
@@ -333,7 +328,7 @@ contract SpaceTest is Test {
         assertGt(currentPosValue, startingPosValue);
     }
 
-    function test_approaches_one() public {
+    function testApproachesOne() public {
         // Target in
         jim.join(0, 10e18);
 
@@ -349,21 +344,41 @@ contract SpaceTest is Test {
         assertClose(sid.swapIn(false), 1e18, 1e12);
     }
 
-    // function test_protocol_fees() public {
-    //     IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
+    function testProtocolFees() public {
+        IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
 
-    //     bytes32 action = vault.getActionId(protocolFeesCollector.setSwapFeePercentage.selector);
+        bytes32 action = vault.getActionId(protocolFeesCollector.setSwapFeePercentage.selector);
 
-    //     bytes32[] memory roles = new bytes32[](1);
-    //     roles[0] = action;
+        // grant protocolFeesCollector.setSwapFeePercentage role
+        authorizer.grantRole(0x2ca923ad9126ab6630c61857852bece415a85e2baa0fb5e8c2cb0939bde66db0, address(this));
+        protocolFeesCollector.setSwapFeePercentage(0.1e18);
 
-    //     authorizer.grantRolesGlobally(roles, address(this));
-    //     protocolFeesCollector.setSwapFeePercentage(0.1e18);
+        jim.join(0, 10e18);
 
-    // jim.join();
-    // }
+        sid.swapIn(true, 5.5e18);
+
+        jim.join(10e18, 10e18);
+
+        log_uint(space.balanceOf(address(protocolFeesCollector)));
+        log_uint(space.balanceOf(address(jim)));
+
+        ava.swapOut(false);
+        ava.swapIn(true);
+        ava.swapOut(false);
+        ava.swapIn(true);
+        ava.swapOut(false);
+        ava.swapIn(true);
+
+        // no additional lp shares extracted until somebody joins or exits
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 7209445462227991794);
+        jim.exit(space.balanceOf(address(jim)));
+
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 7834356990251230156);
+    }
 
     // test_join_diff_scale_values
+
+    // #nice-to-have:
     // test_space_fees_magnitude
     // test_buy_slippage_limit
     // test_join_relative_share
