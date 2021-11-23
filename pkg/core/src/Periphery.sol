@@ -17,10 +17,7 @@ import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "./tokens/Token.sol";
 
 interface SpaceFactoryLike {
-    function create(
-        address,
-        uint48
-    ) external returns (address);
+    function create(address, uint48) external returns (address);
 
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
@@ -361,7 +358,7 @@ contract Periphery is Trust {
         });
 
         BalancerVault.FundManagement memory funds = BalancerVault.FundManagement({
-            sender: msg.sender,
+            sender: address(this),
             fromInternalBalance: false,
             recipient: payable(address(this)),
             toInternalBalance: false

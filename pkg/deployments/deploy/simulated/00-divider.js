@@ -26,7 +26,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const versioning = await ethers.getContract("Versioning");
   console.log("Deploying Sense version", await versioning.version());
 
-  console.log("Deploy a token hanlder for the Divider will use");
+  console.log("Deploy a token handler for the Divider will use");
   const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
     args: [],
