@@ -103,7 +103,7 @@ contract TestHelper is DSTest {
 
         // balancer/space mocks
         balancerVault = new MockBalancerVault();
-        spaceFactory = new MockSpaceFactory(address(balancerVault));
+        spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
