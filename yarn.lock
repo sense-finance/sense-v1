@@ -670,9 +670,9 @@ __metadata:
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.0.12
     dayjs: ^1.10.7
-    ethers: ^5.4.7
-    hardhat: ^2.6.5
-    hardhat-abi-exporter: ^2.3.0
+    ethers: ^5.5.1
+    hardhat: ^2.6.8
+    hardhat-abi-exporter: ^2.3.1
     hardhat-contract-sizer: ^2.1.1
     hardhat-deploy: ^0.9.3
     hardhat-deploy-ethers: ^0.3.0-beta.11
@@ -2341,7 +2341,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.4.7":
+"ethers@npm:^5.5.1":
   version: 5.5.1
   resolution: "ethers@npm:5.5.1"
   dependencies:
@@ -2795,7 +2795,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"hardhat-abi-exporter@npm:^2.3.0":
+"hardhat-abi-exporter@npm:^2.3.1":
   version: 2.3.1
   resolution: "hardhat-abi-exporter@npm:2.3.1"
   peerDependencies:
@@ -2879,7 +2879,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"hardhat@npm:^2.6.5":
+"hardhat@npm:^2.6.8":
   version: 2.6.8
   resolution: "hardhat@npm:2.6.8"
   dependencies:

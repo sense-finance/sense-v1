@@ -19,8 +19,7 @@ import { Token } from "./tokens/Token.sol";
 interface YieldSpaceFactoryLike {
     function create(
         address,
-        address,
-        uint256
+        uint48
     ) external returns (address);
 }
 
@@ -78,7 +77,7 @@ contract Periphery is Trust {
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        address pool = yieldSpaceFactory.create(address(divider), adapter, uint256(maturity));
+        address pool = yieldSpaceFactory.create(adapter, maturity);
         poolIds[adapter][maturity] = BalancerPool(pool).getPoolId();
         poolManager.queueSeries(adapter, maturity, pool);
         emit SeriesSponsored(adapter, maturity, msg.sender);
