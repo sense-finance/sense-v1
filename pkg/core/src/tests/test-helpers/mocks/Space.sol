@@ -143,10 +143,7 @@ contract MockSpaceFactory {
         divider = Divider(_divider);
     }
 
-    function create(
-        address _adapter,
-        uint48 _maturity
-    ) external returns (address) {
+    function create(address _adapter, uint48 _maturity) external returns (address) {
         (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
         address _underlying = Adapter(_adapter).underlying();
 
