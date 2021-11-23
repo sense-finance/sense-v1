@@ -87,12 +87,12 @@ contract PeripheryTestHelper is DSTest {
 
         factory = new CFactory(address(divider), address(implementation), factoryParams, COMP);
 
-        divider.setIsTrusted(address(factory), true); // TODO: remove when PoolManager ready
-        address f = factory.deployAdapter(cDAI); // TODO: remove when PoolManager ready
-        // divider.setIsTrusted(address(factory), true); // TODO: uncomment when PoolManager ready
-        // periphery.setFactory(address(factory), true); // TODO: uncomment when PoolManager ready
+        divider.setIsTrusted(address(factory), true); // TODO: remove when Space ready
+        address f = factory.deployAdapter(cDAI); // TODO: remove when Space ready
+        // divider.setIsTrusted(address(factory), true); // TODO: uncomment when Space ready
+        // periphery.setFactory(address(factory), true); // TODO: uncomment when Space ready
         // onboard adapter, target wrapper
-        // address f = periphery.onboardAdapter(address(factory), cDAI); // onboard target through Periphery // TODO: uncomment when PoolManager ready
+        // address f = periphery.onboardAdapter(address(factory), cDAI); // onboard target through Periphery // TODO: uncomment when Space ready
         adapter = CAdapter(f);
     }
 }
@@ -113,7 +113,7 @@ contract PeripheryTests is PeripheryTestHelper {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // TODO: uncomment below lines when PoolManager ready
+        // TODO: uncomment below lines when Space ready
 
         // // check Balancer pool deployed
         // assertTrue(address(spaceFactory.pool()) != address(0));
@@ -121,6 +121,4 @@ contract PeripheryTests is PeripheryTestHelper {
         // // check zeros and claims onboarded on PoolManager (Fuse)
         // assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
     }
-
-    event Hola(uint256 a);
 }

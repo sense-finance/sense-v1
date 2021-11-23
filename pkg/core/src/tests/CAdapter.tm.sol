@@ -55,46 +55,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
 contract CAdapters is CAdapterTestHelper {
     using FixedMath for uint256;
 
-    function testCAdapterInitialize() public {
-        adapter = new CAdapter(); // compound adapter
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.cDAI,
-            delta: DELTA,
-            oracle: Assets.RARI_ORACLE,
-            ifee: ISSUANCE_FEE,
-            stake: Assets.DAI,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: 0
-        });
-        adapter.initialize(address(divider), adapterParams, Assets.COMP);
-        assertEq(adapter.reward(), Assets.COMP);
-        assertEq(adapter.divider(), address(divider));
-        assertEq(adapter.name(), "Compound Dai Adapter");
-        assertEq(adapter.symbol(), "cDAI-adapter");
-        (
-            address target,
-            address oracle,
-            uint256 delta,
-            uint256 ifee,
-            address stake,
-            uint256 stakeSize,
-            uint256 minm,
-            uint256 maxm,
-            uint8 mode
-        ) = BaseAdapter(adapter).adapterParams();
-        assertEq(target, Assets.cDAI);
-        assertEq(oracle, Assets.RARI_ORACLE);
-        assertEq(delta, DELTA);
-        assertEq(ifee, ISSUANCE_FEE);
-        assertEq(stake, Assets.DAI);
-        assertEq(stakeSize, STAKE_SIZE);
-        assertEq(minm, MIN_MATURITY);
-        assertEq(maxm, MAX_MATURITY);
-        assertEq(mode, 0);
-    }
-
     function testCAdapterScale() public {
         CTokenInterface underlying = CTokenInterface(Assets.DAI);
         CTokenInterface ctoken = CTokenInterface(Assets.cDAI);
