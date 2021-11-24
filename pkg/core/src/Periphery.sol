@@ -318,13 +318,6 @@ contract Periphery is Trust {
         _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
 
-    /* ========== VIEWS ========== */
-
-    function price(address tokenA, address tokenB) public view returns (uint256) {
-        // TODO: unimplemented – solve this with the space for the optimal swap
-        return 0.95e18;
-    }
-
     /* ========== ADMIN FUNCTIONS ========== */
 
     /// @notice Enable or disable a factory
