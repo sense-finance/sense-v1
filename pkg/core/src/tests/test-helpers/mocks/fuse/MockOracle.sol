@@ -17,4 +17,18 @@ contract MockOracle is PriceOracle {
     function setPrice(uint256 price_) external {
         _price = price_;
     }
+
+    function initialize(
+        address[] memory underlyings,
+        PriceOracle[] memory _oracles,
+        PriceOracle _defaultOracle,
+        address _admin,
+        bool _canAdminOverwrite
+    ) external {
+        return;
+    }
+
+    function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external {
+        return;
+    }
 }

@@ -58,8 +58,9 @@ contract Adapters is TestHelper {
             mode: MODE
         });
 
-        adapter.initialize(address(divider), adapterParams);
+        adapter.initialize(address(divider), adapterParams, address(reward));
 
+        assertEq(adapter.reward(), address(reward));
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
         (

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { DSTest } from "./test-helpers/DSTest.sol";
+import { Hevm } from "./test-helpers/Hevm.sol";
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
@@ -49,18 +50,24 @@ contract PeripheryTestHelper is DSTest {
     IUniswapV3Factory uniFactory;
     ISwapRouter uniSwapRouter;
 
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+
     function setUp() public {
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        uint48 firstDayOfMonth = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
+        hevm.warp(firstDayOfMonth); // set to first day of the month
+
+        // divider
+        tokenHandler = new TokenHandler();
+        divider = new Divider(address(this), address(tokenHandler));
+        tokenHandler.init(address(divider));
+
         // periphery
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
         periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         poolManager.setIsTrusted(address(periphery), true);
-
-        // divider
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
-        tokenHandler.init(address(divider));
         divider.setPeriphery(address(periphery));
 
         // adapter & factory
@@ -77,14 +84,16 @@ contract PeripheryTestHelper is DSTest {
             maxm: MAX_MATURITY,
             mode: MODE
         });
+
         factory = new CFactory(address(divider), address(implementation), factoryParams, COMP);
-        //        factory.addTarget(cDAI, true);
-        divider.setIsTrusted(address(factory), true); // add factory as a ward
-        address f = factory.deployAdapter(cDAI); // deploy a cDAI adapter
+
+        divider.setIsTrusted(address(factory), true); // TODO: remove when Space ready
+        address f = factory.deployAdapter(cDAI); // TODO: remove when Space ready
+        // divider.setIsTrusted(address(factory), true); // TODO: uncomment when Space ready
+        // periphery.setFactory(address(factory), true); // TODO: uncomment when Space ready
+        // onboard adapter, target wrapper
+        // address f = periphery.onboardAdapter(address(factory), cDAI); // onboard target through Periphery // TODO: uncomment when Space ready
         adapter = CAdapter(f);
-        // users
-        //        alice = createUser(2**96, 2**96);
-        //        bob = createUser(2**96, 2**96);
     }
 }
 
@@ -93,21 +102,23 @@ contract PeripheryTests is PeripheryTestHelper {
 
     function testSponsorSeries() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
-        if (maturity >= block.timestamp + 2 weeks) {
-            maturity = uint48(DateTimeFull.timestampFromDateTime(year, month + 1 == 13 ? 1 : month + 1, 1, 0, 0, 0));
-        }
-        ERC20(cDAI).approve(address(periphery), 2**256 - 1);
+        uint48 maturity = uint48(
+            DateTimeFull.timestampFromDateTime(year, (month + 1) == 13 ? 1 : (month + 1), 1, 0, 0, 0)
+        );
+
+        ERC20(DAI).approve(address(periphery), 2**256 - 1);
         (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // check Uniswap pool deployed
-        assertTrue(uniFactory.getPool(zero, claim, periphery.UNI_POOL_FEE()) != address(0));
+        // TODO: uncomment below lines when Space ready
 
-        // check zeros and claims onboarded on PoolManager (Fuse)
-        // TODO: do when PoolManage ready
+        // // check Balancer pool deployed
+        // assertTrue(address(spaceFactory.pool()) != address(0));
+
+        // // check zeros and claims onboarded on PoolManager (Fuse)
+        // assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
     }
 }

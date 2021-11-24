@@ -63,7 +63,7 @@ contract CAdapter is CropAdapter {
         // approve underlying contract to pull target (used on wrapUnderlying())
         ERC20 u = ERC20(CTokenInterface(_adapterParams.target).underlying());
         u.safeApprove(_adapterParams.target, type(uint256).max);
-        super.initialize(_divider, _adapterParams);
+        super.initialize(_divider, _adapterParams, _reward);
     }
 
     function _scale() internal override returns (uint256) {

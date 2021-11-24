@@ -96,7 +96,7 @@ contract TestHelper is DSTest {
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
-        divider.setGuard(address(target), 10 * 2**96);
+        divider.setGuard(address(target), 10 * 2**128);
 
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
@@ -116,9 +116,9 @@ contract TestHelper is DSTest {
             address(comptroller),
             address(1),
             address(divider),
-            address(1)
+            address(masterOracle) // oracle impl
         );
-        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(1));
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -145,9 +145,9 @@ contract TestHelper is DSTest {
         adapter = MockAdapter(f);
 
         // users
-        alice = createUser(2**96, 2**96);
-        bob = createUser(2**96, 2**96);
-        jim = createUser(2**96, 2**96);
+        alice = createUser(2**128, 2**128);
+        bob = createUser(2**128, 2**128);
+        jim = createUser(2**128, 2**128);
     }
 
     function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
@@ -243,14 +243,14 @@ contract TestHelper is DSTest {
     }
 
     function fuzzWithBounds(
-        uint96 number,
-        uint96 lBound,
-        uint96 uBound
-    ) public returns (uint96) {
+        uint128 number,
+        uint128 lBound,
+        uint128 uBound
+    ) public returns (uint128) {
         return lBound + (number % (uBound - lBound));
     }
 
-    function fuzzWithBounds(uint96 number, uint96 lBound) public returns (uint96) {
-        return lBound + (number % (type(uint96).max - lBound));
+    function fuzzWithBounds(uint128 number, uint128 lBound) public returns (uint128) {
+        return lBound + (number % (type(uint128).max - lBound));
     }
 }

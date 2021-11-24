@@ -16,6 +16,7 @@ import { Token } from "../tokens/Token.sol";
 
 contract Dividers is TestHelper {
     using FixedMath for uint256;
+    using FixedMath for uint128;
     using Errors for string;
 
     address[] public usrs;
@@ -349,7 +350,7 @@ contract Dividers is TestHelper {
         assertEq(afterBalance, beforeBalance + convertToBase(STAKE_SIZE, stake.decimals()));
     }
 
-    function testSettleSeriesFeesAreTransferredIfSponsor(uint96 tBal) public {
+    function testSettleSeriesFeesAreTransferredIfSponsor(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = target.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
@@ -363,15 +364,22 @@ contract Dividers is TestHelper {
         assertClose(afterBalance, beforeBalance - tBal + fee * 2);
     }
 
-    //    function testSettleSeriesFeesAreTransferredIfNotSponsor() public {
-    //        uint48 maturity = getValidMaturity(2021, 10);
-    //        uint256 beforeBalance = stake.balanceOf(address(bob));
-    //        sponsorSampleSeries(address(alice), maturity);
-    //        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
-    //        bob.doSettleSeries(address(adapter), maturity);
-    //        uint256 afterBalance = stake.balanceOf(address(bob));
-    //        assertEq(afterBalance, beforeBalance + convertToBase(STAKE_SIZE, stake.decimals()));
-    //    }
+    function testSettleSeriesFeesAreTransferredIfNotSponsor(uint128 tBal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 aliceBeforeBalance = target.balanceOf(address(alice));
+        uint256 bobBeforeBalance = target.balanceOf(address(bob));
+        sponsorSampleSeries(address(alice), maturity);
+        alice.doIssue(address(adapter), maturity, tBal);
+        bob.doIssue(address(adapter), maturity, tBal);
+        hevm.warp(maturity + SPONSOR_WINDOW + 1);
+        bob.doSettleSeries(address(adapter), maturity);
+        uint256 tBase = 10**target.decimals();
+        uint256 fee = convertToBase(ISSUANCE_FEE, target.decimals()).fmul(tBal, tBase);
+        uint256 aliceAfterBalance = target.balanceOf(address(alice));
+        uint256 bobAfterBalance = target.balanceOf(address(bob));
+        assertClose(aliceAfterBalance, aliceBeforeBalance - tBal);
+        assertClose(bobAfterBalance, bobBeforeBalance - tBal + fee * 2);
+    }
 
     /* ========== issue() tests ========== */
 
@@ -417,6 +425,7 @@ contract Dividers is TestHelper {
         divider.setGuard(address(target), aliceBalance);
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
+        bob.doApprove(address(target), address(periphery), 0);
         try alice.doIssue(address(adapter), maturity, aliceBalance) {
             fail();
         } catch Error(string memory error) {
@@ -484,7 +493,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testIssue(uint96 tBal) public {
+    function testIssue(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -510,9 +519,25 @@ contract Dividers is TestHelper {
         alice.doIssue(address(adapter), maturity, amount);
     }
 
-    //    function testIssueTwoTimes() public {
-    //        revert("IMPLEMENT");
-    //    }
+    function testIssueMultipleTimes(uint128 bal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = bal.fdiv(4 * tBase, tBase);
+        uint256 fee = convertToBase(ISSUANCE_FEE, target.decimals()).fmul(tBal, tBase); // 1 target
+        uint256 tBalanceBefore = target.balanceOf(address(alice));
+        alice.doIssue(address(adapter), maturity, tBal);
+        alice.doIssue(address(adapter), maturity, tBal);
+        alice.doIssue(address(adapter), maturity, tBal);
+        alice.doIssue(address(adapter), maturity, tBal);
+        // Formula = newBalance.fmul(scale)
+        (, uint256 lscale) = adapter._lscale();
+        uint256 mintedAmount = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        assertEq(ERC20(zero).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
+        assertEq(ERC20(claim).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
+        assertEq(target.balanceOf(address(alice)), tBalanceBefore - tBal.fmul(4 * tBase, tBase));
+    }
 
     /* ========== combine() tests ========== */
 
@@ -550,15 +575,30 @@ contract Dividers is TestHelper {
         }
     }
 
-    //    function testCantCombineNotEnoughBalance() public {
-    //        revert("IMPLEMENT");
-    //    }
-    //
-    //    function testCantCombineNotEnoughAllowance() public {
-    //        revert("IMPLEMENT");
-    //    }
+    function testCantCombineNotEnoughBalance(uint128 tBal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+        uint256 issued = bob.doIssue(address(adapter), maturity, tBal);
+        try bob.doCombine(address(adapter), maturity, issued + 1) {
+            fail();
+        } catch (bytes memory error) {
+            // Does not return any error message
+        }
+    }
 
-    function testCombine(uint96 tBal) public {
+    function testCantCombineNotEnoughAllowance(uint128 tBal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+        uint256 issued = bob.doIssue(address(adapter), maturity, tBal);
+        bob.doApprove(address(target), address(periphery), 0);
+        try bob.doCombine(address(adapter), maturity, issued + 1) {
+            fail();
+        } catch (bytes memory error) {
+            // Does not return any error message
+        }
+    }
+
+    function testCombine(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -574,12 +614,9 @@ contract Dividers is TestHelper {
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
         assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, Token(zero).BASE_UNIT()), zBalanceBefore);
-        // Amount of Zeros before combining == underlying balance
-        // uint256 collected = ??
-        // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
     }
 
-    function testCombineAtMaturity(uint96 tBal) public {
+    function testCombineAtMaturity(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -598,12 +635,7 @@ contract Dividers is TestHelper {
 
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
-        //        (, , , , , , uint256 mscale) = divider.series(address(adapter), maturity);
         assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, Token(zero).BASE_UNIT()), zBalanceBefore);
-        // TODO: check if this is correct!! Should it be .fmul(mscale));
-        // Amount of Zeros before combining == underlying balance
-        // uint256 collected = ??
-        // assertEq(tBalanceAfter - tBalanceBefore, collected); // TODO: assert collected value
     }
 
     /* ========== redeemZero() tests ========== */
@@ -670,7 +702,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testRedeemZero(uint96 tBal) public {
+    function testRedeemZero(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000);
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
@@ -703,10 +735,6 @@ contract Dividers is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(alice));
         assertEq(tBalanceAfter, tBalanceBefore);
     }
-
-    //    function testCanRedeemZeroBeforeMaturityIfSettled() public {
-    //        revert("IMPLEMENT");
-    //    }
 
     /* ========== redeemClaim() tests ========== */
     function testRedeemClaimTiltPositiveScale() public {
@@ -790,7 +818,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantCollectIfMaturityAndNotSettled(uint96 tBal) public {
+    function testCantCollectIfMaturityAndNotSettled(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -803,7 +831,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantCollectIfPaused(uint96 tBal) public {
+    function testCantCollectIfPaused(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -817,11 +845,17 @@ contract Dividers is TestHelper {
         }
     }
 
-    //    function testCantCollectIfNotClaimContract() public {
-    //        revert("IMPLEMENT");
-    //    }
+    function testCantCollectIfNotClaimContract() public {
+        uint256 tBal = 100e18;
+        uint48 maturity = getValidMaturity(2021, 10);
+        try divider.collect(address(bob), address(adapter), maturity, tBal, address(bob)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OnlyClaim);
+        }
+    }
 
-    function testCollect(uint96 tBal) public {
+    function testCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -846,8 +880,8 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    function testCollectReward(uint96 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000);
+    function testCollectReward(uint128 tBal) public {
+        tBal = fuzzWithBounds(148576927244290395723322121708047222714, 1000, type(uint32).max);
         adapter.setScale(1e18);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -874,14 +908,49 @@ contract Dividers is TestHelper {
         collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
-        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
-        assertClose(rBalanceAfter, 1e18);
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
+        assertClose(rBalanceAfter, rBalanceBefore + airdrop);
     }
 
-    //    function testCollectRewardMultipleUsers() public {
-    //    }
+    function testCollectRewardMultipleUsers(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        adapter.setScale(1e18);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        User[3] memory users = [alice, bob, jim];
 
-    function testCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint96 tBal) public {
+        alice.doIssue(address(adapter), maturity, tBal);
+        bob.doIssue(address(adapter), maturity, tBal);
+        jim.doIssue(address(adapter), maturity, tBal);
+
+        uint256 airdrop = 1e18;
+        reward.mint(address(adapter), airdrop * users.length); // trigger an airdrop
+
+        for (uint256 i = 0; i < users.length; i++) {
+            uint256 lscale = divider.lscales(address(adapter), maturity, address(users[i]));
+            uint256 cBalanceBefore = ERC20(claim).balanceOf(address(users[i]));
+            uint256 tBalanceBefore = target.balanceOf(address(users[i]));
+            uint256 rBalanceBefore = reward.balanceOf(address(users[i]));
+
+            uint256 collected = users[i].doCollect(claim);
+
+            // Formula: collect = tBal / lscale - tBal / cscale
+            uint256 collect;
+            {
+                (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
+                (, uint256 lvalue) = adapter._lscale();
+                uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+                collect = cBalanceBefore.fdiv(lscale, Token(claim).BASE_UNIT());
+                collect -= cBalanceBefore.fdiv(cscale, Token(claim).BASE_UNIT());
+            }
+            assertEq(cBalanceBefore, ERC20(claim).balanceOf(address(users[i])));
+            assertEq(collected, collect);
+            assertEq(target.balanceOf(address(users[i])), tBalanceBefore + collected);
+            assertClose(reward.balanceOf(address(users[i])), rBalanceBefore + airdrop);
+        }
+    }
+
+    function testCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -907,7 +976,7 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    function testCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint96 tBal) public {
+    function testCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -922,7 +991,7 @@ contract Dividers is TestHelper {
         // TODO: check .scale() is not called (like to add the lscale). We can't?
     }
 
-    function testCollectBeforeMaturityAndSettled(uint96 tBal) public {
+    function testCollectBeforeMaturityAndSettled(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -948,7 +1017,7 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    function testCollectTransferAndCollect(uint96 tBal) public {
+    function testCollectTransferAndCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -976,7 +1045,7 @@ contract Dividers is TestHelper {
         assertEq(acollected, 0);
     }
 
-    function testCollectTransferToMyselfAndCollect(uint96 tBal) public {
+    function testCollectTransferToMyselfAndCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -1084,7 +1153,7 @@ contract Dividers is TestHelper {
 
     // @notice if backfill happens before the maturity and sponsor window, stakecoin stake is transferred to the
     // sponsor and issuance fees are returned to Sense's cup multisig address
-    function testBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint96 tBal) public {
+    function testBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
@@ -1111,7 +1180,7 @@ contract Dividers is TestHelper {
 
     // @notice if backfill happens after issuance fees are returned to Sense's cup multisig address, both issuance fees
     // and the stakecoin stake will go to Sense's cup multisig address
-    function testBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint96 tBal) public {
+    function testBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
@@ -1209,17 +1278,4 @@ contract Dividers is TestHelper {
         assertEq(divider.adapterAddresses(1), address(adapter));
         assertTrue(divider.adapters(address(adapter)));
     }
-
-    /* ========== misc tests ========== */
-
-    //    function testAdapterIsDisabledIfScaleValueLowerThanPrevious() public {
-    //    }
-
-    //    function testAdapterIsDisabledIfScaleValueCallReverts() public {
-    //        revert("IMPLEMENT");
-    //    }
-
-    //    function testAdapterIsDisabledIfScaleValueHigherThanThanPreviousPlusDelta() public {
-    //        revert("IMPLEMENT");
-    //    }
 }

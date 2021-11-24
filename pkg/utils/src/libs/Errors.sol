@@ -9,6 +9,10 @@ library Errors {
     string constant DuplicateSeries = "Series has already been initialized";
     string constant ExistingValue = "New value must be different than previous";
     string constant FactoryNotSupported = "Factory is not supported";
+    string constant FailedBecomeAdmin = "Failed to become admin";
+    string constant FailedAddMarket = "Failed to add market";
+    string constant FailedAddZeroMarket = "Failed to add Zero market";
+    string constant FailedAddLPMarket = "Failed to add LP market";
     string constant FlashCallbackFailed = "FlashLender: Callback failed";
     string constant FlashRepayFailed = "FlashLender: Repay failed";
     string constant FlashTransferFailed = "FlashLender: Transfer failed";
@@ -24,13 +28,21 @@ library Errors {
     string constant NotAuthorized = "UNTRUSTED"; // We copy the error message used by solmate's `Trust` auth lib
     string constant NotEnoughClaims = "Not enough claims to collect given target balance";
     string constant SeriesDoesntExists = "Series does not exist";
+    string constant SeriesNotQueued = "Series must be queued";
     string constant NotSettled = "Series must be settled";
     string constant NotSupported = "Target is not supported";
+    string constant OnlyClaim = "Can only be invoked by the Claim contract";
     string constant OnlyDivider = "Can only be invoked by the Divider contract";
     string constant OnlyPeriphery = "Can only be invoked by the Periphery contract";
     string constant OnlyPermissionless = "Can only be invoked if permissionless mode is enabled";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
     string constant Paused = "Pausable: paused";
+    string constant PoolAlreadyDeployed = "Pool already deployed";
+    string constant PoolNotDeployed = "Pool not yet deployed";
+    string constant TargetExists = "Target already added";
+    string constant TargetNotInFuse = "Target for this Series not yet added to Fuse";
+    string constant TargetParamNotSet = "Target asset params not set";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
+
 }

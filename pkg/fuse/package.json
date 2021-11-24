@@ -15,9 +15,9 @@
     "scripts": {
         "build": "just build",
         "debug": "just debug",
-        "test": "just test",
+        "test": "just test-local",
         "test:mainnet": "just test-mainnet",
-        "testcov": "just test --coverage",
+        "testcov": "just test-local --coverage",
         "lint": "solhint -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
         "size-contracts": "hardhat compile && hardhat size-contracts"

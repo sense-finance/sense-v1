@@ -190,7 +190,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100e18;
         uint48 maturity = getValidMaturity(2021, 10);
 
-        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -218,7 +218,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100e18;
         uint48 maturity = getValidMaturity(2021, 10);
 
-        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -376,7 +376,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100e18;
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
-        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter._lscale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
@@ -397,7 +397,6 @@ contract PeripheryTest is TestHelper {
 
         bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
 
         // calculate liquidity added
@@ -449,7 +448,6 @@ contract PeripheryTest is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         (, lscale) = adapter._lscale();
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
 
         // convert liquidity added to target (which would be the liquidity withdrawn)
@@ -461,8 +459,6 @@ contract PeripheryTest is TestHelper {
         }
 
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
-
-        (, , , , , , uint256 mscale, uint256 maxscale, uint256 tilt) = divider.series(address(adapter), maturity);
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
         bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
