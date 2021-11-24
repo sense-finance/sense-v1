@@ -86,6 +86,10 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
           ethers.constants.MaxUint256, // `deadline` – no deadline
         )
         .then(tx => tx.wait());
+      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await periphery
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
+        .then(t => t.wait());
     }
   }
 };
