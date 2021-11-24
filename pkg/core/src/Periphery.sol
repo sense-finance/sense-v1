@@ -17,11 +17,7 @@ import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "./tokens/Token.sol";
 
 interface SpaceFactoryLike {
-    function create(
-        address,
-        address,
-        uint256
-    ) external returns (address);
+    function create(address, uint48) external returns (address);
 
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
@@ -88,7 +84,7 @@ contract Periphery is Trust {
 
         // if it is a Sense verified adapter
         if (factory[adapter] != address(0)) {
-            address pool = spaceFactory.create(address(divider), adapter, uint256(maturity));
+            address pool = spaceFactory.create(adapter, maturity);
             poolManager.queueSeries(adapter, maturity, pool);
         }
         emit SeriesSponsored(adapter, maturity, msg.sender);
@@ -362,7 +358,7 @@ contract Periphery is Trust {
         });
 
         BalancerVault.FundManagement memory funds = BalancerVault.FundManagement({
-            sender: msg.sender,
+            sender: address(this),
             fromInternalBalance: false,
             recipient: payable(address(this)),
             toInternalBalance: false

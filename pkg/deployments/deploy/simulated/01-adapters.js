@@ -83,8 +83,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
     const target = await ethers.getContract(targetName);
 
-    console.log(`Mint the deployer a balance of 1,000,000 ${targetName}`);
-    await target.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+    console.log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
+    await target.mint(deployer, ethers.utils.parseEther("10000000")).then(tx => tx.wait());
 
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();

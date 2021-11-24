@@ -134,19 +134,17 @@ contract MockBalancerVault {
 contract MockSpaceFactory {
     MockBalancerVault public vault;
     MockSpacePool public pool;
+    Divider public divider;
 
     mapping(address => mapping(uint256 => address)) public pools;
 
-    constructor(address _vault) {
+    constructor(address _vault, address _divider) {
         vault = MockBalancerVault(_vault);
+        divider = Divider(_divider);
     }
 
-    function create(
-        address _divider,
-        address _adapter,
-        uint256 _maturity
-    ) external returns (address) {
-        (address _zero, , , , , , , , ) = Divider(_divider).series(_adapter, uint48(_maturity));
+    function create(address _adapter, uint48 _maturity) external returns (address) {
+        (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
         address _underlying = Adapter(_adapter).underlying();
 
         pool = new MockSpacePool(address(vault), _underlying, _zero);
