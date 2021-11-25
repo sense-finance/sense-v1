@@ -8,6 +8,12 @@ import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 // Internal references
 import { CropAdapter } from "../CropAdapter.sol";
 
+interface IWETH {
+    function deposit() external payable;
+
+    function withdraw(uint256 wad) external;
+}
+
 interface CTokenInterface {
     /// @notice cToken is convertible into an ever increasing quantity of the underlying asset, as interest accrues in
     /// the market. This function returns the exchange rate between a cToken and the underlying asset.
@@ -34,6 +40,11 @@ interface CTokenInterface {
     function redeem(uint256 redeemTokens) external returns (uint256);
 }
 
+interface CETHTokenInterface {
+    ///@notice Send Ether to CEther to mint
+    function mint() external payable;
+}
+
 interface ComptrollerInterface {
     /// @notice Claim all the comp accrued by holder in all markets
     /// @param holder The address to claim COMP for
@@ -54,6 +65,7 @@ contract CAdapter is CropAdapter {
     using SafeERC20 for ERC20;
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function initialize(
         address _divider,
@@ -61,37 +73,49 @@ contract CAdapter is CropAdapter {
         address _reward
     ) public virtual override initializer {
         // approve underlying contract to pull target (used on wrapUnderlying())
-        ERC20 u = ERC20(CTokenInterface(_adapterParams.target).underlying());
+        address target = _adapterParams.target;
+        ERC20 u = ERC20(_isCETH(target) ? WETH : CTokenInterface(target).underlying());
         u.safeApprove(_adapterParams.target, type(uint256).max);
         super.initialize(_divider, _adapterParams, _reward);
     }
 
     function _scale() internal override returns (uint256) {
-        CTokenInterface t = CTokenInterface(adapterParams.target);
-        uint256 decimals = CTokenInterface(t.underlying()).decimals();
-        return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10**decimals);
+        uint256 decimals = CTokenInterface(underlying()).decimals();
+        return CTokenInterface(adapterParams.target).exchangeRateCurrent().fdiv(10**(10 + decimals), 10**decimals);
     }
 
     function _claimReward() internal virtual override {
         ComptrollerInterface(COMPTROLLER).claimComp(address(this));
     }
 
-    function underlying() external view override returns (address) {
-        return CTokenInterface(adapterParams.target).underlying();
+    function underlying() public view override returns (address) {
+        address target = adapterParams.target;
+        return _isCETH(target) ? WETH : CTokenInterface(target).underlying();
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {
-        return PriceOracleInterface(adapterParams.oracle).price(CTokenInterface(adapterParams.target).underlying());
+        address target = adapterParams.target;
+        return
+            _isCETH(target)
+                ? 1e18
+                : PriceOracleInterface(adapterParams.oracle).price(CTokenInterface(target).underlying());
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256) {
-        ERC20 u = ERC20(CTokenInterface(adapterParams.target).underlying());
+        ERC20 u = ERC20(underlying());
         ERC20 target = ERC20(adapterParams.target);
+        bool isCETH = _isCETH(address(adapterParams.target));
+
         u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        if (isCETH) IWETH(WETH).withdraw(uBal); // unwrap WETH into ETH
 
         // mint target
         uint256 tBalBefore = target.balanceOf(address(this));
-        require(CTokenInterface(adapterParams.target).mint(uBal) == 0, "Mint failed");
+        if (isCETH) {
+            CETHTokenInterface(adapterParams.target).mint{ value: uBal }();
+        } else {
+            require(CTokenInterface(adapterParams.target).mint(uBal) == 0, "Mint failed");
+        }
         uint256 tBalAfter = target.balanceOf(address(this));
         uint256 tBal = tBalAfter - tBalBefore;
 
@@ -101,18 +125,31 @@ contract CAdapter is CropAdapter {
     }
 
     function unwrapTarget(uint256 tBal) external override returns (uint256) {
-        ERC20 u = ERC20(CTokenInterface(adapterParams.target).underlying());
+        ERC20 u = ERC20(underlying());
+        bool isCETH = _isCETH(address(adapterParams.target));
         ERC20 target = ERC20(adapterParams.target);
         target.safeTransferFrom(msg.sender, address(this), tBal); // pull target
 
         // redeem target for underlying
-        uint256 uBalBefore = u.balanceOf(address(this));
+        uint256 uBalBefore = isCETH ? address(this).balance : u.balanceOf(address(this));
         require(CTokenInterface(adapterParams.target).redeem(tBal) == 0, "Redeem failed");
-        uint256 uBalAfter = u.balanceOf(address(this));
+        uint256 uBalAfter = isCETH ? address(this).balance : u.balanceOf(address(this));
         uint256 uBal = uBalAfter - uBalBefore;
+
+        if (isCETH) {
+            // deposit ETH into WETH contract
+            (bool success, ) = WETH.call{ value: uBal }("");
+            require(success, "Transfer failed.");
+        }
 
         // transfer underlying to sender
         u.safeTransfer(msg.sender, uBal);
         return uBal;
     }
+
+    function _isCETH(address target) internal view returns (bool) {
+        return keccak256(abi.encodePacked(ERC20(target).symbol())) == keccak256(abi.encodePacked("cETH"));
+    }
+
+    fallback() external payable {}
 }

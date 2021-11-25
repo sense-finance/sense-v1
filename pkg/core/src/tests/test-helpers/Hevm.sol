@@ -16,4 +16,6 @@ abstract contract Hevm {
     ) public virtual;
 
     function ffi(string[] calldata) external virtual returns (bytes memory);
+
+    function load(address, bytes32) external virtual returns (bytes32);
 }

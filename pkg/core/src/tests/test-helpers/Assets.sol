@@ -9,6 +9,7 @@ library Assets {
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant cETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
 
     // eth
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
