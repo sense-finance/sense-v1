@@ -34,7 +34,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     address public immutable tokenHandler; // zero/claim deployer
     bool public permissionless; // permissionless flag
     bool public guarded = true; // guarded launch flag
-    uint256 public adapterCounter; // total # of adapters
+    uint256 public adapterCounter; // last generated adapter ID
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
@@ -550,6 +550,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== INTERNAL FNCTIONS & HELPERS ========== */
 
+    /// @notice if an adapter is turned off and then back on, it will be re-added into the
+    /// adapterAddresses mapping at a new id (and the previous ID will still exist).
     function _setAdapter(address adapter, bool isOn) internal {
         require(adapters[adapter] != isOn, Errors.ExistingValue);
         adapters[adapter] = isOn;
@@ -559,7 +561,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             adapterCounter++;
         }
 
-        emit AdapterChanged(adapter, adapterCounter, isOn);
+        emit AdapterChanged(adapter, adapterCounter - 1, isOn);
     }
 
     function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
