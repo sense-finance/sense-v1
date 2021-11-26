@@ -318,13 +318,6 @@ contract Periphery is Trust {
         _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
 
-    /* ========== VIEWS ========== */
-
-    function price(address tokenA, address tokenB) public view returns (uint256) {
-        // TODO: unimplemented – solve this with the space for the optimal swap
-        return 0.95e18;
-    }
-
     /* ========== ADMIN FUNCTIONS ========== */
 
     /// @notice Enable or disable a factory
@@ -566,7 +559,7 @@ contract Periphery is Trust {
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({
             assets: assets,
             maxAmountsIn: amounts,
-            userData: abi.encode(1, amounts), // EXACT_TOKENS_IN_FOR_BPT_OUT = 1, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
+            userData: abi.encode(amounts), // EXACT_TOKENS_IN_FOR_BPT_OUT = 1, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
             fromInternalBalance: false
         });
         balancerVault.joinPool(poolId, address(this), msg.sender, request);
