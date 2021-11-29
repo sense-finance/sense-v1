@@ -34,7 +34,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     address public immutable tokenHandler; // zero/claim deployer
     bool public permissionless; // permissionless flag
     bool public guarded = true; // guarded launch flag
-    uint256 public adapterCounter; // last generated adapter ID
+    uint256 public adapterCounter; // # number of adapters (including turned off)
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
