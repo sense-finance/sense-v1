@@ -35,6 +35,8 @@ interface YieldSpacePoolLike {
     ) external view returns (uint256);
 
     function getPoolId() external view returns (bytes32);
+
+    function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
 }
 
 /// @title Periphery
@@ -449,18 +451,23 @@ contract Periphery is Trust {
             // (1) Based on zeros:target ratio from current pool reserves and tBal passed
             // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
             (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
-            uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
 
-            // (2) Target to provide | tBal - zBalInTarget |
-            uint256 tBalToPovide = tBal > zBalInTarget ? tBal - zBalInTarget : zBalInTarget - tBal;
+            // Ensure we have the right token indexes
+            (uint8 zeroi, uint8 targeti) = pool.getIndices();
 
-            // (3) Issue Zeros & Claim
+            uint256 zBalInTarget = tBal *
+                (balances[zeroi] / (Adapter(adapter).scale() * balances[targeti] + balances[zeroi])); // ABDK formula
+
+            // (2) Issue Zeros & Claim
             issued = divider.issue(adapter, maturity, zBalInTarget);
+
+            // (3) Target to provide: | tBal - zBalInTarget |
+            uint256 tBalToProvide = tBal > zBalInTarget ? tBal - zBalInTarget : zBalInTarget - tBal;
 
             // (4) Add liquidity to Space & send the LP Shares to recipient
             uint256[] memory amounts = new uint256[](2);
-            amounts[0] = tBalToPovide;
-            amounts[1] = issued;
+            amounts[targeti] = tBalToProvide;
+            amounts[zeroi] = issued;
 
             _addLiquidityToSpace(pool.getPoolId(), tokens, amounts);
         }
