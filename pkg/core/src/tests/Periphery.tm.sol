@@ -93,7 +93,7 @@ contract PeripheryTestHelper is DSTest {
         // periphery.setFactory(address(factory), true); // TODO: uncomment when Space ready
         // onboard adapter, target wrapper
         // address f = periphery.onboardAdapter(address(factory), cDAI); // onboard target through Periphery // TODO: uncomment when Space ready
-        adapter = CAdapter(f);
+        adapter = CAdapter(payable(f));
     }
 }
 

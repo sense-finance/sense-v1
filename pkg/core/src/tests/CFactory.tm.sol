@@ -91,7 +91,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testDeployAdapter() public {
         address f = factory.deployAdapter(cDAI);
-        CAdapter adapter = CAdapter(f);
+        CAdapter adapter = CAdapter(payable(f));
         (, , uint256 delta, , , , , , ) = CAdapter(adapter).adapterParams();
         assertTrue(address(adapter) != address(0));
         assertEq(CAdapter(adapter).getTarget(), address(cDAI));
