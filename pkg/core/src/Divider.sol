@@ -34,7 +34,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     address public immutable tokenHandler; // zero/claim deployer
     bool public permissionless; // permissionless flag
     bool public guarded = true; // guarded launch flag
-    uint256 public lastAdapterId; // last generated adapter ID
+    uint256 public adapterCounter; // last generated adapter ID
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
@@ -554,8 +554,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter] != isOn, Errors.ExistingValue);
         adapters[adapter] = isOn;
         uint256 id = adapterIDs[adapter];
+        // If this adapter is being added for the first time
         if (isOn && id == 0) {
-            id = ++lastAdapterId;
+            id = ++adapterCounter;
             adapterAddresses[id] = adapter;
             adapterIDs[adapter] = id;
         }
