@@ -1229,30 +1229,30 @@ contract Dividers is TestHelper {
 
     function testSetAdapterFirst() public {
         // check first adapter added on TestHelper.sol has ID 1
-        assertEq(divider.lastAdapterId(), 1);
+        assertEq(divider.adapterCounter(), 1);
         assertEq(divider.adapterIDs(address(adapter)), 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
     }
 
     function testSetAdapter() public {
         MockAdapter aAdapter = new MockAdapter();
-        uint256 lastAdapterId = divider.lastAdapterId();
+        uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
         assertTrue(divider.adapters(address(aAdapter)));
-        assertEq(divider.adapterIDs(address(aAdapter)), lastAdapterId + 1);
-        assertEq(divider.adapterAddresses(lastAdapterId + 1), address(aAdapter));
+        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
+        assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
     }
 
     function testSetAdapterBackOnKeepsExistingId() public {
         MockAdapter aAdapter = new MockAdapter();
-        uint256 lastAdapterId = divider.lastAdapterId();
+        uint256 adapterCounter = divider.adapterCounter();
 
         // set adapter on
         divider.setAdapter(address(aAdapter), true);
         assertTrue(divider.adapters(address(aAdapter)));
-        assertEq(divider.adapterIDs(address(aAdapter)), lastAdapterId + 1);
-        assertEq(divider.adapterAddresses(lastAdapterId + 1), address(aAdapter));
+        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
+        assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
 
         // set adapter off
         divider.setAdapter(address(aAdapter), false);
@@ -1261,14 +1261,14 @@ contract Dividers is TestHelper {
         MockAdapter bAdapter = new MockAdapter();
         divider.setAdapter(address(bAdapter), true);
         assertTrue(divider.adapters(address(bAdapter)));
-        assertEq(divider.adapterIDs(address(bAdapter)), lastAdapterId + 2);
-        assertEq(divider.adapterAddresses(lastAdapterId + 2), address(bAdapter));
+        assertEq(divider.adapterIDs(address(bAdapter)), adapterCounter + 2);
+        assertEq(divider.adapterAddresses(adapterCounter + 2), address(bAdapter));
 
         // set adapter back on
         divider.setAdapter(address(aAdapter), true);
         assertTrue(divider.adapters(address(aAdapter)));
-        assertEq(divider.adapterIDs(address(aAdapter)), lastAdapterId + 1);
-        assertEq(divider.adapterAddresses(lastAdapterId + 1), address(aAdapter));
+        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
+        assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
     }
 
     /* ========== addAdapter() tests ========== */
