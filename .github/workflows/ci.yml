@@ -6,21 +6,44 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      FORGE_REVISION: 0527eb95ce9c17101b434a0626ba3861836c0a9e
+
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
 
-    - name: Install dependencies
-      run: |
-        cargo install --git https://github.com/gakonst/dapptools-rs --locked
-        yarn install
+    # try to get forge from cache
+    - name: Cache forge
+        id: cache-forge
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-forge
+        with:
+          path: ~/.cargo/bin/forge
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
+
+    - name: Install npm dependencies
+      run: yarn install
+
+    # if we couldn't get it from the cache, install forge
+    - name: Install forge
+      if: steps.cache-forge.outputs.cache-hit != 'true'
+      run: cargo install --git https://github.com/gakonst/dapptools-rs --rev ${{ env.FORGE_REVISION }} --locked
 
     - name: Run linter
       run: yarn lint
 
     - name: Run tests
-      run: |
-        yarn turbo-test
+      run: yarn turbo-test
 
     - name: Run deploy scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:prod
