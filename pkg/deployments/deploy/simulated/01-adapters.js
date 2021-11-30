@@ -67,10 +67,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Deploying Targets & Adapters");
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
+    const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/)
+    const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`
     const { address: mockUnderlyingAddress } = await deploy(targetName, {
       contract: "MockToken",
       from: deployer,
-      args: [`UNDERLYING-${targetName}`, `UNDERLYING-${targetName}`, 18],
+      args: [underlyingName, underlyingName, 18],
       log: true,
     });
 
