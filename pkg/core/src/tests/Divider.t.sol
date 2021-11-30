@@ -1180,7 +1180,9 @@ contract Dividers is TestHelper {
 
     // @notice if backfill happens after issuance fees are returned to Sense's cup multisig address, both issuance fees
     // and the stakecoin stake will go to Sense's cup multisig address
-    function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal) public {
+    function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal)
+        public
+    {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
