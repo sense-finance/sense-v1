@@ -4,6 +4,7 @@ name: Gas Snapshots
 #   push:
 #     branches:
 #       - dev
+# on success of ci
 
 jobs:
   gas-snapshot:

@@ -31,13 +31,28 @@ jobs:
           path: ~/.cargo/bin/forge
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
 
+    # try to get just from cache
+    - name: Cache just
+        id: cache-just
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-just
+        with:
+          path: ~/.cargo/bin/just
+          key: ${{ runner.os }}-build-${{ env.cache-name }}
+
     - name: Install npm dependencies
       run: yarn install
 
-    # if we couldn't get it from the cache, install forge
+    # if we couldn't get forge from the cache, install it
     - name: Install forge
       if: steps.cache-forge.outputs.cache-hit != 'true'
       run: cargo install --git https://github.com/gakonst/dapptools-rs --rev ${{ env.FORGE_REVISION }} --locked
+
+      # if we couldn't get just from the cache, install it
+    - name: Install just
+      if: steps.cache-just.outputs.cache-hit != 'true'
+      run: cargo install just
 
     - name: Run linter
       run: yarn lint
