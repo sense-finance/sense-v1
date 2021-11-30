@@ -446,7 +446,7 @@ contract Periphery is Trust {
             // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
             (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
 
-            // Ensure we have the right token indexes
+            // Ensure we have the right token Indices
             (uint8 zeroi, uint8 targeti) = pool.getIndices();
 
             uint256 zBalInTarget = tBal *
