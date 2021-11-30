@@ -51,7 +51,7 @@ contract CAdapterTestHelper is DSTest {
 }
 
 contract CFactories is CAdapterTestHelper {
-    function testDeployFactory() public {
+    function testMainnetDeployFactory() public {
         CAdapter adapterImpl = new CAdapter();
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
@@ -89,7 +89,7 @@ contract CFactories is CAdapterTestHelper {
         assertEq(oracle, ORACLE);
     }
 
-    function testDeployAdapter() public {
+    function testMainnetDeployAdapter() public {
         address f = factory.deployAdapter(cDAI);
         CAdapter adapter = CAdapter(payable(f));
         (, , uint256 delta, , , , , , ) = CAdapter(adapter).adapterParams();

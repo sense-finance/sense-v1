@@ -100,7 +100,7 @@ contract PeripheryTestHelper is DSTest {
 contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
-    function testSponsorSeries() public {
+    function testMainnetSponsorSeries() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint48 maturity = uint48(
             DateTimeFull.timestampFromDateTime(year, (month + 1) == 13 ? 1 : (month + 1), 1, 0, 0, 0)

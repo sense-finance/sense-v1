@@ -11,8 +11,10 @@
   "scripts": {
     "build": "yarn workspaces foreach --parallel --verbose run build",
     "test": "yarn workspaces foreach --parallel --verbose --interlaced run test",
+    "turbo-test": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
-    "fix": "yarn workspaces foreach --parallel --verbose run fix"
+    "fix": "yarn workspaces foreach --parallel --verbose run fix",
+    "gas-snapshot": "yarn workspaces foreach --parallel --verbose --interlaced run gas-snapshot"
   },
   "packageManager": "yarn@3.1.0"
 }

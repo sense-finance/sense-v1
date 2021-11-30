@@ -83,19 +83,19 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
 contract WstETHAdapters is WstETHAdapterTestHelper {
     using FixedMath for uint256;
 
-    function testWstETHAdapterScale() public {
+    function testMainnetWstETHAdapterScale() public {
         WstETHInterface wstETH = WstETHInterface(Assets.WSTETH);
 
         uint256 scale = wstETH.stEthPerToken();
         assertEq(adapter.scale(), scale);
     }
 
-    function testGetUnderlyingPrice() public {
+    function testMainnetGetUnderlyingPrice() public {
         uint256 price = 1e18;
         assertEq(adapter.getUnderlyingPrice(), price);
     }
 
-    function testUnwrapTarget() public {
+    function testMainnetUnwrapTarget() public {
         uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
         ERC20(Assets.WSTETH).approve(address(adapter), wstETHBalanceBefore);
@@ -108,7 +108,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         assertEq(wethBalanceBefore + minDy, wethBalanceAfter);
     }
 
-    function testWrapUnderlying() public {
+    function testMainnetWrapUnderlying() public {
         uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
 

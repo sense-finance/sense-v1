@@ -78,8 +78,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
 contract CAdapters is CAdapterTestHelper {
     using FixedMath for uint256;
 
-    // test with cDAI
-    function testCAdapterScale() public {
+    function testMainnetCAdapterScale() public {
         CTokenInterface underlying = CTokenInterface(Assets.DAI);
         CTokenInterface ctoken = CTokenInterface(Assets.cDAI);
 
@@ -88,13 +87,13 @@ contract CAdapters is CAdapterTestHelper {
         assertEq(adapter.scale(), scale);
     }
 
-    function testGetUnderlyingPrice() public {
+    function testMainnetGetUnderlyingPrice() public {
         PriceOracleInterface oracle = PriceOracleInterface(Assets.RARI_ORACLE);
         uint256 price = oracle.price(Assets.DAI);
         assertEq(adapter.getUnderlyingPrice(), price);
     }
 
-    function testUnwrapTarget() public {
+    function testMainnetUnwrapTarget() public {
         uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
 
@@ -112,7 +111,7 @@ contract CAdapters is CAdapterTestHelper {
         assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
     }
 
-    function testWrapUnderlying() public {
+    function testMainnetWrapUnderlying() public {
         uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
 
@@ -131,7 +130,7 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     // test with cETH
-    function testCETHAdapterScale() public {
+    function testMainnetCETHAdapterScale() public {
         CTokenInterface underlying = CTokenInterface(Assets.WETH);
         CTokenInterface ctoken = CTokenInterface(Assets.cETH);
 
@@ -140,11 +139,11 @@ contract CAdapters is CAdapterTestHelper {
         assertEq(cethAdapter.scale(), scale);
     }
 
-    function testCETHGetUnderlyingPrice() public {
+    function testMainnetCETHGetUnderlyingPrice() public {
         assertEq(cethAdapter.getUnderlyingPrice(), 1e18);
     }
 
-    function testCETHUnwrapTarget() public {
+    function testMainnetCETHUnwrapTarget() public {
         uint256 uBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(Assets.cETH).balanceOf(address(this));
 
@@ -162,7 +161,7 @@ contract CAdapters is CAdapterTestHelper {
         assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
     }
 
-    function testCETHWrapUnderlying() public {
+    function testMainnetCETHWrapUnderlying() public {
         uint256 uBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(Assets.cETH).balanceOf(address(this));
 
