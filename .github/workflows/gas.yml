@@ -1,0 +1,30 @@
+name: Gas Snapshots
+
+# on:
+#   push:
+#     branches:
+#       - dev
+
+jobs:
+  gas-snapshot:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+
+    - name: Install dependencies
+      run: |
+        cargo install --git https://github.com/gakonst/dapptools-rs --locked
+        yarn install
+
+    - name: Generate gas snapshot
+      run: yarn gas-snapshot
+
+    - name: Commit changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: '[ci] gas snapshot'
+        branch: ${{ github.head_ref }}
+        push_options: --force
+        file_pattern: gas-snapshots/*

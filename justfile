@@ -90,7 +90,7 @@ turbo-test-mainnet: && _timer
 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
 		--fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
-turbo-test-regex *exp="": && _timer
+turbo-test-match *exp="": && _timer
 	cd {{ invocation_directory() }}; forge test \
 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
 		-m {{ exp }}
