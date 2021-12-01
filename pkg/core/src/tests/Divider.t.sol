@@ -1051,7 +1051,7 @@ contract Dividers is TestHelper {
 
     // test transferring claims to a user calls collect()
     // it also checks that receiver receives corresp. target collected from the claims he already had
-    function testCollectTransferAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
+    function testFuzzCollectTransferAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
