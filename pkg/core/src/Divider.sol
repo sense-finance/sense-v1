@@ -381,10 +381,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint48 maturity,
         uint256 uBal
     ) internal {
-        require(adapters[adapter], Errors.InvalidAdapter);
-        // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
-        require(_settled(adapter, maturity), Errors.NotSettled);
-
         Series memory _series = series[adapter][maturity];
 
         // Burn the users's Claims
