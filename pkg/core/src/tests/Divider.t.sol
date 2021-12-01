@@ -1024,26 +1024,22 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);
-
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 blscale = divider.lscales(address(adapter), maturity, address(bob));
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 btBalanceBefore = target.balanceOf(address(bob));
-
         bob.doTransfer(address(claim), address(alice), bcBalanceBefore); // collects and transfer
+        uint256 btBalanceAfter = target.balanceOf(address(bob));
+        uint256 bcollected = btBalanceAfter - btBalanceBefore;
+        uint256 acollected = alice.doCollect(claim); // try to collect
 
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter._lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-
-        // bob
-        uint256 btBalanceAfter = target.balanceOf(address(bob));
-        uint256 bcollected = btBalanceAfter - btBalanceBefore;
-
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 bcollect = bcBalanceBefore.fdiv(blscale, claimBaseUnit);
-        bcollect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
-
+        uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
+        collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+        assertEq(bcollected, collect);
+        assertEq(ERC20(claim).balanceOf(address(alice)), bcBalanceBefore);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         assertEq(btBalanceAfter, btBalanceBefore + bcollected);
         assertEq(ERC20(claim).balanceOf(address(alice)), acBalanceBefore + bcBalanceBefore);
@@ -1107,6 +1103,7 @@ contract Dividers is TestHelper {
             assertEq(ERC20(claim).balanceOf(address(bob)), 0);
             assertEq(btBalanceAfter, btBalanceBefore + bcollected);
         }
+        assertEq(acollected, 0);
     }
 
     function testFuzzCollectTransferToMyselfAndCollect(uint128 tBal) public {
