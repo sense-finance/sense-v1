@@ -18,28 +18,28 @@ jobs:
         toolchain: stable
         override: true
     - uses: Swatinem/rust-cache@v1
-        with:
+      with:
           cache-on-failure: true
 
     # try to get forge from cache
     - name: Cache forge
-        id: cache-forge
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-forge
-        with:
-          path: ~/.cargo/bin/forge
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
+      id: cache-forge
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-forge
+      with:
+        path: ~/.cargo/bin/forge
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
 
     # try to get just from cache
     - name: Cache just
-        id: cache-just
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-just
-        with:
-          path: ~/.cargo/bin/just
-          key: ${{ runner.os }}-build-${{ env.cache-name }}
+      id: cache-just
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-just
+      with:
+        path: ~/.cargo/bin/just
+        key: ${{ runner.os }}-build-${{ env.cache-name }}
 
     - name: Install npm dependencies
       run: yarn install
