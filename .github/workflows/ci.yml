@@ -59,9 +59,26 @@ jobs:
 
     - name: Run tests
       run: yarn turbo-test
+      env:
+        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Run deploy scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:prod
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
+
+    - name: Generate gas snapshot
+      run: yarn gas-snapshot
+      env:
+        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}
+
+    - name: Commit changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: '[ci] gas snapshot'
+        branch: ${{ github.head_ref }}
+        push_options: --force
+        file_pattern: gas-snapshots/*
