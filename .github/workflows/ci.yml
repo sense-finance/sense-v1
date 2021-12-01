@@ -63,7 +63,7 @@ jobs:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
-    - name: Run deploy scripts on a local mainnet fork
+    - name: Check deploy scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:prod
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
@@ -76,6 +76,7 @@ jobs:
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Commit changes
+      if: ${{ github.ref == 'refs/heads/dev' }}
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
         commit_message: '[ci] gas snapshot'
