@@ -366,7 +366,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
-            _collect(to, adapter, maturity, claim.balanceOf(to), 0, address(0));
             lscales[adapter][maturity][to] = _series.maxscale;
             uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale, claim.BASE_UNIT());
             Adapter(adapter).notify(usr, tBalTransfer, false);
