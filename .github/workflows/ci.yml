@@ -41,6 +41,12 @@ jobs:
         path: ~/.cargo/bin/just
         key: ${{ runner.os }}-build-${{ env.cache-name }}
 
+    # try to get node_modules from cache
+    - uses: actions/cache@v2
+      with:
+        path: 'node_modules'
+        key: ${{ runner.os }}-modules-${{ hashFiles('yarn.lock') }}
+
     - name: Install npm dependencies
       run: yarn install
 
