@@ -1017,7 +1017,6 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    // test transferring claims to user calls collect()
     function testCollectTransferAndCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -1025,89 +1024,25 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);
-
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 blscale = divider.lscales(address(adapter), maturity, address(bob));
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 btBalanceBefore = target.balanceOf(address(bob));
-
         bob.doTransfer(address(claim), address(alice), bcBalanceBefore); // collects and transfer
+        uint256 btBalanceAfter = target.balanceOf(address(bob));
+        uint256 bcollected = btBalanceAfter - btBalanceBefore;
+        uint256 acollected = alice.doCollect(claim); // try to collect
 
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter._lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-
-        // bob
-        uint256 btBalanceAfter = target.balanceOf(address(bob));
-        uint256 bcollected = btBalanceAfter - btBalanceBefore;
-
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 bcollect = bcBalanceBefore.fdiv(blscale, claimBaseUnit);
-        bcollect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
-
+        uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
+        collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+        assertEq(bcollected, collect);
+        assertEq(ERC20(claim).balanceOf(address(alice)), bcBalanceBefore);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         assertEq(btBalanceAfter, btBalanceBefore + bcollected);
-        assertEq(ERC20(claim).balanceOf(address(alice)), acBalanceBefore + bcBalanceBefore);
-    }
-
-    // test transferring claims to a user calls collect()
-    // it also checks that receiver receives corresp. target collected from the claims he already had
-    function testCollectTransferAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
-        hevm.warp(block.timestamp + 1 days);
-        bob.doIssue(address(adapter), maturity, tBal);
-        alice.doIssue(address(adapter), maturity, tBal);
-        hevm.warp(block.timestamp + 15 days);
-
-        // alice
-        uint256 alscale = divider.lscales(address(adapter), maturity, address(alice));
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 atBalanceBefore = target.balanceOf(address(alice));
-
-        // bob
-        uint256 blscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
-        uint256 btBalanceBefore = target.balanceOf(address(bob));
-
-        bob.doTransfer(address(claim), address(alice), bcBalanceBefore); // collects and transfer
-
-        uint256 cscale;
-        {
-            (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-            (, uint256 lvalue) = adapter._lscale();
-            cscale = block.timestamp >= maturity ? mscale : lvalue;
-        }
-
-        {
-            // alice
-            uint256 atBalanceAfter = target.balanceOf(address(alice));
-            // uint256 acollected = alice.doCollect(claim); // try to collect
-            uint256 acollected = atBalanceAfter - atBalanceBefore;
-
-            // Formula: collect = tBal / lscale - tBal / cscale
-            uint256 acollect = acBalanceBefore.fdiv(alscale, claimBaseUnit);
-            acollect -= acBalanceBefore.fdiv(cscale, claimBaseUnit);
-
-            assertEq(acollected, acollect);
-            assertEq(atBalanceAfter, atBalanceBefore + acollected);
-            assertEq(ERC20(claim).balanceOf(address(alice)), acBalanceBefore + bcBalanceBefore);
-        }
-
-        {
-            // bob
-            uint256 btBalanceAfter = target.balanceOf(address(bob));
-            uint256 bcollected = btBalanceAfter - btBalanceBefore;
-
-            // Formula: collect = tBal / lscale - tBal / cscale
-            uint256 bcollect = bcBalanceBefore.fdiv(blscale, claimBaseUnit);
-            bcollect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
-
-            assertEq(bcollected, bcollect);
-            assertEq(ERC20(claim).balanceOf(address(bob)), 0);
-            assertEq(btBalanceAfter, btBalanceBefore + bcollected);
-        }
+        assertEq(acollected, 0);
     }
 
     function testCollectTransferToMyselfAndCollect(uint128 tBal) public {
