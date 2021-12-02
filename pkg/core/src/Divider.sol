@@ -386,7 +386,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address receiver,
         uint256 maxscale
     ) internal view returns (uint256) {
-        uint256 uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
+        uint256 uBase = ERC20(Adapter(adapter).underlying()).decimals()**10;
         uint256 uBase = 10**uDecimals;
         return
             (cBal + uBal).fdiv(
