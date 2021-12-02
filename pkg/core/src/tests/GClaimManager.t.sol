@@ -20,7 +20,7 @@ contract GClaimsManager is TestHelper {
 
     /* ========== join() tests ========== */
 
-    function testCantJoinIfInvalidMaturity(uint128 balance) public {
+    function testFuzzCantJoinIfInvalidMaturity(uint128 balance) public {
         uint48 maturity = uint48(block.timestamp - 1 days);
         //        uint256 balance = 1e18;
         try alice.doJoin(address(adapter), maturity, balance) {
@@ -30,7 +30,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfSeriesDoesntExists(uint128 balance) public {
+    function testFuzzCantJoinIfSeriesDoesntExists(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 10e18;
         try alice.doJoin(address(adapter), maturity, balance) {
@@ -40,7 +40,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfNotEnoughClaim(uint128 balance) public {
+    function testFuzzCantJoinIfNotEnoughClaim(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
@@ -53,7 +53,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testCantJoinIfNotEnoughClaimAllowance(uint128 balance) public {
+    function testFuzzCantJoinIfNotEnoughClaimAllowance(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance, Claim(claim).BASE_UNIT()) == 0) return;
@@ -103,7 +103,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testJoinFirstGClaim(uint128 balance) public {
+    function testFuzzJoinFirstGClaim(uint128 balance) public {
         // creating new periphery as the one from test helper already had a first gclaim call
         Periphery newPeriphery = new Periphery(
             address(divider),
@@ -194,7 +194,7 @@ contract GClaimsManager is TestHelper {
 
     /* ========== exit() tests ========== */
 
-    function testCantExitIfSeriesDoesntExists(uint128 balance) public {
+    function testFuzzCantExitIfSeriesDoesntExists(uint128 balance) public {
         uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 1e18;
         try alice.doExit(address(adapter), maturity, balance) {
@@ -204,7 +204,7 @@ contract GClaimsManager is TestHelper {
         }
     }
 
-    function testExitFirstGClaim(uint128 balance) public {
+    function testFuzzExitFirstGClaim(uint128 balance) public {
         // creating new periphery as the one from test helper already had a first gclaim call
         Periphery newPeriphery = new Periphery(
             address(divider),
@@ -238,7 +238,7 @@ contract GClaimsManager is TestHelper {
         assertEq(tBalanceBefore, tBalanceAfter);
     }
 
-    function testExitGClaimWithCollected(uint128 balance) public {
+    function testFuzzExitGClaimWithCollected(uint128 balance) public {
         balance = fuzzWithBounds(balance, 1000);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);

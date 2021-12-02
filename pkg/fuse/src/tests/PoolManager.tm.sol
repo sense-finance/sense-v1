@@ -83,7 +83,7 @@ contract PoolManagerTest is DSTest {
         divider.initSeries(address(mockAdapter), _maturity, address(this));
     }
 
-    function testDeployPool() public {
+    function testMainnetDeployPool() public {
         initSeries();
 
         assertTrue(poolManager.comptroller() == address(0));
@@ -92,7 +92,7 @@ contract PoolManagerTest is DSTest {
         assertTrue(poolManager.comptroller() != address(0));
     }
 
-    function testAddTarget() public {
+    function testMainnetAddTarget() public {
         // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();

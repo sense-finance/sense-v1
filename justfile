@@ -13,7 +13,6 @@ ALCHEMY_KEY := env_var("ALCHEMY_KEY")
 MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
 MNEMONIC    := env_var("MNEMONIC")
 
-## for dapp and hevm
 DAPP_SOLC_VERSION   := "0.8.6"
 DAPP_BUILD_OPTIMIZE := "1"
 DAPP_COVERAGE       := "1"
@@ -21,8 +20,8 @@ DAPP_COVERAGE       := "1"
 DAPP_TEST_FUZZ_RUNS := "100"
 # user with DAI
 DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
-# user with cDAI
 DAPP_REMAPPINGS   := remappings-from-pkg-deps
+# user with cDAI
 # DAPP_TEST_ADDRESS := "0xb1e9d641249a2033c37cf1c241a01e717c2f6c76"
 
 # export just vars as env vars
@@ -32,7 +31,6 @@ set export
 
 _default:
   just --list
-
 
 # install dependencies
 install: npm dapp
@@ -46,6 +44,10 @@ dapp:
 	curl -L https://nixos.org/nix/install | sh
 	curl https://dapp.tools/install | sh
 
+# install forge
+forge:
+	cargo install --git https://github.com/gakonst/dapptools-rs --locked
+
 # build using dapp
 build: && _timer
 	cd {{ invocation_directory() }}; dapp build
@@ -53,20 +55,13 @@ build: && _timer
 build-solc7: && _timer
 	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
 
-# debug and open TTY debugger using dapp
+# debug and open dapp's TTY debugger
 debug:
 	cd {{ invocation_directory() }}; dapp debug
-
-
-# turbo-build: && timer
-# 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp \
-# 		build --lib-paths {{ lib-paths-from-pkg-deps }}
 
 # default test scripts
 test: test-local
 test-solc7: test-local-solc7
-
-# turbo-test: turbo-test-local
 
 # run local dapp tests (all files with the extension .t.sol)
 test-local *commands="": && _timer
@@ -80,40 +75,36 @@ test-mainnet *commands="": && _timer
 	cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ commands }}
 
 # run turbo dapp tests
-# turbo-test-local *commands="": && timer
-# 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp test \
-# 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 {{ commands }}
+turbo-test-local *cmds="": && _timer
+	cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+		-m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
 
-# turbo-test-mainnet *commands="": && timer
-# 	cd {{ invocation_directory() }}; dapptools-rs --bin dapp test \
-# 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-# 		--fork-url {{ MAINNET_RPC }} {{ commands }}
+turbo-test-local-no-fuzz *cmds="": && _timer
+	cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+		-m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
 
-#   run a local version of dapptools-rs – NOTE: replace `<path-to-dapptools-rs>` with the actual path
-# 	cd {{ invocation_directory() }}; cargo -r \
-#		--manifest-path <path-to-dapptools-rs>/Cargo.toml --bin dapp test \
-# 		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-# 		--fork-url {{ MAINNET_RPC }} {{ commands }}
+turbo-test-mainnet: && _timer
+	cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+		--fork-url {{ MAINNET_RPC }} -m "^testMainnet"
+
+turbo-test-match *exp="": && _timer
+	cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+		-m {{ exp }}
 
 # default gas snapshot script
 gas-snapshot: gas-snapshot-local
 
-# get gas snapshot from local tests using dapp and save it to a file
+# get gas snapshot from local tests and save it to file
 gas-snapshot-local:
 	cd {{ invocation_directory() }}; \
-	dapp test --fuzz-runs 0 | grep 'gas:' | cut -d " " -f 2-4 >> \
-	{{ justfile_directory() }}/.gas-snapshot-$( \
+	just turbo-test-local-no-fuzz | grep 'gas:' | cut -d " " -f 2-4 | sort > \
+	{{ justfile_directory() }}/gas-snapshots/.$( \
 		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
 	)
-
-# get gas snapshot from mainnet tests using dapp and save it to a file
-gas-snapshot-mainnet:
-	cd {{ invocation_directory() }}; \
-	dapp test --rpc-url {{ MAINNET_RPC }} --fuzz-runs 0 | grep 'gas:' | cut -d " " -f 2-4 >> \
-	{{ justfile_directory() }}/.gas-snapshot-$( \
-		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
-	)
-
 
 ## ---- Appendix ----
 

@@ -10,6 +10,7 @@ import { User } from "./utils/User.sol";
 
 // External references
 import { Vault, IVault, IWETH, IAuthorizer, IAsset, IProtocolFeesCollector } from "@balancer-labs/v2-vault/contracts/Vault.sol";
+import { Authentication } from "@balancer-labs/v2-solidity-utils/contracts/helpers/Authentication.sol";
 import { IERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/IERC20.sol";
 import { Authorizer } from "@balancer-labs/v2-vault/contracts/Authorizer.sol";
 import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
@@ -18,7 +19,7 @@ import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/Fixe
 import { SpaceFactory } from "../SpaceFactory.sol";
 import { Space } from "../Space.sol";
 
-// Base DSTest plus testing utilities
+// Base DSTest plus a few extra features
 contract Test is DSTest {
     function assertClose(
         uint256 a,
@@ -27,9 +28,9 @@ contract Test is DSTest {
     ) internal {
         uint256 diff = a < b ? b - a : a - b;
         if (diff > _tolerance) {
-            emit log("Error: abs(a, b) < threshold not satisfied [uint]");
+            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
             emit log_named_uint("  Expected", b);
-            emit log_named_uint("  Threshold", _tolerance);
+            emit log_named_uint("  Tolerance", _tolerance);
             emit log_named_uint("    Actual", a);
             fail();
         }
@@ -43,11 +44,6 @@ contract Test is DSTest {
         return lBound + (amount % (uBound - lBound));
     }
 }
-
-// Balancer errors –---
-// 007: Y_OUT_OF_BOUNDS
-// 004: ZERO_DIVISION
-// ---------------------
 
 contract SpaceTest is Test {
     using FixedPoint for uint256;
@@ -347,10 +343,11 @@ contract SpaceTest is Test {
     function testProtocolFees() public {
         IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
 
-        bytes32 action = vault.getActionId(protocolFeesCollector.setSwapFeePercentage.selector);
-
         // grant protocolFeesCollector.setSwapFeePercentage role
-        authorizer.grantRole(0x2ca923ad9126ab6630c61857852bece415a85e2baa0fb5e8c2cb0939bde66db0, address(this));
+        bytes32 actionId = Authentication(address(protocolFeesCollector)).getActionId(
+            protocolFeesCollector.setSwapFeePercentage.selector
+        );
+        authorizer.grantRole(actionId, address(this));
         protocolFeesCollector.setSwapFeePercentage(0.1e18);
 
         jim.join(0, 10e18);
@@ -377,6 +374,7 @@ contract SpaceTest is Test {
     }
 
     // test_join_diff_scale_values
+    // test_join_exact
 
     // #nice-to-have:
     // test_space_fees_magnitude

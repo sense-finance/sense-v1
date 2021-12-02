@@ -9,7 +9,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 contract Claims is TestHelper {
     using FixedMath for uint256;
 
-    function testCollect(uint128 tBal) public {
+    function testFuzzCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -34,7 +34,7 @@ contract Claims is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
-    function testCollectOnTransfer(uint128 tBal) public {
+    function testFuzzCollectOnTransfer(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
@@ -64,7 +64,7 @@ contract Claims is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
 
-    function testCollectOnTransferFrom(uint128 tBal) public {
+    function testFuzzCollectOnTransferFrom(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = Token(claim).BASE_UNIT();
