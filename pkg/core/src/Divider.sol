@@ -321,7 +321,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[adapter][maturity][usr];
         Claim claim = Claim(series[adapter][maturity].claim);
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
 
         // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
         // set the "last scale" value to the scale at issuance for this series
@@ -360,19 +359,40 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // is what Claim holders are collecting
         uint256 tBalNow = uBal.fdiv(_series.maxscale, claim.BASE_UNIT());
         collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
-        target.safeTransferFrom(adapter, usr, collected);
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
         Adapter(adapter).notify(usr, collected, false); // distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
         if (to != address(0)) {
-            lscales[adapter][maturity][to] = _series.maxscale;
+            uint256 cBal = ERC20(claim).balanceOf(to);
+            // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
+            lscales[adapter][maturity][to] = cBal > 0
+                ? _reweightLScale(adapter, maturity, cBal, uBal, to, _series.maxscale)
+                : _series.maxscale;
             uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale, claim.BASE_UNIT());
             Adapter(adapter).notify(usr, tBalTransfer, false);
             Adapter(adapter).notify(to, tBalTransfer, true);
         }
 
         emit Collected(adapter, maturity, collected);
+    }
+
+    function _reweightLScale(
+        address adapter,
+        uint256 maturity,
+        uint256 cBal,
+        uint256 uBal,
+        address receiver,
+        uint256 maxscale
+    ) internal view returns (uint256) {
+        uint256 uBase = ERC20(Adapter(adapter).underlying()).decimals()**10;
+        uint256 uBase = 10**uDecimals;
+        return
+            (cBal + uBal).fdiv(
+                (cBal.fdiv(lscales[adapter][maturity][receiver], uBase) + uBal.fdiv(maxscale, uBase)),
+                uBase
+            );
     }
 
     function _redeemClaim(
