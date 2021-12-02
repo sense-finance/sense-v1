@@ -387,7 +387,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maxscale
     ) internal view returns (uint256) {
         uint256 uBase = ERC20(Adapter(adapter).underlying()).decimals()**10;
-        uint256 uBase = 10**uDecimals;
         return
             (cBal + uBal).fdiv(
                 (cBal.fdiv(lscales[adapter][maturity][receiver], uBase) + uBal.fdiv(maxscale, uBase)),
