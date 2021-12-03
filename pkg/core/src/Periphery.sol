@@ -452,8 +452,7 @@ contract Periphery is Trust {
             // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
             (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
             (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
-            uint256 zBalInTarget = tBal *
-                (balances[zeroi] / (Adapter(adapter).scale() * balances[targeti] + balances[zeroi])); // ABDK formula
+            uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
 
             // (2) Issue Zeros & Claim
             issued = divider.issue(adapter, maturity, zBalInTarget);
@@ -483,6 +482,16 @@ contract Periphery is Trust {
             // (5) Send Claims back to the User
             ERC20(claim).safeTransfer(msg.sender, issued);
         }
+    }
+
+    function _computeTarget(
+        address adapter,
+        uint256 zeroiBal,
+        uint256 targetiBal,
+        uint256 tBal
+    ) internal returns (uint256) {
+        uint256 tBase = 10**ERC20(Adapter(adapter).getTarget()).decimals();
+        return tBal.fmul(zeroiBal.fdiv(Adapter(adapter).scale().fmul(targetiBal, tBase) + zeroiBal, tBase), tBase); // ABDK formula
     }
 
     function _removeLiquidity(
