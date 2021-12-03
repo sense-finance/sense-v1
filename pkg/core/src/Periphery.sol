@@ -423,8 +423,8 @@ contract Periphery is Trust {
                 to: address(0),
                 userData: ""
             }),
-            balances[0],
-            balances[1]
+            balances[zeroi],
+            balances[targeti]
         );
 
         // flash borrow target (following actions in `onFlashLoan`)
