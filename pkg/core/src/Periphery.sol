@@ -22,17 +22,6 @@ interface SpaceFactoryLike {
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
 
-interface SpaceLike {
-    function onSwapGivenOut(
-        bool _zeroIn,
-        uint256 _amountOut,
-        uint256 _reservesInAmount,
-        uint256 _reservesOutAmount
-    ) external view returns (uint256);
-
-    function getPoolId() external view returns (bytes32);
-}
-
 /// @title Periphery
 contract Periphery is Trust {
     using FixedMath for uint256;
@@ -369,7 +358,7 @@ contract Periphery is Trust {
     ) internal returns (uint256) {
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal); // pull zeros
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         return _swap(zero, Adapter(adapter).getTarget(), zBal, pool.getPoolId(), minAccepted); // swap zeros for underlying
     }
 
@@ -380,7 +369,7 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) internal returns (uint256) {
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, tBal, pool.getPoolId(), minAccepted); // swap target for zeros
         ERC20(zero).safeTransfer(msg.sender, zBal); // transfer bought zeros to user
         return zBal;
@@ -392,7 +381,7 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256) {
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // issue zeros and claims & swap zeros for target
         uint256 issued = divider.issue(adapter, maturity, tBal);
@@ -411,15 +400,32 @@ contract Periphery is Trust {
         uint256 cBal
     ) internal returns (uint256) {
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // transfer claims into this contract if needed
         if (sender != address(this)) ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
 
         // calculate target to borrow by calling AMM
         bytes32 poolId = pool.getPoolId();
-        (, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
-        uint256 targetToBorrow = SpaceLike(pool).onSwapGivenOut(false, cBal, balances[0], balances[1]);
+        (uint8 zeroi, uint256 targeti) = pool.getIndices();
+        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+        // determine how much Target we'll need in to get `cBal` out.
+        // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after don't matter as much)
+        uint256 targetToBorrow = BalancerPool(pool).onSwap(
+            BalancerPool.SwapRequest({
+                kind: BalancerVault.SwapKind.GIVEN_OUT,
+                tokenIn: tokens[zeroi],
+                tokenOut: tokens[targeti],
+                amount: cBal,
+                poolId: poolId,
+                lastChangeBlock: 0,
+                from: address(0),
+                to: address(0),
+                userData: ""
+            }),
+            balances[0],
+            balances[1]
+        );
 
         // flash borrow target (following actions in `onFlashLoan`)
         return _flashBorrow("0x", adapter, maturity, targetToBorrow);
@@ -433,7 +439,7 @@ contract Periphery is Trust {
     ) internal {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         uint256 issued;
         {
@@ -487,7 +493,7 @@ contract Periphery is Trust {
     ) internal returns (uint256) {
         address target = Adapter(adapter).getTarget();
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         bytes32 poolId = pool.getPoolId();
 
         // (0) Pull LP tokens from sender
@@ -537,7 +543,7 @@ contract Periphery is Trust {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
         (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        SpaceLike pool = SpaceLike(spaceFactory.pools(adapter, maturity));
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // swap Target for Zeros
         uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), 0); // TODO: minAccepted
@@ -560,7 +566,7 @@ contract Periphery is Trust {
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({
             assets: assets,
             maxAmountsIn: amounts,
-            userData: abi.encode(amounts), // EXACT_TOKENS_IN_FOR_BPT_OUT = 1, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
+            userData: abi.encode(amounts), // behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
             fromInternalBalance: false
         });
         balancerVault.joinPool(poolId, address(this), msg.sender, request);

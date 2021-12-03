@@ -76,23 +76,23 @@ test-mainnet *commands="": && _timer
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 2 \
 		-m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
 
 turbo-test-local-no-fuzz *cmds="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 2 \
 		-m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
 
 turbo-test-mainnet: && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 2 \
 		--fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
 turbo-test-match *exp="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 2 \
 		-m {{ exp }}
 
 # default gas snapshot script
