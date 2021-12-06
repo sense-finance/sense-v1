@@ -189,12 +189,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             _mintPoolTokens(address(0), MINIMUM_BPT);
             _mintPoolTokens(_recipient, bptAmountOut);
 
+            // Amounts entering the Pool, so we round up
+            _downscaleUpArray(_reqAmountsIn);
+
             // For the first join, we don't pull any Zeros, regardless of what the caller requested –
             // this starts this pool off as "Underlying" only, as speified in the yieldspace paper
             delete _reqAmountsIn[_zeroi];
-
-            // Amounts entering the Pool, so we round up
-            _downscaleUp(_reqAmountsIn[_targeti], _scalingFactor(false));
 
             // Cache new invariant and reserves
             _cacheInvariantAndReserves(_reserves);
@@ -290,10 +290,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             _reservesTokenIn += totalSupply();
             // Remove all new underlying accured while the Target has been in this pool from Target reserve accounting,
             // then convert the remaining Target into Underlying.
-            // `excess = targetReserves * scale / _initScale - targetReserves`
-            // `adjustedTargetReserves = targetReserves - excess`
-            // `adjustedUnderlyingReserves = adjustedTargetReserves * scale`
-            // simplified to: `(2 * targetReserves - target reserves * scale / initScale) * scale`
             if (scale > _initScale) {
                 _reservesTokenOut = (2 * _reservesTokenOut - _reservesTokenOut / (scale - _initScale)).mulDown(scale);
             } else {
@@ -328,7 +324,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /// @notice Internal helpers ----
 
-    // Balancer fee accounting
+    /// Balancer fee accounting
     function _dueBptFee(uint256[] memory _reserves, uint256 _protocolSwapFeePercentage) internal returns (uint256) {
         uint256 ttm = _maturity > block.timestamp ? uint256(_maturity - block.timestamp) * FixedPoint.ONE : 0;
         uint256 a = ts.mulDown(ttm).complement();
@@ -353,7 +349,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
                 .mulDown(_protocolSwapFeePercentage);
     }
 
-    // Calculate the max amount BPT that can be minted from the requested amounts in, if there are no swaps
+    /// Calculate the max amount of BPT that can be minted from the requested amounts in given the ratio of the reserves,
+    /// assuming we can't make any swaps
     function _tokensInForBptOut(uint256[] memory _reqAmountsIn, uint256[] memory _reserves)
         internal
         returns (uint256, uint256[] memory)
@@ -369,7 +366,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 _reqUnderlyingIn = (2 * _reqTargetIn - (_reqTargetIn * _scale) / _initScale).mulDown(_scale);
 
         // If we pulled all the requested Underlying, what pct of the pool do we get?
-        // note: Current balance of Target will always be > 1 by the time this is called
+        // note: Current balance of Target will always be > 1 by the time this line is reached
         uint256 pctUnderlying = _reqUnderlyingIn.divDown((_targetReserves * _initScale) / _scale);
 
         // If the pool has been initialized, but there aren't yet any Zeros in it,
@@ -401,7 +398,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         }
     }
 
-    // Calculate the missing variable in the yield space equation given the direction (in vs. out) and starting state of the pool
+    /// Calculate the missing variable in the yield space equation given:
+    /// 1) the direction (in vs. out) and
+    /// 2) the starting state of the pool
     function _onSwap(
         bool _zeroIn,
         bool _givenIn,
@@ -431,6 +430,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // y2 = xPost ^ a
         // x2 = yPost ^ a
         uint256 xOrY2 = (_givenIn ? _reservesTokenIn + _amountDelta : _reservesTokenOut - _amountDelta).powDown(a);
+        // require(!_givenIn || xOrY2 > _reservesTokenIn, "Swap amount too small");
 
         // x1 + y1 = xOrY2 + xOrYPost ^ a
         // -> xOrYPost ^ a = x1 + y1 - x2
@@ -462,13 +462,13 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /// @notice Public getter ----
 
-    // Get token indices for Zero and Target
+    /// Get token indices for Zero and Target
     function getIndices() public view returns (uint8 _zeroi, uint8 _targeti) {
         _zeroi = zeroi; // a regrettable SLOAD = 〰 =
         _targeti = _zeroi == 0 ? 1 : 0;
     }
 
-    /// @notice Balancer-required interfaces ----
+    /// @notice Balancer-required functions ----
 
     function getPoolId() public view override returns (bytes32) {
         return _poolId;
@@ -478,19 +478,19 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         return _vault;
     }
 
-    /// @notice Fixed point decimal shifting methods from Balancer ----
+    /// @notice Fixed point decimal shifting taken from Balancer ----
 
-    // scaling factors for Zero & Target tokens
+    /// scaling factors for Zero & Target tokens
     function _scalingFactor(bool zero) internal view returns (uint96) {
         return zero ? _scalingFactorZero : _scalingFactorTarget;
     }
 
-    // Scale number type to 18 decimals if need be
+    /// Scale number type to 18 decimals if need be
     function _upscale(uint256 amount, uint96 scalingFactor) internal pure returns (uint256) {
         return amount * scalingFactor;
     }
 
-    // Ensure number type is back in its base decimals (if less than 18)
+    /// Ensure number type is back in its base decimals (if less than 18)
     function _downscaleDown(uint256 amount, uint96 scalingFactor) internal returns (uint256) {
         return amount / scalingFactor; // rounds down
     }
@@ -517,7 +517,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         amounts[_targeti] = 1 + (amounts[_targeti] - 1) / _scalingFactor(false);
     }
 
-    // Taken from balancer-v2-monorepo/**/WeightedPool2Tokens.sol
+    /// @notice Modifier ----
+
+    /// Taken from balancer-v2-monorepo/**/WeightedPool2Tokens.sol
     modifier onlyVault(bytes32 poolId_) {
         _require(msg.sender == address(getVault()), Errors.CALLER_NOT_VAULT);
         _require(poolId_ == getPoolId(), Errors.INVALID_POOL_ID);
