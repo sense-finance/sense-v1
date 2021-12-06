@@ -382,7 +382,6 @@ contract SpaceTest is Test {
 
         assertClose(sid.swapIn(true), 1e18, 1e12);
         assertClose(sid.swapIn(false), 1e18, 1e12);
-
     }
 
     function testProtocolFees() public {
@@ -462,39 +461,48 @@ contract SpaceTest is Test {
 
     function testDifferentDecimals() public {
         // Setup ----
-        // set target to 9 decimals
-        MockDividerSpace divider = new MockDividerSpace(9);
-        // set zeros/claims to 8 decimals
-        MockAdapterSpace adapter = new MockAdapterSpace(8);
+        // Set Zeros/Claims to 8 decimals
+        MockDividerSpace divider = new MockDividerSpace(8);
+        // Set Target to 9 decimals
+        MockAdapterSpace adapter = new MockAdapterSpace(9);
         SpaceFactory spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2);
         Space space = Space(spaceFactory.create(address(adapter), maturity));
 
         (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         ERC20Mintable zero = ERC20Mintable(_zero);
-        ERC20Mintable target = ERC20Mintable(adapter.getTarget());
+        ERC20Mintable _target = ERC20Mintable(adapter.getTarget());
 
-        User max = new User(vault, space, zero, target);
-        target.mint(address(max), 100e9);
+        User max = new User(vault, space, zero, _target);
+        _target.mint(address(max), 100e9);
         zero.mint(address(max), 100e8);
 
-        User eve = new User(vault, space, zero, target);
-        target.mint(address(eve), 100e9);
+        User eve = new User(vault, space, zero, _target);
+        _target.mint(address(eve), 100e9);
         zero.mint(address(eve), 100e8);
 
         // Test ----
+        // Max joins 1 Target in
         max.join(0, 1e9);
 
-        // the pool moved one Target out of max's account
-        assertEq(target.balanceOf(address(max)), 99e9);
+        // The pool moved one Target out of max's account
+        assertEq(_target.balanceOf(address(max)), 99e9);
 
-        // swap 1 Zero in
+        // Eve swaps 1 Zero in
         eve.swapIn(true, 1e8);
 
         // Max tries to Join 1 of each (should take 1 Zero and some amount of Target)
         max.join(1e8, 1e9);
 
         assertEq(zero.balanceOf(address(max)), 99e8);
-        assertClose(target.balanceOf(address(max)), 98.9e9, 1e6);
+
+        // Compare Target pulled from max's account to the normal, 18 decimal case
+        jim.join(0, 1e18);
+        sid.swapIn(true, 1e18);
+        jim.join(1e18, 1e18);
+        // Determine Jim's Target balance in 9 decimals
+        uint256 jimTargetBalance = target.balanceOf(address(jim)) / 1e9;
+
+        assertClose(_target.balanceOf(address(max)), jimTargetBalance, 1e6);
     }
 
     // scale_goes_down

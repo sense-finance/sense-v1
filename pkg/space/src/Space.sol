@@ -190,23 +190,21 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // Upscale both requiested amounts and reserves to 18 decimals
         _upscaleArray(reserves);
         _upscaleArray(reqAmountsIn);
-        (uint8 zeroi, uint8 targeti) = getIndices();
 
         if (totalSupply() == 0) {
+            (uint8 _zeroi, uint8 _targeti) = getIndices();
             uint256 initScale = AdapterLike(adapter).scale();
 
             // Convert target balance into Underlying
             // note: We assume scale values will always be 18 decimals
-            uint256 underlyingIn = (reqAmountsIn[targeti] * initScale) / 1e18;
-
-            // Initial BPT minted is equal to the vaule of the deposited Target in Underlying terms
-            uint256 bptAmountOut = underlyingIn - MINIMUM_BPT;
+            uint256 underlyingIn = (reqAmountsIn[_targeti] * initScale) / 1e18;
 
             // Just like weighted pool 2 token from the balancer v2 monorepo,
             // we lock MINIMUM_BPT in by minting it for the zero address –
             // this reduces potential issues with rounding and ensures that this code will only be executed once
             _mintPoolTokens(address(0), MINIMUM_BPT);
-            _mintPoolTokens(recipient, bptAmountOut);
+
+            _mintPoolTokens(recipient, underlyingIn - MINIMUM_BPT);
 
             // Amounts entering the Pool, so we round up
             _downscaleUpArray(reqAmountsIn);
@@ -216,7 +214,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             // For the first join, we don't pull any Zeros, regardless of what the caller requested –
             // this starts this pool off as synthetic Underlying only, as the yieldspace invariant expects
-            delete reqAmountsIn[zeroi];
+            delete reqAmountsIn[_zeroi];
 
             _cacheInvariantAndReserves(reserves);
 
@@ -241,7 +239,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Cache new invariant and reserves, post join
             _cacheInvariantAndReserves(reserves);
 
-            // Inspired by PR #990 in balancer-v2-monorepo, we always return zero dueProtocolFeeAmounts 
+            // Inspired by PR #990 in balancer-v2-monorepo, we always return zero dueProtocolFeeAmounts
             // to the Vault, and pay protocol fees by minting BPT directly to the protocolFeeCollector instead
             return (amountsIn, new uint256[](2));
         }
@@ -312,19 +310,19 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         if (zeroIn) {
             // Add LP supply to Zero reserves, as suggested by the yieldspace paper
             reservesTokenIn += totalSupply();
-            // Calculate the excess Target (Target value due only to scale growth since initialization), 
-            // remove it from the requested amount in, 
+            // Calculate the excess Target (Target value due only to scale growth since initialization),
+            // remove it from the requested amount in,
             // then convert the remaining Target into Underlying
-            reservesTokenOut = scale > _initScale ? 
-                (2 * reservesTokenOut - reservesTokenOut / (scale - _initScale)).mulDown(scale) :
-                reservesTokenOut.mulDown(scale);
+            reservesTokenOut = scale > _initScale
+                ? (2 * reservesTokenOut - reservesTokenOut / (scale - _initScale)).mulDown(scale)
+                : reservesTokenOut.mulDown(scale);
         } else {
-            // Calculate the excess Target (Target value due only to scale growth since initialization), 
-            // remove it from the requested amount in, 
+            // Calculate the excess Target (Target value due only to scale growth since initialization),
+            // remove it from the requested amount in,
             // then convert the remaining Target into Underlying
-            reservesTokenIn = scale > _initScale ? 
-                (2 * reservesTokenIn - reservesTokenIn / (scale - _initScale)).mulDown(scale) :
-                reservesTokenIn.mulDown(scale);
+            reservesTokenIn = scale > _initScale
+                ? (2 * reservesTokenIn - reservesTokenIn / (scale - _initScale)).mulDown(scale)
+                : reservesTokenIn.mulDown(scale);
 
             // Add LP supply to Zero reserves, as suggested by the yieldspace paper
             reservesTokenOut += totalSupply();
@@ -349,9 +347,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /* ========== INTERNAL JOIN/SWAP ACCOUNTING ========== */
 
-    /// @notice Calculate the max amount of BPT that can be minted from the requested amounts in, 
+    /// @notice Calculate the max amount of BPT that can be minted from the requested amounts in,
     // given the ratio of the reserves, and assuming we don't make any swaps
-    function _tokensInForBptOut(uint256[] memory reqAmountsIn, uint256[] memory _reserves)
+    function _tokensInForBptOut(uint256[] memory reqAmountsIn, uint256[] memory reserves)
         internal
         returns (uint256, uint256[] memory)
     {
@@ -362,8 +360,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         uint256 scale = AdapterLike(adapter).scale();
 
-        // Calculate the excess Target (Target value due only to scale growth since initialization), 
-        // remove it from the requested amount in, 
+        // Calculate the excess Target (Target value due only to scale growth since initialization),
+        // remove it from the requested amount in,
         // then convert the remaining Target into Underlying
         uint256 reqUnderlyingIn = (2 * reqTargetIn - (reqTargetIn * scale) / _initScale).mulDown(scale);
 
@@ -382,7 +380,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             uint256 pctUnderlying = reqUnderlyingIn.divDown((targetReserves * _initScale) / scale);
 
             // Caclulate the percentage of the pool we'd get if we pulled all of the requested Zeros in
-            uint256 pctZeros = reqZerosIn.divDown(_reserves[_zeroi]);
+            uint256 pctZeros = reqZerosIn.divDown(reserves[_zeroi]);
 
             // Determine which amount in is our limiting factor
             if (pctUnderlying < pctZeros) {
@@ -503,7 +501,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         _lastToken1Reserve = _zeroi == 0 ? reserveUnderlying : reserveZero;
     }
 
-    /* ========== PUBLIC GETTER ========== */
+    /* ========== PUBLIC GETTERS ========== */
 
     /// @notice Get token indices for Zero and Target
     function getIndices() public view returns (uint8 _zeroi, uint8 _targeti) {
