@@ -31,6 +31,8 @@ interface SpaceLike {
     ) external view returns (uint256);
 
     function getPoolId() external view returns (bytes32);
+
+    function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
 }
 
 /// @title Periphery
@@ -443,24 +445,22 @@ contract Periphery is Trust {
             // (1) Based on zeros:target ratio from current pool reserves and tBal passed
             // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
             (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
-            uint256 zBalInTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
+            (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
+            uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
 
-            // (2) Target to provide | tBal - zBalInTarget |
-            uint256 tBalToPovide = tBal > zBalInTarget ? tBal - zBalInTarget : zBalInTarget - tBal;
-
-            // (3) Issue Zeros & Claim
+            // (2) Issue Zeros & Claim
             issued = divider.issue(adapter, maturity, zBalInTarget);
 
-            // (4) Add liquidity to Space & send the LP Shares to recipient
+            // (3) Add liquidity to Space & send the LP Shares to recipient
             uint256[] memory amounts = new uint256[](2);
-            amounts[0] = tBalToPovide;
-            amounts[1] = issued;
+            amounts[targeti] = tBal - zBalInTarget;
+            amounts[zeroi] = issued;
 
             _addLiquidityToSpace(pool.getPoolId(), tokens, amounts);
         }
 
         {
-            // Send any leftover underlying or zeros back to the user
+            // (4) Send any leftover underlying or zeros back to the user
             uint256 tBal = target.balanceOf(address(this));
             uint256 zBal = ERC20(zero).balanceOf(address(this));
             if (tBal > 0) target.safeTransfer(msg.sender, tBal);
@@ -476,6 +476,16 @@ contract Periphery is Trust {
             // (5) Send Claims back to the User
             ERC20(claim).safeTransfer(msg.sender, issued);
         }
+    }
+
+    function _computeTarget(
+        address adapter,
+        uint256 zeroiBal,
+        uint256 targetiBal,
+        uint256 tBal
+    ) internal returns (uint256) {
+        uint256 tBase = 10**ERC20(Adapter(adapter).getTarget()).decimals();
+        return tBal.fmul(zeroiBal.fdiv(Adapter(adapter).scale().fmul(targetiBal, tBase) + zeroiBal, tBase), tBase); // ABDK formula
     }
 
     function _removeLiquidity(
