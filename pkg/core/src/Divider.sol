@@ -367,8 +367,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (to != address(0)) {
             uint256 cBal = ERC20(claim).balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
+            uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
             lscales[adapter][maturity][to] = cBal > 0
-                ? _reweightLScale(adapter, maturity, cBal, uBal, to, _series.maxscale)
+                ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
                 : _series.maxscale;
             uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale, claim.BASE_UNIT());
             Adapter(adapter).notify(usr, tBalTransfer, false);
@@ -385,9 +386,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBal,
         address receiver,
         uint256 maxscale
+<<<<<<< HEAD
     ) internal view returns (uint256) {
         uint256 uBase = ERC20(Adapter(adapter).underlying()).decimals()**10;
         uint256 uBase = 10**uDecimals;
+=======
+    ) internal returns (uint256) {
+        uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
+>>>>>>> 80607c6... fix(Divider): send claim transfer value on reweightLScale and fix test cases
         return
             (cBal + uBal).fdiv(
                 (cBal.fdiv(lscales[adapter][maturity][receiver], uBase) + uBal.fdiv(maxscale, uBase)),
