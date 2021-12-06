@@ -386,14 +386,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBal,
         address receiver,
         uint256 maxscale
-<<<<<<< HEAD
     ) internal view returns (uint256) {
         uint256 uBase = ERC20(Adapter(adapter).underlying()).decimals()**10;
-        uint256 uBase = 10**uDecimals;
-=======
-    ) internal returns (uint256) {
-        uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
->>>>>>> 80607c6... fix(Divider): send claim transfer value on reweightLScale and fix test cases
         return
             (cBal + uBal).fdiv(
                 (cBal.fdiv(lscales[adapter][maturity][receiver], uBase) + uBal.fdiv(maxscale, uBase)),
