@@ -382,6 +382,7 @@ contract SpaceTest is Test {
 
         assertClose(sid.swapIn(true), 1e18, 1e12);
         assertClose(sid.swapIn(false), 1e18, 1e12);
+
     }
 
     function testProtocolFees() public {
@@ -497,6 +498,8 @@ contract SpaceTest is Test {
     }
 
     // scale_goes_down
+    // constant sum after maturity
+    // better protocol fee tests
 
     // #nice-to-have:
     // test_space_fees_magnitude
