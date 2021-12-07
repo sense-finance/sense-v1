@@ -75,6 +75,12 @@ jobs:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
+    - name: Check simulated testchain env scripts on a local mainnet fork
+      run: cd pkg/deployments; yarn deploy:hardhat-fork:sim
+      env:
+        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}
+
     - name: Generate gas snapshot
       run: yarn gas-snapshot
       env:

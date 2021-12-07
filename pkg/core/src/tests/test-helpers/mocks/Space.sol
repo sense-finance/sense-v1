@@ -34,6 +34,10 @@ contract MockSpacePool is MockToken {
         return bytes32(0);
     }
 
+    function getIndices() external view returns (uint8, uint8) {
+        return (1, 0);
+    }
+
     function getVault() external view returns (address) {
         return address(vault);
     }
