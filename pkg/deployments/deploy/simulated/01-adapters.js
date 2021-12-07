@@ -112,7 +112,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
 
-  if (!process.env.CLI) {
+  if (!process.env.CI) {
     const currentTag = await new Promise((resolve, reject) => {
       exec("git describe --abbrev=0", (error, stdout, stderr) => {
         if (error) {
