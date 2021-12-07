@@ -478,7 +478,7 @@ contract Periphery is Trust {
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // (1) compute target, issue zeros & claims & add liquidity to space
-        (uint256 issued, uint256 lpShares) = _do(adapter, maturity, tBal);
+        (uint256 issued, uint256 lpShares) = _computeIssueAdd(adapter, maturity, tBal);
 
         uint256 tAmount;
         if (mode == 0) {
@@ -493,7 +493,7 @@ contract Periphery is Trust {
         return (tAmount, issued, lpShares);
     }
 
-    function _do(
+    function _computeIssueAdd(
         address adapter,
         uint48 maturity,
         uint256 tBal
