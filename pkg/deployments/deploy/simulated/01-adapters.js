@@ -67,8 +67,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Deploying Targets & Adapters");
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
-    const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/)
-    const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`
+    const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
+    const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`;
     const { address: mockUnderlyingAddress } = await deploy(targetName, {
       contract: "MockToken",
       from: deployer,
@@ -111,18 +111,21 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   }
 
   const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
-  const currentTag = await new Promise((resolve, reject) => {
-    exec("git describe --abbrev=0", (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(stdout ? stdout : stderr);
-    });
-  });
 
-  const deploymentDir = `./adapter-deployments/${currentTag.trim().replace(/(\r\n|\n|\r)/gm, "")}/`;
-  fs.mkdirSync(deploymentDir, { recursive: true });
-  fs.writeFileSync(`./${deploymentDir}/adapters.json`, JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }));
+  if (!process.env.CI) {
+    const currentTag = await new Promise((resolve, reject) => {
+      exec("git describe --abbrev=0", (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout ? stdout : stderr);
+      });
+    });
+
+    const deploymentDir = `./adapter-deployments/${currentTag.trim().replace(/(\r\n|\n|\r)/gm, "")}/`;
+    fs.mkdirSync(deploymentDir, { recursive: true });
+    fs.writeFileSync(`./${deploymentDir}/adapters.json`, JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }));
+  }
 };
 
 module.exports.tags = ["simulated:adapters", "scenario:simulated"];
