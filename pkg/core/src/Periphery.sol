@@ -224,8 +224,15 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 tBal,
         uint8 mode
-    ) external {
-        _addLiquidity(adapter, maturity, tBal, mode);
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return _addLiquidity(adapter, maturity, tBal, mode);
     }
 
     /// @notice Adds liquidity providing underlying
@@ -238,11 +245,18 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 uBal,
         uint8 mode
-    ) external {
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         // Wrap Underlying into Target
         ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
-        _addLiquidity(adapter, maturity, tBal, mode);
+        return _addLiquidity(adapter, maturity, tBal, mode);
     }
 
     /// @notice Removes liquidity providing an amount of LP tokens and returns target
@@ -258,9 +272,10 @@ contract Periphery is Trust {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
-    ) external {
+    ) external returns (uint256) {
         uint256 tBal = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
         ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal); // Send Target back to the User
+        return tBal;
     }
 
     /// @notice Removes liquidity providing an amount of LP tokens and returns underlying
@@ -276,11 +291,12 @@ contract Periphery is Trust {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
-    ) external {
+    ) external returns (uint256) {
         uint256 tBal = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
         ERC20(Adapter(adapter).getTarget()).safeApprove(adapter, tBal);
         uint256 uBal = Adapter(adapter).unwrapTarget(tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // Send Underlying back to the User
+        return uBal;
     }
 
     /// @notice Migrates liquidity position from one series to another
@@ -302,9 +318,16 @@ contract Periphery is Trust {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         uint8 mode
-    ) external {
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         uint256 tBal = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted);
-        _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
+        return _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
@@ -440,52 +463,65 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 tBal,
         uint8 mode
-    ) internal {
+    )
+        internal
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+        (, address claim, , , , , , , ) = divider.series(adapter, maturity);
 
-        uint256 issued;
-        {
-            // (0) Pull target from sender
-            target.safeTransferFrom(msg.sender, address(this), tBal);
+        // (0) Pull target from sender
+        target.safeTransferFrom(msg.sender, address(this), tBal);
 
-            // (1) Based on zeros:target ratio from current pool reserves and tBal passed
-            // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
-            (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
-            (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
-            uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
+        // (1) compute target, issue zeros & claims & add liquidity to space
+        (uint256 issued, uint256 lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
 
-            // (2) Issue Zeros & Claim
-            issued = divider.issue(adapter, maturity, zBalInTarget);
-
-            // (3) Add liquidity to Space & send the LP Shares to recipient
-            uint256[] memory amounts = new uint256[](2);
-            amounts[targeti] = tBal - zBalInTarget;
-            amounts[zeroi] = issued;
-
-            _addLiquidityToSpace(pool.getPoolId(), tokens, amounts);
-        }
-
-        {
-            // (4) Send any leftover underlying or zeros back to the user
-            uint256 tBal = target.balanceOf(address(this));
-            uint256 zBal = ERC20(zero).balanceOf(address(this));
-            if (tBal > 0) target.safeTransfer(msg.sender, tBal);
-            if (zBal > 0) ERC20(zero).safeTransfer(msg.sender, zBal);
-        }
-
+        uint256 tAmount;
         if (mode == 0) {
-            // (5) Sell claims
-            uint256 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-            // (6) Send remaining Target back to the User
+            // (2) Sell claims
+            tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
+            // (3) Send remaining Target back to the User
             target.safeTransfer(msg.sender, tAmount);
         } else {
-            // (5) Send Claims back to the User
+            // (4) Send Claims back to the User
             ERC20(claim).safeTransfer(msg.sender, issued);
         }
+        return (tAmount, issued, lpShares);
     }
 
+    /// @dev Calculates amount of zeros in target terms (see description on `_computeTarget`) then issues
+    /// Zeros and Claims with the calculated amount and finally adds liquidity to space with the zeros issued
+    /// and the diff between the target initially passed and the calculated amount
+    function _computeIssueAddLiq(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal
+    ) internal returns (uint256, uint256) {
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+
+        // Compute target
+        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
+        (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
+        uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
+
+        // Issue Zeros & Claim
+        uint256 issued = divider.issue(adapter, maturity, zBalInTarget);
+
+        // Add liquidity to Space & send the LP Shares to recipient
+        uint256[] memory amounts = new uint256[](2);
+        amounts[targeti] = tBal - zBalInTarget;
+        amounts[zeroi] = issued;
+
+        uint256 lpShares = _addLiquidityToSpace(pool, tokens, amounts);
+        return (issued, lpShares);
+    }
+
+    /// @dev Based on zeros:target ratio from current pool reserves and tBal passed
+    /// calculates amount of tBal needed so as to issue Zeros that would keep the ratio
     function _computeTarget(
         address adapter,
         uint256 zeroiBal,
@@ -578,10 +614,11 @@ contract Periphery is Trust {
     }
 
     function _addLiquidityToSpace(
-        bytes32 poolId,
+        BalancerPool pool,
         ERC20[] memory tokens,
         uint256[] memory amounts
-    ) internal {
+    ) internal returns (uint256) {
+        bytes32 poolId = pool.getPoolId();
         IAsset[] memory assets = _convertERC20sToAssets(tokens);
         for (uint8 i; i < tokens.length; i++) {
             // tokens and amounts must be in same order
@@ -593,7 +630,9 @@ contract Periphery is Trust {
             userData: abi.encode(amounts), // behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
             fromInternalBalance: false
         });
+        uint256 lpSharesBefore = ERC20(address(pool)).balanceOf(msg.sender);
         balancerVault.joinPool(poolId, address(this), msg.sender, request);
+        return ERC20(address(pool)).balanceOf(msg.sender) - lpSharesBefore;
     }
 
     function _removeLiquidityFromSpace(
