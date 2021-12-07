@@ -193,7 +193,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             delete reqAmountsIn[_zeroi];
 
             // Cache new invariant and reserves, post join
-            _cacheInvariantAndReserves(reserves);
+            _cacheReserves(reserves);
 
             return (reqAmountsIn, new uint256[](2));
         } else {
@@ -210,12 +210,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // `recipient` receives liquidity tokens
             _mintPoolTokens(recipient, bptToMint);
 
-            // Update reserves for invariant caching
+            // Update reserves for caching
             reserves[0] += amountsIn[0];
             reserves[1] += amountsIn[1];
 
             // Cache new invariant and reserves, post join
-            _cacheInvariantAndReserves(reserves);
+            _cacheReserves(reserves);
 
             // Inspired by PR #990 in balancer-v2-monorepo, we always return zero dueProtocolFeeAmounts
             // to the Vault, and pay protocol fees by minting BPT directly to the protocolFeeCollector instead
@@ -259,12 +259,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // `sender` pays for the liquidity
         _burnPoolTokens(sender, bptAmountIn);
 
-        // Update reserves for invariant caching
+        // Update reserves for caching
         reserves[0] -= amountsOut[0];
         reserves[1] -= amountsOut[1];
 
         // Cache new invariant and reserves, post exit
-        _cacheInvariantAndReserves(reserves);
+        _cacheReserves(reserves);
 
         return (amountsOut, new uint256[](2));
     }
@@ -283,6 +283,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         reservesTokenIn = _upscale(reservesTokenIn, scalingFactorTokenIn);
         reservesTokenOut = _upscale(reservesTokenOut, scalingFactorTokenOut);
 
+        uint256 scale = AdapterLike(adapter).scale();
+
         if (zeroIn) {
             // Add LP supply to Zero reserves, as suggested by the yieldspace paper
             reservesTokenIn += totalSupply();
@@ -297,39 +299,37 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             reservesTokenOut += totalSupply();
         }
 
-        uint256 scale = AdapterLike(adapter).scale();
-
         if (request.kind == IVault.SwapKind.GIVEN_IN) {
             request.amount = _upscale(request.amount, scalingFactorTokenIn);
-            // If Target is being swapped in, convert the amount in to Underlying using present day Scale
+            // If Target is being swapped in, convert the amountIn to Underlying using present day Scale
             if (!zeroIn) {
                 request.amount = request.amount.mulDown(scale);
             }
 
-            // Determine the amount out (with the input and output in present day Underlying terms, depending on the swap kind)
+            // Determine the amountOut (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountOut = _onSwap(zeroIn, true, request.amount, reservesTokenIn, reservesTokenOut);
             // If Zeros are being swapped in, convert the Underlying out back to Target using present day Scale
             if (zeroIn) {
                 amountOut = amountOut.divDown(scale);
             }
 
-            // Amount out, so we round down
+            // AmountOut, so we round down
             return _downscaleDown(amountOut, scalingFactorTokenOut);
         } else {
             request.amount = _upscale(request.amount, scalingFactorTokenOut);
-            // If Zeros are being swapped in, convert the amount out from Target to Underlying using present day Scale
+            // If Zeros are being swapped in, convert the amountOut from Target to Underlying using present day Scale
             if (zeroIn) {
                 request.amount = request.amount.mulDown(scale);
             }
 
-            // Determine the amount in (with the input or output in present day Underlying terms, depending on the swap kind)
+            // Determine the amountIn (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountIn = _onSwap(zeroIn, false, request.amount, reservesTokenIn, reservesTokenOut);
-            // If Target is being swapped in, convert the amount in back to Target using present day Scale
+            // If Target is being swapped in, convert the amountIn back to Target using present day Scale
             if (!zeroIn) {
                 amountIn = amountIn.divDown(scale);
             }
 
-            // Amount in, so we round up
+            // amountIn, so we round up
             return _downscaleUp(amountIn, scalingFactorTokenIn);
         }
     }
@@ -367,9 +367,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Caclulate the percentage of the pool we'd get if we pulled all of the requested Zeros in
             uint256 pctZeros = reqZerosIn.divDown(zeroReserves);
 
-            // Determine which amount in is our limiting factor
+            // Determine which amountIn is our limiting factor
             if (pctTarget < pctZeros) {
-                // If it's Target, pull the entire requested Target amount in,
+                // If it's Target, pull the entire requested Target amountIn,
                 // and pull Zeros in at the percetage of the requested Target
                 uint256 bptToMint = totalSupply().mulDown(pctTarget);
 
@@ -378,7 +378,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
                 return (bptToMint, amountsIn);
             } else {
-                // If it's Zeros, pull the entire requested Zero amount in,
+                // If it's Zeros, pull the entire requested Zero amountIn,
                 // and pull Target in at the percetage of the requested Zeros
                 uint256 bptToMint = totalSupply().mulDown(pctZeros);
 
@@ -415,7 +415,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         // Pow up for `x1` & `y1` and down for `xOrY2` causes the pow induced error for `xOrYPost`
         // to tend towards higher values rather than lower –
-        // effectively adding a little bump up for ammount in, and down for amount out
+        // effectively adding a little bump up for ammount in, and down for amountOut
 
         // x1 = xPre ^ a
         // y1 = yPre ^ a
@@ -424,8 +424,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         // y2 = yPost ^ a
         // x2 = xPost ^ a
-        // If we're given an amount in, add it to the reserves in,
-        // if we're given an amount out, subtract it from the reserves out
+        // If we're given an amountIn, add it to the reserves in,
+        // if we're given an amountOut, subtract it from the reserves out
         uint256 xOrY2 = (givenIn ? reservesTokenIn + amountDelta : reservesTokenOut - amountDelta).powDown(a);
 
         // x1 + y1 = xOrY2 + xOrYPost ^ a
@@ -434,8 +434,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 xOrYPost = (x1 + y1 - xOrY2).powUp(FixedPoint.ONE.divDown(a));
         require(!givenIn || reservesTokenOut > xOrYPost, "Swap too small");
 
-        // amount out given in = yPre - yPost
-        // amount in given out = xPost - xPre
+        // amountOut given in = yPre - yPost
+        // amountIn given out = xPost - xPre
         return givenIn ? reservesTokenOut.sub(xOrYPost) : xOrYPost.sub(reservesTokenIn);
     }
 
@@ -464,7 +464,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     }
 
     /// @notice Cache the given reserve amounts
-    function _cacheInvariantAndReserves(uint256[] memory reserves) internal {
+    function _cacheReserves(uint256[] memory reserves) internal {
         (uint8 _zeroi, uint8 _targeti) = getIndices();
 
         uint256 reserveZero = reserves[_zeroi] + totalSupply();
