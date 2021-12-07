@@ -71,7 +71,7 @@ contract GClaimManager {
         // Mint the user Drag Claims
         gclaims[claim].mint(msg.sender, uBal);
 
-        emit Join(adapter, maturity, msg.sender, uBal);
+        emit Joined(adapter, maturity, msg.sender, uBal);
     }
 
     function exit(
@@ -100,7 +100,7 @@ contract GClaimManager {
         // Burn the user's gclaims
         gclaims[claim].burn(msg.sender, uBal);
 
-        emit Exit(adapter, maturity, msg.sender, uBal);
+        emit Exited(adapter, maturity, msg.sender, uBal);
     }
 
     /* ========== VIEWS ========== */
@@ -128,6 +128,6 @@ contract GClaimManager {
 
     /* ========== EVENTS ========== */
 
-    event Join(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
-    event Exit(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
+    event Joined(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
+    event Exited(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
 }
