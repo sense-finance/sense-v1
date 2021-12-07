@@ -86,6 +86,35 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
           ethers.constants.MaxUint256, // `deadline` – no deadline
         )
         .then(tx => tx.wait());
+
+      // Sanity check that all the swaps on this testchain are working
+      console.log(`--- Sanity check swaps ---`);
+
+      await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+
+      console.log("swapping target for zeros");
+      await periphery
+        .swapTargetForZeros(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
+        .then(tx => tx.wait());
+
+      console.log("swapping target for claims");
+      await periphery
+        .swapTargetForClaims(adapter.address, seriesMaturity, ethers.utils.parseEther("1"))
+        .then(tx => tx.wait());
+
+      console.log("swapping zeros for target");
+      await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await periphery
+        .swapZerosForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"), 0)
+        .then(tx => tx.wait());
+
+      console.log("swapping claims for target");
+      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await periphery
+        .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
+        .then(tx => tx.wait());
+
       await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)

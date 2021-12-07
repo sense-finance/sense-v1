@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.6;
 
+import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { BalancerVault } from "./Vault.sol";
+
 interface BalancerPool {
     function getTimeWeightedAverage(OracleAverageQuery[] memory queries)
         external
@@ -36,4 +39,25 @@ interface BalancerPool {
     function getVault() external view returns (address);
 
     function totalSupply() external view returns (uint256);
+
+    struct SwapRequest {
+        BalancerVault.SwapKind kind;
+        ERC20 tokenIn;
+        ERC20 tokenOut;
+        uint256 amount;
+        // Misc data
+        bytes32 poolId;
+        uint256 lastChangeBlock;
+        address from;
+        address to;
+        bytes userData;
+    }
+
+    function onSwap(
+        SwapRequest memory swapRequest,
+        uint256 currentBalanceTokenIn,
+        uint256 currentBalanceTokenOut
+    ) external returns (uint256 amount);
+
+    function getIndices() external view returns (uint8 zeroi, uint8 targeti);
 }

@@ -6,11 +6,11 @@ import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 import { Token } from "../../../tokens/Token.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
+import { BalancerPool } from "../../../external/balancer/Pool.sol";
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { BaseAdapter as Adapter } from "../../../adapters/BaseAdapter.sol";
-import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
 
 import { MockToken } from "./MockToken.sol";
 
@@ -18,16 +18,16 @@ contract MockSpacePool is MockToken {
     using FixedMath for uint256;
     MockBalancerVault public vault;
     address public zero;
-    address public underlying;
+    address public target;
 
     constructor(
         address _vault,
-        address _underlying,
+        address _target,
         address _zero
     ) MockToken("Mock Yield Space Pool Token", "MYSPT", 18) {
         vault = MockBalancerVault(_vault);
         zero = _zero;
-        underlying = _underlying;
+        target = _target;
     }
 
     function getPoolId() external view returns (bytes32) {
@@ -42,18 +42,19 @@ contract MockSpacePool is MockToken {
         return address(vault);
     }
 
-    function onSwapGivenOut(
-        bool _zeroIn,
-        uint256 _amountOut,
-        uint256 _reservesInAmount,
-        uint256 _reservesOutAmount
+    function onSwap(
+        BalancerPool.SwapRequest memory, /* _request */
+        uint256, /* _reservesInAmount */
+        uint256 /* _reservesOutAmount */
     ) external view returns (uint256) {
         return 10e18;
     }
 
-    // function totalSupply() external view returns (uint256) {
-    //     return 1e18;
-    // }
+    function getIndices() public view returns (uint8 zeroi, uint8 targeti) {
+        // Indices to match MockBalancerVault's balances array
+        zeroi = 1;
+        targeti = 0;
+    }
 }
 
 contract MockBalancerVault {
@@ -122,11 +123,11 @@ contract MockBalancerVault {
         )
     {
         tokens = new ERC20[](2);
-        tokens[0] = ERC20(yieldSpacePool.underlying());
+        tokens[0] = ERC20(yieldSpacePool.target());
         tokens[1] = ERC20(yieldSpacePool.zero());
 
         balances = new uint256[](2);
-        balances[0] = ERC20(yieldSpacePool.underlying()).balanceOf(address(this));
+        balances[0] = ERC20(yieldSpacePool.target()).balanceOf(address(this));
         balances[1] = ERC20(yieldSpacePool.zero()).balanceOf(address(this));
     }
 
@@ -149,9 +150,9 @@ contract MockSpaceFactory {
 
     function create(address _adapter, uint48 _maturity) external returns (address) {
         (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
-        address _underlying = Adapter(_adapter).underlying();
+        address _target = Adapter(_adapter).getTarget();
 
-        pool = new MockSpacePool(address(vault), _underlying, _zero);
+        pool = new MockSpacePool(address(vault), _target, _zero);
         pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));
