@@ -330,10 +330,18 @@ contract PeripheryTest is TestHelper {
             remainingClaimsInTarget = tCombined - TARGET_TO_BORROW;
         }
 
-        bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
+        (uint256 targetBal, uint256 claimBal, uint256 lpShares) = bob.doAddLiquidityFromTarget(
+            address(adapter),
+            maturity,
+            tBal,
+            0
+        );
         uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
+        assertTrue(targetBal > 0);
+        assertTrue(claimBal > 0);
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal + remainingClaimsInTarget, tBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
     }
@@ -343,7 +351,6 @@ contract PeripheryTest is TestHelper {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter._lscale();
 
         // add liquidity to mockUniSwapRouter
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -362,18 +369,27 @@ contract PeripheryTest is TestHelper {
                 balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], tBase),
                 tBase
             ); // ABDK formula
+            (, uint256 lscale) = adapter._lscale();
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
         }
 
-        bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
-        uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
-        uint256 cBalAfter = ERC20(claim).balanceOf(address(bob));
+        {
+            (uint256 targetBal, uint256 claimBal, uint256 lpShares) = bob.doAddLiquidityFromTarget(
+                address(adapter),
+                maturity,
+                tBal,
+                1
+            );
 
-        assertEq(tBalBefore - tBal, tBalAfter);
-        assertEq(lpBalBefore + 100e18, lpBalAfter);
-        assertEq(cBalBefore + toBeIssued, cBalAfter);
+            assertEq(targetBal, 0);
+            assertTrue(claimBal > 0);
+            assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)) - lpBalBefore);
+
+            assertEq(tBalBefore - tBal, ERC20(adapter.getTarget()).balanceOf(address(bob)));
+            assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)));
+            assertEq(cBalBefore + toBeIssued, ERC20(claim).balanceOf(address(bob)));
+        }
     }
 
     function testRemoveLiquidityBeforeMaturity() public {
@@ -413,11 +429,12 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        uint256 targetBal = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
 
         uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
+        assertEq(targetBal, tBalAfter - tBalBefore);
         assertEq(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
     }
@@ -465,11 +482,12 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        uint256 targetBal = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
 
         uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
+        assertEq(targetBal, tBalAfter - tBalBefore);
         assertClose(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
     }
