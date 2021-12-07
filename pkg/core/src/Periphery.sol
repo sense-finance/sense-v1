@@ -557,7 +557,7 @@ contract Periphery is Trust {
         uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - 1e12);
 
         uint256 claimBalance = ERC20(claim).balanceOf(address(this));
-        require(zBal < claimBalance + 1e12 && zBal > claimBalance - 1e12, "Unexpected zBal");
+        require(zBal < claimBalance + 1e12 && zBal > claimBalance - 1e12, Errors.UnexpectedSwapAmount);
 
         // Combine zeros and claim
         uint256 tBal = divider.combine(adapter, maturity, zBal < claimBalance ? zBal : claimBalance);
