@@ -115,6 +115,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
         .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
         .then(tx => tx.wait());
 
+      console.log("adding liquidity from target");
       await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
