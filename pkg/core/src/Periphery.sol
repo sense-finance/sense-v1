@@ -630,10 +630,10 @@ contract Periphery is Trust {
     event Swapped(
         address indexed sender,
         bytes32 indexed poolId,
-        address indexed assetIn,
+        address assetIn,
         address assetOut,
         uint256 amountIn,
         uint256 amountOut,
-        bytes4 sig
+        bytes4 indexed sig
     );
 }
