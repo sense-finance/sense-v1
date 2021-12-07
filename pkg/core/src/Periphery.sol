@@ -400,6 +400,10 @@ contract Periphery is Trust {
         uint256 cBal
     ) internal returns (uint256) {
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+
+        // Because there's some margin of error in the pricing functions here, smaller
+        // swaps will be unreliable.
+        require(cBal * 10**(18 - ERC20(claim).decimals()) > 1e12, Errors.SwapTooSmall);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer claims into this contract if needed
@@ -414,8 +418,8 @@ contract Periphery is Trust {
         uint256 targetToBorrow = BalancerPool(pool).onSwap(
             BalancerPool.SwapRequest({
                 kind: BalancerVault.SwapKind.GIVEN_OUT,
-                tokenIn: tokens[zeroi],
-                tokenOut: tokens[targeti],
+                tokenIn: tokens[targeti],
+                tokenOut: tokens[zeroi],
                 amount: cBal,
                 poolId: poolId,
                 lastChangeBlock: 0,
@@ -423,8 +427,8 @@ contract Periphery is Trust {
                 to: address(0),
                 userData: ""
             }),
-            balances[zeroi],
-            balances[targeti]
+            balances[targeti],
+            balances[zeroi]
         );
 
         // Flash borrow target (following actions in `onFlashLoan`)
@@ -550,14 +554,26 @@ contract Periphery is Trust {
     ) external returns (bytes32, uint256) {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
-        // swap Target for Zeros
-        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), 0); // TODO: minAccepted
+        // Because Space utilizes power ofs liberally in its invariant, there is some error
+        // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
+        // that matched our Claim balance.
+        uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
 
-        // combine zeros and claim
-        uint256 tBal = divider.combine(adapter, maturity, zBal);
+        // Swap Target for Zeros
+        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - acceptableError);
+
+        uint256 claimBalance = ERC20(claim).balanceOf(address(this));
+        // We take the lowest of the two balances, as long as they're within a margin of acceptable error.
+        require(
+            zBal < claimBalance + acceptableError && zBal > claimBalance - acceptableError,
+            Errors.UnexpectedSwapAmount
+        );
+
+        // Combine zeros and claim
+        uint256 tBal = divider.combine(adapter, maturity, zBal < claimBalance ? zBal : claimBalance);
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
     }
 
