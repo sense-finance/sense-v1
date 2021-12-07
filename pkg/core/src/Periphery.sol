@@ -414,8 +414,8 @@ contract Periphery is Trust {
         uint256 targetToBorrow = BalancerPool(pool).onSwap(
             BalancerPool.SwapRequest({
                 kind: BalancerVault.SwapKind.GIVEN_OUT,
-                tokenIn: tokens[zeroi],
-                tokenOut: tokens[targeti],
+                tokenIn: tokens[targeti],
+                tokenOut: tokens[zeroi],
                 amount: cBal,
                 poolId: poolId,
                 lastChangeBlock: 0,
@@ -423,8 +423,8 @@ contract Periphery is Trust {
                 to: address(0),
                 userData: ""
             }),
-            balances[zeroi],
-            balances[targeti]
+            balances[targeti],
+            balances[zeroi]
         );
 
         // Flash borrow target (following actions in `onFlashLoan`)
@@ -550,14 +550,17 @@ contract Periphery is Trust {
     ) external returns (bytes32, uint256) {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
-        // swap Target for Zeros
-        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), 0); // TODO: minAccepted
+        // Swap Target for Zeros
+        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - 1e12);
 
-        // combine zeros and claim
-        uint256 tBal = divider.combine(adapter, maturity, zBal);
+        uint256 claimBalance = ERC20(claim).balanceOf(address(this));
+        require(zBal < claimBalance + 1e12 && zBal > claimBalance - 1e12, "Unexpected zBal");
+
+        // Combine zeros and claim
+        uint256 tBal = divider.combine(adapter, maturity, zBal < claimBalance ? zBal : claimBalance);
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
     }
 
