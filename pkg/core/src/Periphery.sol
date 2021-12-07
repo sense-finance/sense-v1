@@ -477,16 +477,17 @@ contract Periphery is Trust {
         // (0) Pull target from sender
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
+        // (1) compute target, issue zeros & claims & add liquidity to space
         (uint256 issued, uint256 lpShares) = _do(adapter, maturity, tBal);
 
         uint256 tAmount;
         if (mode == 0) {
-            // (5) Sell claims
+            // (2) Sell claims
             tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-            // (6) Send remaining Target back to the User
+            // (3) Send remaining Target back to the User
             target.safeTransfer(msg.sender, tAmount);
         } else {
-            // (5) Send Claims back to the User
+            // (4) Send Claims back to the User
             ERC20(claim).safeTransfer(msg.sender, issued);
         }
         return (tAmount, issued, lpShares);
@@ -499,16 +500,16 @@ contract Periphery is Trust {
     ) internal returns (uint256, uint256) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
-        // (1) Based on zeros:target ratio from current pool reserves and tBal passed
+        // Based on zeros:target ratio from current pool reserves and tBal passed
         // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
         (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
         uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
 
-        // (2) Issue Zeros & Claim
+        // Issue Zeros & Claim
         uint256 issued = divider.issue(adapter, maturity, zBalInTarget);
 
-        // (3) Add liquidity to Space & send the LP Shares to recipient
+        // Add liquidity to Space & send the LP Shares to recipient
         uint256[] memory amounts = new uint256[](2);
         amounts[targeti] = tBal - zBalInTarget;
         amounts[zeroi] = issued;
