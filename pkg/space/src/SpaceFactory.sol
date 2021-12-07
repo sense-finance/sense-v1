@@ -8,6 +8,25 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 import { Space } from "./Space.sol";
 
+interface DividerLike {
+    function series(
+        address, /* adapter */
+        uint256 /* maturity */
+    )
+        external
+        returns (
+            address, /* zero */
+            address, /* claim */
+            address, /* sponsor */
+            uint256, /* reward */
+            uint256, /* iscale */
+            uint256, /* mscale */
+            uint256, /* maxscale */
+            uint128, /* issuance */
+            uint128 /* tilt */
+        );
+}
+
 contract SpaceFactory is Trust {
     // Immutables
     IVault public immutable vault;
@@ -34,11 +53,12 @@ contract SpaceFactory is Trust {
         g2 = _g2;
     }
 
-    /// @dev Deploys a new `Space` contract
+    /// @notice Deploys a new `Space` contract
     function create(address _adapter, uint48 _maturity) external returns (address) {
         require(pools[_adapter][_maturity] == address(0), "Space already exists for this Series");
 
-        address pool = address(new Space(vault, _adapter, _maturity, divider, ts, g1, g2));
+        (address zero, , , , , , , , ) = DividerLike(divider).series(_adapter, uint256(_maturity));
+        address pool = address(new Space(vault, _adapter, _maturity, zero, ts, g1, g2));
 
         pools[_adapter][_maturity] = pool;
         return pool;

@@ -48,6 +48,7 @@ contract Test is DSTest {
 contract SpaceTest is Test {
     using FixedPoint for uint256;
 
+    uint256 public constant INTIAL_USER_BALANCE = 100e18;
     VM internal constant vm = VM(HEVM_ADDRESS);
     IWETH internal constant weth = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
@@ -100,22 +101,22 @@ contract SpaceTest is Test {
         // mint this address Zeros and Target
         // max approve the balancer vault to move this addresses tokens
 
-        zero.mint(address(this), 100e18);
-        target.mint(address(this), 100e18);
+        zero.mint(address(this), INTIAL_USER_BALANCE);
+        target.mint(address(this), INTIAL_USER_BALANCE);
         target.approve(address(vault), type(uint256).max);
         zero.approve(address(vault), type(uint256).max);
 
         jim = new User(vault, space, zero, target);
-        zero.mint(address(jim), 100e18);
-        target.mint(address(jim), 100e18);
+        zero.mint(address(jim), INTIAL_USER_BALANCE);
+        target.mint(address(jim), INTIAL_USER_BALANCE);
 
         ava = new User(vault, space, zero, target);
-        zero.mint(address(ava), 100e18);
-        target.mint(address(ava), 100e18);
+        zero.mint(address(ava), INTIAL_USER_BALANCE);
+        target.mint(address(ava), INTIAL_USER_BALANCE);
 
         sid = new User(vault, space, zero, target);
-        zero.mint(address(sid), 100e18);
-        target.mint(address(sid), 100e18);
+        zero.mint(address(sid), INTIAL_USER_BALANCE);
+        target.mint(address(sid), INTIAL_USER_BALANCE);
     }
 
     function testJoinOnce() public {
@@ -151,98 +152,97 @@ contract SpaceTest is Test {
     }
 
     function testSimpleSwapIn() public {
-        // join once (first join is always Target-only)
+        // Join once (first join is always Target-only)
         jim.join();
 
-        // can't swap any Target in b/c there aren't ever any Zeros to get out after the first join
+        // Can't swap any Target in b/c there aren't ever any Zeros to get out after the first join
         try jim.swapIn(false, 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "BAL#001");
+            assertEq(error, "Swap too small");
         }
 
-        // can successfully swap Zeros in
-        jim.swapIn(true);
-        // fixed amount in, variable amount out
-        uint256 expectedTargetOut = 646139118808709566;
+        // Can successfully swap Zeros in
+        uint256 targetOt = jim.swapIn(true);
+        // Fixed amount in, variable amount out
+        uint256 expectedTargetOut = 646139118808653602;
 
-        // swapped one Zero in
+        // Swapped one Zero in
         assertEq(zero.balanceOf(address(jim)), 99e18);
-        // received less than one Target
-        assertEq(target.balanceOf(address(jim)), 99e18 + expectedTargetOut);
+        // Received less than one Target
+        assertEq(targetOt, expectedTargetOut);
 
         (, uint256[] memory balances, ) = vault.getPoolTokens(space.getPoolId());
         (uint8 zeroi, uint8 targeti) = space.getIndices();
 
-        // pool balances reflect the user's balances
+        // Pool balances reflect the user's balances
         assertEq(balances[zeroi], 1e18);
         assertEq(balances[targeti], 1e18 - expectedTargetOut);
 
-        // can not swap a full Target in
+        // Can not swap a full Target in
         try jim.swapIn(false) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "BAL#001"); // sub overflow
         }
 
-        // can successfully swap a partial Target in
-        jim.swapIn(false, 0.5e18);
-        uint256 expectedZeroOut = 804788983856909903;
+        // Can successfully swap a partial Target in
+        uint256 zeroOut = jim.swapIn(false, 0.5e18);
+        uint256 expectedZeroOut = 804788983856768174;
 
         assertEq(target.balanceOf(address(jim)), 99e18 + expectedTargetOut - 0.5e18);
-        assertEq(zero.balanceOf(address(jim)), 99e18 + expectedZeroOut);
+        assertEq(zeroOut, expectedZeroOut);
     }
 
     function testSimpleSwapsOut() public {
         jim.join();
 
-        // can't swap any Zeros out b/c there aren't any Zeros to get out after the first join
+        // Can't swap any Zeros out b/c there aren't any Zeros to get out after the first join
         try jim.swapOut(false, 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Too few reserves");
+            assertEq(error, "BAL#001");
         }
 
-        // can successfully swap Target out
-        jim.swapOut(true, 0.1e18);
-        // fixed amount out, variable amount in
-        uint256 expectedZerosIn = 105559160849361394; // 0.1055
+        // Can successfully swap Target out
+        uint256 zerosIn = jim.swapOut(true, 0.1e18);
+        // Fixed amount out, variable amount in
+        uint256 expectedZerosIn = 105559160849472541; // around 0.10556
 
-        // received 0.1 Target
+        // Received 0.1 Target
         assertEq(target.balanceOf(address(jim)), 99e18 + 0.1e18);
-
-        assertEq(zero.balanceOf(address(jim)), 100e18 - expectedZerosIn);
+        assertEq(zerosIn, expectedZerosIn);
     }
 
     function testExitOnce() public {
         jim.join();
-        // max exit
+        // Max exit
         jim.exit(space.balanceOf(address(jim)));
 
-        // for the pool's first exit –--
-        // it moved Zeros back to jim's account
+        // For the pool's first exit –--
+        // It moved Zeros back to jim's account
         assertEq(zero.balanceOf(address(jim)), 100e18);
-        // and it took all of jim's account's BPT back
+        // And it took all of jim's account's BPT back
         assertEq(space.balanceOf(address(jim)), 0);
-        // it moved almost all Target back to this account (locked MINIMUM_BPT permanently)
+        // It moved almost all Target back to this account (locked MINIMUM_BPT permanently)
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
     function testJoinSwapExit() public {
         jim.join();
 
-        // swap out 0.1 Target
+        // Swap out 0.1 Target
         jim.swapOut(true, 0.1e18);
 
-        // max exit
+        // Max exit
         jim.exit(space.balanceOf(address(jim)));
 
-        // for the pool's first exit –--
-        // it moved Zeros back to jim's account (less rounding losses)
+        // For the pool's first exit –--
+        // It moved Zeros back to jim's account (less rounding losses)
         assertClose(zero.balanceOf(address(jim)), 100e18, 1e6);
-        // and it took all of jim's account's BPT back
+        // And it took all of jim's account's BPT back
         assertEq(space.balanceOf(address(jim)), 0);
-        // it moved almost all Target back to this account (locked MINIMUM_BPT permanently)
+        // It moved almost all Target back to this account (locked MINIMUM_BPT permanently)
         assertClose(target.balanceOf(address(jim)), 100e18, 1e6);
     }
 
@@ -250,10 +250,10 @@ contract SpaceTest is Test {
         // Jim tries to join 1 of each (should be Target-only)
         jim.join();
 
-        // the pool moved one Target out of jim's account
+        // The pool moved one Target out of jim's account
         assertEq(target.balanceOf(address(jim)), 99e18);
 
-        // swap 1 Zero in
+        // Swap 1 Zero in
         sid.swapIn(true);
 
         // Ava tries to Join 1 of each (should take 1 Zero and some amount of Target)
@@ -261,7 +261,7 @@ contract SpaceTest is Test {
         assertGe(target.balanceOf(address(ava)), 99e18);
         assertEq(zero.balanceOf(address(ava)), 99e18);
 
-        // swap 1 Zero in
+        // Swap 1 Zero in
 
         sid.swapIn(true);
 
@@ -269,22 +269,22 @@ contract SpaceTest is Test {
         uint256 targetPreJoin = target.balanceOf(address(ava));
         ava.join();
         assertGe(target.balanceOf(address(ava)), 99e18);
-        // should have joined less Target than last time
+        // Should have joined less Target than last time
         assertGt(100e18 - targetPreJoin, targetPreJoin - target.balanceOf(address(ava)));
-        // should have joined Target / Zeros at the ratio of the pool
+        // Should have joined Target / Zeros at the ratio of the pool
         assertEq(zero.balanceOf(address(ava)), 98e18);
         (, uint256[] memory balances, ) = vault.getPoolTokens(space.getPoolId());
         (uint8 zeroi, uint8 targeti) = space.getIndices();
-        // all tokens are 18 decimals in `setUp`
+        // All tokens are 18 decimals in `setUp`
         uint256 targetPerZero = (balances[targeti] * 1e18) / balances[zeroi];
-        // targetPerZero * 1 = Target amount in for 1 Zero in
+        // TargetPerZero * 1 = Target amount in for 1 Zero in
         assertEq(target.balanceOf(address(ava)), targetPreJoin - targetPerZero);
 
         // Jim and ava exit
         jim.exit(space.balanceOf(address(jim)));
         ava.exit(space.balanceOf(address(ava)));
 
-        // can't swap after liquidity has been removed
+        // Can't swap after liquidity has been removed
         try sid.swapIn(true, 1e12) {
             fail();
         } catch Error(string memory error) {
@@ -380,14 +380,30 @@ contract SpaceTest is Test {
 
         vm.warp(maturity - 1);
 
-        assertClose(sid.swapIn(true), 1e18, 1e12);
-        assertClose(sid.swapIn(false), 1e18, 1e12);
+        assertClose(sid.swapIn(true).mulDown(adapter.scale()), 1e18, 1e11);
+        assertClose(sid.swapIn(false, uint256(1e18).divDown(adapter.scale())), 1e18, 1e11);
+    }
+
+    function testConstantSumAfterMaturity() public {
+        // Target in
+        jim.join(0, 10e18);
+
+        // Init some Zeros in
+        sid.swapIn(true, 5.5e18);
+
+        // Try as much of both in as possible
+        jim.join(10e18, 10e18);
+
+        vm.warp(maturity + 1);
+
+        assertClose(sid.swapIn(true).mulDown(adapter.scale()), 1e18, 1e7);
+        assertClose(sid.swapIn(false, uint256(1e18).divDown(adapter.scale())), 1e18, 1e7);
     }
 
     function testProtocolFees() public {
         IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
 
-        // grant protocolFeesCollector.setSwapFeePercentage role
+        // Grant protocolFeesCollector.setSwapFeePercentage role
         bytes32 actionId = Authentication(address(protocolFeesCollector)).getActionId(
             protocolFeesCollector.setSwapFeePercentage.selector
         );
@@ -395,69 +411,92 @@ contract SpaceTest is Test {
         protocolFeesCollector.setSwapFeePercentage(0.1e18);
 
         jim.join(0, 10e18);
-
         sid.swapIn(true, 5.5e18);
-
         jim.join(10e18, 10e18);
 
-        ava.swapOut(false);
-        ava.swapIn(true);
-        ava.swapOut(false);
-        ava.swapIn(true);
-        ava.swapOut(false);
-        ava.swapIn(true);
+        for (uint256 i = 0; i < 6; i++) {
+            ava.swapOut(false);
+            ava.swapIn(true);
+        }
 
-        // no additional lp shares extracted until somebody joins or exits
-        assertEq(space.balanceOf(address(protocolFeesCollector)), 7209445462227991794);
+        // No additional lp shares extracted until somebody joins or exits
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 1003147415248878304);
         jim.exit(space.balanceOf(address(jim)));
 
-        assertEq(space.balanceOf(address(protocolFeesCollector)), 7834356990251230156);
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 1006245817246036338);
+
+        // TODO fees don't eat into non-trade invariant growth
+        // TODO fees are correctly proportioned to the fee set in the vault
+        // time goes by
     }
 
-    // function testTinySwaps() public {
-    //     // how do we know the zero price will be below 1?
-    //     jim.join();
+    function testTinySwaps() public {
+        jim.join(0, 10e18);
+        sid.swapIn(true, 5.5e18);
+        jim.join(10e18, 10e18);
 
-    //     uint256 _targetOut = sid.swapIn(true, 1e12);
+        // Swaps in can fail for being too small
+        try sid.swapIn(true, 1e6) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, "Swap too small");
+        }
+        try sid.swapIn(false, 1e6) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, "Swap too small");
+        }
 
-    //     log_named_uint("_targetOut", _targetOut);
+        // Swaps outs don't fail, but they ask for very high amounts in
+        // (rouding in favor of the LP has a big effect on small swaps)
+        assertGt(sid.swapOut(true, 1e6), 2e6);
+        assertGt(sid.swapOut(false, 1e6), 2e6);
+    }
 
-    //     assertTrue(false);
-    // }
+    function testJoinDifferentScaleValues() public {
+        // Jim join Target in
+        jim.join(0, 10e18);
 
-    // test_join_diff_scale_values
+        // Sid inits Zeros
+        sid.swapIn(true, 5.5e18);
 
-    // function testJoinDiffScaleValues() public {
-    //     // Target in
-    //     jim.join(0, 1e18);
-    //     // Init Zeros
-    //     sid.swapIn(true);
-    //     // both in
-    //     uint256 jimBptBalance = space.balanceOf(address(jim));
-    //     jim.join();
-    //     uint256 bptFromJoin = space.balanceOf(address(jim)) - jimBptBalance;
+        uint256 initScale = adapter.scale();
 
-    //     vm.warp(2 weeks);
+        // Determine how much Target Jim gets for one Zero
+        uint256 targetOutForOneZeroInit = jim.swapIn(true);
+        // Swap that Target back in to restore the AMM state to before the prev swap
+        jim.swapIn(false, targetOutForOneZeroInit);
 
-    //     jimBptBalance = space.balanceOf(address(jim));
+        // Ava tries to join both in
+        ava.join();
+        // BPT from Ava's (1 Zero, 1 Target) join
+        uint256 bptFromJoin = space.balanceOf(address(ava));
+        uint256 targetInFromJoin = INTIAL_USER_BALANCE - target.balanceOf(address(ava));
+        uint256 zeroInFromJoin = INTIAL_USER_BALANCE - zero.balanceOf(address(ava));
 
-    //     try jim.join() {} catch Error(string memory error) {
-    //         log_string(error);
-    //     }
+        vm.warp(1 days);
+        uint256 scale1Week = adapter.scale();
+        ava.join();
 
-    //     log_named_uint("bpt jim post", bptFromJoin);
-    //     // log_named_uint("bpt jim post", space.balanceOf(address(jim)) - jimBptBalance);
+        // Ava's BPT out will exactly equal her first join
+        // Since the Target is worth more, she essentially got fewer BPT for the same amount of Underlying
+        assertClose(bptFromJoin, space.balanceOf(address(ava)) - bptFromJoin, 1e3);
+        // Same amount of Target in (but it's worth more now)
+        assertClose(targetInFromJoin * 2, INTIAL_USER_BALANCE - target.balanceOf(address(ava)), 1e3);
+        // Same amount of Zero in
+        assertClose(zeroInFromJoin * 2, INTIAL_USER_BALANCE - zero.balanceOf(address(ava)), 1e3);
 
-    //     assertTrue(false);
+        // Ava can exit her entire LP position just fine
+        ava.exit(space.balanceOf(address(ava)));
 
-    //     return;
-
-    //     // get fewer lp shares for the same amount of assets
-    //     // get fewer targets for the swap for the same zero in
-
-    //     // price should never go above 1
-    //     // protocol fees are calculated correctly
-    // }
+        uint256 targetOutForOneZero1Week = jim.swapIn(true);
+        // Gets fewer target out for one Zero when Target is worth more
+        assertGt(targetOutForOneZeroInit, targetOutForOneZero1Week);
+        // There is some change due to the YS invariant, but it's not much in 1 days time
+        // With the rate the Target is increasing in value, its growth should account for most of the change
+        // in swap rate
+        assertClose(targetOutForOneZeroInit, targetOutForOneZero1Week.mulDown(scale1Week.divDown(initScale)), 1e15);
+    }
 
     function testDifferentDecimals() public {
         // Setup ----
@@ -500,21 +539,38 @@ contract SpaceTest is Test {
         sid.swapIn(true, 1e18);
         jim.join(1e18, 1e18);
         // Determine Jim's Target balance in 9 decimals
-        uint256 jimTargetBalance = target.balanceOf(address(jim)) / 1e9;
+        uint256 jimTargetBalance = target.balanceOf(address(jim)) / 10**(18 - _target.decimals());
 
         assertClose(_target.balanceOf(address(max)), jimTargetBalance, 1e6);
     }
 
-    // scale_goes_down
-    // constant sum after maturity
-    // better protocol fee tests
+    function testNonMonotonicScale() public {
+        adapter.setScale(1e18);
+        jim.join(0, 10e18);
+        sid.swapIn(true, 5.5e18);
+        jim.join(10e18, 10e18);
 
-    // #nice-to-have:
-    // test_space_fees_magnitude
-    // test_buy_slippage_limit
-    // test_join_relative_share
-    // test_ts_g1_g2_variations
-    // test_ys_invariant_changing_scale
-    // test_ys_invariant_low_liq
-    // test_ys_invariant_external_reference
+        adapter.setScale(1.5e18);
+        jim.join(10e18, 10e18);
+        uint256 targetOut1 = sid.swapIn(true, 5.5e18);
+
+        adapter.setScale(1e18);
+        jim.join(10e18, 10e18);
+        uint256 targetOut2 = sid.swapIn(true, 5.5e18);
+
+        // Set scale to below the initial scale
+        adapter.setScale(0.5e18);
+        jim.join(10e18, 10e18);
+        uint256 targetOut3 = sid.swapIn(true, 5.5e18);
+
+        // Receive more and more Target out as the Scale value decreases
+        assertGt(targetOut3, targetOut2);
+        assertGt(targetOut2, targetOut1);
+    }
+
+    // testPoolFees
+    // testPriceNeverAboveOne
+    // testFuzzScaleValues
+    // testYSInvariant
+    // testTimeshift
 }

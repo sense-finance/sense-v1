@@ -14,29 +14,7 @@ import { IERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/
 
 import { Errors, _require } from "@balancer-labs/v2-solidity-utils/contracts/helpers/BalancerErrors.sol";
 
-interface DividerLike {
-    function series(
-        address, /* adapter */
-        uint256 /* maturity */
-    )
-        external
-        virtual
-        returns (
-            address, /* zero */
-            address, /* claim */
-            address, /* sponsor */
-            uint256, /* reward */
-            uint256, /* iscale */
-            uint256, /* mscale */
-            uint256, /* maxscale */
-            uint128, /* issuance */
-            uint128 /* tilt */
-        );
-}
-
 interface AdapterLike {
-    function underlying() external returns (address);
-
     function scale() external returns (uint256);
 
     function getTarget() external returns (address);
@@ -63,9 +41,12 @@ interface AdapterLike {
 
 /// @notice A Yieldspace implementation extended such that it allows LPs to deposit
 /// [Zero, Yield-bearing asset], rather than [Zero, Underlying], while keeping the benefits of
-/// standard yieldspace invariant accounting (ex: it can hold [Zero, cDAI] rather than [Zero, DAI])
+/// the yieldspace invariant (e.g. it can hold [Zero, cDAI], rather than [Zero, DAI], while
+/// still operating in "yield space" for the Zero – see the YieldSpace paper for more https://yield.is/YieldSpace.pdf)
 /// @dev We use much more internal storage here than in other Sense contracts because it
-/// conforms to Balancer's own style, and we're using several Balancer functions that play nicer this way.
+/// conforms to Balancer's own style, and we're using several Balancer functions that play nicer if we do.
+/// @dev Requires an external "Adapter" contract with a `scale()` function which returns the
+/// current exchange rate from Target to the Underlying asset.
 contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     using FixedPoint for uint256;
 
@@ -76,10 +57,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /* ========== PUBLIC IMMUTABLES ========== */
 
-    /// @notice Sense Divider ᗧ···ᗣ···ᗣ··
-    address public immutable divider;
-
-    /// @notice Sense Adapter address for the associated Series
+    /// @notice Adapter address for the associated Series
     address public immutable adapter;
 
     /// @dev Maturity timestamp for associated Series
@@ -122,7 +100,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     uint256 internal _initScale;
 
     /// @dev Invariant tracking for calculating Balancer protocol fees
-    uint256 internal _lastInvariant;
     uint256 internal _lastToken0Reserve;
     uint256 internal _lastToken1Reserve;
 
@@ -130,14 +107,13 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         IVault vault,
         address _adapter,
         uint48 _maturity,
-        address _divider,
+        address zero,
         uint256 _ts,
         uint256 _g1,
         uint256 _g2
     ) BalancerPoolToken(AdapterLike(_adapter).name(), AdapterLike(_adapter).symbol()) {
         bytes32 poolId = vault.registerPool(IVault.PoolSpecialization.TWO_TOKEN);
 
-        (address zero, , , , , , , , ) = DividerLike(_divider).series(_adapter, uint256(_maturity));
         address target = AdapterLike(_adapter).getTarget();
         IERC20[] memory tokens = new IERC20[](2);
 
@@ -162,9 +138,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         g2 = _g2; // see the "Fees" section of the yieldspace paper
         ts = _ts;
 
-        // Set Sense-specific slots
+        // Set Space-specific slots
         maturity = _maturity;
-        divider = _divider;
         adapter = _adapter;
         zeroi = _zeroi;
     }
@@ -181,13 +156,13 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         bytes memory userData
     ) external override onlyVault(poolId) returns (uint256[] memory, uint256[] memory) {
         // Space does not have multiple join types like other Balancer pools,
-        // instead, its `joinPool` always behaves like Balancer's `EXACT_TOKENS_IN_FOR_BPT_OUT`
+        // instead, its `joinPool` always behaves like `EXACT_TOKENS_IN_FOR_BPT_OUT`
 
         require(maturity >= block.timestamp, "Pool past maturity");
 
         uint256[] memory reqAmountsIn = abi.decode(userData, (uint256[]));
 
-        // Upscale both requiested amounts and reserves to 18 decimals
+        // Upscale both requested amounts and reserves to 18 decimals
         _upscaleArray(reserves);
         _upscaleArray(reqAmountsIn);
 
@@ -197,13 +172,14 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             // Convert target balance into Underlying
             // note: We assume scale values will always be 18 decimals
-            uint256 underlyingIn = (reqAmountsIn[_targeti] * initScale) / 1e18;
+            uint256 underlyingIn = reqAmountsIn[_targeti].mulDown(initScale);
 
             // Just like weighted pool 2 token from the balancer v2 monorepo,
-            // we lock MINIMUM_BPT in by minting it for the zero address –
-            // this reduces potential issues with rounding and ensures that this code will only be executed once
+            // we lock MINIMUM_BPT in by minting it for the zero address – this reduces potential
+            // issues with rounding and ensures that this code path will only be executed once
             _mintPoolTokens(address(0), MINIMUM_BPT);
 
+            // Mint the recipient BPT comensurate with the value of their join in Underlying
             _mintPoolTokens(recipient, underlyingIn - MINIMUM_BPT);
 
             // Amounts entering the Pool, so we round up
@@ -216,13 +192,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // this starts this pool off as synthetic Underlying only, as the yieldspace invariant expects
             delete reqAmountsIn[_zeroi];
 
+            // Cache new invariant and reserves, post join
             _cacheInvariantAndReserves(reserves);
 
             return (reqAmountsIn, new uint256[](2));
         } else {
             (uint256 bptToMint, uint256[] memory amountsIn) = _tokensInForBptOut(reqAmountsIn, reserves);
-
-            _mintPoolTokens(recipient, bptToMint);
 
             // Amounts entering the Pool, so we round up
             _downscaleUpArray(amountsIn);
@@ -231,6 +206,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             if (protocolSwapFeePercentage != 0) {
                 _mintPoolTokens(_protocolFeesCollector, _bptFeeDue(reserves, protocolSwapFeePercentage));
             }
+
+            // `recipient` receives liquidity tokens
+            _mintPoolTokens(recipient, bptToMint);
 
             // Update reserves for invariant caching
             reserves[0] += amountsIn[0];
@@ -255,12 +233,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         bytes memory userData
     ) external override onlyVault(poolId) returns (uint256[] memory, uint256[] memory) {
         // Space does not have multiple exit types like other Balancer pools,
-        // instead, its `exitPool` always behaves like Balancer's `EXACT_BPT_IN_FOR_TOKENS_OUT`
+        // instead, its `exitPool` always behaves like `EXACT_BPT_IN_FOR_TOKENS_OUT`
 
         // Upscale reserves to 18 decimals
         _upscaleArray(reserves);
 
-        // Determine what percentage of the pool the BPT being passed inis
+        // Determine what percentage of the pool the BPT being passed in is
         uint256 bptAmountIn = abi.decode(userData, (uint256));
         uint256 pctPool = bptAmountIn.divDown(totalSupply());
 
@@ -269,10 +247,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         amountsOut[0] = reserves[0].mulDown(pctPool);
         amountsOut[1] = reserves[1].mulDown(pctPool);
 
-        // `sender` pays for the liquidity
-        _burnPoolTokens(sender, bptAmountIn);
-
-        // Amounts leaving the Pool, so we round down
+        // Amounts are leaving the Pool, so we round down
         _downscaleDownArray(amountsOut);
 
         // Calculate fees due before updating reserves to determine invariant growth from just swap fees
@@ -280,6 +255,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Balancer fealty
             _mintPoolTokens(_protocolFeesCollector, _bptFeeDue(reserves, protocolSwapFeePercentage));
         }
+
+        // `sender` pays for the liquidity
+        _burnPoolTokens(sender, bptAmountIn);
 
         // Update reserves for invariant caching
         reserves[0] -= amountsOut[0];
@@ -305,40 +283,51 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         reservesTokenIn = _upscale(reservesTokenIn, scalingFactorTokenIn);
         reservesTokenOut = _upscale(reservesTokenOut, scalingFactorTokenOut);
 
-        uint256 scale = AdapterLike(adapter).scale();
-
         if (zeroIn) {
             // Add LP supply to Zero reserves, as suggested by the yieldspace paper
             reservesTokenIn += totalSupply();
-            // Calculate the excess Target (Target value due only to scale growth since initialization),
-            // remove it from the requested amount in,
-            // then convert the remaining Target into Underlying
-            reservesTokenOut = scale > _initScale
-                ? (2 * reservesTokenOut - reservesTokenOut / (scale - _initScale)).mulDown(scale)
-                : reservesTokenOut.mulDown(scale);
+
+            // Backdate the Target reserves and convert to Underlying, as if it were still t0 (initialization)
+            reservesTokenOut = reservesTokenOut.mulDown(_initScale);
         } else {
-            // Calculate the excess Target (Target value due only to scale growth since initialization),
-            // remove it from the requested amount in,
-            // then convert the remaining Target into Underlying
-            reservesTokenIn = scale > _initScale
-                ? (2 * reservesTokenIn - reservesTokenIn / (scale - _initScale)).mulDown(scale)
-                : reservesTokenIn.mulDown(scale);
+            // Backdate the Target reserves and convert to Underlying, as if it were still t0 (initialization)
+            reservesTokenIn = reservesTokenIn.mulDown(_initScale);
 
             // Add LP supply to Zero reserves, as suggested by the yieldspace paper
             reservesTokenOut += totalSupply();
         }
 
+        uint256 scale = AdapterLike(adapter).scale();
+
         if (request.kind == IVault.SwapKind.GIVEN_IN) {
             request.amount = _upscale(request.amount, scalingFactorTokenIn);
+            // If Target is being swapped in, convert the amount in to Underlying using present day Scale
+            if (!zeroIn) {
+                request.amount = request.amount.mulDown(scale);
+            }
 
+            // Determine the amount out (with the input and output in present day Underlying terms, depending on the swap kind)
             uint256 amountOut = _onSwap(zeroIn, true, request.amount, reservesTokenIn, reservesTokenOut);
+            // If Zeros are being swapped in, convert the Underlying out back to Target using present day Scale
+            if (zeroIn) {
+                amountOut = amountOut.divDown(scale);
+            }
 
-            // Amount out, so we round down to avoid sending too much out by some dust amount
+            // Amount out, so we round down
             return _downscaleDown(amountOut, scalingFactorTokenOut);
         } else {
             request.amount = _upscale(request.amount, scalingFactorTokenOut);
+            // If Zeros are being swapped in, convert the amount out from Target to Underlying using present day Scale
+            if (zeroIn) {
+                request.amount = request.amount.mulDown(scale);
+            }
 
+            // Determine the amount in (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountIn = _onSwap(zeroIn, false, request.amount, reservesTokenIn, reservesTokenOut);
+            // If Target is being swapped in, convert the amount in back to Target using present day Scale
+            if (!zeroIn) {
+                amountIn = amountIn.divDown(scale);
+            }
 
             // Amount in, so we round up
             return _downscaleUp(amountIn, scalingFactorTokenIn);
@@ -353,42 +342,38 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         internal
         returns (uint256, uint256[] memory)
     {
-        // Disambiguate reserves and requested amount wrt token type
+        // Disambiguate reserves wrt token type
         (uint8 _zeroi, uint8 _targeti) = getIndices();
         (uint256 zeroReserves, uint256 targetReserves) = (reserves[_zeroi], reserves[_targeti]);
-        (uint256 reqZerosIn, uint256 reqTargetIn) = (reqAmountsIn[_zeroi], reqAmountsIn[_targeti]);
-
-        uint256 scale = AdapterLike(adapter).scale();
-
-        // Calculate the excess Target (Target value due only to scale growth since initialization),
-        // remove it from the requested amount in,
-        // then convert the remaining Target into Underlying
-        uint256 reqUnderlyingIn = (2 * reqTargetIn - (reqTargetIn * scale) / _initScale).mulDown(scale);
 
         uint256[] memory amountsIn = new uint256[](2);
 
-        // If the pool has been initialized, but there aren't yet any Zeros in it,
-        // we pull the entire offered Target and mint lp shares proportionally
+        // If the pool has been initialized, but there aren't yet any Zeros in it
         if (zeroReserves == 0) {
-            uint256 bptToMint = (totalSupply() * reqUnderlyingIn) / ((targetReserves * _initScale) / scale);
+            uint256 reqTargetIn = reqAmountsIn[_targeti];
+            // Mint LP shares according to the relative amount of Target being offered
+            uint256 bptToMint = (totalSupply() * reqTargetIn) / targetReserves;
+
+            // Pull the entire offered Target
             amountsIn[_targeti] = reqTargetIn;
 
             return (bptToMint, amountsIn);
         } else {
-            // Caclulate the percentage of the pool we'd get if we pulled all of the requested Underlying in
-            // note: The current reserves of Target will always be above zero by the time this line is reached
-            uint256 pctUnderlying = reqUnderlyingIn.divDown((targetReserves * _initScale) / scale);
+            // Disambiguate requested amounts wrt token type
+            (uint256 reqZerosIn, uint256 reqTargetIn) = (reqAmountsIn[_zeroi], reqAmountsIn[_targeti]);
+            // Caclulate the percentage of the pool we'd get if we pulled all of the requested Target in
+            uint256 pctTarget = reqTargetIn.divDown(targetReserves);
 
             // Caclulate the percentage of the pool we'd get if we pulled all of the requested Zeros in
-            uint256 pctZeros = reqZerosIn.divDown(reserves[_zeroi]);
+            uint256 pctZeros = reqZerosIn.divDown(zeroReserves);
 
             // Determine which amount in is our limiting factor
-            if (pctUnderlying < pctZeros) {
-                // If it's Underlying, pull the entire requested Target amount in,
-                // and pull Zeros in at the percetage of the requested Underlying
-                uint256 bptToMint = totalSupply().mulDown(pctUnderlying);
+            if (pctTarget < pctZeros) {
+                // If it's Target, pull the entire requested Target amount in,
+                // and pull Zeros in at the percetage of the requested Target
+                uint256 bptToMint = totalSupply().mulDown(pctTarget);
 
-                amountsIn[_zeroi] = zeroReserves.mulDown(pctUnderlying);
+                amountsIn[_zeroi] = zeroReserves.mulDown(pctTarget);
                 amountsIn[_targeti] = reqTargetIn;
 
                 return (bptToMint, amountsIn);
@@ -398,7 +383,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
                 uint256 bptToMint = totalSupply().mulDown(pctZeros);
 
                 amountsIn[_zeroi] = reqZerosIn;
-                // TODO:
                 amountsIn[_targeti] = targetReserves.mulDown(pctZeros);
 
                 return (bptToMint, amountsIn);
@@ -407,6 +391,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     }
 
     /// @notice Calculate the missing variable in the yield space equation given the direction (Zero in vs. out)
+    /// @dev We round in favor of the LPs, meaning that traders get slightly worse prices than they would if we had full
+    /// precision. However, the differences are small (on the order of 1e-11) and should only matter for very small trades.
     function _onSwap(
         bool zeroIn,
         bool givenIn,
@@ -427,24 +413,26 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // Full `t` with fees baked in
         uint256 a = (zeroIn ? g2 : g1).mulUp(t).complement();
 
-        // x1 = xPre ^ a
-        uint256 x1 = reservesTokenIn.powDown(a);
+        // Pow up for `x1` & `y1` and down for `xOrY2` causes the pow induced error for `xOrYPost`
+        // to tend towards higher values rather than lower –
+        // effectively adding a little bump up for ammount in, and down for amount out
 
+        // x1 = xPre ^ a
         // y1 = yPre ^ a
-        uint256 y1 = reservesTokenOut.powDown(a);
+        uint256 x1 = reservesTokenIn.powUp(a);
+        uint256 y1 = reservesTokenOut.powUp(a);
 
         // y2 = yPost ^ a
         // x2 = xPost ^ a
         // If we're given an amount in, add it to the reserves in,
         // if we're given an amount out, subtract it from the reserves out
         uint256 xOrY2 = (givenIn ? reservesTokenIn + amountDelta : reservesTokenOut - amountDelta).powDown(a);
-        // require(!givenIn || xOrY2 > reservesTokenIn, "Swap amount too small");
 
         // x1 + y1 = xOrY2 + xOrYPost ^ a
         // -> xOrYPost ^ a = x1 + y1 - x2
         // -> xOrYPost = (x1 + y1 - xOrY2) ^ (1 / a)
-        uint256 xOrYPost = (x1 + y1 - xOrY2).powDown(FixedPoint.ONE.divDown(a));
-        require(givenIn ? reservesTokenOut > xOrYPost : xOrYPost > reservesTokenIn, "Too few reserves");
+        uint256 xOrYPost = (x1 + y1 - xOrY2).powUp(FixedPoint.ONE.divDown(a));
+        require(!givenIn || reservesTokenOut > xOrYPost, "Swap too small");
 
         // amount out given in = yPre - yPost
         // amount in given out = xPost - xPre
@@ -453,50 +441,37 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /* ========== PROTOCOL FEE HELPERS ========== */
 
-    /// @notice Determine the growth in the yieldspace invariant due to a swap fees, only
+    /// @notice Determine the growth in the yieldspace invariant due to a swap fees only
     /// @dev This can't be a view function b/c `Adapter.scale` is not a view function
-    function _bptFeeDue(uint256[] memory _reserves, uint256 _protocolSwapFeePercentage) internal returns (uint256) {
+    function _bptFeeDue(uint256[] memory reserves, uint256 protocolSwapFeePercentage) internal returns (uint256) {
         uint256 ttm = maturity > block.timestamp ? uint256(maturity - block.timestamp) * FixedPoint.ONE : 0;
         uint256 a = ts.mulDown(ttm).complement();
 
         // Invariant growth from time only
-        uint256 _currentAdjInvariant = _lastToken0Reserve.powDown(a) + _lastToken1Reserve.powDown(a);
+        uint256 timeOnlyInvariant = _lastToken0Reserve.powDown(a) + _lastToken1Reserve.powDown(a);
 
-        uint256 _scale = AdapterLike(adapter).scale();
+        uint256 scale = AdapterLike(adapter).scale();
         (uint8 _zeroi, uint8 _targeti) = getIndices();
 
-        // Actual invariant
-        uint256 x = (_reserves[_zeroi] + totalSupply()).powDown(a);
-        // Calculate the backdated Target reserves in Underyling terms
-        uint256 y = _scale > _initScale
-            ? (2 * _reserves[_targeti] - _reserves[_targeti] / (_scale - _initScale)).mulDown(_scale)
-            : _reserves[_targeti].mulDown(_scale);
+        // `x` & `y` for the actual invariant, with growth from time and fees
+        uint256 x = (reserves[_zeroi] + totalSupply()).powDown(a);
+        uint256 y = reserves[_targeti].mulDown(_initScale).powDown(a);
 
         return
-            (x + y)
-                .divDown(_lastInvariant.mulDown(_currentAdjInvariant.divUp(_lastInvariant)))
-                .sub(FixedPoint.ONE)
-                .mulDown(totalSupply())
-                .mulDown(_protocolSwapFeePercentage);
+            (x + y).divDown(timeOnlyInvariant).sub(FixedPoint.ONE).mulDown(totalSupply()).mulDown(
+                protocolSwapFeePercentage
+            );
     }
 
-    /// @notice Cache the given reserve amounts and use them to calculate the current invariant,
-    /// without taking the fee factors `g1` and `g2` into account
+    /// @notice Cache the given reserve amounts
     function _cacheInvariantAndReserves(uint256[] memory reserves) internal {
-        uint256 ttm = maturity > block.timestamp ? uint256(maturity - block.timestamp) * FixedPoint.ONE : 0;
-        uint256 a = ts.mulDown(ttm).complement();
-
         (uint8 _zeroi, uint8 _targeti) = getIndices();
-        uint256 _scale = AdapterLike(adapter).scale();
 
         uint256 reserveZero = reserves[_zeroi] + totalSupply();
-        // Calculate the backdated Target reserves in Underyling terms
-        uint256 reserveUnderlying = _scale > _initScale
-            ? (2 * reserves[_targeti] - reserves[_targeti] / (_scale - _initScale)).mulDown(_scale)
-            : reserves[_targeti].mulDown(_scale);
+        // Calculate the backdated Target reserve
+        uint256 reserveUnderlying = reserves[_targeti].mulDown(_initScale);
 
         // Caclulate the invariant and store everything
-        _lastInvariant = reserveZero.powDown(a) + reserveUnderlying.powDown(a);
         _lastToken0Reserve = _zeroi == 0 ? reserveZero : reserveUnderlying;
         _lastToken1Reserve = _zeroi == 0 ? reserveUnderlying : reserveZero;
     }
