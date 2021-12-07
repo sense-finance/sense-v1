@@ -399,6 +399,9 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 cBal
     ) internal returns (uint256) {
+        // Because there's some margin of error in the pricing functions here, smaller
+        // swaps will be unreliable. This assumes Zeros are 18 decimals.
+        require(cBal > 1e12, Errors.SwapTooSmall);
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
@@ -554,10 +557,14 @@ contract Periphery is Trust {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Swap Target for Zeros
-        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - 1e12);
+        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - 1e10);
 
         uint256 claimBalance = ERC20(claim).balanceOf(address(this));
-        require(zBal < claimBalance + 1e12 && zBal > claimBalance - 1e12, Errors.UnexpectedSwapAmount);
+        // Because Space utilizes power ofs liberally in its invariant, there is some error 
+        // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
+        // that matched our Claim balance. Therefore, we take the lowest of the two balances, as long
+        // as they're within a margin of acceptable error.
+        require(zBal < claimBalance + 1e10 && zBal > claimBalance - 1e10, Errors.UnexpectedSwapAmount);
 
         // Combine zeros and claim
         uint256 tBal = divider.combine(adapter, maturity, zBal < claimBalance ? zBal : claimBalance);

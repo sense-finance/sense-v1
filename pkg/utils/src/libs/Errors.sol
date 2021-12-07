@@ -19,6 +19,7 @@ library Errors {
     string constant FlashUntrustedBorrower = "FlashBorrower: Untrusted lender";
     string constant FlashUntrustedLoanInitiator = "FlashBorrower: Untrusted loan initiator";
     string constant UnexpectedSwapAmount = "Unexpected swap amount";
+    string constant SwapTooSmall = "Requested Stop amount is to low";
     string constant GuardCapReached = "Issuance cap reached";
     string constant IssuanceFeeCapExceeded = "Issuance fee cannot exceed 10%";
     string constant IssueOnSettled = "Cannot issue if Series is settled";
