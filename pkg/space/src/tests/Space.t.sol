@@ -48,9 +48,9 @@ contract Test is DSTest {
 contract SpaceTest is Test {
     using FixedPoint for uint256;
 
-    uint256 public constant INTIAL_USER_BALANCE = 100e18;
     VM internal constant vm = VM(HEVM_ADDRESS);
     IWETH internal constant weth = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    uint256 public constant INTIAL_USER_BALANCE = 100e18;
 
     Vault internal vault;
     Space internal space;
@@ -72,11 +72,11 @@ contract SpaceTest is Test {
     uint256 internal g2;
 
     function setUp() public {
-        // init normalized starting conditions
+        // Init normalized starting conditions
         vm.warp(0);
         vm.roll(0);
 
-        // create mocks
+        // Create mocks
         divider = new MockDividerSpace(18);
         adapter = new MockAdapterSpace(18);
 
@@ -98,9 +98,8 @@ contract SpaceTest is Test {
         zero = ERC20Mintable(_zero);
         target = ERC20Mintable(adapter.getTarget());
 
-        // mint this address Zeros and Target
-        // max approve the balancer vault to move this addresses tokens
-
+        // Mint this address Zeros and Target
+        // Max approve the balancer vault to move this addresses tokens
         zero.mint(address(this), INTIAL_USER_BALANCE);
         target.mint(address(this), INTIAL_USER_BALANCE);
         target.approve(address(vault), type(uint256).max);
@@ -122,8 +121,8 @@ contract SpaceTest is Test {
     function testJoinOnce() public {
         jim.join();
 
-        // for the pool's first join –--
-        // it moved Target out of jim's account
+        // For the pool's first join –--
+        // It moved Target out of jim's account
         assertEq(target.balanceOf(address(jim)), 99e18);
 
         // and it minted jim's account BPT tokens equal to the value of underlying
@@ -135,13 +134,13 @@ contract SpaceTest is Test {
     }
 
     function testJoinMultiNoSwaps() public {
-        // join once
+        // Join once
         jim.join();
-        // join again after no swaps
+        // Join again after no swaps
         jim.join();
 
-        // if the pool has been joined a second time and no swaps have occured –--
-        // it moved more Target out of jim's account
+        // If the pool has been joined a second time and no swaps have occured –--
+        // It moved more Target out of jim's account
         assertEq(target.balanceOf(address(jim)), 98e18);
 
         // and it minted jim's account more BPT tokens

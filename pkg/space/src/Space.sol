@@ -39,10 +39,10 @@ interface AdapterLike {
 
 */
 
-/// @notice A Yieldspace implementation extended such that it allows LPs to deposit
-/// [Zero, Yield-bearing asset], rather than [Zero, Underlying], while keeping the benefits of
-/// the yieldspace invariant (e.g. it can hold [Zero, cDAI], rather than [Zero, DAI], while
-/// still operating in "yield space" for the Zero – see the YieldSpace paper for more https://yield.is/YieldSpace.pdf)
+/// @notice A Yieldspace implementation extended such that LPs can deposit
+/// [Zero, Yield-bearing asset], rather than [Zero, Underlying], while keeping the benefits of the
+/// yieldspace invariant (e.g. it can hold [Zero, cDAI], rather than [Zero, DAI], while still operating
+/// in "yield space" for the zero-coupon side – see the YieldSpace paper for more https://yield.is/YieldSpace.pdf)
 /// @dev We use much more internal storage here than in other Sense contracts because it
 /// conforms to Balancer's own style, and we're using several Balancer functions that play nicer if we do.
 /// @dev Requires an external "Adapter" contract with a `scale()` function which returns the
@@ -52,7 +52,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /* ========== CONSTANTS ========== */
 
-    /// @notice Minimum BPT we can have in this pool after initialization
+    /// @notice Minimum BPT we can have for this pool after initialization
     uint256 public constant MINIMUM_BPT = 1e6;
 
     /* ========== PUBLIC IMMUTABLES ========== */
@@ -63,7 +63,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     /// @dev Maturity timestamp for associated Series
     uint48 public immutable maturity;
 
-    /// @notice Zero token index (only two tokens in this pool, so `targeti` is always just the complement)
+    /// @notice Zero token index (there are only two tokens in this pool, so `targeti` is always just the complement)
     uint8 public immutable zeroi;
 
     /// @notice Yieldspace config, passed in from the Space Factory
@@ -306,7 +306,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
                 request.amount = request.amount.mulDown(scale);
             }
 
-            // Determine the amountOut (with the input or output in present day Underlying terms, depending on the swap kind)
+            // Determine the amountOut
+            // (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountOut = _onSwap(zeroIn, true, request.amount, reservesTokenIn, reservesTokenOut);
             // If Zeros are being swapped in, convert the Underlying out back to Target using present day Scale
             if (zeroIn) {
@@ -322,7 +323,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
                 request.amount = request.amount.mulDown(scale);
             }
 
-            // Determine the amountIn (with the input or output in present day Underlying terms, depending on the swap kind)
+            // Determine the amountIn
+            // (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountIn = _onSwap(zeroIn, false, request.amount, reservesTokenIn, reservesTokenOut);
             // If Target is being swapped in, convert the amountIn back to Target using present day Scale
             if (!zeroIn) {
@@ -392,7 +394,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /// @notice Calculate the missing variable in the yield space equation given the direction (Zero in vs. out)
     /// @dev We round in favor of the LPs, meaning that traders get slightly worse prices than they would if we had full
-    /// precision. However, the differences are small (on the order of 1e-11) and should only matter for very small trades.
+    /// precision. However, the differences are small (on the order of 1e-11), and should only matter for very small trades.
     function _onSwap(
         bool zeroIn,
         bool givenIn,
@@ -449,8 +451,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         // Invariant growth from time only
         uint256 timeOnlyInvariant = _lastToken0Reserve.powDown(a) + _lastToken1Reserve.powDown(a);
-
-        uint256 scale = AdapterLike(adapter).scale();
         (uint8 _zeroi, uint8 _targeti) = getIndices();
 
         // `x` & `y` for the actual invariant, with growth from time and fees
