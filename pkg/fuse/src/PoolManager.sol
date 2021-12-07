@@ -93,7 +93,7 @@ contract PoolManager is Trust {
     /// @notice Series Pools: adapter -> maturity -> AMM pool
     mapping(address => mapping(uint256 => address)) public sPools;
 
-    event SetParams(bytes32 indexed what, AssetParams data);
+    event ParamsSet(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
     event TargetAdded(address target);
     event SeriesAdded(address zero, address lpToken);
@@ -284,6 +284,6 @@ contract PoolManager is Trust {
         else if (what == "LP_TOKEN_PARAMS") lpTokenParams = data;
         else if (what == "TARGET_PARAMS") targetParams = data;
         else revert("Invalid param");
-        emit SetParams(what, data);
+        emit ParamsSet(what, data);
     }
 }

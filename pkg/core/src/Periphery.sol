@@ -347,7 +347,7 @@ contract Periphery is Trust {
         });
 
         amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
-        emit Swap(msg.sender, poolId, assetIn, assetOut, amountIn, amountOut);
+        emit Swapped(msg.sender, poolId, assetIn, assetOut, amountIn, amountOut, msg.sig);
     }
 
     function _swapZerosForTarget(
@@ -637,12 +637,13 @@ contract Periphery is Trust {
     event FactoryChanged(address indexed adapter, bool isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterOnboarded(address adapter);
-    event Swap(
+    event Swapped(
         address indexed sender,
         bytes32 indexed poolId,
-        address indexed assetIn,
+        address assetIn,
         address assetOut,
         uint256 amountIn,
-        uint256 amountOut
+        uint256 amountOut,
+        bytes4 indexed sig
     );
 }
