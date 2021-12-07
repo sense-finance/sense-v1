@@ -399,10 +399,11 @@ contract Periphery is Trust {
         uint48 maturity,
         uint256 cBal
     ) internal returns (uint256) {
-        // Because there's some margin of error in the pricing functions here, smaller
-        // swaps will be unreliable. This assumes Zeros are 18 decimals.
-        require(cBal > 1e12, Errors.SwapTooSmall);
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+
+        // Because there's some margin of error in the pricing functions here, smaller
+        // swaps will be unreliable.
+        require(cBal * 10**(18 - ERC20(claim).decimals()) > 1e12, Errors.SwapTooSmall);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer claims into this contract if needed
@@ -556,15 +557,20 @@ contract Periphery is Trust {
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
+        // Because Space utilizes power ofs liberally in its invariant, there is some error
+        // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
+        // that matched our Claim balance.
+        uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
+
         // Swap Target for Zeros
-        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - 1e10);
+        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - acceptableError);
 
         uint256 claimBalance = ERC20(claim).balanceOf(address(this));
-        // Because Space utilizes power ofs liberally in its invariant, there is some error 
-        // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
-        // that matched our Claim balance. Therefore, we take the lowest of the two balances, as long
-        // as they're within a margin of acceptable error.
-        require(zBal < claimBalance + 1e10 && zBal > claimBalance - 1e10, Errors.UnexpectedSwapAmount);
+        // We take the lowest of the two balances, as long as they're within a margin of acceptable error.
+        require(
+            zBal < claimBalance + acceptableError && zBal > claimBalance - acceptableError,
+            Errors.UnexpectedSwapAmount
+        );
 
         // Combine zeros and claim
         uint256 tBal = divider.combine(adapter, maturity, zBal < claimBalance ? zBal : claimBalance);
