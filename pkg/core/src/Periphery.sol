@@ -478,7 +478,7 @@ contract Periphery is Trust {
         target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // (1) compute target, issue zeros & claims & add liquidity to space
-        (uint256 issued, uint256 lpShares) = _computeIssueAdd(adapter, maturity, tBal);
+        (uint256 issued, uint256 lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
 
         uint256 tAmount;
         if (mode == 0) {
@@ -493,15 +493,17 @@ contract Periphery is Trust {
         return (tAmount, issued, lpShares);
     }
 
-    function _computeIssueAdd(
+    /// @dev Calculates amount of zeros in target terms (see description on `_computeTarget`) then issues
+    /// Zeros and Claims with the calculated amount and finally adds liquidity to space with the zeros issued
+    /// and the diff between the target initially passed and the calculated amount
+    function _computeIssueAddLiq(
         address adapter,
         uint48 maturity,
         uint256 tBal
     ) internal returns (uint256, uint256) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
-        // Based on zeros:target ratio from current pool reserves and tBal passed
-        // calculate amount of tBal needed so as to issue Zeros that would keep the ratio
+        // Compute target
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
         (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
         uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
@@ -518,6 +520,8 @@ contract Periphery is Trust {
         return (issued, lpShares);
     }
 
+    /// @dev Based on zeros:target ratio from current pool reserves and tBal passed
+    /// calculates amount of tBal needed so as to issue Zeros that would keep the ratio
     function _computeTarget(
         address adapter,
         uint256 zeroiBal,
