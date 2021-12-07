@@ -8,10 +8,16 @@ import { Authorizer } from "@balancer-labs/v2-vault/contracts/Authorizer.sol";
 import { ERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/ERC20.sol";
 
 // Internal references
-import { DividerLike } from "../../Space.sol";
+import { DividerLike } from "../../SpaceFactory.sol";
 
 contract ERC20Mintable is ERC20 {
-    constructor(string memory name, string memory symbol) public ERC20(name, symbol) {}
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) public ERC20(name, symbol) {
+        _setupDecimals(decimals);
+    }
 
     function mint(address user, uint256 amount) public virtual {
         _mint(user, amount);
@@ -20,20 +26,26 @@ contract ERC20Mintable is ERC20 {
 
 // named Space to avoid name collision
 contract MockAdapterSpace {
+    uint256 internal _scale;
     address public target;
     uint256 public start;
     string public symbol = "ADP";
     string public name = "Adapter";
 
-    constructor() public {
-        ERC20Mintable _target = new ERC20Mintable("underlying", "underlying");
+    constructor(uint8 targetDecimals) public {
+        ERC20Mintable _target = new ERC20Mintable("underlying", "underlying", targetDecimals);
         target = address(_target);
         start = block.timestamp;
     }
 
     function scale() external returns (uint256) {
+        if (_scale != 0) return _scale;
         // grow by 0.01 every second after initialization
         return 1e18 + (block.timestamp - start) * 1e12;
+    }
+
+    function setScale(uint256 scale_) external returns (uint256) {
+        _scale = scale_;
     }
 
     function getTarget() external view returns (address) {
@@ -46,9 +58,9 @@ contract MockDividerSpace is DividerLike {
     address public zero;
     address public claim;
 
-    constructor() public {
-        ERC20Mintable _zero = new ERC20Mintable("zero", "zero");
-        ERC20Mintable _claim = new ERC20Mintable("claim", "claim");
+    constructor(uint8 zeroClaimDecimals) public {
+        ERC20Mintable _zero = new ERC20Mintable("zero", "zero", zeroClaimDecimals);
+        ERC20Mintable _claim = new ERC20Mintable("claim", "claim", zeroClaimDecimals);
 
         zero = address(_zero);
         claim = address(_claim);
