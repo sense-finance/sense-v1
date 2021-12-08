@@ -118,7 +118,7 @@ abstract contract BaseAdapter is Initializable {
     }
 
     /// @notice Scale getter to be overriden by child contracts
-    /// @dev This function _must_ return an 18 decimal number, representing the current exchange rate
+    /// @dev This function _must_ return an 18 decimal number representing the current exchange rate
     /// between the Target and the Underlying.
     function _scale() internal virtual returns (uint256);
 
@@ -127,6 +127,8 @@ abstract contract BaseAdapter is Initializable {
 
     /// @notice Tilt value getter that may be overriden by child contracts
     /// @dev Returns `0` by default, which means no principal is set aside for Claims
+    /// @dev This function _must_ return an 18 decimal number representing the percentage of the total
+    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
     function tilt() external virtual returns (uint128) {
         return 0;
     }
