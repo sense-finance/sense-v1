@@ -15,4 +15,4 @@ import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 
-import "./versioning.sol";
+import "./Versioning.sol";
