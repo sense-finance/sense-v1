@@ -99,7 +99,8 @@ The Adapter holds the Target before a series' maturity and contains logic to han
 8. `maxm` - max maturity
 9. `mode` - maturity date type (0 for monthly, 1 for weekly)
 
-To create an Adapter implementation without airdrops, the contract needs to inherit from `BaseAdapter.sol` and override `_scale()`, `underlying()`, `wrapUnderlying()`, `unwrapTarget()`, `getUnderlyingPrice()`, and `notify()`. 
+To create an Adapter implementation without airdrops, the contract needs to inherit from `BaseAdapter.sol` and override `_scale()`, `underlying()`, `wrapUnderlying()`, `unwrapTarget()`, `getUnderlyingPrice()`, and `notify()`. Note that `_scale()` must return an 18 decimal exchange rate, otherwise other compoments of the system might not behave as intended
+when interfacing with the Adapter.
 
 There are two types of Adapters:
 1. Verified Adapters - these are verified by the Sense team and can be permissionessly deployed by Adapter Factories

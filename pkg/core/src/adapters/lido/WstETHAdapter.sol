@@ -67,7 +67,7 @@ contract WstETHAdapter is BaseAdapter {
         super.initialize(_divider, _adapterParams);
     }
 
-    /// @return scale in wei (18 decimals)
+    /// @return Eth per WSTEth (already in 18 decimals)
     function _scale() internal virtual override returns (uint256) {
         WstETHInterface t = WstETHInterface(adapterParams.target);
         return t.stEthPerToken();

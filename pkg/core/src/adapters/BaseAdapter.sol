@@ -117,7 +117,9 @@ abstract contract BaseAdapter is Initializable {
         return _value;
     }
 
-    /// @notice Scale getter that must be overriden by child contracts
+    /// @notice Scale getter to be overriden by child contracts
+    /// @dev This function _must_ return an 18 decimal number, representing the current exchange rate
+    /// between Target and the Underlying.
     function _scale() internal virtual returns (uint256);
 
     /// @notice Underlying token address getter that must be overriden by child contracts
