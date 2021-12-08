@@ -198,7 +198,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Zero(series[adapter][maturity].zero).mint(msg.sender, uBal);
         Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
 
-        emit Issued(adapter, maturity, uBal, msg.sender);
+        emit Issued(adapter, maturity, tBal, uBal, msg.sender);
     }
 
     /// @notice Reconstitute Target by burning Zeros and Claims
@@ -627,7 +627,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address indexed target
     );
     /// -***- middle
-    event Issued(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Issued(address indexed adapter, uint256 indexed maturity, uint256 balanceIn, uint256 balanceOut, address indexed sender);
     event Combined(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
     event Collected(address indexed adapter, uint256 indexed maturity, uint256 collected);
     /// ----* end
