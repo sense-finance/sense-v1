@@ -199,7 +199,7 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testMainnet18Decimals() public {
-        // Scale is in 18 decimals when the Underlying has 18 decimals ----
+        // Scale is in 18 decimals when the Underlying has 18 decimals (WETH) ----
 
         // Mint this address some cETH & give the adapter approvals (note all cTokens have 8 decimals)
         giveTokens(Assets.cETH, ONE_CTOKEN, hevm);
@@ -212,15 +212,14 @@ contract CAdapters is CAdapterTestHelper {
         // Sanity check
         assertEq(ERC20(Assets.WETH).decimals(), 18);
 
-        // Scale is still in 18 decimals when the Underlying 
-        // has a non-standard number of decimals (6 in this case) ----
+        // Scale is in 18 decimals when the Underlying has a non-standard number of decimals (6 for USDC) ----
 
         giveTokens(Assets.cUSDC, ONE_CTOKEN, hevm);
         ERC20(Assets.cUSDC).approve(address(cUsdcAdapter), ONE_CTOKEN);
 
         uint256 usdcOut = cUsdcAdapter.unwrapTarget(ONE_CTOKEN);
-        // USDC is in 6 decimals, so the scale should be equal to the USDC
-        // out scaled to 18 decimals (after we strip the extra precision off of the scale value)
+        // USDC is in 6 decimals, so the scale should be equal to the USDC out
+        // scaled up to 18 decimals (after we strip the extra precision off)
         assertEq(cUsdcAdapter.scale() / 1e12 * 1e12, usdcOut * 10**(18 - 6));
         // Sanity check
         assertEq(ERC20(Assets.USDC).decimals(), 6);

@@ -86,7 +86,7 @@ contract CAdapter is CropAdapter {
         // From the Compound docs:
         // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
         //
-        // And the normal equation to norm an asset to 18 decimals is:
+        // The equation to norm an asset to 18 decimals is:
         // `num * 10**(18 - decimals)`
         //
         // So, when we try to norm exRate to 18 decimals, we get the following:
