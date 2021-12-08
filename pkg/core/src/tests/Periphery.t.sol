@@ -153,7 +153,7 @@ contract PeripheryTest is TestHelper {
 
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, tBase);
-        uint256 claimsAmount = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        uint256 claimsAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         bob.doSwapTargetForClaims(address(adapter), maturity, tBal);
 
         assertEq(cBalBefore + claimsAmount, ERC20(claim).balanceOf(address(bob)));
@@ -168,7 +168,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBase = 10**target.decimals();
 
         // unwrap target into underlying
-        uint256 uBal = tBal.fmul(lscale, 10**target.decimals());
+        uint256 uBal = tBal.fmul(lscale, FixedMath.WAD);
 
         // add liquidity to mockBalancerVault
         target.mint(address(adapter), 100000e18);
@@ -179,7 +179,7 @@ contract PeripheryTest is TestHelper {
 
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, tBase);
-        uint256 claimsAmount = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        uint256 claimsAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         bob.doSwapUnderlyingForClaims(address(adapter), maturity, uBal);
 
         assertEq(cBalBefore + claimsAmount, ERC20(claim).balanceOf(address(bob)));
@@ -326,7 +326,7 @@ contract PeripheryTest is TestHelper {
             uint256 zSwapped = TARGET_TO_BORROW.fdiv(balancerVault.EXCHANGE_RATE(), tBase);
 
             // combine zeros and claim
-            uint256 tCombined = zSwapped.fdiv(lscale, 10**ERC20(claim).decimals());
+            uint256 tCombined = zSwapped.fdiv(lscale, FixedMath.WAD);
             remainingClaimsInTarget = tCombined - TARGET_TO_BORROW;
         }
 
@@ -359,11 +359,11 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 scale = 1e18;
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], tBase),
+                balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], FixedMath.WAD),
                 tBase
             ); // ABDK formula
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
-            toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
+            toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
         }
 
         bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
@@ -392,10 +392,10 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
-            uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
+            uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
 
             // prepare minAmountsOut for removing liquidity
-            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale, tBase); // underlying amount
+            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale, FixedMath.WAD); // underlying amount
             minAmountsOut[1] = toBeIssued; // zeros to be issued
         }
 
@@ -407,7 +407,7 @@ contract PeripheryTest is TestHelper {
         {
             // minAmountsOut to target
             uint256 uBal = minAmountsOut[1].fmul(balancerVault.EXCHANGE_RATE(), 10**target.decimals()); // zero to underlying
-            tBal = (minAmountsOut[0] + uBal).fdiv(lscale, tBase); // (zeros (in underlying) + underlying) to target
+            tBal = (minAmountsOut[0] + uBal).fdiv(lscale, FixedMath.WAD); // (zeros (in underlying) + underlying) to target
         }
 
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -438,10 +438,10 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
-            uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
+            uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
 
             // prepare minAmountsOut for removing liquidity
-            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale, tBase); // underlying amount
+            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale, FixedMath.WAD); // underlying amount
             minAmountsOut[1] = toBeIssued; // zeros to be issued
         }
 
@@ -459,7 +459,7 @@ contract PeripheryTest is TestHelper {
             (, , , , , , uint256 mscale, , uint256 tilt) = divider.series(address(adapter), maturity);
             // minAmountsOut to target
             tBal = (minAmountsOut[1] * (FixedMath.WAD - tilt)) / mscale; // redeem zeros (target)
-            tBal += minAmountsOut[0].fdiv(lscale, tBase); // zeros redeemed (in target) + underlying to target
+            tBal += minAmountsOut[0].fdiv(lscale, FixedMath.WAD); // zeros redeemed (in target) + underlying to target
         }
 
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));

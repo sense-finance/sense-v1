@@ -17,18 +17,13 @@ contract MockAdapter is CropAdapter {
 
     function _scale() internal virtual override returns (uint256 _value) {
         if (value > 0) return value;
-        uint8 tDecimals = ERC20(adapterParams.target).decimals();
         if (INITIAL_VALUE == 0) {
-            if (tDecimals != 18) {
-                INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18 * (10**(tDecimals - 18));
-            } else {
-                INITIAL_VALUE = 1e18;
-            }
+            INITIAL_VALUE = 1e18;
         }
-        uint256 gps = adapterParams.delta.fmul(99 * (10**(tDecimals - 2)), 10**tDecimals); // delta - 1%;
+        uint256 gps = adapterParams.delta.fmul(99 * (10**(18 - 2)), FixedMath.WAD); // delta - 1%;
         uint256 timeDiff = block.timestamp - _lscale.timestamp;
         _value = _lscale.value > 0
-            ? (gps * timeDiff).fmul(_lscale.value, 10**tDecimals) + _lscale.value
+            ? (gps * timeDiff).fmul(_lscale.value, FixedMath.WAD) + _lscale.value
             : INITIAL_VALUE;
     }
 
@@ -40,8 +35,7 @@ contract MockAdapter is CropAdapter {
         MockTarget target = MockTarget(adapterParams.target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
-        uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = uBal.fdivUp(_lscale.value, tBase);
+        uint256 mintAmount = uBal.fdivUp(_lscale.value, FixedMath.WAD);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
@@ -49,8 +43,7 @@ contract MockAdapter is CropAdapter {
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
         MockTarget target = MockTarget(adapterParams.target);
         target.transferFrom(msg.sender, address(this), tBal); // pull target
-        uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = tBal.fmul(_lscale.value, tBase);
+        uint256 mintAmount = tBal.fmul(_lscale.value, FixedMath.WAD);
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
         return mintAmount;
     }
