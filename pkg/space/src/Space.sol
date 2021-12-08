@@ -372,7 +372,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Determine which amountIn is our limiting factor
             if (pctTarget < pctZeros) {
                 // If it's Target, pull the entire requested Target amountIn,
-                // and pull Zeros in at the percetage of the requested Target
+                // and pull Zeros in at the percetage of the requested Target / Target reserves
                 uint256 bptToMint = totalSupply().mulDown(pctTarget);
 
                 amountsIn[_zeroi] = zeroReserves.mulDown(pctTarget);
@@ -381,7 +381,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
                 return (bptToMint, amountsIn);
             } else {
                 // If it's Zeros, pull the entire requested Zero amountIn,
-                // and pull Target in at the percetage of the requested Zeros
+                // and pull Target in at the percetage of the requested Zeros / Zero reserves
                 uint256 bptToMint = totalSupply().mulDown(pctZeros);
 
                 amountsIn[_zeroi] = reqZerosIn;
@@ -406,7 +406,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // yPre = token out reserves pre swap
 
         // Seconds until maturity, in 18 decimals
-        // After maturity, this pool becomes a pure constant sum AMM
+        // After maturity, this pool becomes a constant sum AMM
         uint256 ttm = maturity > block.timestamp ? uint256(maturity - block.timestamp) * FixedPoint.ONE : 0;
 
         // Time shifted partial `t` from the yieldspace paper (`ttm` adjusted by some factor `ts`)
@@ -417,7 +417,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         // Pow up for `x1` & `y1` and down for `xOrY2` causes the pow induced error for `xOrYPost`
         // to tend towards higher values rather than lower –
-        // effectively adding a little bump up for ammount in, and down for amountOut
+        // effectively we're adding a little bump up for ammountIn, and down for amountOut
 
         // x1 = xPre ^ a
         // y1 = yPre ^ a
@@ -443,7 +443,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /* ========== PROTOCOL FEE HELPERS ========== */
 
-    /// @notice Determine the growth in the yieldspace invariant due to a swap fees only
+    /// @notice Determine the growth in the invariant due to swap fees only
     /// @dev This can't be a view function b/c `Adapter.scale` is not a view function
     function _bptFeeDue(uint256[] memory reserves, uint256 protocolSwapFeePercentage) internal returns (uint256) {
         uint256 ttm = maturity > block.timestamp ? uint256(maturity - block.timestamp) * FixedPoint.ONE : 0;
