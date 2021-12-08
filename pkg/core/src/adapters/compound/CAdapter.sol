@@ -66,10 +66,22 @@ contract CAdapter is CropAdapter {
         super.initialize(_divider, _adapterParams);
     }
 
+    /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function _scale() internal override returns (uint256) {
-        CTokenInterface t = CTokenInterface(adapterParams.target);
-        uint256 decimals = CTokenInterface(t.underlying()).decimals();
-        return t.exchangeRateCurrent().fdiv(10**(10 + decimals), 10**decimals);
+        uint256 uDecimals = CTokenInterface(underlying()).decimals();
+        uint256 exRate = CTokenInterface(adapterParams.target).exchangeRateCurrent();
+        // From the Compound docs:
+        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
+        //
+        // And the normal equation to norm an asset to 18 decimals is:
+        // `num * 10**(18 - decimals)`
+        //
+        // So, when we try to norm exRate to 18 decimals, we get the following:
+        // `exRate * 10**(18 - exRateDecimals)` 
+        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))` 
+        // -> `exRate * 10**(8 - uDecimals)`
+        // -> `exRate / 10**(uDecimals - 8)`
+        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
     function _claimReward() internal virtual override {
