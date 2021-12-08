@@ -14,7 +14,7 @@ import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
 // Space & Balanacer V2 mock
-import { MockSpaceFactory, MockBalancerVault } from "./mocks/Space.sol";
+import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
