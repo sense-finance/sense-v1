@@ -16,6 +16,7 @@ interface IPeriphery {
         address initiator,
         address adapter,
         uint48 maturity,
+        uint256 cBalIn,
         uint256 amount
     ) external returns (bytes32, uint256);
 }
@@ -73,17 +74,19 @@ abstract contract BaseAdapter is Initializable {
     /// `onFlashLoan(address user, address adapter, uint48 maturity, uint256 amount)` interface.
     /// @param adapter adapter address
     /// @param maturity maturity
+    /// @param cBalIn Claim amount the user has sent in
     /// @param amount The amount of target lent.
     function flashLoan(
         bytes calldata data,
         address receiver,
         address adapter,
         uint48 maturity,
+        uint256 cBalIn,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
         ERC20 target = ERC20(adapterParams.target);
         require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
-        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(data, msg.sender, adapter, maturity, amount);
+        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(data, msg.sender, adapter, maturity, cBalIn, amount);
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
         require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);

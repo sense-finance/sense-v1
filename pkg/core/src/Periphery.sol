@@ -16,6 +16,8 @@ import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "./tokens/Token.sol";
 
+import { DSTest } from "./tests/test-helpers/DSTest.sol";
+
 interface SpaceFactoryLike {
     function create(address, uint48) external returns (address);
 
@@ -23,7 +25,7 @@ interface SpaceFactoryLike {
 }
 
 /// @title Periphery
-contract Periphery is Trust {
+contract Periphery is Trust, DSTest {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
     using Errors for string;
@@ -454,8 +456,12 @@ contract Periphery is Trust {
             balances[zeroi]
         );
 
+        emit log_named_uint("cBalIn ", cBal);
+        emit log_named_uint("targetToBorrow ", targetToBorrow);
+
+
         // Flash borrow target (following actions in `onFlashLoan`)
-        return _flashBorrow("0x", adapter, maturity, targetToBorrow);
+        return _flashBorrow("0x", adapter, maturity, cBal, targetToBorrow);
     }
 
     function _addLiquidity(
@@ -564,18 +570,20 @@ contract Periphery is Trust {
     /// @notice Initiate a flash loan
     /// @param adapter adapter
     /// @param maturity maturity
+    /// @param cBalIn Claim amount the user has sent in
     /// @param amount target amount to borrow
     /// @return claims issued with flashloan
     function _flashBorrow(
         bytes memory data,
         address adapter,
         uint48 maturity,
+        uint256 cBalIn,
         uint256 amount
     ) internal returns (uint256) {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint256 _allowance = target.allowance(address(this), address(adapter));
         if (_allowance < amount) target.safeApprove(address(adapter), type(uint256).max);
-        (bool result, uint256 value) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, amount);
+        (bool result, uint256 value) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, cBalIn, amount);
         require(result == true);
         return value;
     }
@@ -586,6 +594,7 @@ contract Periphery is Trust {
         address initiator,
         address adapter,
         uint48 maturity,
+        uint256 cBalIn,
         uint256 amount
     ) external returns (bytes32, uint256) {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
@@ -599,17 +608,21 @@ contract Periphery is Trust {
         uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
 
         // Swap Target for Zeros
-        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), amount - acceptableError);
+        uint256 zBal = _swap(Adapter(adapter).getTarget(), zero, amount, pool.getPoolId(), cBalIn - acceptableError);
 
         uint256 claimBalance = ERC20(claim).balanceOf(address(this));
+        emit log_named_uint("claimBalance", claimBalance);
+        emit log_named_uint("zBal", zBal);
+        emit log_named_uint("amount", amount);
+        emit log_named_uint("cBalIn", cBalIn);
         // We take the lowest of the two balances, as long as they're within a margin of acceptable error.
-        require(
-            zBal < claimBalance + acceptableError && zBal > claimBalance - acceptableError,
-            Errors.UnexpectedSwapAmount
-        );
+        // require(
+        //     zBal < cBalIn + acceptableError && zBal > cBalIn - acceptableError,
+        //     Errors.UnexpectedSwapAmount
+        // );
 
         // Combine zeros and claim
-        uint256 tBal = divider.combine(adapter, maturity, zBal < claimBalance ? zBal : claimBalance);
+        uint256 tBal = divider.combine(adapter, maturity, zBal < cBalIn ? zBal : cBalIn);
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
     }
 

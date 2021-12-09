@@ -16,6 +16,8 @@ import { MockToken } from "./MockToken.sol";
 
 contract MockSpacePool is MockToken {
     using FixedMath for uint256;
+    uint256 public constant EXCHANGE_RATE = 0.95e18;
+
     MockBalancerVault public vault;
     address public zero;
     address public target;
@@ -43,7 +45,7 @@ contract MockSpacePool is MockToken {
         uint256, /* _reservesInAmount */
         uint256 /* _reservesOutAmount */
     ) external view returns (uint256) {
-        return 10e18;
+        return EXCHANGE_RATE;
     }
 
     function getIndices() public view returns (uint8 zeroi, uint8 targeti) {
