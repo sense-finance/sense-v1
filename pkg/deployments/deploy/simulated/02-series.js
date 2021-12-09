@@ -92,6 +92,8 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
 
       await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       console.log("swapping target for zeros");
       await periphery
@@ -110,15 +112,18 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
         .then(tx => tx.wait());
 
       console.log("swapping claims for target");
-      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await periphery
         .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
         .then(tx => tx.wait());
 
-      console.log("adding liquidity from target");
-      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      console.log("adding liquidity via target");
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
+        .then(t => t.wait());
+
+      console.log("removing liquidity to target");
+      await periphery
+        .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther(".01"), [0, 0], 0)
         .then(t => t.wait());
     }
   }
