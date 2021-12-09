@@ -651,7 +651,7 @@ contract Periphery is Trust {
         BalancerVault.ExitPoolRequest memory request = BalancerVault.ExitPoolRequest({
             assets: assets,
             minAmountsOut: minAmountsOut,
-            userData: abi.encode(1, lpBal),
+            userData: abi.encode(lpBal),
             toInternalBalance: false
         });
         balancerVault.exitPool(poolId, address(this), payable(address(this)), request);
