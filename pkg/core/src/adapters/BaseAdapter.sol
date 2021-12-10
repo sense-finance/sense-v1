@@ -86,7 +86,14 @@ abstract contract BaseAdapter is Initializable {
     ) external onlyPeriphery returns (bool, uint256) {
         ERC20 target = ERC20(adapterParams.target);
         require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
-        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(data, msg.sender, adapter, maturity, cBalIn, amount);
+        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
+            data,
+            msg.sender,
+            adapter,
+            maturity,
+            cBalIn,
+            amount
+        );
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
         require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);

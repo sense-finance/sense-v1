@@ -196,13 +196,26 @@ contract TestHelper is DSTest {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
-    function assertClose(uint256 actual, uint256 expected) public {
-        if (actual == expected) return DSTest.assertEq(actual, expected);
+    function assertClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) public {
+        uint256 diff = a < b ? b - a : a - b;
+        if (diff > _tolerance) {
+            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
+            emit log_named_uint("  Expected", b);
+            emit log_named_uint("  Tolerance", _tolerance);
+            emit log_named_uint("    Actual", a);
+            fail();
+        }
+    }
+
+    function assertClose(uint256 a, uint256 b) public {
         uint256 variance = 100;
-        if (expected < variance) variance = 10;
-        if (expected < variance) variance = 1;
-        DSTest.assertTrue(actual >= (expected - variance));
-        DSTest.assertTrue(actual <= (expected + variance));
+        if (b < variance) variance = 10;
+        if (b < variance) variance = 1;
+        assertClose(a, b, variance);
     }
 
     function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
