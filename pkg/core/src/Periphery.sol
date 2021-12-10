@@ -484,7 +484,6 @@ contract Periphery is Trust {
         if (mode == 0) {
             // (2) Sell claims
             tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-
             // (3) Send remaining Target back to the User
             target.safeTransfer(msg.sender, tAmount);
         } else {
