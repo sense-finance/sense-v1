@@ -123,7 +123,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
 
       console.log("removing liquidity to target");
       await periphery
-        .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther(".01"), [0, 0], 0)
+        .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), [0, 0], 0)
         .then(t => t.wait());
     }
   }

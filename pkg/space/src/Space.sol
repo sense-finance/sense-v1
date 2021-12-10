@@ -60,7 +60,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     /// @notice Adapter address for the associated Series
     address public immutable adapter;
 
-    /// @dev Maturity timestamp for associated Series
+    /// @notice Maturity timestamp for associated Series
     uint48 public immutable maturity;
 
     /// @notice Zero token index (there are only two tokens in this pool, so `targeti` is always just the complement)
@@ -192,7 +192,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // this starts this pool off as synthetic Underlying only, as the yieldspace invariant expects
             delete reqAmountsIn[_zeroi];
 
-            // Cache new invariant and reserves, post join
+            // Cache new reserves, post join
             _cacheReserves(reserves);
 
             return (reqAmountsIn, new uint256[](2));
@@ -214,10 +214,10 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             reserves[0] += amountsIn[0];
             reserves[1] += amountsIn[1];
 
-            // Cache new invariant and reserves, post join
+            // Cache new reserves, post join
             _cacheReserves(reserves);
 
-            // Inspired by PR #990 in balancer-v2-monorepo, we always return zero dueProtocolFeeAmounts
+            // Inspired by PR #990 in the balancer v2 monorepo, we always return zero dueProtocolFeeAmounts
             // to the Vault, and pay protocol fees by minting BPT directly to the protocolFeeCollector instead
             return (amountsIn, new uint256[](2));
         }
@@ -259,6 +259,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // `sender` pays for the liquidity
         _burnPoolTokens(sender, bptAmountIn);
 
+        // TODO gas efficiency
         // Update reserves for caching
         reserves[0] -= amountsOut[0];
         reserves[1] -= amountsOut[1];
@@ -277,9 +278,10 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         bool token0In = request.tokenIn == _token0;
         bool zeroIn = token0In ? zeroi == 0 : zeroi == 1;
 
-        // Upscale reserves to 18 decimals
         uint256 scalingFactorTokenIn = _scalingFactor(zeroIn);
         uint256 scalingFactorTokenOut = _scalingFactor(!zeroIn);
+
+        // Upscale reserves to 18 decimals
         reservesTokenIn = _upscale(reservesTokenIn, scalingFactorTokenIn);
         reservesTokenOut = _upscale(reservesTokenOut, scalingFactorTokenOut);
 
@@ -307,7 +309,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             }
 
             // Determine the amountOut
-            // (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountOut = _onSwap(zeroIn, true, request.amount, reservesTokenIn, reservesTokenOut);
             // If Zeros are being swapped in, convert the Underlying out back to Target using present day Scale
             if (zeroIn) {
@@ -324,7 +325,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             }
 
             // Determine the amountIn
-            // (with the input or output in present day Underlying terms, depending on the swap kind)
             uint256 amountIn = _onSwap(zeroIn, false, request.amount, reservesTokenIn, reservesTokenOut);
             // If Target is being swapped in, convert the amountIn back to Target using present day Scale
             if (!zeroIn) {
@@ -354,6 +354,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         if (zeroReserves == 0) {
             uint256 reqTargetIn = reqAmountsIn[_targeti];
             // Mint LP shares according to the relative amount of Target being offered
+            // TODO
             uint256 bptToMint = (totalSupply() * reqTargetIn) / targetReserves;
 
             // Pull the entire offered Target
@@ -419,15 +420,11 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // to tend towards higher values rather than lower –
         // effectively we're adding a little bump up for ammountIn, and down for amountOut
 
-        // x1 = xPre ^ a
-        // y1 = yPre ^ a
+        // x1 = xPre ^ a; y1 = yPre ^ a
         uint256 x1 = reservesTokenIn.powUp(a);
         uint256 y1 = reservesTokenOut.powUp(a);
 
-        // y2 = yPost ^ a
-        // x2 = xPost ^ a
-        // If we're given an amountIn, add it to the reserves in,
-        // if we're given an amountOut, subtract it from the reserves out
+        // y2 = (yPre - amountOut) ^ a; x2 = (xPre + amountIn) ^ a
         uint256 xOrY2 = (givenIn ? reservesTokenIn + amountDelta : reservesTokenOut - amountDelta).powDown(a);
 
         // x1 + y1 = xOrY2 + xOrYPost ^ a
@@ -436,8 +433,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 xOrYPost = (x1 + y1 - xOrY2).powUp(FixedPoint.ONE.divDown(a));
         require(!givenIn || reservesTokenOut > xOrYPost, "Swap too small");
 
-        // amountOut given in = yPre - yPost
-        // amountIn given out = xPost - xPre
+        // amountOut = yPre - yPost; amountIn = xPost - xPre
         return givenIn ? reservesTokenOut.sub(xOrYPost) : xOrYPost.sub(reservesTokenIn);
     }
 
@@ -472,6 +468,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 reserveUnderlying = reserves[_targeti].mulDown(_initScale);
 
         // Caclulate the invariant and store everything
+        // TODO
         _lastToken0Reserve = _zeroi == 0 ? reserveZero : reserveUnderlying;
         _lastToken1Reserve = _zeroi == 0 ? reserveUnderlying : reserveZero;
     }
