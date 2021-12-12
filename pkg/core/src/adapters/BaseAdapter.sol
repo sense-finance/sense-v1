@@ -175,8 +175,8 @@ abstract contract BaseAdapter is Initializable {
         return (adapterParams.minm, adapterParams.maxm);
     }
 
-    function getStakeSize() external view returns (uint256) {
-        return adapterParams.stakeSize;
+    function getStakeData() external view returns (address, uint256) {
+        return (adapterParams.stake, adapterParams.stakeSize);
     }
 
     function getMode() external view returns (uint8) {

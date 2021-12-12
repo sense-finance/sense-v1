@@ -89,7 +89,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);
 
         // Transfer stake asset stake from caller to adapter
-        (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
+        address target = Adapter(adapter).getTarget();
+        (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
         ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
@@ -132,7 +133,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
+
+        address target = Adapter(adapter).getTarget();
+        (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
@@ -506,7 +509,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             lscales[adapter][maturity][_usrs[i]] = _lscales[i];
         }
 
-        (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
+        address target = Adapter(adapter).getTarget();
+        (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
 
         // Determine where the stake should go depending on where we are relative to the maturity date
         address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
