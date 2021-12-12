@@ -125,7 +125,7 @@ contract Adapters is TestHelper {
             localAdapter.setScale(startingScale);
             // Set starting scale and store it as lscale
             localAdapter.scale();
-            (uint256 ltimestamp, uint256 lvalue) = localAdapter._lscale();
+            (uint256 ltimestamp, uint256 lvalue) = localAdapter.lscale();
             assertEq(lvalue, startingScale);
 
             hevm.warp(1 days);
@@ -149,7 +149,7 @@ contract Adapters is TestHelper {
 
             // add 1 more day
             hevm.warp(2 days);
-            (ltimestamp, lvalue) = localAdapter._lscale();
+            (ltimestamp, lvalue) = localAdapter.lscale();
             timeDiff = block.timestamp - ltimestamp;
             maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
             localAdapter.setScale(maxScale);
@@ -184,7 +184,7 @@ contract Adapters is TestHelper {
             localAdapter.setScale(startingScale);
             // Set starting scale and store it as lscale
             localAdapter.scale();
-            (uint256 ltimestamp, uint256 lvalue) = localAdapter._lscale();
+            (uint256 ltimestamp, uint256 lvalue) = localAdapter.lscale();
             assertEq(lvalue, startingScale);
 
             hevm.warp(1 days);

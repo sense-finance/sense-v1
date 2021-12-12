@@ -26,9 +26,9 @@ contract MockAdapter is CropAdapter {
             }
         }
         uint256 gps = adapterParams.delta.fmul(99 * (10**(tDecimals - 2)), 10**tDecimals); // delta - 1%;
-        uint256 timeDiff = block.timestamp - _lscale.timestamp;
-        _value = _lscale.value > 0
-            ? (gps * timeDiff).fmul(_lscale.value, 10**tDecimals) + _lscale.value
+        uint256 timeDiff = block.timestamp - lscale.timestamp;
+        _value = lscale.value > 0
+            ? (gps * timeDiff).fmul(lscale.value, 10**tDecimals) + lscale.value
             : INITIAL_VALUE;
     }
 
@@ -41,7 +41,7 @@ contract MockAdapter is CropAdapter {
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
         uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = uBal.fdivUp(_lscale.value, tBase);
+        uint256 mintAmount = uBal.fdivUp(lscale.value, tBase);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
@@ -50,7 +50,7 @@ contract MockAdapter is CropAdapter {
         MockTarget target = MockTarget(adapterParams.target);
         target.transferFrom(msg.sender, address(this), tBal); // pull target
         uint256 tBase = 10**target.decimals();
-        uint256 mintAmount = tBal.fmul(_lscale.value, tBase);
+        uint256 mintAmount = tBal.fmul(lscale.value, tBase);
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
         return mintAmount;
     }
