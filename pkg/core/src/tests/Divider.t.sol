@@ -704,12 +704,72 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore);
     }
 
-    //    function testCanRedeemZeroBeforeMaturityIfSettled() public {
-    //        revert("IMPLEMENT");
-    //    }
+    function testRedeemZeroPositiveTiltNegativeScale() public {
+        // Reserve 10% of principal for Claims
+        adapter.setTilt(0.1e18);
+        // Sanity check
+        assertEq(adapter.tilt(), 0.1e18);
+
+        adapter.setScale(1e18);
+
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+
+        uint256 tBal = 100e18;
+        bob.doIssue(address(adapter), maturity, tBal);
+
+        uint256 tBalanceBefore = ERC20(target).balanceOf(address(bob));
+        uint256 zeroBalanceBefore = ERC20(zero).balanceOf(address(bob));
+        hevm.warp(maturity);
+        // Set scale to 90% of its initial value
+        adapter.setScale(0.9e18);
+        alice.doSettleSeries(address(adapter), maturity);
+        uint256 redeemed = bob.doRedeemZero(address(adapter), maturity, ERC20(zero).balanceOf(address(bob)));
+
+        // zeroPrincipalInTarget [in Target]:
+        // zBal [in underlying] / current scale * pct principal reserved for Zeros
+        uint256 zeroPrincipalInTarget = zeroBalanceBefore.fdiv(adapter.scale(), 1e18).fmul(0.9e18, 1e18);
+        // Even though the scale has gone down, Zeros should redeem for 100% of their principal
+        assertEq(redeemed, zeroPrincipalInTarget);
+
+        uint256 tBalanceAfter = ERC20(target).balanceOf(address(bob));
+        // Redeemed amount should match the amount of Target bob got back
+        assertEq(tBalanceAfter - tBalanceBefore, redeemed);
+    }
+
+    function testRedeemZeroNoTiltNegativeScale() public {
+        // Sanity check
+        assertEq(adapter.tilt(), 0);
+
+        adapter.setScale(1e18);
+
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+
+        uint256 tBal = 100e18;
+        bob.doIssue(address(adapter), maturity, tBal);
+
+        uint256 tBalanceBefore = ERC20(target).balanceOf(address(bob));
+        uint256 zeroBalanceBefore = ERC20(zero).balanceOf(address(bob));
+        hevm.warp(maturity);
+        // Set scale to 90% of its initial value
+        adapter.setScale(0.9e18);
+        alice.doSettleSeries(address(adapter), maturity);
+        uint256 redeemed = bob.doRedeemZero(address(adapter), maturity, ERC20(zero).balanceOf(address(bob)));
+
+        // zeroPrincipalInTarget [in Target]:
+        // zBal [in underlying] / current scale * pct principal reserved for Zeros
+        uint256 zeroPrincipalInTarget = zeroBalanceBefore.fdiv(adapter.scale(), 1e18).fmul(0.9e18, 1e18);
+        // Without any Claim principal to cut into, Zero holders should be down to 90% of their principal
+        assertEq(redeemed, zeroPrincipalInTarget.fmul(0.9e18, 1e18));
+
+        uint256 tBalanceAfter = ERC20(target).balanceOf(address(bob));
+        // Redeemed amount should match the amount of Target bob got back
+        assertEq(tBalanceAfter - tBalanceBefore, redeemed);
+    }
 
     /* ========== redeemClaim() tests ========== */
-    function testRedeemClaimTiltPositiveScale() public {
+    function testRedeemClaimPositiveTiltPositiveScale() public {
         // Reserve 10% of principal for Claims
         adapter.setTilt(0.1e18);
         // Sanity check
@@ -747,7 +807,7 @@ contract Dividers is TestHelper {
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
     }
 
-    function testRedeemClaimNegativeScale() public {
+    function testRedeemClaimPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
         adapter.setTilt(0.1e18);
         // Sanity check
