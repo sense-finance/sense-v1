@@ -91,6 +91,7 @@ jobs:
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Commit changes
+      if: ${{ github.ref == 'refs/heads/dev' }}
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
         commit_message: '[ci] gas snapshot'
