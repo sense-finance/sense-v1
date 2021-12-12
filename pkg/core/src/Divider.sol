@@ -267,7 +267,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             if (tBalClaimActual != 0) {
                 uint256 shortfall = tBal - tBalZeroActual;
                 // Calculate the amount of Target this Zero holder will get back –
-                // start with the amount of Target have set aside in their pool 
+                // start with the amount of Target Zeros have set aside in their pool
                 // as that's the lower bound on what they'll get
                 tBal = tBalZeroActual;
                 // If the shortfall is less than what we've reserved for Claims, cover the whole thing
