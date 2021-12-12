@@ -304,6 +304,54 @@ contract PeripheryTest is TestHelper {
     //    }
 
     /* ========== liquidity tests ========== */
+    function testAddLiquidityFirstTimeWithSellClaimsModeShouldNotIssue() public {
+        uint256 tBal = 100e18;
+        uint48 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+
+        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
+
+        (uint256 targetBal, uint256 claimBal, uint256 lpShares) = bob.doAddLiquidityFromTarget(
+            address(adapter),
+            maturity,
+            tBal,
+            0
+        );
+        uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
+        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+
+        assertTrue(targetBal == 0);
+        assertTrue(claimBal == 0);
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
+        assertEq(tBalBefore - tBal, tBalAfter);
+        assertEq(lpBalBefore + 100e18, lpBalAfter);
+    }
+
+    function testAddLiquidityFirstTimeWithHoldClaimsModeShouldNotIssue() public {
+        uint256 tBal = 100e18;
+        uint48 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+
+        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
+
+        (uint256 targetBal, uint256 claimBal, uint256 lpShares) = bob.doAddLiquidityFromTarget(
+            address(adapter),
+            maturity,
+            tBal,
+            0
+        );
+        uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
+        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+
+        assertTrue(targetBal == 0);
+        assertTrue(claimBal == 0);
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
+        assertEq(tBalBefore - tBal, tBalAfter);
+        assertEq(lpBalBefore + 100e18, lpBalAfter);
+    }
+
     function testAddLiquidityAndSellClaims() public {
         uint256 tBal = 100e18;
         uint256 targetToBorrow = 40.5e18;
