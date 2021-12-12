@@ -647,19 +647,16 @@ contract TokenHandler is Trust {
     string private constant CLAIM_NAME_PREFIX = "Claim";
 
     /// @notice Program state
-    bool public inited;
     address public divider;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) { }
 
     function init(address _divider) external requiresTrust {
-        require(!inited, "Already initialized");
+        require(divider == address(0));
         divider = _divider;
-        inited = true;
     }
 
     function deploy(address adapter, uint48 maturity) external returns (address zero, address claim) {
-        require(inited, "Not yet initialized");
         require(msg.sender == divider, "Must be called by the Divider");
 
         ERC20 target = ERC20(Adapter(adapter).getTarget());
