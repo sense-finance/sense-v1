@@ -477,7 +477,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /// @notice Get token indices for Zero and Target
     function getIndices() public view returns (uint8 _zeroi, uint8 _targeti) {
-        _zeroi = zeroi; // a regrettable SLOAD
+        _zeroi = zeroi;
         _targeti = _zeroi == 0 ? 1 : 0;
     }
 
