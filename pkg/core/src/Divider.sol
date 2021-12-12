@@ -133,7 +133,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-
         address target = Adapter(adapter).getTarget();
         (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
