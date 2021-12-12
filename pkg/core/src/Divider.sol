@@ -154,20 +154,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
 
         ERC20 target = ERC20(Adapter(adapter).getTarget());
-        uint256 tDecimals = target.decimals();
-        uint256 tBase = 10**tDecimals;
-        uint256 fee;
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Adapter(adapter).getIssuanceFee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
 
-        if (tDecimals != 18) {
-            uint256 base = (tDecimals < 18 ? issuanceFee / (10**(18 - tDecimals)) : issuanceFee * 10**(tDecimals - 18));
-            fee = base.fmul(tBal, tBase);
-        } else {
-            fee = issuanceFee.fmul(tBal, tBase);
-        }
+        uint256 fee = tBal.fmul(issuanceFee, FixedMath.WAD);
 
         series[adapter][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
