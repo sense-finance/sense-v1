@@ -55,6 +55,14 @@ build: && _timer
 build-solc7: && _timer
 	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
 
+turbo-build: && _timer
+	@cd {{ invocation_directory() }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
+		--root {{ invocation_directory() }}
+
+turbo-build-dir *dir="":
+	@cd {{ invocation_directory() }}; cd {{ dir }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
+		--root {{ dir }} >> /dev/null; printf 0x00
+
 # debug and open dapp's TTY debugger
 debug:
 	cd {{ invocation_directory() }}; dapp debug
@@ -64,36 +72,41 @@ test: test-local
 test-solc7: test-local-solc7
 
 # run local dapp tests (all files with the extension .t.sol)
-test-local *commands="": && _timer
-	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ commands }}
+test-local *cmds="": && _timer
+	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ cmds }}
 
-test-local-solc7 *commands="": && _timer
-	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ commands }}
+test-local-solc7 *cmds="": && _timer
+	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ cmds }}
 
 # run mainnet fork dapp tests (all files with the extension .tm.sol)
-test-mainnet *commands="": && _timer
-	cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ commands }}
+test-mainnet *cmds="": && _timer
+	@cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ cmds }}
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		-m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
+	cd {{ invocation_directory() }}; /forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
 
 turbo-test-local-no-fuzz *cmds="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		-m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
+	@cd {{ invocation_directory() }}; /forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
 
 turbo-test-mainnet: && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		--fork-url {{ MAINNET_RPC }} -m "^testMainnet"
+	@cd {{ invocation_directory() }}; /forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
 turbo-test-match *exp="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		-m {{ exp }}
+	@cd {{ invocation_directory() }}; /forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 --force --root {{ invocation_directory() }} \
+		--ffi -m {{ exp }}
+
+turbo-test-mainnet-match *exp="": && _timer
+	@cd {{ invocation_directory() }}; /forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 --force --root {{ invocation_directory() }} \
+		--ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
 
 # default gas snapshot script
 gas-snapshot: gas-snapshot-local

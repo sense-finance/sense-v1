@@ -52,11 +52,11 @@ abstract contract BaseFactory {
     function deployAdapter(address _target) external virtual returns (address adapterClone) {
         require(_exists(_target), Errors.NotSupported);
 
-        // clone the adapter using the Target address as salt
-        // note: duplicate Target addresses will revert
+        // Clone the adapter using the Target address as salt
+        // NOTE: Duplicate Target addresses will revert
         adapterClone = Clones.cloneDeterministic(adapterImpl, Bytes32AddressLib.fillLast12Bytes(_target));
 
-        // TODO: see if we can inline this
+        // TODO: See if we can inline this
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
             delta: factoryParams.delta,
@@ -70,7 +70,7 @@ abstract contract BaseFactory {
         });
         BaseAdapter(adapterClone).initialize(divider, adapterParams);
 
-        // authd set adapter since this adapter factory is only for Sense-vetted adapters
+        // Authd set adapter since this adapter factory is only for Sense-vetted adapters
         Divider(divider).setAdapter(adapterClone, true);
 
         emit AdapterDeployed(adapterClone, _target);

@@ -15,7 +15,12 @@ abstract contract Hevm {
         bytes32 val
     ) public virtual;
 
+    // Performs a foreign function call via terminal, (stringInputs) => (result)
     function ffi(string[] calldata) external virtual returns (bytes memory);
 
+    // Loads a storage slot from an address (who, slot)
     function load(address, bytes32) external virtual returns (bytes32);
+
+    // Sets an address' code, (who, newCode)
+    function etch(address, bytes calldata) external virtual;
 }

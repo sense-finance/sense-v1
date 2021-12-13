@@ -81,7 +81,7 @@ contract TestHelper is DSTest {
         address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
