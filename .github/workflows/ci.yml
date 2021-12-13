@@ -96,5 +96,4 @@ jobs:
       with:
         commit_message: '[ci] gas snapshot'
         branch: ${{ github.head_ref }}
-        push_options: --force
         file_pattern: gas-snapshots/*
