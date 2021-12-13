@@ -47,7 +47,7 @@ abstract contract BaseAdapter is Initializable {
     /// Program state --------
     string public name;
     string public symbol;
-    LScale public _lscale;
+    LScale public lscale;
     struct LScale {
         uint256 timestamp; // timestamp of the last scale value
         uint256 value; // last scale value
@@ -102,15 +102,15 @@ abstract contract BaseAdapter is Initializable {
     /// @notice Calculate and return this adapter's Scale value for the current timestamp
     /// @dev For some Targets, such as cTokens, this is simply the exchange rate, or `supply cToken / supply underlying`
     /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    /// @return _value WAD Scale value
+    /// @return value WAD Scale value
     function scale() external virtual returns (uint256) {
-        uint256 _value = _scale();
-        uint256 lvalue = _lscale.value;
-        uint256 elapsed = block.timestamp - _lscale.timestamp;
+        uint256 value = _scale();
+        uint256 lvalue = lscale.value;
+        uint256 elapsed = block.timestamp - lscale.timestamp;
 
         if (elapsed > 0 && lvalue != 0) {
             // check actual growth vs delta (max growth per sec)
-            uint256 growthPerSec = (_value > lvalue ? _value - lvalue : lvalue - _value).fdiv(
+            uint256 growthPerSec = (value > lvalue ? value - lvalue : lvalue - value).fdiv(
                 lvalue * elapsed,
                 10**ERC20(adapterParams.target).decimals()
             );
@@ -118,13 +118,13 @@ abstract contract BaseAdapter is Initializable {
             if (growthPerSec > adapterParams.delta) revert(Errors.InvalidScaleValue);
         }
 
-        if (_value != lvalue) {
+        if (value != lvalue) {
             // update value only if different than the previous
-            _lscale.value = _value;
-            _lscale.timestamp = block.timestamp;
+            lscale.value = value;
+            lscale.timestamp = block.timestamp;
         }
 
-        return _value;
+        return value;
     }
 
     /// @notice Scale getter that must be overriden by child contracts
