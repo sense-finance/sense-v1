@@ -354,7 +354,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         if (zeroReserves == 0) {
             uint256 reqTargetIn = reqAmountsIn[_targeti];
             // Mint LP shares according to the relative amount of Target being offered
-            // TODO
             uint256 bptToMint = (totalSupply() * reqTargetIn) / targetReserves;
 
             // Pull the entire offered Target
@@ -365,30 +364,22 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Disambiguate requested amounts wrt token type
             (uint256 reqZerosIn, uint256 reqTargetIn) = (reqAmountsIn[_zeroi], reqAmountsIn[_targeti]);
             // Caclulate the percentage of the pool we'd get if we pulled all of the requested Target in
-            uint256 pctTarget = reqTargetIn.divDown(targetReserves);
+            uint256 bptToMintTarget = (totalSupply() * reqTargetIn) / targetReserves;
 
             // Caclulate the percentage of the pool we'd get if we pulled all of the requested Zeros in
-            uint256 pctZeros = reqZerosIn.divDown(zeroReserves);
+            uint256 bptToMintZeros = (totalSupply() * reqZerosIn) / zeroReserves;
 
             // Determine which amountIn is our limiting factor
-            if (pctTarget < pctZeros) {
-                // If it's Target, pull the entire requested Target amountIn,
-                // and pull Zeros in at the percetage of the requested Target / Target reserves
-                uint256 bptToMint = totalSupply().mulDown(pctTarget);
-
-                amountsIn[_zeroi] = zeroReserves.mulDown(pctTarget);
+            if (bptToMintTarget < bptToMintZeros) {
+                amountsIn[_zeroi] = zeroReserves * reqTargetIn / targetReserves;
                 amountsIn[_targeti] = reqTargetIn;
 
-                return (bptToMint, amountsIn);
+                return (bptToMintTarget, amountsIn);
             } else {
-                // If it's Zeros, pull the entire requested Zero amountIn,
-                // and pull Target in at the percetage of the requested Zeros / Zero reserves
-                uint256 bptToMint = totalSupply().mulDown(pctZeros);
-
                 amountsIn[_zeroi] = reqZerosIn;
-                amountsIn[_targeti] = targetReserves.mulDown(pctZeros);
+                amountsIn[_targeti] = targetReserves * reqZerosIn / zeroReserves;
 
-                return (bptToMint, amountsIn);
+                return (bptToMintZeros, amountsIn);
             }
         }
     }
