@@ -312,7 +312,15 @@ contract Periphery is Trust {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         uint8 mode
-    ) external {
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        require(Adapter(srcAdapter).getTarget() == Adapter(dstAdapter).getTarget(), Errors.TargetsNotMatch);
         uint256 tBal = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted);
         _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
