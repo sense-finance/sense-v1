@@ -321,8 +321,8 @@ contract PeripheryTest is TestHelper {
         uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
-        assertTrue(targetBal == 0);
-        assertTrue(claimBal == 0);
+        assertEq(targetBal, 0);
+        assertEq(claimBal, 0);
         assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal, tBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
@@ -345,8 +345,8 @@ contract PeripheryTest is TestHelper {
         uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
-        assertTrue(targetBal == 0);
-        assertTrue(claimBal == 0);
+        assertEq(targetBal, 0);
+        assertEq(claimBal, 0);
         assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal, tBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);

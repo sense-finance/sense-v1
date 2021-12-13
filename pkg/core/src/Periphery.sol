@@ -518,12 +518,11 @@ contract Periphery is Trust {
         (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
 
         // We do not add zeros liquidity on the first provision (hence, we skip computation)
-        uint256 zBalInTarget = !isFirstProvision
-            ? _computeTarget(adapter, balances[zeroi], balances[targeti], tBal)
-            : 0;
+        uint256 zBalInTarget = isFirstProvision
+            ? 0 : _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
 
         // Issue Zeros & Claim (skip if first pool provision)
-        uint256 issued = !isFirstProvision ? divider.issue(adapter, maturity, zBalInTarget) : 0;
+        uint256 issued = isFirstProvision ? 0 : divider.issue(adapter, maturity, zBalInTarget);
 
         // Add liquidity to Space & send the LP Shares to recipient
         uint256[] memory amounts = new uint256[](2);
