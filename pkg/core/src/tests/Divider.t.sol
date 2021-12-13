@@ -502,7 +502,7 @@ contract Dividers is TestHelper {
         uint256 tBalanceBefore = target.balanceOf(address(alice));
         alice.doIssue(address(adapter), maturity, tBal);
         // Formula = newBalance.fmul(scale)
-        (, uint256 lscale) = adapter._lscale();
+        (, uint256 lscale) = adapter.lscale();
         uint256 mintedAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         assertEq(ERC20(zero).balanceOf(address(alice)), mintedAmount);
         assertEq(ERC20(claim).balanceOf(address(alice)), mintedAmount);
@@ -532,7 +532,7 @@ contract Dividers is TestHelper {
         alice.doIssue(address(adapter), maturity, tBal);
         alice.doIssue(address(adapter), maturity, tBal);
         // Formula = newBalance.fmul(scale)
-        (, uint256 lscale) = adapter._lscale();
+        (, uint256 lscale) = adapter.lscale();
         uint256 mintedAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         assertEq(ERC20(zero).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
         assertEq(ERC20(claim).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
@@ -758,7 +758,7 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) -
             cBalanceBefore.fdiv(cscale, FixedMath.WAD);
@@ -871,7 +871,7 @@ contract Dividers is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
         collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
@@ -902,7 +902,7 @@ contract Dividers is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
         collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
@@ -938,7 +938,7 @@ contract Dividers is TestHelper {
             uint256 collect;
             {
                 (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-                (, uint256 lvalue) = adapter._lscale();
+                (, uint256 lvalue) = adapter.lscale();
                 uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
                 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
                 collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
@@ -965,7 +965,7 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
@@ -1006,7 +1006,7 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
@@ -1033,7 +1033,7 @@ contract Dividers is TestHelper {
         bob.doTransfer(address(claim), address(alice), bcBalanceBefore); // collects and transfer
 
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
 
         // bob
@@ -1077,7 +1077,7 @@ contract Dividers is TestHelper {
         uint256 cscale;
         {
             (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-            (, uint256 lvalue) = adapter._lscale();
+            (, uint256 lvalue) = adapter.lscale();
             cscale = block.timestamp >= maturity ? mscale : lvalue;
         }
 
@@ -1136,7 +1136,7 @@ contract Dividers is TestHelper {
         uint256 cscale;
         {
             (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-            (, uint256 lvalue) = adapter._lscale();
+            (, uint256 lvalue) = adapter.lscale();
             cscale = block.timestamp >= maturity ? mscale : lvalue;
         }
 
@@ -1186,7 +1186,7 @@ contract Dividers is TestHelper {
         uint256 collectedAfterTransfer = alice.doCollect(claim); // try to collect
 
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);

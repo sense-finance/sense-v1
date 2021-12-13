@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FORGE_REVISION: 0527eb95ce9c17101b434a0626ba3861836c0a9e
+      FORGE_REVISION: bab7e2d672bf9459645c01201b37e6fcfd257521
 
     steps:
     - uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
       with:
           cache-on-failure: true
 
-    # try to get forge from cache
+    # Try to get forge from cache
     - name: Cache forge
       id: cache-forge
       uses: actions/cache@v2
@@ -31,7 +31,7 @@ jobs:
         path: ~/.cargo/bin/forge
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
 
-    # try to get just from cache
+    # Try to get just from cache
     - name: Cache just
       id: cache-just
       uses: actions/cache@v2
@@ -41,7 +41,7 @@ jobs:
         path: ~/.cargo/bin/just
         key: ${{ runner.os }}-build-${{ env.cache-name }}
 
-    # try to get node_modules from cache
+    # Try to get node_modules from cache
     - uses: actions/cache@v2
       with:
         path: 'node_modules'
@@ -50,12 +50,12 @@ jobs:
     - name: Install npm dependencies
       run: yarn install
 
-    # if we couldn't get forge from the cache, install it
+    # If we couldn't get forge from the cache, install it
     - name: Install forge
       if: steps.cache-forge.outputs.cache-hit != 'true'
       run: cargo install --git https://github.com/gakonst/dapptools-rs --rev ${{ env.FORGE_REVISION }} --locked
 
-      # if we couldn't get just from the cache, install it
+      # If we couldn't get just from the cache, install it
     - name: Install just
       if: steps.cache-just.outputs.cache-hit != 'true'
       run: cargo install just
@@ -64,7 +64,10 @@ jobs:
       run: yarn lint
 
     - name: Run tests
-      run: yarn turbo-test
+      run: |
+        yarn turbo-test | tee _out.txt
+        grep -vz FAIL _out.txt 1> /dev/null
+
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
@@ -93,5 +96,4 @@ jobs:
       with:
         commit_message: '[ci] gas snapshot'
         branch: ${{ github.head_ref }}
-        push_options: --force
         file_pattern: gas-snapshots/*

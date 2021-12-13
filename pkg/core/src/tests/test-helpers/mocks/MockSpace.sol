@@ -16,6 +16,7 @@ import { MockToken } from "./MockToken.sol";
 
 contract MockSpacePool is MockToken {
     using FixedMath for uint256;
+
     MockBalancerVault public vault;
     address public zero;
     address public target;
@@ -39,11 +40,23 @@ contract MockSpacePool is MockToken {
     }
 
     function onSwap(
-        BalancerPool.SwapRequest memory, /* _request */
+        BalancerPool.SwapRequest memory request,
         uint256, /* _reservesInAmount */
         uint256 /* _reservesOutAmount */
     ) external view returns (uint256) {
-        return 10e18;
+        if (address(request.tokenIn) == zero) {
+            if (request.kind == BalancerVault.SwapKind.GIVEN_IN) {
+                return request.amount.fmul(vault.EXCHANGE_RATE(), 1e18);
+            } else {
+                return request.amount.fmul(FixedMath.WAD.fdiv(vault.EXCHANGE_RATE(), FixedMath.WAD), 1e18);
+            }
+        } else {
+            if (request.kind == BalancerVault.SwapKind.GIVEN_IN) {
+                return request.amount.fmul(FixedMath.WAD.fdiv(vault.EXCHANGE_RATE(), FixedMath.WAD), 1e18);
+            } else {
+                return request.amount.fmul(vault.EXCHANGE_RATE(), 1e18);
+            }
+        }
     }
 
     function getIndices() public view returns (uint8 zeroi, uint8 targeti) {
@@ -71,14 +84,22 @@ contract MockBalancerVault {
         uint256 deadline
     ) external payable returns (uint256) {
         Token(address(singleSwap.assetIn)).transferFrom(msg.sender, address(this), singleSwap.amount);
-        uint256 amountOut;
+        uint256 amountInOrOut;
         if (address(singleSwap.assetIn) == yieldSpacePool.zero()) {
-            amountOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 10**Token(address(singleSwap.assetIn)).decimals());
+            if (singleSwap.kind == BalancerVault.SwapKind.GIVEN_IN) {
+                amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 1e18);
+            } else {
+                amountInOrOut = (singleSwap.amount).fdiv(EXCHANGE_RATE, 1e18);
+            }
         } else {
-            amountOut = (singleSwap.amount).fdiv(EXCHANGE_RATE, 10**Token(address(singleSwap.assetIn)).decimals());
+            if (singleSwap.kind == BalancerVault.SwapKind.GIVEN_IN) {
+                amountInOrOut = (singleSwap.amount).fdiv(EXCHANGE_RATE, 1e18);
+            } else {
+                amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 1e18);
+            }
         }
-        Token(address(singleSwap.assetOut)).transfer(msg.sender, amountOut);
-        return amountOut;
+        Token(address(singleSwap.assetOut)).transfer(msg.sender, amountInOrOut);
+        return amountInOrOut;
     }
 
     function joinPool(
@@ -103,7 +124,7 @@ contract MockBalancerVault {
     ) external payable {
         IAsset[] memory assets = request.assets;
         uint256[] memory minAmountsOut = request.minAmountsOut;
-        (uint8 mode, uint256 lpBal) = abi.decode(request.userData, (uint8, uint256));
+        uint256 lpBal = abi.decode(request.userData, (uint256));
         MockToken(yieldSpacePool).burn(recipient, lpBal);
         MockToken(address(assets[0])).transfer(recipient, minAmountsOut[0]);
         MockToken(address(assets[1])).transfer(recipient, minAmountsOut[1]);

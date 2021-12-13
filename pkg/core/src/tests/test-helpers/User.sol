@@ -246,8 +246,15 @@ contract User {
         uint48 maturity,
         uint256 tBal,
         uint8 mode
-    ) public {
-        periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
+    )
+        public
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
     }
 
     function doRemoveLiquidityToTarget(
@@ -256,7 +263,7 @@ contract User {
         uint256 tBal,
         uint256[] memory minAmountsOut,
         uint256 minAmount
-    ) public {
-        periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
+    ) public returns (uint256) {
+        return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
     }
 }

@@ -66,7 +66,11 @@ abstract contract CropAdapter is BaseAdapter {
 
         uint256 last = rewarded[_usr];
         uint256 curr = tBalance[_usr].fmul(share, FixedMath.RAY);
-        if (curr > last) ERC20(reward).safeTransfer(_usr, curr - last);
+        if (curr > last) {
+            unchecked {
+                ERC20(reward).safeTransfer(_usr, curr - last);
+            }
+        }
         rewardBal = ERC20(reward).balanceOf(address(this));
         emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }

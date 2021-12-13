@@ -21,9 +21,9 @@ contract MockAdapter is CropAdapter {
             INITIAL_VALUE = 1e18;
         }
         uint256 gps = adapterParams.delta.fmul(99 * (10**(18 - 2)), FixedMath.WAD); // delta - 1%;
-        uint256 timeDiff = block.timestamp - _lscale.timestamp;
-        _value = _lscale.value > 0
-            ? (gps * timeDiff).fmul(_lscale.value, FixedMath.WAD) + _lscale.value
+        uint256 timeDiff = block.timestamp - lscale.timestamp;
+        _value = lscale.value > 0
+            ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value
             : INITIAL_VALUE;
     }
 
@@ -35,7 +35,7 @@ contract MockAdapter is CropAdapter {
         MockTarget target = MockTarget(adapterParams.target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
-        uint256 mintAmount = uBal.fdivUp(_lscale.value, FixedMath.WAD);
+        uint256 mintAmount = uBal.fdivUp(lscale.value, FixedMath.WAD);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
@@ -43,7 +43,7 @@ contract MockAdapter is CropAdapter {
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
         MockTarget target = MockTarget(adapterParams.target);
         target.transferFrom(msg.sender, address(this), tBal); // pull target
-        uint256 mintAmount = tBal.fmul(_lscale.value, FixedMath.WAD);
+        uint256 mintAmount = tBal.fmul(lscale.value, FixedMath.WAD);
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
         return mintAmount;
     }

@@ -14,7 +14,7 @@ import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
 // Space & Balanacer V2 mock
-import { MockSpaceFactory, MockBalancerVault } from "./mocks/Space.sol";
+import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
@@ -81,7 +81,7 @@ contract TestHelper is DSTest {
         address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
@@ -196,13 +196,26 @@ contract TestHelper is DSTest {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
-    function assertClose(uint256 actual, uint256 expected) public {
-        if (actual == expected) return DSTest.assertEq(actual, expected);
+    function assertClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) public {
+        uint256 diff = a < b ? b - a : a - b;
+        if (diff > _tolerance) {
+            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
+            emit log_named_uint("  Expected", b);
+            emit log_named_uint("  Tolerance", _tolerance);
+            emit log_named_uint("    Actual", a);
+            fail();
+        }
+    }
+
+    function assertClose(uint256 a, uint256 b) public {
         uint256 variance = 100;
-        if (expected < variance) variance = 10;
-        if (expected < variance) variance = 1;
-        DSTest.assertTrue(actual >= (expected - variance));
-        DSTest.assertTrue(actual <= (expected + variance));
+        if (b < variance) variance = 10;
+        if (b < variance) variance = 1;
+        assertClose(a, b, variance);
     }
 
     function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
@@ -228,7 +241,7 @@ contract TestHelper is DSTest {
     }
 
     function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
-        (, uint256 cscale) = adapter._lscale();
+        (, uint256 cscale) = adapter.lscale();
         //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
         toIssue = tBal.fmul(cscale, FixedMath.WAD);
     }

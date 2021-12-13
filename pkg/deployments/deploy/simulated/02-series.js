@@ -1,5 +1,9 @@
 const dayjs = require("dayjs");
 
+const ONE_MINUTE_MS = 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
+const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
+
 module.exports = async function ({ ethers, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
   const stake = await ethers.getContract("STAKE");
@@ -58,7 +62,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       const { _zeroi, _targeti } = await pool.getIndices();
       const initialBalances = [null, null];
       initialBalances[_zeroi] = 0;
-      initialBalances[_targeti] = ethers.utils.parseEther("1000000");
+      initialBalances[_targeti] = ethers.utils.parseEther("2000000");
 
       const userData = defaultAbiCoder.encode(["uint[]"], [initialBalances]);
       await balancerVault
@@ -78,7 +82,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
             kind: 0, // given in
             assetIn: zero.address,
             assetOut: target.address,
-            amount: ethers.utils.parseEther("500000"), // 500,000
+            amount: ethers.utils.parseEther("100000"),
             userData: defaultAbiCoder.encode(["uint[]"], [[0, 0]]),
           },
           { sender: deployer, fromInternalBalance: false, recipient: deployer, toInternalBalance: false },
@@ -87,11 +91,48 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
         )
         .then(tx => tx.wait());
 
+      const zeroPriceInTarget = await balancerVault.callStatic
+        .swap(
+          {
+            poolId,
+            kind: 0, // given in
+            assetIn: zero.address,
+            assetOut: target.address,
+            amount: ethers.utils.parseEther("0.1"),
+            userData: defaultAbiCoder.encode(["uint[]"], [[0, 0]]),
+          },
+          { sender: deployer, fromInternalBalance: false, recipient: deployer, toInternalBalance: false },
+          0, // `limit` – no min expectations of return around tokens out testing GIVEN_IN
+          ethers.constants.MaxUint256, // `deadline` – no deadline
+        )
+        .then(v => v.div(1e10).toNumber() / 1e7);
+
+      const scale = await adapter.callStatic.scale();
+      const zeroPriceInUnderlying = zeroPriceInTarget * (scale.div(1e12).toNumber() / 1e6);
+
+      const discountRate =
+        ((1 / zeroPriceInUnderlying) **
+          (1 / ((dayjs(seriesMaturity * 1000).unix() - dayjs().unix()) / ONE_YEAR_SECONDS)) -
+          1) *
+        100;
+
+      console.log(
+        `
+          Target ${targetName}
+          Maturity: ${dayjs(seriesMaturity * 1000).format("YYYY-MM-DD")}
+          Implied rate: ${discountRate}
+          Zero price in Target: ${zeroPriceInTarget}
+          Zero price in Underlying: ${zeroPriceInUnderlying}
+        `,
+      );
+
       // Sanity check that all the swaps on this testchain are working
       console.log(`--- Sanity check swaps ---`);
 
       await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       console.log("swapping target for zeros");
       await periphery
@@ -110,15 +151,18 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
         .then(tx => tx.wait());
 
       console.log("swapping claims for target");
-      await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await periphery
         .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
         .then(tx => tx.wait());
 
-      console.log("adding liquidity from target");
-      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      console.log("adding liquidity via target");
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
+        .then(t => t.wait());
+
+      console.log("removing liquidity to target");
+      await periphery
+        .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), [0, 0], 0)
         .then(t => t.wait());
     }
   }
