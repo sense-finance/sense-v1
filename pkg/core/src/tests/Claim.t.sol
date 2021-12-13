@@ -25,7 +25,7 @@ contract Claims is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
         collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
@@ -53,7 +53,7 @@ contract Claims is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
         collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
@@ -84,7 +84,7 @@ contract Claims is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter._lscale();
+        (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
         collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);

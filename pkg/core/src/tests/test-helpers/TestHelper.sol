@@ -241,7 +241,7 @@ contract TestHelper is DSTest {
     }
 
     function calculateAmountToIssue(uint256 tBal, uint256 baseUnit) public returns (uint256 toIssue) {
-        (, uint256 cscale) = adapter._lscale();
+        (, uint256 cscale) = adapter.lscale();
         //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
         toIssue = tBal.fmul(cscale, baseUnit);
     }
