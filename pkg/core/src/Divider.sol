@@ -247,25 +247,24 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the caller's Zeros
         Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
-        uint256 tBase = 10**ERC20(Adapter(adapter).getTarget()).decimals();
-        // Amount of Target Zeros would ideally have
+        // Amount of Target these Zeros would ideally redeem for
         tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
 
         if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
-            // Amount of Target we actually have set aside for them (after collections from Claim holders)
+            // Amount of Target they actually have set aside for them (after collections from Claim holders)
             uint256 tBalZeroActual = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) /
                 series[adapter][maturity].maxscale;
 
-            // Set our Target transfer value to the actual principal we have reserved for Zeros
-            tBal = tBalZeroActual;
+            // Amount of Target we have set aside for Claims
+            uint256 tBalClaimActual = (uBal * series[adapter][maturity].tilt) / series[adapter][maturity].maxscale;
 
-            // How much principal we have set aside for Claim holders
-            uint256 tBalClaimActual = tBalZeroActual.fmul(series[adapter][maturity].tilt, tBase);
-
-            // Cut from Claim holders to cover shortfall if we can
+            // Cut from Claim holders to cover any shortfall if we can
             if (tBalClaimActual != 0) {
                 uint256 shortfall = tBal - tBalZeroActual;
+                // Calculate the amount of Target this Zero holder will get back –
+                // start with the amount of Target Zeros have set aside in their pool
+                // as that's the lower bound on what they'll get
+                tBal = tBalZeroActual;
                 // If the shortfall is less than what we've reserved for Claims, cover the whole thing
                 // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
                 if (tBalClaimActual > shortfall) {
@@ -274,10 +273,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 } else {
                     tBal += tBalClaimActual;
                 }
+            } else {
+                // If there was nothing set aside for Claim holders in this Series,
+                // the most we can send back to Zero holders is what remains of their Target principal,
+                // so we transfer that out in full
+                tBal = tBalZeroActual;
             }
         }
 
-        target.safeTransferFrom(adapter, msg.sender, tBal);
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 
