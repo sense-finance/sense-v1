@@ -12,6 +12,7 @@ import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
@@ -586,6 +587,27 @@ contract PeripheryTest is TestHelper {
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertClose(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
+    }
+
+    function testCantMigrateLiquidityIfTargetsAreDifferent() public {
+        uint256 tBal = 100e18;
+        uint48 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToBalancerVault(maturity, 1000e18);
+
+        MockTarget otherTarget = new MockTarget(address(underlying), "Compound Usdc", "cUSDC", 8);
+        factory.addTarget(address(otherTarget), true);
+        address dstAdapter = periphery.onboardAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
+
+        (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
+        uint256[] memory minAmountsOut = new uint256[](2);
+        try bob.doMigrateLiquidity(address(adapter), dstAdapter, maturity, maturity, lpShares, minAmountsOut, 0, 0) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TargetsNotMatch);
+        }
     }
 
     function testMigrateLiquidity() public {

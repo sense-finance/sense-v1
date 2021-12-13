@@ -266,4 +266,34 @@ contract User {
     ) public returns (uint256) {
         return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
     }
+
+    function doMigrateLiquidity(
+        address srcAdapter,
+        address dstAdapter,
+        uint48 srcMaturity,
+        uint48 dstMaturity,
+        uint256 lpBal,
+        uint256[] memory minAmountsOut,
+        uint256 minAccepted,
+        uint8 mode
+    )
+        public
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return
+            periphery.migrateLiquidity(
+                srcAdapter,
+                dstAdapter,
+                srcMaturity,
+                dstMaturity,
+                lpBal,
+                minAmountsOut,
+                minAccepted,
+                mode
+            );
+    }
 }
