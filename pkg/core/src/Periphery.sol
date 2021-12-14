@@ -481,14 +481,17 @@ contract Periphery is Trust {
         (uint256 issued, uint256 lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
 
         uint256 tAmount;
-        if (mode == 0) {
-            // (2) Sell claims
-            tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
-            // (3) Send remaining Target back to the User
-            target.safeTransfer(msg.sender, tAmount);
-        } else {
-            // (4) Send Claims back to the User
-            ERC20(claim).safeTransfer(msg.sender, issued);
+        if (issued > 0) {
+            // issue = 0 means that we are on the first pool provision or that the zero:target ratio is 0:target
+            if (mode == 0) {
+                // (2) Sell claims
+                tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
+                // (3) Send remaining Target back to the User
+                target.safeTransfer(msg.sender, tAmount);
+            } else {
+                // (4) Send Claims back to the User
+                ERC20(claim).safeTransfer(msg.sender, issued);
+            }
         }
         return (tAmount, issued, lpShares);
     }
@@ -502,20 +505,22 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256, uint256) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+        bool isFirstProvision = pool.totalSupply() == 0;
 
         // Compute target
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
         (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
-        uint256 zBalInTarget = _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
 
-        // Issue Zeros & Claim
-        uint256 issued = divider.issue(adapter, maturity, zBalInTarget);
+        // We do not add zeros liquidity on the first provision (hence, we skip computation)
+        uint256 zBalInTarget = isFirstProvision ? 0 : _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
+
+        // Issue Zeros & Claim (skip if first pool provision)
+        uint256 issued = zBalInTarget > 0 ? divider.issue(adapter, maturity, zBalInTarget) : 0;
 
         // Add liquidity to Space & send the LP Shares to recipient
         uint256[] memory amounts = new uint256[](2);
         amounts[targeti] = tBal - zBalInTarget;
         amounts[zeroi] = issued;
-
         uint256 lpShares = _addLiquidityToSpace(pool, tokens, amounts);
         return (issued, lpShares);
     }
