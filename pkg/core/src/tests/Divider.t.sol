@@ -503,7 +503,7 @@ contract Dividers is TestHelper {
         alice.doIssue(address(adapter), maturity, tBal);
         // Formula = newBalance.fmul(scale)
         (, uint256 lscale) = adapter.lscale();
-        uint256 mintedAmount = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        uint256 mintedAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         assertEq(ERC20(zero).balanceOf(address(alice)), mintedAmount);
         assertEq(ERC20(claim).balanceOf(address(alice)), mintedAmount);
         assertEq(target.balanceOf(address(alice)), tBalanceBefore - tBal);
@@ -533,7 +533,7 @@ contract Dividers is TestHelper {
         alice.doIssue(address(adapter), maturity, tBal);
         // Formula = newBalance.fmul(scale)
         (, uint256 lscale) = adapter.lscale();
-        uint256 mintedAmount = (tBal - fee).fmul(lscale, Token(zero).BASE_UNIT());
+        uint256 mintedAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         assertEq(ERC20(zero).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
         assertEq(ERC20(claim).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
         assertEq(target.balanceOf(address(alice)), tBalanceBefore - tBal.fmul(4 * tBase, tBase));
@@ -613,7 +613,7 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
-        assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, Token(zero).BASE_UNIT()), zBalanceBefore);
+        assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, FixedMath.WAD), zBalanceBefore);
     }
 
     function testFuzzCombineAtMaturity(uint128 tBal) public {
@@ -635,7 +635,7 @@ contract Dividers is TestHelper {
 
         require(zBalanceAfter == 0);
         require(cBalanceAfter == 0);
-        assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, Token(zero).BASE_UNIT()), zBalanceBefore);
+        assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, FixedMath.WAD), zBalanceBefore);
     }
 
     /* ========== redeemZero() tests ========== */
@@ -718,9 +718,9 @@ contract Dividers is TestHelper {
 
         // Formula: tBal = balance / mscale
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        uint256 redeemed = balanceToRedeem.fdiv(mscale, Token(zero).BASE_UNIT());
+        uint256 redeemed = balanceToRedeem.fdiv(mscale, FixedMath.WAD);
         // Amount of Zeros burned == underlying amount
-        assertClose(redeemed.fmul(mscale, Token(zero).BASE_UNIT()), zBalanceBefore);
+        assertClose(redeemed.fmul(mscale, FixedMath.WAD), zBalanceBefore);
         assertEq(zBalanceBefore, zBalanceAfter + balanceToRedeem);
     }
 
@@ -846,8 +846,8 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, 10**target.decimals()) -
-            cBalanceBefore.fdiv(cscale, 10**target.decimals());
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) -
+            cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -857,7 +857,7 @@ contract Dividers is TestHelper {
         collected = bob.doCollect(claim);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , , mscale, , ) = divider.series(address(adapter), maturity);
-        uint256 redeemed = cBalanceAfter.fdiv(mscale, 10**target.decimals()).fmul(0.1e18, 10**target.decimals());
+        uint256 redeemed = cBalanceAfter.fdiv(mscale, FixedMath.WAD).fmul(0.1e18, FixedMath.WAD);
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
     }
 
@@ -959,8 +959,8 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -990,8 +990,8 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -1026,8 +1026,8 @@ contract Dividers is TestHelper {
                 (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
                 (, uint256 lvalue) = adapter.lscale();
                 uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-                collect = cBalanceBefore.fdiv(lscale, Token(claim).BASE_UNIT());
-                collect -= cBalanceBefore.fdiv(cscale, Token(claim).BASE_UNIT());
+                collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+                collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
             }
             assertEq(cBalanceBefore, ERC20(claim).balanceOf(address(users[i])));
             assertEq(collected, collect);
@@ -1039,7 +1039,6 @@ contract Dividers is TestHelper {
     function testFuzzCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(maturity);
@@ -1055,8 +1054,8 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -1096,8 +1095,8 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -1128,8 +1127,8 @@ contract Dividers is TestHelper {
         uint256 bcollected = btBalanceAfter - btBalanceBefore;
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 bcollect = bcBalanceBefore.fdiv(blscale, claimBaseUnit);
-        bcollect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 bcollect = bcBalanceBefore.fdiv(blscale, FixedMath.WAD);
+        bcollect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
 
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         assertEq(btBalanceAfter, btBalanceBefore + bcollected);
@@ -1174,8 +1173,8 @@ contract Dividers is TestHelper {
             uint256 acollected = atBalanceAfter - atBalanceBefore;
 
             // Formula: collect = tBal / lscale - tBal / cscale
-            uint256 acollect = (acBalanceBefore + bcBalanceBefore).fdiv(alscale, claimBaseUnit);
-            acollect -= (acBalanceBefore + bcBalanceBefore).fdiv(cscale, claimBaseUnit);
+            uint256 acollect = (acBalanceBefore + bcBalanceBefore).fdiv(alscale, FixedMath.WAD);
+            acollect -= (acBalanceBefore + bcBalanceBefore).fdiv(cscale, FixedMath.WAD);
             assertEq(acollected, acollect);
             assertEq(atBalanceAfter, atBalanceBefore + acollected);
             assertEq(ERC20(claim).balanceOf(address(alice)), acBalanceBefore + bcBalanceBefore);
@@ -1187,8 +1186,8 @@ contract Dividers is TestHelper {
             uint256 bcollected = btBalanceAfter - btBalanceBefore;
 
             // Formula: collect = tBal / lscale - tBal / cscale
-            uint256 bcollect = bcBalanceBefore.fdiv(blscale, claimBaseUnit);
-            bcollect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+            uint256 bcollect = bcBalanceBefore.fdiv(blscale, FixedMath.WAD);
+            bcollect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
 
             assertEq(bcollected, bcollect);
             assertEq(btBalanceAfter, btBalanceBefore + bcollected);
@@ -1233,8 +1232,8 @@ contract Dividers is TestHelper {
             uint256 acollected = atBalanceAfter - atBalanceBefore;
 
             // Formula: collect = tBal / lscale - tBal / cscale
-            uint256 acollect = (acBalanceBefore + transferValue).fdiv(alscale, claimBaseUnit);
-            acollect -= (acBalanceBefore + transferValue).fdiv(cscale, claimBaseUnit);
+            uint256 acollect = (acBalanceBefore + transferValue).fdiv(alscale, FixedMath.WAD);
+            acollect -= (acBalanceBefore + transferValue).fdiv(cscale, FixedMath.WAD);
 
             assertEq(acollected, acollect);
             assertEq(atBalanceAfter, atBalanceBefore + acollected);
@@ -1247,8 +1246,8 @@ contract Dividers is TestHelper {
             uint256 bcollected = btBalanceAfter - btBalanceBefore;
 
             // Formula: collect = tBal / lscale - tBal / cscale
-            uint256 bcollect = bcBalanceBefore.fdiv(blscale, claimBaseUnit);
-            bcollect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+            uint256 bcollect = bcBalanceBefore.fdiv(blscale, FixedMath.WAD);
+            bcollect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
 
             assertEq(bcollected, bcollect);
             assertEq(ERC20(claim).balanceOf(address(bob)), bcBalanceBefore - transferValue);
@@ -1276,8 +1275,8 @@ contract Dividers is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
-        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, cBalanceBefore);
         assertEq(tBalanceAfter, tBalanceBefore + collected);

@@ -12,7 +12,6 @@ contract Claims is TestHelper {
     function testFuzzCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -27,8 +26,8 @@ contract Claims is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= cBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -37,7 +36,6 @@ contract Claims is TestHelper {
     function testFuzzCollectOnTransfer(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -55,8 +53,8 @@ contract Claims is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
@@ -67,7 +65,6 @@ contract Claims is TestHelper {
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -86,8 +83,8 @@ contract Claims is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bcBalanceBefore.fdiv(lscale, claimBaseUnit);
-        collect -= bcBalanceBefore.fdiv(cscale, claimBaseUnit);
+        uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;

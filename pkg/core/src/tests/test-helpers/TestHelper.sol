@@ -81,7 +81,7 @@ contract TestHelper is DSTest {
         address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
         uint8 tDecimals = 18;
@@ -240,10 +240,10 @@ contract TestHelper is DSTest {
         return amount;
     }
 
-    function calculateAmountToIssue(uint256 tBal, uint256 baseUnit) public returns (uint256 toIssue) {
+    function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
         (, uint256 cscale) = adapter.lscale();
         //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
-        toIssue = tBal.fmul(cscale, baseUnit);
+        toIssue = tBal.fmul(cscale, FixedMath.WAD);
     }
 
     function calculateExcess(
@@ -251,7 +251,7 @@ contract TestHelper is DSTest {
         uint48 maturity,
         address claim
     ) public returns (uint256 gap) {
-        uint256 toIssue = calculateAmountToIssue(tBal, Token(claim).BASE_UNIT());
+        uint256 toIssue = calculateAmountToIssue(tBal);
         gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }
 

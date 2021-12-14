@@ -187,7 +187,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
-        uBal = tBalSubFee.fmul(scale, Zero(series[adapter][maturity].zero).BASE_UNIT());
+        uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
 
         // Mint equal amounts of Zeros and Claims
         Zero(series[adapter][maturity].zero).mint(msg.sender, uBal);
@@ -224,7 +224,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Convert from units of Underlying to units of Target
         ERC20 target = ERC20(Adapter(adapter).getTarget());
-        tBal = uBal.fdiv(cscale, 10**target.decimals());
+        tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
         Adapter(adapter).notify(msg.sender, tBal, false);
 
@@ -356,8 +356,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         //
         // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        uint256 tBalNow = uBal.fdiv(_series.maxscale, claim.BASE_UNIT());
-        collected = uBal.fdiv(lscale, claim.BASE_UNIT()) - tBalNow;
+        uint256 tBalNow = uBal.fdiv(_series.maxscale, FixedMath.WAD);
+        collected = uBal.fdiv(lscale, FixedMath.WAD) - tBalNow;
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
         Adapter(adapter).notify(usr, collected, false); // distribute reward tokens
 
@@ -369,7 +369,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
                 : _series.maxscale;
-            uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale, claim.BASE_UNIT());
+            uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale, FixedMath.WAD);
             Adapter(adapter).notify(usr, tBalTransfer, false);
             Adapter(adapter).notify(to, tBalTransfer, true);
         }
@@ -388,7 +388,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
         return
             (cBal + uBal).fdiv(
-                (cBal.fdiv(lscales[adapter][maturity][receiver], uBase) + uBal.fdiv(maxscale, uBase)),
+                (cBal.fdiv(lscales[adapter][maturity][receiver], FixedMath.WAD) + uBal.fdiv(maxscale, FixedMath.WAD)),
                 uBase
             );
     }
