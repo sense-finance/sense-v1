@@ -87,7 +87,7 @@ contract TestHelper is DSTest {
         uint8 tDecimals = 18;
         stake = new MockToken("Stake Token", "ST", tDecimals);
         underlying = new MockToken("Dai Token", "DAI", tDecimals);
-        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals);
+        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 8);
         reward = new MockToken("Reward Token", "RT", tDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
         DELTA = convertToBase(DELTA, target.decimals());

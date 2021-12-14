@@ -22,9 +22,7 @@ contract MockAdapter is CropAdapter {
         }
         uint256 gps = adapterParams.delta.fmul(99 * (10**(18 - 2)), FixedMath.WAD); // delta - 1%;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
-        _value = lscale.value > 0
-            ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value
-            : INITIAL_VALUE;
+        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
     }
 
     function _claimReward() internal virtual override {

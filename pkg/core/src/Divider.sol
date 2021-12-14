@@ -645,7 +645,7 @@ contract TokenHandler is Trust {
     /// @notice Program state
     address public divider;
 
-    constructor() Trust(msg.sender) { }
+    constructor() Trust(msg.sender) {}
 
     function init(address _divider) external requiresTrust {
         require(divider == address(0));

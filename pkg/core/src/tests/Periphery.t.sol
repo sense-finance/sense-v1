@@ -101,7 +101,7 @@ contract PeripheryTest is TestHelper {
 
         // unwrap target into underlying
         (, uint256 lvalue) = adapter.lscale();
-        uint256 uBal = tBal.fmul(lvalue, 10**target.decimals());
+        uint256 uBal = tBal.fmul(lvalue, FixedMath.WAD);
 
         // calculate underlying swapped to zeros
         uint256 zBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
@@ -119,7 +119,7 @@ contract PeripheryTest is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
 
         // unwrap target into underlying
-        uint256 uBal = tBal.fmul(lvalue, 10**target.decimals());
+        uint256 uBal = tBal.fmul(lvalue, FixedMath.WAD);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -199,13 +199,9 @@ contract PeripheryTest is TestHelper {
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
-        // calculate zeros swapped to underlying
+        // calculate zeros swapped to target
         uint256 rate = balancerVault.EXCHANGE_RATE();
-        uint256 uBal = zBalBefore.fmul(rate, 10**target.decimals());
-
-        // wrap underlying into target
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 swapped = uBal.fdiv(lvalue, 10**target.decimals());
+        uint256 swapped = zBalBefore.fmul(rate, FixedMath.WAD);
 
         alice.doApprove(zero, address(periphery), zBalBefore);
         alice.doSwapZerosForTarget(address(adapter), maturity, zBalBefore, 0);
@@ -227,9 +223,13 @@ contract PeripheryTest is TestHelper {
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(address(alice));
         uint256 zBalBefore = ERC20(zero).balanceOf(address(alice));
 
-        // calculate zeros swapped to underlying
+        // calculate zeros swapped to target
         uint256 rate = balancerVault.EXCHANGE_RATE();
-        uint256 uBal = zBalBefore.fmul(rate, 10**target.decimals());
+        uint256 swapped = zBalBefore.fmul(rate, FixedMath.WAD);
+
+        // unwrap target into underlying
+        (, uint256 lvalue) = adapter.lscale();
+        uint256 uBal = swapped.fmul(lvalue, FixedMath.WAD);
 
         alice.doApprove(zero, address(periphery), zBalBefore);
         alice.doSwapZerosForUnderlying(address(adapter), maturity, zBalBefore, 0);
@@ -409,7 +409,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndSellClaims() public {
         uint256 tBal = 100e18;
-        uint256 targetToBorrow = 40.5e18;
+        uint256 targetToBorrow = 76188118050000000000;
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
@@ -550,7 +550,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100e18;
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
-        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+        sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256[] memory minAmountsOut = new uint256[](2);
 

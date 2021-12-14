@@ -68,9 +68,6 @@ contract GClaimsManager is TestHelper {
     }
 
     function testCantJoinAfterFirstGClaimNotEnoughTargetBalance() public {
-        uint256 tBase = 10**target.decimals();
-        divider.setGuard(address(target), 10000000000000000000000 * tBase);
-
         adapter.setScale(0.1e18); // freeze scale so no excess is generated
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -238,8 +235,9 @@ contract GClaimsManager is TestHelper {
         assertEq(tBalanceBefore, tBalanceAfter);
     }
 
+    // TODO: re-add this test once we use glcaims again
     function testFuzzExitGClaimWithCollected(uint128 balance) public {
-        balance = fuzzWithBounds(balance, 1000);
+        balance = fuzzWithBounds(balance, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         // avoid fuzz tests in which nothing is issued
