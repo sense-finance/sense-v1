@@ -92,7 +92,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Transfer stake asset stake from caller to adapter
         address target = Adapter(adapter).getTarget();
         (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
-        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
@@ -109,8 +108,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             issuance: uint128(block.timestamp),
             tilt: Adapter(adapter).tilt()
         });
-
         series[adapter][maturity] = newSeries;
+
+        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
     }
