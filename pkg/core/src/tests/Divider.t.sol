@@ -1320,18 +1320,6 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantBackfillScaleInvalidValue() public {
-        uint48 maturity = getValidMaturity(2021, 10);
-        sponsorSampleSeries(address(alice), maturity);
-        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        uint256 amount = 1 * (10**(target.decimals() - 2));
-        try divider.backfillScale(address(adapter), maturity, amount, usrs, lscales) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidScaleValue);
-        }
-    }
-
     function testBackfillScale() public {
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
