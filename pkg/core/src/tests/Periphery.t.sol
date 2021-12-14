@@ -340,7 +340,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             tBal,
-            0
+            1
         );
         uint256 tBalAfter = ERC20(adapter.getTarget()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -362,6 +362,9 @@ contract PeripheryTest is TestHelper {
 
         // add liquidity to mock Space pool
         addLiquidityToBalancerVault(maturity, 1000e18);
+
+        // init liquidity
+        alice.doAddLiquidityFromTarget(address(adapter), maturity, 1, 0);
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
@@ -400,8 +403,11 @@ contract PeripheryTest is TestHelper {
         uint256 tBase = 10**target.decimals();
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
-        // add liquidity to mockUniSwapRouter
+        // add liquidity to mock Space pool
         addLiquidityToBalancerVault(maturity, 1000e18);
+
+        // init liquidity
+        alice.doAddLiquidityFromTarget(address(adapter), maturity, 1, 1);
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
