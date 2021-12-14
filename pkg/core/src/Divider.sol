@@ -493,7 +493,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256[] calldata _lscales
     ) external requiresTrust {
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        require(mscale > series[adapter][maturity].iscale, Errors.InvalidScaleValue);
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the adapter is disabled, it will allow the admin to backfill no matter the maturity
