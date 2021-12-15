@@ -329,13 +329,9 @@ contract PeripheryTest is TestHelper {
         {
             // calculate claims to be issued
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            uint256 scale = 1e18;
-            uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], tBase),
-                tBase
-            ); // ABDK formula
+            uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
-            toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
+            toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT()); // TODO: sub fee??
         }
 
         bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
@@ -362,7 +358,7 @@ contract PeripheryTest is TestHelper {
         {
             // calculate zeros to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
+            uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
@@ -409,7 +405,7 @@ contract PeripheryTest is TestHelper {
         {
             // calculate zeros to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
+            uint256 proportionalTarget = (balances[1] * tBal) / (balances[1] + balances[0]);
             uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, Token(zero).BASE_UNIT());
 
