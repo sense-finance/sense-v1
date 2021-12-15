@@ -606,7 +606,7 @@ contract PeripheryTest is TestHelper {
         try bob.doMigrateLiquidity(address(adapter), dstAdapter, maturity, maturity, lpShares, minAmountsOut, 0, 0) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.TargetsNotMatch);
+            assertEq(error, Errors.TargetMismatch);
         }
     }
 
