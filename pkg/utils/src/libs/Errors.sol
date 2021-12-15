@@ -31,12 +31,6 @@ library Errors {
     string constant OnlyPermissionless = "Can only be invoked if permissionless mode is enabled";
     string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
     string constant Paused = "Pausable: paused";
-    string constant PoolAlreadyDeployed = "Pool already deployed";
-    string constant PoolNotDeployed = "Pool not yet deployed";
-    string constant TargetExists = "Target already added";
-    string constant TargetNotInFuse = "Target for this Series not yet added to Fuse";
-    string constant TargetsNotMatch = "Source Target must be the same a destination Target";
-    string constant TargetParamNotSet = "Target asset params not set";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
 }
