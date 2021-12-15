@@ -326,6 +326,7 @@ contract Periphery is Trust {
             uint256
         )
     {
+        require(Adapter(srcAdapter).getTarget() == Adapter(dstAdapter).getTarget(), Errors.TargetsNotMatch);
         uint256 tBal = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted);
         return _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
