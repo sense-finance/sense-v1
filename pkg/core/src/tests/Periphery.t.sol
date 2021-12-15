@@ -11,8 +11,11 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
+import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { BalancerPool } from "../external/balancer/Pool.sol";
+import { BalancerVault } from "../external/balancer/Vault.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
@@ -409,9 +412,9 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndSellClaims() public {
         uint256 tBal = 100e18;
-        uint256 targetToBorrow = 76188118050000000000;
+
         uint48 maturity = getValidMaturity(2021, 10);
-        sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
 
         // add liquidity to mock Space pool
@@ -419,6 +422,40 @@ contract PeripheryTest is TestHelper {
 
         // init liquidity
         alice.doAddLiquidityFromTarget(address(adapter), maturity, 1, 0);
+
+        // calculate targetToBorrow
+        uint256 targetToBorrow;
+        {
+            // compute target
+            uint256 tBase = 10**target.decimals();
+            uint256 zeroiBal = ERC20(zero).balanceOf(address(balancerVault));
+            uint256 targetiBal = target.balanceOf(address(balancerVault));
+            uint256 computedTarget = tBal.fmul(
+                zeroiBal.fdiv(adapter.scale().fmul(targetiBal, tBase) + zeroiBal, FixedMath.WAD),
+                tBase
+            ); // ABDK formula
+
+            // to issue
+            uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(computedTarget, tBase);
+            uint256 toBeIssued = (computedTarget - fee).fmul(lscale, FixedMath.WAD);
+
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            targetToBorrow = pool.onSwap(
+                BalancerPool.SwapRequest({
+                    kind: BalancerVault.SwapKind.GIVEN_OUT,
+                    tokenIn: target,
+                    tokenOut: ERC20(zero),
+                    amount: toBeIssued,
+                    poolId: 0,
+                    lastChangeBlock: 0,
+                    from: address(0),
+                    to: address(0),
+                    userData: ""
+                }),
+                0,
+                0
+            );
+        }
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.getTarget()).balanceOf(address(bob));
