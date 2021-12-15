@@ -227,10 +227,10 @@ contract TestHelper is DSTest {
         return amount;
     }
 
-    function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
+    function calculateAmountToIssue(uint256 tBal, uint256 baseUnit) public returns (uint256 toIssue) {
         (, uint256 cscale) = adapter._lscale();
         //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
-        toIssue = tBal.fmul(cscale, FixedMath.WAD);
+        toIssue = tBal.fmul(cscale, baseUnit);
     }
 
     function calculateExcess(
@@ -238,7 +238,7 @@ contract TestHelper is DSTest {
         uint48 maturity,
         address claim
     ) public returns (uint256 gap) {
-        uint256 toIssue = calculateAmountToIssue(tBal);
+        uint256 toIssue = calculateAmountToIssue(tBal, Token(claim).BASE_UNIT());
         gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }
 
