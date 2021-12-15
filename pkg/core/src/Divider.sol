@@ -500,24 +500,27 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If the adapter is disabled, it will allow the admin to backfill no matter the maturity
         require(!adapters[adapter] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
 
-        // Set the maturity scale for the Series (needed for `redeem` methods)
-        series[adapter][maturity].mscale = mscale;
-        if (mscale > series[adapter][maturity].maxscale) {
-            series[adapter][maturity].maxscale = mscale;
-        }
         // Set user's last scale values the Series (needed for the `collect` method)
         for (uint256 i = 0; i < _usrs.length; i++) {
             lscales[adapter][maturity][_usrs[i]] = _lscales[i];
         }
 
-        (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
+        if (mscale > 0) {
+            // Set the maturity scale for the Series (needed for `redeem` methods)
+            series[adapter][maturity].mscale = mscale;
+            if (mscale > series[adapter][maturity].maxscale) {
+                series[adapter][maturity].maxscale = mscale;
+            }
 
-        // Determine where the stake should go depending on where we are relative to the maturity date
-        address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
-        uint256 reward = series[adapter][maturity].reward;
+            (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
-        ERC20(target).safeTransferFrom(adapter, cup, reward);
-        ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
+            // Determine where the stake should go depending on where we are relative to the maturity date
+            address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
+            uint256 reward = series[adapter][maturity].reward;
+
+            ERC20(target).safeTransferFrom(adapter, cup, reward);
+            ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
+        }
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
     }
