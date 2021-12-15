@@ -597,7 +597,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         _;
     }
 
-    /* ========== EVENTS ========== */
+    /* ========== LOGS ========== */
 
     /// @notice Admin
     event Backfilled(
