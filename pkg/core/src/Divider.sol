@@ -167,8 +167,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Ensure the caller won't hit the issuance cap with this action
         if (guarded) require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
-        target.safeTransferFrom(msg.sender, adapter, tBalSubFee);
-        target.safeTransferFrom(msg.sender, adapter, fee);
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
@@ -190,6 +188,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Mint equal amounts of Zeros and Claims
         Zero(series[adapter][maturity].zero).mint(msg.sender, uBal);
         Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
+
+        target.safeTransferFrom(msg.sender, adapter, tBal);
 
         emit Issued(adapter, maturity, uBal, msg.sender);
     }
