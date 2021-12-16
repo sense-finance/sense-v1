@@ -1410,6 +1410,45 @@ contract Dividers is TestHelper {
         assertEq(cupStakeBalanceAfter, cupStakeBalanceBefore + convertToBase(STAKE_SIZE, stake.decimals()));
     }
 
+    function testFuzzBackfillOnlyLScale(uint128 tBal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
+        uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
+        sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+
+        uint256 tDecimals = target.decimals();
+        uint256 tBase = 10**tDecimals;
+        uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, tBase); // 1 target
+        bob.doIssue(address(adapter), maturity, tBal);
+
+        hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
+        divider.setAdapter(address(adapter), false);
+
+        usrs.push(address(alice));
+        usrs.push(address(bob));
+        lscales.push(5e17);
+        lscales.push(4e17);
+        divider.backfillScale(address(adapter), maturity, 0, usrs, lscales);
+
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
+        assertEq(mscale, 0);
+        assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
+        assertEq(
+            stake.balanceOf(address(alice)),
+            sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals())
+        );
+        assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore);
+        assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore);
+
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(alice));
+        assertEq(lscale, lscales[0]);
+        lscale = divider.lscales(address(adapter), maturity, address(bob));
+        assertEq(lscale, lscales[1]);
+    }
+
     /* ========== setAdapter() tests ========== */
     function testCantSetAdapterIfNotTrusted() public {
         try bob.doSetAdapter(address(adapter), false) {
