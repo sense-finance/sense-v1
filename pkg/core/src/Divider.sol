@@ -210,7 +210,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the Zeros
         Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
         // Collect whatever excess is due
-        _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
+        uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
         // We use lscale since the current scale was already stored there in `_collect()`
         uint256 cscale = series[adapter][maturity].mscale;
@@ -225,7 +225,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
         Adapter(adapter).notify(msg.sender, tBal, false);
-
+        tBal += collected;
         emit Combined(adapter, maturity, tBal, msg.sender);
     }
 

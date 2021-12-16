@@ -607,12 +607,13 @@ contract Dividers is TestHelper {
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        bob.doCombine(address(adapter), maturity, zBalanceBefore);
+        uint256 combined = bob.doCombine(address(adapter), maturity, zBalanceBefore);
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
-        require(zBalanceAfter == 0);
-        require(cBalanceAfter == 0);
+        assertEq(zBalanceAfter, 0);
+        assertEq(cBalanceAfter, 0);
+        assertClose((combined).fmul(lscale, FixedMath.WAD), zBalanceBefore); // check includes collected target
         assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, FixedMath.WAD), zBalanceBefore);
     }
 
@@ -633,8 +634,8 @@ contract Dividers is TestHelper {
         uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
 
-        require(zBalanceAfter == 0);
-        require(cBalanceAfter == 0);
+        assertEq(zBalanceAfter, 0);
+        assertEq(cBalanceAfter, 0);
         assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, FixedMath.WAD), zBalanceBefore);
     }
 
@@ -846,8 +847,7 @@ contract Dividers is TestHelper {
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) -
-            cBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) - cBalanceBefore.fdiv(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
