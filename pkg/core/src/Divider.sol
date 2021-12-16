@@ -185,9 +185,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
 
-        // Mint equal amounts of Zeros and Claims
-        Zero(series[adapter][maturity].zero).mint(msg.sender, uBal);
-        Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
+        // Calculate the amount of Underlying the Zeros for this issuance will be redeemable for,
+        // given that `uBal` pot is the total pot of principal
+        uint256 uZRedeemable = uBal.fmul(FixedMath.WAD - series[adapter][maturity].tilt, FixedMath.WAD);
+
+        // Mint equal amounts of Zeros and Claims representing the underlying balance
+        // that the Zeros will be redeemable for
+        Zero(series[adapter][maturity].zero).mint(msg.sender, uZRedeemable);
+        Claim(series[adapter][maturity].claim).mint(msg.sender, uZRedeemable);
 
         target.safeTransferFrom(msg.sender, adapter, tBal);
 
@@ -212,11 +217,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Collect whatever excess is due
         _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
-        // We use lscale since the current scale was already stored there in `_collect()`
+        // Optimistically assume there's a valid scale at maturity
         uint256 cscale = series[adapter][maturity].mscale;
         if (!_settled(adapter, maturity)) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
+            // We use lscale since the current scale is already stored there in `_collect()`
             cscale = lscales[adapter][maturity][msg.sender];
         }
 
@@ -242,19 +248,24 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
+
+        Series memory _series = series[adapter][maturity];
+
         // Burn the caller's Zeros
-        Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        Zero(_series.zero).burn(msg.sender, uBal);
 
         // Amount of Target these Zeros would ideally redeem for
-        tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
+        tBal = uBal.fdiv(_series.mscale, FixedMath.WAD);
 
-        if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
+        if (_series.mscale < _series.maxscale) {
             // Amount of Target they actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) /
-                series[adapter][maturity].maxscale;
+            uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, FixedMath.WAD);
 
             // Amount of Target we have set aside for Claims
-            uint256 tBalClaimActual = (uBal * series[adapter][maturity].tilt) / series[adapter][maturity].maxscale;
+            uint256 tBalClaimActual = uint256((uBal * _series.tilt) / (FixedMath.WAD - _series.tilt)).fdiv(
+                _series.maxscale,
+                FixedMath.WAD
+            );
 
             // Cut from Claim holders to cover any shortfall if we can
             if (tBalClaimActual != 0) {
@@ -408,15 +419,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If there's some principal set aside for Claims, determine whether they get it all
         if (_series.tilt != 0) {
             // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = (uBal * _series.tilt) / _series.maxscale;
+            tBal = uint256((uBal * _series.tilt) / (FixedMath.WAD - _series.tilt)).fdiv(
+                _series.maxscale,
+                FixedMath.WAD
+            );
 
-            // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
+            // If scale is down relative to its max for this Series, we'll try to take the shortfall out of Claim's principal
             if (_series.mscale < _series.maxscale) {
                 // Amount of Target we would ideally have set aside for Zero holders
-                uint256 tBalZeroIdeal = (uBal * (FixedMath.WAD - _series.tilt)) / _series.mscale;
+                uint256 tBalZeroIdeal = uBal.fdiv(_series.mscale, FixedMath.WAD);
 
                 // Amount of Target we actually have set aside for them (after collections from Claim holders)
-                uint256 tBalZeroActual = (uBal * (FixedMath.WAD - _series.tilt)) / _series.maxscale;
+                uint256 tBalZeroActual = uBal.fdiv(_series.maxscale, FixedMath.WAD);
 
                 // Calculate how much is getting taken from Claim's principal
                 uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
@@ -598,7 +612,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         _;
     }
 
-    /* ========== EVENTS ========== */
+    /* ========== LOGS ========== */
 
     /// @notice Admin
     event Backfilled(
@@ -645,7 +659,7 @@ contract TokenHandler is Trust {
     /// @notice Program state
     address public divider;
 
-    constructor() Trust(msg.sender) { }
+    constructor() Trust(msg.sender) {}
 
     function init(address _divider) external requiresTrust {
         require(divider == address(0));

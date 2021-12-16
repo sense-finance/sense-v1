@@ -739,8 +739,6 @@ contract Dividers is TestHelper {
     function testRedeemZeroPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
         uint128 tilt = 0.1e18;
-        // The Targeted redemption value Alice will send Bob wants, in Underlying
-        uint256 intendedRedemptionValue = 50e18;
 
         adapter.setTilt(tilt);
         // Sanity check
@@ -752,33 +750,27 @@ contract Dividers is TestHelper {
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
-        alice.doIssue(address(adapter), maturity, tBal);
+        bob.doIssue(address(adapter), maturity, tBal);
+        uint256 zeroBalanceAfterIssuance = ERC20(zero).balanceOf(address(bob));
 
-        // Alice transfers Zeros that would ideally redeem for 50 Underlying at maturity
-        // 50 = zero bal * 1 - tilt
-        alice.doTransfer(address(zero), address(bob), intendedRedemptionValue.fdiv(1e18 - tilt, 1e18));
-
-        uint256 tBalanceBeforeRedeem = ERC20(target).balanceOf(address(bob));
-        uint256 zeroBalanceBefore = ERC20(zero).balanceOf(address(bob));
         hevm.warp(maturity);
-        // Set scale to 90% of its initial value
+
+        // Set scale to 90% of its initial value & settle the Series
         adapter.setScale(0.9e18);
         alice.doSettleSeries(address(adapter), maturity);
-        uint256 redeemed = bob.doRedeemZero(address(adapter), maturity, zeroBalanceBefore);
 
-        // Even though the scale has gone down, Zeros should redeem for 100% of their intended redemption
-        assertClose(redeemed, intendedRedemptionValue.fdiv(adapter.scale(), 1e18), 10);
-
+        uint256 tBalanceBeforeRedeem = ERC20(target).balanceOf(address(bob));
+        uint256 redeemed = bob.doRedeemZero(address(adapter), maturity, zeroBalanceAfterIssuance);
         uint256 tBalanceAfterRedeem = ERC20(target).balanceOf(address(bob));
+
+        // Even though the scale has gone down, Zeros should redeem for 100% of their intended underlying
+        assertEq(redeemed, zeroBalanceAfterIssuance.fdiv(adapter.scale(), 1e18));
+
         // Redeemed amount should match the amount of Target bob got back
         assertEq(tBalanceAfterRedeem - tBalanceBeforeRedeem, redeemed);
 
         // Bob should have gained Target comensurate with the entire intended Zero redemption value
-        assertClose(
-            tBalanceBeforeRedeem + intendedRedemptionValue.fdiv(adapter.scale(), 1e18),
-            tBalanceAfterRedeem,
-            10
-        );
+        assertEq(tBalanceBeforeRedeem + zeroBalanceAfterIssuance.fdiv(adapter.scale(), 1e18), tBalanceAfterRedeem);
     }
 
     function testRedeemZeroNoTiltNegativeScale() public {
@@ -836,18 +828,20 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         uint256 tBal = 100e18;
         bob.doIssue(address(adapter), maturity, tBal);
+
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
+
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 collected = bob.doCollect(claim);
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
+
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) -
-            cBalanceBefore.fdiv(cscale, FixedMath.WAD);
+            cBalanceBefore.fdiv(adapter.scale(), FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -855,9 +849,11 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
         collected = bob.doCollect(claim);
+        // Bob should have his Claims burned
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , , mscale, , ) = divider.series(address(adapter), maturity);
-        uint256 redeemed = cBalanceAfter.fdiv(mscale, FixedMath.WAD).fmul(0.1e18, FixedMath.WAD);
+        uint256 redeemed = uint256(cBalanceAfter * 0.1e18 / (FixedMath.WAD - 0.1e18))
+            .fdiv(mscale, FixedMath.WAD);
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
     }
 
@@ -882,6 +878,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         adapter.setScale(0.90e18);
         alice.doSettleSeries(address(adapter), maturity);
+
         uint256 collected = bob.doCollect(claim);
         // Nothing to collect if scale went down
         assertEq(collected, 0);
@@ -891,6 +888,8 @@ contract Dividers is TestHelper {
         // Claim holders are cut out completely and don't get any of their principal back
         assertEq(tBalanceBefore, tBalanceAfter);
     }
+
+    // TODO: combine
 
     /* ========== collect() tests ========== */
     function testCantCollectDisabledAdapter() public {
