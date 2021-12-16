@@ -90,6 +90,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Transfer stake asset stake from caller to adapter
         (address target, , , , address stake, uint256 stakeSize, , , ) = Adapter(adapter).adapterParams();
+        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
@@ -106,9 +107,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             issuance: uint128(block.timestamp),
             tilt: Adapter(adapter).tilt()
         });
-        series[adapter][maturity] = newSeries;
 
-        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
+        series[adapter][maturity] = newSeries;
 
         emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
     }
@@ -252,6 +252,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the caller's Zeros
         Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
         // Amount of Target these Zeros would ideally redeem for
         tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
 
@@ -286,7 +287,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             }
         }
 
-        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
+        target.safeTransferFrom(adapter, msg.sender, tBal);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 
