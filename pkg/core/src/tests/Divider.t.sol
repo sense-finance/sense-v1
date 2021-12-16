@@ -852,8 +852,7 @@ contract Dividers is TestHelper {
         // Bob should have his Claims burned
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , , mscale, , ) = divider.series(address(adapter), maturity);
-        uint256 redeemed = uint256(cBalanceAfter * 0.1e18 / (FixedMath.WAD - 0.1e18))
-            .fdiv(mscale, FixedMath.WAD);
+        uint256 redeemed = uint256((cBalanceAfter * 0.1e18) / (FixedMath.WAD - 0.1e18)).fdiv(mscale, FixedMath.WAD);
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
     }
 
