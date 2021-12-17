@@ -131,8 +131,8 @@ contract User {
         address adapter,
         uint48 maturity,
         uint256 balance
-    ) public {
-        divider.combine(adapter, maturity, balance);
+    ) public returns (uint256 tBal) {
+        return divider.combine(adapter, maturity, balance);
     }
 
     function doBackfillScale(

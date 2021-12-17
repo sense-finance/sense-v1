@@ -222,6 +222,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_settled(adapter, maturity)) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
+            
             // We use lscale since the current scale is already stored there in `_collect()`
             cscale = lscales[adapter][maturity][msg.sender];
         }
@@ -229,6 +230,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Convert from units of Underlying to units of Target
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
+        if (series[adapter][maturity].tilt > 0) {
+            tBal = tBal.fdiv(FixedMath.WAD - series[adapter][maturity].tilt, FixedMath.WAD);
+        }
         target.safeTransferFrom(adapter, msg.sender, tBal);
         Adapter(adapter).notify(msg.sender, tBal, false);
 
@@ -659,7 +663,7 @@ contract TokenHandler is Trust {
     /// @notice Program state
     address public divider;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) { }
 
     function init(address _divider) external requiresTrust {
         require(divider == address(0));

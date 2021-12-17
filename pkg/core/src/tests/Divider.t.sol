@@ -638,6 +638,40 @@ contract Dividers is TestHelper {
         assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, FixedMath.WAD), zBalanceBefore);
     }
 
+    function testCombinePositiveTilt() public {
+        // Reserve 10% of principal for Claims
+        uint128 tilt = 0.1e18;
+
+        adapter.setTilt(tilt);
+        // Sanity check
+        assertEq(adapter.tilt(), tilt);
+
+        adapter.setScale(1e18);
+
+        uint256 tBase = 10**target.decimals();
+        uint256 tBal = 100 * tBase;
+
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 tBalanceBeforeIssue = target.balanceOf(address(bob));
+        bob.doIssue(address(adapter), maturity, tBal);
+        uint256 ifeePaid = tBal.fmul(ISSUANCE_FEE, FixedMath.WAD);
+
+        hevm.warp(block.timestamp + 1 days);
+
+        uint256 tBalanceBeforeCombine = target.balanceOf(address(bob));
+        uint256 zBalanceBefore = ERC20(zero).balanceOf(address(bob));
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
+
+        uint256 combined = bob.doCombine(address(adapter), maturity, zBalanceBefore);
+
+        assertEq(ERC20(zero).balanceOf(address(bob)), 0);
+        assertEq(ERC20(claim).balanceOf(address(bob)), 0);
+        assertEq(combined + tBalanceBeforeCombine, tBalanceBeforeIssue - ifeePaid);
+        assertEq(target.balanceOf(address(bob)), tBalanceBeforeIssue - ifeePaid);
+    }
+
     /* ========== redeemZero() tests ========== */
     function testCantRedeemZeroDisabledAdapter() public {
         uint48 maturity = getValidMaturity(2021, 10);
@@ -888,7 +922,39 @@ contract Dividers is TestHelper {
         assertEq(tBalanceBefore, tBalanceAfter);
     }
 
-    // TODO: combine
+    function testRedeemClaimPositiveTiltNegativeScale() public {
+        // Reserve 10% of principal for Claims
+        adapter.setTilt(0.1e18);
+        // Sanity check
+        assertEq(adapter.tilt(), 0.1e18);
+
+        // Reserve 10% of principal for Claims
+        adapter.setScale(1e18);
+        // Sanity check
+        assertEq(adapter.scale(), 1e18);
+
+        uint48 maturity = getValidMaturity(2021, 10);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        uint256 tBal = 100e18;
+        bob.doIssue(address(adapter), maturity, tBal);
+
+        uint256 tBalanceBefore = ERC20(target).balanceOf(address(bob));
+        hevm.warp(maturity);
+        adapter.setScale(0.90e18);
+        alice.doSettleSeries(address(adapter), maturity);
+
+        uint256 collected = bob.doCollect(claim);
+        // Nothing to collect if scale went down
+        assertEq(collected, 0);
+        // Claim tokens should be burned
+        assertEq(ERC20(claim).balanceOf(address(bob)), 0);
+        uint256 tBalanceAfter = ERC20(target).balanceOf(address(bob));
+        // Claim holders are cut out completely and don't get any of their principal back
+        assertEq(tBalanceBefore, tBalanceAfter);
+    }
+
+    // partial redeem
 
     /* ========== collect() tests ========== */
     function testCantCollectDisabledAdapter() public {
