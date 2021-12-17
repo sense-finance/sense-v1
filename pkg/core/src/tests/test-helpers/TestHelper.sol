@@ -84,11 +84,21 @@ contract TestHelper is DSTest {
     function setUp() public virtual {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        uint8 tDecimals = 18;
-        stake = new MockToken("Stake Token", "ST", tDecimals);
-        underlying = new MockToken("Dai Token", "DAI", tDecimals);
-        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 8);
-        reward = new MockToken("Reward Token", "RT", tDecimals);
+        uint8 baseDecimals = 18;
+        stake = new MockToken("Stake Token", "ST", baseDecimals);
+        underlying = new MockToken("Dai Token", "DAI", baseDecimals);
+        // Get Target decimal number from the environment
+        string[] memory inputs = new string[](2);
+        inputs[0] = "just";
+        inputs[1] = "_forge_mock_target_decimals";
+        uint8 targetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
+        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", targetDecimals);
+        emit log_named_uint(
+            "Running tests with the Mock Target configured with the following number of decimals",
+            uint256(targetDecimals)
+        );
+
+        reward = new MockToken("Reward Token", "RT", baseDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
         DELTA = convertToBase(DELTA, target.decimals());
 

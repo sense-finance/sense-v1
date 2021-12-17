@@ -8,6 +8,9 @@ set positional-arguments
 
 ## ---- Environment ----
 
+HEX_18 := "0x0000000000000000000000000000000000000000000000000000000000000012"
+HEX_8  := "0x0000000000000000000000000000000000000000000000000000000000000008"
+
 ## for mainnet tests and deployments
 ALCHEMY_KEY := env_var("ALCHEMY_KEY")
 MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
@@ -15,6 +18,8 @@ MNEMONIC    := env_var("MNEMONIC")
 
 DAPP_SOLC_VERSION   := "0.8.6"
 DAPP_BUILD_OPTIMIZE := "1"
+
+## forge testing configuration
 DAPP_COVERAGE       := "1"
 # when developing we only want to fuzz briefly
 DAPP_TEST_FUZZ_RUNS := "100"
@@ -23,6 +28,9 @@ DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 DAPP_REMAPPINGS   := remappings-from-pkg-deps
 # user with cDAI
 # DAPP_TEST_ADDRESS := "0xb1e9d641249a2033c37cf1c241a01e717c2f6c76"
+# set mock target to 18 decimals by default
+FORGE_MOCK_TARGET_DECIMALS := env_var_or_default("FORGE_MOCK_TARGET_DECIMALS", HEX_18)
+
 
 # export just vars as env vars
 set export
@@ -55,6 +63,14 @@ build: && _timer
 build-solc7: && _timer
 	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
 
+turbo-build: && _timer
+	@cd {{ invocation_directory() }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
+		--root {{ invocation_directory() }}
+
+turbo-build-dir *dir="":
+	@cd {{ invocation_directory() }}; cd {{ dir }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
+		--root {{ dir }} >> /dev/null; printf 0x00
+
 # debug and open dapp's TTY debugger
 debug:
 	cd {{ invocation_directory() }}; dapp debug
@@ -64,36 +80,47 @@ test: test-local
 test-solc7: test-local-solc7
 
 # run local dapp tests (all files with the extension .t.sol)
-test-local *commands="": && _timer
-	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ commands }}
+test-local *cmds="": && _timer
+	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ cmds }}
 
-test-local-solc7 *commands="": && _timer
-	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ commands }}
+test-local-solc7 *cmds="": && _timer
+	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ cmds }}
 
 # run mainnet fork dapp tests (all files with the extension .tm.sol)
-test-mainnet *commands="": && _timer
-	cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ commands }}
+test-mainnet *cmds="": && _timer
+	@cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ cmds }}
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
 	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		-m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
 
 turbo-test-local-no-fuzz *cmds="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		-m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
 
 turbo-test-mainnet: && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		--fork-url {{ MAINNET_RPC }} -m "^testMainnet"
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
 turbo-test-match *exp="": && _timer
-	cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 \
-		-m {{ exp }}
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 --force --root {{ invocation_directory() }} \
+		--ffi -m {{ exp }}
+
+turbo-test-mainnet-match *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 5 --force --root {{ invocation_directory() }} \
+		--ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
+
+
+turbo-test-local-8-decimal-target *cmds="": && _timer
+	cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
 
 # default gas snapshot script
 gas-snapshot: gas-snapshot-local
@@ -112,6 +139,9 @@ start_time := `date +%s`
 _timer:
 	@echo "Task executed in $(($(date +%s) - {{ start_time }})) seconds"
 
+# Solidity test ffi callback to get Target decimals for the base Mock Target token
+_forge_mock_target_decimals:
+	@printf {{ FORGE_MOCK_TARGET_DECIMALS }}
 
 remappings-from-pkg-deps := ```
 	cat pkg/*/package.json  |
