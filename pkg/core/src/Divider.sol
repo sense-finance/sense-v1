@@ -319,10 +319,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 lscale = lscales[adapter][maturity][usr];
         Claim claim = Claim(series[adapter][maturity].claim);
 
-        // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
-        // set the "last scale" value to the scale at issuance for this series
-        if (lscale == 0) lscale = _series.iscale;
-
         // If the Series has been settled, this should be their last collect, so redeem the user's claims for them
         if (_settled(adapter, maturity)) {
             _redeemClaim(usr, adapter, maturity, uBal);
