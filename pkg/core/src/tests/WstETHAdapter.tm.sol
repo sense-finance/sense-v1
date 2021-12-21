@@ -44,6 +44,10 @@ interface WstETHInterface {
     function getWstETHByStETH(uint256 _stETHAmount) external returns (uint256);
 }
 
+interface StEthPriceFeed {
+    function safe_price_value() external returns (uint256);
+}
+
 contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     WstETHAdapter adapter;
     Divider internal divider;
@@ -84,9 +88,10 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     using FixedMath for uint256;
 
     function testMainnetWstETHAdapterScale() public {
-        WstETHInterface wstETH = WstETHInterface(Assets.WSTETH);
+        uint256 ethStEth = StEthPriceFeed(Assets.STETHPRICEFEED).safe_price_value();
+        uint256 wstETHstETH = WstETHInterface(Assets.WSTETH).stEthPerToken();
 
-        uint256 scale = wstETH.stEthPerToken();
+        uint256 scale = ethStEth.fmul(wstETHstETH, FixedMath.WAD);
         assertEq(adapter.scale(), scale);
     }
 
