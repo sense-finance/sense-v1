@@ -319,10 +319,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 lscale = lscales[adapter][maturity][usr];
         Claim claim = Claim(series[adapter][maturity].claim);
 
-        // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
-        // set the "last scale" value to the scale at issuance for this series
-        if (lscale == 0) lscale = _series.iscale;
-
         // If the Series has been settled, this should be their last collect, so redeem the user's claims for them
         if (_settled(adapter, maturity)) {
             _redeemClaim(usr, adapter, maturity, uBal);
@@ -357,7 +353,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalNow = uBal.fdiv(_series.maxscale, FixedMath.WAD);
         collected = uBal.fdiv(lscale, FixedMath.WAD) - tBalNow;
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
-        Adapter(adapter).notify(usr, collected, false); // distribute reward tokens
+        Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
