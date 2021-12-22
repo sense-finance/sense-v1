@@ -27,9 +27,12 @@ abstract contract BaseAdapter is Initializable {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
 
+    /* ========== CONSTANTS ========== */
+
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
-    /// Configuration --------
+    /* ========== PUBLIC MUTABLE STORAGE ========== */
+
     address public divider;
     AdapterParams public adapterParams;
     struct AdapterParams {
@@ -44,7 +47,6 @@ abstract contract BaseAdapter is Initializable {
         uint8 mode; // 0 for monthly, 1 for weekly
     }
 
-    /// Program state --------
     string public name;
     string public symbol;
     LScale public lscale;
@@ -127,6 +129,8 @@ abstract contract BaseAdapter is Initializable {
         return value;
     }
 
+     /* ========== REQUIRED VALUE GETTERS ========== */
+
     /// @notice Scale getter to be overriden by child contracts
     /// @dev This function _must_ return an 18 decimal number representing the current exchange rate
     /// between the Target and the Underlying.
@@ -135,22 +139,10 @@ abstract contract BaseAdapter is Initializable {
     /// @notice Underlying token address getter that must be overriden by child contracts
     function underlying() external view virtual returns (address);
 
-    /// @notice Tilt value getter that may be overriden by child contracts
-    /// @dev Returns `0` by default, which means no principal is set aside for Claims
-    /// @dev This function _must_ return an 18 decimal number representing the percentage of the total
-    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
-    function tilt() external virtual returns (uint128) {
-        return 0;
-    }
+    /// @notice Returns the current price of the underlying in ETH terms
+    function getUnderlyingPrice() external view virtual returns (uint256);
 
-    /// @notice Notification whenever the Divider adds or removes Target
-    function notify(
-        address, /* usr */
-        uint256, /* amt */
-        bool /* join */
-    ) public virtual {
-        return;
-    }
+    /* ========== REQUIRED UTILITIES ========== */
 
     /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts
     /// @param amount Underlying amount
@@ -162,10 +154,38 @@ abstract contract BaseAdapter is Initializable {
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
-    /// @notice Returns the current price of the underlying in ETH terms
-    function getUnderlyingPrice() external view virtual returns (uint256);
+    /* ========== OPTIONAL VALUE GETTERS ========== */
 
-    /* ========== ACCESSORS ========== */
+    /// @notice Tilt value getter that may be overriden by child contracts
+    /// @dev Returns `0` by default, which means no principal is set aside for Claims
+    /// @dev This function _must_ return an 18 decimal number representing the percentage of the total
+    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
+    function tilt() external view virtual returns (uint128) {
+        return 0;
+    }
+
+    /// @notice Level value getter that may be overriden by child contracts
+    /// @dev Returns `7` by default, which means that Series from this adapter will have full
+    /// access to Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`).
+    /// @dev The number this function returns will be used to determine its access by checking for binary
+    /// digits using the following scheme: <issue(y/n)><combine(y/n)><collect(y/n)> 
+    /// (e.g. 101 means issue and collect are allowed, but combines are not)
+    function level() external view virtual returns (uint8) {
+        return 7;
+    }
+
+    /* ========== OPTIONAL HOOKS ========== */
+
+    /// @notice Notification whenever the Divider adds or removes Target
+    function notify(
+        address, /* usr */
+        uint256, /* amt */
+        bool /* join */
+    ) public virtual {
+        return;
+    }
+
+    /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
     function getTarget() external view returns (address) {
         return adapterParams.target;
