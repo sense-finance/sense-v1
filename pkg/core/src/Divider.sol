@@ -54,7 +54,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address claim; // Claim ERC20 token
         address sponsor; // actor who initialized the Series
         uint256 reward; // tracks fees due to the series' settler
-        uint256 iscale; // scale at issuance
         uint256 mscale; // scale at maturity
         uint256 maxscale; // max scale value from this series' lifetime
         uint128 issuance; // timestamp of series initialization
@@ -101,7 +100,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             claim: claim,
             sponsor: sponsor,
             reward: 0,
-            iscale: Adapter(adapter).scale(),
             mscale: 0,
             maxscale: Adapter(adapter).scale(),
             issuance: uint128(block.timestamp),

@@ -69,10 +69,10 @@ abstract contract CropAdapter is BaseAdapter {
         if (curr > last) {
             unchecked {
                 ERC20(reward).safeTransfer(_usr, curr - last);
+                rewardBal = ERC20(reward).balanceOf(address(this));
+                emit Distributed(_usr, reward, curr > last ? curr - last : 0);
             }
         }
-        rewardBal = ERC20(reward).balanceOf(address(this));
-        emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
     /// @notice Some protocols don't airdrop reward tokens, instead users must claim them –

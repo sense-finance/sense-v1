@@ -199,7 +199,7 @@ contract PoolManager is Trust {
         uint48 maturity,
         address pool
     ) external requiresTrust {
-        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        (address zero, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(zero != address(0), Errors.SeriesDoesntExists);
@@ -219,7 +219,7 @@ contract PoolManager is Trust {
     function addSeries(address adapter, uint48 maturity) external {
         require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
 
-        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        (address zero, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         address pool = sPools[adapter][maturity];
 

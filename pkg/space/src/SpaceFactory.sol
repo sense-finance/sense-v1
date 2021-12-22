@@ -19,7 +19,6 @@ interface DividerLike {
             address, /* claim */
             address, /* sponsor */
             uint256, /* reward */
-            uint256, /* iscale */
             uint256, /* mscale */
             uint256, /* maxscale */
             uint128, /* issuance */

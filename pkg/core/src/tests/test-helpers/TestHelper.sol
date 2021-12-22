@@ -75,7 +75,6 @@ contract TestHelper is DSTest {
         address sponsor; // Series initializer/sponsor
         uint256 issuance; // Issuance date for this Series (needed for Zero redemption)
         uint256 reward; // Tracks the fees due to the settler on Settlement
-        uint256 iscale; // Scale value at issuance
         uint256 mscale; // Scale value at maturity
         uint256 stakeBal; // Balance staked at initialisation TODO: do we want to keep this?
         address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
@@ -229,7 +228,7 @@ contract TestHelper is DSTest {
     }
 
     function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
-        (address zero, address claim, , , , , , , ) = divider.series(address(adapter), maturity);
+        (address zero, address claim, , , , , , ) = divider.series(address(adapter), maturity);
         uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
         alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
         alice.doTransfer(zero, address(balancerVault), issued);

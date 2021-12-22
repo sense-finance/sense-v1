@@ -166,7 +166,7 @@ contract MockSpaceFactory {
     }
 
     function create(address _adapter, uint48 _maturity) external returns (address) {
-        (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
+        (address _zero, , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
         address _target = Adapter(_adapter).getTarget();
 
         pool = new MockSpacePool(address(vault), _target, _zero);
