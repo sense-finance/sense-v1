@@ -156,7 +156,7 @@ contract PeripheryTest is TestHelper {
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, tBase);
         uint256 claimsAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
-        bob.doSwapTargetForClaims(address(adapter), maturity, tBal);
+        bob.doSwapTargetForClaims(address(adapter), maturity, tBal, 0);
 
         assertEq(cBalBefore + claimsAmount, ERC20(claim).balanceOf(address(bob)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
@@ -182,7 +182,7 @@ contract PeripheryTest is TestHelper {
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.getIssuanceFee() / convertBase(target.decimals())).fmul(tBal, tBase);
         uint256 claimsAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
-        bob.doSwapUnderlyingForClaims(address(adapter), maturity, uBal);
+        bob.doSwapUnderlyingForClaims(address(adapter), maturity, uBal, 0);
 
         assertEq(cBalBefore + claimsAmount, ERC20(claim).balanceOf(address(bob)));
         assertEq(zBalBefore, ERC20(zero).balanceOf(address(alice)));
