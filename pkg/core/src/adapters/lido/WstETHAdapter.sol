@@ -77,9 +77,9 @@ contract WstETHAdapter is BaseAdapter {
     function _scale() internal virtual override returns (uint256) {
         // In order to account for the stETH/ETH CurveStableSwap rate, we use `safe_price_value` from Lido's stETH price feed.
         // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
-        uint256 ethStEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached ETH/stETH safe price
+        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
         uint256 wstETHstETH = WstETHInterface(adapterParams.target).stEthPerToken(); // stETH tokens corresponding to one wstETH
-        return ethStEth.fmul(wstETHstETH, FixedMath.WAD);
+        return stEthEth.fmul(wstETHstETH, FixedMath.WAD);
     }
 
     function underlying() external view override returns (address) {
