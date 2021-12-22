@@ -353,7 +353,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalNow = uBal.fdiv(_series.maxscale, FixedMath.WAD);
         collected = uBal.fdiv(lscale, FixedMath.WAD) - tBalNow;
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
-        Adapter(adapter).notify(usr, collected, false); // distribute reward tokens
+        Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)

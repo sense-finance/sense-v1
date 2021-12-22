@@ -971,7 +971,6 @@ contract Dividers is TestHelper {
         adapter.setScale(1e18);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         bob.doIssue(address(adapter), maturity, tBal);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
@@ -1269,7 +1268,6 @@ contract Dividers is TestHelper {
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         uint256 collected = tBalanceAfter - tBalanceBefore;
-        uint256 collectedAfterTransfer = alice.doCollect(claim); // try to collect
 
         (, , , , , , uint256 mscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
@@ -1280,7 +1278,6 @@ contract Dividers is TestHelper {
         assertEq(collected, collect);
         assertEq(cBalanceAfter, cBalanceBefore);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
-        assertEq(collectedAfterTransfer, 0);
     }
 
     /* ========== backfillScale() tests ========== */
