@@ -47,4 +47,5 @@ library Errors {
     string constant TargetParamNotSet = "Target asset params not set";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
+    string constant CombineNotEnabled = "Combine not enabled for this Adapter";
 }

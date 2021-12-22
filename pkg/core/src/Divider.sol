@@ -26,6 +26,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Configuration
     uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
     uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
+    uint256 public constant ISSUANCE_BUFFER = 1 days;
     uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
 
     /// @notice Program state
@@ -153,6 +154,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
+        if (Adapter(adapter).level() & 2**2 == 2**2 && series[adapter][maturity].issuance + ISSUANCE_BUFFER >= block.timestamp) {
+            revert(Errors.CombineNotEnabled);
+        }
 
         ERC20 target = ERC20(Adapter(adapter).getTarget());
 
@@ -206,6 +210,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+        if (Adapter(adapter).level() & 2**1 == 2**1) {
+            revert(Errors.CombineNotEnabled);
+        }
 
         // Burn the Zeros
         Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
@@ -312,6 +319,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) internal returns (uint256 collected) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+
+        if (Adapter(adapter).level() & 2**0 == 2**0) {
+            return 0;
+        }
 
         Series memory _series = series[adapter][maturity];
 
