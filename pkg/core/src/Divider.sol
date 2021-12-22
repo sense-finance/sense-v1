@@ -515,7 +515,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
             // Determine where the stake should go depending on where we are relative to the maturity date
-            address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
+            address stakeDst = adapters[adapter] ? cup : series[adapter][maturity].sponsor;
             uint256 reward = series[adapter][maturity].reward;
 
             ERC20(target).safeTransferFrom(adapter, cup, reward);
