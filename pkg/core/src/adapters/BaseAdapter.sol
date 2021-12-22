@@ -129,7 +129,7 @@ abstract contract BaseAdapter is Initializable {
         return value;
     }
 
-     /* ========== REQUIRED VALUE GETTERS ========== */
+    /* ========== REQUIRED VALUE GETTERS ========== */
 
     /// @notice Scale getter to be overriden by child contracts
     /// @dev This function _must_ return an 18 decimal number representing the current exchange rate
@@ -168,8 +168,8 @@ abstract contract BaseAdapter is Initializable {
     /// @dev Returns `7` by default, which means that Series from this adapter will have full
     /// access to Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`).
     /// @dev The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <issue(y/n)><combine(y/n)><collect(y/n)> 
-    /// (e.g. 101 means issue and collect are allowed, but combines are not)
+    /// digits using the following scheme: <collect(y/n)><combine(y/n)><issue(y/n)>
+    /// (e.g. 101 means `issue` and `collect` are allowed, but `combine` is not)
     function level() external view virtual returns (uint8) {
         return 7;
     }
@@ -199,7 +199,15 @@ abstract contract BaseAdapter is Initializable {
         return (adapterParams.minm, adapterParams.maxm);
     }
 
-    function getStakeAndTarget() external view returns (address, address, uint256) {
+    function getStakeAndTarget()
+        external
+        view
+        returns (
+            address,
+            address,
+            uint256
+        )
+    {
         return (adapterParams.target, adapterParams.stake, adapterParams.stakeSize);
     }
 

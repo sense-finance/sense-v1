@@ -154,8 +154,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
-        if (Adapter(adapter).level() & 2**2 == 2**2 && series[adapter][maturity].issuance + ISSUANCE_BUFFER >= block.timestamp) {
-            revert(Errors.CombineNotEnabled);
+        if (
+            Adapter(adapter).level() & (2**0) != 2**0 &&
+            series[adapter][maturity].issuance + ISSUANCE_BUFFER >= block.timestamp
+        ) {
+            revert(Errors.IssuanceNotEnabled);
         }
 
         ERC20 target = ERC20(Adapter(adapter).getTarget());
@@ -175,15 +178,22 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
-        // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
-        uint256 scale = lscales[adapter][maturity][msg.sender];
+        uint256 scale;
+        // If collect has been disabled for this Series, issue using issuance scale always
+        if (Adapter(adapter).level() & (2**2) != 2**2) {
+            // If the Series has settled, we ensure everyone
+            scale = series[adapter][maturity].iscale;
+        } else {
+            // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
+            // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
+            scale = lscales[adapter][maturity][msg.sender];
 
-        // If the caller has not collected on Claims before, use the current scale value to determine how many Zeros/Claims to mint
-        // so that the Claims they mint here are "clean," in that they have no yet-to-be-collected yield
-        if (scale == 0) {
-            scale = Adapter(adapter).scale();
-            lscales[adapter][maturity][msg.sender] = scale;
+            // If the caller has not collected on Claims before, use the current scale value to determine how many Zeros/Claims to mint
+            // so that the Claims they mint here are "clean," in that they have no yet-to-be-collected yield
+            if (scale == 0) {
+                scale = Adapter(adapter).scale();
+                lscales[adapter][maturity][msg.sender] = scale;
+            }
         }
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
@@ -210,7 +220,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        if (Adapter(adapter).level() & 2**1 == 2**1) {
+        if (Adapter(adapter).level() & (2**1) != 2**1 && !_settled(adapter, maturity)) {
             revert(Errors.CombineNotEnabled);
         }
 
@@ -320,19 +330,20 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
 
-        if (Adapter(adapter).level() & 2**0 == 2**0) {
-            return 0;
-        }
-
         Series memory _series = series[adapter][maturity];
 
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[adapter][maturity][usr];
         Claim claim = Claim(series[adapter][maturity].claim);
 
-        // If this is the Claim holder's first time collecting and nobody sent these Claims to them,
-        // set the "last scale" value to the scale at issuance for this series
-        if (lscale == 0) lscale = _series.iscale;
+        if (Adapter(adapter).level() & (2**2) != 2**2) {
+            // If the Series has settled, we ensure everyone
+            if (_settled(adapter, maturity)) {
+                lscale = _series.iscale;
+            } else {
+                return 0;
+            }
+        }
 
         // If the Series has been settled, this should be their last collect, so redeem the user's claims for them
         if (_settled(adapter, maturity)) {
@@ -368,7 +379,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalNow = uBal.fdiv(_series.maxscale, FixedMath.WAD);
         collected = uBal.fdiv(lscale, FixedMath.WAD) - tBalNow;
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
-        Adapter(adapter).notify(usr, collected, false); // distribute reward tokens
+        Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to this scale (as all yield is being stripped off before the Claims are sent)
@@ -659,7 +670,7 @@ contract TokenHandler is Trust {
     /// @notice Program state
     address public divider;
 
-    constructor() Trust(msg.sender) { }
+    constructor() Trust(msg.sender) {}
 
     function init(address _divider) external requiresTrust {
         require(divider == address(0));

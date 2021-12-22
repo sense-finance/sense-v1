@@ -575,6 +575,24 @@ contract Dividers is TestHelper {
         }
     }
 
+    function testCantCombineIfProperLevelIsntSet() public {
+        // Enable issue and collect, but not combine
+        adapter.setLevel(2**2 + 2**0);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+        try bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob))) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.CombineNotEnabled);
+        }
+
+        // Collect still works
+        hevm.warp(block.timestamp + 1 days);
+        uint256 collected = bob.doCollect(claim);
+        assertTrue(collected > 0);
+    }
+
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
@@ -902,6 +920,26 @@ contract Dividers is TestHelper {
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidAdapter);
         }
+    }
+
+    function testCantCollectIfProperLevelIsntSet() public {
+        // Enable issue and combine, but not collect
+        adapter.setLevel(2**1 + 2**0);
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 initScale = adapter.scale();
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+        hevm.warp(block.timestamp + 1 days);
+
+        // Scale has grown so there should be excess yield available
+        assertTrue(initScale < adapter.scale());
+
+        // Yet none is collected
+        uint256 collected = bob.doCollect(claim);
+        assertEq(collected, 0);
+
+        // It should still be possible to combine
+        bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob)));
     }
 
     function testFuzzCantCollectIfMaturityAndNotSettled(uint128 tBal) public {

@@ -48,4 +48,5 @@ library Errors {
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
     string constant CombineNotEnabled = "Combine not enabled for this Adapter";
+    string constant IssuanceNotEnabled = "Issuance not enabled for this Adapter";
 }

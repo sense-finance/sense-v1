@@ -12,6 +12,7 @@ contract MockAdapter is CropAdapter {
 
     uint256 internal value;
     uint128 internal _tilt = 0;
+    uint8 internal _level = 7;
     uint256 public INITIAL_VALUE;
     address public under;
 
@@ -22,9 +23,7 @@ contract MockAdapter is CropAdapter {
         }
         uint256 gps = adapterParams.delta.fmul(99 * (10**(18 - 2)), FixedMath.WAD); // delta - 1%;
         uint256 timeDiff = block.timestamp - lscale.timestamp;
-        _value = lscale.value > 0
-            ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value
-            : INITIAL_VALUE;
+        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
     }
 
     function _claimReward() internal virtual override {
@@ -56,8 +55,12 @@ contract MockAdapter is CropAdapter {
         return MockTarget(adapterParams.target).underlying();
     }
 
-    function tilt() external virtual override returns (uint128) {
+    function tilt() external view virtual override returns (uint128) {
         return _tilt;
+    }
+
+    function level() external view virtual override returns (uint8) {
+        return _level;
     }
 
     function setScale(uint256 _value) external {
@@ -70,6 +73,10 @@ contract MockAdapter is CropAdapter {
 
     function setTilt(uint128 _value) external {
         _tilt = _value;
+    }
+
+    function setLevel(uint8 _value) external {
+        _level = _value;
     }
 
     function setMode(uint8 _mode) external {
