@@ -12,7 +12,7 @@ contract MockAdapter is CropAdapter {
 
     uint256 internal value;
     uint128 internal _tilt = 0;
-    uint8 internal _level = 7;
+    uint8 internal _level;
     uint256 public INITIAL_VALUE;
     address public under;
 
@@ -60,6 +60,9 @@ contract MockAdapter is CropAdapter {
     }
 
     function level() external view virtual override returns (uint8) {
+        if (_level == 0) {
+            return 7;
+        }
         return _level;
     }
 

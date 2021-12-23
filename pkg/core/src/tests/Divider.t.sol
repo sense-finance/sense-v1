@@ -493,6 +493,30 @@ contract Dividers is TestHelper {
         }
     }
 
+    function testCantIssueIfProperLevelIsntSet() public {
+        // Enable combine, but not collect and issue only during the issuance buffer
+        adapter.setLevel(2**1);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        // Can issue at initial Series initialization
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        // Can issue up until the buffer window
+        hevm.warp(block.timestamp + divider.ISSUANCE_BUFFER());
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        // Cannot issue past the buffer window
+        hevm.warp(block.timestamp + 1);
+        try bob.doIssue(address(adapter), maturity, 1e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssuanceNotEnabled);
+        }
+
+        // It should still be possible to combine
+        bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob)));
+    }
+
     function testFuzzIssue(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
