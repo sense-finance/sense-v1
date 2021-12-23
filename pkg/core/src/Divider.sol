@@ -414,6 +414,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Burn the users's Claims
         Claim(_series.claim).burn(usr, uBal);
+        Adapter(adapter).notify(
+            usr,
+            uBal.fdiv(_series.mscale, Zero(series[adapter][maturity].claim).BASE_UNIT()),
+            false
+        );
 
         // Default principal for Claim
         uint256 tBal = 0;

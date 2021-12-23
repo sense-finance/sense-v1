@@ -1106,7 +1106,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectReward(uint128 tBal) public {
-        tBal = fuzzWithBounds(148576927244290395723322121708047222714, 1000, type(uint32).max);
+        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -1172,6 +1172,26 @@ contract Dividers is TestHelper {
             assertEq(target.balanceOf(address(users[i])), tBalanceBefore + collected);
             assertClose(reward.balanceOf(address(users[i])), rBalanceBefore + airdrop);
         }
+    }
+
+    function testFuzzCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        adapter.setScale(1e18);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        alice.doIssue(address(adapter), maturity, tBal);
+
+        uint256 airdrop = 1e18;
+        reward.mint(address(adapter), airdrop);
+        alice.doCollect(claim);
+
+        reward.mint(address(adapter), airdrop);
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        alice.doCollect(claim);
+
+        assertEq(adapter.tBalance(address(alice)), 0);
     }
 
     function testFuzzCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint128 tBal) public {
