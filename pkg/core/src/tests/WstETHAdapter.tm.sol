@@ -9,7 +9,7 @@ import { Periphery } from "../Periphery.sol";
 import { Divider, TokenHandler } from "../Divider.sol";
 import { WstETHAdapter } from "../adapters/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-//import { LFactory } from "../adapters/lido/LFactory.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Assets } from "./test-helpers/Assets.sol";
@@ -42,6 +42,10 @@ interface WstETHInterface {
     function stEthPerToken() external view returns (uint256);
 
     function getWstETHByStETH(uint256 _stETHAmount) external returns (uint256);
+}
+
+interface StEthPriceFeed {
+    function safe_price_value() external returns (uint256);
 }
 
 contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
@@ -78,15 +82,21 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         });
         adapter.initialize(address(divider), adapterParams);
     }
+
+    function sendEther(address to, uint256 amt) external returns (bool) {
+        (bool success, ) = to.call{ value: amt }("");
+        return success;
+    }
 }
 
 contract WstETHAdapters is WstETHAdapterTestHelper {
     using FixedMath for uint256;
 
     function testMainnetWstETHAdapterScale() public {
-        WstETHInterface wstETH = WstETHInterface(Assets.WSTETH);
+        uint256 ethStEth = StEthPriceFeed(Assets.STETHPRICEFEED).safe_price_value();
+        uint256 wstETHstETH = WstETHInterface(Assets.WSTETH).stEthPerToken();
 
-        uint256 scale = wstETH.stEthPerToken();
+        uint256 scale = ethStEth.fmul(wstETHstETH, FixedMath.WAD);
         assertEq(adapter.scale(), scale);
     }
 
@@ -121,5 +131,17 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
 
         assertEq(wethBalanceAfter, 0);
         assertEq(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
+    }
+
+    function testCantSendEtherIfNotEligible() public {
+        // try this.sendEther(address(adapter), 1 ether) {
+        //     fail();
+        // } catch Error(string memory error) {
+        //     assertEq(error, Errors.SenderNotEligible);
+        // }
+
+        (bool success, bytes memory err) = payable(address(adapter)).call{ value: 1 ether }("");
+        assertTrue(!success);
+        assertEq(abi.decode(err, (string)), Errors.SenderNotEligible);
     }
 }
