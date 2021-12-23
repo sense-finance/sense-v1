@@ -27,7 +27,7 @@ contract Claims is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
@@ -54,7 +54,7 @@ contract Claims is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        collect -= bcBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
@@ -84,7 +84,7 @@ contract Claims is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        collect -= bcBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
