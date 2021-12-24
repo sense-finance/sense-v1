@@ -152,6 +152,21 @@ abstract contract BaseAdapter is Initializable {
         return;
     }
 
+    function onZeroRedeem(
+        uint256, /* uBal */
+        uint256, /* tBal */
+        uint256 /* remainder */
+    ) public virtual {
+        return;
+    }
+
+    function onSettle(
+        uint48, /* maturity */
+        uint256 /* mscale */
+    ) public virtual {
+        return;
+    }
+
     /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts
     /// @param amount Underlying amount
     /// @return amount of target returned

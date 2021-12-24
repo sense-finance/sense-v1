@@ -137,7 +137,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
-        Adapter(adapter).onSettle();
+        Adapter(adapter).onSettle(maturity, mscale);
 
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
@@ -269,21 +269,23 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
                 if (tBalClaimActual > shortfall) {
                     tBal += shortfall;
+                    Adapter(adapter).onZeroRedeem(uBal, tBal, 0);
                     // If the shortfall is greater than what we've reserved for Claims, take as much as we can
                 } else {
                     tBal += tBalClaimActual;
+                    Adapter(adapter).onZeroRedeem(uBal, tBal, shortfall - tBalClaimActual);
                 }
             } else {
                 // If there was nothing set aside for Claim holders in this Series,
                 // the most we can send back to Zero holders is what remains of their Target principal,
                 // so we transfer that out in full
                 tBal = tBalZeroActual;
+                Adapter(adapter).onZeroRedeem(uBal, tBal, 0);
             }
         }
 
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
 
-        Adapter(adapter).onZeroRedeem();
 
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
