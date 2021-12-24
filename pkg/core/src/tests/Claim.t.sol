@@ -10,6 +10,7 @@ contract Claims is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -34,6 +35,7 @@ contract Claims is TestHelper {
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -63,6 +65,7 @@ contract Claims is TestHelper {
     }
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
