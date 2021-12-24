@@ -936,6 +936,8 @@ contract Dividers is TestHelper {
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 collected = bob.doCollect(claim);
+        assertTrue(adapter.tBalance(address(bob)) > 0);
+
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
@@ -952,7 +954,10 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , mscale, , , ) = divider.series(address(adapter), maturity);
         uint256 redeemed = cBalanceAfter.fdiv(mscale, FixedMath.WAD).fmul(0.1e18, FixedMath.WAD);
-        assertClose(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed, 100);
+        assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
+        assertEq(adapter.tBalance(address(bob)), 0);
+        collected = bob.doCollect(claim); // try collecting after redemption
+        assertEq(collected, 0);
     }
 
     function testRedeemClaimPositiveTiltNegativeScale() public {
@@ -987,6 +992,7 @@ contract Dividers is TestHelper {
 
         uint256 tBal = 100e18;
         bob.doIssue(address(adapter), maturity, tBal);
+        assertTrue(adapter.tBalance(address(bob)) > 0);
 
         uint256 tBalanceBefore = ERC20(target).balanceOf(address(bob));
         hevm.warp(maturity);
@@ -1000,6 +1006,9 @@ contract Dividers is TestHelper {
         uint256 tBalanceAfter = ERC20(target).balanceOf(address(bob));
         // Claim holders are cut out completely and don't get any of their principal back
         assertEq(tBalanceBefore, tBalanceAfter);
+        assertEq(adapter.tBalance(address(bob)), 0);
+        collected = bob.doCollect(claim); // try collecting after redemption
+        assertEq(collected, 0);
     }
 
     /* ========== collect() tests ========== */
@@ -1174,7 +1183,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testFuzzCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
+    function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
         uint48 maturity = getValidMaturity(2021, 10);
@@ -1185,6 +1194,7 @@ contract Dividers is TestHelper {
         uint256 airdrop = 1e18;
         reward.mint(address(adapter), airdrop);
         alice.doCollect(claim);
+        assertTrue(adapter.tBalance(address(alice)) > 0);
 
         reward.mint(address(adapter), airdrop);
         hevm.warp(maturity);
@@ -1192,6 +1202,8 @@ contract Dividers is TestHelper {
         alice.doCollect(claim);
 
         assertEq(adapter.tBalance(address(alice)), 0);
+        uint256 collected = alice.doCollect(claim); // try collecting after redemption
+        assertEq(collected, 0);
     }
 
     function testFuzzCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint128 tBal) public {
@@ -1201,23 +1213,29 @@ contract Dividers is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(maturity);
+
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
+
         alice.doSettleSeries(address(adapter), maturity);
-        hevm.warp(block.timestamp + 1 days);
+
         uint256 collected = bob.doCollect(claim);
+        if (tBal > 0) assertTrue(adapter.tBalance(address(bob)) > 0);
+
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+
         // Formula: collect = tBal / lscale - tBal / cscale
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
         collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
+        assertClose(adapter.tBalance(address(bob)), 0);
     }
 
     function testFuzzCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
