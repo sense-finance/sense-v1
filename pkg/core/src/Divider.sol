@@ -13,6 +13,7 @@ import { FixedMath } from "./external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
+import { CropAdapter } from "./adapters/CropAdapter.sol";
 import { Token as Zero } from "./tokens/Token.sol";
 
 /// @title Sense Divider: Divide Assets in Two
@@ -214,7 +215,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // We use lscale since the current scale was already stored there in `_collect()`
         uint256 cscale = series[adapter][maturity].mscale;
-        if (!_settled(adapter, maturity)) {
+        bool settled = _settled(adapter, maturity);
+        if (!settled) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
             cscale = lscales[adapter][maturity][msg.sender];
@@ -224,7 +226,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20 target = ERC20(Adapter(adapter).getTarget());
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
-        Adapter(adapter).notify(msg.sender, tBal, false);
+
+        // when series is settled, the _collect() call above would trigger a redeemClaim which will execute the notify below
+        if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         tBal += collected;
         emit Combined(adapter, maturity, tBal, msg.sender);
     }
@@ -397,11 +401,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Burn the users's Claims
         Claim(_series.claim).burn(usr, uBal);
-        Adapter(adapter).notify(
-            usr,
-            uBal.fdiv(_series.mscale, Zero(series[adapter][maturity].claim).BASE_UNIT()),
-            false
-        );
 
         ERC20 target = ERC20(Adapter(adapter).getTarget());
 
@@ -434,6 +433,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             target.safeTransferFrom(adapter, usr, tBal);
             Adapter(adapter).notify(usr, tBal, false);
         }
+
+        Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale, FixedMath.WAD) - tBal, false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
