@@ -41,6 +41,7 @@ library Errors {
     string constant Paused = "Pausable: paused";
     string constant PoolAlreadyDeployed = "Pool already deployed";
     string constant PoolNotDeployed = "Pool not yet deployed";
+    string constant SenderNotEligible = "Sender is not eligible";
     string constant TargetExists = "Target already added";
     string constant TargetNotInFuse = "Target for this Series not yet added to Fuse";
     string constant TargetMismatch = "Source Target must be the same a destination Target";

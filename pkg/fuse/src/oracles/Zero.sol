@@ -74,7 +74,7 @@ contract ZeroOracle is PriceOracle, Trust {
         require(pool != BalancerOracleLike(address(0)), "Zero must have a pool set");
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
-        // https://docs.balancer.fi/developers/smart-contracts/apis/pools
+        // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
         (, , , , , , uint256 sampleTs) = pool.getSample(1023);
         if (sampleTs == 0) {
             // revert if the pool's oracle can't be used yet, preventing this market from being deployed

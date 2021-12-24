@@ -7,6 +7,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 // Internal references
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 interface WstETHInterface {
     /// @notice https://github.com/lidofinance/lido-dao/blob/master/contracts/0.6.12/WstETH.sol
@@ -48,6 +49,10 @@ interface IWETH {
     function withdraw(uint256 wad) external;
 }
 
+interface StEthPriceFeed {
+    function safe_price_value() external returns (uint256);
+}
+
 /// @notice Adapter contract for wstETH
 contract WstETHAdapter is BaseAdapter {
     using FixedMath for uint256;
@@ -58,6 +63,7 @@ contract WstETHAdapter is BaseAdapter {
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
+    address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
 
     function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
@@ -67,10 +73,13 @@ contract WstETHAdapter is BaseAdapter {
         super.initialize(_divider, _adapterParams);
     }
 
-    /// @return Eth per WSTEth (natively in 18 decimals)
+    /// @return Eth per wstEtH (natively in 18 decimals)
     function _scale() internal virtual override returns (uint256) {
-        WstETHInterface t = WstETHInterface(adapterParams.target);
-        return t.stEthPerToken();
+        // In order to account for the stETH/ETH CurveStableSwap rate, we use `safe_price_value` from Lido's stETH price feed.
+        // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
+        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+        uint256 wstETHstETH = WstETHInterface(adapterParams.target).stEthPerToken(); // stETH tokens corresponding to one wstETH
+        return stEthEth.fmul(wstETHstETH, FixedMath.WAD);
     }
 
     function underlying() external view override returns (address) {
@@ -105,5 +114,7 @@ contract WstETHAdapter is BaseAdapter {
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH); // transfer wstETH to msg.sender
     }
 
-    fallback() external payable {}
+    fallback() external payable {
+        require(msg.sender == WETH || msg.sender == CURVESINGLESWAP, Errors.SenderNotEligible);
+    }
 }
