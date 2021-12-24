@@ -141,7 +141,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
 
       console.log("swapping target for claims");
       await periphery
-        .swapTargetForClaims(adapter.address, seriesMaturity, ethers.utils.parseEther("1"))
+        .swapTargetForClaims(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
         .then(tx => tx.wait());
 
       console.log("swapping zeros for target");

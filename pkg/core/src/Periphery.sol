@@ -130,10 +130,11 @@ contract Periphery is Trust {
     function swapTargetForClaims(
         address adapter,
         uint48 maturity,
-        uint256 tBal
+        uint256 tBal,
+        uint256 minAccepted
     ) external returns (uint256) {
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
-        return _swapTargetForClaims(adapter, maturity, tBal);
+        return _swapTargetForClaims(adapter, maturity, tBal, minAccepted);
     }
 
     /// @notice Swap Underlying to Claims of a particular series
@@ -143,12 +144,13 @@ contract Periphery is Trust {
     function swapUnderlyingForClaims(
         address adapter,
         uint48 maturity,
-        uint256 uBal
+        uint256 uBal,
+        uint256 minAccepted
     ) external returns (uint256) {
         ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), uBal); // pull target
         ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal); // approve adapter to pull underlying
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
-        return _swapTargetForClaims(adapter, maturity, tBal);
+        return _swapTargetForClaims(adapter, maturity, tBal, minAccepted);
     }
 
     /// @notice Swap Zeros for Target of a particular series
@@ -402,14 +404,15 @@ contract Periphery is Trust {
     function _swapTargetForClaims(
         address adapter,
         uint48 maturity,
-        uint256 tBal
+        uint256 tBal,
+        uint256 minAccepted
     ) internal returns (uint256) {
         (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // issue zeros and claims & swap zeros for target
         uint256 issued = divider.issue(adapter, maturity, tBal);
-        tBal = _swap(zero, Adapter(adapter).getTarget(), issued, pool.getPoolId(), 0);
+        tBal = _swap(zero, Adapter(adapter).getTarget(), issued, pool.getPoolId(), minAccepted);
 
         // transfer claims & target to user
         ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
@@ -573,7 +576,7 @@ contract Periphery is Trust {
     /// @param maturity maturity
     /// @param cBalIn Claim amount the user has sent in
     /// @param amount target amount to borrow
-    /// @return claims issued with flashloan
+    /// @return amount of Target obtained from a sale of Claims
     function _flashBorrow(
         bytes memory data,
         address adapter,
@@ -693,7 +696,7 @@ contract Periphery is Trust {
     }
 
     /* ========== EVENTS ========== */
-    event FactoryChanged(address indexed adapter, bool isOn);
+    event FactoryChanged(address indexed factory, bool isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterOnboarded(address adapter);
     event Swapped(

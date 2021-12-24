@@ -194,17 +194,19 @@ contract User {
     function doSwapTargetForClaims(
         address adapter,
         uint48 maturity,
-        uint256 balance
+        uint256 balance,
+        uint256 minAccepted
     ) public {
-        periphery.swapTargetForClaims(adapter, maturity, balance);
+        periphery.swapTargetForClaims(adapter, maturity, balance, minAccepted);
     }
 
     function doSwapUnderlyingForClaims(
         address adapter,
         uint48 maturity,
-        uint256 balance
+        uint256 balance,
+        uint256 minAccepted
     ) public {
-        periphery.swapUnderlyingForClaims(adapter, maturity, balance);
+        periphery.swapUnderlyingForClaims(adapter, maturity, balance, minAccepted);
     }
 
     function doSwapZerosForTarget(
