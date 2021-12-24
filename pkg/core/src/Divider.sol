@@ -137,6 +137,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
+        Adapter(adapter).onSettle();
+
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
 
@@ -280,6 +282,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
+
+        Adapter(adapter).onZeroRedeem();
+
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 
