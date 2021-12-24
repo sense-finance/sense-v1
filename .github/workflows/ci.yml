@@ -68,6 +68,11 @@ jobs:
         yarn turbo-test | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
 
+    - name: Run tests where the mock Target token uses 8 decimals
+      run: |
+        yarn turbo-test-8-decimal-target | tee _out.txt
+        grep -vz FAIL _out.txt 1> /dev/null
+
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
