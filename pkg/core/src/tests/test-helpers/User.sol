@@ -259,6 +259,22 @@ contract User {
         return periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
     }
 
+    function doAddLiquidityFromUnderlying(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint8 mode
+    )
+        public
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode);
+    }
+
     function doRemoveLiquidityToTarget(
         address adapter,
         uint48 maturity,

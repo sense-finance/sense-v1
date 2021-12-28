@@ -234,6 +234,7 @@ contract Periphery is Trust {
             uint256
         )
     {
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
         return _addLiquidity(adapter, maturity, tBal, mode);
     }
 
@@ -255,8 +256,10 @@ contract Periphery is Trust {
             uint256
         )
     {
+        ERC20 underlying = ERC20(Adapter(adapter).underlying());
+        underlying.safeTransferFrom(msg.sender, address(this), uBal);
+        underlying.safeApprove(adapter, uBal);
         // Wrap Underlying into Target
-        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
         return _addLiquidity(adapter, maturity, tBal, mode);
     }
@@ -475,11 +478,7 @@ contract Periphery is Trust {
             uint256
         )
     {
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
-
-        // (0) Pull target from sender
-        target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // (1) compute target, issue zeros & claims & add liquidity to space
         (uint256 issued, uint256 lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
@@ -491,7 +490,7 @@ contract Periphery is Trust {
                 // (2) Sell claims
                 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
                 // (3) Send remaining Target back to the User
-                target.safeTransfer(msg.sender, tAmount);
+                ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tAmount);
             } else {
                 // (4) Send Claims back to the User
                 ERC20(claim).safeTransfer(msg.sender, issued);
