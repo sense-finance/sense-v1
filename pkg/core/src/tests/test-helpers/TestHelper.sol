@@ -94,7 +94,7 @@ contract TestHelper is DSTest {
         uint8 targetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", targetDecimals);
         emit log_named_uint(
-            "Running tests with the Mock Target configured with the following number of decimals",
+            "Test run using the following number of decimals for the Mock Target token",
             uint256(targetDecimals)
         );
 

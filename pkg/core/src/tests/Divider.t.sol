@@ -12,6 +12,7 @@ import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
+import { Wrap } from "../Can.sol";
 import { Token } from "../tokens/Token.sol";
 
 contract Dividers is TestHelper {
@@ -171,6 +172,24 @@ contract Dividers is TestHelper {
         assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
         assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
         assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
+    }
+
+    function testInitSeriesDeterministicTokens() public {
+        uint48 maturity = getValidMaturity(2021, 10);
+
+        Wrap wrap = new Wrap();
+
+        (address zero, address claim) = wrap.wrap(address(divider), address(adapter), maturity);
+
+        emit log_named_address("zero", zero);
+        emit log_named_address("claim", claim);
+
+        revert();
+        // (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        // assertEq(zero, "Compound Dai 10-2021 Zero #1 by Sense");
+        // assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
+        // assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
+        // assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
     }
 
     function testInitSeriesWithdrawStake() public {
@@ -944,7 +963,6 @@ contract Dividers is TestHelper {
     function testFuzzCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -1078,7 +1096,6 @@ contract Dividers is TestHelper {
     function testFuzzCollectBeforeMaturityAndSettled(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(maturity - SPONSOR_WINDOW);
@@ -1105,7 +1122,6 @@ contract Dividers is TestHelper {
     function testFuzzCollectTransferAndCollect(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);
@@ -1363,13 +1379,16 @@ contract Dividers is TestHelper {
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
-        assertEq(stake.balanceOf(address(alice)), sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(
+            stake.balanceOf(address(alice)),
+            sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals())
+        );
         assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore + fee);
         assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore + convertToBase(STAKE_SIZE, stake.decimals()));
     }
 
     // @notice if backfill happens while adapter is disabled stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
-    // no matter that the current timestamp is > cutoff 
+    // no matter that the current timestamp is > cutoff
     function testFuzzBackfillScaleAfterCutoffAdapterDisabledTransfersStakeAmountAndFees(uint128 tBal) public {
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
@@ -1423,7 +1442,7 @@ contract Dividers is TestHelper {
     }
 
     // @notice if backfill happens while adapter is disabled, stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
-    // no matter that the current timestamp is > SPONSOR WINDOW 
+    // no matter that the current timestamp is > SPONSOR WINDOW
     function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal)
         public
     {

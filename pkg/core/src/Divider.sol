@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { CREATE3 } from "@rari-capital/solmate/src/utils/CREATE3.sol";
 import { ReentrancyGuard } from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
 import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
@@ -12,8 +13,8 @@ import { FixedMath } from "./external/FixedMath.sol";
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
+import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
-import { Token as Zero } from "./tokens/Token.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -186,7 +187,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
 
         // Mint equal amounts of Zeros and Claims
-        Zero(series[adapter][maturity].zero).mint(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
         Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
 
         target.safeTransferFrom(msg.sender, adapter, tBal);
@@ -208,7 +209,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
 
         // Burn the Zeros
-        Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
         // Collect whatever excess is due
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
@@ -243,7 +244,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
         // Burn the caller's Zeros
-        Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
         // Amount of Target these Zeros would ideally redeem for
         tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
@@ -662,7 +663,7 @@ contract TokenHandler is Trust {
 
         string memory adapterId = DateTime.uintToString(Divider(divider).adapterIDs(adapter));
         zero = address(
-            new Zero(
+            new Token{ salt: keccak256(abi.encode(adapter, maturity, "zero")) }(
                 string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
                 string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
                 decimals,
@@ -671,7 +672,7 @@ contract TokenHandler is Trust {
         );
 
         claim = address(
-            new Claim(
+            new Claim{ salt: keccak256(abi.encode(adapter, maturity, "claim")) }(
                 maturity,
                 divider,
                 adapter,
