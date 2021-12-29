@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { DSTest } from "./test-helpers/DSTest.sol";
+import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 
 import { FixedMath } from "../external/FixedMath.sol";
@@ -21,8 +22,9 @@ import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswa
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 
-contract PeripheryTestHelper is DSTest {
+contract PeripheryTestHelper is DSTest, LiquidityHelper {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -30,7 +32,8 @@ contract PeripheryTestHelper is DSTest {
     address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
-    address public constant CERC20_IMPL = 0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1;
+    address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
+    address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     uint8 public constant MODE = 0;
@@ -46,6 +49,7 @@ contract PeripheryTestHelper is DSTest {
     Divider internal divider;
     PoolManager internal poolManager;
     TokenHandler internal tokenHandler;
+    MockOracle internal mockOracle;
 
     IUniswapV3Factory uniFactory;
     ISwapRouter uniSwapRouter;
@@ -65,18 +69,19 @@ contract PeripheryTestHelper is DSTest {
         // periphery
         uniFactory = IUniswapV3Factory(UNI_FACTORY);
         uniSwapRouter = ISwapRouter(uniSwapRouter);
-        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE);
+        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);
         periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
         poolManager.setIsTrusted(address(periphery), true);
         divider.setPeriphery(address(periphery));
 
         // adapter & factory
         CAdapter implementation = new CAdapter(); // compound adapter implementation
+        mockOracle = new MockOracle();
 
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
-            oracle: MASTER_ORACLE,
+            oracle: address(mockOracle),
             delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
@@ -87,13 +92,21 @@ contract PeripheryTestHelper is DSTest {
 
         factory = new CFactory(address(divider), address(implementation), factoryParams, COMP);
 
-        divider.setIsTrusted(address(factory), true); // TODO: remove when Space ready
-        address f = factory.deployAdapter(cDAI); // TODO: remove when Space ready
-        // divider.setIsTrusted(address(factory), true); // TODO: uncomment when Space ready
-        // periphery.setFactory(address(factory), true); // TODO: uncomment when Space ready
-        // onboard adapter, target wrapper
-        // address f = periphery.onboardAdapter(address(factory), cDAI); // onboard target through Periphery // TODO: uncomment when Space ready
-        adapter = CAdapter(payable(f));
+        divider.setIsTrusted(address(factory), true);
+        divider.setIsTrusted(address(factory), true);
+        periphery.setFactory(address(factory), true);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+
+        PoolManager.AssetParams memory params = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether,
+            closeFactor: 0.051 ether,
+            liquidationIncentive: 1 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", params);
+
+        // onboard target through Periphery
     }
 }
 
@@ -101,24 +114,24 @@ contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
     function testMainnetSponsorSeries() public {
+        address f = periphery.onboardAdapter(address(factory), cDAI);
+        adapter = CAdapter(payable(f));
+        // Mint this address MAX_UINT DAI
+        giveTokens(DAI, type(uint256).max, hevm);
+
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint48 maturity = uint48(
-            DateTimeFull.timestampFromDateTime(year, (month + 1) == 13 ? 1 : (month + 1), 1, 0, 0, 0)
+            DateTimeFull.timestampFromDateTime(month == 12 ? year + 1 : year, month == 12 ? 1 : (month + 1), 1, 0, 0, 0)
         );
 
-        ERC20(DAI).approve(address(periphery), 2**256 - 1);
+        ERC20(DAI).approve(address(periphery), type(uint256).max);
         (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // TODO: uncomment below lines when Space ready
-
-        // // check Balancer pool deployed
-        // assertTrue(address(spaceFactory.pool()) != address(0));
-
-        // // check zeros and claims onboarded on PoolManager (Fuse)
-        // assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
+        // check zeros and claims onboarded on PoolManager (Fuse)
+        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
     }
 }

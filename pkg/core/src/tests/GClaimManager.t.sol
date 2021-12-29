@@ -99,7 +99,7 @@ contract GClaimsManager is TestHelper {
             assertEq(error, Errors.TransferFromFailed);
         }
     }
-    
+
     // TODO: re-add this test once we use glcaims again
     // function testFuzzJoinFirstGClaim(uint128 balance) public {
     //     // creating new periphery as the one from test helper already had a first gclaim call
