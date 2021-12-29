@@ -29,7 +29,7 @@ contract Periphery is Trust {
     using Errors for string;
 
     /// @notice Configuration
-    uint24 public constant UNI_POOL_FEE = 10000; // denominated in hundredths of a bip
+    uint24 public constant UNI_POOL_FEE = 0.01e6; // denominated in hundredths of a bip
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
 
     /// @notice Program state
@@ -40,6 +40,11 @@ contract Periphery is Trust {
 
     mapping(address => bool) public factories; // adapter factories -> is supported
     mapping(address => address) public factory; // adapter -> factory
+
+    struct PoolLiquidity { 
+        ERC20[] tokens;
+        uint256[] amounts;
+    }
 
     constructor(
         address _divider,
@@ -67,7 +72,7 @@ contract Periphery is Trust {
         ERC20(stake).safeTransferFrom(msg.sender, address(this), _convertToBase(stakeSize, stakeDecimals));
 
         // approve divider to withdraw stake assets
-        ERC20(stake).safeApprove(address(divider), type(uint256).max);
+        ERC20(stake).safeApprove(address(divider), stakeSize);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
@@ -97,6 +102,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to sell
+    /// @return amount of Zeros received 
     function swapTargetForZeros(
         address adapter,
         uint48 maturity,
@@ -525,7 +531,7 @@ contract Periphery is Trust {
         uint256[] memory amounts = new uint256[](2);
         amounts[targeti] = tBal - zBalInTarget;
         amounts[zeroi] = issued;
-        uint256 lpShares = _addLiquidityToSpace(pool, tokens, amounts);
+        uint256 lpShares = _addLiquidityToSpace(pool, PoolLiquidity(tokens, amounts));
         return (issued, lpShares);
     }
 
@@ -595,7 +601,7 @@ contract Periphery is Trust {
             cBalIn,
             amount
         );
-        require(result == true);
+        require(result);
         return value;
     }
 
@@ -632,19 +638,18 @@ contract Periphery is Trust {
 
     function _addLiquidityToSpace(
         BalancerPool pool,
-        ERC20[] memory tokens,
-        uint256[] memory amounts
+        PoolLiquidity memory liq
     ) internal returns (uint256) {
         bytes32 poolId = pool.getPoolId();
-        IAsset[] memory assets = _convertERC20sToAssets(tokens);
-        for (uint8 i; i < tokens.length; i++) {
+        IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
+        for (uint8 i; i < liq.tokens.length; i++) {
             // tokens and amounts must be in same order
-            tokens[i].safeApprove(address(balancerVault), amounts[i]);
+            liq.tokens[i].safeApprove(address(balancerVault), liq.amounts[i]);
         }
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({
             assets: assets,
-            maxAmountsIn: amounts,
-            userData: abi.encode(amounts), // behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
+            maxAmountsIn: liq.amounts,
+            userData: abi.encode(liq.amounts), // behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
             fromInternalBalance: false
         });
         uint256 lpSharesBefore = ERC20(address(pool)).balanceOf(msg.sender);
@@ -696,7 +701,7 @@ contract Periphery is Trust {
     }
 
     /* ========== EVENTS ========== */
-    event FactoryChanged(address indexed adapter, bool isOn);
+    event FactoryChanged(address indexed adapter, bool indexed isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterOnboarded(address adapter);
     event Swapped(
