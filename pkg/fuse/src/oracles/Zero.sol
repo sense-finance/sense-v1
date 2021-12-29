@@ -45,6 +45,9 @@ interface BalancerOracleLike {
     function getPoolId() external view returns (bytes32);
 
     function getVault() external view returns (address);
+
+    function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
+
 }
 
 contract ZeroOracle is PriceOracle, Trust {
@@ -91,7 +94,8 @@ contract ZeroOracle is PriceOracle, Trust {
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
         // get the price of Zeros in terms of underlying
-        uint256 zeroPrice = results[0];
+        (uint8 zeroi, ) = pool.getIndices();
+        uint256 zeroPrice = results[zeroi];
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying;
