@@ -352,7 +352,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
-        // last collection to this scale (as all yield is being stripped off before the Claims are sent)
+        // last collection to a synthetic scale weighted based on the scale on their last collect,
+        // the time elapsed, and the current scale
         if (to != address(0)) {
             uint256 cBal = ERC20(claim).balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
