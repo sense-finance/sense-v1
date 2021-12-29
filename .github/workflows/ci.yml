@@ -63,14 +63,19 @@ jobs:
     - name: Run linter
       run: yarn lint
 
-    - name: Run tests
+    - name: Run local tests
       run: |
         yarn turbo-test | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
 
     - name: Run tests where the mock Target token uses 8 decimals
       run: |
-        yarn turbo-test-8-decimal-target | tee _out.txt
+        yarn turbo-test:8-decimal-target | tee _out.txt
+        grep -vz FAIL _out.txt 1> /dev/null
+
+    - name: Run mainnet tests
+      run: |
+        yarn turbo-test:mainnet | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
 
       env:
