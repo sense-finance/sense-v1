@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.0;
 
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";

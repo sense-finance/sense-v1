@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.0;
 
 // Taken from: https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
 
