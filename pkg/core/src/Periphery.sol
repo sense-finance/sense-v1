@@ -29,7 +29,6 @@ contract Periphery is Trust {
     using Errors for string;
 
     /// @notice Configuration
-    uint24 public constant UNI_POOL_FEE = 0.01e6; // denominated in hundredths of a bip
     uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
 
     /// @notice Program state
