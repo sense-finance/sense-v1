@@ -29,7 +29,6 @@ interface DividerLike {
 }
 
 contract SpaceFactory is Trust {
-
     /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Balancer Vault
@@ -72,13 +71,13 @@ contract SpaceFactory is Trust {
         pools[_adapter][_maturity] = pool;
         return pool;
     }
-    
+
     function setParams(
         uint256 _ts,
         uint256 _g1,
         uint256 _g2
     ) public requiresTrust {
-        // g1 is for swapping Targets to Zeros and should discount the effective interest 
+        // g1 is for swapping Targets to Zeros and should discount the effective interest
         require(_g1 <= FixedPoint.ONE, "INVALID_G1");
         // g2 is for swapping Zeros to Target and should mark the effective interest up
         require(_g2 >= FixedPoint.ONE, "INVALID_G2");

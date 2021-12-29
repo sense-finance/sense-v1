@@ -370,13 +370,13 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             // Determine which amountIn is our limiting factor
             if (bptToMintTarget < bptToMintZeros) {
-                amountsIn[_zeroi] = zeroReserves * reqTargetIn / targetReserves;
+                amountsIn[_zeroi] = (zeroReserves * reqTargetIn) / targetReserves;
                 amountsIn[_targeti] = reqTargetIn;
 
                 return (bptToMintTarget, amountsIn);
             } else {
                 amountsIn[_zeroi] = reqZerosIn;
-                amountsIn[_targeti] = targetReserves * reqZerosIn / zeroReserves;
+                amountsIn[_targeti] = (targetReserves * reqZerosIn) / zeroReserves;
 
                 return (bptToMintZeros, amountsIn);
             }
