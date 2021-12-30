@@ -2,7 +2,6 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
@@ -23,7 +22,7 @@ interface IPeriphery {
 
 /// @title Assign time-based value to Target tokens
 /// @dev In most cases, the only method that will be unique to each adapter type is `_scale`
-abstract contract BaseAdapter is Initializable {
+abstract contract BaseAdapter {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
 
@@ -95,25 +94,34 @@ abstract contract BaseAdapter is Initializable {
     /// @notice Cached scale value from the last call to `scale()`
     LScale public lscale;
 
-    constructor(address _divider, Config memory _config) {
-        // Sanity check
-        require(_config.minm < _config.maxm, Errors.InvalidMaturityOffsets);
-
-        name = string(abi.encodePacked(ERC20(_config.target).name(), " Adapter"));
-        symbol = string(abi.encodePacked(ERC20(_config.target).symbol(), "-adapter"));
-
-        ERC20(_config.target).safeApprove(_divider, type(uint256).max);
-
+    constructor(
+        address _divider,
+        address _target,
+        address _oracle,
+        uint256 _delta,
+        uint256 _ifee,
+        address _stake,
+        uint256 _stakeSize,
+        uint256 _minm,
+        uint256 _maxm,
+        uint8 _mode
+    ) {
+        // sanity check
+        require(_minm < _maxm, Errors.InvalidMaturityOffsets);
         divider = _divider;
-        target = _config.target;
-        oracle = _config.oracle;
-        delta = _config.delta;
-        ifee = _config.ifee;
-        stake = _config.stake;
-        stakeSize = _config.stakeSize;
-        minm = _config.minm;
-        maxm = _config.maxm;
-        mode = _config.mode;
+        target = _target;
+        oracle = _oracle;
+        delta = _delta;
+        ifee = _ifee;
+        stake = _stake;
+        stakeSize = _stakeSize;
+        minm = _minm;
+        maxm = _maxm;
+        mode = _mode;
+        name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
+        symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
+
+        ERC20(_target).safeApprove(_divider, type(uint256).max);
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
@@ -131,8 +139,7 @@ abstract contract BaseAdapter is Initializable {
         uint256 cBalIn,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
-        ERC20 target = ERC20(adapterParams.target);
-        require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
+        require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
         (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
             data,
             msg.sender,
@@ -142,7 +149,7 @@ abstract contract BaseAdapter is Initializable {
             amount
         );
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
-        require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
+        require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);
     }
 
@@ -162,7 +169,7 @@ abstract contract BaseAdapter is Initializable {
                 FixedMath.WAD
             );
 
-            if (growthPerSec > adapterParams.delta) revert(Errors.InvalidScaleValue);
+            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
 
         if (value != lvalue) {
@@ -222,16 +229,8 @@ abstract contract BaseAdapter is Initializable {
 
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
-    function getTarget() external view returns (address) {
-        return adapterParams.target;
-    }
-
-    function getIssuanceFee() external view returns (uint256) {
-        return adapterParams.ifee;
-    }
-
     function getMaturityBounds() external view returns (uint256, uint256) {
-        return (adapterParams.minm, adapterParams.maxm);
+        return (minm, maxm);
     }
 
     function getStakeData() external view returns (address, uint256) {
@@ -239,7 +238,7 @@ abstract contract BaseAdapter is Initializable {
     }
 
     function getMode() external view returns (uint8) {
-        return adapterParams.mode;
+        return mode;
     }
 
     /* ========== MODIFIERS ========== */

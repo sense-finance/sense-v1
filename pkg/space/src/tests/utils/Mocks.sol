@@ -48,7 +48,7 @@ contract MockAdapterSpace {
         _scale = scale_;
     }
 
-    function getTarget() external view returns (address) {
+    function target() external view returns (address) {
         return target;
     }
 }

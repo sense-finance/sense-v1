@@ -14,7 +14,6 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {
-        MockAdapter adapterImpl = new MockAdapter();
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -25,15 +24,9 @@ contract Factories is TestHelper {
             maxm: MAX_MATURITY,
             mode: MODE
         });
-        MockFactory someFactory = new MockFactory(
-            address(adapterImpl),
-            address(divider),
-            factoryParams,
-            address(reward)
-        );
+        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
 
         assertTrue(address(someFactory) != address(0));
-        assertEq(MockFactory(someFactory).adapterImpl(), address(adapterImpl));
         assertEq(MockFactory(someFactory).divider(), address(divider));
         (
             address oracle,
@@ -61,29 +54,18 @@ contract Factories is TestHelper {
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         address adapter = someFactory.deployAdapter(address(someTarget));
         assertTrue(adapter != address(0));
-        (
-            address target,
-            address oracle,
-            uint256 delta,
-            uint256 ifee,
-            address stake,
-            uint256 stakeSize,
-            uint256 minm,
-            uint256 maxm,
-            uint8 mode
-        ) = BaseAdapter(adapter).adapterParams();
         assertEq(IAdapter(adapter).divider(), address(divider));
-        assertEq(target, address(someTarget));
-        assertEq(delta, DELTA);
+        assertEq(IAdapter(adapter).target(), address(someTarget));
+        assertEq(IAdapter(adapter).delta(), DELTA);
         assertEq(IAdapter(adapter).name(), "Some Target Adapter");
         assertEq(IAdapter(adapter).symbol(), "ST-adapter");
-        assertEq(stake, address(stake));
-        assertEq(ifee, ISSUANCE_FEE);
-        assertEq(stakeSize, STAKE_SIZE);
-        assertEq(minm, MIN_MATURITY);
-        assertEq(maxm, MAX_MATURITY);
-        assertEq(oracle, ORACLE);
-        assertEq(mode, MODE);
+        assertEq(IAdapter(adapter).stake(), address(stake));
+        assertEq(IAdapter(adapter).ifee(), ISSUANCE_FEE);
+        assertEq(IAdapter(adapter).stakeSize(), STAKE_SIZE);
+        assertEq(IAdapter(adapter).minm(), MIN_MATURITY);
+        assertEq(IAdapter(adapter).maxm(), MAX_MATURITY);
+        assertEq(IAdapter(adapter).oracle(), ORACLE);
+        assertEq(IAdapter(adapter).mode(), MODE);
         uint256 scale = IAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }
@@ -129,7 +111,7 @@ contract Factories is TestHelper {
         try factory.deployAdapter(address(target)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Create2Failed);
+            assertEq(error, Errors.AdapterExists);
         }
     }
 }

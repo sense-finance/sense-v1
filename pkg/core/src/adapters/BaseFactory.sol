@@ -21,18 +21,9 @@ abstract contract BaseFactory {
 
     /// @notice Protocol's data contract address
     address public immutable protocol;
-    
-    FactoryParams public factoryParams;
-    struct FactoryParams {
-        address oracle; // oracle address
-        uint256 delta; // max growth per second allowed
-        uint256 ifee; // issuance fee
-        address stake; // token to stake at issuance
-        uint256 stakeSize; // amount to stake at issuance
-        uint256 minm; // min maturity (seconds after block.timstamp)
-        uint256 maxm; // max maturity (seconds after block.timstamp)
-        uint8 mode; // 0 for monthly, 1 for weekly
-    }
+
+    /// @notice target -> adapter
+    mapping(address => address) public adapters;
 
     FactoryParams public factoryParams;
     struct FactoryParams {
@@ -56,11 +47,23 @@ abstract contract BaseFactory {
         factoryParams = _factoryParams;
     }
 
+    /// @notice Performs sanitychecks adds adapter to Divider
+    /// @param _adapter Address of the adapter
+    function _addAdapter(address _adapter) internal {
+        address target = BaseAdapter(_adapter).target();
+        require(_exists(target), Errors.NotSupported);
+        require(adapters[target] == address(0), Errors.AdapterExists);
+        adapters[target] = _adapter;
+        Divider(divider).setAdapter(address(_adapter), true);
+        emit AdapterAdded(address(_adapter), target);
+    }
+
     /* ========== REQUIRED DEPLOY ========== */
 
-    /// @notice Deploys both a adapter and a target wrapper for the given _target
+    /// @notice Deploys both an adapter and a target wrapper for the given _target
     /// @param _target Address of the Target token
-    function deployAdapter(address _target) external virtual returns (address adapter);
+    /// @dev Must call _addAdapter()
+    function deployAdapter(address _target) external virtual returns (address adapter) {}
 
     /* ========== REQUIRED INTERNAL GUARD ========== */
 
@@ -70,5 +73,5 @@ abstract contract BaseFactory {
     /* ========== LOGS ========== */
 
     /// @notice Logs the deployment of the adapter
-    event AdapterDeployed(address addr, address indexed target);
+    event AdapterAdded(address addr, address indexed target);
 }
