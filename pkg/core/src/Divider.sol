@@ -21,7 +21,6 @@ import { Token as Zero } from "./tokens/Token.sol";
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
-    using Errors for string;
 
     /// @notice Configuration
     uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
@@ -256,6 +255,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
         uint256 zShare = FixedMath.WAD - _series.tilt;
 
+        // If Zeros are at a loss and Claims have some principal to help cover the shortfall,
+        // take what we can from Claims
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
             tBal = (uBal * zShare) / _series.mscale;
         } else {
@@ -377,13 +378,16 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the users's Claims
         Claim(_series.claim).burn(usr, uBal);
 
+        // Default principal for Claim
         uint256 tBal = 0;
+
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
         uint256 zShare = FixedMath.WAD - _series.tilt;
 
+        // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
+        // calculate how much Claims have left
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            // Amounts leaving the Adapter, so we round down
-            tBal = uBal.fmul(FixedMath.WAD.fdiv(_series.maxscale) - zShare.fdivUp(_series.mscale));
+            tBal = uBal * FixedMath.WAD / _series.maxscale - uBal * zShare / _series.mscale;
 
             ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, tBal);
             Adapter(adapter).notify(usr, tBal, false);
@@ -392,7 +396,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
+    /* ========== ADMIN ========== */
 
     /// @notice Enable or disable a adapter
     /// @param adapter Adapter's address

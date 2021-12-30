@@ -7,7 +7,7 @@ library FixedMath {
     uint256 internal constant RAY = 1e27;
 
     /// Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol
-    /// @dev Multiply an amount by a fixed point factor with 18 decimals, rounds down
+    /// @dev Multiply an amount by a fixed point factor, rounds down
     function fmul(
         uint256 x,
         uint256 y,
@@ -45,7 +45,7 @@ library FixedMath {
     }
 
     /// Taken from https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol
-    /// @dev Divide an amount by a fixed point factor with 18 decimals, rounds down
+    /// @dev Divide an amount by a fixed point factor, rounds down
     function fdiv(
         uint256 x,
         uint256 y,
@@ -71,10 +71,10 @@ library FixedMath {
     }
 
     function fdivUp(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        z = x * WAD + y; // 101 (1.01) / 1000 (10) -> (101 * 100 + 1000 - 1) / 1000 -> 11 (0.11 = 0.101 rounded up).
+        z = x * WAD + y;
         unchecked {
             z -= 1;
-        } // Can do unchecked subtraction since division in next line will catch y = 0 case anyway
+        }
         z /= y;
     }
 }
