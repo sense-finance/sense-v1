@@ -90,7 +90,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);
 
         // Transfer stake asset stake from caller to adapter
-        (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
+        (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Deploy Zeros and Claims for this new Series
         (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
@@ -111,7 +111,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
-        emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, Adapter(adapter).target());
+        emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
     }
 
     /// @notice Settles a Series and transfers the settlement reward to the caller
@@ -133,8 +133,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Reward the caller for doing the work of settling the Series at around the correct time
-        (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
-        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
+        (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
+        ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
 
         emit SeriesSettled(adapter, maturity, msg.sender);
@@ -508,13 +508,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 series[adapter][maturity].maxscale = mscale;
             }
 
-            (address stake, uint256 stakeSize) = Adapter(adapter).getStakeData();
+            (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
             // Determine where the stake should go depending on where we are relative to the maturity date
             address stakeDst = block.timestamp <= maturity + SPONSOR_WINDOW ? series[adapter][maturity].sponsor : cup;
             uint256 reward = series[adapter][maturity].reward;
 
-            ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, cup, reward);
+            ERC20(target).safeTransferFrom(adapter, cup, reward);
             ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
         }
 

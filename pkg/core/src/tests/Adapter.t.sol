@@ -117,20 +117,6 @@ contract Adapters is TestHelper {
                 address(reward)
             );
 
-            // BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            //     target: address(target),
-            //     stake: address(stake),
-            //     oracle: ORACLE,
-            //     delta: DELTA,
-            //     ifee: ISSUANCE_FEE,
-            //     stakeSize: STAKE_SIZE,
-            //     minm: MIN_MATURITY,
-            //     maxm: MAX_MATURITY,
-            //     mode: MODE
-            // });
-
-            // localAdapter.initialize(address(divider), adapterParams);
-
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -189,19 +175,7 @@ contract Adapters is TestHelper {
                 MODE,
                 address(reward)
             );
-            // BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            //     target: address(target),
-            //     stake: address(stake),
-            //     oracle: ORACLE,
-            //     delta: DELTA,
-            //     ifee: ISSUANCE_FEE,
-            //     stakeSize: STAKE_SIZE,
-            //     minm: MIN_MATURITY,
-            //     maxm: MAX_MATURITY,
-            //     mode: MODE
-            // });
 
-            // localAdapter.initialize(address(divider), adapterParams);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -244,19 +218,6 @@ contract Adapters is TestHelper {
             MODE
         );
 
-        // BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-        //     target: address(target),
-        //     stake: address(stake),
-        //     oracle: ORACLE,
-        //     delta: DELTA,
-        //     ifee: ISSUANCE_FEE,
-        //     stakeSize: STAKE_SIZE,
-        //     minm: MIN_MATURITY,
-        //     maxm: MAX_MATURITY,
-        //     mode: MODE
-        // });
-
-        // fakeAdapter.initialize(address(divider), adapterParams);
         try fakeAdapter.doSetAdapter(divider, address(fakeAdapter)) {
             fail();
         } catch Error(string memory error) {

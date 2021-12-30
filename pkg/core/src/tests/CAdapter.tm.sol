@@ -62,18 +62,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             0,
             Assets.COMP
         ); // Compound adapter
-        // BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-        //     target: Assets.cDAI,
-        //     delta: DELTA,
-        //     oracle: Assets.RARI_ORACLE,
-        //     ifee: ISSUANCE_FEE,
-        //     stake: Assets.DAI,
-        //     stakeSize: STAKE_SIZE,
-        //     minm: MIN_MATURITY,
-        //     maxm: MAX_MATURITY,
-        //     mode: 0
-        // });
-        // adapter.initialize(address(divider), adapterParams, Assets.COMP);
 
         cEthAdapter = new CAdapter(
             address(divider),
@@ -88,18 +76,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             0,
             Assets.COMP
         ); // Compound adapter
-        // adapterParams = BaseAdapter.AdapterParams({
-        //     target: Assets.cETH,
-        //     delta: DELTA,
-        //     oracle: Assets.RARI_ORACLE,
-        //     ifee: ISSUANCE_FEE,
-        //     stake: Assets.DAI,
-        //     stakeSize: STAKE_SIZE,
-        //     minm: MIN_MATURITY,
-        //     maxm: MAX_MATURITY,
-        //     mode: 0
-        // });
-        // cEthAdapter.initialize(address(divider), adapterParams, Assets.COMP);
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
         cUsdcAdapter = new CAdapter(
@@ -115,18 +91,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             0,
             Assets.COMP
         ); // Compound adapter
-        // adapterParams = BaseAdapter.AdapterParams({
-        //     target: Assets.cUSDC,
-        //     delta: DELTA,
-        //     oracle: Assets.RARI_ORACLE,
-        //     ifee: ISSUANCE_FEE,
-        //     stake: Assets.USDC,
-        //     stakeSize: STAKE_SIZE,
-        //     minm: MIN_MATURITY,
-        //     maxm: MAX_MATURITY,
-        //     mode: 0
-        // });
-        // cUsdcAdapter.initialize(address(divider), adapterParams, Assets.COMP);
     }
 }
 

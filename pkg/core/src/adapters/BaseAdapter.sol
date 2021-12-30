@@ -233,8 +233,16 @@ abstract contract BaseAdapter {
         return (minm, maxm);
     }
 
-    function getStakeData() external view returns (address, uint256) {
-        return (stake, stakeSize);
+    function getStakeAndTarget()
+        external
+        view
+        returns (
+            address,
+            address,
+            uint256
+        )
+    {
+        return (target, stake, stakeSize);
     }
 
     function getMode() external view returns (uint8) {

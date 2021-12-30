@@ -62,18 +62,6 @@ contract PeripheryTest is TestHelper {
             MODE,
             address(reward)
         );
-        // BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-        //     target: address(target),
-        //     stake: address(stake),
-        //     oracle: ORACLE,
-        //     delta: DELTA,
-        //     ifee: 1e18,
-        //     stakeSize: STAKE_SIZE,
-        //     minm: MIN_MATURITY,
-        //     maxm: MAX_MATURITY,
-        //     mode: MODE
-        // });
-        // adapter.initialize(address(divider), adapterParams, address(reward));
         divider.addAdapter(address(adapter));
 
         uint48 maturity = getValidMaturity(2021, 10);

@@ -80,18 +80,6 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0
         ); // wstETH adapter
-        // BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-        //     target: Assets.WSTETH,
-        //     delta: DELTA,
-        //     oracle: Assets.RARI_ORACLE,
-        //     ifee: ISSUANCE_FEE,
-        //     stake: Assets.DAI,
-        //     stakeSize: STAKE_SIZE,
-        //     minm: MIN_MATURITY,
-        //     maxm: MAX_MATURITY,
-        //     mode: 0
-        // });
-        // adapter.initialize(address(divider), adapterParams);
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {

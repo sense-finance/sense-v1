@@ -25,7 +25,19 @@ contract MockFactory is CropFactory {
     }
 
     function deployAdapter(address _target) external override returns (address adapterAddress) {
-        MockAdapter adapter = new MockAdapter(divider, _target, factoryParams.oracle, factoryParams.delta, factoryParams.ifee, factoryParams.stake, factoryParams.stakeSize, factoryParams.minm, factoryParams.maxm, factoryParams.mode, reward);
+        MockAdapter adapter = new MockAdapter(
+            divider,
+            _target,
+            factoryParams.oracle,
+            factoryParams.delta,
+            factoryParams.ifee,
+            factoryParams.stake,
+            factoryParams.stakeSize,
+            factoryParams.minm,
+            factoryParams.maxm,
+            factoryParams.mode,
+            reward
+        );
 
         _addAdapter(address(adapter));
 
