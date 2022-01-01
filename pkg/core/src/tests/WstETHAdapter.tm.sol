@@ -133,7 +133,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         assertEq(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
     }
 
-    function testCantSendEtherIfNotEligible() public {
+    function testMainnetCantSendEtherIfNotEligible() public {
         // try this.sendEther(address(adapter), 1 ether) {
         //     fail();
         // } catch Error(string memory error) {

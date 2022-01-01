@@ -13,6 +13,7 @@ import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Divider, TokenHandler } from "../Divider.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
+import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
 
@@ -23,13 +24,19 @@ import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
+import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
+import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+
+// Space & Balanacer V2 mock
+import { MockSpaceFactory, MockBalancerVault } from "./test-helpers/mocks/MockSpace.sol";
 
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address public constant UNI_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+
+    /// @notice Fuse addresses
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
     address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
@@ -43,16 +50,16 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
 
-    Periphery periphery;
-    CAdapter adapter;
+    Periphery internal periphery;
+    CAdapter internal adapter;
     CFactory internal factory;
     Divider internal divider;
     PoolManager internal poolManager;
     TokenHandler internal tokenHandler;
     MockOracle internal mockOracle;
 
-    IUniswapV3Factory uniFactory;
-    ISwapRouter uniSwapRouter;
+    MockBalancerVault internal balancerVault;
+    MockSpaceFactory internal spaceFactory;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -61,24 +68,26 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         uint48 firstDayOfMonth = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
         hevm.warp(firstDayOfMonth); // set to first day of the month
 
-        // divider
+        // Divider
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
 
-        // periphery
-        uniFactory = IUniswapV3Factory(UNI_FACTORY);
-        uniSwapRouter = ISwapRouter(uniSwapRouter);
+        // Periphery
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);
-        periphery = new Periphery(address(divider), address(poolManager), address(uniFactory), address(uniSwapRouter));
+
+        balancerVault = new MockBalancerVault();
+        spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
+
+        periphery = new Periphery(address(divider), address(poolManager), address(spaceFactory), address(balancerVault));
         poolManager.setIsTrusted(address(periphery), true);
         divider.setPeriphery(address(periphery));
 
-        // adapter & factory
+        // Adapter & factory
         CAdapter implementation = new CAdapter(); // compound adapter implementation
         mockOracle = new MockOracle();
 
-        // deploy compound adapter factory
+        // Deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: address(mockOracle),
@@ -95,8 +104,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         divider.setIsTrusted(address(factory), true);
         divider.setIsTrusted(address(factory), true);
         periphery.setFactory(address(factory), true);
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
 
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -105,8 +114,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-
-        // onboard target through Periphery
     }
 }
 
@@ -127,11 +134,11 @@ contract PeripheryTests is PeripheryTestHelper {
         ERC20(DAI).approve(address(periphery), type(uint256).max);
         (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity);
 
-        // check zeros and claim deployed
+        // Check zeros and claim deployed
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // check zeros and claims onboarded on PoolManager (Fuse)
+        // Check zeros and claims onboarded on PoolManager (Fuse)
         assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
     }
 }
