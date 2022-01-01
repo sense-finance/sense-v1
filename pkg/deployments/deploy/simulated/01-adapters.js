@@ -48,7 +48,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const MAX_MATURITY = "4838400"; // 4 weeks;
   const ORACLE = "0x6D2299C48a8dD07a872FDd0F8233924872Ad1071";
   const MODE = 1; // 1 for weekly
-  const DELTA = ethers.utils.parseEther("1");
+  const DELTA = ethers.constants.MaxUint256;
   const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
