@@ -47,7 +47,6 @@ interface BalancerOracleLike {
     function getVault() external view returns (address);
 
     function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
-
 }
 
 contract ZeroOracle is PriceOracle, Trust {

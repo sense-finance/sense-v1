@@ -79,7 +79,12 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         balancerVault = new MockBalancerVault();
         spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
 
-        periphery = new Periphery(address(divider), address(poolManager), address(spaceFactory), address(balancerVault));
+        periphery = new Periphery(
+            address(divider),
+            address(poolManager),
+            address(spaceFactory),
+            address(balancerVault)
+        );
         poolManager.setIsTrusted(address(periphery), true);
         divider.setPeriphery(address(periphery));
 
