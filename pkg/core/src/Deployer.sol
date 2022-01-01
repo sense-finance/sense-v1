@@ -15,7 +15,7 @@ library TokenFactory {
     string internal constant CLAIM_SYMBOL_PREFIX = "c";
     string internal constant CLAIM_NAME_PREFIX = "Claim";
 
-    function create(
+    function deployTokens(
         address divider,
         address adapter,
         uint48 maturity
@@ -79,5 +79,38 @@ library TokenFactory {
                 )
             )
         );
+    }
+
+    function tokensExist(
+        address divider,
+        address adapter,
+        uint48 maturity
+    ) internal returns (address zero, address claim) {
+        zero = address(
+            uint256(
+                keccak256(
+                    abi.encodePacked(
+                        // Prefix:
+                        hex"ff",
+                        // Creator:
+                        divider,
+                        // Salt:
+                        keccak256(abi.encode(adapter, maturity, "zero")),
+                        // Bytecode hash:
+                        keccak256(
+                            abi.encodePacked(
+                                // Deployment bytecode:
+                                type(Zero).creationCode,
+                                // Constructor arguments:
+                                abi.encode(string, string, decimals, divider)
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        // There should never be a case where one token is deployed without the other
+        return address(zero).code.length > 0;
     }
 }

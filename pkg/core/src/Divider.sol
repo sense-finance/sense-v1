@@ -5,7 +5,6 @@ pragma solidity ^0.8.6;
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
-import { CREATE3 } from "@rari-capital/solmate/src/utils/CREATE3.sol";
 import { ReentrancyGuard } from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
 import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
@@ -39,14 +38,19 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
+
     /// @notice adapter ID -> adapter address
     mapping(uint256 => address) public adapterAddresses;
+
     /// @notice adapter address -> adapter ID
     mapping(address => uint256) public adapterIDs;
+
     /// @notice target -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
+
     /// @notice adapter -> maturity -> Series
     mapping(address => mapping(uint256 => Series)) public series;
+
     /// @notice adapter -> maturity -> user -> lscale (last scale)
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
 
