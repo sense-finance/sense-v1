@@ -137,6 +137,16 @@ gas-snapshot-local:
 		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
 	)
 
+forge-gas-snapshot: && _timer
+	@cd {{ invocation_directory() }}; forge snapshot \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+
+forge-gas-snapshot-diff: && _timer
+	@cd {{ invocation_directory() }}; forge snapshot --diff \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+
 ## ---- Appendix ----
 
 start_time := `date +%s`
