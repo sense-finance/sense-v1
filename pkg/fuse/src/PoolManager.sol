@@ -88,8 +88,10 @@ contract PoolManager is Trust {
 
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
+
     /// @notice Series Status: adapter -> maturity -> series status (zeros/lp shares)
     mapping(address => mapping(uint256 => SeriesStatus)) public sStatus;
+
     /// @notice Series Pools: adapter -> maturity -> AMM pool
     mapping(address => mapping(uint256 => address)) public sPools;
 
@@ -138,7 +140,7 @@ contract PoolManager is Trust {
         (_poolIndex, _comptroller) = FuseDirectoryLike(fuseDirectory).deployPool(
             name,
             comptrollerImpl,
-            false, // whitelist is always false
+            false, // `whitelist` is always false
             closeFactor,
             liqIncentive,
             masterOracle
@@ -192,8 +194,8 @@ contract PoolManager is Trust {
         emit TargetAdded(target);
     }
 
-    /// @notice queues a set of (Zero, LPShare) for Fuse pool once the TWAP is ready
-    /// @dev called by the periphery, which will know which pool address to set for this Series
+    /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
+    /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
         uint48 maturity,

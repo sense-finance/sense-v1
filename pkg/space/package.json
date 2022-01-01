@@ -16,7 +16,6 @@
         "build": "just build",
         "test": "just test-local",
         "turbo-test": "just turbo-test-local",
-        "test:mainnet": "just test-mainnet",
         "testcov": "just test --coverage",
         "lint": "solhint -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
