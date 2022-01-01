@@ -45,6 +45,9 @@ interface BalancerOracleLike {
     function getPoolId() external view returns (bytes32);
 
     function getVault() external view returns (address);
+
+    function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
+
 }
 
 contract ZeroOracle is PriceOracle, Trust {
@@ -74,7 +77,7 @@ contract ZeroOracle is PriceOracle, Trust {
         require(pool != BalancerOracleLike(address(0)), "Zero must have a pool set");
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
-        // https://docs.balancer.fi/developers/smart-contracts/apis/pools
+        // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
         (, , , , , , uint256 sampleTs) = pool.getSample(1023);
         if (sampleTs == 0) {
             // revert if the pool's oracle can't be used yet, preventing this market from being deployed
@@ -91,14 +94,15 @@ contract ZeroOracle is PriceOracle, Trust {
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
         // get the price of Zeros in terms of underlying
-        uint256 zeroPrice = results[0];
+        (uint8 zeroi, ) = pool.getIndices();
+        uint256 zeroPrice = results[zeroi];
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying;
         if (address(zero) == address(tokens[0])) {
-            underlying = address(tokens[0]);
-        } else {
             underlying = address(tokens[1]);
+        } else {
+            underlying = address(tokens[0]);
         }
 
         // `Zero/underlying` * `underlying/ETH` = `Price of Zero in ETH`

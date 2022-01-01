@@ -581,7 +581,7 @@ contract Periphery is Trust {
     /// @param maturity maturity
     /// @param cBalIn Claim amount the user has sent in
     /// @param amount target amount to borrow
-    /// @return claims issued with flashloan
+    /// @return amount of Target obtained from a sale of Claims
     function _flashBorrow(
         bytes memory data,
         address adapter,
@@ -699,7 +699,8 @@ contract Periphery is Trust {
         }
     }
 
-    /* ========== EVENTS ========== */
+    /* ========== LOGS ========== */
+    
     event FactoryChanged(address indexed adapter, bool indexed isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterOnboarded(address adapter);

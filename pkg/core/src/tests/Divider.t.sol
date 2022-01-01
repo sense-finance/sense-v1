@@ -1343,6 +1343,61 @@ contract Dividers is TestHelper {
         assertEq(mscale, newScale);
     }
 
+    // @notice if backfill happens while adapter is NOT disabled it is because the current timestamp is > cutoff so stakecoin stake and fees are to the Sense's cup multisig address
+    function testFuzzBackfillScaleAfterCutoffAdapterEnabledTransfersStakeAmountAndFees(uint128 tBal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
+        uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
+        uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
+        sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 tDecimals = target.decimals();
+        uint256 tBase = 10**tDecimals;
+        uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, tBase); // 1 target
+        bob.doIssue(address(adapter), maturity, tBal);
+
+        hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds);
+        uint256 newScale = 2e18;
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
+        assertEq(mscale, newScale);
+        assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
+        assertEq(
+            stake.balanceOf(address(alice)),
+            sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals())
+        );
+        assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore + fee);
+        assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore + convertToBase(STAKE_SIZE, stake.decimals()));
+    }
+
+    // @notice if backfill happens while adapter is disabled stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
+    // no matter that the current timestamp is > cutoff
+    function testFuzzBackfillScaleAfterCutoffAdapterDisabledTransfersStakeAmountAndFees(uint128 tBal) public {
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
+        uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
+        uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
+        sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        uint256 tDecimals = target.decimals();
+        uint256 tBase = 10**tDecimals;
+        uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, tBase); // 1 target
+        bob.doIssue(address(adapter), maturity, tBal);
+
+        hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds);
+        divider.setAdapter(address(adapter), false);
+        uint256 newScale = 2e18;
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
+        assertEq(mscale, newScale);
+        assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
+        assertEq(stake.balanceOf(address(alice)), sponsorStakeBalanceBefore);
+        assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore + fee);
+        assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore);
+    }
+
     // @notice if backfill happens before the maturity and sponsor window, stakecoin stake is transferred to the
     // sponsor and issuance fees are returned to Sense's cup multisig address
     function testFuzzBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint128 tBal) public {
@@ -1370,8 +1425,8 @@ contract Dividers is TestHelper {
         assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore);
     }
 
-    // @notice if backfill happens after issuance fees are returned to Sense's cup multisig address, both issuance fees
-    // and the stakecoin stake will go to Sense's cup multisig address
+    // @notice if backfill happens while adapter is disabled, stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
+    // no matter that the current timestamp is > SPONSOR WINDOW
     function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal)
         public
     {
@@ -1397,11 +1452,11 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceAfter = stake.balanceOf(address(alice));
         assertEq(sponsorTargetBalanceAfter, sponsorTargetBalanceBefore);
-        assertEq(sponsorStakeBalanceAfter, sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(sponsorStakeBalanceAfter, sponsorStakeBalanceBefore);
         uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
         uint256 cupStakeBalanceAfter = stake.balanceOf(address(this));
         assertEq(cupTargetBalanceAfter, cupTargetBalanceBefore + fee);
-        assertEq(cupStakeBalanceAfter, cupStakeBalanceBefore + convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(cupStakeBalanceAfter, cupStakeBalanceBefore);
     }
 
     function testFuzzBackfillOnlyLScale(uint128 tBal) public {
