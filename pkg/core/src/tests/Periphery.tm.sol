@@ -71,7 +71,6 @@ contract PeripheryTestHelper is DSTest {
         divider.setPeriphery(address(periphery));
 
         // adapter & factory
-        CAdapter implementation = new CAdapter(); // compound adapter implementation
 
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
@@ -85,7 +84,7 @@ contract PeripheryTestHelper is DSTest {
             mode: MODE
         });
 
-        factory = new CFactory(address(divider), address(implementation), factoryParams, COMP);
+        factory = new CFactory(address(divider), factoryParams, COMP);
 
         divider.setIsTrusted(address(factory), true); // TODO: remove when Space ready
         address f = factory.deployAdapter(cDAI); // TODO: remove when Space ready

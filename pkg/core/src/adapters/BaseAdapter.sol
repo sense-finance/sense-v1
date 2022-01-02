@@ -2,7 +2,6 @@
 pragma solidity ^0.8.6;
 
 // External references
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
@@ -23,7 +22,7 @@ interface IPeriphery {
 
 /// @title Assign time-based value to Target tokens
 /// @dev In most cases, the only method that will be unique to each adapter type is `_scale`
-abstract contract BaseAdapter is Initializable {
+abstract contract BaseAdapter {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
 
@@ -31,44 +30,98 @@ abstract contract BaseAdapter is Initializable {
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
-    /* ========== PUBLIC MUTABLE STORAGE ========== */
+    /* ========== PUBLIC IMMUTABLES ========== */
 
-    address public divider;
-    AdapterParams public adapterParams;
-    struct AdapterParams {
-        address target; // Target token to divide
-        address oracle; // oracle address
-        uint256 delta; // max growth per second allowed
-        uint256 ifee; // issuance fee
-        address stake; // token to stake at issuance
-        uint256 stakeSize; // amount to stake at issuance
-        uint256 minm; // min maturity (seconds after block.timstamp)
-        uint256 maxm; // max maturity (seconds after block.timstamp)
-        uint8 mode; // 0 for monthly, 1 for weekly
+    /// @notice Sense core Divider address
+    address public immutable divider;
+
+    /// @notice Target token to divide
+    address public immutable target;
+
+    /// @notice Oracle address
+    address public immutable oracle;
+
+    /// @notice Max growth per second allowed
+    uint256 public immutable delta;
+
+    /// @notice Issuance fee
+    uint256 public immutable ifee;
+
+    /// @notice Token to stake at issuance
+    address public immutable stake;
+
+    /// @notice Amount to stake at issuance
+    uint256 public immutable stakeSize;
+
+    /// @notice Min maturity (seconds after block.timstamp)
+    uint256 public immutable minm;
+
+    /// @notice Max maturity (seconds after block.timstamp)
+    uint256 public immutable maxm;
+
+    /// @notice 0 for monthly, 1 for weekly
+    uint8 public immutable mode;
+
+    /* ========== DATA STRUCTURES ========== */
+
+    struct LScale {
+        // Timestamp of the last scale value
+        uint256 timestamp;
+        // Last scale value
+        uint256 value;
     }
+
+    struct Config {
+        address target;
+        address oracle;
+        uint256 delta;
+        uint256 ifee;
+        address stake;
+        uint256 stakeSize;
+        uint256 minm;
+        uint256 maxm;
+        uint8 mode;
+    }
+
+    /* ========== METADATA STORAGE ========== */
 
     string public name;
+
     string public symbol;
+
+    /* ========== PUBLIC MUTABLE STORAGE ========== */
+
+    /// @notice Cached scale value from the last call to `scale()`
     LScale public lscale;
-    struct LScale {
-        uint256 timestamp; // timestamp of the last scale value
-        uint256 value; // last scale value
-    }
 
-    event Initialized();
-
-    function initialize(address _divider, AdapterParams memory _adapterParams) public virtual initializer {
+    constructor(
+        address _divider,
+        address _target,
+        address _oracle,
+        uint256 _delta,
+        uint256 _ifee,
+        address _stake,
+        uint256 _stakeSize,
+        uint256 _minm,
+        uint256 _maxm,
+        uint8 _mode
+    ) {
         // sanity check
-        require(_adapterParams.minm < _adapterParams.maxm, Errors.InvalidMaturityOffsets);
-
+        require(_minm < _maxm, Errors.InvalidMaturityOffsets);
         divider = _divider;
-        adapterParams = _adapterParams;
-        name = string(abi.encodePacked(ERC20(_adapterParams.target).name(), " Adapter"));
-        symbol = string(abi.encodePacked(ERC20(_adapterParams.target).symbol(), "-adapter"));
+        target = _target;
+        oracle = _oracle;
+        delta = _delta;
+        ifee = _ifee;
+        stake = _stake;
+        stakeSize = _stakeSize;
+        minm = _minm;
+        maxm = _maxm;
+        mode = _mode;
+        name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
+        symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
 
-        ERC20(_adapterParams.target).safeApprove(divider, type(uint256).max);
-
-        emit Initialized();
+        ERC20(_target).safeApprove(_divider, type(uint256).max);
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
@@ -86,8 +139,7 @@ abstract contract BaseAdapter is Initializable {
         uint256 cBalIn,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
-        ERC20 target = ERC20(adapterParams.target);
-        require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
+        require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
         (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
             data,
             msg.sender,
@@ -97,7 +149,7 @@ abstract contract BaseAdapter is Initializable {
             amount
         );
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
-        require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
+        require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);
     }
 
@@ -114,10 +166,10 @@ abstract contract BaseAdapter is Initializable {
             // check actual growth vs delta (max growth per sec)
             uint256 growthPerSec = (value > lvalue ? value - lvalue : lvalue - value).fdiv(
                 lvalue * elapsed,
-                10**ERC20(adapterParams.target).decimals()
+                FixedMath.WAD
             );
 
-            if (growthPerSec > adapterParams.delta) revert(Errors.InvalidScaleValue);
+            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
         }
 
         if (value != lvalue) {
@@ -164,16 +216,6 @@ abstract contract BaseAdapter is Initializable {
         return 0;
     }
 
-    /// @notice Level value getter that may be overriden by child contracts
-    /// @dev Returns `7` by default, which means that Series from this adapter will have full
-    /// access to Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`).
-    /// @dev The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <collect(y/n)><combine(y/n)><issue(y/n)>
-    /// (e.g. 101 means `issue` and `collect` are allowed, but `combine` is not)
-    function level() external view virtual returns (uint256) {
-        return 7;
-    }
-
     /* ========== OPTIONAL HOOKS ========== */
 
     /// @notice Notification whenever the Divider adds or removes Target
@@ -187,16 +229,8 @@ abstract contract BaseAdapter is Initializable {
 
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
-    function getTarget() external view returns (address) {
-        return adapterParams.target;
-    }
-
-    function getIssuanceFee() external view returns (uint256) {
-        return adapterParams.ifee;
-    }
-
     function getMaturityBounds() external view returns (uint256, uint256) {
-        return (adapterParams.minm, adapterParams.maxm);
+        return (minm, maxm);
     }
 
     function getStakeAndTarget()
@@ -208,11 +242,11 @@ abstract contract BaseAdapter is Initializable {
             uint256
         )
     {
-        return (adapterParams.target, adapterParams.stake, adapterParams.stakeSize);
+        return (target, stake, stakeSize);
     }
 
     function getMode() external view returns (uint8) {
-        return adapterParams.mode;
+        return mode;
     }
 
     /* ========== MODIFIERS ========== */

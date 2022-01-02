@@ -180,7 +180,6 @@ contract TestHelper is DSTest {
     }
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
-        MockAdapter adapterImpl = new MockAdapter();
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -191,7 +190,7 @@ contract TestHelper is DSTest {
             maxm: MAX_MATURITY,
             mode: MODE
         });
-        someFactory = new MockFactory(address(adapterImpl), address(divider), factoryParams, address(_reward)); // deploy adapter factory
+        someFactory = new MockFactory(address(divider), factoryParams, address(_reward)); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -234,7 +233,7 @@ contract TestHelper is DSTest {
         alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
         alice.doTransfer(zero, address(balancerVault), issued);
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
-        MockToken(adapter.getTarget()).mint(address(balancerVault), tBal);
+        MockToken(adapter.target()).mint(address(balancerVault), tBal);
     }
 
     function convertBase(uint256 decimals) public pure returns (uint256) {

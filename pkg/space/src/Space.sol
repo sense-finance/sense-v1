@@ -16,7 +16,7 @@ import { Errors, _require } from "@balancer-labs/v2-solidity-utils/contracts/hel
 interface AdapterLike {
     function scale() external returns (uint256);
 
-    function getTarget() external returns (address);
+    function target() external returns (address);
 
     function symbol() external returns (string memory);
 
@@ -113,7 +113,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     ) BalancerPoolToken(AdapterLike(_adapter).name(), AdapterLike(_adapter).symbol()) {
         bytes32 poolId = vault.registerPool(IVault.PoolSpecialization.TWO_TOKEN);
 
-        address target = AdapterLike(_adapter).getTarget();
+        address target = AdapterLike(_adapter).target();
         IERC20[] memory tokens = new IERC20[](2);
 
         // Ensure that the array of tokens is correctly ordered

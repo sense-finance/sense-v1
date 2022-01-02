@@ -12,14 +12,18 @@ import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
 abstract contract BaseFactory {
-    address public immutable divider;
-    address public immutable protocol; // protocol's data contract address
-    address public immutable adapterImpl; // adapter implementation
+    using Bytes32AddressLib for address;
 
-    event AdapterDeployed(address addr, address indexed target);
-    event DeltaChanged(uint256 delta);
-    event AdapterImplementationChanged(address implementation);
-    event ProtocolChanged(address protocol);
+    /* ========== PUBLIC IMMUTABLES ========== */
+
+    /// @notice Sense core Divider address
+    address public immutable divider;
+
+    /// @notice Protocol's data contract address
+    address public immutable protocol;
+
+    /// @notice target -> adapter
+    mapping(address => address) public adapters;
 
     FactoryParams public factoryParams;
     struct FactoryParams {
@@ -36,50 +40,38 @@ abstract contract BaseFactory {
     constructor(
         address _divider,
         address _protocol,
-        address _adapterImpl,
         FactoryParams memory _factoryParams
     ) {
         divider = _divider;
         protocol = _protocol;
-        adapterImpl = _adapterImpl;
         factoryParams = _factoryParams;
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    /// @notice Deploys both a adapter and a target wrapper for the given _target
-    /// @param _target Address of the Target token
-    function deployAdapter(address _target) external virtual returns (address adapterClone) {
-        require(_exists(_target), Errors.NotSupported);
-
-        // clone the adapter using the Target address as salt
-        // note: duplicate Target addresses will revert
-        adapterClone = Clones.cloneDeterministic(adapterImpl, Bytes32AddressLib.fillLast12Bytes(_target));
-
-        // TODO: see if we can inline this
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: _target,
-            delta: factoryParams.delta,
-            oracle: factoryParams.oracle,
-            ifee: factoryParams.ifee,
-            stake: factoryParams.stake,
-            stakeSize: factoryParams.stakeSize,
-            minm: factoryParams.minm,
-            maxm: factoryParams.maxm,
-            mode: factoryParams.mode
-        });
-        BaseAdapter(adapterClone).initialize(divider, adapterParams);
-
-        // authd set adapter since this adapter factory is only for Sense-vetted adapters
-        Divider(divider).setAdapter(adapterClone, true);
-
-        emit AdapterDeployed(adapterClone, _target);
-
-        return adapterClone;
+    /// @notice Performs sanitychecks adds adapter to Divider
+    /// @param _adapter Address of the adapter
+    function _addAdapter(address _adapter) internal {
+        address target = BaseAdapter(_adapter).target();
+        require(_exists(target), Errors.NotSupported);
+        require(adapters[target] == address(0), Errors.AdapterExists);
+        adapters[target] = _adapter;
+        Divider(divider).setAdapter(address(_adapter), true);
+        emit AdapterAdded(address(_adapter), target);
     }
 
-    /* ========== INTERNAL ========== */
+    /* ========== REQUIRED DEPLOY ========== */
+
+    /// @notice Deploys both an adapter and a target wrapper for the given _target
+    /// @param _target Address of the Target token
+    /// @dev Must call _addAdapter()
+    function deployAdapter(address _target) external virtual returns (address adapter) {}
+
+    /* ========== REQUIRED INTERNAL GUARD ========== */
 
     /// @notice Target validity check that must be overriden by child contracts
     function _exists(address _target) internal virtual returns (bool);
+
+    /* ========== LOGS ========== */
+
+    /// @notice Logs the deployment of the adapter
+    event AdapterAdded(address addr, address indexed target);
 }

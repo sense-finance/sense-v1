@@ -49,48 +49,48 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         tokenHandler.init(address(divider));
 
         // cdai adapter
-        adapter = new CAdapter(); // Compound adapter
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.cDAI,
-            delta: DELTA,
-            oracle: Assets.RARI_ORACLE,
-            ifee: ISSUANCE_FEE,
-            stake: Assets.DAI,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: 0
-        });
-        adapter.initialize(address(divider), adapterParams, Assets.COMP);
+        adapter = new CAdapter(
+            address(divider),
+            Assets.cDAI,
+            Assets.RARI_ORACLE,
+            DELTA,
+            ISSUANCE_FEE,
+            Assets.DAI,
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            0,
+            Assets.COMP
+        ); // Compound adapter
 
-        cEthAdapter = new CAdapter(); // Compound adapter
-        adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.cETH,
-            delta: DELTA,
-            oracle: Assets.RARI_ORACLE,
-            ifee: ISSUANCE_FEE,
-            stake: Assets.DAI,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: 0
-        });
-        cEthAdapter.initialize(address(divider), adapterParams, Assets.COMP);
+        cEthAdapter = new CAdapter(
+            address(divider),
+            Assets.cETH,
+            Assets.RARI_ORACLE,
+            DELTA,
+            ISSUANCE_FEE,
+            Assets.DAI,
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            0,
+            Assets.COMP
+        ); // Compound adapter
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
-        cUsdcAdapter = new CAdapter(); // Compound adapter
-        adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.cUSDC,
-            delta: DELTA,
-            oracle: Assets.RARI_ORACLE,
-            ifee: ISSUANCE_FEE,
-            stake: Assets.USDC,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: 0
-        });
-        cUsdcAdapter.initialize(address(divider), adapterParams, Assets.COMP);
+        cUsdcAdapter = new CAdapter(
+            address(divider),
+            Assets.cUSDC,
+            Assets.RARI_ORACLE,
+            DELTA,
+            ISSUANCE_FEE,
+            Assets.DAI,
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            0,
+            Assets.COMP
+        ); // Compound adapter
     }
 }
 
