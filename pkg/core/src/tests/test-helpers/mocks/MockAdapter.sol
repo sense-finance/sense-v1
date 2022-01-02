@@ -59,7 +59,7 @@ contract MockAdapter is CropAdapter {
         return _tilt;
     }
 
-    function level() external view virtual override returns (uint8) {
+    function level() external view virtual override returns (uint256) {
         if (_level == 0) {
             return 7;
         }

@@ -170,7 +170,7 @@ abstract contract BaseAdapter is Initializable {
     /// @dev The number this function returns will be used to determine its access by checking for binary
     /// digits using the following scheme: <collect(y/n)><combine(y/n)><issue(y/n)>
     /// (e.g. 101 means `issue` and `collect` are allowed, but `combine` is not)
-    function level() external view virtual returns (uint8) {
+    function level() external view virtual returns (uint256) {
         return 7;
     }
 

@@ -15,12 +15,27 @@ import { Claim } from "./tokens/Claim.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 import { Token as Zero } from "./tokens/Token.sol";
 
+library Levels {
+    function issueEnabled(uint256 level) internal pure returns (bool) {
+        return level & (2**0) == 2**0;
+    }
+    function combineEnabled(uint256 level) internal pure returns (bool) {
+        return level & (2**1) == 2**1;
+    }
+
+    function collectEnabled(uint256 level) internal pure returns (uint256) {
+        return level & (2**2) == 2**2;
+    }
+}
+
+
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
+    using Levels for uint256;
     using Errors for string;
 
     /// @notice Configuration
@@ -155,8 +170,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
-        uint8 level = Adapter(adapter).level();
-        if (level & (2**0) != 2**0 && series[adapter][maturity].issuance + ISSUANCE_BUFFER < block.timestamp) {
+        uint256 level = Adapter(adapter).level();
+        if (!level.issueEnabled() && series[adapter][maturity].issuance + ISSUANCE_BUFFER < block.timestamp) {
             revert(Errors.IssuanceNotEnabled);
         }
 
@@ -180,7 +195,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         uint256 scale;
         // If collect has been disabled for this Series, issue using issuance scale always
-        if (level & (2**2) != 2**2) {
+        if (!level.collectEnabled()) {
             scale = _series.iscale;
         } else {
             // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
@@ -219,8 +234,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        uint8 level = Adapter(adapter).level();
-        if (level & (2**1) != 2**1 && !_settled(adapter, maturity)) {
+        uint256 level = Adapter(adapter).level();
+        if (!level.combineEnabled() && !_settled(adapter, maturity)) {
             revert(Errors.CombineNotEnabled);
         }
 
@@ -235,8 +250,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_settled(adapter, maturity)) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(_series.claim).burn(msg.sender, uBal);
-            // If collect has been disabled, use the inital scale, otherwise use the current scale
-            cscale = level & (2**2) != 2**2 ? _series.iscale : lscales[adapter][maturity][msg.sender];
+            // If collect has been enabled, use the current scale, otherwise use the inital scale
+            cscale = level.collectEnabled() ? lscales[adapter][maturity][msg.sender] : _series.iscale ;
             // We use lscale since the current scale was already stored there in `_collect()`
         }
 
@@ -337,12 +352,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 lscale = lscales[adapter][maturity][usr];
         Claim claim = Claim(series[adapter][maturity].claim);
 
-        if (Adapter(adapter).level() & (2**2) != 2**2) {
-            // If the Series is settled, we ensure everyone's Claims will
+        if (!Adapter(adapter).level().collectEnabled()) {
+            // If pre-maturity collection has been disabled for this Series and 
+            // the Series is settled, we ensure everyone's Claims will
             // collect all yield accrued since issuance
             if (_settled(adapter, maturity)) {
                 lscale = _series.iscale;
-                // If the Series is not settled, we ensure no collections can happen
+            // If the Series is not settled, we ensure no collections can happen
             } else {
                 return 0;
             }
