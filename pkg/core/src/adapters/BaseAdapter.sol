@@ -62,10 +62,11 @@ abstract contract BaseAdapter {
     /// @notice 0 for monthly, 1 for weekly
     uint8 public immutable mode;
 
-    /// @notice Returns `7` by default, which means that Series from this adapter will have full
-    /// access to Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`).
+    /// @notice Returns `7` by default, which equates to an adapter having
+    /// access to all Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`), but not
+    /// the onZeroRedeem hook.
     /// @notice The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <collect(y/n)><combine(y/n)><issue(y/n)>
+    /// digits using the following scheme: <onRedeemZero<(y/n)>><collect(y/n)><combine(y/n)><issue(y/n)>
     /// (e.g. 101 means `issue` and `collect` are allowed, but `combine` is not)
     uint256 public level = 7;
 
@@ -225,11 +226,21 @@ abstract contract BaseAdapter {
 
     /* ========== OPTIONAL HOOKS ========== */
 
-    /// @notice Notification whenever the Divider adds or removes Target
+    /// @notice Hook called whenever the Divider adds or removes Target to the Adapter
     function notify(
         address, /* usr */
         uint256, /* amt */
         bool /* join */
+    ) public virtual {
+        return;
+    }
+
+    /// @notice Hook called whenever a user redeems Zeros
+    function onZeroRedeem(
+        uint256, /* uBal */
+        uint256, /* mscale */
+        uint256, /* maxscale */
+        uint256 /* tBal */
     ) public virtual {
         return;
     }

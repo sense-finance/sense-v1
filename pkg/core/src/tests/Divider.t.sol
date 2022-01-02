@@ -905,6 +905,31 @@ contract Dividers is TestHelper {
         );
     }
 
+    function testRedeenZeroHookIsntCalledIfProperLevelIsntSet() public {
+        // Enable Divider lifecycle moethods, but not the adapter zero redeem hook
+        adapter.setLevel(2**2);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero,) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        bob.doRedeemZero(address(adapter), maturity, ERC20(zero).balanceOf(address(bob)));
+        assertEq(adapter.onZeroRedeemCalls(), 0);
+    }
+
+    function testRedeenZeroHookIsCalledIfProperLevelIsntSet() public {
+        adapter.setLevel(2**3);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        bob.doRedeemZero(address(adapter), maturity, ERC20(zero).balanceOf(address(bob)));
+        assertEq(adapter.onZeroRedeemCalls(), 1);
+    }
+
     /* ========== redeemClaim() tests ========== */
     function testRedeemClaimPositiveTiltPositiveScale() public {
         // Reserve 10% of principal for Claims

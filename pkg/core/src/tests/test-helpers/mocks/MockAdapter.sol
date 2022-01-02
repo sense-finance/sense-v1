@@ -16,6 +16,8 @@ contract MockAdapter is CropAdapter {
     uint256 public INITIAL_VALUE;
     address public under;
 
+    uint256 public onZeroRedeemCalls;
+
     constructor(
         address _divider,
         address _target,
@@ -67,6 +69,15 @@ contract MockAdapter is CropAdapter {
 
     function underlying() external view override returns (address) {
         return MockTarget(target).underlying();
+    }
+
+    function onZeroRedeem(
+        uint256, /* uBal */
+        uint256, /* mscale */
+        uint256, /* maxscale */
+        uint256 /* tBal */
+    ) public virtual override {
+        onZeroRedeemCalls++;
     }
 
     function tilt() external view virtual override returns (uint128) {

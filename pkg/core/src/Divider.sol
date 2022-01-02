@@ -11,32 +11,20 @@ import { FixedMath } from "./external/FixedMath.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 import { Token as Zero } from "./tokens/Token.sol";
-
-library Levels {
-    function issueEnabled(uint256 level) internal pure returns (bool) {
-        return level & (2**0) == 2**0;
-    }
-    function combineEnabled(uint256 level) internal pure returns (bool) {
-        return level & (2**1) == 2**1;
-    }
-
-    function collectEnabled(uint256 level) internal pure returns (bool) {
-        return level & (2**2) == 2**2;
-    }
-}
-
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
+    using Errors for string;
+
     using FixedMath for uint256;
     using Levels for uint256;
-    using Errors for string;
 
     /// @notice Configuration
     uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
@@ -283,7 +271,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the caller's Zeros
         Zero(_series.zero).burn(msg.sender, uBal);
 
-        if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
+        if (_series.mscale < _series.maxscale) {
             // Amount of Target they actually have set aside for them (after collections from Claim holders)
             uint256 tBalZeroActual = (uBal * (FixedMath.WAD - _series.tilt)) / _series.maxscale;
 
@@ -297,8 +285,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // Cut from Claim holders to cover any shortfall if we can
             if (tBalClaimActual != 0) {
                 // Amount of Target these Zeros would ideally redeem for minus what they actually have
-                uint256 shortfall = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) /
-                    series[adapter][maturity].mscale -
+                uint256 shortfall = (uBal * (FixedMath.WAD - _series.tilt)) /
+                    _series.mscale -
                     tBal;
                 // Calculate the amount of Target this Zero holder will get back
                 //
@@ -309,7 +297,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             }
         } else {
             // Amount of Target these Zeros will redeem for
-            tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
+            tBal = (uBal * (FixedMath.WAD - _series.tilt)) / _series.mscale;
+        }
+
+        if (Adapter(adapter).level().redeemZeroHookEnabled()) {
+            Adapter(adapter).onZeroRedeem(uBal, _series.mscale, _series.maxscale, tBal);
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
