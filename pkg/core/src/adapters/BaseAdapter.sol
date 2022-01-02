@@ -62,6 +62,13 @@ abstract contract BaseAdapter {
     /// @notice 0 for monthly, 1 for weekly
     uint8 public immutable mode;
 
+    /// @notice Returns `7` by default, which means that Series from this adapter will have full
+    /// access to Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`).
+    /// @notice The number this function returns will be used to determine its access by checking for binary
+    /// digits using the following scheme: <collect(y/n)><combine(y/n)><issue(y/n)>
+    /// (e.g. 101 means `issue` and `collect` are allowed, but `combine` is not)
+    uint256 public level = 7;
+
     /* ========== DATA STRUCTURES ========== */
 
     struct LScale {
@@ -243,10 +250,6 @@ abstract contract BaseAdapter {
         )
     {
         return (target, stake, stakeSize);
-    }
-
-    function getMode() external view returns (uint8) {
-        return mode;
     }
 
     /* ========== MODIFIERS ========== */

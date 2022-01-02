@@ -23,7 +23,7 @@ library Levels {
         return level & (2**1) == 2**1;
     }
 
-    function collectEnabled(uint256 level) internal pure returns (uint256) {
+    function collectEnabled(uint256 level) internal pure returns (bool) {
         return level & (2**2) == 2**2;
     }
 }
@@ -594,7 +594,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint8 mode = Adapter(adapter).getMode();
+        uint8 mode = Adapter(adapter).mode();
         if (mode == 0) {
             return day == 1;
         }
