@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.6;
 
 import { PriceOracle, CTokenLike } from "@sense-finance/v1-fuse/src/external/PriceOracle.sol";
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.6;
 
 // External references
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";

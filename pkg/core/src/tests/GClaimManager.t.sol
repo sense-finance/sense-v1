@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
@@ -99,7 +99,7 @@ contract GClaimsManager is TestHelper {
             assertEq(error, Errors.TransferFromFailed);
         }
     }
-
+    
     // TODO: re-add this test once we use glcaims again
     // function testFuzzJoinFirstGClaim(uint128 balance) public {
     //     // creating new periphery as the one from test helper already had a first gclaim call
