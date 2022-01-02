@@ -48,12 +48,12 @@ contract Periphery is Trust {
     constructor(
         address _divider,
         address _poolManager,
-        address _ysFactory,
+        address _spaceFactory,
         address _balancerVault
     ) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
-        spaceFactory = SpaceFactoryLike(_ysFactory);
+        spaceFactory = SpaceFactoryLike(_spaceFactory);
         balancerVault = BalancerVault(_balancerVault);
     }
 
@@ -66,16 +66,16 @@ contract Periphery is Trust {
     function sponsorSeries(address adapter, uint48 maturity) external returns (address zero, address claim) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
-        // transfer stakeSize from sponsor into this contract
+        // Transfer stakeSize from sponsor into this contract
         uint256 stakeDecimals = ERC20(stake).decimals();
         ERC20(stake).safeTransferFrom(msg.sender, address(this), _convertToBase(stakeSize, stakeDecimals));
 
-        // approve divider to withdraw stake assets
+        // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        // if it is a Sense verified adapter
+        // If it is a Sense verified adapter
         if (factory[adapter] != address(0)) {
             address pool = spaceFactory.create(adapter, maturity);
             poolManager.queueSeries(adapter, maturity, pool);
@@ -90,6 +90,8 @@ contract Periphery is Trust {
     function onboardAdapter(address f, address target) external returns (address adapterClone) {
         require(factories[f], Errors.FactoryNotSupported);
         adapterClone = Factory(f).deployAdapter(target);
+        // Ping scale to ensure an lscale is cached
+        Adapter(adapterClone).scale();
         ERC20(target).safeApprove(address(divider), type(uint256).max);
         ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
         poolManager.addTarget(target, adapterClone);

@@ -68,7 +68,7 @@ contract PoolManagerTest is DSTest {
         });
 
         mockAdapter.initialize(address(divider), adapterParams, address(reward));
-        // ping scale to set an lscale
+        // Ping scale to set an lscale
         mockAdapter.scale();
         divider.setAdapter(address(mockAdapter), true);
     }
