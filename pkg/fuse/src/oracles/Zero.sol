@@ -47,7 +47,6 @@ interface BalancerOracleLike {
     function getVault() external view returns (address);
 
     function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
-
 }
 
 contract ZeroOracle is PriceOracle, Trust {
@@ -100,9 +99,9 @@ contract ZeroOracle is PriceOracle, Trust {
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying;
         if (address(zero) == address(tokens[0])) {
-            underlying = address(tokens[0]);
-        } else {
             underlying = address(tokens[1]);
+        } else {
+            underlying = address(tokens[0]);
         }
 
         // `Zero/underlying` * `underlying/ETH` = `Price of Zero in ETH`
