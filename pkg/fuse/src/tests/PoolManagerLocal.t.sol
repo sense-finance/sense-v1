@@ -52,7 +52,6 @@ contract PoolManagerTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        MockOracle fallbackOracle = new MockOracle();
         try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
             fail();
         } catch Error(string memory error) {

@@ -278,9 +278,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the caller's Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
-        // Amount of Target these Zeros would ideally redeem for
-        tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
-
         if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
             // Amount of Target they actually have set aside for them (after collections from Claim holders)
             uint256 tBalZeroActual = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) /
@@ -289,27 +286,26 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // Amount of Target we have set aside for Claims
             uint256 tBalClaimActual = (uBal * series[adapter][maturity].tilt) / series[adapter][maturity].maxscale;
 
+            // Start with the amount of Target this Zero holder has set aside in their pool,
+            // as that's the lower bound on what they'll get
+            tBal = tBalZeroActual;
+
             // Cut from Claim holders to cover any shortfall if we can
             if (tBalClaimActual != 0) {
-                uint256 shortfall = tBal - tBalZeroActual;
-                // Calculate the amount of Target this Zero holder will get back –
-                // start with the amount of Target Zeros have set aside in their pool
-                // as that's the lower bound on what they'll get
-                tBal = tBalZeroActual;
+                // Amount of Target these Zeros would ideally redeem for minus what they actually have
+                uint256 shortfall = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) /
+                    series[adapter][maturity].mscale -
+                    tBal;
+                // Calculate the amount of Target this Zero holder will get back
+                //
+                // If the shortfall is greater than or eq to what we've reserved for Claims, cover as much as we can
+                //
                 // If the shortfall is less than what we've reserved for Claims, cover the whole thing
-                // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
-                if (tBalClaimActual > shortfall) {
-                    tBal += shortfall;
-                    // If the shortfall is greater than what we've reserved for Claims, take as much as we can
-                } else {
-                    tBal += tBalClaimActual;
-                }
-            } else {
-                // If there was nothing set aside for Claim holders in this Series,
-                // the most we can send back to Zero holders is what remains of their Target principal,
-                // so we transfer that out in full
-                tBal = tBalZeroActual;
+                tBal += shortfall >= tBalClaimActual ? tBalClaimActual : shortfall;
             }
+        } else {
+            // Amount of Target these Zeros will redeem for
+            tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
         }
 
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
@@ -389,7 +385,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
-        // last collection to this scale (as all yield is being stripped off before the Claims are sent)
+        // last collection to a synthetic scale weighted based on the scale on their last collect,
+        // the time elapsed, and the current scale
         if (to != address(0)) {
             uint256 cBal = ERC20(claim).balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.

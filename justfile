@@ -12,9 +12,9 @@ HEX_18 := "0x0000000000000000000000000000000000000000000000000000000000000012"
 HEX_8  := "0x0000000000000000000000000000000000000000000000000000000000000008"
 
 ## for mainnet tests and deployments
-ALCHEMY_KEY := env_var("ALCHEMY_KEY")
+ALCHEMY_KEY := env_var_or_default("ALCHEMY_KEY", "_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC")
 MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
-MNEMONIC    := env_var("MNEMONIC")
+MNEMONIC    := env_var_or_default("MNEMONIC", "")
 
 DAPP_SOLC_VERSION   := "0.8.6"
 DAPP_BUILD_OPTIMIZE := "1"
@@ -26,8 +26,6 @@ DAPP_TEST_FUZZ_RUNS := "100"
 # user with DAI
 DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 DAPP_REMAPPINGS   := remappings-from-pkg-deps
-# user with cDAI
-# DAPP_TEST_ADDRESS := "0xb1e9d641249a2033c37cf1c241a01e717c2f6c76"
 # set mock target to 18 decimals by default
 FORGE_MOCK_TARGET_DECIMALS := env_var_or_default("FORGE_MOCK_TARGET_DECIMALS", HEX_18)
 
@@ -35,7 +33,7 @@ FORGE_MOCK_TARGET_DECIMALS := env_var_or_default("FORGE_MOCK_TARGET_DECIMALS", H
 # export just vars as env vars
 set export
 
-## ---- Recipes ----
+## ---- Installation ----
 
 _default:
   just --list
@@ -56,6 +54,9 @@ dapp:
 forge:
     cargo install --git https://github.com/gakonst/dapptools-rs --locked
 
+
+## ---- Building ----
+
 # build using dapp
 build: && _timer
     cd {{ invocation_directory() }}; dapp build
@@ -75,6 +76,8 @@ turbo-build-dir *dir="":
 debug:
     cd {{ invocation_directory() }}; dapp debug
 
+## ---- Testing ----
+
 # default test scripts
 test: test-local
 test-solc7: test-local-solc7
@@ -92,47 +95,36 @@ test-mainnet *cmds="": && _timer
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
-    @cd {{ invocation_directory() }}; forge test \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
 
 turbo-test-local-no-fuzz *cmds="": && _timer
-    @cd {{ invocation_directory() }}; forge test \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }} 
-
-turbo-test-mainnet: && _timer
-    @cd {{ invocation_directory() }}; forge test \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
-
-turbo-test-match *exp="": && _timer
-    @cd {{ invocation_directory() }}; forge test \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi -m {{ exp }}
-
-turbo-test-mainnet-match *exp="": && _timer
-    @cd {{ invocation_directory() }}; forge test \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
-
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }}
 
 turbo-test-local-8-decimal-target *cmds="": && _timer
-    cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; forge test \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }} 
+	cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
 
-# regex for no fuzzing
-forge-snapshot:
-    @cd {{ invocation_directory() }}; forge snapshot \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+turbo-test-mainnet: && _timer
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
-# regex for no fuzzing
-forge-snapshot-diff:
-    @cd {{ invocation_directory() }}; forge snapshot --diff \
-        --lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
-        --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+turbo-test-match *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m {{ exp }}
+
+turbo-test-mainnet-match *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
+
+## ---- Gas Metering ----
 
 # default gas snapshot script
 gas-snapshot: gas-snapshot-local
@@ -144,6 +136,16 @@ gas-snapshot-local:
     {{ justfile_directory() }}/gas-snapshots/.$( \
         cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
     )
+
+forge-gas-snapshot: && _timer
+	@cd {{ invocation_directory() }}; forge snapshot \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+
+forge-gas-snapshot-diff: && _timer
+	@cd {{ invocation_directory() }}; forge snapshot --diff \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
 
 ## ---- Appendix ----
 

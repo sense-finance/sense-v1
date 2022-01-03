@@ -157,7 +157,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // Space does not have multiple join types like other Balancer pools,
         // instead, its `joinPool` always behaves like `EXACT_TOKENS_IN_FOR_BPT_OUT`
 
-        require(maturity >= block.timestamp, "Pool past maturity");
+        require(maturity >= block.timestamp, "POOL_PAST_MATURITY");
 
         uint256[] memory reqAmountsIn = abi.decode(userData, (uint256[]));
 
@@ -421,7 +421,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // -> xOrYPost ^ a = x1 + y1 - x2
         // -> xOrYPost = (x1 + y1 - xOrY2) ^ (1 / a)
         uint256 xOrYPost = (x1 + y1 - xOrY2).powUp(FixedPoint.ONE.divDown(a));
-        require(!givenIn || reservesTokenOut > xOrYPost, "Swap too small");
+        require(!givenIn || reservesTokenOut > xOrYPost, "SWAP_TOO_SMALL");
 
         // amountOut = yPre - yPost; amountIn = xPost - xPre
         return givenIn ? reservesTokenOut.sub(xOrYPost) : xOrYPost.sub(reservesTokenIn);
