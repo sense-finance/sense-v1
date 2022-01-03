@@ -15,11 +15,6 @@ library TokenFactory {
     using Bytes32AddressLib for address;
     using Bytes32AddressLib for bytes32;
 
-    string internal constant ZERO_SYMBOL_PREFIX = "z";
-    string internal constant ZERO_NAME_PREFIX = "Zero";
-    string internal constant CLAIM_SYMBOL_PREFIX = "c";
-    string internal constant CLAIM_NAME_PREFIX = "Claim";
-
     function deployTokens(
         address divider,
         address adapter,
