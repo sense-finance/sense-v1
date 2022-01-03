@@ -142,7 +142,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         });
         series[adapter][maturity] = newSeries;
 
-        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize);
 
         emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
     }
@@ -168,7 +168,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Reward the caller for doing the work of settling the Series at around the correct time
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
-        ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize);
 
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
@@ -545,7 +545,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             uint256 reward = series[adapter][maturity].reward;
 
             ERC20(target).safeTransferFrom(adapter, cup, reward);
-            ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
+            ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);
         }
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
@@ -601,17 +601,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             adapterIDs[adapter] = id;
         }
         emit AdapterChanged(adapter, id, isOn);
-    }
-
-    function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
-        if (decimals != 18) {
-            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
-        }
-        return amount;
-    }
-
-    function monday(address adapter, uint48 maturity) public returns (address, address) {
-        return TokenFactory.deployTokens(address(this), adapter, maturity);
     }
 
     /* ========== MODIFIERS ========== */
