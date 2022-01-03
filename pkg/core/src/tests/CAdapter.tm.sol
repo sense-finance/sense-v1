@@ -5,7 +5,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
-import { Divider, TokenHandler } from "../Divider.sol";
+import { Divider } from "../Divider.sol";
 import { CAdapter, CTokenInterface, PriceOracleInterface } from "../adapters/compound/CAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 
@@ -21,7 +21,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     CAdapter internal cEthAdapter;
     CAdapter internal cUsdcAdapter;
     Divider internal divider;
-    TokenHandler internal tokenHandler;
 
     /// @notice all cTokens have 8 decimals
     uint256 public constant ONE_CTOKEN = 1e8;
@@ -43,10 +42,8 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         assets[3] = Assets.cETH;
         addLiquidity(assets);
 
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
+        divider = new Divider(address(this));
         divider.setPeriphery(address(this));
-        tokenHandler.init(address(divider));
 
         // cdai adapter
         adapter = new CAdapter(); // Compound adapter

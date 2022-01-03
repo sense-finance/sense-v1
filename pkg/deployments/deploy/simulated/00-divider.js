@@ -26,28 +26,17 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const versioning = await ethers.getContract("Versioning");
   console.log("Deploying Sense version", await versioning.version());
 
-  console.log("Deploy a token handler for the Divider will use");
-  const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
   // set the cup to the zero address (where unclaimed rewards will go if nobody settles)
   const cup = ethers.constants.AddressZero;
 
   console.log("Deploy the divider");
   await deploy("Divider", {
     from: deployer,
-    args: [cup, tokenHandlerAddress],
+    args: [cup],
     log: true,
   });
 
   const divider = await ethers.getContract("Divider");
-  const tokenHandler = await ethers.getContract("TokenHandler");
-
-  console.log("Add the divider to the asset deployer");
-  await (await tokenHandler.init(divider.address)).wait();
 
   console.log("Deploy mocked fuse & comp dependencies");
   const { address: mockComptrollerAddress } = await deploy("MockComptroller", {

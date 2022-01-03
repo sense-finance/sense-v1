@@ -3,7 +3,7 @@ pragma solidity  0.8.11;
 
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
+import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 import { CAdapter, CTokenInterface } from "@sense-finance/v1-core/src/adapters/compound/CAdapter.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";

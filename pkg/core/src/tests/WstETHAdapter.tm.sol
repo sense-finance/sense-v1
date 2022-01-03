@@ -6,7 +6,7 @@ import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol"
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
+import { Divider } from "../Divider.sol";
 import { WstETHAdapter } from "../adapters/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -52,7 +52,6 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     WstETHAdapter adapter;
     Divider internal divider;
     Periphery internal periphery;
-    TokenHandler internal tokenHandler;
 
     uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
@@ -64,10 +63,8 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         address[] memory assets = new address[](1);
         assets[0] = Assets.WSTETH;
         addLiquidity(assets);
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
+        divider = new Divider(address(this));
         divider.setPeriphery(address(this));
-        tokenHandler.init(address(divider));
         adapter = new WstETHAdapter(); // wstETH adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: Assets.WSTETH,

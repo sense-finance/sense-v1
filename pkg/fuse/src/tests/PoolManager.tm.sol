@@ -3,7 +3,7 @@ pragma solidity  0.8.11;
 
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
+import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 import { CAdapter, CTokenInterface } from "@sense-finance/v1-core/src/adapters/compound/CAdapter.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
@@ -26,7 +26,6 @@ contract PoolManagerTest is DSTest {
     MockToken internal stake;
     MockTarget internal target;
     Divider internal divider;
-    TokenHandler internal tokenHandler;
     MockAdapter internal mockAdapter;
     MockOracle internal mockOracle;
 
@@ -39,9 +38,7 @@ contract PoolManagerTest is DSTest {
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     function setUp() public {
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
-        tokenHandler.init(address(divider));
+        divider = new Divider(address(this));
         mockOracle = new MockOracle();
 
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);

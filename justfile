@@ -16,7 +16,7 @@ ALCHEMY_KEY := env_var_or_default("ALCHEMY_KEY", "_gg7wSSi0KMBsdKnGVfHDueq6xMB9E
 MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
 MNEMONIC    := env_var_or_default("MNEMONIC", "")
 
-DAPP_SOLC_VERSION   := "0.8.6"
+DAPP_SOLC_VERSION   := "0.8.11"
 DAPP_BUILD_OPTIMIZE := "1"
 
 ## forge testing configuration

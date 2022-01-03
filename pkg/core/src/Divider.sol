@@ -14,7 +14,6 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
-import { TokenFactory } from "./Deployer.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -91,7 +90,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint128 tilt;
     }
 
-    constructor(address _cup, address) Trust(msg.sender) {
+    constructor(address _cup) Trust(msg.sender) {
         cup = _cup;
     }
 
@@ -122,7 +121,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = TokenFactory.deployTokens(address(this), adapter, maturity);
+        (zero, claim) = _deployTokens(adapter, maturity);
 
         // Initialize the new Series struct
         Series memory newSeries = Series({
@@ -560,6 +559,24 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             adapterIDs[adapter] = id;
         }
         emit AdapterChanged(adapter, id, isOn);
+    }
+
+    function _deployTokens(address adapter, uint48 maturity) internal returns (address zero, address claim) {
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
+        uint8 decimals = target.decimals();
+        string memory name = target.name();
+
+        (, string memory m, string memory y) = DateTime.toDateString(maturity);
+        string memory datestring = string(abi.encodePacked(m, "-", y));
+
+        string memory adapterId = DateTime.uintToString(adapterIDs[adapter]);
+        zero = address(
+            0
+        );
+
+        claim = address(
+            0
+        );
     }
 
     /* ========== MODIFIERS ========== */

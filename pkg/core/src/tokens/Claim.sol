@@ -5,38 +5,24 @@ pragma solidity  0.8.11;
 import { Divider } from "../Divider.sol";
 import { Token } from "./Token.sol";
 
-import { DateTime } from "../external/DateTime.sol";
-import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
-
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
-
 /// @title Claim Token
 /// @notice Strips off excess before every transfer
 contract Claim is Token {
-    string private constant CLAIM_SYMBOL_PREFIX = "c";
-    string private constant CLAIM_NAME_PREFIX = "Claim";
-
+    address public immutable adapter;
     uint48 public immutable maturity;
     address public immutable divider;
-    address public immutable adapter;
 
     constructor(
-        address _divider,
         address _adapter,
-        uint48 _maturity
-    ) Token("", "", 18, _divider) {
-        divider = _divider;
+        uint48 _maturity,
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
+        address _divider
+    ) Token(_name, _symbol, _decimals, _divider) {
         adapter = _adapter;
         maturity = _maturity;
-
-        ERC20 target = ERC20(Adapter(_adapter).getTarget());
-        (, string memory m, string memory y) = DateTime.toDateString(_maturity);
-        string memory datestring = string(abi.encodePacked(m, "-", y));
-
-        string memory adapterId = DateTime.uintToString(Divider(_divider).adapterIDs(_adapter));
-
-        name = string(abi.encodePacked(target.name(), " ", datestring, " ", CLAIM_NAME_PREFIX, " #", adapterId, " by Sense"));
-        symbol = string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId));
+        divider = _divider;
     }
 
     function collect() external returns (uint256 _collected) {

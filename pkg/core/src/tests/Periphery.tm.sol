@@ -11,7 +11,7 @@ import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 // Internal references
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
+import { Divider } from "../Divider.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
@@ -55,7 +55,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     CFactory internal factory;
     Divider internal divider;
     PoolManager internal poolManager;
-    TokenHandler internal tokenHandler;
     MockOracle internal mockOracle;
 
     MockBalancerVault internal balancerVault;
@@ -69,9 +68,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         hevm.warp(firstDayOfMonth); // set to first day of the month
 
         // Divider
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
-        tokenHandler.init(address(divider));
+        divider = new Divider(address(this));
 
         // Periphery
         poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);

@@ -3,7 +3,7 @@ pragma solidity  0.8.11;
 
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
-import { Divider, TokenHandler } from "../../Divider.sol";
+import { Divider } from "../../Divider.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
@@ -41,7 +41,6 @@ contract TestHelper is DSTest {
     PoolManager poolManager;
     GClaimManager gClaimManager;
     Divider internal divider;
-    TokenHandler internal tokenHandler;
     Periphery internal periphery;
 
     User internal alice;
@@ -103,9 +102,7 @@ contract TestHelper is DSTest {
         DELTA = convertToBase(DELTA, target.decimals());
 
         // divider
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
-        tokenHandler.init(address(divider));
+        divider = new Divider(address(this));
         divider.setGuard(address(target), 10 * 2**128);
 
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
