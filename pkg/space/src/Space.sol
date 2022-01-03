@@ -138,9 +138,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         ts = _ts;
 
         // Set Space-specific slots
-        maturity = _maturity;
-        adapter = _adapter;
         zeroi = _zeroi;
+        adapter = _adapter;
+        maturity = _maturity;
     }
 
     /* ========== BALANCER VAULT HOOKS ========== */

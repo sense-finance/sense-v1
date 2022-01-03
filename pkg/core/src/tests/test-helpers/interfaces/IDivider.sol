@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 abstract contract IDivider {
     function series(address adapter, uint48 maturity)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
@@ -859,7 +859,7 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , mscale, , , ) = divider.series(address(adapter), maturity);
         uint256 redeemed = cBalanceAfter.fdiv(mscale, FixedMath.WAD).fmul(0.1e18, FixedMath.WAD);
-        assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
+        assertClose(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed, 100);
     }
 
     function testRedeemClaimPositiveTiltNegativeScale() public {
