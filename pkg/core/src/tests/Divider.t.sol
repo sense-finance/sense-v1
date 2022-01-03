@@ -13,7 +13,6 @@ import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
-import { TokenFactory } from "../Deployer.sol";
 
 contract Dividers is TestHelper {
     using FixedMath for uint256;
@@ -173,29 +172,7 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
         assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
     }
-
-    // function testInitSeriesDeterministicTokens() public {
-    //     uint48 maturity = getValidMaturity(2021, 10);
-    //     assertTrue(!TokenFactory.tokensExist(address(divider), address(adapter), maturity));
-    //     (address zero, address claim) = divider.monday(address(adapter), maturity);
-
-    //     emit log_string(ERC20(zero).name());
-    //     emit log_string(ERC20(zero).symbol());
-
-    //     (address _zero, address _claim) = TokenFactory.getTokenAddresses(address(divider), address(adapter), maturity);
-
-    //     emit log_named_address("_zero", _zero);
-    //     emit log_named_address("_claim", _claim);
-
-    //     assertTrue(TokenFactory.tokensExist(address(divider), address(adapter), maturity));
-
-    //     revert();
-    //     // (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
-    //     // assertEq(zero, "Compound Dai 10-2021 Zero #1 by Sense");
-    //     // assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
-    //     // assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
-    //     // assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
-    // }
+    
 
     function testInitSeriesWithdrawStake() public {
         uint48 maturity = getValidMaturity(2021, 10);

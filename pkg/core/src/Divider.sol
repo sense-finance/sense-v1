@@ -41,9 +41,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Sense team multisig
     address public immutable cup;
 
-    /// @notice Zero/Claim deployer
-    address public immutable tokenHandler;
-
     /// @notice Permissionless flag
     bool public permissionless;
 
@@ -94,9 +91,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint128 tilt;
     }
 
-    constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
+    constructor(address _cup, address) Trust(msg.sender) {
         cup = _cup;
-        tokenHandler = _tokenHandler;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -655,51 +651,4 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// *----* misc
     event GuardedChanged(bool indexed guarded);
     event PermissionlessChanged(bool indexed permissionless);
-}
-
-contract TokenHandler is Trust {
-    /// @notice Configuration
-    string private constant ZERO_SYMBOL_PREFIX = "z";
-    string private constant ZERO_NAME_PREFIX = "Zero";
-    string private constant CLAIM_SYMBOL_PREFIX = "c";
-    string private constant CLAIM_NAME_PREFIX = "Claim";
-
-    /// @notice Program state
-    address public divider;
-
-    constructor() Trust(msg.sender) {}
-
-    function init(address _divider) external requiresTrust {
-        require(divider == address(0));
-        divider = _divider;
-    }
-
-    function deploy(address adapter, uint48 maturity) external returns (address zero, address claim) {
-        require(msg.sender == divider, "Must be called by the Divider");
-
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
-        uint8 decimals = target.decimals();
-        string memory name = target.name();
-        (, string memory m, string memory y) = DateTime.toDateString(maturity);
-        string memory datestring = string(abi.encodePacked(m, "-", y));
-
-        string memory adapterId = DateTime.uintToString(Divider(divider).adapterIDs(adapter));
-        zero = address(
-            new Token{ salt: keccak256(abi.encode(adapter, maturity, "zero")) }(
-                string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
-                string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
-                decimals,
-                divider
-            )
-        );
-
-        claim = address(
-            new Token{ salt: keccak256(abi.encode(adapter, maturity, "claim")) }(
-                string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
-                string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
-                decimals,
-                divider
-            )
-        );
-    }
 }
