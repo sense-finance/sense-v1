@@ -122,7 +122,10 @@ contract GClaimManager {
         }
 
         if (scale - initScale > 0) {
-            tBal = (uBal * scale) / (scale - initScale) / 10**18;
+            tBal = ((uBal.fmul(scale, FixedMath.WAD)).fdiv(scale - initScale, FixedMath.WAD)).fdivUp(
+                10**18,
+                FixedMath.WAD
+            );
         }
     }
 
