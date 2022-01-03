@@ -14,6 +14,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
+import { TokenFactory } from "./Deployer.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -21,20 +22,36 @@ import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
-    using Errors for string;
 
-    /// @notice Configuration
-    uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
-    uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
-    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
+    /* ========== PUBLIC CONSTANTS ========== */
 
-    /// @notice Program state
+    /// @notice TODO: TBD
+    uint256 public constant SPONSOR_WINDOW = 4 hours;
+
+    /// @notice TODO: TBD
+    uint256 public constant SETTLEMENT_WINDOW = 2 hours;
+
+    /// @notice 10% issuance fee cap
+    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18;
+
+    /* ========== PUBLIC MUTABLE STORAGE ========== */
+
     address public periphery;
-    address public immutable cup; // sense team multisig
-    address public immutable tokenHandler; // zero/claim deployer
-    bool public permissionless; // permissionless flag
-    bool public guarded = true; // guarded launch flag
-    uint256 public adapterCounter; // # number of adapters (including turned off)
+
+    /// @notice Sense team multisig
+    address public immutable cup;
+
+    /// @notice Zero/Claim deployer
+    address public immutable tokenHandler;
+
+    /// @notice Permissionless flag
+    bool public permissionless;
+
+    /// @notice Guarded launch flag
+    bool public guarded = true;
+
+    /// @notice Number of adapters (including turned off)
+    uint256 public adapterCounter;
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
@@ -54,16 +71,27 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice adapter -> maturity -> user -> lscale (last scale)
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
 
+    /* ========== DATA STRUCTURES ========== */
+
     struct Series {
-        address zero; // Zero ERC20 token
-        address claim; // Claim ERC20 token
-        address sponsor; // actor who initialized the Series
-        uint256 reward; // tracks fees due to the series' settler
-        uint256 iscale; // scale at issuance
-        uint256 mscale; // scale at maturity
-        uint256 maxscale; // max scale value from this series' lifetime
-        uint128 issuance; // timestamp of series initialization
-        uint128 tilt; // % of underlying principal initially reserved for Claims
+        // Zero ERC20 token
+        address zero;
+        // Claim ERC20 token
+        address claim;
+        // Actor who initialized the Series
+        address sponsor;
+        // Tracks fees due to the series' settler
+        uint256 reward;
+        // Scale at issuance
+        uint256 iscale;
+        // Scale at maturity
+        uint256 mscale;
+        // Max scale value from this series' lifetime
+        uint256 maxscale;
+        // Timestamp of series initialization
+        uint128 issuance;
+        // % of underlying principal initially reserved for Claims
+        uint128 tilt;
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -98,7 +126,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
+        (zero, claim) = TokenFactory.deployTokens(address(this), adapter, maturity);
 
         // Initialize the new Series struct
         Series memory newSeries = Series({
@@ -585,6 +613,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         return amount;
     }
 
+    function monday(address adapter, uint48 maturity) public returns (address, address) {
+        return TokenFactory.deployTokens(address(this), adapter, maturity);
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address adapter, uint48 maturity) {
@@ -676,13 +708,11 @@ contract TokenHandler is Trust {
         );
 
         claim = address(
-            new Claim{ salt: keccak256(abi.encode(adapter, maturity, "claim")) }(
-                maturity,
-                divider,
-                adapter,
-                string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " #", adapterId, " by Sense")),
-                string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
-                decimals
+            new Token{ salt: keccak256(abi.encode(adapter, maturity, "claim")) }(
+                string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
+                string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
+                decimals,
+                divider
             )
         );
     }

@@ -5,23 +5,31 @@ pragma solidity ^0.8.6;
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
-/// @title Base Token
-contract Token is ERC20, Trust {
-    uint256 public immutable BASE_UNIT;
+// Internal references
+import { Divider } from "../Divider.sol";
+import { DateTime } from "../external/DateTime.sol";
+import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
+
+/// @title Zero Token
+contract Zero is ERC20, Trust {
+    string private constant ZERO_SYMBOL_PREFIX = "z";
+    string private constant ZERO_NAME_PREFIX = "Zero";
 
     constructor(
+        address _divider,
         address _adapter,
-        uint8 _decimals,
-        address _trusted
-    )
-        ERC20(
-            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
-            string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
-            18
-        )
-        Trust(_trusted)
-    {
-        BASE_UNIT = 10**_decimals;
+        uint48 _maturity
+    ) ERC20("", "", 18) Trust(_divider) {
+        ERC20 target = ERC20(Adapter(_adapter).getTarget());
+        (, string memory m, string memory y) = DateTime.toDateString(_maturity);
+        string memory datestring = string(abi.encodePacked(m, "-", y));
+
+        string memory adapterId = DateTime.uintToString(Divider(_divider).adapterIDs(_adapter));
+
+        name = string(
+            abi.encodePacked(target.name(), " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")
+        );
+        symbol = string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId));
     }
 
     /// @param usr The address to send the minted tokens
