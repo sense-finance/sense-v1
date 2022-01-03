@@ -263,7 +263,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
 
-        // when series is settled, the _collect() call above would trigger a redeemClaim which will execute the notify below
+        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify
         if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         tBal += collected;
         emit Combined(adapter, maturity, tBal, msg.sender);
@@ -433,7 +433,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             Adapter(adapter).notify(usr, tBal, false);
         }
 
-        Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale, FixedMath.WAD) - tBal, false);
+        Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale) - tBal, false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
