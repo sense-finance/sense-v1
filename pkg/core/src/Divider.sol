@@ -427,12 +427,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
         // calculate how much Claims have left
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = (uBal * FixedMath.WAD) / _series.maxscale - (uBal * zShare) / _series.mscale;
-
+            tBal = uBal * FixedMath.WAD / _series.maxscale - uBal * zShare / _series.mscale;
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
         }
 
-        Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale) - tBal, false);
+        // Always notify the Adapter of the full Target balance that will no longer
+        // have its rewards distributed
+        Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale), false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
