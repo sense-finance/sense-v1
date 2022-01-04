@@ -125,7 +125,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = _deployTokens(adapter, maturity);
+        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
 
         // Initialize the new Series struct
         Series memory newSeries = Series({
@@ -655,7 +655,7 @@ contract TokenHandler is Trust {
 
         string memory adapterId = DateTime.uintToString(Divider(divider).adapterIDs(adapter));
         zero = address(
-            new Zero(
+            new Token(
                 string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
                 string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
                 decimals,
@@ -665,12 +665,12 @@ contract TokenHandler is Trust {
 
         claim = address(
             new Claim(
-                maturity,
-                divider,
                 adapter,
+                maturity,
                 string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " #", adapterId, " by Sense")),
                 string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
-                decimals
+                decimals,
+                divider
             )
         );
     }
