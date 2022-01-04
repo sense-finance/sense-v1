@@ -46,7 +46,6 @@ contract CFactory is CropFactory {
                 divider,
                 _target,
                 factoryParams.oracle,
-                factoryParams.delta,
                 factoryParams.ifee,
                 factoryParams.stake,
                 factoryParams.stakeSize,

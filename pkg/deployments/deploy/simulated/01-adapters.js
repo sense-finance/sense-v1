@@ -42,8 +42,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const MODE = 1; // 1 for weekly
   const TILT = 0;
   // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
-  const DELTA = "115792089237316195423570985008687907853269984665640564";
-  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
+  const factoryParams = [ORACLE, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
     args: [divider.address, factoryParams, airdrop.address],

@@ -69,7 +69,6 @@ contract WstETHAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
@@ -77,7 +76,7 @@ contract WstETHAdapter is BaseAdapter {
         uint128 _maxm,
         uint8 _mode,
         uint128 _tilt
-    ) BaseAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {
+    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
         // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())

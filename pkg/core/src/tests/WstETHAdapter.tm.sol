@@ -54,7 +54,6 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
 
-    uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint128 public constant MIN_MATURITY = 2 weeks;
@@ -72,7 +71,6 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.WSTETH,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,

@@ -13,12 +13,12 @@ contract MockAdapter is CropAdapter {
     uint256 internal value;
     uint256 public INITIAL_VALUE;
     address public under;
+    uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
 
     constructor(
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
@@ -27,14 +27,14 @@ contract MockAdapter is CropAdapter {
         uint8 _mode,
         uint128 _tilt,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _reward) {}
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _reward) {}
 
     function _scale() internal virtual override returns (uint256 _value) {
         if (value > 0) return value;
         if (INITIAL_VALUE == 0) {
             INITIAL_VALUE = 1e18;
         }
-        uint256 gps = delta.fmul(99 * (10**(18 - 2)), FixedMath.WAD); // delta - 1%;
+        uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)), FixedMath.WAD);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
     }

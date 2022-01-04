@@ -30,7 +30,6 @@ abstract contract CropAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
@@ -39,7 +38,7 @@ abstract contract CropAdapter is BaseAdapter {
         uint8 _mode,
         uint128 _tilt,
         address _reward
-    ) BaseAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {
+    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {
         reward = _reward;
         ERC20(_stake).safeApprove(_divider, type(uint256).max);
     }

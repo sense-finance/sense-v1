@@ -37,7 +37,6 @@ contract MockFactory is CropFactory {
             divider,
             _target,
             factoryParams.oracle,
-            factoryParams.delta,
             factoryParams.ifee,
             factoryParams.stake,
             factoryParams.stakeSize,

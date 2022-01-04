@@ -44,7 +44,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     uint8 public constant MODE = 0;
-    uint256 public constant DELTA = 1;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint128 public constant MIN_MATURITY = 2 weeks;
@@ -94,7 +93,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: address(mockOracle),
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
