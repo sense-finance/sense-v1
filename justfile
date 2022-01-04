@@ -16,7 +16,7 @@ ALCHEMY_KEY := env_var_or_default("ALCHEMY_KEY", "_gg7wSSi0KMBsdKnGVfHDueq6xMB9E
 MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
 MNEMONIC    := env_var_or_default("MNEMONIC", "")
 
-DAPP_SOLC_VERSION   := "0.8.6"
+DAPP_SOLC_VERSION   := "0.8.11"
 DAPP_BUILD_OPTIMIZE := "1"
 
 ## forge testing configuration
@@ -43,38 +43,43 @@ install: npm dapp
 
 # install npm dependencies
 npm:
-	yarn install
+    yarn install
 
 # install dapptools
 dapp:
-	curl -L https://nixos.org/nix/install | sh
-	curl https://dapp.tools/install | sh
+    curl -L https://nixos.org/nix/install | sh
+    curl https://dapp.tools/install | sh
 
 # install forge
 forge:
-	cargo install --git https://github.com/gakonst/dapptools-rs --locked
+    cargo install --git https://github.com/gakonst/dapptools-rs --locked
+
+
+## ---- Building ----
 
 
 ## ---- Building ----
 
 # build using dapp
 build: && _timer
-	cd {{ invocation_directory() }}; dapp build
+    cd {{ invocation_directory() }}; dapp build
 
 build-solc7: && _timer
-	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
+    cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
 
 turbo-build: && _timer
-	@cd {{ invocation_directory() }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
-		--root {{ invocation_directory() }}
+    @cd {{ invocation_directory() }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
+        --root {{ invocation_directory() }}
 
 turbo-build-dir *dir="":
-	@cd {{ invocation_directory() }}; cd {{ dir }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
-		--root {{ dir }} >> /dev/null; printf 0x00
+    @cd {{ invocation_directory() }}; cd {{ dir }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
+        --root {{ dir }} >> /dev/null; printf 0x00
 
 # debug and open dapp's TTY debugger
 debug:
-	cd {{ invocation_directory() }}; dapp debug
+    cd {{ invocation_directory() }}; dapp debug
+
+## ---- Testing ----
 
 ## ---- Testing ----
 
@@ -84,14 +89,14 @@ test-solc7: test-local-solc7
 
 # run local dapp tests (all files with the extension .t.sol)
 test-local *cmds="": && _timer
-	cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ cmds }}
+    cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ cmds }}
 
 test-local-solc7 *cmds="": && _timer
-	cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ cmds }}
+    cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ cmds }}
 
 # run mainnet fork dapp tests (all files with the extension .tm.sol)
 test-mainnet *cmds="": && _timer
-	@cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ cmds }}
+    @cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ cmds }}
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
@@ -131,11 +136,11 @@ gas-snapshot: gas-snapshot-local
 
 # get gas snapshot from local tests and save it to file
 gas-snapshot-local:
-	cd {{ invocation_directory() }}; \
-	just turbo-test-local-no-fuzz | grep 'gas:' | cut -d " " -f 2-4 | sort > \
-	{{ justfile_directory() }}/gas-snapshots/.$( \
-		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
-	)
+    cd {{ invocation_directory() }}; \
+    just turbo-test-local-no-fuzz | grep 'gas:' | cut -d " " -f 2-4 | sort > \
+    {{ justfile_directory() }}/gas-snapshots/.$( \
+        cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
+    )
 
 forge-gas-snapshot: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot \
@@ -151,20 +156,20 @@ forge-gas-snapshot-diff: && _timer
 
 start_time := `date +%s`
 _timer:
-	@echo "Task executed in $(($(date +%s) - {{ start_time }})) seconds"
+    @echo "Task executed in $(($(date +%s) - {{ start_time }})) seconds"
 
 # Solidity test ffi callback to get Target decimals for the base Mock Target token
 _forge_mock_target_decimals:
-	@printf {{ FORGE_MOCK_TARGET_DECIMALS }}
+    @printf {{ FORGE_MOCK_TARGET_DECIMALS }}
 
 remappings-from-pkg-deps := ```
-	cat pkg/*/package.json  |
-	jq 'select(.dependencies != null) | .dependencies | to_entries | map([.key + "/", "../../node_modules/" + .key + "/"] | join("="))' |
-	tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq
+    cat pkg/*/package.json  |
+    jq 'select(.dependencies != null) | .dependencies | to_entries | map([.key + "/", "../../node_modules/" + .key + "/"] | join("="))' |
+    tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq
 ```
 
 lib-paths-from-pkg-deps := ```
-	cat pkg/*/package.json |
-	jq 'select(.dependencies != null) | .dependencies | to_entries | map("../../node_modules/" + .key + "/")' |
-	tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | tr '\n' ' '
+    cat pkg/*/package.json |
+    jq 'select(.dependencies != null) | .dependencies | to_entries | map("../../node_modules/" + .key + "/")' |
+    tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | tr '\n' ' '
   ```

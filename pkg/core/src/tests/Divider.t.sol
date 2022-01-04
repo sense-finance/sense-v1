@@ -1055,7 +1055,7 @@ contract Dividers is TestHelper {
         tBal = 1;
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
+        uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -1083,7 +1083,7 @@ contract Dividers is TestHelper {
         tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
+        uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -1247,7 +1247,7 @@ contract Dividers is TestHelper {
         tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = Token(claim).BASE_UNIT();
+        uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 15 days);

@@ -47,7 +47,7 @@ Note: This repo is configured with this version of `dapp` && `solc`:
 ```
 dapp 0.34.0
 solc, the solidity compiler commandline interface
-Version: 0.8.6+commit.11564f7e.Darwin.appleclang
+Version: 0.8.11+commit.11564f7e.Darwin.appleclang
 hevm 0.48.1
 ```
 

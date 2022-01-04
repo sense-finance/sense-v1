@@ -12,8 +12,8 @@ import { FixedMath } from "./external/FixedMath.sol";
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Claim } from "./tokens/Claim.sol";
+import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
-import { Token as Zero } from "./tokens/Token.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
@@ -22,18 +22,35 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
-    /// @notice Configuration
-    uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
-    uint256 public constant SETTLEMENT_WINDOW = 2 hours; // TODO: TBD
-    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // 10% issuance fee cap
+    /* ========== PUBLIC CONSTANTS ========== */
 
-    /// @notice Program state
+    /// @notice TODO: TBD
+    uint256 public constant SPONSOR_WINDOW = 4 hours;
+
+    /// @notice TODO: TBD
+    uint256 public constant SETTLEMENT_WINDOW = 2 hours;
+
+    /// @notice 10% issuance fee cap
+    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18;
+
+    /* ========== PUBLIC MUTABLE STORAGE ========== */
+
     address public periphery;
-    address public immutable cup; // sense team multisig
-    address public immutable tokenHandler; // zero/claim deployer
-    bool public permissionless; // permissionless flag
-    bool public guarded = true; // guarded launch flag
-    uint256 public adapterCounter; // # number of adapters (including turned off)
+
+    /// @notice Sense team multisig
+    address public immutable cup;
+
+    /// @notice Zero/Claim deployer
+    address public immutable tokenHandler;
+
+    /// @notice Permissionless flag
+    bool public permissionless;
+
+    /// @notice Guarded launch flag
+    bool public guarded = true;
+
+    /// @notice Number of adapters (including turned off)
+    uint256 public adapterCounter;
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
@@ -53,16 +70,27 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice adapter -> maturity -> user -> lscale (last scale)
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
 
+    /* ========== DATA STRUCTURES ========== */
+
     struct Series {
-        address zero; // Zero ERC20 token
-        address claim; // Claim ERC20 token
-        address sponsor; // actor who initialized the Series
-        uint256 reward; // tracks fees due to the series' settler
-        uint256 iscale; // scale at issuance
-        uint256 mscale; // scale at maturity
-        uint256 maxscale; // max scale value from this series' lifetime
-        uint128 issuance; // timestamp of series initialization
-        uint128 tilt; // % of underlying principal initially reserved for Claims
+        // Zero ERC20 token
+        address zero;
+        // Claim ERC20 token
+        address claim;
+        // Actor who initialized the Series
+        address sponsor;
+        // Tracks fees due to the series' settler
+        uint256 reward;
+        // Scale at issuance
+        uint256 iscale;
+        // Scale at maturity
+        uint256 mscale;
+        // Max scale value from this series' lifetime
+        uint256 maxscale;
+        // Timestamp of series initialization
+        uint128 issuance;
+        // % of underlying principal initially reserved for Claims
+        uint128 tilt;
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -113,7 +141,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         });
         series[adapter][maturity] = newSeries;
 
-        ERC20(stake).safeTransferFrom(msg.sender, adapter, _convertToBase(stakeSize, ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize);
 
         emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
     }
@@ -139,7 +167,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Reward the caller for doing the work of settling the Series at around the correct time
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
-        ERC20(stake).safeTransferFrom(adapter, msg.sender, _convertToBase(stakeSize, ERC20(stake).decimals()));
+        ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize);
 
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
@@ -195,7 +223,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             );
 
         // Mint equal amounts of Zeros and Claims
-        Zero(series[adapter][maturity].zero).mint(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
         Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
 
         target.safeTransferFrom(msg.sender, adapter, tBal);
@@ -217,7 +245,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
 
         // Burn the Zeros
-        Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
         // Collect whatever excess is due
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
@@ -255,7 +283,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Series memory _series = series[adapter][maturity];
 
         // Burn the caller's Zeros
-        Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
         uint256 zShare = FixedMath.WAD - _series.tilt;
@@ -487,7 +515,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             uint256 reward = series[adapter][maturity].reward;
 
             ERC20(target).safeTransferFrom(adapter, cup, reward);
-            ERC20(stake).safeTransferFrom(adapter, stakeDst, _convertToBase(stakeSize, ERC20(stake).decimals()));
+            ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);
         }
 
         emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
@@ -543,13 +571,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             adapterIDs[adapter] = id;
         }
         emit AdapterChanged(adapter, id, isOn);
-    }
-
-    function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
-        if (decimals != 18) {
-            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
-        }
-        return amount;
     }
 
     /* ========== MODIFIERS ========== */
@@ -634,7 +655,7 @@ contract TokenHandler is Trust {
 
         string memory adapterId = DateTime.uintToString(Divider(divider).adapterIDs(adapter));
         zero = address(
-            new Zero(
+            new Token(
                 string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
                 string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
                 decimals,
@@ -644,12 +665,12 @@ contract TokenHandler is Trust {
 
         claim = address(
             new Claim(
-                maturity,
-                divider,
                 adapter,
+                maturity,
                 string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " #", adapterId, " by Sense")),
                 string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
-                decimals
+                decimals,
+                divider
             )
         );
     }
