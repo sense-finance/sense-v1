@@ -14,6 +14,20 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeAdapter is BaseAdapter {
+    constructor(
+        address _divider,
+        address _target,
+        address _oracle,
+        uint256 _delta,
+        uint256 _ifee,
+        address _stake,
+        uint256 _stakeSize,
+        uint128 _minm,
+        uint128 _maxm,
+        uint8 _mode,
+        uint128 _tilt
+    ) BaseAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {}
+
     function _scale() internal virtual override returns (uint256 _value) {
         _value = 100e18;
     }
@@ -44,46 +58,34 @@ contract Adapters is TestHelper {
 
     function testAdapterHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI", 18);
-        MockAdapter adapter = new MockAdapter();
-
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            stake: address(stake),
-            oracle: ORACLE,
-            delta: DELTA,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE
-        });
-
-        adapter.initialize(address(divider), adapterParams, address(reward));
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            address(reward)
+        );
 
         assertEq(adapter.reward(), address(reward));
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
-        (
-            ,
-            address oracle,
-            uint256 delta,
-            uint256 ifee,
-            address stake,
-            uint256 stakeSize,
-            uint256 minm,
-            uint256 maxm,
-            uint8 mode
-        ) = BaseAdapter(adapter).adapterParams();
-        assertEq(adapter.getTarget(), address(target));
+        assertEq(adapter.target(), address(target));
         assertEq(adapter.divider(), address(divider));
-        assertEq(delta, DELTA);
-        assertEq(ifee, ISSUANCE_FEE);
-        assertEq(stake, address(stake));
-        assertEq(stakeSize, STAKE_SIZE);
-        assertEq(minm, MIN_MATURITY);
-        assertEq(maxm, MAX_MATURITY);
-        assertEq(oracle, ORACLE);
-        assertEq(mode, MODE);
+        assertEq(adapter.delta(), DELTA);
+        assertEq(adapter.ifee(), ISSUANCE_FEE);
+        assertEq(adapter.stake(), address(stake));
+        assertEq(adapter.stakeSize(), STAKE_SIZE);
+        assertEq(adapter.minm(), MIN_MATURITY);
+        assertEq(adapter.maxm(), MAX_MATURITY);
+        assertEq(adapter.oracle(), ORACLE);
+        assertEq(adapter.mode(), MODE);
     }
 
     function testScale() public {
@@ -103,21 +105,20 @@ contract Adapters is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockAdapter localAdapter = new MockAdapter();
-
-            BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-                target: address(target),
-                stake: address(stake),
-                oracle: ORACLE,
-                delta: DELTA,
-                ifee: ISSUANCE_FEE,
-                stakeSize: STAKE_SIZE,
-                minm: MIN_MATURITY,
-                maxm: MAX_MATURITY,
-                mode: MODE
-            });
-
-            localAdapter.initialize(address(divider), adapterParams);
+            MockAdapter localAdapter = new MockAdapter(
+                address(divider),
+                address(target),
+                ORACLE,
+                DELTA,
+                ISSUANCE_FEE,
+                address(stake),
+                STAKE_SIZE,
+                MIN_MATURITY,
+                MAX_MATURITY,
+                MODE,
+                0,
+                address(reward)
+            );
 
             uint256 startingScale = startingScales[i];
 
@@ -141,7 +142,7 @@ contract Adapters is TestHelper {
             //         We are functionally doing `maxPercentIncrease * value`, which gets
             //         us the max *amount* that the value could have increased by.
             //      *  Then add that max increase to the original value to get the maximum possible.
-            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.target()).decimals()) + lvalue;
 
             // Set max scale and ensure calling `scale` with it doesn't revert
             localAdapter.setScale(maxScale);
@@ -151,7 +152,7 @@ contract Adapters is TestHelper {
             hevm.warp(2 days);
             (ltimestamp, lvalue) = localAdapter.lscale();
             timeDiff = block.timestamp - ltimestamp;
-            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
+            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.target()).decimals()) + lvalue;
             localAdapter.setScale(maxScale);
             localAdapter.scale();
         }
@@ -164,20 +165,21 @@ contract Adapters is TestHelper {
         startingScales[2] = 1e17; // 0.1 WAD
         startingScales[3] = 4e15; // 0.004 WAD
         for (uint256 i = 0; i < startingScales.length; i++) {
-            MockAdapter localAdapter = new MockAdapter();
-            BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-                target: address(target),
-                stake: address(stake),
-                oracle: ORACLE,
-                delta: DELTA,
-                ifee: ISSUANCE_FEE,
-                stakeSize: STAKE_SIZE,
-                minm: MIN_MATURITY,
-                maxm: MAX_MATURITY,
-                mode: MODE
-            });
+            MockAdapter localAdapter = new MockAdapter(
+                address(divider),
+                address(target),
+                ORACLE,
+                DELTA,
+                ISSUANCE_FEE,
+                address(stake),
+                STAKE_SIZE,
+                MIN_MATURITY,
+                MAX_MATURITY,
+                MODE,
+                0,
+                address(reward)
+            );
 
-            localAdapter.initialize(address(divider), adapterParams);
             uint256 startingScale = startingScales[i];
 
             hevm.warp(0);
@@ -192,11 +194,11 @@ contract Adapters is TestHelper {
             // 86400 (1 day)
             uint256 timeDiff = block.timestamp - ltimestamp;
             // find the scale value would bring us right up to the acceptable growth per second (delta)?
-            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.target()).decimals()) + lvalue;
 
             // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded
             // away in wdivs)
-            localAdapter.setScale(maxScale.fmul(1000001e12, 10**ERC20(localAdapter.getTarget()).decimals()));
+            localAdapter.setScale(maxScale.fmul(1000001e12, 10**ERC20(localAdapter.target()).decimals()));
 
             try localAdapter.scale() {
                 fail();
@@ -207,20 +209,20 @@ contract Adapters is TestHelper {
     }
 
     function testCantAddCustomAdapterToDivider() public {
-        FakeAdapter fakeAdapter = new FakeAdapter();
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            stake: address(stake),
-            oracle: ORACLE,
-            delta: DELTA,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE
-        });
+        FakeAdapter fakeAdapter = new FakeAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0
+        );
 
-        fakeAdapter.initialize(address(divider), adapterParams);
         try fakeAdapter.doSetAdapter(divider, address(fakeAdapter)) {
             fail();
         } catch Error(string memory error) {

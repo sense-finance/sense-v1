@@ -6,6 +6,8 @@ abstract contract IAdapter {
 
     function target() external view virtual returns (address target);
 
+    function oracle() external view virtual returns (address oracle);
+
     function name() external view virtual returns (string memory name);
 
     function symbol() external view virtual returns (string memory symbol);
@@ -16,13 +18,15 @@ abstract contract IAdapter {
 
     function stake() external virtual returns (address _stake);
 
-    function issuanceFee() external virtual returns (uint256 _issuanceFee);
+    function ifee() external virtual returns (uint256 _issuanceFee);
 
     function stakeSize() external virtual returns (uint256 _stakeSize);
 
-    function minMaturity() external virtual returns (uint256 _minMaturity);
+    function minm() external virtual returns (uint256 _minMaturity);
 
-    function maxMaturity() external virtual returns (uint256 _maxMaturity);
+    function maxm() external virtual returns (uint256 _maxMaturity);
+
+    function mode() external virtual returns (uint8 _mode);
 
     function initialize(
         address _target,

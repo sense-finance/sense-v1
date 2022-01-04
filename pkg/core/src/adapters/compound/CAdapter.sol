@@ -67,22 +67,29 @@ contract CAdapter is CropAdapter {
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    function initialize(
+    constructor(
         address _divider,
-        AdapterParams memory _adapterParams,
+        address _target,
+        address _oracle,
+        uint256 _delta,
+        uint256 _ifee,
+        address _stake,
+        uint256 _stakeSize,
+        uint128 _minm,
+        uint128 _maxm,
+        uint8 _mode,
+        uint128 _tilt,
         address _reward
-    ) public virtual override initializer {
+    ) CropAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _reward) {
         // approve underlying contract to pull target (used on wrapUnderlying())
-        address target = _adapterParams.target;
-        ERC20 u = ERC20(_isCETH(target) ? WETH : CTokenInterface(target).underlying());
-        u.safeApprove(_adapterParams.target, type(uint256).max);
-        super.initialize(_divider, _adapterParams, _reward);
+        ERC20 u = ERC20(_isCETH(_target) ? WETH : CTokenInterface(_target).underlying());
+        u.safeApprove(_target, type(uint256).max);
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function _scale() internal override returns (uint256) {
         uint256 uDecimals = CTokenInterface(underlying()).decimals();
-        uint256 exRate = CTokenInterface(adapterParams.target).exchangeRateCurrent();
+        uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
         // From the Compound docs:
         // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
         //
@@ -102,22 +109,17 @@ contract CAdapter is CropAdapter {
     }
 
     function underlying() public view override returns (address) {
-        address target = adapterParams.target;
         return _isCETH(target) ? WETH : CTokenInterface(target).underlying();
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {
-        address target = adapterParams.target;
-        return
-            _isCETH(target)
-                ? 1e18
-                : PriceOracleInterface(adapterParams.oracle).price(CTokenInterface(target).underlying());
+        return _isCETH(target) ? 1e18 : PriceOracleInterface(oracle).price(CTokenInterface(target).underlying());
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256) {
+        bool isCETH = _isCETH(target);
         ERC20 u = ERC20(underlying());
-        ERC20 target = ERC20(adapterParams.target);
-        bool isCETH = _isCETH(address(adapterParams.target));
+        ERC20 target = ERC20(target);
 
         u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
         if (isCETH) IWETH(WETH).withdraw(uBal); // unwrap WETH into ETH
@@ -125,9 +127,9 @@ contract CAdapter is CropAdapter {
         // mint target
         uint256 tBalBefore = target.balanceOf(address(this));
         if (isCETH) {
-            CETHTokenInterface(adapterParams.target).mint{ value: uBal }();
+            CETHTokenInterface(address(target)).mint{ value: uBal }();
         } else {
-            require(CTokenInterface(adapterParams.target).mint(uBal) == 0, "Mint failed");
+            require(CTokenInterface(address(target)).mint(uBal) == 0, "Mint failed");
         }
         uint256 tBalAfter = target.balanceOf(address(this));
         uint256 tBal = tBalAfter - tBalBefore;
@@ -139,13 +141,13 @@ contract CAdapter is CropAdapter {
 
     function unwrapTarget(uint256 tBal) external override returns (uint256) {
         ERC20 u = ERC20(underlying());
-        bool isCETH = _isCETH(address(adapterParams.target));
-        ERC20 target = ERC20(adapterParams.target);
+        bool isCETH = _isCETH(address(target));
+        ERC20 target = ERC20(target);
         target.safeTransferFrom(msg.sender, address(this), tBal); // pull target
 
         // redeem target for underlying
         uint256 uBalBefore = isCETH ? address(this).balance : u.balanceOf(address(this));
-        require(CTokenInterface(adapterParams.target).redeem(tBal) == 0, "Redeem failed");
+        require(CTokenInterface(address(target)).redeem(tBal) == 0, "Redeem failed");
         uint256 uBalAfter = isCETH ? address(this).balance : u.balanceOf(address(this));
         uint256 uBal = uBalAfter - uBalBefore;
 

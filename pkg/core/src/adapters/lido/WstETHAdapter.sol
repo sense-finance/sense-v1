@@ -65,12 +65,23 @@ contract WstETHAdapter is BaseAdapter {
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
 
-    function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
+    constructor(
+        address _divider,
+        address _target,
+        address _oracle,
+        uint256 _delta,
+        uint256 _ifee,
+        address _stake,
+        uint256 _stakeSize,
+        uint128 _minm,
+        uint128 _maxm,
+        uint8 _mode,
+        uint128 _tilt
+    ) BaseAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
         // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
         ERC20(STETH).safeApprove(CURVESINGLESWAP, type(uint256).max);
-        super.initialize(_divider, _adapterParams);
     }
 
     /// @return Eth per wstEtH (natively in 18 decimals)
@@ -78,7 +89,7 @@ contract WstETHAdapter is BaseAdapter {
         // In order to account for the stETH/ETH CurveStableSwap rate, we use `safe_price_value` from Lido's stETH price feed.
         // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
         uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
-        uint256 wstETHstETH = WstETHInterface(adapterParams.target).stEthPerToken(); // stETH tokens corresponding to one wstETH
+        uint256 wstETHstETH = WstETHInterface(target).stEthPerToken(); // stETH tokens corresponding to one wstETH
         return stEthEth.fmul(wstETHstETH, FixedMath.WAD);
     }
 
