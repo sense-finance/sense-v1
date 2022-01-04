@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // Internal references
 import { CAdapter } from "../adapters/compound/CAdapter.sol";
@@ -23,11 +23,10 @@ contract CAdapterTestHelper is DSTest {
     address public constant ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
 
     uint8 public constant MODE = 0;
-    uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint128 public constant MIN_MATURITY = 2 weeks;
+    uint128 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -38,12 +37,12 @@ contract CAdapterTestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
         factory = new CFactory(address(divider), factoryParams, COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -55,28 +54,27 @@ contract CFactories is CAdapterTestHelper {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
         CFactory otherCFactory = new CFactory(address(divider), factoryParams, COMP);
 
         assertTrue(address(otherCFactory) != address(0));
         (
             address oracle,
-            uint256 delta,
             uint256 ifee,
             address stake,
             uint256 stakeSize,
             uint256 minm,
             uint256 maxm,
-            uint8 mode
+            uint8 mode,
+            uint128 tilt
         ) = CFactory(otherCFactory).factoryParams();
         assertEq(CFactory(otherCFactory).divider(), address(divider));
-        assertEq(delta, DELTA);
         assertEq(CFactory(otherCFactory).reward(), COMP);
         assertEq(stake, DAI);
         assertEq(ifee, ISSUANCE_FEE);
@@ -85,6 +83,7 @@ contract CFactories is CAdapterTestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(oracle, ORACLE);
+        assertEq(tilt, 0);
     }
 
     function testMainnetDeployAdapter() public {
@@ -93,7 +92,6 @@ contract CFactories is CAdapterTestHelper {
         assertTrue(address(adapter) != address(0));
         assertEq(CAdapter(adapter).target(), address(cDAI));
         assertEq(CAdapter(adapter).divider(), address(divider));
-        assertEq(CAdapter(adapter).delta(), DELTA);
         assertEq(CAdapter(adapter).name(), "Compound Dai Adapter");
         assertEq(CAdapter(adapter).symbol(), "cDAI-adapter");
 

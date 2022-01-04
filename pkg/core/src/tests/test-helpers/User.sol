@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 import { Hevm } from "./Hevm.sol";
 import { MockToken } from "./mocks/MockToken.sol";
@@ -257,6 +257,22 @@ contract User {
         )
     {
         return periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
+    }
+
+    function doAddLiquidityFromUnderlying(
+        address adapter,
+        uint48 maturity,
+        uint256 tBal,
+        uint8 mode
+    )
+        public
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode);
     }
 
     function doRemoveLiquidityToTarget(

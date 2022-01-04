@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FORGE_REVISION: bab7e2d672bf9459645c01201b37e6fcfd257521
+      FORGE_REVISION: 81b9f7dbceb2d2bbf59644fa5dae88eff29fba21
 
     steps:
     - uses: actions/checkout@v2
@@ -67,6 +67,7 @@ jobs:
       run: |
         yarn turbo-test | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
+        grep -vz CompilerError _out.txt 1> /dev/null
 
     - name: Run local tests where the mock Target token uses 8 decimals
       run: |

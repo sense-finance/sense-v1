@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -54,11 +54,10 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
 
-    uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint128 public constant MIN_MATURITY = 2 weeks;
+    uint128 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         address[] memory assets = new address[](1);
@@ -72,12 +71,12 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.WSTETH,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
+            0,
             0
         ); // wstETH adapter
     }
@@ -132,15 +131,8 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         assertEq(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
     }
 
-    function testCantSendEtherIfNotEligible() public {
-        // try this.sendEther(address(adapter), 1 ether) {
-        //     fail();
-        // } catch Error(string memory error) {
-        //     assertEq(error, Errors.SenderNotEligible);
-        // }
-
-        (bool success, bytes memory err) = payable(address(adapter)).call{ value: 1 ether }("");
-        assertTrue(!success);
-        assertEq(abi.decode(err, (string)), Errors.SenderNotEligible);
+    function testMainnetCantSendEtherIfNotEligible() public {
+        Hevm(HEVM_ADDRESS).expectRevert(abi.encode(Errors.SenderNotEligible));
+        payable(address(adapter)).call{ value: 1 ether }("");
     }
 }

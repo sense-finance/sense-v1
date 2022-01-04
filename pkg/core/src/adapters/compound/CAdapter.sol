@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { FixedMath } from "../../external/FixedMath.sol";
@@ -71,15 +71,16 @@ contract CAdapter is CropAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
+        uint128 _minm,
+        uint128 _maxm,
         uint8 _mode,
+        uint128 _tilt,
+        uint256 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _reward) {
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {
         // approve underlying contract to pull target (used on wrapUnderlying())
         ERC20 u = ERC20(_isCETH(_target) ? WETH : CTokenInterface(_target).underlying());
         u.safeApprove(_target, type(uint256).max);
@@ -108,19 +109,17 @@ contract CAdapter is CropAdapter {
     }
 
     function underlying() public view override returns (address) {
-        address target = target;
         return _isCETH(target) ? WETH : CTokenInterface(target).underlying();
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {
-        address target = target;
         return _isCETH(target) ? 1e18 : PriceOracleInterface(oracle).price(CTokenInterface(target).underlying());
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256) {
+        bool isCETH = _isCETH(target);
         ERC20 u = ERC20(underlying());
         ERC20 target = ERC20(target);
-        bool isCETH = _isCETH(address(target));
 
         u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
         if (isCETH) IWETH(WETH).withdraw(uBal); // unwrap WETH into ETH

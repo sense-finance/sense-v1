@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -12,8 +11,13 @@ import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
 abstract contract BaseFactory {
-    using Bytes32AddressLib for address;
 
+    /* ========== CONSTANTS ========== */
+
+    /// @notice Sets level to `7` by default, which enables all Divider lifecycle methods
+    /// (`issue`, `combine`, `collect`), but not the `onZeroRedeem` hook.
+    uint256 public constant DEFAULT_LEVEL = 7;
+    
     /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Sense core Divider address
@@ -28,13 +32,13 @@ abstract contract BaseFactory {
     FactoryParams public factoryParams;
     struct FactoryParams {
         address oracle; // oracle address
-        uint256 delta; // max growth per second allowed
         uint256 ifee; // issuance fee
         address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance
-        uint256 minm; // min maturity (seconds after block.timstamp)
-        uint256 maxm; // max maturity (seconds after block.timstamp)
+        uint128 minm; // min maturity (seconds after block.timstamp)
+        uint128 maxm; // max maturity (seconds after block.timstamp)
         uint8 mode; // 0 for monthly, 1 for weekly
+        uint128 tilt; // tilt
     }
 
     constructor(
@@ -47,13 +51,11 @@ abstract contract BaseFactory {
         factoryParams = _factoryParams;
     }
 
-    /// @notice Performs sanitychecks adds adapter to Divider
+    /// @notice Performs sanity checks and adds the adapter to Divider
     /// @param _adapter Address of the adapter
     function _addAdapter(address _adapter) internal {
         address target = BaseAdapter(_adapter).target();
         require(_exists(target), Errors.NotSupported);
-        require(adapters[target] == address(0), Errors.AdapterExists);
-        adapters[target] = _adapter;
         Divider(divider).setAdapter(address(_adapter), true);
         emit AdapterAdded(address(_adapter), target);
     }

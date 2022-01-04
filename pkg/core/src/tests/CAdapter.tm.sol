@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -27,11 +27,10 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant ONE_CTOKEN = 1e8;
 
     uint8 public constant MODE = 0;
-    uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint128 public constant MIN_MATURITY = 2 weeks;
+    uint128 public constant MAX_MATURITY = 14 weeks;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -53,13 +52,14 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.cDAI,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             0,
+            0,
+            7,
             Assets.COMP
         ); // Compound adapter
 
@@ -67,13 +67,14 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.cETH,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             0,
+            0,
+            7,
             Assets.COMP
         ); // Compound adapter
 
@@ -82,13 +83,14 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.cUSDC,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             0,
+            0,
+            7,
             Assets.COMP
         ); // Compound adapter
     }

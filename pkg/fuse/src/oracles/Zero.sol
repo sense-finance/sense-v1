@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -47,7 +47,6 @@ interface BalancerOracleLike {
     function getVault() external view returns (address);
 
     function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
-
 }
 
 contract ZeroOracle is PriceOracle, Trust {

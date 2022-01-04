@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 abstract contract IAdapter {
     function divider() external view virtual returns (address divider);
@@ -11,8 +11,6 @@ abstract contract IAdapter {
     function name() external view virtual returns (string memory name);
 
     function symbol() external view virtual returns (string memory symbol);
-
-    function delta() external view virtual returns (uint256 delta);
 
     function scale() external virtual returns (uint256 _scale);
 
@@ -28,9 +26,5 @@ abstract contract IAdapter {
 
     function mode() external virtual returns (uint8 _mode);
 
-    function initialize(
-        address _target,
-        address _divider,
-        uint256 _delta
-    ) external virtual;
+    function initialize(address _target, address _divider) external virtual;
 }

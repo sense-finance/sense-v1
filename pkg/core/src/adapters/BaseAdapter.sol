@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -41,9 +41,6 @@ abstract contract BaseAdapter {
     /// @notice Oracle address
     address public immutable oracle;
 
-    /// @notice Max growth per second allowed
-    uint256 public immutable delta;
-
     /// @notice Issuance fee
     uint256 public immutable ifee;
 
@@ -54,21 +51,23 @@ abstract contract BaseAdapter {
     uint256 public immutable stakeSize;
 
     /// @notice Min maturity (seconds after block.timstamp)
-    uint256 public immutable minm;
+    uint128 public immutable minm;
 
     /// @notice Max maturity (seconds after block.timstamp)
-    uint256 public immutable maxm;
+    uint128 public immutable maxm;
 
     /// @notice 0 for monthly, 1 for weekly
     uint8 public immutable mode;
+    
+    /// @notice 18 decimal number representing the percentage of the total
+    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
+    /// @notice If `0`, it means no principal is set aside for Claims
+    uint128 public immutable tilt;
 
-    /// @notice Returns `7` by default, which equates to an adapter having
-    /// access to all Divider lifecycle methods (e.g. `issue`, `combine`, & `collect`), but not
-    /// the onZeroRedeem hook.
     /// @notice The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <onRedeemZero<(y/n)>><collect(y/n)><combine(y/n)><issue(y/n)>
-    /// (e.g. 101 means `issue` and `collect` are allowed, but `combine` is not)
-    uint256 public level = 7;
+    /// digits using the following scheme: <onRedeemZero(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
+    /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
+    uint256 public immutable level;
 
     /* ========== DATA STRUCTURES ========== */
 
@@ -77,18 +76,6 @@ abstract contract BaseAdapter {
         uint256 timestamp;
         // Last scale value
         uint256 value;
-    }
-
-    struct Config {
-        address target;
-        address oracle;
-        uint256 delta;
-        uint256 ifee;
-        address stake;
-        uint256 stakeSize;
-        uint256 minm;
-        uint256 maxm;
-        uint8 mode;
     }
 
     /* ========== METADATA STORAGE ========== */
@@ -106,28 +93,30 @@ abstract contract BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint8 _mode
+        uint128 _minm,
+        uint128 _maxm,
+        uint8 _mode,
+        uint128 _tilt,
+        uint256 _level
     ) {
-        // sanity check
+        // Sanity check
         require(_minm < _maxm, Errors.InvalidMaturityOffsets);
         divider = _divider;
         target = _target;
         oracle = _oracle;
-        delta = _delta;
         ifee = _ifee;
         stake = _stake;
         stakeSize = _stakeSize;
         minm = _minm;
         maxm = _maxm;
         mode = _mode;
+        tilt = _tilt;
         name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
         symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
+        level = _level;
 
         ERC20(_target).safeApprove(_divider, type(uint256).max);
     }
@@ -170,16 +159,6 @@ abstract contract BaseAdapter {
         uint256 lvalue = lscale.value;
         uint256 elapsed = block.timestamp - lscale.timestamp;
 
-        if (elapsed > 0 && lvalue != 0) {
-            // check actual growth vs delta (max growth per sec)
-            uint256 growthPerSec = (value > lvalue ? value - lvalue : lvalue - value).fdiv(
-                lvalue * elapsed,
-                FixedMath.WAD
-            );
-
-            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
-        }
-
         if (value != lvalue) {
             // update value only if different than the previous
             lscale.value = value;
@@ -214,19 +193,9 @@ abstract contract BaseAdapter {
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
-    /* ========== OPTIONAL VALUE GETTERS ========== */
-
-    /// @notice Tilt value getter that may be overriden by child contracts
-    /// @dev Returns `0` by default, which means no principal is set aside for Claims
-    /// @dev This function _must_ return an 18 decimal number representing the percentage of the total
-    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
-    function tilt() external view virtual returns (uint128) {
-        return 0;
-    }
-
     /* ========== OPTIONAL HOOKS ========== */
 
-    /// @notice Hook called whenever the Divider adds or removes Target to the Adapter
+    /// @notice Notification whenever the Divider adds or removes Target
     function notify(
         address, /* usr */
         uint256, /* amt */
@@ -247,7 +216,7 @@ abstract contract BaseAdapter {
 
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
-    function getMaturityBounds() external view returns (uint256, uint256) {
+    function getMaturityBounds() external view returns (uint128, uint128) {
         return (minm, maxm);
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
@@ -30,15 +30,16 @@ abstract contract CropAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
+        uint128 _minm,
+        uint128 _maxm,
         uint8 _mode,
+        uint128 _tilt,
+        uint256 _level,
         address _reward
-    ) BaseAdapter(_divider, _target, _oracle, _delta, _ifee, _stake, _stakeSize, _minm, _maxm, _mode) {
+    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {
         reward = _reward;
         ERC20(_stake).safeApprove(_divider, type(uint256).max);
     }

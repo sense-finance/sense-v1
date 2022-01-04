@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
@@ -58,14 +58,14 @@ contract TestHelper is DSTest {
     MockFuseDirectory fuseDirectory;
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
-    uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
     uint8 public MODE = 0;
     address public ORACLE = address(123);
     uint256 public ISSUANCE_FEE = 0.1e18;
     uint256 public STAKE_SIZE = 1e18;
-    uint256 public MIN_MATURITY = 2 weeks;
-    uint256 public MAX_MATURITY = 14 weeks;
+    uint128 public MIN_MATURITY = 2 weeks;
+    uint128 public MAX_MATURITY = 14 weeks;
+    uint256 public DEFAULT_LEVEL = 7;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
 
@@ -100,7 +100,6 @@ contract TestHelper is DSTest {
 
         reward = new MockToken("Reward Token", "RT", baseDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
-        DELTA = convertToBase(DELTA, target.decimals());
 
         // divider
         tokenHandler = new TokenHandler();
@@ -183,12 +182,12 @@ contract TestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
         someFactory = new MockFactory(address(divider), factoryParams, address(_reward)); // deploy adapter factory
         someFactory.addTarget(_target, true);

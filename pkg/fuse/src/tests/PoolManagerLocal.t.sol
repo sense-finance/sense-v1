@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
@@ -23,7 +23,7 @@ import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
 
-contract PoolManagerTest is TestHelper {
+contract PoolManagerLocalTest is TestHelper {
     using FixedMath for uint256;
     using Errors for string;
 

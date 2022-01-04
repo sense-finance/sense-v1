@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -40,7 +40,7 @@ contract Periphery is Trust {
     mapping(address => bool) public factories; // adapter factories -> is supported
     mapping(address => address) public factory; // adapter -> factory
 
-    struct PoolLiquidity { 
+    struct PoolLiquidity {
         ERC20[] tokens;
         uint256[] amounts;
     }
@@ -48,12 +48,12 @@ contract Periphery is Trust {
     constructor(
         address _divider,
         address _poolManager,
-        address _ysFactory,
+        address _spaceFactory,
         address _balancerVault
     ) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
-        spaceFactory = SpaceFactoryLike(_ysFactory);
+        spaceFactory = SpaceFactoryLike(_spaceFactory);
         balancerVault = BalancerVault(_balancerVault);
     }
 
@@ -66,16 +66,16 @@ contract Periphery is Trust {
     function sponsorSeries(address adapter, uint48 maturity) external returns (address zero, address claim) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
-        // transfer stakeSize from sponsor into this contract
+        // Transfer stakeSize from sponsor into this contract
         uint256 stakeDecimals = ERC20(stake).decimals();
         ERC20(stake).safeTransferFrom(msg.sender, address(this), _convertToBase(stakeSize, stakeDecimals));
 
-        // approve divider to withdraw stake assets
+        // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        // if it is a Sense verified adapter
+        // If it is a Sense verified adapter
         if (factory[adapter] != address(0)) {
             address pool = spaceFactory.create(adapter, maturity);
             poolManager.queueSeries(adapter, maturity, pool);
@@ -90,6 +90,8 @@ contract Periphery is Trust {
     function onboardAdapter(address f, address target) external returns (address adapterClone) {
         require(factories[f], Errors.FactoryNotSupported);
         adapterClone = Factory(f).deployAdapter(target);
+        // Ping scale to ensure an lscale is cached
+        Adapter(adapterClone).scale();
         ERC20(target).safeApprove(address(divider), type(uint256).max);
         ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
         poolManager.addTarget(target, adapterClone);
@@ -101,7 +103,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to sell
-    /// @return amount of Zeros received 
+    /// @return amount of Zeros received
     function swapTargetForZeros(
         address adapter,
         uint48 maturity,
@@ -239,6 +241,7 @@ contract Periphery is Trust {
             uint256
         )
     {
+        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
         return _addLiquidity(adapter, maturity, tBal, mode);
     }
 
@@ -260,8 +263,10 @@ contract Periphery is Trust {
             uint256
         )
     {
+        ERC20 underlying = ERC20(Adapter(adapter).underlying());
+        underlying.safeTransferFrom(msg.sender, address(this), uBal);
+        underlying.safeApprove(adapter, uBal);
         // Wrap Underlying into Target
-        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal);
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
         return _addLiquidity(adapter, maturity, tBal, mode);
     }
@@ -480,11 +485,7 @@ contract Periphery is Trust {
             uint256
         )
     {
-        ERC20 target = ERC20(Adapter(adapter).target());
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
-
-        // (0) Pull target from sender
-        target.safeTransferFrom(msg.sender, address(this), tBal);
 
         // (1) compute target, issue zeros & claims & add liquidity to space
         (uint256 issued, uint256 lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
@@ -496,7 +497,7 @@ contract Periphery is Trust {
                 // (2) Sell claims
                 tAmount = _swapClaimsForTarget(address(this), adapter, maturity, issued);
                 // (3) Send remaining Target back to the User
-                target.safeTransfer(msg.sender, tAmount);
+                ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tAmount);
             } else {
                 // (4) Send Claims back to the User
                 ERC20(claim).safeTransfer(msg.sender, issued);
@@ -635,10 +636,7 @@ contract Periphery is Trust {
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
     }
 
-    function _addLiquidityToSpace(
-        BalancerPool pool,
-        PoolLiquidity memory liq
-    ) internal returns (uint256) {
+    function _addLiquidityToSpace(BalancerPool pool, PoolLiquidity memory liq) internal returns (uint256) {
         bytes32 poolId = pool.getPoolId();
         IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
         for (uint8 i; i < liq.tokens.length; i++) {
@@ -700,7 +698,7 @@ contract Periphery is Trust {
     }
 
     /* ========== LOGS ========== */
-    
+
     event FactoryChanged(address indexed adapter, bool indexed isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterOnboarded(address adapter);
