@@ -430,7 +430,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             tBal = (uBal * FixedMath.WAD) / _series.maxscale - (uBal * zShare) / _series.mscale;
 
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
-            Adapter(adapter).notify(usr, tBal, false);
         }
 
         Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale) - tBal, false);
