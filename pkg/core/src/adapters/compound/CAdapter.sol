@@ -23,9 +23,9 @@ interface CTokenInterface {
     /// @notice Calculates the exchange rate from the underlying to the CToken
     /// @dev This function does not accrue interest before calculating the exchange rate
     /// @return Calculated exchange rate scaled by 1e18
-    function exchangeRateStored() external returns (uint256);
+    function exchangeRateStored() external view returns (uint256);
 
-    function decimals() external returns (uint8);
+    function decimals() external view returns (uint8);
 
     function underlying() external view returns (address);
 
@@ -108,7 +108,7 @@ contract CAdapter is CropAdapter {
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
-    function scaleStored() internal view override returns (uint256) {
+    function scaleStored() external view override returns (uint256) {
         uint256 uDecimals = CTokenInterface(underlying()).decimals();
         uint256 exRate = CTokenInterface(adapterParams.target).exchangeRateStored();
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);

@@ -33,15 +33,14 @@ contract TargetOracle is PriceOracle, Trust {
     }
 
     function _price(address target) internal view returns (uint256) {
-        Adapter adapter = Adapter(adapters[address(target)]);
-        require(adapter != Adapter(address(0)), "Target must have a adapter set");
+        address adapter = adapters[address(target)];
+        require(adapter != address(0), "Target must have an adapter set");
 
         // Use the cached scale for view function compatibility
-        // (this updates with every call to scale elsehwere, is that ok?)
-        uint256 scale = adapter.scaleStored();
+        uint256 scale = Adapter(adapter).scaleStored();
 
         // `Target/Target's underlying` * `Target's underlying/ ETH` = `Price of Target in ETH`
         // scale and the value returned by getUnderlyingPrice are expected to be in WAD form
-        return scale.fmul(adapter.getUnderlyingPrice(), FixedPointMathLib.WAD);
+        return scale.fmul(Adapter(adapter).getUnderlyingPrice(), FixedPointMathLib.WAD);
     }
 }

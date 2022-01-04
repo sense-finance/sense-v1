@@ -92,7 +92,7 @@ contract WstETHAdapter is BaseAdapter {
         return stEthEth.fmul(wstETHstETH, FixedMath.WAD);
     }
 
-    function scaleStored() internal view override returns (uint256) {
+    function scaleStored() external view override returns (uint256) {
         return lscale;
     }
 

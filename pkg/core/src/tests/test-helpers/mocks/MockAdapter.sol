@@ -14,6 +14,7 @@ contract MockAdapter is CropAdapter {
     uint256 public INITIAL_VALUE;
     address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 lastScale;
 
     constructor(
         address _divider,
@@ -37,6 +38,11 @@ contract MockAdapter is CropAdapter {
         uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)), FixedMath.WAD);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
+        lastScale = _value;
+    }
+
+    function scaleStored() external view virtual override returns (uint256 _value) {
+        return lastScale;
     }
 
     function _claimReward() internal virtual override {
