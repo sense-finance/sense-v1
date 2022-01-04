@@ -93,7 +93,7 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     function scaleStored() external view override returns (uint256) {
-        return lscale;
+        return lscale.value;
     }
 
     function underlying() external view override returns (address) {

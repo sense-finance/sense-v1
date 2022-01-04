@@ -31,6 +31,10 @@ contract FakeAdapter is BaseAdapter {
         _value = 100e18;
     }
 
+    function scaleStored() external view virtual override returns (uint256) {
+        return 100e18;
+    }
+
     function underlying() external view override returns (address) {
         return address(1);
     }
