@@ -219,7 +219,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
 
-        // If the caller has not collected on Claims before, use the current scale, otherwise –
+        // If the caller has not collected on Claims before, use the current scale, otherwise
         // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
@@ -352,9 +352,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Claim claim = Claim(series[adapter][maturity].claim);
 
         if (!uint256(Adapter(adapter).level()).collectEnabled()) {
-            // If pre-maturity collection has been disabled for this Series and
-            // the Series is settled, we ensure everyone's Claims will
-            // collect all yield accrued since issuance
+            // If this Series has been settled, we ensure everyone's Claims will
+            // collect yield accrued since *issuance*
             if (_settled(adapter, maturity)) {
                 lscale = _series.iscale;
                 // If the Series is not settled, we ensure no collections can happen
