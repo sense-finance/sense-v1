@@ -509,7 +509,7 @@ contract Dividers is TestHelper {
         assertEq(target.balanceOf(address(alice)), tBalanceBefore - tBal);
     }
 
-    function testFuzzIssueIfMoreThanCapButGuardedDisabled() public {
+    function testIssueIfMoreThanCapButGuardedDisabled() public {
         uint256 aliceBalance = target.balanceOf(address(alice));
         divider.setGuard(address(target), aliceBalance - 1);
         divider.setGuarded(false);
@@ -537,6 +537,33 @@ contract Dividers is TestHelper {
         assertEq(ERC20(zero).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
         assertEq(ERC20(claim).balanceOf(address(alice)), mintedAmount.fmul(4 * tBase, tBase));
         assertEq(target.balanceOf(address(alice)), tBalanceBefore - tBal.fmul(4 * tBase, tBase));
+    }
+
+    function testIssueReweightScale() public {
+        uint256 tBal = 1e18;
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        alice.doIssue(address(adapter), maturity, tBal);
+        uint256 lscaleFirst = divider.lscales(address(adapter), maturity, address(alice));
+
+        hevm.warp(block.timestamp + 7 days);
+        uint256 lscaleSecond = divider.lscales(address(adapter), maturity, address(alice));
+        alice.doIssue(address(adapter), maturity, tBal);
+        uint256 scaleAfterThrid = adapter.scale();
+
+        hevm.warp(block.timestamp + 7 days);
+        uint256 lscaleThird = divider.lscales(address(adapter), maturity, address(alice));
+        alice.doIssue(address(adapter), maturity, tBal * 5);
+        uint256 lscaleFourth = divider.lscales(address(adapter), maturity, address(alice));
+
+        assertEq(lscaleFirst, lscaleSecond);
+
+        // Exact mean
+        assertEq((lscaleSecond + scaleAfterThrid) / 2, lscaleThird);
+
+        // Weighted
+        assertEq((lscaleThird * 2 + adapter.scale() * 5) / 7, lscaleFourth);
     }
 
     /* ========== combine() tests ========== */
