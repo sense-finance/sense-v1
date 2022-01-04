@@ -99,7 +99,7 @@ contract PoolManager is Trust {
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address target, address cToken);
+    event TargetAdded(address target, address cTarget);
     event SeriesAdded(address zero, address lpToken);
     event SeriesQueued(address adapter, uint48 maturity, address pool);
 
@@ -155,7 +155,7 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target, address adapter) external requiresTrust returns (address cToken) {
+    function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(!tInits[target], Errors.TargetExists);
         require(targetParams.irModel != address(0), Errors.TargetParamNotSet);
@@ -190,10 +190,10 @@ contract PoolManager is Trust {
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
         require(err == 0, Errors.FailedAddMarket);
 
-        cToken = ComptrollerLike(comptroller).cTokensByUnderlying(target);
+        cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 
         tInits[target] = true;
-        emit TargetAdded(target, cToken);
+        emit TargetAdded(target, cTarget);
     }
 
     /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
