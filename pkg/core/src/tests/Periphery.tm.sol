@@ -47,8 +47,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     uint256 public constant DELTA = 1;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint128 public constant MIN_MATURITY = 2 weeks;
+    uint128 public constant MAX_MATURITY = 14 weeks;
 
     Periphery internal periphery;
     CAdapter internal adapter;
@@ -88,8 +88,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         poolManager.setIsTrusted(address(periphery), true);
         divider.setPeriphery(address(periphery));
 
-        // Adapter & factory
-        CAdapter implementation = new CAdapter(); // compound adapter implementation
         mockOracle = new MockOracle();
 
         // Deploy compound adapter factory
@@ -101,10 +99,11 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
 
-        factory = new CFactory(address(divider), address(implementation), factoryParams, COMP);
+        factory = new CFactory(address(divider), factoryParams, COMP);
 
         divider.setIsTrusted(address(factory), true);
         divider.setIsTrusted(address(factory), true);

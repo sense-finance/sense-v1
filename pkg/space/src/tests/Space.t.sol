@@ -96,7 +96,7 @@ contract SpaceTest is Test {
 
         (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         zero = ERC20Mintable(_zero);
-        target = ERC20Mintable(adapter.getTarget());
+        target = ERC20Mintable(adapter.target());
 
         // Mint this address Zeros and Target
         // Max approve the balancer vault to move this addresses tokens
@@ -518,7 +518,7 @@ contract SpaceTest is Test {
 
         (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         ERC20Mintable zero = ERC20Mintable(_zero);
-        ERC20Mintable _target = ERC20Mintable(adapter.getTarget());
+        ERC20Mintable _target = ERC20Mintable(adapter.target());
 
         User max = new User(vault, space, zero, _target);
         _target.mint(address(max), 100e9);

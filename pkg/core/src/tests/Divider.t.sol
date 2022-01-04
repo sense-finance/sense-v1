@@ -116,7 +116,21 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfModeInvalid() public {
-        adapter.setMode(4);
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0)); // Tuesday
@@ -128,7 +142,21 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfNotTopWeek() public {
-        adapter.setMode(1);
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            1,
+            0,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0)); // Tuesday
@@ -140,16 +168,31 @@ contract Dividers is TestHelper {
     }
 
     function testInitSeriesWeekly() public {
-        adapter.setMode(1);
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            1,
+            0,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
         uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0)); // Monday
-        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, address claim) = alice.doSponsorSeries(address(adapter), maturity);
+
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #1 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
-        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
+        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #2 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#2");
+        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #2 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#2");
     }
 
     function testCantInitSeriesIfPaused() public {
@@ -459,19 +502,20 @@ contract Dividers is TestHelper {
 
     function testCantIssueIfIssuanceFeeExceedsCap() public {
         divider.setPermissionless(true);
-        MockAdapter aAdapter = new MockAdapter();
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            stake: address(stake),
-            oracle: ORACLE,
-            delta: DELTA,
-            ifee: 1e18,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE
-        });
-        aAdapter.initialize(address(divider), adapterParams, address(reward));
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            address(reward)
+        );
         divider.addAdapter(address(aAdapter));
         uint48 maturity = getValidMaturity(2021, 10);
         User(address(alice)).doSponsorSeries(address(aAdapter), maturity);
@@ -770,7 +814,22 @@ contract Dividers is TestHelper {
         // The Targeted redemption value Alice will send Bob wants, in Underlying
         uint256 intendedRedemptionValue = 50e18;
 
-        adapter.setTilt(tilt);
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            0.1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            tilt,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+
         // Sanity check
         assertEq(adapter.tilt(), tilt);
 
@@ -853,9 +912,23 @@ contract Dividers is TestHelper {
     /* ========== redeemClaim() tests ========== */
     function testRedeemClaimPositiveTiltPositiveScale() public {
         // Reserve 10% of principal for Claims
-        adapter.setTilt(0.1e18);
-        // Sanity check
-        assertEq(adapter.tilt(), 0.1e18);
+        uint128 tilt = 0.1e18;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            tilt,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
 
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -890,7 +963,24 @@ contract Dividers is TestHelper {
 
     function testRedeemClaimPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
-        adapter.setTilt(0.1e18);
+        uint128 tilt = 0.1e18;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            tilt,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+
         // Sanity check
         assertEq(adapter.tilt(), 0.1e18);
 
@@ -1582,7 +1672,20 @@ contract Dividers is TestHelper {
     }
 
     function testSetAdapter() public {
-        MockAdapter aAdapter = new MockAdapter();
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            address(reward)
+        );
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
@@ -1592,7 +1695,20 @@ contract Dividers is TestHelper {
     }
 
     function testSetAdapterBackOnKeepsExistingId() public {
-        MockAdapter aAdapter = new MockAdapter();
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            address(reward)
+        );
         uint256 adapterCounter = divider.adapterCounter();
 
         // set adapter on
@@ -1605,7 +1721,20 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(aAdapter), false);
 
         // create new adapter
-        MockAdapter bAdapter = new MockAdapter();
+        MockAdapter bAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            DELTA,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            address(reward)
+        );
         divider.setAdapter(address(bAdapter), true);
         assertTrue(divider.adapters(address(bAdapter)));
         assertEq(divider.adapterIDs(address(bAdapter)), adapterCounter + 2);

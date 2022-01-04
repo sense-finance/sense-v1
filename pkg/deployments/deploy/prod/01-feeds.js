@@ -17,13 +17,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const { deployer, dev } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  console.log("Deploy a cAdapter implementation");
-  const { address: cAdapterAddress } = await deploy("CAdapter", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
   const divider = await ethers.getContract("Divider");
 
   // FIXME: placeholder to be replaced with the real delta value once determined
@@ -40,11 +33,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const MAX_MATURITY = "8467200"; // 14 weeks;
   const MODE = 0; // 0 monthly, 1 weekly;
   const ORACLE = "0x6d2299c48a8dd07a872fdd0f8233924872ad1071"; // oracle address
+  const TILT = 0;
   console.log("Deploy cToken adapter factory");
-  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, daiAddress, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
+  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, daiAddress, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
   await deploy("CFactory", {
     from: deployer,
-    args: [divider.address, cAdapterAddress, factoryParams, compAddress],
+    args: [divider.address, factoryParams, compAddress],
     log: true,
   });
 

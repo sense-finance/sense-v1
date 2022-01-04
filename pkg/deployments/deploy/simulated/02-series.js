@@ -26,8 +26,8 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
 
     for (let seriesMaturity of global.SERIES_MATURITIES) {
       const adapterAddress = global.ADAPTERS[targetName];
-      const mockAdapterImpl = await ethers.getContract("MockAdapter");
-      const adapter = new ethers.Contract(adapterAddress, mockAdapterImpl.interface, signer);
+      const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
+      const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
 
       const { zero: zeroAddress, claim: claimAddress } = await periphery.callStatic.sponsorSeries(
         adapter.address,
