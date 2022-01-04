@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity  0.8.11;
+pragma solidity 0.8.11;
 
 // External references
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";

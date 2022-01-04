@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity  0.8.11;
+pragma solidity 0.8.11;
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";

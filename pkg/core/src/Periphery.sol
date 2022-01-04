@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity  0.8.11;
+pragma solidity 0.8.11;
 
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -40,7 +40,7 @@ contract Periphery is Trust {
     mapping(address => bool) public factories; // adapter factories -> is supported
     mapping(address => address) public factory; // adapter -> factory
 
-    struct PoolLiquidity { 
+    struct PoolLiquidity {
         ERC20[] tokens;
         uint256[] amounts;
     }
@@ -103,7 +103,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to sell
-    /// @return amount of Zeros received 
+    /// @return amount of Zeros received
     function swapTargetForZeros(
         address adapter,
         uint48 maturity,
@@ -636,10 +636,7 @@ contract Periphery is Trust {
         return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
     }
 
-    function _addLiquidityToSpace(
-        BalancerPool pool,
-        PoolLiquidity memory liq
-    ) internal returns (uint256) {
+    function _addLiquidityToSpace(BalancerPool pool, PoolLiquidity memory liq) internal returns (uint256) {
         bytes32 poolId = pool.getPoolId();
         IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
         for (uint8 i; i < liq.tokens.length; i++) {
@@ -701,7 +698,7 @@ contract Periphery is Trust {
     }
 
     /* ========== LOGS ========== */
-    
+
     event FactoryChanged(address indexed adapter, bool indexed isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterOnboarded(address adapter);
