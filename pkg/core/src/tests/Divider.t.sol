@@ -954,8 +954,8 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         (, , , , , mscale, , , ) = divider.series(address(adapter), maturity);
         uint256 redeemed = cBalanceAfter.fdiv(mscale, FixedMath.WAD).fmul(0.1e18, FixedMath.WAD);
-        assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
-        assertEq(adapter.tBalance(address(bob)), 0);
+        assertClose(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
+        assertClose(adapter.tBalance(address(bob)), 0);
         collected = bob.doCollect(claim); // try collecting after redemption
         assertEq(collected, 0);
     }

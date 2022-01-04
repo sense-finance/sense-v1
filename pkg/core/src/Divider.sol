@@ -433,7 +433,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Always notify the Adapter of the full Target balance that will no longer
         // have its rewards distributed
-        Adapter(adapter).notify(usr, uBal.fdiv(_series.maxscale), false);
+        Adapter(adapter).notify(usr, uBal.fdivUp(_series.maxscale), false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
