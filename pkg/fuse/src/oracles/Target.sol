@@ -38,7 +38,7 @@ contract TargetOracle is PriceOracle, Trust {
 
         // Use the cached scale for view function compatibility
         // (this updates with every call to scale elsehwere, is that ok?)
-        (, uint256 scale) = adapter.lscale();
+        uint256 scale = adapter.scaleStored();
 
         // `Target/Target's underlying` * `Target's underlying/ ETH` = `Price of Target in ETH`
         // scale and the value returned by getUnderlyingPrice are expected to be in WAD form

@@ -168,6 +168,10 @@ abstract contract BaseAdapter {
     /// between the Target and the Underlying.
     function _scale() internal virtual returns (uint256);
 
+    /// @notice Cached scale value getter
+    /// @dev For situations where you need scale from a view function
+    function scaleStored() internal view virtual returns (uint256);
+
     /// @notice Underlying token address getter that must be overriden by child contracts
     function underlying() external view virtual returns (address);
 
