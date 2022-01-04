@@ -59,13 +59,13 @@ contract TestHelper is DSTest {
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
 
-    uint8 public MODE = 0;
+    uint16 public MODE = 0;
     address public ORACLE = address(123);
-    uint256 public ISSUANCE_FEE = 0.1e18;
+    uint64 public ISSUANCE_FEE = 0.1e18;
     uint256 public STAKE_SIZE = 1e18;
-    uint128 public MIN_MATURITY = 2 weeks;
-    uint128 public MAX_MATURITY = 14 weeks;
-    uint256 public DEFAULT_LEVEL = 7;
+    uint48 public MIN_MATURITY = 2 weeks;
+    uint48 public MAX_MATURITY = 14 weeks;
+    uint16 public DEFAULT_LEVEL = 7;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
 

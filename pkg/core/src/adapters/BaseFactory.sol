@@ -15,7 +15,7 @@ abstract contract BaseFactory {
 
     /// @notice Sets level to `7` by default, which enables all Divider lifecycle methods
     /// (`issue`, `combine`, `collect`), but not the `onZeroRedeem` hook.
-    uint256 public constant DEFAULT_LEVEL = 7;
+    uint16 public constant DEFAULT_LEVEL = 7;
 
     /* ========== PUBLIC IMMUTABLES ========== */
 
@@ -31,13 +31,13 @@ abstract contract BaseFactory {
     FactoryParams public factoryParams;
     struct FactoryParams {
         address oracle; // oracle address
-        uint256 ifee; // issuance fee
+        uint64 ifee; // issuance fee
         address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance
-        uint128 minm; // min maturity (seconds after block.timstamp)
-        uint128 maxm; // max maturity (seconds after block.timstamp)
-        uint8 mode; // 0 for monthly, 1 for weekly
-        uint128 tilt; // tilt
+        uint48 minm; // min maturity (seconds after block.timstamp)
+        uint48 maxm; // max maturity (seconds after block.timstamp)
+        uint16 mode; // 0 for monthly, 1 for weekly
+        uint64 tilt; // tilt
     }
 
     constructor(

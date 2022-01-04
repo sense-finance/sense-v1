@@ -41,9 +41,6 @@ abstract contract BaseAdapter {
     /// @notice Oracle address
     address public immutable oracle;
 
-    /// @notice Issuance fee
-    uint256 public immutable ifee;
-
     /// @notice Token to stake at issuance
     address public immutable stake;
 
@@ -51,23 +48,26 @@ abstract contract BaseAdapter {
     uint256 public immutable stakeSize;
 
     /// @notice Min maturity (seconds after block.timstamp)
-    uint128 public immutable minm;
+    uint48 public immutable minm;
 
     /// @notice Max maturity (seconds after block.timstamp)
-    uint128 public immutable maxm;
+    uint48 public immutable maxm;
 
     /// @notice 0 for monthly, 1 for weekly
-    uint8 public immutable mode;
+    uint16 public immutable mode;
+
+    /// @notice Issuance fee
+    uint64 public immutable ifee;
 
     /// @notice 18 decimal number representing the percentage of the total
     /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
     /// @notice If `0`, it means no principal is set aside for Claims
-    uint128 public immutable tilt;
+    uint64 public immutable tilt;
 
     /// @notice The number this function returns will be used to determine its access by checking for binary
     /// digits using the following scheme: <onRedeemZero(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
     /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
-    uint256 public immutable level;
+    uint16 public immutable level;
 
     /* ========== DATA STRUCTURES ========== */
 
@@ -93,14 +93,14 @@ abstract contract BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _ifee,
+        uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint128 _minm,
-        uint128 _maxm,
-        uint8 _mode,
-        uint128 _tilt,
-        uint256 _level
+        uint48 _minm,
+        uint48 _maxm,
+        uint16 _mode,
+        uint64 _tilt,
+        uint16 _level
     ) {
         // Sanity check
         require(_minm < _maxm, Errors.InvalidMaturityOffsets);

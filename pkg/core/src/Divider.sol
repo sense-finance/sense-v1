@@ -191,7 +191,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
-        uint256 level = Adapter(adapter).level();
+        uint256 level = uint256(Adapter(adapter).level());
         if (!level.issueEnabled() && series[adapter][maturity].issuance + ISSUANCE_BUFFER < block.timestamp) {
             revert(Errors.IssuanceNotEnabled);
         }
@@ -246,7 +246,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        uint256 level = Adapter(adapter).level();
+        uint256 level = uint256(Adapter(adapter).level());
         if (!level.combineEnabled() && !_settled(adapter, maturity)) {
             revert(Errors.CombineNotEnabled);
         }
@@ -307,7 +307,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             tBal = uBal.fdiv(_series.maxscale);
         }
 
-        if (Adapter(adapter).level().redeemZeroHookEnabled()) {
+        if (uint256(Adapter(adapter).level()).redeemZeroHookEnabled()) {
             Adapter(adapter).onZeroRedeem(uBal, _series.mscale, _series.maxscale, tBal);
         }
 
@@ -351,7 +351,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 lscale = lscales[adapter][maturity][usr];
         Claim claim = Claim(series[adapter][maturity].claim);
 
-        if (!Adapter(adapter).level().collectEnabled()) {
+        if (!uint256(Adapter(adapter).level()).collectEnabled()) {
             // If pre-maturity collection has been disabled for this Series and
             // the Series is settled, we ensure everyone's Claims will
             // collect all yield accrued since issuance
@@ -575,7 +575,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint8 mode = Adapter(adapter).mode();
+        uint16 mode = Adapter(adapter).mode();
         if (mode == 0) {
             return day == 1;
         }

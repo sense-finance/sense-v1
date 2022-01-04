@@ -539,7 +539,7 @@ contract Dividers is TestHelper {
 
     function testCantIssueIfProperLevelIsntSet() public {
         // Enable combine, but not collect and issue only during the issuance buffer
-        uint128 level = 2**1;
+        uint16 level = 2**1;
 
         adapter = new MockAdapter(
             address(divider),
@@ -688,7 +688,7 @@ contract Dividers is TestHelper {
 
     function testCantCombineIfProperLevelIsntSet() public {
         // Enable issue and collect, but not combine
-        uint128 level = 2**2 + 2**0;
+        uint16 level = 2**2 + 2**0;
 
         adapter = new MockAdapter(
             address(divider),
@@ -884,7 +884,7 @@ contract Dividers is TestHelper {
 
     function testRedeemZeroPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
-        uint128 tilt = 0.1e18;
+        uint64 tilt = 0.1e18;
         // The Targeted redemption value Alice will send Bob wants, in Underlying
         uint256 intendedRedemptionValue = 50e18;
 
@@ -985,7 +985,7 @@ contract Dividers is TestHelper {
 
     function testRedeenZeroHookIsntCalledIfProperLevelIsntSet() public {
         // Enable Divider lifecycle moethods, but not the adapter zero redeem hook
-        uint128 level = 2**2;
+        uint16 level = 2**2;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1013,7 +1013,7 @@ contract Dividers is TestHelper {
     }
 
     function testRedeenZeroHookIsCalledIfProperLevelIsntSet() public {
-        uint128 level = 2**3;
+        uint16 level = 2**3;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1043,7 +1043,7 @@ contract Dividers is TestHelper {
     /* ========== redeemClaim() tests ========== */
     function testRedeemClaimPositiveTiltPositiveScale() public {
         // Reserve 10% of principal for Claims
-        uint128 tilt = 0.1e18;
+        uint64 tilt = 0.1e18;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1094,7 +1094,7 @@ contract Dividers is TestHelper {
 
     function testRedeemClaimPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
-        uint128 tilt = 0.1e18;
+        uint64 tilt = 0.1e18;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1154,7 +1154,7 @@ contract Dividers is TestHelper {
 
     function testCantCollectIfProperLevelIsntSet() public {
         // Enable issue and combine, but not collect
-        uint128 level = 2**1 + 2**0;
+        uint16 level = 2**1 + 2**0;
 
         adapter = new MockAdapter(
             address(divider),
