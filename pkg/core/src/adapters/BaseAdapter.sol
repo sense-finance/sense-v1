@@ -58,7 +58,7 @@ abstract contract BaseAdapter {
 
     /// @notice 0 for monthly, 1 for weekly
     uint8 public immutable mode;
-    
+
     /// @notice 18 decimal number representing the percentage of the total
     /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
     /// @notice If `0`, it means no principal is set aside for Claims

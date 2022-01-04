@@ -1003,7 +1003,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         uint48 maturity = getValidMaturity(2021, 10);
-        (address zero,) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
         hevm.warp(maturity);

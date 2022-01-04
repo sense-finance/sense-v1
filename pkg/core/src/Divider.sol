@@ -223,14 +223,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
-            : _reweightLScale(
-                adapter,
-                maturity,
-                Claim(_series.claim).balanceOf(msg.sender),
-                uBal,
-                msg.sender,
-                scale
-            );
+            : _reweightLScale(adapter, maturity, Claim(_series.claim).balanceOf(msg.sender), uBal, msg.sender, scale);
 
         // Mint equal amounts of Zeros and Claims
         Token(_series.zero).mint(msg.sender, uBal);
@@ -271,7 +264,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(_series.claim).burn(msg.sender, uBal);
             // If collect has been enabled, use the current scale, otherwise use the inital scale
-            cscale = level.collectEnabled() ? lscales[adapter][maturity][msg.sender] : _series.iscale ;
+            cscale = level.collectEnabled() ? lscales[adapter][maturity][msg.sender] : _series.iscale;
             // We use lscale since the current scale was already stored there in `_collect()`
         }
 
@@ -359,12 +352,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Claim claim = Claim(series[adapter][maturity].claim);
 
         if (!Adapter(adapter).level().collectEnabled()) {
-            // If pre-maturity collection has been disabled for this Series and 
+            // If pre-maturity collection has been disabled for this Series and
             // the Series is settled, we ensure everyone's Claims will
             // collect all yield accrued since issuance
             if (_settled(adapter, maturity)) {
                 lscale = _series.iscale;
-            // If the Series is not settled, we ensure no collections can happen
+                // If the Series is not settled, we ensure no collections can happen
             } else {
                 return 0;
             }

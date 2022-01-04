@@ -16,7 +16,6 @@ contract MockAdapter is CropAdapter {
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onZeroRedeemCalls;
 
-
     constructor(
         address _divider,
         address _target,
@@ -30,7 +29,7 @@ contract MockAdapter is CropAdapter {
         uint128 _tilt,
         uint256 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) { }
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {}
 
     function _scale() internal virtual override returns (uint256 _value) {
         if (value > 0) return value;
