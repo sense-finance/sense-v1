@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 import { Token } from "../tokens/Token.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
@@ -10,6 +10,7 @@ contract Claims is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -27,13 +28,14 @@ contract Claims is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= cBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -54,7 +56,7 @@ contract Claims is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        collect -= bcBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
@@ -63,6 +65,7 @@ contract Claims is TestHelper {
     }
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
+        tBal = fuzzWithBounds(tBal, 1e12);
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -84,7 +87,7 @@ contract Claims is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bcBalanceBefore.fdiv(cscale, FixedMath.WAD);
+        collect -= bcBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
         assertEq(bcBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
@@ -531,6 +531,55 @@ contract PeripheryTest is TestHelper {
             assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)) - lpBalBefore);
 
             assertEq(tBalBefore - tBal, ERC20(adapter.getTarget()).balanceOf(address(bob)));
+            assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)));
+            assertEq(cBalBefore + toBeIssued, ERC20(claim).balanceOf(address(bob)));
+        }
+    }
+
+    function testAddLiquidityFromUnderlyingAndHoldClaims() public {
+        uint256 tBal = 100e18; // we assume target = underlying as scale is 1e18
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 tBase = 10**target.decimals();
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // add liquidity to mock Space pool
+        addLiquidityToBalancerVault(maturity, 1000e18);
+
+        // init liquidity
+        alice.doAddLiquidityFromTarget(address(adapter), maturity, 1, 1);
+
+        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(address(bob));
+        uint256 cBalBefore = ERC20(claim).balanceOf(address(bob));
+
+        // calculate amount to be issued
+        uint256 toBeIssued;
+        {
+            // calculate claims to be issued
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            uint256 scale = 1e18;
+            uint256 proportionalTarget = tBal.fmul(
+                balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], FixedMath.WAD),
+                tBase
+            ); // ABDK formula
+            (, uint256 lscale) = adapter.lscale();
+            uint256 fee = convertToBase(adapter.getIssuanceFee(), target.decimals()).fmul(proportionalTarget, tBase);
+            toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
+        }
+
+        {
+            (uint256 targetBal, uint256 claimBal, uint256 lpShares) = bob.doAddLiquidityFromUnderlying(
+                address(adapter),
+                maturity,
+                tBal,
+                1
+            );
+
+            assertEq(targetBal, 0);
+            assertTrue(claimBal > 0);
+            assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)) - lpBalBefore);
+
+            assertEq(uBalBefore - tBal, ERC20(adapter.underlying()).balanceOf(address(bob)));
             assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)));
             assertEq(cBalBefore + toBeIssued, ERC20(claim).balanceOf(address(bob)));
         }

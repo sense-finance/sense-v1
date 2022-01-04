@@ -158,7 +158,7 @@ contract SpaceTest is Test {
         try jim.swapIn(false, 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Swap too small");
+            assertEq(error, "SWAP_TOO_SMALL");
         }
 
         // Can successfully swap Zeros in
@@ -399,6 +399,16 @@ contract SpaceTest is Test {
         assertClose(sid.swapIn(false, uint256(1e18).divDown(adapter.scale())), 1e18, 1e7);
     }
 
+    function testCantJoinAfterMaturity() public {
+        vm.warp(maturity + 1);
+
+        try jim.join(0, 10e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, "POOL_PAST_MATURITY");
+        }
+    }
+
     function testProtocolFees() public {
         IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
 
@@ -438,12 +448,12 @@ contract SpaceTest is Test {
         try sid.swapIn(true, 1e6) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Swap too small");
+            assertEq(error, "SWAP_TOO_SMALL");
         }
         try sid.swapIn(false, 1e6) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Swap too small");
+            assertEq(error, "SWAP_TOO_SMALL");
         }
 
         // Swaps outs don't fail, but they ask for very high amounts in

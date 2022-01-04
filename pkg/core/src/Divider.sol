@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 // External references
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
@@ -21,7 +21,6 @@ import { Token as Zero } from "./tokens/Token.sol";
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
-    using Errors for string;
 
     /// @notice Configuration
     uint256 public constant SPONSOR_WINDOW = 4 hours; // TODO: TBD
@@ -38,14 +37,19 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /// @notice adapter -> is supported
     mapping(address => bool) public adapters;
+
     /// @notice adapter ID -> adapter address
     mapping(uint256 => address) public adapterAddresses;
+
     /// @notice adapter address -> adapter ID
     mapping(address => uint256) public adapterIDs;
+
     /// @notice target -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
+
     /// @notice adapter -> maturity -> Series
     mapping(address => mapping(uint256 => Series)) public series;
+
     /// @notice adapter -> maturity -> user -> lscale (last scale)
     mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;
 
@@ -246,41 +250,21 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
+
+        Series memory _series = series[adapter][maturity];
+
         // Burn the caller's Zeros
         Zero(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
-        // Amount of Target these Zeros would ideally redeem for
-        tBal = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) / series[adapter][maturity].mscale;
+        // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
+        uint256 zShare = FixedMath.WAD - _series.tilt;
 
-        if (series[adapter][maturity].mscale < series[adapter][maturity].maxscale) {
-            // Amount of Target they actually have set aside for them (after collections from Claim holders)
-            uint256 tBalZeroActual = (uBal * (FixedMath.WAD - series[adapter][maturity].tilt)) /
-                series[adapter][maturity].maxscale;
-
-            // Amount of Target we have set aside for Claims
-            uint256 tBalClaimActual = (uBal * series[adapter][maturity].tilt) / series[adapter][maturity].maxscale;
-
-            // Cut from Claim holders to cover any shortfall if we can
-            if (tBalClaimActual != 0) {
-                uint256 shortfall = tBal - tBalZeroActual;
-                // Calculate the amount of Target this Zero holder will get back –
-                // start with the amount of Target Zeros have set aside in their pool
-                // as that's the lower bound on what they'll get
-                tBal = tBalZeroActual;
-                // If the shortfall is less than what we've reserved for Claims, cover the whole thing
-                // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
-                if (tBalClaimActual > shortfall) {
-                    tBal += shortfall;
-                    // If the shortfall is greater than what we've reserved for Claims, take as much as we can
-                } else {
-                    tBal += tBalClaimActual;
-                }
-            } else {
-                // If there was nothing set aside for Claim holders in this Series,
-                // the most we can send back to Zero holders is what remains of their Target principal,
-                // so we transfer that out in full
-                tBal = tBalZeroActual;
-            }
+        // If Zeros are at a loss and Claims have some principal to help cover the shortfall,
+        // take what we can from Claims
+        if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
+            tBal = (uBal * zShare) / _series.mscale;
+        } else {
+            tBal = uBal.fdiv(_series.maxscale);
         }
 
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
@@ -354,20 +338,22 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         //
         // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        uint256 tBalNow = uBal.fdiv(_series.maxscale, FixedMath.WAD);
-        collected = uBal.fdiv(lscale, FixedMath.WAD) - tBalNow;
+        uint256 tBalNow = uBal.fdivUp(_series.maxscale); // preventive round-up towards the protocol
+        uint256 tBalPrev = uBal.fdiv(lscale);
+        collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
         ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
-        // last collection to this scale (as all yield is being stripped off before the Claims are sent)
+        // last collection to a synthetic scale weighted based on the scale on their last collect,
+        // the time elapsed, and the current scale
         if (to != address(0)) {
             uint256 cBal = claim.balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
                 : _series.maxscale;
-            uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale, FixedMath.WAD);
+            uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale);
             Adapter(adapter).notify(usr, tBalTransfer, false);
             Adapter(adapter).notify(to, tBalTransfer, true);
         }
@@ -386,7 +372,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
         return
             (cBal + uBal).fdiv(
-                (cBal.fdiv(lscales[adapter][maturity][receiver], FixedMath.WAD) + uBal.fdiv(scale, FixedMath.WAD)),
+                (cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)),
                 uBase
             );
     }
@@ -402,42 +388,25 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the users's Claims
         Claim(_series.claim).burn(usr, uBal);
 
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
-
+        // Default principal for Claim
         uint256 tBal = 0;
-        // If there's some principal set aside for Claims, determine whether they get it all
-        if (_series.tilt != 0) {
-            // Amount of Target we have set aside for Claims (Target * % set aside for Claims)
-            tBal = (uBal * _series.tilt) / _series.maxscale;
 
-            // If is down relative to its max, we'll try to take the shortfall out of Claim's principal
-            if (_series.mscale < _series.maxscale) {
-                // Amount of Target we would ideally have set aside for Zero holders
-                uint256 tBalZeroIdeal = (uBal * (FixedMath.WAD - _series.tilt)) / _series.mscale;
+        // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
+        uint256 zShare = FixedMath.WAD - _series.tilt;
 
-                // Amount of Target we actually have set aside for them (after collections from Claim holders)
-                uint256 tBalZeroActual = (uBal * (FixedMath.WAD - _series.tilt)) / _series.maxscale;
+        // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
+        // calculate how much Claims have left
+        if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
+            tBal = uBal * FixedMath.WAD / _series.maxscale - uBal * zShare / _series.mscale;
 
-                // Calculate how much is getting taken from Claim's principal
-                uint256 shortfall = tBalZeroIdeal - tBalZeroActual;
-
-                // If the shortfall is less than what we've reserved for Claims, cover the whole thing
-                // (accounting for what the Claim holders will be able to redeem is done in the redeemClaims method)
-                if (tBal > shortfall) {
-                    tBal -= shortfall;
-                    // If the shortfall is greater than what we've reserved for Claims, take as much as we can
-                } else {
-                    tBal = 0;
-                }
-            }
-            target.safeTransferFrom(adapter, usr, tBal);
+            ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, tBal);
             Adapter(adapter).notify(usr, tBal, false);
         }
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
+    /* ========== ADMIN ========== */
 
     /// @notice Enable or disable a adapter
     /// @param adapter Adapter's address

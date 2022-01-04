@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -133,15 +133,8 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         assertEq(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
     }
 
-    function testCantSendEtherIfNotEligible() public {
-        // try this.sendEther(address(adapter), 1 ether) {
-        //     fail();
-        // } catch Error(string memory error) {
-        //     assertEq(error, Errors.SenderNotEligible);
-        // }
-
-        (bool success, bytes memory err) = payable(address(adapter)).call{ value: 1 ether }("");
-        assertTrue(!success);
-        assertEq(abi.decode(err, (string)), Errors.SenderNotEligible);
+    function testMainnetCantSendEtherIfNotEligible() public {
+        Hevm(HEVM_ADDRESS).expectRevert(abi.encode(Errors.SenderNotEligible));
+        payable(address(adapter)).call{ value: 1 ether }("");
     }
 }

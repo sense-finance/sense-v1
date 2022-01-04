@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
@@ -68,7 +68,7 @@ contract PoolManagerTest is DSTest {
         });
 
         mockAdapter.initialize(address(divider), adapterParams, address(reward));
-        // ping scale to set an lscale
+        // Ping scale to set an lscale
         mockAdapter.scale();
         divider.setAdapter(address(mockAdapter), true);
     }

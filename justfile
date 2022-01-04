@@ -22,7 +22,7 @@ DAPP_BUILD_OPTIMIZE := "1"
 ## forge testing configuration
 DAPP_COVERAGE       := "1"
 # when developing we only want to fuzz briefly
-DAPP_TEST_FUZZ_RUNS := "100"
+DAPP_TEST_FUZZ_RUNS := "5"
 # user with DAI
 DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 DAPP_REMAPPINGS   := remappings-from-pkg-deps
@@ -136,6 +136,16 @@ gas-snapshot-local:
 	{{ justfile_directory() }}/gas-snapshots/.$( \
 		cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
 	)
+
+forge-gas-snapshot: && _timer
+	@cd {{ invocation_directory() }}; forge snapshot \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+
+forge-gas-snapshot-diff: && _timer
+	@cd {{ invocation_directory() }}; forge snapshot --diff \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
 
 ## ---- Appendix ----
 
