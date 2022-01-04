@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
@@ -14,7 +14,6 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract Factories is TestHelper {
     function testDeployFactory() public {
-        MockAdapter adapterImpl = new MockAdapter();
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -23,17 +22,12 @@ contract Factories is TestHelper {
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
-        MockFactory someFactory = new MockFactory(
-            address(adapterImpl),
-            address(divider),
-            factoryParams,
-            address(reward)
-        );
+        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
 
         assertTrue(address(someFactory) != address(0));
-        assertEq(MockFactory(someFactory).adapterImpl(), address(adapterImpl));
         assertEq(MockFactory(someFactory).divider(), address(divider));
         (
             address oracle,
@@ -43,7 +37,8 @@ contract Factories is TestHelper {
             uint256 stakeSize,
             uint256 minm,
             uint256 maxm,
-            uint8 mode
+            uint8 mode,
+            uint128 tilt
         ) = MockFactory(someFactory).factoryParams();
         assertEq(oracle, ORACLE);
         assertEq(delta, DELTA);
@@ -53,6 +48,7 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
+        assertEq(tilt, 0);
     }
 
     function testDeployAdapter() public {
@@ -61,29 +57,18 @@ contract Factories is TestHelper {
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         address adapter = someFactory.deployAdapter(address(someTarget));
         assertTrue(adapter != address(0));
-        (
-            address target,
-            address oracle,
-            uint256 delta,
-            uint256 ifee,
-            address stake,
-            uint256 stakeSize,
-            uint256 minm,
-            uint256 maxm,
-            uint8 mode
-        ) = BaseAdapter(adapter).adapterParams();
         assertEq(IAdapter(adapter).divider(), address(divider));
-        assertEq(target, address(someTarget));
-        assertEq(delta, DELTA);
+        assertEq(IAdapter(adapter).target(), address(someTarget));
+        assertEq(IAdapter(adapter).delta(), DELTA);
         assertEq(IAdapter(adapter).name(), "Some Target Adapter");
         assertEq(IAdapter(adapter).symbol(), "ST-adapter");
-        assertEq(stake, address(stake));
-        assertEq(ifee, ISSUANCE_FEE);
-        assertEq(stakeSize, STAKE_SIZE);
-        assertEq(minm, MIN_MATURITY);
-        assertEq(maxm, MAX_MATURITY);
-        assertEq(oracle, ORACLE);
-        assertEq(mode, MODE);
+        assertEq(IAdapter(adapter).stake(), address(stake));
+        assertEq(IAdapter(adapter).ifee(), ISSUANCE_FEE);
+        assertEq(IAdapter(adapter).stakeSize(), STAKE_SIZE);
+        assertEq(IAdapter(adapter).minm(), MIN_MATURITY);
+        assertEq(IAdapter(adapter).maxm(), MAX_MATURITY);
+        assertEq(IAdapter(adapter).oracle(), ORACLE);
+        assertEq(IAdapter(adapter).mode(), MODE);
         uint256 scale = IAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }
@@ -125,11 +110,7 @@ contract Factories is TestHelper {
         someFactory.deployAdapter(address(someTarget));
     }
 
-    function testCantDeployAdapterIfAlreadyExists() public {
-        try factory.deployAdapter(address(target)) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.Create2Failed);
-        }
+    function testFailDeployAdapterIfAlreadyExists() public {
+        factory.deployAdapter(address(target));
     }
 }

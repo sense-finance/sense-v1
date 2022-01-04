@@ -16,7 +16,7 @@ import { Errors, _require } from "@balancer-labs/v2-solidity-utils/contracts/hel
 interface AdapterLike {
     function scale() external returns (uint256);
 
-    function getTarget() external returns (address);
+    function target() external returns (address);
 
     function symbol() external returns (string memory);
 
@@ -113,7 +113,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     ) BalancerPoolToken(AdapterLike(_adapter).name(), AdapterLike(_adapter).symbol()) {
         bytes32 poolId = vault.registerPool(IVault.PoolSpecialization.TWO_TOKEN);
 
-        address target = AdapterLike(_adapter).getTarget();
+        address target = AdapterLike(_adapter).target();
         IERC20[] memory tokens = new IERC20[](2);
 
         // Ensure that the array of tokens is correctly ordered
@@ -138,9 +138,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         ts = _ts;
 
         // Set Space-specific slots
-        maturity = _maturity;
-        adapter = _adapter;
         zeroi = _zeroi;
+        adapter = _adapter;
+        maturity = _maturity;
     }
 
     /* ========== BALANCER VAULT HOOKS ========== */
@@ -157,7 +157,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // Space does not have multiple join types like other Balancer pools,
         // instead, its `joinPool` always behaves like `EXACT_TOKENS_IN_FOR_BPT_OUT`
 
-        require(maturity >= block.timestamp, "Pool past maturity");
+        require(maturity >= block.timestamp, "POOL_PAST_MATURITY");
 
         uint256[] memory reqAmountsIn = abi.decode(userData, (uint256[]));
 
@@ -370,13 +370,13 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             // Determine which amountIn is our limiting factor
             if (bptToMintTarget < bptToMintZeros) {
-                amountsIn[_zeroi] = zeroReserves * reqTargetIn / targetReserves;
+                amountsIn[_zeroi] = (zeroReserves * reqTargetIn) / targetReserves;
                 amountsIn[_targeti] = reqTargetIn;
 
                 return (bptToMintTarget, amountsIn);
             } else {
                 amountsIn[_zeroi] = reqZerosIn;
-                amountsIn[_targeti] = targetReserves * reqZerosIn / zeroReserves;
+                amountsIn[_targeti] = (targetReserves * reqZerosIn) / zeroReserves;
 
                 return (bptToMintZeros, amountsIn);
             }
@@ -421,7 +421,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // -> xOrYPost ^ a = x1 + y1 - x2
         // -> xOrYPost = (x1 + y1 - xOrY2) ^ (1 / a)
         uint256 xOrYPost = (x1 + y1 - xOrY2).powUp(FixedPoint.ONE.divDown(a));
-        require(!givenIn || reservesTokenOut > xOrYPost, "Swap too small");
+        require(!givenIn || reservesTokenOut > xOrYPost, "SWAP_TOO_SMALL");
 
         // amountOut = yPre - yPost; amountIn = xPost - xPre
         return givenIn ? reservesTokenOut.sub(xOrYPost) : xOrYPost.sub(reservesTokenIn);

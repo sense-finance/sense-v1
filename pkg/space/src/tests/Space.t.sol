@@ -96,7 +96,7 @@ contract SpaceTest is Test {
 
         (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         zero = ERC20Mintable(_zero);
-        target = ERC20Mintable(adapter.getTarget());
+        target = ERC20Mintable(adapter.target());
 
         // Mint this address Zeros and Target
         // Max approve the balancer vault to move this addresses tokens
@@ -158,7 +158,7 @@ contract SpaceTest is Test {
         try jim.swapIn(false, 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Swap too small");
+            assertEq(error, "SWAP_TOO_SMALL");
         }
 
         // Can successfully swap Zeros in
@@ -399,6 +399,16 @@ contract SpaceTest is Test {
         assertClose(sid.swapIn(false, uint256(1e18).divDown(adapter.scale())), 1e18, 1e7);
     }
 
+    function testCantJoinAfterMaturity() public {
+        vm.warp(maturity + 1);
+
+        try jim.join(0, 10e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, "POOL_PAST_MATURITY");
+        }
+    }
+
     function testProtocolFees() public {
         IProtocolFeesCollector protocolFeesCollector = vault.getProtocolFeesCollector();
 
@@ -438,12 +448,12 @@ contract SpaceTest is Test {
         try sid.swapIn(true, 1e6) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Swap too small");
+            assertEq(error, "SWAP_TOO_SMALL");
         }
         try sid.swapIn(false, 1e6) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Swap too small");
+            assertEq(error, "SWAP_TOO_SMALL");
         }
 
         // Swaps outs don't fail, but they ask for very high amounts in
@@ -508,7 +518,7 @@ contract SpaceTest is Test {
 
         (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
         ERC20Mintable zero = ERC20Mintable(_zero);
-        ERC20Mintable _target = ERC20Mintable(adapter.getTarget());
+        ERC20Mintable _target = ERC20Mintable(adapter.target());
 
         User max = new User(vault, space, zero, _target);
         _target.mint(address(max), 100e9);

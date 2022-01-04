@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 abstract contract Hevm {
     // Sets the block timestamp to x
@@ -18,4 +18,7 @@ abstract contract Hevm {
     function ffi(string[] calldata) external virtual returns (bytes memory);
 
     function load(address, bytes32) external virtual returns (bytes32);
+
+    // Expects an error on next call
+    function expectRevert(bytes calldata) external virtual;
 }

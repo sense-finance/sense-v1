@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -167,7 +167,7 @@ contract MockSpaceFactory {
 
     function create(address _adapter, uint48 _maturity) external returns (address) {
         (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
-        address _target = Adapter(_adapter).getTarget();
+        address _target = Adapter(_adapter).target();
 
         pool = new MockSpacePool(address(vault), _target, _zero);
         pools[_adapter][_maturity] = address(pool);

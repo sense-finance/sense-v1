@@ -48,9 +48,6 @@ contract MockAdapterSpace {
         _scale = scale_;
     }
 
-    function getTarget() external view returns (address) {
-        return target;
-    }
 }
 
 // named Space to avoid name collision

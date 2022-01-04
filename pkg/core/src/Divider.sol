@@ -186,10 +186,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
 
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
+        ERC20 target = ERC20(Adapter(adapter).target());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
-        uint256 issuanceFee = Adapter(adapter).getIssuanceFee();
+        uint256 issuanceFee = Adapter(adapter).ifee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
 
         uint256 fee = tBal.fmul(issuanceFee, FixedMath.WAD);
@@ -203,19 +203,24 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        // If the caller has collected on Claims before, use the scale value from that collection to determine how many Zeros/Claims to mint
-        // so that the Claims they mint here will have the same amount of yield stored up as their existing holdings
-        uint256 scale = lscales[adapter][maturity][msg.sender];
-
-        // If the caller has not collected on Claims before, use the current scale value to determine how many Zeros/Claims to mint
-        // so that the Claims they mint here are "clean," in that they have no yet-to-be-collected yield
-        if (scale == 0) {
-            scale = Adapter(adapter).scale();
-            lscales[adapter][maturity][msg.sender] = scale;
-        }
+        // Issue using the current scale
+        uint256 scale = Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
+
+        // If the caller has not collected on Claims before, use the current scale, otherwise –
+        // use the harmonic mean of the last and the current scale value
+        lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
+            ? scale
+            : _reweightLScale(
+                adapter,
+                maturity,
+                Claim(series[adapter][maturity].claim).balanceOf(msg.sender),
+                uBal,
+                msg.sender,
+                scale
+            );
 
         // Mint equal amounts of Zeros and Claims
         Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
@@ -253,7 +258,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Convert from units of Underlying to units of Target
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
+        ERC20 target = ERC20(Adapter(adapter).target());
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
         Adapter(adapter).notify(msg.sender, tBal, false);
@@ -291,7 +296,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             tBal = uBal.fdiv(_series.maxscale);
         }
 
-        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
+        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 
@@ -362,16 +367,17 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         //
         // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
         // is what Claim holders are collecting
-        uint256 tBalNow = uBal.fdiv(_series.maxscale);
-        collected = uBal.fdiv(lscale) - tBalNow;
-        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
+        uint256 tBalNow = uBal.fdivUp(_series.maxscale); // preventive round-up towards the protocol
+        uint256 tBalPrev = uBal.fdiv(lscale);
+        collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
+        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, collected);
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
         // last collection to a synthetic scale weighted based on the scale on their last collect,
         // the time elapsed, and the current scale
         if (to != address(0)) {
-            uint256 cBal = ERC20(claim).balanceOf(to);
+            uint256 cBal = claim.balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
@@ -384,16 +390,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit Collected(adapter, maturity, collected);
     }
 
+    /// @notice calculate the harmonic mean of the current scale and the last scale,
+    /// weighted by amounts associated with each
     function _reweightLScale(
         address adapter,
         uint256 maturity,
         uint256 cBal,
         uint256 uBal,
         address receiver,
-        uint256 maxscale
+        uint256 scale
     ) internal view returns (uint256) {
         uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
-        return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(maxscale)), uBase);
+        return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
     }
 
     function _redeemClaim(
@@ -418,7 +426,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
             tBal = (uBal * FixedMath.WAD) / _series.maxscale - (uBal * zShare) / _series.mscale;
 
-            ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, tBal);
+            ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
             Adapter(adapter).notify(usr, tBal, false);
         }
 
@@ -540,7 +548,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint8 mode = Adapter(adapter).getMode();
+        uint8 mode = Adapter(adapter).mode();
         if (mode == 0) {
             return day == 1;
         }
@@ -582,7 +590,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         _;
     }
 
-    /* ========== EVENTS ========== */
+    /* ========== LOGS ========== */
 
     /// @notice Admin
     event Backfilled(
@@ -639,7 +647,7 @@ contract TokenHandler is Trust {
     function deploy(address adapter, uint48 maturity) external returns (address zero, address claim) {
         require(msg.sender == divider, "Must be called by the Divider");
 
-        ERC20 target = ERC20(Adapter(adapter).getTarget());
+        ERC20 target = ERC20(Adapter(adapter).target());
         uint8 decimals = target.decimals();
         string memory name = target.name();
         (, string memory m, string memory y) = DateTime.toDateString(maturity);

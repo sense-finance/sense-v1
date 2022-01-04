@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // External references
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -56,12 +56,12 @@ contract GClaimManager {
             inits[claim] = scale;
             string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
             string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
-            gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).getTarget()).decimals(), address(this));
+            gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).target()).decimals(), address(this));
         } else {
             uint256 tBal = excess(adapter, maturity, uBal);
             if (tBal > 0) {
                 // Pull the amount of Target needed to backfill the excess back to issuance
-                ERC20(Adapter(adapter).getTarget()).safeTransferFrom(msg.sender, address(this), tBal);
+                ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
                 totals[claim] += tBal;
             }
         }
@@ -94,7 +94,7 @@ contract GClaimManager {
         totals[claim] = total - tBal;
 
         // Send the excess Target back to the user
-        ERC20(Adapter(adapter).getTarget()).safeTransfer(msg.sender, tBal);
+        ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal);
         // Transfer Collect Claims back to the user
         ERC20(claim).safeTransfer(msg.sender, uBal);
         // Burn the user's gclaims
@@ -122,7 +122,10 @@ contract GClaimManager {
         }
 
         if (scale - initScale > 0) {
-            tBal = (uBal * scale) / (scale - initScale) / 10**18;
+            tBal = ((uBal.fmul(scale, FixedMath.WAD)).fdiv(scale - initScale, FixedMath.WAD)).fdivUp(
+                10**18,
+                FixedMath.WAD
+            );
         }
     }
 

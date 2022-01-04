@@ -23,13 +23,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Mint the deployer a balance of 1,000,000 STAKE");
   await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
-  console.log("Deploy a mocked Adapter implementation");
-  const { address: mockAdapterImplAddress } = await deploy("MockAdapter", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
   console.log("Deploy a simulated airdrop reward token named Airdrop");
   await deploy("Airdrop", {
     contract: "Token",
@@ -41,18 +34,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const airdrop = await ethers.getContract("Airdrop");
 
   console.log("Deploy a mocked Factory with mocked dependencies");
-
   const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
   const STAKE_SIZE = ethers.utils.parseEther("1");
   const MIN_MATURITY = "0";
   const MAX_MATURITY = "4838400"; // 4 weeks;
   const ORACLE = "0x6D2299C48a8dD07a872FDd0F8233924872Ad1071";
   const MODE = 1; // 1 for weekly
-  const DELTA = ethers.utils.parseEther("1");
-  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
+  const TILT = 0;
+  // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
+  const DELTA = "115792089237316195423570985008687907853269984665640564";
+  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [mockAdapterImplAddress, divider.address, factoryParams, airdrop.address],
+    args: [divider.address, factoryParams, airdrop.address],
     log: true,
   });
 

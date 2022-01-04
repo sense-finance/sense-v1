@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 // Internal references
 import { CAdapter } from "../adapters/compound/CAdapter.sol";
@@ -26,14 +26,14 @@ contract CAdapterTestHelper is DSTest {
     uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint128 public constant MIN_MATURITY = 2 weeks;
+    uint128 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
-        CAdapter adapterImpl = new CAdapter(); // compound adapter implementation
+
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
@@ -43,16 +43,16 @@ contract CAdapterTestHelper is DSTest {
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
-        factory = new CFactory(address(divider), address(adapterImpl), factoryParams, COMP);
+        factory = new CFactory(address(divider), factoryParams, COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
 
 contract CFactories is CAdapterTestHelper {
     function testMainnetDeployFactory() public {
-        CAdapter adapterImpl = new CAdapter();
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: ORACLE,
@@ -61,9 +61,10 @@ contract CFactories is CAdapterTestHelper {
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE
+            mode: MODE,
+            tilt: 0
         });
-        CFactory otherCFactory = new CFactory(address(divider), address(adapterImpl), factoryParams, COMP);
+        CFactory otherCFactory = new CFactory(address(divider), factoryParams, COMP);
 
         assertTrue(address(otherCFactory) != address(0));
         (
@@ -74,9 +75,9 @@ contract CFactories is CAdapterTestHelper {
             uint256 stakeSize,
             uint256 minm,
             uint256 maxm,
-            uint8 mode
+            uint8 mode,
+            uint128 tilt
         ) = CFactory(otherCFactory).factoryParams();
-        assertEq(CFactory(otherCFactory).adapterImpl(), address(adapterImpl));
         assertEq(CFactory(otherCFactory).divider(), address(divider));
         assertEq(delta, DELTA);
         assertEq(CFactory(otherCFactory).reward(), COMP);
@@ -87,16 +88,16 @@ contract CFactories is CAdapterTestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(oracle, ORACLE);
+        assertEq(tilt, 0);
     }
 
     function testMainnetDeployAdapter() public {
         address f = factory.deployAdapter(cDAI);
         CAdapter adapter = CAdapter(payable(f));
-        (, , uint256 delta, , , , , , ) = CAdapter(adapter).adapterParams();
         assertTrue(address(adapter) != address(0));
-        assertEq(CAdapter(adapter).getTarget(), address(cDAI));
+        assertEq(CAdapter(adapter).target(), address(cDAI));
         assertEq(CAdapter(adapter).divider(), address(divider));
-        assertEq(delta, DELTA);
+        assertEq(CAdapter(adapter).delta(), DELTA);
         assertEq(CAdapter(adapter).name(), "Compound Dai Adapter");
         assertEq(CAdapter(adapter).symbol(), "cDAI-adapter");
 

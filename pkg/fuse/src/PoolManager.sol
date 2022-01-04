@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 // External reference
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
@@ -37,6 +37,8 @@ interface ComptrollerLike {
     ) external returns (uint256);
 
     function _acceptAdmin() external returns (uint256);
+
+    function cTokensByUnderlying(address underlying) external returns (address);
 }
 
 interface MasterOracleLike {
@@ -88,14 +90,16 @@ contract PoolManager is Trust {
 
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
+
     /// @notice Series Status: adapter -> maturity -> series status (zeros/lp shares)
     mapping(address => mapping(uint256 => SeriesStatus)) public sStatus;
+
     /// @notice Series Pools: adapter -> maturity -> AMM pool
     mapping(address => mapping(uint256 => address)) public sPools;
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address target);
+    event TargetAdded(address target, address cTarget);
     event SeriesAdded(address zero, address lpToken);
     event SeriesQueued(address adapter, uint48 maturity, address pool);
 
@@ -138,7 +142,7 @@ contract PoolManager is Trust {
         (_poolIndex, _comptroller) = FuseDirectoryLike(fuseDirectory).deployPool(
             name,
             comptrollerImpl,
-            false, // whitelist is always false
+            false, // `whitelist` is always false
             closeFactor,
             liqIncentive,
             masterOracle
@@ -151,7 +155,7 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target, address adapter) external requiresTrust {
+    function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(!tInits[target], Errors.TargetExists);
         require(targetParams.irModel != address(0), Errors.TargetParamNotSet);
@@ -186,14 +190,14 @@ contract PoolManager is Trust {
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
         require(err == 0, Errors.FailedAddMarket);
 
-        // TODO: get actual cTarget address
+        cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 
         tInits[target] = true;
-        emit TargetAdded(target);
+        emit TargetAdded(target, cTarget);
     }
 
-    /// @notice queues a set of (Zero, LPShare) for Fuse pool once the TWAP is ready
-    /// @dev called by the periphery, which will know which pool address to set for this Series
+    /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
+    /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
         uint48 maturity,
@@ -205,7 +209,7 @@ contract PoolManager is Trust {
         require(zero != address(0), Errors.SeriesDoesntExists);
         require(sStatus[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
 
-        address target = Adapter(adapter).getTarget();
+        address target = Adapter(adapter).target();
         require(tInits[target], Errors.TargetNotInFuse);
 
         sStatus[adapter][maturity] = SeriesStatus.QUEUED;
