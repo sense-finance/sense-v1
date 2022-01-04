@@ -69,25 +69,11 @@ abstract contract BaseAdapter {
     /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
     uint16 public immutable level;
 
-    /* ========== DATA STRUCTURES ========== */
-
-    struct LScale {
-        // Timestamp of the last scale value
-        uint256 timestamp;
-        // Last scale value
-        uint256 value;
-    }
-
     /* ========== METADATA STORAGE ========== */
 
     string public name;
 
     string public symbol;
-
-    /* ========== PUBLIC MUTABLE STORAGE ========== */
-
-    /// @notice Cached scale value from the last call to `scale()`
-    LScale public lscale;
 
     constructor(
         address _divider,
@@ -150,30 +136,19 @@ abstract contract BaseAdapter {
         return (true, value);
     }
 
-    /// @notice Calculate and return this adapter's Scale value for the current timestamp
-    /// @dev For some Targets, such as cTokens, this is simply the exchange rate, or `supply cToken / supply underlying`
-    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    /// @return value WAD Scale value
-    function scale() external virtual returns (uint256) {
-        uint256 value = _scale();
-        uint256 lvalue = lscale.value;
-        uint256 elapsed = block.timestamp - lscale.timestamp;
-
-        if (value != lvalue) {
-            // update value only if different than the previous
-            lscale.value = value;
-            lscale.timestamp = block.timestamp;
-        }
-
-        return value;
-    }
-
     /* ========== REQUIRED VALUE GETTERS ========== */
 
-    /// @notice Scale getter to be overriden by child contracts
+    /// @notice Calculate and return this adapter's Scale value for the current timestamp. To be overriden by child contracts
+    /// @dev For some Targets, such as cTokens, this is simply the exchange rate, or `supply cToken / supply underlying`
+    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
     /// @dev This function _must_ return an 18 decimal number representing the current exchange rate
     /// between the Target and the Underlying.
-    function _scale() internal virtual returns (uint256);
+    /// @return value WAD Scale value
+    function scale() external virtual returns (uint256);
+
+    /// @notice Cached scale value getter
+    /// @dev For situations where you need scale from a view function
+    function scaleStored() external view virtual returns (uint256);
 
     /// @notice Underlying token address getter that must be overriden by child contracts
     function underlying() external view virtual returns (address);

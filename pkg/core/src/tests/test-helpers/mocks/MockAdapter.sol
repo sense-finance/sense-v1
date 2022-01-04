@@ -16,6 +16,16 @@ contract MockAdapter is CropAdapter {
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onZeroRedeemCalls;
 
+    struct LScale {
+        // Timestamp of the last scale value
+        uint256 timestamp;
+        // Last scale value
+        uint256 value;
+    }
+
+    /// @notice Cached scale value from the last call to `scale()`
+    LScale public lscale;
+
     constructor(
         address _divider,
         address _target,
@@ -31,7 +41,7 @@ contract MockAdapter is CropAdapter {
         address _reward
     ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {}
 
-    function _scale() internal virtual override returns (uint256 _value) {
+    function scale() external virtual override returns (uint256 _value) {
         if (value > 0) return value;
         if (INITIAL_VALUE == 0) {
             INITIAL_VALUE = 1e18;
@@ -39,6 +49,16 @@ contract MockAdapter is CropAdapter {
         uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)), FixedMath.WAD);
         uint256 timeDiff = block.timestamp - lscale.timestamp;
         _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
+
+        if (_value != lscale.value) {
+            // update value only if different than the previous
+            lscale.value = _value;
+            lscale.timestamp = block.timestamp;
+        }
+    }
+
+    function scaleStored() external view virtual override returns (uint256 _value) {
+        return lscale.value;
     }
 
     function _claimReward() internal virtual override {

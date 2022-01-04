@@ -20,7 +20,12 @@ interface CTokenInterface {
     /// @dev returns the current exchange rate as an uint, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals).
     function exchangeRateCurrent() external returns (uint256);
 
-    function decimals() external returns (uint8);
+    /// @notice Calculates the exchange rate from the underlying to the CToken
+    /// @dev This function does not accrue interest before calculating the exchange rate
+    /// @return Calculated exchange rate scaled by 1e18
+    function exchangeRateStored() external view returns (uint256);
+
+    function decimals() external view returns (uint8);
 
     function underlying() external view returns (address);
 
@@ -80,14 +85,14 @@ contract CAdapter is CropAdapter {
         uint64 _tilt,
         uint16 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {
-        // approve underlying contract to pull target (used on wrapUnderlying())
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _reward) {
+        // Approve underlying contract to pull target (used on wrapUnderlying())
         ERC20 u = ERC20(_isCETH(_target) ? WETH : CTokenInterface(_target).underlying());
         u.safeApprove(_target, type(uint256).max);
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
-    function _scale() internal override returns (uint256) {
+    function scale() external override returns (uint256) {
         uint256 uDecimals = CTokenInterface(underlying()).decimals();
         uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
         // From the Compound docs:
@@ -101,6 +106,12 @@ contract CAdapter is CropAdapter {
         // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
         // -> `exRate * 10**(8 - uDecimals)`
         // -> `exRate / 10**(uDecimals - 8)`
+        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+    }
+
+    function scaleStored() external view override returns (uint256) {
+        uint256 uDecimals = CTokenInterface(underlying()).decimals();
+        uint256 exRate = CTokenInterface(target).exchangeRateStored();
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
