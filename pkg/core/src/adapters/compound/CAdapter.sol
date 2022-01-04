@@ -91,7 +91,7 @@ contract CAdapter is CropAdapter {
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
-    function _scale() internal override returns (uint256) {
+    function scale() external override returns (uint256) {
         uint256 uDecimals = CTokenInterface(underlying()).decimals();
         uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
         // From the Compound docs:

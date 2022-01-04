@@ -27,8 +27,8 @@ contract FakeAdapter is BaseAdapter {
         uint128 _tilt
     ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt) {}
 
-    function _scale() internal virtual override returns (uint256 _value) {
-        _value = 100e18;
+    function scale() external virtual override returns (uint256 _value) {
+        return 100e18;
     }
 
     function scaleStored() external view virtual override returns (uint256) {
