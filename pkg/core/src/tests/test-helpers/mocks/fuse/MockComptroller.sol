@@ -16,6 +16,10 @@ contract MockComptroller {
     function _acceptAdmin() external virtual returns (uint256) {
         return 0;
     }
+
+    function cTokensByUnderlying(address) external virtual returns (address) {
+        return address(1337);
+    }
 }
 
 contract MockComptrollerRejectAdmin is MockComptroller {
