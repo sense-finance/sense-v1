@@ -37,6 +37,8 @@ interface ComptrollerLike {
     ) external returns (uint256);
 
     function _acceptAdmin() external returns (uint256);
+
+    function cTokensByUnderlying(address underlying) external returns (address);
 }
 
 interface MasterOracleLike {
@@ -97,7 +99,7 @@ contract PoolManager is Trust {
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address target);
+    event TargetAdded(address target, address cToken);
     event SeriesAdded(address zero, address lpToken);
     event SeriesQueued(address adapter, uint48 maturity, address pool);
 
@@ -153,7 +155,7 @@ contract PoolManager is Trust {
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target, address adapter) external requiresTrust {
+    function addTarget(address target, address adapter) external requiresTrust returns (address cToken) {
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(!tInits[target], Errors.TargetExists);
         require(targetParams.irModel != address(0), Errors.TargetParamNotSet);
@@ -188,10 +190,10 @@ contract PoolManager is Trust {
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
         require(err == 0, Errors.FailedAddMarket);
 
-        // TODO: get actual cTarget address
+        cToken = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 
         tInits[target] = true;
-        emit TargetAdded(target);
+        emit TargetAdded(target, cToken);
     }
 
     /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
