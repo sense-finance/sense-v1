@@ -25,7 +25,6 @@ abstract contract BaseFactory {
     FactoryParams public factoryParams;
     struct FactoryParams {
         address oracle; // oracle address
-        uint256 delta; // max growth per second allowed
         uint256 ifee; // issuance fee
         address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance

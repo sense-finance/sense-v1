@@ -41,9 +41,6 @@ abstract contract BaseAdapter {
     /// @notice Oracle address
     address public immutable oracle;
 
-    /// @notice Max growth per second allowed
-    uint256 public immutable delta;
-
     /// @notice Issuance fee
     uint256 public immutable ifee;
 
@@ -91,7 +88,6 @@ abstract contract BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _delta,
         uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
@@ -105,7 +101,6 @@ abstract contract BaseAdapter {
         divider = _divider;
         target = _target;
         oracle = _oracle;
-        delta = _delta;
         ifee = _ifee;
         stake = _stake;
         stakeSize = _stakeSize;
@@ -156,12 +151,6 @@ abstract contract BaseAdapter {
         uint256 value = _scale();
         uint256 lvalue = lscale.value;
         uint256 elapsed = block.timestamp - lscale.timestamp;
-
-        if (elapsed > 0 && lvalue != 0) {
-            // check actual growth vs delta (max growth per sec)
-            uint256 growthPerSec = (value > lvalue ? value - lvalue : lvalue - value).fdiv(lvalue * elapsed);
-            if (growthPerSec > delta) revert(Errors.InvalidScaleValue);
-        }
 
         if (value != lvalue) {
             // update value only if different than the previous

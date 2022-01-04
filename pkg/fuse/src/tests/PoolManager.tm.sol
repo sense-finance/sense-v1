@@ -57,7 +57,6 @@ contract PoolManagerTest is DSTest {
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: address(target),
-            delta: 150,
             oracle: address(mockOracle),
             ifee: 0.1e18,
             stake: address(stake),

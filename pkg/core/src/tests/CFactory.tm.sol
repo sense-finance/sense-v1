@@ -23,7 +23,6 @@ contract CAdapterTestHelper is DSTest {
     address public constant ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
 
     uint8 public constant MODE = 0;
-    uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint128 public constant MIN_MATURITY = 2 weeks;
@@ -38,7 +37,6 @@ contract CAdapterTestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -56,7 +54,6 @@ contract CFactories is CAdapterTestHelper {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: DAI,
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -69,7 +66,6 @@ contract CFactories is CAdapterTestHelper {
         assertTrue(address(otherCFactory) != address(0));
         (
             address oracle,
-            uint256 delta,
             uint256 ifee,
             address stake,
             uint256 stakeSize,
@@ -79,7 +75,6 @@ contract CFactories is CAdapterTestHelper {
             uint128 tilt
         ) = CFactory(otherCFactory).factoryParams();
         assertEq(CFactory(otherCFactory).divider(), address(divider));
-        assertEq(delta, DELTA);
         assertEq(CFactory(otherCFactory).reward(), COMP);
         assertEq(stake, DAI);
         assertEq(ifee, ISSUANCE_FEE);
@@ -97,7 +92,6 @@ contract CFactories is CAdapterTestHelper {
         assertTrue(address(adapter) != address(0));
         assertEq(CAdapter(adapter).target(), address(cDAI));
         assertEq(CAdapter(adapter).divider(), address(divider));
-        assertEq(CAdapter(adapter).delta(), DELTA);
         assertEq(CAdapter(adapter).name(), "Compound Dai Adapter");
         assertEq(CAdapter(adapter).symbol(), "cDAI-adapter");
 

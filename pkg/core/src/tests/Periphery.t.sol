@@ -53,7 +53,6 @@ contract PeripheryTest is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            DELTA,
             1e18,
             address(stake),
             STAKE_SIZE,

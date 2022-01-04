@@ -58,7 +58,6 @@ contract TestHelper is DSTest {
     MockFuseDirectory fuseDirectory;
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
-    uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
     uint8 public MODE = 0;
     address public ORACLE = address(123);
@@ -100,7 +99,6 @@ contract TestHelper is DSTest {
 
         reward = new MockToken("Reward Token", "RT", baseDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
-        DELTA = convertToBase(DELTA, target.decimals());
 
         // divider
         tokenHandler = new TokenHandler();
@@ -183,7 +181,6 @@ contract TestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,

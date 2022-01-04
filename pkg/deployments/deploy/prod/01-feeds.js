@@ -19,9 +19,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   const divider = await ethers.getContract("Divider");
 
-  // FIXME: placeholder to be replaced with the real delta value once determined
-  const DELTA = 150;
-
   if (!DAI_TOKEN.has(chainId)) throw Error("No Dai token found");
   if (!COMP_TOKEN.has(chainId)) throw Error("No Comp token found");
   const compAddress = COMP_TOKEN.get(chainId);
@@ -35,7 +32,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const ORACLE = "0x6d2299c48a8dd07a872fdd0f8233924872ad1071"; // oracle address
   const TILT = 0;
   console.log("Deploy cToken adapter factory");
-  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, daiAddress, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
+  const factoryParams = [ORACLE, ISSUANCE_FEE, daiAddress, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
   await deploy("CFactory", {
     from: deployer,
     args: [divider.address, factoryParams, compAddress],

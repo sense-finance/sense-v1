@@ -27,7 +27,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant ONE_CTOKEN = 1e8;
 
     uint8 public constant MODE = 0;
-    uint256 public constant DELTA = 150;
     uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint128 public constant MIN_MATURITY = 2 weeks;
@@ -53,7 +52,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.cDAI,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
@@ -68,7 +66,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.cETH,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
@@ -84,7 +81,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             Assets.cUSDC,
             Assets.RARI_ORACLE,
-            DELTA,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,

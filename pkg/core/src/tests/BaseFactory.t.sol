@@ -17,7 +17,6 @@ contract Factories is TestHelper {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -31,7 +30,6 @@ contract Factories is TestHelper {
         assertEq(MockFactory(someFactory).divider(), address(divider));
         (
             address oracle,
-            uint256 delta,
             uint256 ifee,
             address stake,
             uint256 stakeSize,
@@ -41,7 +39,6 @@ contract Factories is TestHelper {
             uint128 tilt
         ) = MockFactory(someFactory).factoryParams();
         assertEq(oracle, ORACLE);
-        assertEq(delta, DELTA);
         assertEq(stake, address(stake));
         assertEq(ifee, ISSUANCE_FEE);
         assertEq(stakeSize, STAKE_SIZE);
@@ -59,7 +56,6 @@ contract Factories is TestHelper {
         assertTrue(adapter != address(0));
         assertEq(IAdapter(adapter).divider(), address(divider));
         assertEq(IAdapter(adapter).target(), address(someTarget));
-        assertEq(IAdapter(adapter).delta(), DELTA);
         assertEq(IAdapter(adapter).name(), "Some Target Adapter");
         assertEq(IAdapter(adapter).symbol(), "ST-adapter");
         assertEq(IAdapter(adapter).stake(), address(stake));

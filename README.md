@@ -91,13 +91,12 @@ The Adapter holds the Target before a series' maturity and contains logic to han
 
 1. `target` - address to the Target 
 2. `oracle` - address to the Oracle of the Target's Underlying
-3. `delta` - max growth per second allowed in the scale, as retrieved from the Target's protocol
-4. `ifee` - issuance fee
-5. `stake` - token to stake at issuance
-6. `stakeSize` - amount to stake at issuance
-7. `minm` - min maturity
-8. `maxm` - max maturity
-9. `mode` - maturity date type (0 for monthly, 1 for weekly)
+3. `ifee` - issuance fee
+4. `stake` - token to stake at issuance
+5. `stakeSize` - amount to stake at issuance
+6. `minm` - min maturity
+7. `maxm` - max maturity
+8. `mode` - maturity date type (0 for monthly, 1 for weekly)
 
 To create an Adapter implementation without airdrops, the contract needs to inherit from `BaseAdapter.sol` and override `_scale()`, `underlying()`, `wrapUnderlying()`, `unwrapTarget()`, `getUnderlyingPrice()`, and `notify()`. In addition, `_scale()` must return an 18 decimal exchange rate, otherwise some compoments of the system might not behave as intended when interfacing with the Adapter.
 
