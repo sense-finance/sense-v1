@@ -67,6 +67,7 @@ jobs:
       run: |
         yarn turbo-test | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
+        grep -vz CompilerError _out.txt 1> /dev/null
 
     - name: Run local tests where the mock Target token uses 8 decimals
       run: |
