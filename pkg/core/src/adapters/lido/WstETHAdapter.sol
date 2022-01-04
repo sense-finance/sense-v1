@@ -65,6 +65,9 @@ contract WstETHAdapter is BaseAdapter {
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
 
+    /// @notice Cached scale value from the last call to `scale()`
+    uint256 public override scaleStored;
+
     constructor(
         address _divider,
         address _target,
@@ -84,25 +87,31 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     /// @return Eth per wstEtH (natively in 18 decimals)
-    function _scale() internal virtual override returns (uint256) {
+    function scale() external virtual override returns (uint256) {
         // In order to account for the stETH/ETH CurveStableSwap rate, we use `safe_price_value` from Lido's stETH price feed.
         // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
         uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
         uint256 wstETHstETH = WstETHInterface(target).stEthPerToken(); // stETH tokens corresponding to one wstETH
-        return stEthEth.fmul(wstETHstETH, FixedMath.WAD);
+        uint256 _value = stEthEth.fmul(wstETHstETH, FixedMath.WAD);
+
+        if (_value != scaleStored) {
+            // update value only if different than the previous
+            scaleStored = _value;
+        }
+        return _value;
     }
 
-    function underlying() external view override returns (address) {
+    function underlying() external pure override returns (address) {
         return WETH;
     }
 
-    function getUnderlyingPrice() external view override returns (uint256) {
+    function getUnderlyingPrice() external pure override returns (uint256) {
         return 1e18;
     }
 
     function unwrapTarget(uint256 amount) external override returns (uint256) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
-        uint256 stETH = WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
+        WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
         // exchange stETH to ETH exchange on Curve
         uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
