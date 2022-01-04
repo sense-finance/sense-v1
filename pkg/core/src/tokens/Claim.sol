@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity  0.8.11;
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -8,21 +8,21 @@ import { Token } from "./Token.sol";
 /// @title Claim Token
 /// @notice Strips off excess before every transfer
 contract Claim is Token {
+    address public immutable adapter;
     uint48 public immutable maturity;
     address public immutable divider;
-    address public immutable adapter;
 
     constructor(
-        uint48 _maturity,
-        address _divider,
         address _adapter,
+        uint48 _maturity,
         string memory _name,
         string memory _symbol,
-        uint8 _decimals
+        uint8 _decimals,
+        address _divider
     ) Token(_name, _symbol, _decimals, _divider) {
+        adapter = _adapter;
         maturity = _maturity;
         divider = _divider;
-        adapter = _adapter;
     }
 
     function collect() external returns (uint256 _collected) {
