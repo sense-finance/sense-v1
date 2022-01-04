@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity  0.8.11;
+pragma solidity 0.8.11;
 
 // External references
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
@@ -181,7 +181,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
 
-        // If the caller has not collected on Claims before, in that they have no yet-to-be-collected yield
+        // If the caller has not collected on Claims before, use the current scale, otherwise –
+        // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
             : _reweightLScale(
@@ -361,6 +362,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit Collected(adapter, maturity, collected);
     }
 
+    /// @notice calculate the harmonic mean of the current scale and the last scale,
+    /// weighted by amounts associated with each
     function _reweightLScale(
         address adapter,
         uint256 maturity,
@@ -370,11 +373,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 scale
     ) internal view returns (uint256) {
         uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
-        return
-            (cBal + uBal).fdiv(
-                (cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)),
-                uBase
-            );
+        return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
     }
 
     function _redeemClaim(
@@ -397,7 +396,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
         // calculate how much Claims have left
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = uBal * FixedMath.WAD / _series.maxscale - uBal * zShare / _series.mscale;
+            tBal = (uBal * FixedMath.WAD) / _series.maxscale - (uBal * zShare) / _series.mscale;
 
             ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, tBal);
             Adapter(adapter).notify(usr, tBal, false);
