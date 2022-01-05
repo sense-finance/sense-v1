@@ -194,10 +194,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             require(msg.sender == adapter, Errors.IssuanceRestricted);
         }
 
-        ERC20 target = ERC20(Adapter(adapter).target());
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
-        uint256 issuanceFee = Adapter(adapter).ifee();
+        uint256 issuanceFee = Adapter(adapter).getIssuanceFee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
         uint256 fee = tBal.fmul(issuanceFee);
 
@@ -261,7 +261,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Convert from units of Underlying to units of Target
-        ERC20 target = ERC20(Adapter(adapter).target());
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
 
@@ -308,7 +308,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             Adapter(adapter).onZeroRedeem(uBal, series[adapter][maturity].mscale, series[adapter][maturity].maxscale, tBal);
         }
 
-        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, msg.sender, tBal);
         emit ZeroRedeemed(adapter, maturity, tBal);
     }
 
@@ -393,7 +393,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalNow = uBal.fdivUp(_series.maxscale); // preventive round-up towards the protocol
         uint256 tBalPrev = uBal.fdiv(lscale);
         collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
-        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, collected);
+        ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, collected);
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
@@ -573,7 +573,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint16 mode = Adapter(adapter).mode();
+        uint8 mode = Adapter(adapter).getMode();
         if (mode == 0) {
             return day == 1;
         }
@@ -615,7 +615,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         _;
     }
 
-    /* ========== LOGS ========== */
+    /* ========== EVENTS ========== */
 
     /// @notice Admin
     event Backfilled(
@@ -672,7 +672,7 @@ contract TokenHandler is Trust {
     function deploy(address adapter, uint48 maturity) external returns (address zero, address claim) {
         require(msg.sender == divider, "Must be called by the Divider");
 
-        ERC20 target = ERC20(Adapter(adapter).target());
+        ERC20 target = ERC20(Adapter(adapter).getTarget());
         uint8 decimals = target.decimals();
         string memory name = target.name();
         (, string memory m, string memory y) = DateTime.toDateString(maturity);

@@ -209,7 +209,7 @@ contract PoolManager is Trust {
         require(zero != address(0), Errors.SeriesDoesntExists);
         require(sStatus[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
 
-        address target = Adapter(adapter).target();
+        address target = Adapter(adapter).getTarget();
         require(tInits[target], Errors.TargetNotInFuse);
 
         sStatus[adapter][maturity] = SeriesStatus.QUEUED;

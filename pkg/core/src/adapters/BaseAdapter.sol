@@ -2,6 +2,7 @@
 pragma solidity ^0.8.6;
 
 // External references
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
@@ -22,89 +23,50 @@ interface IPeriphery {
 
 /// @title Assign time-based value to Target tokens
 /// @dev In most cases, the only method that will be unique to each adapter type is `_scale`
-abstract contract BaseAdapter {
+abstract contract BaseAdapter is Initializable {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
 
-    /* ========== CONSTANTS ========== */
-
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
-    /* ========== PUBLIC IMMUTABLES ========== */
+    /// Configuration --------
+    address public divider;
+    AdapterParams public adapterParams;
+    struct AdapterParams {
+        address target; // Target token to divide
+        address oracle; // oracle address
+        uint256 delta; // max growth per second allowed
+        uint256 ifee; // issuance fee
+        address stake; // token to stake at issuance
+        uint256 stakeSize; // amount to stake at issuance
+        uint256 minm; // min maturity (seconds after block.timstamp)
+        uint256 maxm; // max maturity (seconds after block.timstamp)
+        uint8 mode; // 0 for monthly, 1 for weekly
+    }
 
-    /// @notice Sense core Divider address
-    address public immutable divider;
-
-    /// @notice Target token to divide
-    address public immutable target;
-
-    /// @notice Oracle address
-    address public immutable oracle;
-
-    /// @notice Token to stake at issuance
-    address public immutable stake;
-
-    /// @notice Amount to stake at issuance
-    uint256 public immutable stakeSize;
-
-    /// @notice Min maturity (seconds after block.timstamp)
-    uint48 public immutable minm;
-
-    /// @notice Max maturity (seconds after block.timstamp)
-    uint48 public immutable maxm;
-
-    /// @notice 0 for monthly, 1 for weekly
-    uint16 public immutable mode;
-
-    /// @notice Issuance fee
-    uint64 public immutable ifee;
-
-    /// @notice 18 decimal number representing the percentage of the total
-    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
-    /// @notice If `0`, it means no principal is set aside for Claims
-    uint64 public immutable tilt;
-
-    /// @notice The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <onRedeemZero(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
-    /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
-    uint16 public immutable level;
-
-    /* ========== METADATA STORAGE ========== */
-
+    /// Program state --------
     string public name;
-
     string public symbol;
+    LScale public lscale;
+    struct LScale {
+        uint256 timestamp; // timestamp of the last scale value
+        uint256 value; // last scale value
+    }
 
-    constructor(
-        address _divider,
-        address _target,
-        address _oracle,
-        uint64 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint16 _level
-    ) {
-        // Sanity check
-        require(_minm < _maxm, Errors.InvalidMaturityOffsets);
+    event Initialized();
+
+    function initialize(address _divider, AdapterParams memory _adapterParams) public virtual initializer {
+        // sanity check
+        require(_adapterParams.minm < _adapterParams.maxm, Errors.InvalidMaturityOffsets);
+
         divider = _divider;
-        target = _target;
-        oracle = _oracle;
-        ifee = _ifee;
-        stake = _stake;
-        stakeSize = _stakeSize;
-        minm = _minm;
-        maxm = _maxm;
-        mode = _mode;
-        tilt = _tilt;
-        name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
-        symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
-        level = _level;
+        adapterParams = _adapterParams;
+        name = string(abi.encodePacked(ERC20(_adapterParams.target).name(), " Adapter"));
+        symbol = string(abi.encodePacked(ERC20(_adapterParams.target).symbol(), "-adapter"));
 
-        ERC20(_target).safeApprove(_divider, type(uint256).max);
+        ERC20(_adapterParams.target).safeApprove(divider, type(uint256).max);
+
+        emit Initialized();
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
@@ -122,7 +84,8 @@ abstract contract BaseAdapter {
         uint256 cBalIn,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
-        require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
+        ERC20 target = ERC20(adapterParams.target);
+        require(target.transfer(address(receiver), amount), Errors.FlashTransferFailed);
         (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
             data,
             msg.sender,
@@ -132,7 +95,7 @@ abstract contract BaseAdapter {
             amount
         );
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
-        require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
+        require(target.transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
         return (true, value);
     }
 
@@ -153,10 +116,22 @@ abstract contract BaseAdapter {
     /// @notice Underlying token address getter that must be overriden by child contracts
     function underlying() external view virtual returns (address);
 
-    /// @notice Returns the current price of the underlying in ETH terms
-    function getUnderlyingPrice() external view virtual returns (uint256);
+    /// @notice Tilt value getter that may be overriden by child contracts
+    /// @dev Returns `0` by default, which means no principal is set aside for Claims
+    /// @dev This function _must_ return an 18 decimal number representing the percentage of the total
+    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
+    function tilt() external virtual returns (uint128) {
+        return 0;
+    }
 
-    /* ========== REQUIRED UTILITIES ========== */
+    /// @notice Notification whenever the Divider adds or removes Target
+    function notify(
+        address, /* usr */
+        uint256, /* amt */
+        bool /* join */
+    ) public virtual {
+        return;
+    }
 
     /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts
     /// @param amount Underlying amount
@@ -168,15 +143,13 @@ abstract contract BaseAdapter {
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
-    /* ========== OPTIONAL HOOKS ========== */
+    /// @notice Returns the current price of the underlying in ETH terms
+    function getUnderlyingPrice() external view virtual returns (uint256);
 
-    /// @notice Notification whenever the Divider adds or removes Target
-    function notify(
-        address, /* usr */
-        uint256, /* amt */
-        bool /* join */
-    ) public virtual {
-        return;
+    /* ========== ACCESSORS ========== */
+
+    function getTarget() external view returns (address) {
+        return adapterParams.target;
     }
 
     /// @notice Hook called whenever a user redeems Zeros
@@ -190,9 +163,12 @@ abstract contract BaseAdapter {
     }
 
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
+    function getIssuanceFee() external view returns (uint256) {
+        return adapterParams.ifee;
+    }
 
-    function getMaturityBounds() external view returns (uint128, uint128) {
-        return (minm, maxm);
+    function getMaturityBounds() external view returns (uint256, uint256) {
+        return (adapterParams.minm, adapterParams.maxm);
     }
 
     function getStakeAndTarget()
@@ -204,7 +180,11 @@ abstract contract BaseAdapter {
             uint256
         )
     {
-        return (target, stake, stakeSize);
+        return (adapterParams.target, adapterParams.stake, adapterParams.stakeSize);
+    }
+
+    function getMode() external view returns (uint8) {
+        return adapterParams.mode;
     }
 
     /* ========== MODIFIERS ========== */

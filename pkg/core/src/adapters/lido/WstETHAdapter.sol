@@ -73,25 +73,12 @@ contract WstETHAdapter is BaseAdapter {
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
 
-    /// @notice Cached scale value from the last call to `scale()`
-    uint256 public override scaleStored;
-
-    constructor(
-        address _divider,
-        address _target,
-        address _oracle,
-        uint64 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
-        uint16 _mode,
-        uint64 _tilt
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
+    function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
         // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
         ERC20(STETH).safeApprove(CURVESINGLESWAP, type(uint256).max);
+        super.initialize(_divider, _adapterParams);
     }
 
     /// @return Eth per wstEtH (natively in 18 decimals)

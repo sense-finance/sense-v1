@@ -17,7 +17,7 @@ abstract contract CropAdapter is BaseAdapter {
     using FixedMath for uint256;
 
     /// @notice Program state
-    address public immutable reward;
+    address public reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget;
@@ -26,22 +26,14 @@ abstract contract CropAdapter is BaseAdapter {
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
 
-    constructor(
+    function initialize(
         address _divider,
-        address _target,
-        address _oracle,
-        uint64 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint16 _level,
+        AdapterParams memory _adapterParams,
         address _reward
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {
+    ) public virtual initializer {
+        super.initialize(_divider, _adapterParams);
         reward = _reward;
-        ERC20(_stake).safeApprove(_divider, type(uint256).max);
+        ERC20(_adapterParams.stake).safeApprove(_divider, type(uint256).max);
     }
 
     function notify(
