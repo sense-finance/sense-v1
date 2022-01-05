@@ -560,6 +560,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
         uint48 maturity = getValidMaturity(2021, 10);
 
         bob.doApprove(address(target), address(adapter), type(uint256).max);
@@ -709,6 +710,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
@@ -1015,6 +1017,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
@@ -1043,6 +1046,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
@@ -1195,6 +1199,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
         uint48 maturity = getValidMaturity(2021, 10);
         uint256 initScale = adapter.scale();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
