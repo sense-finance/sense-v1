@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-core",
-    "version": "0.3.2",
+    "version": "0.4.0-beta",
     "description": "Sense V1 Core Contracts",
     "license": "UNLICENSED",
     "repository": {
