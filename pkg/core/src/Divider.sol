@@ -244,9 +244,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         uint256 level = uint256(Adapter(adapter).level());
-        if (level.combineRestricted()) {
-            require(msg.sender == adapter, Errors.CombineRestricted);
-        }
+        if (level.combineRestricted() && msg.sender != adapter) revert(Errors.CombineRestricted);
 
         Series memory _series = series[adapter][maturity];
 
@@ -356,7 +354,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // collect yield accrued since issuance
             if (_settled(adapter, maturity)) {
                 lscale = _series.iscale;
-            // If the Series is not settled, we ensure no collections can happen
+                // If the Series is not settled, we ensure no collections can happen
             } else {
                 return 0;
             }
@@ -377,7 +375,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 if (cscale > _series.maxscale) {
                     _series.maxscale = cscale;
                     lscales[adapter][maturity][usr] = cscale;
-                // If not, use the previously noted max scale value
+                    // If not, use the previously noted max scale value
                 } else {
                     lscales[adapter][maturity][usr] = _series.maxscale;
                 }

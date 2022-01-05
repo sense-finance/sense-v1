@@ -340,7 +340,6 @@ contract User {
         return MockAdapter(adapter).doCombine(maturity, balance);
     }
 
-
     function doAdapterRedeemZero(
         address adapter,
         uint48 maturity,
