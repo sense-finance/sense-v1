@@ -204,15 +204,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         series[adapter][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
 
-        Series memory _series = series[adapter][maturity];
-
         // Ensure the caller won't hit the issuance cap with this action
         if (guarded) require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        uint256 scale = level.collectDisabled() ? _series.iscale : Adapter(adapter).scale();
+        uint256 scale = level.collectDisabled() ? series[adapter][maturity].iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale);
@@ -221,11 +219,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
-            : _reweightLScale(adapter, maturity, Claim(_series.claim).balanceOf(msg.sender), uBal, msg.sender, scale);
+            : _reweightLScale(adapter, maturity, Claim(series[adapter][maturity].claim).balanceOf(msg.sender), uBal, msg.sender, scale);
 
         // Mint equal amounts of Zeros and Claims
-        Token(_series.zero).mint(msg.sender, uBal);
-        Claim(_series.claim).mint(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
+        Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
 
         target.safeTransferFrom(msg.sender, adapter, tBal);
 
@@ -247,20 +245,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 level = uint256(Adapter(adapter).level());
         if (level.combineRestricted() && msg.sender != adapter) revert(Errors.CombineRestricted);
 
-        Series memory _series = series[adapter][maturity];
-
         // Burn the Zeros
-        Token(_series.zero).burn(msg.sender, uBal);
+        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
         // Collect whatever excess is due
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
-        uint256 cscale = _series.mscale;
+        uint256 cscale = series[adapter][maturity].mscale;
         if (!_settled(adapter, maturity)) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
-            Claim(_series.claim).burn(msg.sender, uBal);
+            Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
             // If collect has been restricted, use the initial scale, otherwise use the current scale
-            cscale = level.collectDisabled() ? _series.iscale : lscales[adapter][maturity][msg.sender];
+            cscale = level.collectDisabled() ? series[adapter][maturity].iscale : lscales[adapter][maturity][msg.sender];
         }
 
         // Convert from units of Underlying to units of Target
@@ -286,7 +282,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
 
-        Series memory _series = series[adapter][maturity];
         uint256 level = uint256(Adapter(adapter).level());
         if (level.redeemZeroRestricted()) {
             require(msg.sender == adapter, Errors.RedeemZeroRestricted);
@@ -296,18 +291,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
-        uint256 zShare = FixedMath.WAD - _series.tilt;
+        uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
         // If Zeros are at a loss and Claims have some principal to help cover the shortfall,
         // take what we can from Claim's principal
-        if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = (uBal * zShare) / _series.mscale;
+        if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
+            tBal = (uBal * zShare) / series[adapter][maturity].mscale;
         } else {
-            tBal = uBal.fdiv(_series.maxscale);
+            tBal = uBal.fdiv(series[adapter][maturity].maxscale);
         }
 
         if (!level.redeemZeroHookDisabled()) {
-            Adapter(adapter).onZeroRedeem(uBal, _series.mscale, _series.maxscale, tBal);
+            Adapter(adapter).onZeroRedeem(uBal, series[adapter][maturity].mscale, series[adapter][maturity].maxscale, tBal);
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
@@ -354,7 +349,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // If this Series has been settled, we ensure everyone's Claims will
             // collect yield accrued since issuance
             if (_settled(adapter, maturity)) {
-                lscale = _series.iscale;
+                lscale = series[adapter][maturity].iscale;
                 // If the Series is not settled, we ensure no collections can happen
             } else {
                 return 0;
@@ -435,21 +430,20 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint48 maturity,
         uint256 uBal
     ) internal {
-        Series memory _series = series[adapter][maturity];
 
         // Burn the users's Claims
-        Claim(_series.claim).burn(usr, uBal);
+        Claim(series[adapter][maturity].claim).burn(usr, uBal);
 
         // Default principal for Claim
         uint256 tBal = 0;
 
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
-        uint256 zShare = FixedMath.WAD - _series.tilt;
+        uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
         // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
         // calculate how much Claims have left
-        if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = (uBal * FixedMath.WAD) / _series.maxscale - (uBal * zShare) / _series.mscale;
+        if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
+            tBal = (uBal * FixedMath.WAD) / series[adapter][maturity].maxscale - (uBal * zShare) / series[adapter][maturity].mscale;
 
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
             Adapter(adapter).notify(usr, tBal, false);
