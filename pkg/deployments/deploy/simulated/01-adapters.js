@@ -92,8 +92,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
     await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
 
-    console.log(`Set ${targetName} issuance cap to max uint so we don't have to worry about it`);
-    await divider.setGuard(target.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+    console.log(`Set ${targetName} adapter issuance cap to max uint so we don't have to worry about it`);
+    await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
 
     console.log(`Can call scale value`);
     const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");

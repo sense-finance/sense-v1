@@ -451,7 +451,7 @@ contract Dividers is TestHelper {
         uint256 aliceBalance = target.balanceOf(address(alice));
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        divider.setGuard(address(target), aliceBalance * 2);
+        divider.setGuard(address(adapter), aliceBalance * 2);
         try alice.doIssue(address(adapter), maturity, aliceBalance + 1) {
             fail();
         } catch Error(string memory error) {
@@ -462,7 +462,7 @@ contract Dividers is TestHelper {
     function testCantIssueNotEnoughAllowance() public {
         uint256 aliceBalance = target.balanceOf(address(alice));
         alice.doApprove(address(target), address(divider), 0);
-        divider.setGuard(address(target), aliceBalance);
+        divider.setGuard(address(adapter), aliceBalance);
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         bob.doApprove(address(target), address(periphery), 0);
@@ -489,8 +489,11 @@ contract Dividers is TestHelper {
     function testCantIssueIfMoreThanCap() public {
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        uint256 amount = divider.guards(address(target)) + 1;
-        try alice.doIssue(address(adapter), maturity, amount) {
+        uint256 guard = divider.guards(address(adapter));
+        uint256 targetBalance = target.balanceOf(address(alice));
+        divider.setGuard(address(adapter), targetBalance);
+        alice.doIssue(address(adapter), maturity, targetBalance);
+        try bob.doIssue(address(adapter), maturity, 1e18) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, Errors.GuardCapReached);
@@ -551,7 +554,7 @@ contract Dividers is TestHelper {
 
     function testIssueIfMoreThanCapButGuardedDisabled() public {
         uint256 aliceBalance = target.balanceOf(address(alice));
-        divider.setGuard(address(target), aliceBalance - 1);
+        divider.setGuard(address(adapter), aliceBalance - 1);
         divider.setGuarded(false);
         uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
@@ -824,6 +827,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
 
         // Sanity check
         assertEq(adapter.tilt(), tilt);
@@ -923,6 +927,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
 
         uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -973,6 +978,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
 
         // Sanity check
         assertEq(adapter.tilt(), 0.1e18);
