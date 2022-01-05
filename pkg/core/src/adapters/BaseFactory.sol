@@ -13,9 +13,9 @@ import { Divider } from "../Divider.sol";
 abstract contract BaseFactory {
     /* ========== CONSTANTS ========== */
 
-    /// @notice Sets level to `7` by default, which enables all Divider lifecycle methods
-    /// (`issue`, `combine`, `collect`), but not the `onZeroRedeem` hook.
-    uint16 public constant DEFAULT_LEVEL = 7;
+    /// @notice Sets level to `31` by default, which keeps all Divider lifecycle methods public
+    /// (`issue`, `combine`, `collect`, etc), but not the `onZeroRedeem` hook.
+    uint16 public constant DEFAULT_LEVEL = 31;
 
     /* ========== PUBLIC IMMUTABLES ========== */
 

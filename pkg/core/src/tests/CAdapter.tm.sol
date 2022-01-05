@@ -25,6 +25,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
 
     /// @notice all cTokens have 8 decimals
     uint256 public constant ONE_CTOKEN = 1e8;
+    uint16 public constant DEFAULT_LEVEL = 31;
 
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -59,7 +60,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0,
             0,
-            7,
+            DEFAULT_LEVEL,
             Assets.COMP
         ); // Compound adapter
 
@@ -74,7 +75,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0,
             0,
-            7,
+            DEFAULT_LEVEL,
             Assets.COMP
         ); // Compound adapter
 
@@ -90,7 +91,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0,
             0,
-            7,
+            DEFAULT_LEVEL,
             Assets.COMP
         ); // Compound adapter
     }

@@ -4,6 +4,8 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { CropAdapter } from "../../../adapters/CropAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
+import { Divider } from "../../../Divider.sol";
+import { Claim } from "../../../tokens/Claim.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockTarget.sol";
 
@@ -101,5 +103,25 @@ contract MockAdapter is CropAdapter {
 
     function setScale(uint256 _value) external {
         value = _value;
+    }
+
+    function doInitSeries(uint48 maturity, address sponsor) external {
+        Divider(divider).initSeries(address(this), maturity, sponsor);
+    }
+
+    function doIssue(uint48 maturity, uint256 tBal) external {
+        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
+        Divider(divider).issue(address(this), maturity, tBal);
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(address(this), maturity);
+        MockToken(zero).transfer(msg.sender, MockToken(zero).balanceOf(address(this)));
+        MockToken(claim).transfer(msg.sender, MockToken(claim).balanceOf(address(this)));
+    }
+
+    function doCombine(uint48 maturity, uint256 uBal) external returns (uint256 tBal) {
+        tBal = Divider(divider).combine(address(this), maturity, uBal);
+    }
+
+    function doRedeemZero(uint48 maturity, uint256 uBal) external {
+        Divider(divider).redeemZero(address(this), maturity, uBal);
     }
 }

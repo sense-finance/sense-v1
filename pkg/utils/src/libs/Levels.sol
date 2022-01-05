@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity 0.8.11;
 
 library Levels {
     uint256 private constant _INIT_BIT = 0;
@@ -16,11 +16,12 @@ library Levels {
     function issueRestricted(uint256 level) internal pure returns (bool) {
         return level & (2**_ISSUE_BIT) != 2**_ISSUE_BIT;
     }
+
     function combineRestricted(uint256 level) internal pure returns (bool) {
         return level & (2**_COMBINE_BIT) != 2**_COMBINE_BIT;
     }
 
-    function collectRestricted(uint256 level) internal pure returns (bool) {
+    function collectDisabled(uint256 level) internal pure returns (bool) {
         return level & (2**_COLLECT_BIT) != 2**_COLLECT_BIT;
     }
 

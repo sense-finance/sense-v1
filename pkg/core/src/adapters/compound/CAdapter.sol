@@ -85,7 +85,7 @@ contract CAdapter is CropAdapter {
         uint64 _tilt,
         uint16 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _reward) {
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {
         // Approve underlying contract to pull target (used on wrapUnderlying())
         ERC20 u = ERC20(_isCETH(_target) ? WETH : CTokenInterface(_target).underlying());
         u.safeApprove(_target, type(uint256).max);

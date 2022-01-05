@@ -211,7 +211,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        uint256 scale = level.collectRestricted() ? _series.iscale : Adapter(adapter).scale();
+        uint256 scale = level.collectDisabled() ? _series.iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
@@ -243,7 +243,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        if (uint256(Adapter(adapter).level()).combineRestricted()) {
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.combineRestricted()) {
             require(msg.sender == adapter, Errors.CombineRestricted);
         }
 
@@ -260,7 +261,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(_series.claim).burn(msg.sender, uBal);
             // If collect has been restricted, use the initial scale, otherwise use the current scale
-            cscale = level.collectRestricted() ? _series.iscale : lscales[adapter][maturity][msg.sender];
+            cscale = level.collectDisabled() ? _series.iscale : lscales[adapter][maturity][msg.sender];
         }
 
         // Convert from units of Underlying to units of Target
@@ -348,10 +349,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[adapter][maturity][usr];
-        Claim claim = Claim(_series.claim);
 
         uint256 level = uint256(Adapter(adapter).level());
-        if (level.collectRestricted() && msg.sender != adapter) {
+        if (level.collectDisabled()) {
             // If this Series has been settled, we ensure everyone's Claims will
             // collect yield accrued since issuance
             if (_settled(adapter, maturity)) {
@@ -403,7 +403,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // last collection to a synthetic scale weighted based on the scale on their last collect,
         // the time elapsed, and the current scale
         if (to != address(0)) {
-            uint256 cBal = claim.balanceOf(to);
+            uint256 cBal = Claim(_series.claim).balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)

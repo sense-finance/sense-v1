@@ -65,7 +65,7 @@ contract TestHelper is DSTest {
     uint256 public STAKE_SIZE = 1e18;
     uint48 public MIN_MATURITY = 2 weeks;
     uint48 public MAX_MATURITY = 14 weeks;
-    uint16 public DEFAULT_LEVEL = 7;
+    uint16 public DEFAULT_LEVEL = 31;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
 

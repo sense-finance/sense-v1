@@ -6,6 +6,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
@@ -537,9 +538,9 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCantIssueIfProperLevelIsntSet() public {
-        // Enable combine, but not collect and issue only during the issuance buffer
-        uint16 level = 2**1;
+    function testIssueLevelRestrictions() public {
+        // Restrict issuance, enable all other lifecycle methods
+        uint16 level = 2**0 + 2**2 + 2**3 + 2**4;
 
         adapter = new MockAdapter(
             address(divider),
@@ -557,21 +558,21 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         uint48 maturity = getValidMaturity(2021, 10);
+
+        bob.doApprove(address(target), address(adapter), type(uint256).max);
+
+        // Should be possible to init series
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        // Can issue at initial Series initialization
-        bob.doIssue(address(adapter), maturity, 1e18);
 
-        // Can issue up until the buffer window
-        hevm.warp(block.timestamp + divider.ISSUANCE_BUFFER());
-        bob.doIssue(address(adapter), maturity, 1e18);
-
-        // Cannot issue past the buffer window
-        hevm.warp(block.timestamp + 1);
+        // Can't issue directly through the divider
         try bob.doIssue(address(adapter), maturity, 1e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.IssuanceNotEnabled);
+            assertEq(error, Errors.IssuanceRestricted);
         }
+
+        // Can issue through adapter
+        bob.doAdapterIssue(address(adapter), maturity, 1e18);
 
         // It should still be possible to combine
         bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob)));
@@ -687,8 +688,8 @@ contract Dividers is TestHelper {
     }
 
     function testCantCombineIfProperLevelIsntSet() public {
-        // Enable issue and collect, but not combine
-        uint16 level = 2**2 + 2**0;
+        // Restrict combine, enable all other lifecycle methods
+        uint16 level = 2**0 + 2**1 + 2**3 + 2**4;
 
         adapter = new MockAdapter(
             address(divider),
@@ -706,18 +707,26 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         uint48 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
+
         try bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob))) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.CombineNotEnabled);
+            assertEq(error, Errors.CombineRestricted);
         }
 
         // Collect still works
         hevm.warp(block.timestamp + 1 days);
         uint256 collected = bob.doCollect(claim);
-        assertTrue(collected > 0);
+        assertGt(collected, 0);
+
+        // Can combine through adapter
+        uint256 balance = ERC20(claim).balanceOf(address(bob));
+        bob.doTransfer(address(zero), address(adapter), balance);
+        bob.doTransfer(address(claim), address(adapter), balance);
+        uint256 combined = bob.doAdapterCombine(address(adapter), maturity, balance);
+        assertGt(combined, 0);
     }
 
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
@@ -984,8 +993,8 @@ contract Dividers is TestHelper {
     }
 
     function testRedeenZeroHookIsntCalledIfProperLevelIsntSet() public {
-        // Enable Divider lifecycle moethods, but not the adapter zero redeem hook
-        uint16 level = 2**2;
+        // Enable all Divider lifecycle methods, but not the adapter zero redeem hook
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**4;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1013,7 +1022,7 @@ contract Dividers is TestHelper {
     }
 
     function testRedeenZeroHookIsCalledIfProperLevelIsntSet() public {
-        uint16 level = 2**3;
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**4 + 2**5;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1153,8 +1162,8 @@ contract Dividers is TestHelper {
     }
 
     function testCantCollectIfProperLevelIsntSet() public {
-        // Enable issue and combine, but not collect
-        uint16 level = 2**1 + 2**0;
+        // Disable collection, enable all other lifecycle methods
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**4;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1183,6 +1192,13 @@ contract Dividers is TestHelper {
         // Yet none is collected
         uint256 collected = bob.doCollect(claim);
         assertEq(collected, 0);
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+
+        // But it can be collected at maturity
+        collected = bob.doCollect(claim);
+        assertGt(collected, 0);
 
         // It should still be possible to combine
         bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob)));
