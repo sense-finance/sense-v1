@@ -61,7 +61,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice adapter address -> adapter ID
     mapping(address => uint256) public adapterIDs;
 
-    /// @notice target -> max amount of Target allowed to be issued
+    /// @notice adaper -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
 
     /// @notice adapter -> maturity -> Series
@@ -198,7 +198,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalSubFee = tBal - fee;
 
         // Ensure the caller won't hit the issuance cap with this action
-        if (guarded) require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
+        if (guarded) require(target.balanceOf(adapter) + tBal <= guards[address(adapter)], Errors.GuardCapReached);
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
@@ -442,12 +442,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         _setAdapter(adapter, isOn);
     }
 
-    /// @notice Set target's guard
-    /// @param target Target address
-    /// @param cap The max target that can be deposited on the Divider
-    function setGuard(address target, uint256 cap) external requiresTrust {
-        guards[target] = cap;
-        emit GuardChanged(target, cap);
+    /// @notice Set adapter's guard
+    /// @param adapter Adapter address
+    /// @param cap The max target that can be deposited on the Adapter
+    function setGuard(address adapter, uint256 cap) external requiresTrust {
+        guards[adapter] = cap;
+        emit GuardChanged(adapter, cap);
     }
 
     /// @notice Set guarded mode
@@ -600,7 +600,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address[] _usrs,
         uint256[] _lscales
     );
-    event GuardChanged(address indexed target, uint256 indexed cap);
+    event GuardChanged(address indexed adapter, uint256 indexed cap);
     event AdapterChanged(address indexed adapter, uint256 indexed id, bool isOn);
     event PeripheryChanged(address indexed periphery);
 
