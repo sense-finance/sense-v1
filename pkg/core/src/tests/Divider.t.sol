@@ -953,7 +953,6 @@ contract Dividers is TestHelper {
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         uint256 maxscale;
         (, , , , , mscale, maxscale, ,) = divider.series(address(adapter), maturity);
-        // uint256 redeemed = cBalanceAfter.fdivUp(mscale).fmul(0.1e18);
         uint256 redeemed = cBalanceAfter * FixedMath.WAD / maxscale - cBalanceAfter * (FixedMath.WAD - tilt) / mscale;
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
         assertClose(adapter.tBalance(address(bob)), 0);
