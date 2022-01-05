@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
