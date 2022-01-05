@@ -1235,7 +1235,7 @@ contract Dividers is TestHelper {
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
-        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), 1);
     }
 
     function testFuzzCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
