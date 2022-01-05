@@ -29,6 +29,7 @@ interface DividerLike {
 }
 
 contract SpaceFactory is Trust {
+
     /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Balancer Vault
@@ -47,18 +48,23 @@ contract SpaceFactory is Trust {
     uint256 public g1;
     uint256 public g2;
 
+    /// @notice Flag to initialize future pools will be inited with their oracles turned on
+    bool public oracle;
+
     constructor(
         IVault _vault,
         address _divider,
         uint256 _ts,
         uint256 _g1,
-        uint256 _g2
+        uint256 _g2,
+        bool _oracle
     ) Trust(msg.sender) {
         vault = _vault;
         divider = _divider;
         ts = _ts;
         g1 = _g1;
         g2 = _g2;
+        oracle = _oracle;
     }
 
     /// @notice Deploys a new `Space` contract
@@ -66,7 +72,7 @@ contract SpaceFactory is Trust {
         require(pools[_adapter][_maturity] == address(0), "POOL_ALREADY_EXISTS");
 
         (address zero, , , , , , , , ) = DividerLike(divider).series(_adapter, uint256(_maturity));
-        address pool = address(new Space(vault, _adapter, _maturity, zero, ts, g1, g2));
+        address pool = address(new Space(vault, _adapter, _maturity, zero, ts, g1, g2, oracle));
 
         pools[_adapter][_maturity] = pool;
         return pool;
@@ -75,7 +81,8 @@ contract SpaceFactory is Trust {
     function setParams(
         uint256 _ts,
         uint256 _g1,
-        uint256 _g2
+        uint256 _g2,
+        bool _oracle
     ) public requiresTrust {
         // g1 is for swapping Targets to Zeros and should discount the effective interest
         require(_g1 <= FixedPoint.ONE, "INVALID_G1");
@@ -85,5 +92,7 @@ contract SpaceFactory is Trust {
         ts = _ts;
         g1 = _g1;
         g2 = _g2;
+
+        oracle = _oracle;
     }
 }

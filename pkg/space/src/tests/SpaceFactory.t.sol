@@ -34,6 +34,8 @@ contract SpaceFactoryTest is DSTest {
     uint256 internal g1;
     uint256 internal g2;
 
+    bool internal oracle;
+
     function setUp() public {
         // Init normalized starting conditions
         vm.warp(0);
@@ -49,13 +51,15 @@ contract SpaceFactoryTest is DSTest {
         // 1 / 0.95 for selling Zeros
         g2 = (FixedPoint.ONE * 1000).divDown(FixedPoint.ONE * 950);
 
+        oracle = false;
+
         maturity1 = 15811200; // 6 months in seconds
         maturity2 = 31560000; // 1 yarn in seconds
         maturity3 = 63120000; // 2 years in seconds
 
         Authorizer authorizer = new Authorizer(address(this));
         vault = new Vault(authorizer, weth, 0, 0);
-        spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2);
+        spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2, oracle);
     }
 
     function testCreatePool() public {
@@ -82,24 +86,27 @@ contract SpaceFactoryTest is DSTest {
         ts = FixedPoint.ONE.divDown(FixedPoint.ONE * 100);
         g1 = (FixedPoint.ONE * 900).divDown(FixedPoint.ONE * 1000);
         g2 = (FixedPoint.ONE * 1000).divDown(FixedPoint.ONE * 900);
-        spaceFactory.setParams(ts, g1, g2);
+        oracle = true;
+
+        spaceFactory.setParams(ts, g1, g2, oracle);
         space = Space(spaceFactory.create(address(adapter), maturity2));
 
         // If params are updated, the new ones are used in the next deployment
         assertEq(space.ts(), ts);
         assertEq(space.g1(), g1);
         assertEq(space.g2(), g2);
+        assertTrue(space.oracleIsSet());
 
         // Fee params are validated
         g1 = (FixedPoint.ONE * 1000).divDown(FixedPoint.ONE * 900);
-        try spaceFactory.setParams(ts, g1, g2) {
+        try spaceFactory.setParams(ts, g1, g2, oracle) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "INVALID_G1");
         }
         g1 = (FixedPoint.ONE * 900).divDown(FixedPoint.ONE * 1000);
         g2 = (FixedPoint.ONE * 900).divDown(FixedPoint.ONE * 1000);
-        try spaceFactory.setParams(ts, g1, g2) {
+        try spaceFactory.setParams(ts, g1, g2, oracle) {
             fail();
         } catch Error(string memory error) {
             assertEq(error, "INVALID_G2");

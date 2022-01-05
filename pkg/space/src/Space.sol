@@ -102,6 +102,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     uint256 internal _lastToken0Reserve;
     uint256 internal _lastToken1Reserve;
 
+    bool internal _oracle;
+
     constructor(
         IVault vault,
         address _adapter,
@@ -109,7 +111,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         address zero,
         uint256 _ts,
         uint256 _g1,
-        uint256 _g2
+        uint256 _g2,
+        bool oracle_
     ) BalancerPoolToken(AdapterLike(_adapter).name(), AdapterLike(_adapter).symbol()) {
         bytes32 poolId = vault.registerPool(IVault.PoolSpecialization.TWO_TOKEN);
 
@@ -136,6 +139,9 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         g1 = _g1; // fees are baked into factors `g1` & `g2`,
         g2 = _g2; // see the "Fees" section of the yieldspace paper
         ts = _ts;
+
+        // Set Oracle
+        _setOracleEnabled(oracle_);
 
         // Set Space-specific slots
         zeroi = _zeroi;
@@ -459,9 +465,35 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 reserveUnderlying = reserves[_targeti].mulDown(_initScale);
 
         // Caclulate the invariant and store everything
-        // TODO
         _lastToken0Reserve = _zeroi == 0 ? reserveZero : reserveUnderlying;
         _lastToken1Reserve = _zeroi == 0 ? reserveUnderlying : reserveZero;
+    }
+
+    /* ========== PRICE ORACLE MANAGEMENT ========== */
+
+    function enableOracle() external {
+        _setOracleEnabled(true);
+
+        // Cache log invariant and supply only if the pool was initialized
+        if (totalSupply() > 0) {
+            _cacheInvariantAndSupply();
+        }
+    }
+
+    function _setOracleEnabled(bool enabled) internal {
+        _oracle = enabled;
+        emit OracleEnabledChanged(enabled);
+    }
+
+    function _updateOracle(
+        uint256 lastChangeBlock,
+        uint256 balanceToken0,
+        uint256 balanceToken1
+    ) internal {
+        if (oracle) {
+            
+        }
+
     }
 
     /* ========== PUBLIC GETTERS ========== */
@@ -470,6 +502,10 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     function getIndices() public view returns (uint8 _zeroi, uint8 _targeti) {
         _zeroi = zeroi;
         _targeti = _zeroi == 0 ? 1 : 0;
+    }
+
+    function oracleIsSet() public view returns (bool) {
+        return _oracle;
     }
 
     /* ========== BALANCER REQUIRED INTERFACE ========== */
@@ -533,4 +569,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         _require(poolId_ == getPoolId(), Errors.INVALID_POOL_ID);
         _;
     }
+
+    /* ========== LOGS ========== */
+    event OracleEnabledChanged(bool enabled)
 }

@@ -71,6 +71,8 @@ contract SpaceTest is Test {
     uint256 internal g1;
     uint256 internal g2;
 
+    bool internal oracle;
+
     function setUp() public {
         // Init normalized starting conditions
         vm.warp(0);
@@ -90,7 +92,7 @@ contract SpaceTest is Test {
 
         authorizer = new Authorizer(address(this));
         vault = new Vault(authorizer, weth, 0, 0);
-        spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2);
+        spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2, oracle);
 
         space = Space(spaceFactory.create(address(adapter), maturity));
 
@@ -513,7 +515,7 @@ contract SpaceTest is Test {
         MockDividerSpace divider = new MockDividerSpace(8);
         // Set Target to 9 decimals
         MockAdapterSpace adapter = new MockAdapterSpace(9);
-        SpaceFactory spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2);
+        SpaceFactory spaceFactory = new SpaceFactory(vault, address(divider), ts, g1, g2, oracle);
         Space space = Space(spaceFactory.create(address(adapter), maturity));
 
         (address _zero, , , , , , , , ) = MockDividerSpace(divider).series(address(adapter), maturity);
