@@ -35,9 +35,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice 10% issuance fee cap
     uint256 public constant ISSUANCE_FEE_CAP = 0.1e18;
 
-    /// @notice Buffer after which users are able to issue if issuance is disabled for a Series
-    uint256 public constant ISSUANCE_BUFFER = 1 days;
-
     /* ========== PUBLIC MUTABLE STORAGE ========== */
 
     address public periphery;
@@ -191,18 +188,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
+        Series memory _series = series[adapter][maturity];
+
         uint256 level = uint256(Adapter(adapter).level());
-        if (!level.issueEnabled() && series[adapter][maturity].issuance + ISSUANCE_BUFFER < block.timestamp) {
-            revert(Errors.IssuanceNotEnabled);
+        if (level.issueRestricted()) {
+            require(msg.sender == adapter, Errors.IssuanceRestricted);
         }
 
-        Series memory _series = series[adapter][maturity];
         ERC20 target = ERC20(Adapter(adapter).target());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Adapter(adapter).ifee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
-
         uint256 fee = tBal.fmul(issuanceFee, FixedMath.WAD);
 
         _series.reward += fee;
@@ -214,7 +211,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        uint256 scale = level.collectEnabled() ? Adapter(adapter).scale() : _series.iscale;
+        uint256 scale = level.collectRestricted() ? _series.iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
@@ -246,9 +243,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        uint256 level = uint256(Adapter(adapter).level());
-        if (!level.combineEnabled() && !_settled(adapter, maturity)) {
-            revert(Errors.CombineNotEnabled);
+        if (uint256(Adapter(adapter).level()).combineRestricted()) {
+            require(msg.sender == adapter, Errors.CombineRestricted);
         }
 
         Series memory _series = series[adapter][maturity];
@@ -263,9 +259,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_settled(adapter, maturity)) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(_series.claim).burn(msg.sender, uBal);
-            // If collect has been enabled, use the current scale, otherwise use the inital scale
-            cscale = level.collectEnabled() ? lscales[adapter][maturity][msg.sender] : _series.iscale;
-            // We use lscale since the current scale was already stored there in `_collect()`
+            // If collect has been restricted, use the initial scale, otherwise use the current scale
+            cscale = level.collectRestricted() ? _series.iscale : lscales[adapter][maturity][msg.sender];
         }
 
         // Convert from units of Underlying to units of Target
@@ -292,6 +287,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_settled(adapter, maturity), Errors.NotSettled);
 
         Series memory _series = series[adapter][maturity];
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.redeemZeroRestricted()) {
+            require(msg.sender == adapter, Errors.RedeemZeroRestricted);
+        }
 
         // Burn the caller's Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
@@ -300,14 +299,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 zShare = FixedMath.WAD - _series.tilt;
 
         // If Zeros are at a loss and Claims have some principal to help cover the shortfall,
-        // take what we can from Claims
+        // take what we can from Claim's principal
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
             tBal = (uBal * zShare) / _series.mscale;
         } else {
             tBal = uBal.fdiv(_series.maxscale);
         }
 
-        if (uint256(Adapter(adapter).level()).redeemZeroHookEnabled()) {
+        if (!level.redeemZeroHookDisabled()) {
             Adapter(adapter).onZeroRedeem(uBal, _series.mscale, _series.maxscale, tBal);
         }
 
@@ -349,14 +348,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[adapter][maturity][usr];
-        Claim claim = Claim(series[adapter][maturity].claim);
+        Claim claim = Claim(_series.claim);
 
-        if (!uint256(Adapter(adapter).level()).collectEnabled()) {
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.collectRestricted() && msg.sender != adapter) {
             // If this Series has been settled, we ensure everyone's Claims will
-            // collect yield accrued since *issuance*
+            // collect yield accrued since issuance
             if (_settled(adapter, maturity)) {
                 lscale = _series.iscale;
-                // If the Series is not settled, we ensure no collections can happen
+            // If the Series is not settled, we ensure no collections can happen
             } else {
                 return 0;
             }
@@ -377,7 +377,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 if (cscale > _series.maxscale) {
                     _series.maxscale = cscale;
                     lscales[adapter][maturity][usr] = cscale;
-                    // If not, use the previously noted max scale value
+                // If not, use the previously noted max scale value
                 } else {
                     lscales[adapter][maturity][usr] = _series.maxscale;
                 }
