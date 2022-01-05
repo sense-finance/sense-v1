@@ -251,7 +251,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // We use lscale since the current scale was already stored there in `_collect()`
         uint256 cscale = series[adapter][maturity].mscale;
-        if (!_settled(adapter, maturity)) {
+        bool settled = _settled(adapter, maturity);
+        if (!settled) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
             cscale = lscales[adapter][maturity][msg.sender];
@@ -261,7 +262,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20 target = ERC20(Adapter(adapter).target());
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
-        Adapter(adapter).notify(msg.sender, tBal, false);
+
+        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify
+        if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         tBal += collected;
         emit Combined(adapter, maturity, tBal, msg.sender);
     }
@@ -424,11 +427,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
         // calculate how much Claims have left
         if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = (uBal * FixedMath.WAD) / _series.maxscale - (uBal * zShare) / _series.mscale;
-
+            tBal = uBal * FixedMath.WAD / _series.maxscale - uBal * zShare / _series.mscale;
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
-            Adapter(adapter).notify(usr, tBal, false);
         }
+
+        // Always notify the Adapter of the full Target balance that will no longer
+        // have its rewards distributed
+        Adapter(adapter).notify(usr, uBal.fdivUp(_series.maxscale), false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
