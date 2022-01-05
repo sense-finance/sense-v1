@@ -60,6 +60,7 @@ contract PeripheryTest is TestHelper {
             MAX_MATURITY,
             MODE,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.addAdapter(address(adapter));

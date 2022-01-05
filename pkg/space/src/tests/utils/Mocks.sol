@@ -47,7 +47,6 @@ contract MockAdapterSpace {
     function setScale(uint256 scale_) external returns (uint256) {
         _scale = scale_;
     }
-
 }
 
 // named Space to avoid name collision

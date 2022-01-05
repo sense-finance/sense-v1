@@ -4,6 +4,8 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { CropAdapter } from "../../../adapters/CropAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
+import { Divider } from "../../../Divider.sol";
+import { Claim } from "../../../tokens/Claim.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockTarget.sol";
 
@@ -14,6 +16,7 @@ contract MockAdapter is CropAdapter {
     uint256 public INITIAL_VALUE;
     address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 public onZeroRedeemCalls;
 
     struct LScale {
         // Timestamp of the last scale value
@@ -29,15 +32,16 @@ contract MockAdapter is CropAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _ifee,
+        uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint128 _minm,
-        uint128 _maxm,
-        uint8 _mode,
-        uint128 _tilt,
+        uint48 _minm,
+        uint48 _maxm,
+        uint16 _mode,
+        uint64 _tilt,
+        uint16 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _reward) {}
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {}
 
     function scale() external virtual override returns (uint256 _value) {
         if (value > 0) return value;
@@ -88,7 +92,36 @@ contract MockAdapter is CropAdapter {
         return MockTarget(target).underlying();
     }
 
+    function onZeroRedeem(
+        uint256, /* uBal */
+        uint256, /* mscale */
+        uint256, /* maxscale */
+        uint256 /* tBal */
+    ) public virtual override {
+        onZeroRedeemCalls++;
+    }
+
     function setScale(uint256 _value) external {
         value = _value;
+    }
+
+    function doInitSeries(uint48 maturity, address sponsor) external {
+        Divider(divider).initSeries(address(this), maturity, sponsor);
+    }
+
+    function doIssue(uint48 maturity, uint256 tBal) external {
+        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
+        Divider(divider).issue(address(this), maturity, tBal);
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(address(this), maturity);
+        MockToken(zero).transfer(msg.sender, MockToken(zero).balanceOf(address(this)));
+        MockToken(claim).transfer(msg.sender, MockToken(claim).balanceOf(address(this)));
+    }
+
+    function doCombine(uint48 maturity, uint256 uBal) external returns (uint256 tBal) {
+        tBal = Divider(divider).combine(address(this), maturity, uBal);
+    }
+
+    function doRedeemZero(uint48 maturity, uint256 uBal) external {
+        Divider(divider).redeemZero(address(this), maturity, uBal);
     }
 }

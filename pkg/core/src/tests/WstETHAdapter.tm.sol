@@ -54,10 +54,10 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
 
-    uint256 public constant ISSUANCE_FEE = 0.01e18;
+    uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint128 public constant MIN_MATURITY = 2 weeks;
-    uint128 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant MIN_MATURITY = 2 weeks;
+    uint48 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         address[] memory assets = new address[](1);

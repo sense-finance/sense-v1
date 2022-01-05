@@ -7,13 +7,12 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 
 /// @title Base Token
 contract Token is ERC20, Trust {
-
     constructor(
         string memory _name,
         string memory _symbol,
         uint8 _decimals,
         address _trusted
-    ) ERC20(_name, _symbol, _decimals) Trust(_trusted) { }
+    ) ERC20(_name, _symbol, _decimals) Trust(_trusted) {}
 
     /// @param usr The address to send the minted tokens
     /// @param amount The amount to be minted

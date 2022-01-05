@@ -6,6 +6,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
@@ -120,13 +121,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             4,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -145,13 +147,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             1,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -170,13 +173,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             1,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -513,6 +517,7 @@ contract Dividers is TestHelper {
             MAX_MATURITY,
             MODE,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.addAdapter(address(aAdapter));
@@ -534,6 +539,47 @@ contract Dividers is TestHelper {
         } catch Error(string memory error) {
             assertEq(error, Errors.Paused);
         }
+    }
+
+    function testIssueLevelRestrictions() public {
+        // Restrict issuance, enable all other lifecycle methods
+        uint16 level = 2**0 + 2**2 + 2**3 + 2**4;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            level,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
+        uint48 maturity = getValidMaturity(2021, 10);
+
+        bob.doApprove(address(target), address(adapter), type(uint256).max);
+
+        // Should be possible to init series
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+
+        // Can't issue directly through the divider
+        try bob.doIssue(address(adapter), maturity, 1e18) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssuanceRestricted);
+        }
+
+        // Can issue through adapter
+        bob.doAdapterIssue(address(adapter), maturity, 1e18);
+
+        // It should still be possible to combine
+        bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob)));
     }
 
     function testFuzzIssue(uint128 tBal) public {
@@ -643,6 +689,49 @@ contract Dividers is TestHelper {
         } catch Error(string memory error) {
             assertEq(error, Errors.Paused);
         }
+    }
+
+    function testCantCombineIfProperLevelIsntSet() public {
+        // Restrict combine, enable all other lifecycle methods
+        uint16 level = 2**0 + 2**1 + 2**3 + 2**4;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            level,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        try bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob))) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.CombineRestricted);
+        }
+
+        // Collect still works
+        hevm.warp(block.timestamp + 1 days);
+        uint256 collected = bob.doCollect(claim);
+        assertGt(collected, 0);
+
+        // Can combine through adapter
+        uint256 balance = ERC20(claim).balanceOf(address(bob));
+        bob.doTransfer(address(zero), address(adapter), balance);
+        bob.doTransfer(address(claim), address(adapter), balance);
+        uint256 combined = bob.doAdapterCombine(address(adapter), maturity, balance);
+        assertGt(combined, 0);
     }
 
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
@@ -809,7 +898,7 @@ contract Dividers is TestHelper {
 
     function testRedeemZeroPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
-        uint128 tilt = 0.1e18;
+        uint64 tilt = 0.1e18;
         // The Targeted redemption value Alice will send Bob wants, in Underlying
         uint256 intendedRedemptionValue = 50e18;
 
@@ -817,13 +906,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            0.1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             MODE,
             tilt,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -908,22 +998,82 @@ contract Dividers is TestHelper {
         );
     }
 
-    /* ========== redeemClaim() tests ========== */
-    function testRedeemClaimPositiveTiltPositiveScale() public {
-        // Reserve 10% of principal for Claims
-        uint128 tilt = 0.1e18;
+    function testRedeenZeroHookIsntCalledIfProperLevelIsntSet() public {
+        // Enable all Divider lifecycle methods, but not the adapter zero redeem hook
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**4;
 
         adapter = new MockAdapter(
             address(divider),
             address(target),
             ORACLE,
-            0.1e18,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            level,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        bob.doRedeemZero(address(adapter), maturity, ERC20(zero).balanceOf(address(bob)));
+        assertEq(adapter.onZeroRedeemCalls(), 0);
+    }
+
+    function testRedeenZeroHookIsCalledIfProperLevelIsntSet() public {
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**4 + 2**5;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            level,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
+        uint48 maturity = getValidMaturity(2021, 10);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        bob.doRedeemZero(address(adapter), maturity, ERC20(zero).balanceOf(address(bob)));
+        assertEq(adapter.onZeroRedeemCalls(), 1);
+    }
+
+    /* ========== redeemClaim() tests ========== */
+    function testRedeemClaimPositiveTiltPositiveScale() public {
+        // Reserve 10% of principal for Claims
+        uint64 tilt = 0.1e18;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             MODE,
             tilt,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -967,19 +1117,20 @@ contract Dividers is TestHelper {
 
     function testRedeemClaimPositiveTiltNegativeScale() public {
         // Reserve 10% of principal for Claims
-        uint128 tilt = 0.1e18;
+        uint64 tilt = 0.1e18;
 
         adapter = new MockAdapter(
             address(divider),
             address(target),
             ORACLE,
-            0.1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             MODE,
             tilt,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1027,6 +1178,50 @@ contract Dividers is TestHelper {
         } catch Error(string memory error) {
             assertEq(error, Errors.InvalidAdapter);
         }
+    }
+
+    function testCantCollectIfProperLevelIsntSet() public {
+        // Disable collection, enable all other lifecycle methods
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**4;
+
+        adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            level,
+            address(reward)
+        );
+        divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
+        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 initScale = adapter.scale();
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+        hevm.warp(block.timestamp + 1 days);
+
+        // Scale has grown so there should be excess yield available
+        assertTrue(initScale < adapter.scale());
+
+        // Yet none is collected
+        uint256 collected = bob.doCollect(claim);
+        assertEq(collected, 0);
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+
+        // But it can be collected at maturity
+        collected = bob.doCollect(claim);
+        assertGt(collected, 0);
+
+        // It should still be possible to combine
+        bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob)));
     }
 
     function testFuzzCantCollectIfMaturityAndNotSettled(uint128 tBal) public {
@@ -1713,13 +1908,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             MODE,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         uint256 adapterCounter = divider.adapterCounter();
@@ -1735,13 +1931,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             MODE,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         uint256 adapterCounter = divider.adapterCounter();
@@ -1760,13 +1957,14 @@ contract Dividers is TestHelper {
             address(divider),
             address(target),
             ORACLE,
-            1e18,
+            ISSUANCE_FEE,
             address(stake),
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             MODE,
             0,
+            DEFAULT_LEVEL,
             address(reward)
         );
         divider.setAdapter(address(bAdapter), true);

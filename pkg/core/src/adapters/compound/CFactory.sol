@@ -53,6 +53,7 @@ contract CFactory is CropFactory {
                 factoryParams.maxm,
                 factoryParams.mode,
                 factoryParams.tilt,
+                DEFAULT_LEVEL,
                 reward
             )
         );

@@ -11,6 +11,7 @@ import { FixedMath } from "./external/FixedMath.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
@@ -21,6 +22,7 @@ import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeERC20 for ERC20;
     using FixedMath for uint256;
+    using Levels for uint256;
 
     /* ========== PUBLIC CONSTANTS ========== */
 
@@ -128,14 +130,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
 
         // Initialize the new Series struct
+        uint256 scale = Adapter(adapter).scale();
         Series memory newSeries = Series({
             zero: zero,
             claim: claim,
             sponsor: sponsor,
             reward: 0,
-            iscale: Adapter(adapter).scale(),
+            iscale: scale,
             mscale: 0,
-            maxscale: Adapter(adapter).scale(),
+            maxscale: scale,
             issuance: uint128(block.timestamp),
             tilt: Adapter(adapter).tilt()
         });
@@ -186,13 +189,17 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
 
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.issueRestricted()) {
+            require(msg.sender == adapter, Errors.IssuanceRestricted);
+        }
+
         ERC20 target = ERC20(Adapter(adapter).target());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Adapter(adapter).ifee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
-
-        uint256 fee = tBal.fmul(issuanceFee, FixedMath.WAD);
+        uint256 fee = tBal.fmul(issuanceFee);
 
         series[adapter][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
@@ -203,24 +210,16 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        // Issue using the current scale
-        uint256 scale = Adapter(adapter).scale();
+        uint256 scale = level.collectDisabled() ? series[adapter][maturity].iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
-        uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
+        uBal = tBalSubFee.fmul(scale);
 
-        // If the caller has not collected on Claims before, use the current scale, otherwise –
+        // If the caller has not collected on Claims before, use the current scale, otherwise
         // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
-            : _reweightLScale(
-                adapter,
-                maturity,
-                Claim(series[adapter][maturity].claim).balanceOf(msg.sender),
-                uBal,
-                msg.sender,
-                scale
-            );
+            : _reweightLScale(adapter, maturity, Claim(series[adapter][maturity].claim).balanceOf(msg.sender), uBal, msg.sender, scale);
 
         // Mint equal amounts of Zeros and Claims
         Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
@@ -243,19 +242,22 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.combineRestricted() && msg.sender != adapter) revert(Errors.CombineRestricted);
 
         // Burn the Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
+
         // Collect whatever excess is due
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
-        // We use lscale since the current scale was already stored there in `_collect()`
         uint256 cscale = series[adapter][maturity].mscale;
         bool settled = _settled(adapter, maturity);
         if (!settled) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
-            cscale = lscales[adapter][maturity][msg.sender];
+            // If collect has been restricted, use the initial scale, otherwise use the current scale
+            cscale = level.collectDisabled() ? series[adapter][maturity].iscale : lscales[adapter][maturity][msg.sender];
         }
 
         // Convert from units of Underlying to units of Target
@@ -283,20 +285,27 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
 
-        Series memory _series = series[adapter][maturity];
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.redeemZeroRestricted()) {
+            require(msg.sender == adapter, Errors.RedeemZeroRestricted);
+        }
 
         // Burn the caller's Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
 
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
-        uint256 zShare = FixedMath.WAD - _series.tilt;
+        uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
         // If Zeros are at a loss and Claims have some principal to help cover the shortfall,
-        // take what we can from Claims
-        if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = (uBal * zShare) / _series.mscale;
+        // take what we can from Claim's principal
+        if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
+            tBal = (uBal * zShare) / series[adapter][maturity].mscale;
         } else {
-            tBal = uBal.fdiv(_series.maxscale);
+            tBal = uBal.fdiv(series[adapter][maturity].maxscale);
+        }
+
+        if (!level.redeemZeroHookDisabled()) {
+            Adapter(adapter).onZeroRedeem(uBal, series[adapter][maturity].mscale, series[adapter][maturity].maxscale, tBal);
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
@@ -337,7 +346,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[adapter][maturity][usr];
-        Claim claim = Claim(series[adapter][maturity].claim);
+
+        uint256 level = uint256(Adapter(adapter).level());
+        if (level.collectDisabled()) {
+            // If this Series has been settled, we ensure everyone's Claims will
+            // collect yield accrued since issuance
+            if (_settled(adapter, maturity)) {
+                lscale = series[adapter][maturity].iscale;
+                // If the Series is not settled, we ensure no collections can happen
+            } else {
+                return 0;
+            }
+        }
 
         // If the Series has been settled, this should be their last collect, so redeem the user's claims for them
         if (_settled(adapter, maturity)) {
@@ -380,7 +400,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // last collection to a synthetic scale weighted based on the scale on their last collect,
         // the time elapsed, and the current scale
         if (to != address(0)) {
-            uint256 cBal = claim.balanceOf(to);
+            uint256 cBal = Claim(_series.claim).balanceOf(to);
             // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
@@ -413,27 +433,27 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint48 maturity,
         uint256 uBal
     ) internal {
-        Series memory _series = series[adapter][maturity];
 
         // Burn the users's Claims
-        Claim(_series.claim).burn(usr, uBal);
+        Claim(series[adapter][maturity].claim).burn(usr, uBal);
 
         // Default principal for Claim
         uint256 tBal = 0;
 
         // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
-        uint256 zShare = FixedMath.WAD - _series.tilt;
+        uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
         // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
         // calculate how much Claims have left
-        if (_series.mscale.fdiv(_series.maxscale) >= zShare) {
-            tBal = uBal * FixedMath.WAD / _series.maxscale - uBal * zShare / _series.mscale;
+        if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
+            tBal = (uBal * FixedMath.WAD) / series[adapter][maturity].maxscale - (uBal * zShare) / series[adapter][maturity].mscale;
+
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
         }
 
         // Always notify the Adapter of the full Target balance that will no longer
         // have its rewards distributed
-        Adapter(adapter).notify(usr, uBal.fdivUp(_series.maxscale), false);
+        Adapter(adapter).notify(usr, uBal.fdivUp(series[adapter][maturity].maxscale), false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
@@ -553,7 +573,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint8 mode = Adapter(adapter).mode();
+        uint16 mode = Adapter(adapter).mode();
         if (mode == 0) {
             return day == 1;
         }

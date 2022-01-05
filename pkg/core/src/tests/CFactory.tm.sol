@@ -22,11 +22,11 @@ contract CAdapterTestHelper is DSTest {
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address public constant ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
 
-    uint8 public constant MODE = 0;
-    uint256 public constant ISSUANCE_FEE = 0.01e18;
+    uint16 public constant MODE = 0;
+    uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint128 public constant MIN_MATURITY = 2 weeks;
-    uint128 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant MIN_MATURITY = 2 weeks;
+    uint48 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -66,14 +66,15 @@ contract CFactories is CAdapterTestHelper {
         assertTrue(address(otherCFactory) != address(0));
         (
             address oracle,
-            uint256 ifee,
+            uint64 ifee,
             address stake,
             uint256 stakeSize,
-            uint256 minm,
-            uint256 maxm,
-            uint8 mode,
-            uint128 tilt
+            uint48 minm,
+            uint48 maxm,
+            uint16 mode,
+            uint64 tilt
         ) = CFactory(otherCFactory).factoryParams();
+
         assertEq(CFactory(otherCFactory).divider(), address(divider));
         assertEq(CFactory(otherCFactory).reward(), COMP);
         assertEq(stake, DAI);

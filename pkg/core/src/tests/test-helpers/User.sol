@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 
 import { Hevm } from "./Hevm.sol";
 import { MockToken } from "./mocks/MockToken.sol";
+import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { Periphery } from "../../Periphery.sol";
 import { GClaimManager } from "../../modules/GClaimManager.sol";
@@ -313,5 +314,37 @@ contract User {
                 minAccepted,
                 mode
             );
+    }
+
+    function doAdapterInitSeries(
+        address adapter,
+        uint48 maturity,
+        address sponsor
+    ) public {
+        MockAdapter(adapter).doInitSeries(maturity, sponsor);
+    }
+
+    function doAdapterIssue(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public {
+        MockAdapter(adapter).doIssue(maturity, balance);
+    }
+
+    function doAdapterCombine(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public returns (uint256) {
+        return MockAdapter(adapter).doCombine(maturity, balance);
+    }
+
+    function doAdapterRedeemZero(
+        address adapter,
+        uint48 maturity,
+        uint256 balance
+    ) public {
+        divider.combine(adapter, maturity, balance);
     }
 }

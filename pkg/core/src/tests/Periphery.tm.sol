@@ -43,11 +43,11 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
-    uint8 public constant MODE = 0;
-    uint256 public constant ISSUANCE_FEE = 0.01e18;
+    uint16 public constant MODE = 0;
+    uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint128 public constant MIN_MATURITY = 2 weeks;
-    uint128 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant MIN_MATURITY = 2 weeks;
+    uint48 public constant MAX_MATURITY = 14 weeks;
 
     Periphery internal periphery;
     CAdapter internal adapter;

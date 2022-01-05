@@ -25,12 +25,13 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
 
     /// @notice all cTokens have 8 decimals
     uint256 public constant ONE_CTOKEN = 1e8;
+    uint16 public constant DEFAULT_LEVEL = 31;
 
-    uint8 public constant MODE = 0;
-    uint256 public constant ISSUANCE_FEE = 0.01e18;
+    uint16 public constant MODE = 0;
+    uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint128 public constant MIN_MATURITY = 2 weeks;
-    uint128 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant MIN_MATURITY = 2 weeks;
+    uint48 public constant MAX_MATURITY = 14 weeks;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -59,6 +60,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0,
             0,
+            DEFAULT_LEVEL,
             Assets.COMP
         ); // Compound adapter
 
@@ -73,6 +75,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0,
             0,
+            DEFAULT_LEVEL,
             Assets.COMP
         ); // Compound adapter
 
@@ -88,6 +91,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             MAX_MATURITY,
             0,
             0,
+            DEFAULT_LEVEL,
             Assets.COMP
         ); // Compound adapter
     }
