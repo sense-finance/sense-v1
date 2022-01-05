@@ -105,7 +105,6 @@ contract TestHelper is DSTest {
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
-        divider.setGuard(address(target), 10 * 2**128);
 
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
@@ -152,6 +151,7 @@ contract TestHelper is DSTest {
         factory = createFactory(address(target), address(reward));
         address f = periphery.onboardAdapter(address(factory), address(target)); // onboard target through Periphery
         adapter = MockAdapter(f);
+        divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
         alice = createUser(2**128, 2**128);

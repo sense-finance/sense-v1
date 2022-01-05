@@ -63,7 +63,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice adapter address -> adapter ID
     mapping(address => uint256) public adapterIDs;
 
-    /// @notice target -> max amount of Target allowed to be issued
+    /// @notice adaper -> max amount of Target allowed to be issued
     mapping(address => uint256) public guards;
 
     /// @notice adapter -> maturity -> Series
@@ -205,7 +205,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalSubFee = tBal - fee;
 
         // Ensure the caller won't hit the issuance cap with this action
-        if (guarded) require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
+        if (guarded) require(target.balanceOf(adapter) + tBal <= guards[address(adapter)], Errors.GuardCapReached);
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
@@ -252,7 +252,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
         uint256 cscale = series[adapter][maturity].mscale;
-        if (!_settled(adapter, maturity)) {
+        bool settled = _settled(adapter, maturity);
+        if (!settled) {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
             // If collect has been restricted, use the initial scale, otherwise use the current scale
@@ -263,7 +264,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20 target = ERC20(Adapter(adapter).target());
         tBal = uBal.fdiv(cscale, FixedMath.WAD);
         target.safeTransferFrom(adapter, msg.sender, tBal);
-        Adapter(adapter).notify(msg.sender, tBal, false);
+
+        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify
+        if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         tBal += collected;
         emit Combined(adapter, maturity, tBal, msg.sender);
     }
@@ -446,8 +449,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             tBal = (uBal * FixedMath.WAD) / series[adapter][maturity].maxscale - (uBal * zShare) / series[adapter][maturity].mscale;
 
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
-            Adapter(adapter).notify(usr, tBal, false);
         }
+
+        // Always notify the Adapter of the full Target balance that will no longer
+        // have its rewards distributed
+        Adapter(adapter).notify(usr, uBal.fdivUp(_series.maxscale), false);
 
         emit ClaimRedeemed(adapter, maturity, tBal);
     }
@@ -461,12 +467,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         _setAdapter(adapter, isOn);
     }
 
-    /// @notice Set target's guard
-    /// @param target Target address
-    /// @param cap The max target that can be deposited on the Divider
-    function setGuard(address target, uint256 cap) external requiresTrust {
-        guards[target] = cap;
-        emit GuardChanged(target, cap);
+    /// @notice Set adapter's guard
+    /// @param adapter Adapter address
+    /// @param cap The max target that can be deposited on the Adapter
+    function setGuard(address adapter, uint256 cap) external requiresTrust {
+        guards[adapter] = cap;
+        emit GuardChanged(adapter, cap);
     }
 
     /// @notice Set guarded mode
@@ -619,7 +625,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address[] _usrs,
         uint256[] _lscales
     );
-    event GuardChanged(address indexed target, uint256 indexed cap);
+    event GuardChanged(address indexed adapter, uint256 indexed cap);
     event AdapterChanged(address indexed adapter, uint256 indexed id, bool isOn);
     event PeripheryChanged(address indexed periphery);
 
