@@ -188,7 +188,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
-        Series memory _series = series[adapter][maturity];
 
         uint256 level = uint256(Adapter(adapter).level());
         if (level.issueRestricted()) {
@@ -200,10 +199,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Adapter(adapter).ifee();
         require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
-        uint256 fee = tBal.fmul(issuanceFee, FixedMath.WAD);
+        uint256 fee = tBal.fmul(issuanceFee);
 
-        _series.reward += fee;
+        series[adapter][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
+
+        Series memory _series = series[adapter][maturity];
 
         // Ensure the caller won't hit the issuance cap with this action
         if (guarded) require(target.balanceOf(address(this)) + tBal <= guards[address(target)], Errors.GuardCapReached);
@@ -214,7 +215,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 scale = level.collectDisabled() ? _series.iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
-        uBal = tBalSubFee.fmul(scale, FixedMath.WAD);
+        uBal = tBalSubFee.fmul(scale);
 
         // If the caller has not collected on Claims before, use the current scale, otherwise
         // use the harmonic mean of the last and the current scale value
