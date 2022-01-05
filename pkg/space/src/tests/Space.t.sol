@@ -432,7 +432,7 @@ contract SpaceTest is Test {
         assertEq(space.balanceOf(address(protocolFeesCollector)), 1003147415248878304);
         jim.exit(space.balanceOf(address(jim)));
 
-        assertEq(space.balanceOf(address(protocolFeesCollector)), 1009326178371634036);
+        assertEq(space.balanceOf(address(protocolFeesCollector)), 1009757643907926313);
 
         // TODO fees don't eat into non-trade invariant growth
         // TODO fees are correctly proportioned to the fee set in the vault

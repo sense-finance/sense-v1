@@ -196,15 +196,15 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
             return (reqAmountsIn, new uint256[](2));
         } else {
+            // Calculate fees due before updating bpt balances to determine invariant growth from just swap fees
+            if (protocolSwapFeePercentage != 0) {
+                _mintPoolTokens(_protocolFeesCollector, _bptFeeDue(reserves, protocolSwapFeePercentage));
+            }
+
             (uint256 bptToMint, uint256[] memory amountsIn) = _tokensInForBptOut(reqAmountsIn, reserves);
 
             // Amounts entering the Pool, so we round up
             _downscaleUpArray(amountsIn);
-
-            // Calculate fees due before updating reserves to determine invariant growth from just swap fees
-            if (protocolSwapFeePercentage != 0) {
-                _mintPoolTokens(_protocolFeesCollector, _bptFeeDue(reserves, protocolSwapFeePercentage));
-            }
 
             // `recipient` receives liquidity tokens
             _mintPoolTokens(recipient, bptToMint);
@@ -237,6 +237,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // Upscale reserves to 18 decimals
         _upscaleArray(reserves);
 
+        // Calculate fees due before updating bpt balances to determine invariant growth from just swap fees
+        if (protocolSwapFeePercentage != 0) {
+            // Balancer fealty
+            _mintPoolTokens(_protocolFeesCollector, _bptFeeDue(reserves, protocolSwapFeePercentage));
+        }
+
         // Determine what percentage of the pool the BPT being passed in is
         uint256 bptAmountIn = abi.decode(userData, (uint256));
         uint256 pctPool = bptAmountIn.divDown(totalSupply());
@@ -248,12 +254,6 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
         // Amounts are leaving the Pool, so we round down
         _downscaleDownArray(amountsOut);
-
-        // Calculate fees due before updating reserves to determine invariant growth from just swap fees
-        if (protocolSwapFeePercentage != 0) {
-            // Balancer fealty
-            _mintPoolTokens(_protocolFeesCollector, _bptFeeDue(reserves, protocolSwapFeePercentage));
-        }
 
         // `sender` pays for the liquidity
         _burnPoolTokens(sender, bptAmountIn);
