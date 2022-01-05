@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 // Internal references
 import { GClaimManager } from "../../modules/GClaimManager.sol";
@@ -13,8 +13,8 @@ import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { MockFactory } from "./mocks/MockFactory.sol";
 
-// Space & Balanacer V2 mock
-import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
+// Uniswap mocks
+import { MockYieldSpaceFactory, MockBalancerVault } from "./mocks/YieldSpace.sol";
 
 // Fuse & compound mocks
 import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
@@ -49,8 +49,8 @@ contract TestHelper is DSTest {
     User internal jim;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    // balancer/space
-    MockSpaceFactory spaceFactory;
+    // balancer/yield space
+    MockYieldSpaceFactory yieldSpaceFactory;
     MockBalancerVault balancerVault;
 
     // fuse & compound
@@ -58,14 +58,14 @@ contract TestHelper is DSTest {
     MockFuseDirectory fuseDirectory;
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
+    uint256 internal DELTA = 800672247590; // GROWTH_PER_SECOND + 1% = 25.25% APY
 
-    uint16 public MODE = 0;
+    uint8 public MODE = 0;
     address public ORACLE = address(123);
-    uint64 public ISSUANCE_FEE = 0.1e18;
+    uint256 public ISSUANCE_FEE = 0.1e18;
     uint256 public STAKE_SIZE = 1e18;
-    uint48 public MIN_MATURITY = 2 weeks;
-    uint48 public MAX_MATURITY = 14 weeks;
-    uint16 public DEFAULT_LEVEL = 31;
+    uint256 public MIN_MATURITY = 2 weeks;
+    uint256 public MAX_MATURITY = 14 weeks;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
 
@@ -81,37 +81,29 @@ contract TestHelper is DSTest {
         address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
     }
 
-    function setUp() public virtual {
+    function setUp() public {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        uint8 baseDecimals = 18;
-        stake = new MockToken("Stake Token", "ST", baseDecimals);
-        underlying = new MockToken("Dai Token", "DAI", baseDecimals);
-        // Get Target decimal number from the environment
-        string[] memory inputs = new string[](2);
-        inputs[0] = "just";
-        inputs[1] = "_forge_mock_target_decimals";
-        uint8 targetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
-        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", targetDecimals);
-        emit log_named_uint(
-            "Running tests with the Mock Target configured with the following number of decimals",
-            uint256(targetDecimals)
-        );
-
-        reward = new MockToken("Reward Token", "RT", baseDecimals);
+        uint8 tDecimals = 18;
+        stake = new MockToken("Stake Token", "ST", tDecimals);
+        underlying = new MockToken("Dai Token", "DAI", tDecimals);
+        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals);
+        reward = new MockToken("Reward Token", "RT", tDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
+        DELTA = convertToBase(DELTA, target.decimals());
 
         // divider
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
+        divider.setGuard(address(target), 10 * 2**96);
 
         SPONSOR_WINDOW = divider.SPONSOR_WINDOW();
         SETTLEMENT_WINDOW = divider.SETTLEMENT_WINDOW();
 
-        // balancer/space mocks
+        // balancer/yield space mocks
         balancerVault = new MockBalancerVault();
-        spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
+        yieldSpaceFactory = new MockYieldSpaceFactory(address(balancerVault));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
@@ -124,9 +116,9 @@ contract TestHelper is DSTest {
             address(comptroller),
             address(1),
             address(divider),
-            address(masterOracle) // oracle impl
+            address(1)
         );
-        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(1));
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -140,7 +132,7 @@ contract TestHelper is DSTest {
         periphery = new Periphery(
             address(divider),
             address(poolManager),
-            address(spaceFactory),
+            address(yieldSpaceFactory),
             address(balancerVault)
         );
         divider.setPeriphery(address(periphery));
@@ -151,12 +143,11 @@ contract TestHelper is DSTest {
         factory = createFactory(address(target), address(reward));
         address f = periphery.onboardAdapter(address(factory), address(target)); // onboard target through Periphery
         adapter = MockAdapter(f);
-        divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
-        alice = createUser(2**128, 2**128);
-        bob = createUser(2**128, 2**128);
-        jim = createUser(2**128, 2**128);
+        alice = createUser(2**96, 2**96);
+        bob = createUser(2**96, 2**96);
+        jim = createUser(2**96, 2**96);
     }
 
     function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
@@ -179,17 +170,18 @@ contract TestHelper is DSTest {
     }
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
+        MockAdapter adapterImpl = new MockAdapter();
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
+            delta: DELTA,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0
+            mode: MODE
         });
-        someFactory = new MockFactory(address(divider), factoryParams, address(_reward)); // deploy adapter factory
+        someFactory = new MockFactory(address(adapterImpl), address(divider), factoryParams, address(_reward)); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -204,26 +196,13 @@ contract TestHelper is DSTest {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
-    function assertClose(
-        uint256 a,
-        uint256 b,
-        uint256 _tolerance
-    ) public {
-        uint256 diff = a < b ? b - a : a - b;
-        if (diff > _tolerance) {
-            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
-            emit log_named_uint("  Expected", b);
-            emit log_named_uint("  Tolerance", _tolerance);
-            emit log_named_uint("    Actual", a);
-            fail();
-        }
-    }
-
-    function assertClose(uint256 a, uint256 b) public {
+    function assertClose(uint256 actual, uint256 expected) public {
+        if (actual == expected) return DSTest.assertEq(actual, expected);
         uint256 variance = 100;
-        if (b < variance) variance = 10;
-        if (b < variance) variance = 1;
-        assertClose(a, b, variance);
+        if (expected < variance) variance = 10;
+        if (expected < variance) variance = 1;
+        DSTest.assertTrue(actual >= (expected - variance));
+        DSTest.assertTrue(actual <= (expected + variance));
     }
 
     function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
@@ -232,7 +211,7 @@ contract TestHelper is DSTest {
         alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
         alice.doTransfer(zero, address(balancerVault), issued);
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
-        MockToken(adapter.target()).mint(address(balancerVault), tBal);
+        MockToken(adapter.getTarget()).mint(address(balancerVault), tBal);
     }
 
     function convertBase(uint256 decimals) public pure returns (uint256) {
@@ -248,10 +227,10 @@ contract TestHelper is DSTest {
         return amount;
     }
 
-    function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
-        (, uint256 cscale) = adapter.lscale();
+    function calculateAmountToIssue(uint256 tBal, uint256 baseUnit) public returns (uint256 toIssue) {
+        (, uint256 cscale) = adapter._lscale();
         //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
-        toIssue = tBal.fmul(cscale, FixedMath.WAD);
+        toIssue = tBal.fmul(cscale, baseUnit);
     }
 
     function calculateExcess(
@@ -259,19 +238,19 @@ contract TestHelper is DSTest {
         uint48 maturity,
         address claim
     ) public returns (uint256 gap) {
-        uint256 toIssue = calculateAmountToIssue(tBal);
+        uint256 toIssue = calculateAmountToIssue(tBal, Token(claim).BASE_UNIT());
         gap = gClaimManager.excess(address(adapter), maturity, toIssue);
     }
 
     function fuzzWithBounds(
-        uint128 number,
-        uint128 lBound,
-        uint128 uBound
-    ) public returns (uint128) {
+        uint96 number,
+        uint96 lBound,
+        uint96 uBound
+    ) public returns (uint96) {
         return lBound + (number % (uBound - lBound));
     }
 
-    function fuzzWithBounds(uint128 number, uint128 lBound) public returns (uint128) {
-        return lBound + (number % (type(uint128).max - lBound));
+    function fuzzWithBounds(uint96 number, uint96 lBound) public returns (uint96) {
+        return lBound + (number % (type(uint96).max - lBound));
     }
 }

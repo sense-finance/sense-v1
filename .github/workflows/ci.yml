@@ -1,4 +1,4 @@
-name: CI
+name: CI dev
 
 on: [push, pull_request]
 
@@ -6,104 +6,34 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      FORGE_REVISION: 81b9f7dbceb2d2bbf59644fa5dae88eff29fba21
-
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-    - uses: Swatinem/rust-cache@v1
-      with:
-          cache-on-failure: true
 
-    # Try to get forge from cache
-    - name: Cache forge
-      id: cache-forge
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-forge
-      with:
-        path: ~/.cargo/bin/forge
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
-
-    # Try to get just from cache
-    - name: Cache just
-      id: cache-just
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-just
-      with:
-        path: ~/.cargo/bin/just
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
-
-    # Try to get node_modules from cache
-    - uses: actions/cache@v2
-      with:
-        path: 'node_modules'
-        key: ${{ runner.os }}-modules-${{ hashFiles('yarn.lock') }}
-
-    - name: Install npm dependencies
-      run: yarn install
-
-    # If we couldn't get forge from the cache, install it
-    - name: Install forge
-      if: steps.cache-forge.outputs.cache-hit != 'true'
-      run: cargo install --git https://github.com/gakonst/dapptools-rs --rev ${{ env.FORGE_REVISION }} --locked
-
-      # If we couldn't get just from the cache, install it
-    - name: Install just
-      if: steps.cache-just.outputs.cache-hit != 'true'
-      run: cargo install just
+    - name: Install dependencies
+      run: |
+        curl -L https://nixos.org/nix/install | sh
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+        curl https://dapp.tools/install | sh
+        nix-env -f '<nixpkgs>' -iA just
+        yarn install
 
     - name: Run linter
       run: yarn lint
 
-    - name: Run local tests
+    # Tests use dapp
+    - name: Run tests
       run: |
-        yarn turbo-test | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
-
-    - name: Run local tests where the mock Target token uses 8 decimals
-      run: |
-        yarn turbo-test:8-decimal-target | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
-
-    - name: Run mainnet tests
-      run: |
-        yarn turbo-test:mainnet | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+        yarn test
       env:
+        # Only fuzz deeply if we're pushing to main or this is a PR to main:
+        DEEP_FUZZ: ${{ github.ref == 'refs/heads/main' || github.base_ref == 'main' }}
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
-    - name: Check deploy scripts on a local mainnet fork
+    - name: Run deploy scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:prod
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
-
-    - name: Check simulated testchain env scripts on a local mainnet fork
-      run: cd pkg/deployments; yarn deploy:hardhat-fork:sim
-      env:
-        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        MNEMONIC: ${{ secrets.MNEMONIC }}
-
-    - name: Generate gas snapshot
-      run: yarn gas-snapshot
-      env:
-        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        MNEMONIC: ${{ secrets.MNEMONIC }}
-
-    - name: Commit changes
-      if: ${{ github.ref == 'refs/heads/dev' }}
-      uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        commit_message: '[ci] gas snapshot'
-        branch: ${{ github.head_ref }}
-        file_pattern: gas-snapshots/*

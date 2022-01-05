@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
@@ -57,6 +57,7 @@ contract PoolManagerTest is DSTest {
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: address(target),
+            delta: 150,
             oracle: address(mockOracle),
             ifee: 0.1e18,
             stake: address(stake),
@@ -67,7 +68,7 @@ contract PoolManagerTest is DSTest {
         });
 
         mockAdapter.initialize(address(divider), adapterParams, address(reward));
-        // Ping scale to set an lscale
+        // ping scale to set an lscale
         mockAdapter.scale();
         divider.setAdapter(address(mockAdapter), true);
     }
@@ -82,7 +83,7 @@ contract PoolManagerTest is DSTest {
         divider.initSeries(address(mockAdapter), _maturity, address(this));
     }
 
-    function testMainnetDeployPool() public {
+    function testDeployPool() public {
         initSeries();
 
         assertTrue(poolManager.comptroller() == address(0));
@@ -91,7 +92,7 @@ contract PoolManagerTest is DSTest {
         assertTrue(poolManager.comptroller() != address(0));
     }
 
-    function testMainnetAddTarget() public {
+    function testAddTarget() public {
         // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();

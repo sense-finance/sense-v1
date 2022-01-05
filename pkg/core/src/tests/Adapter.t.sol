@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
@@ -14,26 +14,8 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeAdapter is BaseAdapter {
-    constructor(
-        address _divider,
-        address _target,
-        address _oracle,
-        uint64 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint16 _level
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {}
-
-    function scale() external virtual override returns (uint256 _value) {
-        return 100e18;
-    }
-
-    function scaleStored() external view virtual override returns (uint256) {
-        return 100e18;
+    function _scale() internal virtual override returns (uint256 _value) {
+        _value = 100e18;
     }
 
     function underlying() external view override returns (address) {
@@ -62,33 +44,45 @@ contract Adapters is TestHelper {
 
     function testAdapterHasParams() public {
         MockToken target = new MockToken("Compound Dai", "cDAI", 18);
-        MockAdapter adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        MockAdapter adapter = new MockAdapter();
 
-        assertEq(adapter.reward(), address(reward));
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: address(target),
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+
+        adapter.initialize(address(divider), adapterParams);
+
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
-        assertEq(adapter.target(), address(target));
+        (
+            ,
+            address oracle,
+            uint256 delta,
+            uint256 ifee,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm,
+            uint8 mode
+        ) = BaseAdapter(adapter).adapterParams();
+        assertEq(adapter.getTarget(), address(target));
         assertEq(adapter.divider(), address(divider));
-        assertEq(adapter.ifee(), ISSUANCE_FEE);
-        assertEq(adapter.stake(), address(stake));
-        assertEq(adapter.stakeSize(), STAKE_SIZE);
-        assertEq(adapter.minm(), MIN_MATURITY);
-        assertEq(adapter.maxm(), MAX_MATURITY);
-        assertEq(adapter.oracle(), ORACLE);
-        assertEq(adapter.mode(), MODE);
+        assertEq(delta, DELTA);
+        assertEq(ifee, ISSUANCE_FEE);
+        assertEq(stake, address(stake));
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(oracle, ORACLE);
+        assertEq(mode, MODE);
     }
 
     function testScale() public {
@@ -101,21 +95,131 @@ contract Adapters is TestHelper {
         assertEq(adapter.scale(), adapter.INITIAL_VALUE());
     }
 
-    function testCantAddCustomAdapterToDivider() public {
-        FakeAdapter fakeAdapter = new FakeAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL
-        );
+    function testScaleIfEqualDelta() public {
+        uint256[] memory startingScales = new uint256[](4);
+        startingScales[0] = 2e20; // 200 WAD
+        startingScales[1] = 1e18; // 1 WAD
+        startingScales[2] = 1e17; // 0.1 WAD
+        startingScales[3] = 4e15; // 0.004 WAD
+        for (uint256 i = 0; i < startingScales.length; i++) {
+            MockAdapter localAdapter = new MockAdapter();
 
+            BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+                target: address(target),
+                stake: address(stake),
+                oracle: ORACLE,
+                delta: DELTA,
+                ifee: ISSUANCE_FEE,
+                stakeSize: STAKE_SIZE,
+                minm: MIN_MATURITY,
+                maxm: MAX_MATURITY,
+                mode: MODE
+            });
+
+            localAdapter.initialize(address(divider), adapterParams);
+
+            uint256 startingScale = startingScales[i];
+
+            hevm.warp(0);
+            localAdapter.setScale(startingScale);
+            // Set starting scale and store it as lscale
+            localAdapter.scale();
+            (uint256 ltimestamp, uint256 lvalue) = localAdapter._lscale();
+            assertEq(lvalue, startingScale);
+
+            hevm.warp(1 days);
+
+            // 86400 (1 day)
+            uint256 timeDiff = block.timestamp - ltimestamp;
+            // Find the scale value would bring us right up to the acceptable growth per second (delta)?
+            // Equation rationale:
+            //      *  DELTA is the max tolerable percent growth in the scale value per second.
+            //      *  So, we multiply that by the number of seconds that have passed.
+            //      *  And multiply that result by the previous scale value to
+            //         get the max amount of scale that we say can have grown.
+            //         We are functionally doing `maxPercentIncrease * value`, which gets
+            //         us the max *amount* that the value could have increased by.
+            //      *  Then add that max increase to the original value to get the maximum possible.
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
+
+            // Set max scale and ensure calling `scale` with it doesn't revert
+            localAdapter.setScale(maxScale);
+            localAdapter.scale();
+
+            // add 1 more day
+            hevm.warp(2 days);
+            (ltimestamp, lvalue) = localAdapter._lscale();
+            timeDiff = block.timestamp - ltimestamp;
+            maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
+            localAdapter.setScale(maxScale);
+            localAdapter.scale();
+        }
+    }
+
+    function testCantScaleIfMoreThanDelta() public {
+        uint256[] memory startingScales = new uint256[](4);
+        startingScales[0] = 2e20; // 200 WAD
+        startingScales[1] = 1e18; // 1 WAD
+        startingScales[2] = 1e17; // 0.1 WAD
+        startingScales[3] = 4e15; // 0.004 WAD
+        for (uint256 i = 0; i < startingScales.length; i++) {
+            MockAdapter localAdapter = new MockAdapter();
+            BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+                target: address(target),
+                stake: address(stake),
+                oracle: ORACLE,
+                delta: DELTA,
+                ifee: ISSUANCE_FEE,
+                stakeSize: STAKE_SIZE,
+                minm: MIN_MATURITY,
+                maxm: MAX_MATURITY,
+                mode: MODE
+            });
+
+            localAdapter.initialize(address(divider), adapterParams);
+            uint256 startingScale = startingScales[i];
+
+            hevm.warp(0);
+            localAdapter.setScale(startingScale);
+            // Set starting scale and store it as lscale
+            localAdapter.scale();
+            (uint256 ltimestamp, uint256 lvalue) = localAdapter._lscale();
+            assertEq(lvalue, startingScale);
+
+            hevm.warp(1 days);
+
+            // 86400 (1 day)
+            uint256 timeDiff = block.timestamp - ltimestamp;
+            // find the scale value would bring us right up to the acceptable growth per second (delta)?
+            uint256 maxScale = (DELTA * timeDiff).fmul(lvalue, 10**ERC20(localAdapter.getTarget()).decimals()) + lvalue;
+
+            // `maxScale * 1.000001` (adding small numbers wasn't enough to trigger the delta check as they got rounded
+            // away in wdivs)
+            localAdapter.setScale(maxScale.fmul(1000001e12, 10**ERC20(localAdapter.getTarget()).decimals()));
+
+            try localAdapter.scale() {
+                fail();
+            } catch Error(string memory error) {
+                assertEq(error, Errors.InvalidScaleValue);
+            }
+        }
+    }
+
+    function testCantAddCustomAdapterToDivider() public {
+        FakeAdapter fakeAdapter = new FakeAdapter();
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: address(target),
+            stake: address(stake),
+            oracle: ORACLE,
+            delta: DELTA,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE
+        });
+
+        fakeAdapter.initialize(address(divider), adapterParams);
         try fakeAdapter.doSetAdapter(divider, address(fakeAdapter)) {
             fail();
         } catch Error(string memory error) {

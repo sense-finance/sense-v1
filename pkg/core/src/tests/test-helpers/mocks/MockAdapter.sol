@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { CropAdapter } from "../../../adapters/CropAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
-import { Divider } from "../../../Divider.sol";
-import { Claim } from "../../../tokens/Claim.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockTarget.sol";
 
@@ -13,54 +11,25 @@ contract MockAdapter is CropAdapter {
     using FixedMath for uint256;
 
     uint256 internal value;
+    uint128 internal _tilt = 0;
     uint256 public INITIAL_VALUE;
     address public under;
-    uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
-    uint256 public onZeroRedeemCalls;
 
-    struct LScale {
-        // Timestamp of the last scale value
-        uint256 timestamp;
-        // Last scale value
-        uint256 value;
-    }
-
-    /// @notice Cached scale value from the last call to `scale()`
-    LScale public lscale;
-
-    constructor(
-        address _divider,
-        address _target,
-        address _oracle,
-        uint64 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint16 _level,
-        address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {}
-
-    function scale() external virtual override returns (uint256 _value) {
+    function _scale() internal virtual override returns (uint256 _value) {
         if (value > 0) return value;
+        uint8 tDecimals = ERC20(adapterParams.target).decimals();
         if (INITIAL_VALUE == 0) {
-            INITIAL_VALUE = 1e18;
+            if (tDecimals != 18) {
+                INITIAL_VALUE = tDecimals < 18 ? 0.1e18 / (10**(18 - tDecimals)) : 0.1e18 * (10**(tDecimals - 18));
+            } else {
+                INITIAL_VALUE = 1e18;
+            }
         }
-        uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)), FixedMath.WAD);
-        uint256 timeDiff = block.timestamp - lscale.timestamp;
-        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
-
-        if (_value != lscale.value) {
-            // update value only if different than the previous
-            lscale.value = _value;
-            lscale.timestamp = block.timestamp;
-        }
-    }
-
-    function scaleStored() external view virtual override returns (uint256 _value) {
-        return lscale.value;
+        uint256 gps = adapterParams.delta.fmul(99 * (10**(tDecimals - 2)), 10**tDecimals); // delta - 1%;
+        uint256 timeDiff = block.timestamp - _lscale.timestamp;
+        _value = _lscale.value > 0
+            ? (gps * timeDiff).fmul(_lscale.value, 10**tDecimals) + _lscale.value
+            : INITIAL_VALUE;
     }
 
     function _claimReward() internal virtual override {
@@ -68,18 +37,20 @@ contract MockAdapter is CropAdapter {
     }
 
     function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {
-        MockTarget target = MockTarget(target);
+        MockTarget target = MockTarget(adapterParams.target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
-        uint256 mintAmount = uBal.fdivUp(lscale.value, FixedMath.WAD);
+        uint256 tBase = 10**target.decimals();
+        uint256 mintAmount = uBal.fdivUp(_lscale.value, tBase);
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
-        MockTarget target = MockTarget(target);
+        MockTarget target = MockTarget(adapterParams.target);
         target.transferFrom(msg.sender, address(this), tBal); // pull target
-        uint256 mintAmount = tBal.fmul(lscale.value, FixedMath.WAD);
+        uint256 tBase = 10**target.decimals();
+        uint256 mintAmount = tBal.fmul(_lscale.value, tBase);
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
         return mintAmount;
     }
@@ -89,39 +60,26 @@ contract MockAdapter is CropAdapter {
     }
 
     function underlying() external view override returns (address) {
-        return MockTarget(target).underlying();
+        return MockTarget(adapterParams.target).underlying();
     }
 
-    function onZeroRedeem(
-        uint256, /* uBal */
-        uint256, /* mscale */
-        uint256, /* maxscale */
-        uint256 /* tBal */
-    ) public virtual override {
-        onZeroRedeemCalls++;
+    function tilt() external virtual override returns (uint128) {
+        return _tilt;
     }
 
     function setScale(uint256 _value) external {
         value = _value;
     }
 
-    function doInitSeries(uint48 maturity, address sponsor) external {
-        Divider(divider).initSeries(address(this), maturity, sponsor);
+    function setOracle(address _oracle) external {
+        adapterParams.oracle = _oracle;
     }
 
-    function doIssue(uint48 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(zero).transfer(msg.sender, MockToken(zero).balanceOf(address(this)));
-        MockToken(claim).transfer(msg.sender, MockToken(claim).balanceOf(address(this)));
+    function setTilt(uint128 _value) external {
+        _tilt = _value;
     }
 
-    function doCombine(uint48 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
-    }
-
-    function doRedeemZero(uint48 maturity, uint256 uBal) external {
-        Divider(divider).redeemZero(address(this), maturity, uBal);
+    function setMode(uint8 _mode) external {
+        adapterParams.mode = _mode;
     }
 }

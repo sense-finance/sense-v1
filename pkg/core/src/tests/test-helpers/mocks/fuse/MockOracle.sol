@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 import { PriceOracle, CTokenLike } from "@sense-finance/v1-fuse/src/external/PriceOracle.sol";
 
@@ -16,19 +16,5 @@ contract MockOracle is PriceOracle {
 
     function setPrice(uint256 price_) external {
         _price = price_;
-    }
-
-    function initialize(
-        address[] memory underlyings,
-        PriceOracle[] memory _oracles,
-        PriceOracle _defaultOracle,
-        address _admin,
-        bool _canAdminOverwrite
-    ) external {
-        return;
-    }
-
-    function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external {
-        return;
     }
 }

@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-utils",
-    "version": "0.4.0-beta",
+    "version": "0.2.2",
     "description": "Sense V1 Contract Utils",
     "license": "UNLICENSED",
     "repository": {

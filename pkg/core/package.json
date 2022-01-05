@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-core",
-    "version": "0.4.0-beta",
+    "version": "0.2.2",
     "description": "Sense V1 Core Contracts",
     "license": "UNLICENSED",
     "repository": {
@@ -16,13 +16,10 @@
         "build": "just build",
         "debug": "just debug",
         "test": "just test-local",
-        "turbo-test": "just turbo-test-local",
-        "turbo-test:8-decimal-target": "just turbo-test-local-8-decimal-target",
-        "turbo-test:mainnet": "just turbo-test-mainnet",
+        "test:mainnet": "just test-mainnet",
         "testcov": "just test-local --coverage",
         "lint": "solhint -f table src/**/*.sol",
-        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
-        "gas-snapshot": "just gas-snapshot"
+        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix"
     },
     "dependencies": {
         "@openzeppelin/contracts": "4.3.2",

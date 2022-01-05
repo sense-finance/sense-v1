@@ -3,16 +3,10 @@ const fs = require("fs");
 const MASTER_ORACLE_IMPL = "0xb3c8ee7309be658c186f986388c2377da436d8fb";
 const FUSE_CERC20_IMPL = "0x67db14e73c2dce786b5bbbfa4d010deab4bbfcf9";
 const RARI_MASTER_ORACLE = "0x1887118E49e0F4A78Bd71B792a49dE03504A764D";
-const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-
-  // for Space
-  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("31622400"));
-  const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
-  const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
 
   // IMPORTANT: this must be run *first*, so that it has the same address across deployments
   // (has the same deployment address and nonce)
@@ -26,7 +20,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const versioning = await ethers.getContract("Versioning");
   console.log("Deploying Sense version", await versioning.version());
 
-  console.log("Deploy a token handler for the Divider will use");
+  console.log("Deploy a token hanlder for the Divider will use");
   const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
     args: [],
@@ -45,6 +39,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   const divider = await ethers.getContract("Divider");
   const tokenHandler = await ethers.getContract("TokenHandler");
+
+  // console.log("Trust the dev address on the divider");
+  // await divider.setIsTrusted(dev, true).then(tx => tx.wait());
 
   console.log("Add the divider to the asset deployer");
   await (await tokenHandler.init(divider.address)).wait();
@@ -89,28 +86,23 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
 
-  console.log("Deploy Space & Space dependencies");
-  const { address: authorizerAddress } = await deploy("Authorizer", {
+  console.log("Deploy mocked balancer/yield space dependencies");
+  const { address: mockBalancerVault } = await deploy("MockBalancerVault", {
     from: deployer,
-    args: [deployer],
-    log: true,
-  });
-  const { address: balancerVaultAddress } = await deploy("Vault", {
-    from: deployer,
-    args: [authorizerAddress, WETH, 0, 0],
+    args: [],
     log: true,
   });
 
-  const { address: spaceFactory } = await deploy("SpaceFactory", {
+  const { address: mockYieldSpaceFactory } = await deploy("MockYieldSpaceFactory", {
     from: deployer,
-    args: [balancerVaultAddress, divider.address, TS, G1, G2],
+    args: [mockBalancerVault],
     log: true,
   });
 
   console.log("Deploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [divider.address, poolManagerAddress, spaceFactory, balancerVaultAddress],
+    args: [divider.address, poolManagerAddress, mockYieldSpaceFactory, mockBalancerVault],
     log: true,
   });
 

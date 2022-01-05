@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 import { Hevm } from "./Hevm.sol";
 import { MockToken } from "./mocks/MockToken.sol";
-import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { Periphery } from "../../Periphery.sol";
 import { GClaimManager } from "../../modules/GClaimManager.sol";
@@ -132,8 +131,8 @@ contract User {
         address adapter,
         uint48 maturity,
         uint256 balance
-    ) public returns (uint256) {
-        return divider.combine(adapter, maturity, balance);
+    ) public {
+        divider.combine(adapter, maturity, balance);
     }
 
     function doBackfillScale(
@@ -150,8 +149,8 @@ contract User {
         address adapter,
         uint48 maturity,
         uint256 balance
-    ) public returns (uint256 redeemed) {
-        redeemed = divider.redeemZero(adapter, maturity, balance);
+    ) public {
+        divider.redeemZero(adapter, maturity, balance);
     }
 
     function doCollect(address claim) public returns (uint256 collected) {
@@ -195,19 +194,17 @@ contract User {
     function doSwapTargetForClaims(
         address adapter,
         uint48 maturity,
-        uint256 balance,
-        uint256 minAccepted
+        uint256 balance
     ) public {
-        periphery.swapTargetForClaims(adapter, maturity, balance, minAccepted);
+        periphery.swapTargetForClaims(adapter, maturity, balance);
     }
 
     function doSwapUnderlyingForClaims(
         address adapter,
         uint48 maturity,
-        uint256 balance,
-        uint256 minAccepted
+        uint256 balance
     ) public {
-        periphery.swapUnderlyingForClaims(adapter, maturity, balance, minAccepted);
+        periphery.swapUnderlyingForClaims(adapter, maturity, balance);
     }
 
     function doSwapZerosForTarget(
@@ -249,31 +246,8 @@ contract User {
         uint48 maturity,
         uint256 tBal,
         uint8 mode
-    )
-        public
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
-    }
-
-    function doAddLiquidityFromUnderlying(
-        address adapter,
-        uint48 maturity,
-        uint256 tBal,
-        uint8 mode
-    )
-        public
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode);
+    ) public {
+        periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
     }
 
     function doRemoveLiquidityToTarget(
@@ -282,69 +256,7 @@ contract User {
         uint256 tBal,
         uint256[] memory minAmountsOut,
         uint256 minAmount
-    ) public returns (uint256) {
-        return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
-    }
-
-    function doMigrateLiquidity(
-        address srcAdapter,
-        address dstAdapter,
-        uint48 srcMaturity,
-        uint48 dstMaturity,
-        uint256 lpBal,
-        uint256[] memory minAmountsOut,
-        uint256 minAccepted,
-        uint8 mode
-    )
-        public
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return
-            periphery.migrateLiquidity(
-                srcAdapter,
-                dstAdapter,
-                srcMaturity,
-                dstMaturity,
-                lpBal,
-                minAmountsOut,
-                minAccepted,
-                mode
-            );
-    }
-
-    function doAdapterInitSeries(
-        address adapter,
-        uint48 maturity,
-        address sponsor
     ) public {
-        MockAdapter(adapter).doInitSeries(maturity, sponsor);
-    }
-
-    function doAdapterIssue(
-        address adapter,
-        uint48 maturity,
-        uint256 balance
-    ) public {
-        MockAdapter(adapter).doIssue(maturity, balance);
-    }
-
-    function doAdapterCombine(
-        address adapter,
-        uint48 maturity,
-        uint256 balance
-    ) public returns (uint256) {
-        return MockAdapter(adapter).doCombine(maturity, balance);
-    }
-
-    function doAdapterRedeemZero(
-        address adapter,
-        uint48 maturity,
-        uint256 balance
-    ) public {
-        divider.combine(adapter, maturity, balance);
+        periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.11;
+pragma solidity ^0.8.6;
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
@@ -9,7 +9,7 @@ import { Periphery } from "../Periphery.sol";
 import { Divider, TokenHandler } from "../Divider.sol";
 import { WstETHAdapter } from "../adapters/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+//import { LFactory } from "../adapters/lido/LFactory.sol";
 
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Assets } from "./test-helpers/Assets.sol";
@@ -44,20 +44,17 @@ interface WstETHInterface {
     function getWstETHByStETH(uint256 _stETHAmount) external returns (uint256);
 }
 
-interface StEthPriceFeed {
-    function safe_price_value() external returns (uint256);
-}
-
 contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     WstETHAdapter adapter;
     Divider internal divider;
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
 
-    uint64 public constant ISSUANCE_FEE = 0.01e18;
+    uint256 public constant DELTA = 150;
+    uint256 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint48 public constant MIN_MATURITY = 2 weeks;
-    uint48 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant MIN_MATURITY = 2 weeks;
+    uint256 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         address[] memory assets = new address[](1);
@@ -67,43 +64,38 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
-        adapter = new WstETHAdapter(
-            address(divider),
-            Assets.WSTETH,
-            Assets.RARI_ORACLE,
-            ISSUANCE_FEE,
-            Assets.DAI,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            0,
-            0
-        ); // wstETH adapter
-    }
-
-    function sendEther(address to, uint256 amt) external returns (bool) {
-        (bool success, ) = to.call{ value: amt }("");
-        return success;
+        adapter = new WstETHAdapter(); // wstETH adapter
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: Assets.WSTETH,
+            delta: DELTA,
+            oracle: Assets.RARI_ORACLE,
+            ifee: ISSUANCE_FEE,
+            stake: Assets.DAI,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: 0
+        });
+        adapter.initialize(address(divider), adapterParams);
     }
 }
 
 contract WstETHAdapters is WstETHAdapterTestHelper {
     using FixedMath for uint256;
 
-    function testMainnetWstETHAdapterScale() public {
-        uint256 ethStEth = StEthPriceFeed(Assets.STETHPRICEFEED).safe_price_value();
-        uint256 wstETHstETH = WstETHInterface(Assets.WSTETH).stEthPerToken();
+    function testWstETHAdapterScale() public {
+        WstETHInterface wstETH = WstETHInterface(Assets.WSTETH);
 
-        uint256 scale = ethStEth.fmul(wstETHstETH, FixedMath.WAD);
+        uint256 scale = wstETH.stEthPerToken();
         assertEq(adapter.scale(), scale);
     }
 
-    function testMainnetGetUnderlyingPrice() public {
+    function testGetUnderlyingPrice() public {
         uint256 price = 1e18;
         assertEq(adapter.getUnderlyingPrice(), price);
     }
 
-    function testMainnetUnwrapTarget() public {
+    function testUnwrapTarget() public {
         uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
         ERC20(Assets.WSTETH).approve(address(adapter), wstETHBalanceBefore);
@@ -116,7 +108,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         assertEq(wethBalanceBefore + minDy, wethBalanceAfter);
     }
 
-    function testMainnetWrapUnderlying() public {
+    function testWrapUnderlying() public {
         uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
 
@@ -129,10 +121,5 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
 
         assertEq(wethBalanceAfter, 0);
         assertEq(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
-    }
-
-    function testMainnetCantSendEtherIfNotEligible() public {
-        Hevm(HEVM_ADDRESS).expectRevert(abi.encode(Errors.SenderNotEligible));
-        payable(address(adapter)).call{ value: 1 ether }("");
     }
 }

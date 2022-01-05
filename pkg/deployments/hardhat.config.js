@@ -14,7 +14,7 @@ const utc = require("dayjs/plugin/utc");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 
 // For dev scenarios ------------
-global.TARGETS = ["cDAI", "cETH", "cUSDT", "cUSDC", "f6-DAI", "f8-DAI"];
+global.TARGETS = ["cDAI", "cETH", "cUSDT", "f6-DAI", "f8-DAI"];
 global.ADAPTERS = {};
 
 dayjs.extend(weekOfYear);
@@ -23,14 +23,14 @@ global.SERIES_MATURITIES = [
   // beginning of the week falling between 0 and 1 weeks from now
   dayjs
     .utc()
-    .week(dayjs().week() + 1)
+    .week(dayjs().week() + 2)
     .startOf("week")
     .add(1, "day")
     .unix(),
   // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
-    .week(dayjs().week() + 2)
+    .week(dayjs().week() + 3)
     .startOf("week")
     .add(1, "day")
     .unix(),
@@ -96,20 +96,13 @@ module.exports = {
     sources: "src/",
   },
   solidity: {
-    compilers: [
-      {
-        version: "0.8.11",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1000,
-          },
-        },
+    version: "0.8.6",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
       },
-      {
-        version: "0.7.5",
-      },
-    ],
+    },
   },
   contractSizer: {
     alphaSort: true,

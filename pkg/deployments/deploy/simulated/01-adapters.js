@@ -23,6 +23,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Mint the deployer a balance of 1,000,000 STAKE");
   await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
+  console.log("Deploy a mocked Adapter implementation");
+  const { address: mockAdapterImplAddress } = await deploy("MockAdapter", {
+    from: deployer,
+    args: [],
+    log: true,
+  });
+
   console.log("Deploy a simulated airdrop reward token named Airdrop");
   await deploy("Airdrop", {
     contract: "Token",
@@ -34,18 +41,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const airdrop = await ethers.getContract("Airdrop");
 
   console.log("Deploy a mocked Factory with mocked dependencies");
+
   const ISSUANCE_FEE = ethers.utils.parseEther("0.01");
   const STAKE_SIZE = ethers.utils.parseEther("1");
   const MIN_MATURITY = "0";
   const MAX_MATURITY = "4838400"; // 4 weeks;
   const ORACLE = "0x6D2299C48a8dD07a872FDd0F8233924872Ad1071";
   const MODE = 1; // 1 for weekly
-  const TILT = 0;
-  // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
-  const factoryParams = [ORACLE, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE, TILT];
+  const DELTA = ethers.utils.parseEther("1");
+  const factoryParams = [ORACLE, DELTA, ISSUANCE_FEE, stake.address, STAKE_SIZE, MIN_MATURITY, MAX_MATURITY, MODE];
   const { address: mockFactoryAddress } = await deploy("MockFactory", {
     from: deployer,
-    args: [divider.address, factoryParams, airdrop.address],
+    args: [mockAdapterImplAddress, divider.address, factoryParams, airdrop.address],
     log: true,
   });
 
@@ -60,12 +67,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("Deploying Targets & Adapters");
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
-    const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
-    const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`;
     const { address: mockUnderlyingAddress } = await deploy(targetName, {
       contract: "MockToken",
       from: deployer,
-      args: [underlyingName, underlyingName, 18],
+      args: [`UNDERLYING-${targetName}`, `UNDERLYING-${targetName}`, 18],
       log: true,
     });
 
@@ -78,8 +83,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
     const target = await ethers.getContract(targetName);
 
-    console.log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
-    await target.mint(deployer, ethers.utils.parseEther("10000000")).then(tx => tx.wait());
+    console.log(`Mint the deployer a balance of 1,000,000 ${targetName}`);
+    await target.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();
@@ -92,8 +97,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
     await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
 
-    console.log(`Set ${targetName} adapter issuance cap to max uint so we don't have to worry about it`);
-    await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
+    console.log(`Set ${targetName} issuance cap to max uint so we don't have to worry about it`);
+    await divider.setGuard(target.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
     console.log(`Can call scale value`);
     const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
@@ -104,21 +109,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   }
 
   const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
-
-  if (!process.env.CI) {
-    const currentTag = await new Promise((resolve, reject) => {
-      exec("git describe --abbrev=0", (error, stdout, stderr) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(stdout ? stdout : stderr);
-      });
+  const currentTag = await new Promise((resolve, reject) => {
+    exec("git describe --abbrev=0", (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(stdout ? stdout : stderr);
     });
+  });
 
-    const deploymentDir = `./adapter-deployments/${currentTag.trim().replace(/(\r\n|\n|\r)/gm, "")}/`;
-    fs.mkdirSync(deploymentDir, { recursive: true });
-    fs.writeFileSync(`./${deploymentDir}/adapters.json`, JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }));
-  }
+  const deploymentDir = `./adapter-deployments/${currentTag.trim().replace(/(\r\n|\n|\r)/gm, "")}/`;
+  fs.mkdirSync(deploymentDir, { recursive: true });
+  fs.writeFileSync(`./${deploymentDir}/adapters.json`, JSON.stringify({ addresses: global.ADAPTERS, adapterAbi }));
 };
 
 module.exports.tags = ["simulated:adapters", "scenario:simulated"];
