@@ -929,8 +929,7 @@ contract Dividers is TestHelper {
 
         // Can collect normally
         hevm.warp(block.timestamp + 1 days);
-        uint256 tBal = 100e18;
-        bob.doIssue(address(adapter), maturity, tBal);
+        bob.doIssue(address(adapter), maturity, 100e18);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
@@ -952,9 +951,11 @@ contract Dividers is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         collected = bob.doCollect(claim);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
-        (, , , , , mscale, , , ) = divider.series(address(adapter), maturity);
-        uint256 redeemed = cBalanceAfter.fdiv(mscale, FixedMath.WAD).fmul(0.1e18, FixedMath.WAD);
-        assertClose(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
+        uint256 maxscale;
+        (, , , , , mscale, maxscale, ,) = divider.series(address(adapter), maturity);
+        // uint256 redeemed = cBalanceAfter.fdivUp(mscale).fmul(0.1e18);
+        uint256 redeemed = cBalanceAfter * FixedMath.WAD / maxscale - cBalanceAfter * (FixedMath.WAD - tilt) / mscale;
+        assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
         assertClose(adapter.tBalance(address(bob)), 0);
         collected = bob.doCollect(claim); // try collecting after redemption
         assertEq(collected, 0);
