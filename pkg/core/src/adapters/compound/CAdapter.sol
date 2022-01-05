@@ -88,17 +88,6 @@ contract CAdapter is CropAdapter {
     function scale() external override returns (uint256) {
         uint256 uDecimals = CTokenInterface(underlying()).decimals();
         uint256 exRate = CTokenInterface(adapterParams.target).exchangeRateCurrent();
-        // From the Compound docs:
-        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
-        //
-        // The equation to norm an asset to 18 decimals is:
-        // `num * 10**(18 - decimals)`
-        //
-        // So, when we try to norm exRate to 18 decimals, we get the following:
-        // `exRate * 10**(18 - exRateDecimals)`
-        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
-        // -> `exRate * 10**(8 - uDecimals)`
-        // -> `exRate / 10**(uDecimals - 8)`
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 

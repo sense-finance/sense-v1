@@ -37,8 +37,6 @@ interface ComptrollerLike {
     ) external returns (uint256);
 
     function _acceptAdmin() external returns (uint256);
-
-    function cTokensByUnderlying(address underlying) external returns (address);
 }
 
 interface MasterOracleLike {
@@ -90,16 +88,14 @@ contract PoolManager is Trust {
 
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
-
     /// @notice Series Status: adapter -> maturity -> series status (zeros/lp shares)
     mapping(address => mapping(uint256 => SeriesStatus)) public sStatus;
-
     /// @notice Series Pools: adapter -> maturity -> AMM pool
     mapping(address => mapping(uint256 => address)) public sPools;
 
-    event ParamsSet(bytes32 indexed what, AssetParams data);
+    event SetParams(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address target, address cTarget);
+    event TargetAdded(address target);
     event SeriesAdded(address zero, address lpToken);
     event SeriesQueued(address adapter, uint48 maturity, address pool);
 
@@ -128,7 +124,7 @@ contract PoolManager is Trust {
         uint256 liqIncentive,
         address fallbackOracle
     ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
-        require(comptroller == address(0), Errors.PoolAlreadyDeployed);
+        require(comptroller == address(0), "Pool already deployed");
 
         masterOracle = Clones.cloneDeterministic(oracleImpl, Bytes32AddressLib.fillLast12Bytes(address(this)));
         MasterOracleLike(masterOracle).initialize(
@@ -142,23 +138,23 @@ contract PoolManager is Trust {
         (_poolIndex, _comptroller) = FuseDirectoryLike(fuseDirectory).deployPool(
             name,
             comptrollerImpl,
-            false, // `whitelist` is always false
+            false, // whitelist is always false
             closeFactor,
             liqIncentive,
             masterOracle
         );
 
         uint256 err = ComptrollerLike(_comptroller)._acceptAdmin();
-        require(err == 0, Errors.FailedBecomeAdmin);
+        require(err == 0, "Failed to become admin");
         comptroller = _comptroller;
 
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
-    function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
-        require(comptroller != address(0), Errors.PoolNotDeployed);
-        require(!tInits[target], Errors.TargetExists);
-        require(targetParams.irModel != address(0), Errors.TargetParamNotSet);
+    function addTarget(address target, address adapter) external requiresTrust {
+        require(comptroller != address(0), "Pool not yet deployed");
+        require(!tInits[target], "Target already added");
+        require(targetParams.irModel != address(0), "Target asset params not set");
 
         address underlying = Adapter(adapter).underlying();
 
@@ -188,16 +184,16 @@ contract PoolManager is Trust {
         );
 
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
-        require(err == 0, Errors.FailedAddMarket);
+        require(err == 0, "Failed to add market");
 
-        cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
+        // TODO: get actual cTarget address
 
         tInits[target] = true;
-        emit TargetAdded(target, cTarget);
+        emit TargetAdded(target);
     }
 
-    /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
-    /// @dev called by the Periphery, which will know which pool address to set for this Series
+    /// @notice queues a set of (Zero,LPShare) for Fuse pool once the TWAP is ready
+    /// @dev called by the periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
         uint48 maturity,
@@ -205,12 +201,12 @@ contract PoolManager is Trust {
     ) external requiresTrust {
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
-        require(comptroller != address(0), Errors.PoolNotDeployed);
+        require(comptroller != address(0), "Fuse pool not yet deployed");
         require(zero != address(0), Errors.SeriesDoesntExists);
         require(sStatus[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
 
         address target = Adapter(adapter).getTarget();
-        require(tInits[target], Errors.TargetNotInFuse);
+        require(tInits[target], "Target for this Series not yet added to Fuse");
 
         sStatus[adapter][maturity] = SeriesStatus.QUEUED;
         sPools[adapter][maturity] = pool;
@@ -221,7 +217,7 @@ contract PoolManager is Trust {
     /// @notice open method to add queued Zeros and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint48 maturity) external {
-        require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
+        require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, "Series must be queued");
 
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
@@ -256,7 +252,7 @@ contract PoolManager is Trust {
             constructorDataZero,
             zeroParams.collateralFactor
         );
-        require(errZero == 0, Errors.FailedAddZeroMarket);
+        require(errZero == 0, "Failed to add Zero market");
 
         // LP Share pool token
         bytes memory constructorDataLpToken = abi.encodePacked(
@@ -276,7 +272,7 @@ contract PoolManager is Trust {
             constructorDataLpToken,
             lpTokenParams.collateralFactor
         );
-        require(errLpToken == 0, Errors.FailedAddLPMarket);
+        require(errLpToken == 0, "Failed to add LP market");
 
         sStatus[adapter][maturity] = SeriesStatus.ADDED;
 
@@ -288,6 +284,6 @@ contract PoolManager is Trust {
         else if (what == "LP_TOKEN_PARAMS") lpTokenParams = data;
         else if (what == "TARGET_PARAMS") targetParams = data;
         else revert("Invalid param");
-        emit ParamsSet(what, data);
+        emit SetParams(what, data);
     }
 }
