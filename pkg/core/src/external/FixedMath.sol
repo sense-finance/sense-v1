@@ -31,16 +31,16 @@ library FixedMath {
         uint256 y,
         uint256 baseUnit
     ) internal pure returns (uint256 z) {
-        z = x * y + baseUnit - 1; // Rounds up.  So (again imagining 2 decimal places):
+        z = x * y + (baseUnit - 1); // Rounds up.  So (again imagining 2 decimal places):
         unchecked {
-            z /= (baseUnit);
+            z /= baseUnit;
         } // 383 (3.83) * 235 (2.35) -> 90005 (9.0005), + 99 (0.0099) -> 90104, / 100 -> 901 (9.01).
     }
 
     function fmulUp(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x * y + WAD - 1;
         unchecked {
-            z /= (WAD);
+            z /= WAD;
         }
     }
 

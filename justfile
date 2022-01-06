@@ -22,7 +22,7 @@ DAPP_BUILD_OPTIMIZE := "1"
 ## forge testing configuration
 DAPP_COVERAGE       := "1"
 # when developing we only want to fuzz briefly
-DAPP_TEST_FUZZ_RUNS := "5"
+DAPP_TEST_FUZZ_RUNS := "100"
 # user with DAI
 DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 DAPP_REMAPPINGS   := remappings-from-pkg-deps

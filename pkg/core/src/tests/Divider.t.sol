@@ -609,6 +609,9 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzIssueMultipleTimes(uint128 bal) public {
+        // if issuing multiple times with bal = 0, the 2nd issue will fail on _reweightLScale because
+        // it will attempt to do a division by 0.
+        bal = fuzzWithBounds(bal, 1000);
         uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1107,8 +1110,11 @@ contract Dividers is TestHelper {
         collected = bob.doCollect(claim);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
         uint256 maxscale;
-        (, , , , , mscale, maxscale, ,) = divider.series(address(adapter), maturity);
-        uint256 redeemed = cBalanceAfter * FixedMath.WAD / maxscale - cBalanceAfter * (FixedMath.WAD - tilt) / mscale;
+        (, , , , , mscale, maxscale, , ) = divider.series(address(adapter), maturity);
+        uint256 redeemed = (cBalanceAfter * FixedMath.WAD) /
+            maxscale -
+            (cBalanceAfter * (FixedMath.WAD - tilt)) /
+            mscale;
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
         assertClose(adapter.tBalance(address(bob)), 0);
         collected = bob.doCollect(claim); // try collecting after redemption

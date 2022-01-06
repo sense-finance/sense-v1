@@ -219,7 +219,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
-            : _reweightLScale(adapter, maturity, Claim(series[adapter][maturity].claim).balanceOf(msg.sender), uBal, msg.sender, scale);
+            : _reweightLScale(
+                adapter,
+                maturity,
+                Claim(series[adapter][maturity].claim).balanceOf(msg.sender),
+                uBal,
+                msg.sender,
+                scale
+            );
 
         // Mint equal amounts of Zeros and Claims
         Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
@@ -257,7 +264,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // If it's not settled, then Claims won't be burned automatically in `_collect()`
             Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
             // If collect has been restricted, use the initial scale, otherwise use the current scale
-            cscale = level.collectDisabled() ? series[adapter][maturity].iscale : lscales[adapter][maturity][msg.sender];
+            cscale = level.collectDisabled()
+                ? series[adapter][maturity].iscale
+                : lscales[adapter][maturity][msg.sender];
         }
 
         // Convert from units of Underlying to units of Target
@@ -305,7 +314,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         if (!level.redeemZeroHookDisabled()) {
-            Adapter(adapter).onZeroRedeem(uBal, series[adapter][maturity].mscale, series[adapter][maturity].maxscale, tBal);
+            Adapter(adapter).onZeroRedeem(
+                uBal,
+                series[adapter][maturity].mscale,
+                series[adapter][maturity].maxscale,
+                tBal
+            );
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
@@ -433,7 +447,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint48 maturity,
         uint256 uBal
     ) internal {
-
         // Burn the users's Claims
         Claim(series[adapter][maturity].claim).burn(usr, uBal);
 
@@ -446,7 +459,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
         // calculate how much Claims have left
         if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
-            tBal = (uBal * FixedMath.WAD) / series[adapter][maturity].maxscale - (uBal * zShare) / series[adapter][maturity].mscale;
+            tBal =
+                (uBal * FixedMath.WAD) /
+                series[adapter][maturity].maxscale -
+                (uBal * zShare) /
+                series[adapter][maturity].mscale;
 
             ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
         }
@@ -527,19 +544,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         if (mscale > 0) {
+            Series memory _series = series[adapter][maturity];
             // Set the maturity scale for the Series (needed for `redeem` methods)
             series[adapter][maturity].mscale = mscale;
-            if (mscale > series[adapter][maturity].maxscale) {
+            if (mscale > _series.maxscale) {
                 series[adapter][maturity].maxscale = mscale;
             }
 
             (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
             // Determine where the stake should go depending on where we are relative to the maturity date
-            address stakeDst = adapters[adapter] ? cup : series[adapter][maturity].sponsor;
-            uint256 reward = series[adapter][maturity].reward;
-
-            ERC20(target).safeTransferFrom(adapter, cup, reward);
+            address stakeDst = adapters[adapter] ? cup : _series.sponsor;
+            ERC20(target).safeTransferFrom(adapter, cup, _series.reward);
             ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);
         }
 
@@ -625,8 +641,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address[] _usrs,
         uint256[] _lscales
     );
-    event GuardChanged(address indexed adapter, uint256 indexed cap);
-    event AdapterChanged(address indexed adapter, uint256 indexed id, bool isOn);
+    event GuardChanged(address indexed adapter, uint256 cap);
+    event AdapterChanged(address indexed adapter, uint256 indexed id, bool indexed isOn);
     event PeripheryChanged(address indexed periphery);
 
     /// @notice Series lifecycle

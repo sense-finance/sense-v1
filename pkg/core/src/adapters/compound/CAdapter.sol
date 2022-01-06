@@ -72,6 +72,8 @@ contract CAdapter is CropAdapter {
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
+    address public override underlying;
+
     constructor(
         address _divider,
         address _target,
@@ -87,13 +89,13 @@ contract CAdapter is CropAdapter {
         address _reward
     ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {
         // Approve underlying contract to pull target (used on wrapUnderlying())
-        ERC20 u = ERC20(_isCETH(_target) ? WETH : CTokenInterface(_target).underlying());
-        u.safeApprove(_target, type(uint256).max);
+        underlying = _isCETH(_target) ? WETH : CTokenInterface(_target).underlying();
+        ERC20(underlying).safeApprove(_target, type(uint256).max);
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function scale() external override returns (uint256) {
-        uint256 uDecimals = CTokenInterface(underlying()).decimals();
+        uint256 uDecimals = CTokenInterface(underlying).decimals();
         uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
         // From the Compound docs:
         // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
@@ -110,7 +112,7 @@ contract CAdapter is CropAdapter {
     }
 
     function scaleStored() external view override returns (uint256) {
-        uint256 uDecimals = CTokenInterface(underlying()).decimals();
+        uint256 uDecimals = CTokenInterface(underlying).decimals();
         uint256 exRate = CTokenInterface(target).exchangeRateStored();
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
@@ -119,17 +121,13 @@ contract CAdapter is CropAdapter {
         ComptrollerInterface(COMPTROLLER).claimComp(address(this));
     }
 
-    function underlying() public view override returns (address) {
-        return _isCETH(target) ? WETH : CTokenInterface(target).underlying();
-    }
-
     function getUnderlyingPrice() external view override returns (uint256) {
-        return _isCETH(target) ? 1e18 : PriceOracleInterface(oracle).price(CTokenInterface(target).underlying());
+        return _isCETH(target) ? 1e18 : PriceOracleInterface(oracle).price(underlying);
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256) {
         bool isCETH = _isCETH(target);
-        ERC20 u = ERC20(underlying());
+        ERC20 u = ERC20(underlying);
         ERC20 target = ERC20(target);
 
         u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
@@ -151,7 +149,7 @@ contract CAdapter is CropAdapter {
     }
 
     function unwrapTarget(uint256 tBal) external override returns (uint256) {
-        ERC20 u = ERC20(underlying());
+        ERC20 u = ERC20(underlying);
         bool isCETH = _isCETH(address(target));
         ERC20 target = ERC20(target);
         target.safeTransferFrom(msg.sender, address(this), tBal); // pull target

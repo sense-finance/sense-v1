@@ -99,9 +99,9 @@ contract PoolManager is Trust {
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address target, address cTarget);
-    event SeriesAdded(address zero, address lpToken);
-    event SeriesQueued(address adapter, uint48 maturity, address pool);
+    event TargetAdded(address indexed target, address indexed cTarget);
+    event SeriesAdded(address indexed zero, address indexed lpToken);
+    event SeriesQueued(address indexed adapter, uint48 indexed maturity, address indexed pool);
 
     constructor(
         address _fuseDirectory,

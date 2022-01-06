@@ -15,8 +15,6 @@ library Errors {
     string constant FailedAddZeroMarket = "Failed to add Zero market";
     string constant FailedAddLPMarket = "Failed to add LP market";
     string constant FlashCallbackFailed = "FlashLender: Callback failed";
-    string constant FlashRepayFailed = "FlashLender: Repay failed";
-    string constant FlashTransferFailed = "FlashLender: Transfer failed";
     string constant FlashUntrustedBorrower = "FlashBorrower: Untrusted lender";
     string constant FlashUntrustedLoanInitiator = "FlashBorrower: Untrusted loan initiator";
     string constant UnexpectedSwapAmount = "Unexpected swap amount";
