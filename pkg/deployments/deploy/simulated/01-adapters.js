@@ -86,11 +86,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
     const target = await ethers.getContract(targetName);
 
+    await new Promise(res => setTimeout(res, 500));
+
     console.log("Give the multi minter permission on Target");
     await (await target.setIsTrusted(multiMint.address, true)).wait();
 
     console.log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
-    multiMint.mint([target.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
+    await multiMint.mint([target.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
 
     // await target.mint(deployer, ethers.utils.parseEther("10000000")).then(tx => tx.wait());
 
