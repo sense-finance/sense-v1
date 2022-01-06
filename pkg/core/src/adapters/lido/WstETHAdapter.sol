@@ -123,7 +123,7 @@ contract WstETHAdapter is BaseAdapter {
 
         // exchange stETH to ETH exchange on Curve
         uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
-        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy);
+        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy * 99.5e18 / 100e18); // slippage tolerance of 0.5%
 
         // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
