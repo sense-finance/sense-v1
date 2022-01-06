@@ -103,6 +103,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to sell
+    /// @param minAccepted Min accepted amount of Zeros
     /// @return amount of Zeros received
     function swapTargetForZeros(
         address adapter,
@@ -118,6 +119,8 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Underlying to sell
+    /// @param minAccepted Min accepted amount of Zeros
+    /// @return amount of Zeros received
     function swapUnderlyingForZeros(
         address adapter,
         uint48 maturity,
