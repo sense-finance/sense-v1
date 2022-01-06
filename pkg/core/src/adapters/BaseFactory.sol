@@ -20,7 +20,6 @@ abstract contract BaseFactory {
     address public immutable adapterImpl; // adapter implementation
 
     event AdapterDeployed(address addr, address indexed target);
-    event DeltaChanged(uint256 delta);
     event AdapterImplementationChanged(address implementation);
     event ProtocolChanged(address protocol);
 
@@ -62,7 +61,6 @@ abstract contract BaseFactory {
         // TODO: see if we can inline this
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
-            delta: factoryParams.delta,
             oracle: factoryParams.oracle,
             ifee: factoryParams.ifee,
             stake: factoryParams.stake,

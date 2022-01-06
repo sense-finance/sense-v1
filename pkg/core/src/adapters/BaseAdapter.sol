@@ -35,13 +35,12 @@ abstract contract BaseAdapter is Initializable {
     struct AdapterParams {
         address target; // Target token to divide
         address oracle; // oracle address
-        uint256 delta; // max growth per second allowed
-        uint256 ifee; // issuance fee
+        uint64 ifee; // issuance fee
         address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance
-        uint256 minm; // min maturity (seconds after block.timstamp)
-        uint256 maxm; // max maturity (seconds after block.timstamp)
-        uint8 mode; // 0 for monthly, 1 for weekly
+        uint48 minm; // min maturity (seconds after block.timstamp)
+        uint48 maxm; // max maturity (seconds after block.timstamp)
+        uint16 mode; // 0 for monthly, 1 for weekly
     }
 
     /// Program state --------
@@ -124,6 +123,10 @@ abstract contract BaseAdapter is Initializable {
         return 0;
     }
 
+    function level() external virtual returns (uint128) {
+        return 31; // Returns `31` by default, which enables all Divider lifecycle methods
+    }
+
     /// @notice Notification whenever the Divider adds or removes Target
     function notify(
         address, /* usr */
@@ -183,7 +186,7 @@ abstract contract BaseAdapter is Initializable {
         return (adapterParams.target, adapterParams.stake, adapterParams.stakeSize);
     }
 
-    function getMode() external view returns (uint8) {
+    function getMode() external view returns (uint16) {
         return adapterParams.mode;
     }
 

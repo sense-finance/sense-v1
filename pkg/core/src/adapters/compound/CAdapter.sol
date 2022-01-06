@@ -93,7 +93,7 @@ contract CAdapter is CropAdapter {
 
     function scaleStored() external view override returns (uint256) {
         uint256 uDecimals = CTokenInterface(underlying()).decimals();
-        uint256 exRate = CTokenInterface(target).exchangeRateStored();
+        uint256 exRate = CTokenInterface(adapterParams.target).exchangeRateStored();
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 

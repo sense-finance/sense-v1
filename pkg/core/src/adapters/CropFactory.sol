@@ -31,7 +31,6 @@ abstract contract CropFactory is BaseFactory {
         adapterClone = Clones.cloneDeterministic(adapterImpl, Bytes32AddressLib.fillLast12Bytes(_target));
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
-            delta: factoryParams.delta,
             oracle: factoryParams.oracle,
             ifee: factoryParams.ifee,
             stake: factoryParams.stake,
