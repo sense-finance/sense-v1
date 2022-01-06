@@ -33,7 +33,7 @@ contract TargetOracle is PriceOracle, Trust {
     }
 
     function _price(address target) internal view returns (uint256) {
-       Adapter adapter = Adapter(adapters[address(target)]);
+        Adapter adapter = Adapter(adapters[address(target)]);
         require(adapter != Adapter(address(0)), "Target must have a adapter set");
 
         // Use the cached scale for view function compatibility

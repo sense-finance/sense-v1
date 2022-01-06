@@ -12,13 +12,7 @@ import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
 abstract contract BaseFactory {
-    /* ========== CONSTANTS ========== */
-
-    /// @notice Sets level to `31` by default, which keeps all Divider lifecycle methods public
-    /// (`issue`, `combine`, `collect`, etc), but not the `onZeroRedeem` hook.
     uint16 public constant DEFAULT_LEVEL = 31;
-
-    /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Sense core Divider address
     address public immutable divider;
