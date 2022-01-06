@@ -72,6 +72,7 @@ contract WstETHAdapter is BaseAdapter {
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
+    uint256 public constant SLIPPAGE_TOLERANCE = 0.5e18;
 
     /// @notice Cached scale value from the last call to `scale()`
     uint256 public override scaleStored;
@@ -123,7 +124,12 @@ contract WstETHAdapter is BaseAdapter {
 
         // exchange stETH to ETH exchange on Curve
         uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
-        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy * 99.5e18 / 100e18); // slippage tolerance of 0.5%
+        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(
+            int128(1),
+            int128(0),
+            amount,
+            (minDy * (100e18 - SLIPPAGE_TOLERANCE)) / 100e18
+        ); // slippage tolerance of 0.5%
 
         // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
