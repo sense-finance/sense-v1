@@ -129,7 +129,7 @@ contract WstETHAdapter is BaseAdapter {
             int128(0),
             amount,
             (minDy * (100e18 - SLIPPAGE_TOLERANCE)) / 100e18
-        ); // slippage tolerance of 0.5%
+        );
 
         // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
