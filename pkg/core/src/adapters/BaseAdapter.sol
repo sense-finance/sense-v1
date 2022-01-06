@@ -122,7 +122,7 @@ abstract contract BaseAdapter {
         uint256 cBalIn,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
-        require(ERC20(target).transfer(address(receiver), amount), Errors.FlashTransferFailed);
+        ERC20(target).safeTransfer(address(receiver), amount);
         (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
             data,
             msg.sender,
@@ -132,7 +132,7 @@ abstract contract BaseAdapter {
             amount
         );
         require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
-        require(ERC20(target).transferFrom(address(receiver), address(this), amount), Errors.FlashRepayFailed);
+        ERC20(target).safeTransferFrom(address(receiver), address(this), amount);
         return (true, value);
     }
 

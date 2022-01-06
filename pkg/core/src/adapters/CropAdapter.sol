@@ -22,7 +22,7 @@ abstract contract CropAdapter is BaseAdapter {
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget;
     mapping(address => uint256) public tBalance;
-    mapping(address => uint256) public rewarded; // reward token per collected target per user
+    mapping(address => uint256) public rewarded; // reward token per user
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
 
