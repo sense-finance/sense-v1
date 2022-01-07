@@ -53,11 +53,14 @@ contract WstETHAdapter is BaseAdapter {
     using FixedMath for uint256;
     using SafeERC20 for ERC20;
 
+    uint256 public _lscale;
+
     address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
+    uint256 public constant SLIPPAGE_TOLERANCE = 0.5e18;
 
     function initialize(address _divider, AdapterParams memory _adapterParams) public virtual override initializer {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
@@ -70,12 +73,12 @@ contract WstETHAdapter is BaseAdapter {
     /// @return scale in wei (18 decimals)
     function scale() external override returns (uint256) {
         WstETHInterface t = WstETHInterface(adapterParams.target);
-        return t.stEthPerToken();
+        _lscale = t.stEthPerToken();
+        return _lscale;
     }
 
     function scaleStored() external view override returns (uint256) {
-        WstETHInterface t = WstETHInterface(adapterParams.target);
-        return t.stEthPerToken();
+        return _lscale;
     }
 
     function underlying() external view override returns (address) {
@@ -88,11 +91,16 @@ contract WstETHAdapter is BaseAdapter {
 
     function unwrapTarget(uint256 amount) external override returns (uint256) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
-        uint256 stETH = WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
+        WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
         // exchange stETH to ETH exchange on Curve
         uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
-        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(int128(1), int128(0), amount, minDy);
+        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(
+            int128(1),
+            int128(0),
+            amount,
+            (minDy * (100e18 - SLIPPAGE_TOLERANCE)) / 100e18
+        );
 
         // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
