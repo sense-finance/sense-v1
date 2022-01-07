@@ -56,7 +56,7 @@ abstract contract BaseFactory {
         address target = BaseAdapter(_adapter).target();
         require(_exists(target), Errors.NotSupported);
         Divider(divider).setAdapter(address(_adapter), true);
-        emit AdapterAdded(address(_adapter), target);
+        emit AdapterAddition(address(_adapter), target);
     }
 
     /* ========== REQUIRED DEPLOY ========== */
@@ -74,5 +74,5 @@ abstract contract BaseFactory {
     /* ========== LOGS ========== */
 
     /// @notice Logs the deployment of the adapter
-    event AdapterAdded(address addr, address indexed target);
+    event AdapterAddition(address addr, address indexed target);
 }

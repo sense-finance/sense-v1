@@ -146,7 +146,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize);
 
-        emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
+        emit SeriesInitialization(adapter, maturity, zero, claim, sponsor, target);
     }
 
     /// @notice Settles a Series and transfers the settlement reward to the caller
@@ -172,7 +172,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);
         ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize);
 
-        emit SeriesSettled(adapter, maturity, msg.sender);
+        emit SeriesSettlement(adapter, maturity, msg.sender);
     }
 
     /// @notice Mint Zeros and Claims of a specific Series
@@ -234,7 +234,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         target.safeTransferFrom(msg.sender, adapter, tBal);
 
-        emit Issued(adapter, maturity, uBal, msg.sender);
+        emit Issuance(adapter, maturity, uBal, msg.sender);
     }
 
     /// @notice Reconstitute Target by burning Zeros and Claims
@@ -277,7 +277,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify
         if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         tBal += collected;
-        emit Combined(adapter, maturity, tBal, msg.sender);
+        emit Combine(adapter, maturity, tBal, msg.sender);
     }
 
     /// @notice Burn Zeros of a Series once it's been settled
@@ -323,7 +323,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
-        emit ZeroRedeemed(adapter, maturity, tBal);
+        emit ZeroRedemption(adapter, maturity, tBal);
     }
 
     function collect(
@@ -424,7 +424,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             Adapter(adapter).notify(to, tBalTransfer, true);
         }
 
-        emit Collected(adapter, maturity, collected);
+        emit Collection(adapter, maturity, collected);
     }
 
     /// @notice calculate the harmonic mean of the current scale and the last scale,
@@ -472,7 +472,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // have its rewards distributed
         Adapter(adapter).notify(usr, uBal.fdivUp(series[adapter][maturity].maxscale), false);
 
-        emit ClaimRedeemed(adapter, maturity, tBal);
+        emit ClaimRedemption(adapter, maturity, tBal);
     }
 
     /* ========== ADMIN ========== */
@@ -489,21 +489,21 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param cap The max target that can be deposited on the Adapter
     function setGuard(address adapter, uint256 cap) external requiresTrust {
         guards[adapter] = cap;
-        emit GuardChanged(adapter, cap);
+        emit GuardChange(adapter, cap);
     }
 
     /// @notice Set guarded mode
     /// @param _guarded bool
     function setGuarded(bool _guarded) external requiresTrust {
         guarded = _guarded;
-        emit GuardedChanged(_guarded);
+        emit GuardedChange(_guarded);
     }
 
     /// @notice Set periphery's contract
     /// @param _periphery Target address
     function setPeriphery(address _periphery) external requiresTrust {
         periphery = _periphery;
-        emit PeripheryChanged(_periphery);
+        emit PeripheryChange(_periphery);
     }
 
     /// @notice Set paused flag
@@ -516,7 +516,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param _permissionless bool
     function setPermissionless(bool _permissionless) external requiresTrust {
         permissionless = _permissionless;
-        emit PermissionlessChanged(_permissionless);
+        emit PermissionlessChange(_permissionless);
     }
 
     /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it
@@ -559,7 +559,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);
         }
 
-        emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);
+        emit Backfill(adapter, maturity, mscale, _usrs, _lscales);
     }
 
     /* ========== INTERNAL VIEWS ========== */
@@ -611,7 +611,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             adapterAddresses[id] = adapter;
             adapterIDs[adapter] = id;
         }
-        emit AdapterChanged(adapter, id, isOn);
+        emit AdapterChange(adapter, id, isOn);
     }
 
     /* ========== MODIFIERS ========== */
@@ -634,20 +634,20 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== LOGS ========== */
 
     /// @notice Admin
-    event Backfilled(
+    event Backfill(
         address indexed adapter,
         uint256 indexed maturity,
         uint256 mscale,
         address[] _usrs,
         uint256[] _lscales
     );
-    event GuardChanged(address indexed adapter, uint256 cap);
-    event AdapterChanged(address indexed adapter, uint256 indexed id, bool indexed isOn);
-    event PeripheryChanged(address indexed periphery);
+    event GuardChange(address indexed adapter, uint256 cap);
+    event AdapterChange(address indexed adapter, uint256 indexed id, bool indexed isOn);
+    event PeripheryChange(address indexed periphery);
 
     /// @notice Series lifecycle
     /// *---- beginning
-    event SeriesInitialized(
+    event SeriesInitialization(
         address adapter,
         uint256 indexed maturity,
         address zero,
@@ -656,16 +656,16 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address indexed target
     );
     /// -***- middle
-    event Issued(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
-    event Combined(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
-    event Collected(address indexed adapter, uint256 indexed maturity, uint256 collected);
+    event Issuance(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Combine(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Collection(address indexed adapter, uint256 indexed maturity, uint256 collected);
     /// ----* end
-    event SeriesSettled(address indexed adapter, uint256 indexed maturity, address indexed settler);
-    event ZeroRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
-    event ClaimRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event SeriesSettlement(address indexed adapter, uint256 indexed maturity, address indexed settler);
+    event ZeroRedemption(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event ClaimRedemption(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
     /// *----* misc
-    event GuardedChanged(bool indexed guarded);
-    event PermissionlessChanged(bool indexed permissionless);
+    event GuardedChange(bool indexed guarded);
+    event PermissionlessChange(bool indexed permissionless);
 }
 
 contract TokenHandler is Trust {

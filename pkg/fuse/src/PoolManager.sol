@@ -98,10 +98,10 @@ contract PoolManager is Trust {
     mapping(address => mapping(uint256 => address)) public sPools;
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
-    event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address indexed target, address indexed cTarget);
-    event SeriesAdded(address indexed zero, address indexed lpToken);
-    event SeriesQueued(address indexed adapter, uint48 indexed maturity, address indexed pool);
+    event PoolDeployment(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
+    event TargetAddition(address indexed target, address indexed cTarget);
+    event SeriesAddition(address indexed zero, address indexed lpToken);
+    event SeriesQueueing(address indexed adapter, uint48 indexed maturity, address indexed pool);
 
     constructor(
         address _fuseDirectory,
@@ -152,7 +152,7 @@ contract PoolManager is Trust {
         require(err == 0, Errors.FailedBecomeAdmin);
         comptroller = _comptroller;
 
-        emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
+        emit PoolDeployment(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
     function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
@@ -193,7 +193,7 @@ contract PoolManager is Trust {
         cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 
         tInits[target] = true;
-        emit TargetAdded(target, cTarget);
+        emit TargetAddition(target, cTarget);
     }
 
     /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
@@ -215,7 +215,7 @@ contract PoolManager is Trust {
         sStatus[adapter][maturity] = SeriesStatus.QUEUED;
         sPools[adapter][maturity] = pool;
 
-        emit SeriesQueued(adapter, maturity, pool);
+        emit SeriesQueueing(adapter, maturity, pool);
     }
 
     /// @notice open method to add queued Zeros and LPShares to Fuse pool
@@ -280,7 +280,7 @@ contract PoolManager is Trust {
 
         sStatus[adapter][maturity] = SeriesStatus.ADDED;
 
-        emit SeriesAdded(zero, pool);
+        emit SeriesAddition(zero, pool);
     }
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {

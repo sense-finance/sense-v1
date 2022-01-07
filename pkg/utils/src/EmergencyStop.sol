@@ -20,9 +20,9 @@ contract EmergencyStop is Trust {
         for (uint256 i = 0; i < adapters.length; i++) {
             Divider(divider).setPermissionless(false);
             Divider(divider).setAdapter(adapters[i], false);
-            emit Stopped(adapters[i]);
+            emit Stop(adapters[i]);
         }
     }
 
-    event Stopped(address indexed adapter);
+    event Stop(address indexed adapter);
 }

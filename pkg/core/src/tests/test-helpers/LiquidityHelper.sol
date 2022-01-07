@@ -78,18 +78,18 @@ contract LiquidityHelper {
             uint256 stETH = StETHInterface(Assets.STETH).submit{ value: amountIn }(address(0));
             ERC20(Assets.STETH).safeApprove(Assets.WSTETH, stETH);
             amountOut = WstETHInterface(Assets.WSTETH).wrap(stETH);
-            emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
+            emit Swap(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
         }
         if (tokenOut == Assets.cDAI) {
             ERC20(Assets.DAI).safeApprove(Assets.cDAI, amountIn);
             amountOut = CTokenInterface(Assets.cDAI).mint(amountIn);
-            emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
+            emit Swap(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
         }
         if (tokenOut == Assets.cETH) {
             Assets.cETH.call{ value: amountIn }("");
-            emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
+            emit Swap(tokenIn, tokenOut, amountIn, amountOut);
             return amountIn;
         }
         if (tokenOut == Assets.WETH) {
@@ -109,9 +109,9 @@ contract LiquidityHelper {
             sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
         amountOut = ISwapRouter(Assets.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
-        emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
+        emit Swap(tokenIn, tokenOut, amountIn, amountOut);
         return amountOut;
     }
 
-    event Swapped(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut);
+    event Swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut);
 }

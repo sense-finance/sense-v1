@@ -80,7 +80,7 @@ contract Periphery is Trust {
             address pool = spaceFactory.create(adapter, maturity);
             poolManager.queueSeries(adapter, maturity, pool);
         }
-        emit SeriesSponsored(adapter, maturity, msg.sender);
+        emit SeriesSponsorship(adapter, maturity, msg.sender);
     }
 
     /// @notice Onboards a target
@@ -96,7 +96,7 @@ contract Periphery is Trust {
         ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
         poolManager.addTarget(target, adapterClone);
         factory[adapterClone] = f;
-        emit AdapterOnboarded(adapterClone);
+        emit AdapterOnboarding(adapterClone);
     }
 
     /// @notice Swap Target to Zeros of a particular series
@@ -354,7 +354,7 @@ contract Periphery is Trust {
     function setFactory(address factory, bool isOn) external requiresTrust {
         require(factories[factory] != isOn, Errors.ExistingValue);
         factories[factory] = isOn;
-        emit FactoryChanged(factory, isOn);
+        emit FactoryChange(factory, isOn);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -386,7 +386,7 @@ contract Periphery is Trust {
         });
 
         amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
-        emit Swapped(msg.sender, poolId, assetIn, assetOut, amountIn, amountOut, msg.sig);
+        emit Swap(msg.sender, poolId, assetIn, assetOut, amountIn, amountOut, msg.sig);
     }
 
     function _swapZerosForTarget(
@@ -702,10 +702,10 @@ contract Periphery is Trust {
 
     /* ========== LOGS ========== */
 
-    event FactoryChanged(address indexed adapter, bool indexed isOn);
-    event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
-    event AdapterOnboarded(address adapter);
-    event Swapped(
+    event FactoryChange(address indexed adapter, bool indexed isOn);
+    event SeriesSponsorship(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
+    event AdapterOnboarding(address adapter);
+    event Swap(
         address indexed sender,
         bytes32 indexed poolId,
         address assetIn,

@@ -5,7 +5,7 @@ pragma solidity 0.8.11;
 import { Divider } from "../../Divider.sol";
 
 contract Factory {
-    event Deployed(address addr, uint256 salt);
+    event Deployment(address addr, uint256 salt);
 
     // 1. Get bytecode of contract to be deployed
     // NOTE: _owner and _foo are arguments of the TestContract's constructor
@@ -55,6 +55,6 @@ contract Factory {
             }
         }
 
-        emit Deployed(addr, _salt);
+        emit Deployment(addr, _salt);
     }
 }

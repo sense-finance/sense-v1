@@ -24,7 +24,7 @@ abstract contract CropAdapter is BaseAdapter {
     mapping(address => uint256) public tBalance;
     mapping(address => uint256) public rewarded; // reward token per user
 
-    event Distributed(address indexed usr, address indexed token, uint256 amount);
+    event Distribution(address indexed usr, address indexed token, uint256 amount);
 
     constructor(
         address _divider,
@@ -80,7 +80,7 @@ abstract contract CropAdapter is BaseAdapter {
             }
         }
         rewardBal = ERC20(reward).balanceOf(address(this));
-        emit Distributed(_usr, reward, curr > last ? curr - last : 0);
+        emit Distribution(_usr, reward, curr > last ? curr - last : 0);
     }
 
     /// @notice Some protocols don't airdrop reward tokens, instead users must claim them –
