@@ -432,7 +432,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 (uBal * zShare) /
                 series[adapter][maturity].mscale;
 
-            ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);
+            ERC20(Adapter(adapter).getTarget()).safeTransferFrom(adapter, usr, tBal);
         }
 
         // Always notify the Adapter of the full Target balance that will no longer
@@ -557,7 +557,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint8 mode = Adapter(adapter).getMode();
+        uint16 mode = Adapter(adapter).getMode();
         if (mode == 0) {
             return day == 1;
         }

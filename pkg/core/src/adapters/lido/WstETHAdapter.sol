@@ -68,7 +68,12 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     /// @return scale in wei (18 decimals)
-    function _scale() internal virtual override returns (uint256) {
+    function scale() external override returns (uint256) {
+        WstETHInterface t = WstETHInterface(adapterParams.target);
+        return t.stEthPerToken();
+    }
+
+    function scaleStored() external view override returns (uint256) {
         WstETHInterface t = WstETHInterface(adapterParams.target);
         return t.stEthPerToken();
     }
