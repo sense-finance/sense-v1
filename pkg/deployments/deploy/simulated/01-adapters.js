@@ -70,12 +70,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log(`Deploying simulated ${targetName}`);
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
     const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`;
-    const { address: mockUnderlyingAddress } = await deploy(targetName, {
+    const { address: mockUnderlyingAddress } = await deploy(underlyingName, {
       contract: "AuthdMockToken",
       from: deployer,
       args: [underlyingName, underlyingName, 18],
       log: true,
     });
+
+    const underlying = await ethers.getContract(underlyingName);
 
     await deploy(targetName, {
       contract: "AuthdMockTarget",
@@ -94,8 +96,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
     await multiMint.mint([target.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
 
-    // await target.mint(deployer, ethers.utils.parseEther("10000000")).then(tx => tx.wait());
-
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();
 
@@ -106,6 +106,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
     console.log("Give the adapter minter permission on Target");
     await (await target.setIsTrusted(adapterAddress, true)).wait();
+
+    console.log("Give the adapter minter permission on Underlying");
+    await (await underlying.setIsTrusted(adapterAddress, true)).wait();
 
     console.log("Grant minting authority on the Reward token to the mock TWrapper");
     await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
