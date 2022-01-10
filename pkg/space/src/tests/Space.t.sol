@@ -18,6 +18,7 @@ import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/Fixe
 // Internal references
 import { SpaceFactory } from "../SpaceFactory.sol";
 import { Space } from "../Space.sol";
+import { Errors } from "../Errors.sol";
 
 // Base DSTest plus a few extra features
 contract Test is DSTest {
@@ -158,7 +159,7 @@ contract SpaceTest is Test {
         try jim.swapIn(false, 1) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "SWAP_TOO_SMALL");
+            assertEq(error, Errors.SWAP_TOO_SMALL);
         }
 
         // Can successfully swap Zeros in
@@ -405,7 +406,7 @@ contract SpaceTest is Test {
         try jim.join(0, 10e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "POOL_PAST_MATURITY");
+            assertEq(error, Errors.POOL_PAST_MATURITY);
         }
     }
 
@@ -448,12 +449,12 @@ contract SpaceTest is Test {
         try sid.swapIn(true, 1e6) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "SWAP_TOO_SMALL");
+            assertEq(error, Errors.SWAP_TOO_SMALL);
         }
         try sid.swapIn(false, 1e6) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "SWAP_TOO_SMALL");
+            assertEq(error, Errors.SWAP_TOO_SMALL);
         }
 
         // Swaps outs don't fail, but they ask for very high amounts in

@@ -108,7 +108,7 @@ abstract contract CropAdapter is BaseAdapter {
     /* ========== MODIFIERS ========== */
 
     modifier onlyDivider() {
-        require(divider == msg.sender, Errors.OnlyDivider);
+        if (divider != msg.sender) revert Errors.OnlyDivider();
         _;
     }
 }

@@ -92,8 +92,8 @@ contract Factories is TestHelper {
         MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         try factory.deployAdapter(address(newTarget)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.NotSupported);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
     }
 
@@ -104,8 +104,8 @@ contract Factories is TestHelper {
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         try factory.deployAdapter(address(someTarget)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.NotSupported);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
         someFactory.deployAdapter(address(someTarget));
     }

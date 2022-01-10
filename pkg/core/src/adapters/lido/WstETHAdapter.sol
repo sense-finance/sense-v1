@@ -132,7 +132,7 @@ contract WstETHAdapter is BaseAdapter {
 
         // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
-        require(success, "Transfer failed.");
+        if (!success) revert Errors.TransferFailed();
 
         ERC20(WETH).safeTransfer(msg.sender, eth); // transfer WETH back to sender (periphery)
     }
@@ -145,6 +145,6 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     fallback() external payable {
-        require(msg.sender == WETH || msg.sender == CURVESINGLESWAP, Errors.SenderNotEligible);
+        if (!(msg.sender == WETH || msg.sender == CURVESINGLESWAP)) revert Errors.SenderNotEligible();
     }
 }

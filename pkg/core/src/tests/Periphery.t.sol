@@ -692,8 +692,8 @@ contract PeripheryTest is TestHelper {
         uint256[] memory minAmountsOut = new uint256[](2);
         try bob.doMigrateLiquidity(address(adapter), dstAdapter, maturity, maturity, lpShares, minAmountsOut, 0, 0) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.TargetMismatch);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetMismatch.selector));
         }
     }
 

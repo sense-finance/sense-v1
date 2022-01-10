@@ -9,6 +9,7 @@ import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vaul
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
@@ -73,7 +74,7 @@ contract ZeroOracle is PriceOracle, Trust {
 
     function _price(address zero) internal view returns (uint256) {
         BalancerOracleLike pool = BalancerOracleLike(pools[address(zero)]);
-        require(pool != BalancerOracleLike(address(0)), "Zero must have a pool set");
+        if(pool == BalancerOracleLike(address(0))) revert Errors.PoolNotSet();
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
@@ -81,7 +82,7 @@ contract ZeroOracle is PriceOracle, Trust {
         if (sampleTs == 0) {
             // revert if the pool's oracle can't be used yet, preventing this market from being deployed
             // on Fuse until we're able to read a TWAP
-            revert("Zero pool oracle not yet ready");
+            revert Errors.OracleNotReady();
         }
 
         BalancerOracleLike.OracleAverageQuery[] memory queries = new BalancerOracleLike.OracleAverageQuery[](1);
