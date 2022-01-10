@@ -6,7 +6,7 @@ import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 
 import { FixedMath } from "../external/FixedMath.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
@@ -39,8 +39,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint48 public constant MIN_MATURITY = 2 weeks;
-    uint48 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant MIN_MATURITY = 2 weeks;
+    uint256 public constant MAX_MATURITY = 14 weeks;
 
     Periphery internal periphery;
     CAdapter internal adapter;
@@ -57,7 +57,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
     function setUp() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        uint48 firstDayOfMonth = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
+        uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         hevm.warp(firstDayOfMonth); // set to first day of the month
 
         // Divider
@@ -122,8 +122,13 @@ contract PeripheryTests is PeripheryTestHelper {
         giveTokens(Assets.DAI, type(uint256).max, hevm);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        uint48 maturity = uint48(
-            DateTimeFull.timestampFromDateTime(month == 12 ? year + 1 : year, month == 12 ? 1 : (month + 1), 1, 0, 0, 0)
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
         );
 
         ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);

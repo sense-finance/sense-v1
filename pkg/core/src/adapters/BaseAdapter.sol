@@ -2,7 +2,8 @@
 pragma solidity 0.8.11;
 
 // External references
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
@@ -14,7 +15,7 @@ interface IPeriphery {
         bytes calldata data,
         address initiator,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBalIn,
         uint256 amount
     ) external returns (bytes32, uint256);
@@ -24,7 +25,7 @@ interface IPeriphery {
 /// @dev In most cases, the only method that will be unique to each adapter type is `_scale`
 abstract contract BaseAdapter {
     using FixedMath for uint256;
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
 
     /* ========== CONSTANTS ========== */
 
@@ -48,10 +49,10 @@ abstract contract BaseAdapter {
     uint256 public immutable stakeSize;
 
     /// @notice Min maturity (seconds after block.timstamp)
-    uint48 public immutable minm;
+    uint256 public immutable minm;
 
     /// @notice Max maturity (seconds after block.timstamp)
-    uint48 public immutable maxm;
+    uint256 public immutable maxm;
 
     /// @notice 0 for monthly, 1 for weekly
     uint16 public immutable mode;
@@ -82,8 +83,8 @@ abstract contract BaseAdapter {
         uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
+        uint256 _minm,
+        uint256 _maxm,
         uint16 _mode,
         uint64 _tilt,
         uint16 _level
@@ -105,11 +106,12 @@ abstract contract BaseAdapter {
         level = _level;
 
         ERC20(_target).safeApprove(_divider, type(uint256).max);
+        ERC20(_stake).safeApprove(_divider, type(uint256).max);
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
     /// @param receiver The contract receiving target, needs to implement the
-    /// `onFlashLoan(address user, address adapter, uint48 maturity, uint256 amount)` interface.
+    /// `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.
     /// @param adapter adapter address
     /// @param maturity maturity
     /// @param cBalIn Claim amount the user has sent in
@@ -118,7 +120,7 @@ abstract contract BaseAdapter {
         bytes calldata data,
         address receiver,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBalIn,
         uint256 amount
     ) external onlyPeriphery returns (bool, uint256) {
@@ -191,7 +193,7 @@ abstract contract BaseAdapter {
 
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
-    function getMaturityBounds() external view returns (uint128, uint128) {
+    function getMaturityBounds() external view returns (uint256, uint256) {
         return (minm, maxm);
     }
 

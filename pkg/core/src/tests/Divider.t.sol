@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
@@ -9,7 +9,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+import { MockAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
@@ -28,7 +28,7 @@ contract Dividers is TestHelper {
     function testCantInitSeriesNotEnoughStakeBalance() public {
         uint256 balance = stake.balanceOf(address(alice));
         alice.doTransfer(address(stake), address(bob), balance - convertToBase(STAKE_SIZE, stake.decimals()) / 2);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -38,7 +38,7 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
         alice.doApprove(address(stake), address(periphery), 0);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -47,7 +47,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesAdapterNotEnabled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         divider.setAdapter(address(adapter), false);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
@@ -57,7 +57,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfAlreadyExists() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
@@ -69,14 +69,14 @@ contract Dividers is TestHelper {
     function testCantInitSeriesActiveSeriesReached() public {
         uint256 SERIES_TO_INIT = 3;
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
-            uint48 nextMonthDate = uint48(DateTimeFull.addMonths(block.timestamp, i));
+            uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = sponsorSampleSeries(address(alice), nextMonthDate);
             hevm.warp(block.timestamp + 1 days);
             assertTrue(address(zero) != address(0));
             assertTrue(address(claim) != address(0));
         }
-        uint48 lastDate = uint48(DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1));
+        uint256 lastDate = DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1);
         lastDate = getValidMaturity(DateTimeFull.getYear(lastDate), DateTimeFull.getMonth(lastDate));
         try alice.doSponsorSeries(address(adapter), lastDate) {
             fail();
@@ -86,7 +86,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesWithMaturityBeforeTimestamp() public {
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0));
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -97,7 +97,7 @@ contract Dividers is TestHelper {
     function testCantInitSeriesLessThanMinMaturity() public {
         hevm.warp(1631923200);
         // 18-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -108,7 +108,7 @@ contract Dividers is TestHelper {
     function testCantInitSeriesMoreThanMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0));
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -134,7 +134,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0)); // Tuesday
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Tuesday
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -160,7 +160,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0)); // Tuesday
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0); // Tuesday
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -185,7 +185,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0)); // Monday
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
         (address zero, address claim) = alice.doSponsorSeries(address(adapter), maturity);
 
         assertTrue(zero != address(0));
@@ -198,7 +198,7 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesIfPaused() public {
         divider.setPaused(true);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -207,7 +207,7 @@ contract Dividers is TestHelper {
     }
 
     function testInitSeries() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
@@ -218,7 +218,7 @@ contract Dividers is TestHelper {
     }
 
     function testInitSeriesWithdrawStake() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(address(alice));
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(address(zero) != address(0));
@@ -230,7 +230,7 @@ contract Dividers is TestHelper {
     function testInitThreeSeries() public {
         uint256 SERIES_TO_INIT = 3;
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
-            uint48 nextMonthDate = uint48(DateTimeFull.addMonths(block.timestamp, i));
+            uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = sponsorSampleSeries(address(alice), nextMonthDate);
             hevm.warp(block.timestamp + 1 days);
@@ -242,21 +242,21 @@ contract Dividers is TestHelper {
     function testInitSeriesOnMinMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         sponsorSampleSeries(address(alice), maturity);
     }
 
     function testInitSeriesOnMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 12, 1, 0, 0, 0));
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 12, 1, 0, 0, 0);
         sponsorSampleSeries(address(alice), maturity);
     }
 
     /* ========== settleSeries() tests ========== */
 
     function testCantSettleSeriesIfDisabledAdapter() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         divider.setAdapter(address(adapter), false);
         try alice.doSettleSeries(address(adapter), maturity) {
@@ -267,7 +267,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantSettleSeriesAlreadySettled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
@@ -279,7 +279,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantSettleSeriesIfNotSponsorAndSponsorWindow() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         try bob.doSettleSeries(address(adapter), maturity) {
@@ -290,7 +290,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantSettleSeriesIfNotSponsorCutoffTime() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try bob.doSettleSeries(address(adapter), maturity) {
@@ -301,7 +301,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantSettleSeriesIfSponsorAndCutoffTime() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try alice.doSettleSeries(address(adapter), maturity) {
@@ -312,7 +312,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantSettleSeriesIfNotSponsorAndSponsorTime() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
         try bob.doSettleSeries(address(adapter), maturity) {
@@ -324,7 +324,7 @@ contract Dividers is TestHelper {
 
     function testCantSettleSeriesIfPaused() public {
         divider.setPaused(true);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
@@ -333,49 +333,49 @@ contract Dividers is TestHelper {
     }
 
     function testSettleSeries() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSponsorWindow() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMinLimit() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.subSeconds(maturity, SPONSOR_WINDOW));
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMaxLimit() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW));
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSettlementWindow() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfNotSponsorAndSettlementWindow() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         bob.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesStakeIsTransferredIfSponsor() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
@@ -385,7 +385,7 @@ contract Dividers is TestHelper {
     }
 
     function testSettleSeriesStakeIsTransferredIfNotSponsor() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(address(bob));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
@@ -394,8 +394,30 @@ contract Dividers is TestHelper {
         assertEq(afterBalance, beforeBalance + convertToBase(STAKE_SIZE, stake.decimals()));
     }
 
+    function testSettleSeriesWithMockBaseAdapter() public {
+        divider.setPermissionless(true);
+        MockBaseAdapter aAdapter = new MockBaseAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            DEFAULT_LEVEL
+        );
+        divider.addAdapter(address(aAdapter));
+        uint256 maturity = getValidMaturity(2021, 10);
+        User(alice).doSponsorSeries(address(aAdapter), maturity);
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(aAdapter), maturity);
+    }
+
     function testFuzzSettleSeriesFeesAreTransferredIfSponsor(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = target.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         alice.doIssue(address(adapter), maturity, tBal);
@@ -409,7 +431,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzSettleSeriesFeesAreTransferredIfNotSponsor(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 aliceBeforeBalance = target.balanceOf(address(alice));
         uint256 bobBeforeBalance = target.balanceOf(address(bob));
         sponsorSampleSeries(address(alice), maturity);
@@ -428,7 +450,7 @@ contract Dividers is TestHelper {
     /* ========== issue() tests ========== */
 
     function testCantIssueAdapterDisabled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
@@ -441,7 +463,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantIssueSeriesDoesntExists() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         try alice.doIssue(address(adapter), maturity, tBal) {
@@ -453,7 +475,7 @@ contract Dividers is TestHelper {
 
     function testCantIssueNotEnoughBalance() public {
         uint256 aliceBalance = target.balanceOf(address(alice));
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         divider.setGuard(address(adapter), aliceBalance * 2);
         try alice.doIssue(address(adapter), maturity, aliceBalance + 1) {
@@ -467,7 +489,7 @@ contract Dividers is TestHelper {
         uint256 aliceBalance = target.balanceOf(address(alice));
         alice.doApprove(address(target), address(divider), 0);
         divider.setGuard(address(adapter), aliceBalance);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         bob.doApprove(address(target), address(periphery), 0);
         try alice.doIssue(address(adapter), maturity, aliceBalance) {
@@ -478,7 +500,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantIssueIfSeriesSettled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
@@ -491,7 +513,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantIssueIfMoreThanCap() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 guard = divider.guards(address(adapter));
         uint256 targetBalance = target.balanceOf(address(alice));
@@ -521,7 +543,7 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.addAdapter(address(aAdapter));
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         User(address(alice)).doSponsorSeries(address(aAdapter), maturity);
         uint256 amount = target.balanceOf(address(alice));
         try alice.doIssue(address(aAdapter), maturity, amount) {
@@ -533,7 +555,7 @@ contract Dividers is TestHelper {
 
     function testCantIssueSeriesIfPaused() public {
         divider.setPaused(true);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doIssue(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
@@ -561,7 +583,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
 
         bob.doApprove(address(target), address(adapter), type(uint256).max);
 
@@ -583,7 +605,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzIssue(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
@@ -602,7 +624,7 @@ contract Dividers is TestHelper {
         uint256 aliceBalance = target.balanceOf(address(alice));
         divider.setGuard(address(adapter), aliceBalance - 1);
         divider.setGuarded(false);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 amount = divider.guards(address(target)) + 1;
         alice.doIssue(address(adapter), maturity, amount);
@@ -612,7 +634,7 @@ contract Dividers is TestHelper {
         // if issuing multiple times with bal = 0, the 2nd issue will fail on _reweightLScale because
         // it will attempt to do a division by 0.
         bal = fuzzWithBounds(bal, 1000);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
@@ -633,7 +655,7 @@ contract Dividers is TestHelper {
 
     function testIssueReweightScale() public {
         uint256 tBal = 1e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         alice.doIssue(address(adapter), maturity, tBal);
@@ -661,7 +683,7 @@ contract Dividers is TestHelper {
     /* ========== combine() tests ========== */
 
     function testCantCombineAdapterDisabled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
@@ -674,7 +696,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantCombineSeriesDoesntExists() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         try alice.doCombine(address(adapter), maturity, tBal) {
@@ -686,7 +708,7 @@ contract Dividers is TestHelper {
 
     function testCantCombineSeriesIfPaused() public {
         divider.setPaused(true);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doCombine(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
@@ -714,7 +736,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
@@ -738,7 +760,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 issued = bob.doIssue(address(adapter), maturity, tBal);
         try bob.doCombine(address(adapter), maturity, issued + 1) {
@@ -749,7 +771,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCombineNotEnoughAllowance(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 issued = bob.doIssue(address(adapter), maturity, tBal);
         bob.doApprove(address(target), address(periphery), 0);
@@ -761,7 +783,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombine(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -780,7 +802,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombineAtMaturity(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -803,7 +825,7 @@ contract Dividers is TestHelper {
 
     /* ========== redeemZero() tests ========== */
     function testCantRedeemZeroDisabledAdapter() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         divider.setAdapter(address(adapter), false);
@@ -816,7 +838,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantRedeemZeroSeriesDoesntExists() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
         try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
@@ -827,7 +849,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantRedeemZeroSeriesNotSettled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
@@ -843,7 +865,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantRedeemZeroMoreThanBalance() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
@@ -857,7 +879,7 @@ contract Dividers is TestHelper {
 
     function testCantRedeemZeroIfPaused() public {
         divider.setPaused(true);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try alice.doRedeemZero(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
@@ -867,7 +889,7 @@ contract Dividers is TestHelper {
 
     function testFuzzRedeemZero(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -888,7 +910,7 @@ contract Dividers is TestHelper {
     }
 
     function testRedeemZeroBalanceIsZero() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
@@ -927,7 +949,7 @@ contract Dividers is TestHelper {
 
         adapter.setScale(1e18);
 
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
@@ -968,7 +990,7 @@ contract Dividers is TestHelper {
 
         adapter.setScale(1e18);
 
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
@@ -1021,7 +1043,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
@@ -1050,7 +1072,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
@@ -1082,7 +1104,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // Can collect normally
@@ -1150,7 +1172,7 @@ contract Dividers is TestHelper {
         // Sanity check
         assertEq(adapter.scale(), 1e18);
 
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
@@ -1176,7 +1198,7 @@ contract Dividers is TestHelper {
 
     /* ========== collect() tests ========== */
     function testCantCollectDisabledAdapter() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         divider.setAdapter(address(adapter), false);
         try alice.doCollect(claim) {
@@ -1206,7 +1228,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 initScale = adapter.scale();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
@@ -1231,7 +1253,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCollectIfMaturityAndNotSettled(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1244,7 +1266,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCollectIfPaused(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1259,7 +1281,7 @@ contract Dividers is TestHelper {
 
     function testCantCollectIfNotClaimContract() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try divider.collect(address(bob), address(adapter), maturity, tBal, address(bob)) {
             fail();
         } catch Error(string memory error) {
@@ -1269,7 +1291,7 @@ contract Dividers is TestHelper {
 
     function testCollectSmallTBal(uint128 tBal) public {
         tBal = 1;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
@@ -1297,7 +1319,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
@@ -1324,7 +1346,7 @@ contract Dividers is TestHelper {
     function testFuzzCollectReward(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, tBal);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
@@ -1355,7 +1377,7 @@ contract Dividers is TestHelper {
     function testFuzzCollectRewardMultipleUsers(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         User[3] memory users = [alice, bob, jim];
 
@@ -1393,7 +1415,7 @@ contract Dividers is TestHelper {
     function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         alice.doIssue(address(adapter), maturity, tBal);
@@ -1415,7 +1437,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1447,7 +1469,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1463,7 +1485,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectBeforeMaturityAndSettled(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1490,7 +1512,7 @@ contract Dividers is TestHelper {
     // test transferring claims to user calls collect()
     function testFuzzCollectTransferAndCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
@@ -1525,7 +1547,7 @@ contract Dividers is TestHelper {
     // it also checks that receiver receives corresp. target collected from the claims he already had
     function testFuzzCollectTransferAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e10);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1582,7 +1604,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectTransferLessThanBalanceAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1641,7 +1663,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectTransferToMyselfAndCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1667,7 +1689,7 @@ contract Dividers is TestHelper {
 
     /* ========== backfillScale() tests ========== */
     function testCantBackfillScaleSeriesDoesntExists() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         try divider.backfillScale(address(adapter), maturity, tBal, usrs, lscales) {
@@ -1678,7 +1700,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantBackfillScaleBeforeCutoffAndAdapterEnabled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         (, , , , uint256 iscale, , , , ) = divider.series(address(adapter), maturity);
         try divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales) {
@@ -1689,7 +1711,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantBackfillScaleSeriesNotGov() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 tBase = 10**target.decimals();
@@ -1702,7 +1724,7 @@ contract Dividers is TestHelper {
     }
 
     function testBackfillScale() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 newScale = 1.1e18;
@@ -1720,7 +1742,7 @@ contract Dividers is TestHelper {
     }
 
     function testBackfillScaleBeforeCutoffAndAdapterDisabled() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         divider.setAdapter(address(adapter), false);
@@ -1732,7 +1754,7 @@ contract Dividers is TestHelper {
 
     // @notice if backfill happens while adapter is NOT disabled it is because the current timestamp is > cutoff so stakecoin stake and fees are to the Sense's cup multisig address
     function testFuzzBackfillScaleAfterCutoffAdapterEnabledTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
@@ -1761,7 +1783,7 @@ contract Dividers is TestHelper {
     // @notice if backfill happens while adapter is disabled stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
     // no matter that the current timestamp is > cutoff
     function testFuzzBackfillScaleAfterCutoffAdapterDisabledTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
@@ -1788,7 +1810,7 @@ contract Dividers is TestHelper {
     // @notice if backfill happens before the maturity and sponsor window, stakecoin stake is transferred to the
     // sponsor and issuance fees are returned to Sense's cup multisig address
     function testFuzzBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
@@ -1817,7 +1839,7 @@ contract Dividers is TestHelper {
     function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal)
         public
     {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
@@ -1847,7 +1869,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzBackfillOnlyLScale(uint128 tBal) public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));

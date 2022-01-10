@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -21,8 +21,8 @@ contract FakeAdapter is BaseAdapter {
         uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
+        uint256 _minm,
+        uint256 _maxm,
         uint16 _mode,
         uint64 _tilt,
         uint16 _level
@@ -125,7 +125,7 @@ contract Adapters is TestHelper {
 
     // distribution tests
     function testDistribution() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -150,7 +150,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionSimple() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -178,7 +178,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionProportionally() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -220,7 +220,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionSimpleCollect() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -236,7 +236,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionCollectAndTransferMultiStep() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 

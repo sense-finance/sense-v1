@@ -2,7 +2,8 @@
 pragma solidity 0.8.11;
 
 // External references
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
@@ -15,7 +16,7 @@ import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 /// @title Grounded Claims (gClaims)
 /// @notice The GClaim Manager contract turns Collect Claims into Drag Claims
 contract GClaimManager {
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
     /// @notice "Issuance" scale value all claims of the same Series must backfill to separated by Claim address
@@ -35,7 +36,7 @@ contract GClaimManager {
 
     function join(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
@@ -76,7 +77,7 @@ contract GClaimManager {
 
     function exit(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal
     ) external {
         (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
@@ -108,7 +109,7 @@ contract GClaimManager {
     /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
     function excess(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
         (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
@@ -131,6 +132,6 @@ contract GClaimManager {
 
     /* ========== EVENTS ========== */
 
-    event Joined(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
-    event Exited(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
+    event Joined(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
+    event Exited(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
 }

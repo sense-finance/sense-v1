@@ -62,7 +62,7 @@ contract SpaceFactory is Trust {
     }
 
     /// @notice Deploys a new `Space` contract
-    function create(address _adapter, uint48 _maturity) external returns (address) {
+    function create(address _adapter, uint256 _maturity) external returns (address) {
         require(pools[_adapter][_maturity] == address(0), "POOL_ALREADY_EXISTS");
 
         (address zero, , , , , , , , ) = DividerLike(divider).series(_adapter, uint256(_maturity));

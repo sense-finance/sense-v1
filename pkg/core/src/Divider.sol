@@ -3,8 +3,8 @@ pragma solidity 0.8.11;
 
 // External references
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { ReentrancyGuard } from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
 import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
@@ -12,6 +12,7 @@ import { FixedMath } from "./external/FixedMath.sol";
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
+import { Trust } from "./external/Trust.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
@@ -20,7 +21,7 @@ import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 /// @author fedealconada + jparklev
 /// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
 contract Divider is Trust, ReentrancyGuard, Pausable {
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
     using FixedMath for uint256;
     using Levels for uint256;
 
@@ -105,6 +106,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Enable an adapter
     /// @param adapter Adapter's address
     function addAdapter(address adapter) external whenPermissionless whenNotPaused {
+        require(adapter != address(0), Errors.InvalidAddress);
         _setAdapter(adapter, true);
     }
 
@@ -116,9 +118,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param sponsor Sponsor of the Series that puts up a token stake and receives the issuance fees
     function initSeries(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         address sponsor
-    ) external onlyPeriphery whenNotPaused returns (address zero, address claim) {
+    ) external nonReentrant onlyPeriphery whenNotPaused returns (address zero, address claim) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(!_exists(adapter, maturity), Errors.DuplicateSeries);
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);
@@ -154,7 +156,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @dev After that, the reward becomes MEV
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series
-    function settleSeries(address adapter, uint48 maturity) external nonReentrant whenNotPaused {
+    function settleSeries(address adapter, uint256 maturity) external nonReentrant whenNotPaused {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(_canBeSettled(adapter, maturity), Errors.OutOfWindowBoundaries);
@@ -182,7 +184,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
     function issue(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal
     ) external nonReentrant whenNotPaused returns (uint256 uBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
@@ -244,7 +246,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param uBal Balance of Zeros and Claims to burn
     function combine(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
@@ -287,7 +289,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param uBal Amount of Zeros to burn, which should be equivalent to the amount of Underlying owed to the caller
     function redeemZero(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
@@ -329,7 +331,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     function collect(
         address usr,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBalTransfer,
         address to
     ) external nonReentrant onlyClaim(adapter, maturity) whenNotPaused returns (uint256 collected) {
@@ -348,7 +350,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     function _collect(
         address usr,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal,
         uint256 uBalTransfer,
         address to
@@ -444,7 +446,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     function _redeemClaim(
         address usr,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal
     ) internal {
         // Burn the users's Claims
@@ -527,7 +529,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param _lscales Values to set on lscales mapping
     function backfillScale(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 mscale,
         address[] calldata _usrs,
         uint256[] calldata _lscales
@@ -564,15 +566,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== INTERNAL VIEWS ========== */
 
-    function _exists(address adapter, uint48 maturity) internal view returns (bool) {
+    function _exists(address adapter, uint256 maturity) internal view returns (bool) {
         return series[adapter][maturity].zero != address(0);
     }
 
-    function _settled(address adapter, uint48 maturity) internal view returns (bool) {
+    function _settled(address adapter, uint256 maturity) internal view returns (bool) {
         return series[adapter][maturity].mscale > 0;
     }
 
-    function _canBeSettled(address adapter, uint48 maturity) internal view returns (bool) {
+    function _canBeSettled(address adapter, uint256 maturity) internal view returns (bool) {
         require(!_settled(adapter, maturity), Errors.AlreadySettled);
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the sender is the sponsor for the Series
@@ -583,7 +585,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
     }
 
-    function _isValid(address adapter, uint48 maturity) internal view returns (bool) {
+    function _isValid(address adapter, uint256 maturity) internal view returns (bool) {
         (uint256 minm, uint256 maxm) = Adapter(adapter).getMaturityBounds();
         if (maturity < block.timestamp + minm || maturity > block.timestamp + maxm) return false;
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
@@ -616,7 +618,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyClaim(address adapter, uint48 maturity) {
+    modifier onlyClaim(address adapter, uint256 maturity) {
         require(series[adapter][maturity].claim == msg.sender, Errors.OnlyClaim);
         _;
     }
@@ -685,7 +687,7 @@ contract TokenHandler is Trust {
         divider = _divider;
     }
 
-    function deploy(address adapter, uint48 maturity) external returns (address zero, address claim) {
+    function deploy(address adapter, uint256 maturity) external returns (address zero, address claim) {
         require(msg.sender == divider, "Must be called by the Divider");
 
         ERC20 target = ERC20(Adapter(adapter).target());

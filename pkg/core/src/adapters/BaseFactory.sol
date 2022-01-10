@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 // External references
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -34,8 +34,8 @@ abstract contract BaseFactory {
         uint64 ifee; // issuance fee
         address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance
-        uint48 minm; // min maturity (seconds after block.timstamp)
-        uint48 maxm; // max maturity (seconds after block.timstamp)
+        uint256 minm; // min maturity (seconds after block.timstamp)
+        uint256 maxm; // max maturity (seconds after block.timstamp)
         uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
     }

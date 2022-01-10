@@ -58,7 +58,7 @@ contract SpaceTest is Test {
 
     MockDividerSpace internal divider;
     MockAdapterSpace internal adapter;
-    uint48 internal maturity;
+    uint256 internal maturity;
     ERC20Mintable internal zero;
     ERC20Mintable internal target;
     Authorizer internal authorizer;

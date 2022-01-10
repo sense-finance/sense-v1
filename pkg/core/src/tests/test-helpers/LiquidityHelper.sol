@@ -4,7 +4,8 @@ pragma solidity 0.8.11;
 import { Hevm } from "./Hevm.sol";
 
 // Internal references
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { Assets } from "./Assets.sol";
 
 interface SwapRouterLike {
@@ -45,7 +46,7 @@ interface CETHTokenInterface {
 }
 
 contract LiquidityHelper {
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
 
     uint24 public constant UNI_POOL_FEE = 3000; // denominated in hundredths of a bip
 

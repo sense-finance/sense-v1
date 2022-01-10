@@ -2,14 +2,15 @@
 pragma solidity 0.8.11;
 
 // External references
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 import { BalancerVault, IAsset } from "./external/balancer/Vault.sol";
 import { BalancerPool } from "./external/balancer/Pool.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Trust } from "./external/Trust.sol";
 import { CropAdapter as Adapter } from "./adapters/CropAdapter.sol";
 import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
@@ -17,7 +18,7 @@ import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "./tokens/Token.sol";
 
 interface SpaceFactoryLike {
-    function create(address, uint48) external returns (address);
+    function create(address, uint256) external returns (address);
 
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
@@ -25,7 +26,7 @@ interface SpaceFactoryLike {
 /// @title Periphery
 contract Periphery is Trust {
     using FixedMath for uint256;
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
     using Errors for string;
 
     /// @notice Configuration
@@ -63,12 +64,11 @@ contract Periphery is Trust {
     /// @dev Calls divider to initalise a new series
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
-    function sponsorSeries(address adapter, uint48 maturity) external returns (address zero, address claim) {
+    function sponsorSeries(address adapter, uint256 maturity) external returns (address zero, address claim) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Transfer stakeSize from sponsor into this contract
-        uint256 stakeDecimals = ERC20(stake).decimals();
-        ERC20(stake).safeTransferFrom(msg.sender, address(this), _convertToBase(stakeSize, stakeDecimals));
+        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize);
 
         // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
@@ -107,7 +107,7 @@ contract Periphery is Trust {
     /// @return amount of Zeros received
     function swapTargetForZeros(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal,
         uint256 minAccepted
     ) external returns (uint256) {
@@ -123,12 +123,13 @@ contract Periphery is Trust {
     /// @return amount of Zeros received
     function swapUnderlyingForZeros(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal,
         uint256 minAccepted
     ) external returns (uint256) {
-        ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal); // approve adapter to pull uBal
+        ERC20 underlying = ERC20(Adapter(adapter).underlying());
+        underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        underlying.safeApprove(adapter, uBal); // approve adapter to pull uBal
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // convert target to underlying
         return _swapTargetForZeros(adapter, maturity, tBal, minAccepted);
     }
@@ -139,7 +140,7 @@ contract Periphery is Trust {
     /// @param tBal Balance of Target to sell
     function swapTargetForClaims(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal,
         uint256 minAccepted
     ) external returns (uint256) {
@@ -153,12 +154,13 @@ contract Periphery is Trust {
     /// @param uBal Balance of Underlying to sell
     function swapUnderlyingForClaims(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal,
         uint256 minAccepted
     ) external returns (uint256) {
-        ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), uBal); // pull target
-        ERC20(Adapter(adapter).underlying()).safeApprove(adapter, uBal); // approve adapter to pull underlying
+        ERC20 underlying = ERC20(Adapter(adapter).underlying());
+        underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
+        underlying.safeApprove(adapter, uBal); // approve adapter to pull underlying
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         return _swapTargetForClaims(adapter, maturity, tBal, minAccepted);
     }
@@ -170,7 +172,7 @@ contract Periphery is Trust {
     /// @param minAccepted Min accepted amount of Target
     function swapZerosForTarget(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 zBal,
         uint256 minAccepted
     ) external returns (uint256) {
@@ -186,7 +188,7 @@ contract Periphery is Trust {
     /// @param minAccepted Min accepted amount of Target
     function swapZerosForUnderlying(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 zBal,
         uint256 minAccepted
     ) external returns (uint256) {
@@ -203,7 +205,7 @@ contract Periphery is Trust {
     /// @param cBal Balance of Claims to swap
     function swapClaimsForTarget(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBal
     ) external returns (uint256) {
         uint256 tBal = _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
@@ -217,7 +219,7 @@ contract Periphery is Trust {
     /// @param cBal Balance of Claims to swap
     function swapClaimsForUnderlying(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBal
     ) external returns (uint256) {
         uint256 tBal = _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
@@ -233,7 +235,7 @@ contract Periphery is Trust {
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
     function addLiquidityFromTarget(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal,
         uint8 mode
     )
@@ -255,7 +257,7 @@ contract Periphery is Trust {
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
     function addLiquidityFromUnderlying(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 uBal,
         uint8 mode
     )
@@ -283,7 +285,7 @@ contract Periphery is Trust {
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
     function removeLiquidityToTarget(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
@@ -302,7 +304,7 @@ contract Periphery is Trust {
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
     function removeLiquidityToUnderlying(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
@@ -327,8 +329,8 @@ contract Periphery is Trust {
     function migrateLiquidity(
         address srcAdapter,
         address dstAdapter,
-        uint48 srcMaturity,
-        uint48 dstMaturity,
+        uint256 srcMaturity,
+        uint256 dstMaturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
@@ -391,7 +393,7 @@ contract Periphery is Trust {
 
     function _swapZerosForTarget(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 zBal,
         uint256 minAccepted
     ) internal returns (uint256) {
@@ -403,7 +405,7 @@ contract Periphery is Trust {
 
     function _swapTargetForZeros(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal,
         uint256 minAccepted
     ) internal returns (uint256) {
@@ -416,7 +418,7 @@ contract Periphery is Trust {
 
     function _swapTargetForClaims(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal,
         uint256 minAccepted
     ) internal returns (uint256) {
@@ -436,7 +438,7 @@ contract Periphery is Trust {
     function _swapClaimsForTarget(
         address sender,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBal
     ) internal returns (uint256) {
         (, address claim, , , , , , , ) = divider.series(adapter, maturity);
@@ -477,7 +479,7 @@ contract Periphery is Trust {
 
     function _addLiquidity(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal,
         uint8 mode
     )
@@ -514,7 +516,7 @@ contract Periphery is Trust {
     /// and the diff between the target initially passed and the calculated amount
     function _computeIssueAddLiq(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 tBal
     ) internal returns (uint256, uint256) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
@@ -553,7 +555,7 @@ contract Periphery is Trust {
 
     function _removeLiquidity(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
@@ -589,7 +591,7 @@ contract Periphery is Trust {
     function _flashBorrow(
         bytes memory data,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBalIn,
         uint256 amount
     ) internal returns (uint256) {
@@ -613,7 +615,7 @@ contract Periphery is Trust {
         bytes calldata,
         address initiator,
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         uint256 cBalIn,
         uint256 amount
     ) external returns (bytes32, uint256) {
@@ -681,15 +683,6 @@ contract Periphery is Trust {
         uint256 zBalAfter = ERC20(zero).balanceOf(address(this));
         uint256 tBalAfter = ERC20(target).balanceOf(address(this));
         return (tBalAfter - tBalBefore, zBalAfter - zBalBefore);
-    }
-
-    /* ========== HELPER FUNCTIONS ========== */
-
-    function _convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
-        if (decimals != 18) {
-            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
-        }
-        return amount;
     }
 
     // @author https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33

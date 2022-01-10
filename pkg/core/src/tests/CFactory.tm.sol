@@ -21,8 +21,8 @@ contract CAdapterTestHelper is DSTest {
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint48 public constant MIN_MATURITY = 2 weeks;
-    uint48 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant MIN_MATURITY = 2 weeks;
+    uint256 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -65,8 +65,8 @@ contract CFactories is CAdapterTestHelper {
             uint64 ifee,
             address stake,
             uint256 stakeSize,
-            uint48 minm,
-            uint48 maxm,
+            uint256 minm,
+            uint256 maxm,
             uint16 mode,
             uint64 tilt
         ) = CFactory(otherCFactory).factoryParams();

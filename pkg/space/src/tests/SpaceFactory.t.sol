@@ -26,9 +26,9 @@ contract SpaceFactoryTest is DSTest {
     SpaceFactory internal spaceFactory;
     MockDividerSpace internal divider;
     MockAdapterSpace internal adapter;
-    uint48 internal maturity1;
-    uint48 internal maturity2;
-    uint48 internal maturity3;
+    uint256 internal maturity1;
+    uint256 internal maturity2;
+    uint256 internal maturity3;
 
     uint256 internal ts;
     uint256 internal g1;

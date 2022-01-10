@@ -63,8 +63,8 @@ contract TestHelper is DSTest {
     address public ORACLE = address(123);
     uint64 public ISSUANCE_FEE = 0.1e18;
     uint256 public STAKE_SIZE = 1e18;
-    uint48 public MIN_MATURITY = 2 weeks;
-    uint48 public MAX_MATURITY = 14 weeks;
+    uint256 public MIN_MATURITY = 2 weeks;
+    uint256 public MAX_MATURITY = 14 weeks;
     uint16 public DEFAULT_LEVEL = 31;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
@@ -195,12 +195,12 @@ contract TestHelper is DSTest {
         periphery.setFactory(address(someFactory), true);
     }
 
-    function getValidMaturity(uint256 year, uint256 month) public view returns (uint48 maturity) {
-        maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
+    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
+        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
     }
 
-    function sponsorSampleSeries(address sponsor, uint48 maturity) public returns (address zero, address claim) {
+    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
@@ -226,7 +226,7 @@ contract TestHelper is DSTest {
         assertClose(a, b, variance);
     }
 
-    function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
+    function addLiquidityToBalancerVault(uint256 maturity, uint256 tBal) public {
         (address zero, address claim, , , , , , , ) = divider.series(address(adapter), maturity);
         uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
         alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
@@ -256,7 +256,7 @@ contract TestHelper is DSTest {
 
     function calculateExcess(
         uint256 tBal,
-        uint48 maturity,
+        uint256 maturity,
         address claim
     ) public returns (uint256 gap) {
         uint256 toIssue = calculateAmountToIssue(tBal);

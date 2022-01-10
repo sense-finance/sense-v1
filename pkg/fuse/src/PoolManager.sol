@@ -3,12 +3,12 @@ pragma solidity 0.8.11;
 
 // External reference
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
 import { PriceOracle } from "./external/PriceOracle.sol";
 
 // Internal references
+import { Trust } from "@sense-finance/v1-core/src/external/Trust.sol";
 import { UnderlyingOracle } from "./oracles/Underlying.sol";
 import { TargetOracle } from "./oracles/Target.sol";
 import { ZeroOracle } from "./oracles/Zero.sol";
@@ -101,7 +101,7 @@ contract PoolManager is Trust {
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
     event TargetAdded(address indexed target, address indexed cTarget);
     event SeriesAdded(address indexed zero, address indexed lpToken);
-    event SeriesQueued(address indexed adapter, uint48 indexed maturity, address indexed pool);
+    event SeriesQueued(address indexed adapter, uint256 indexed maturity, address indexed pool);
 
     constructor(
         address _fuseDirectory,
@@ -200,7 +200,7 @@ contract PoolManager is Trust {
     /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
-        uint48 maturity,
+        uint256 maturity,
         address pool
     ) external requiresTrust {
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
@@ -220,7 +220,7 @@ contract PoolManager is Trust {
 
     /// @notice open method to add queued Zeros and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
-    function addSeries(address adapter, uint48 maturity) external {
+    function addSeries(address adapter, uint256 maturity) external {
         require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
 
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
