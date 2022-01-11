@@ -10,7 +10,7 @@ contract MockToken is ERC20 {
         string memory _name,
         string memory _symbol,
         uint8 _decimal
-    ) ERC20(_name, _symbol, _decimal) { }
+    ) ERC20(_name, _symbol, _decimal) {}
 
     function mint(address account, uint256 amount) external virtual {
         _mint(account, amount);
@@ -26,7 +26,7 @@ contract AuthdMockToken is ERC20, Trust {
         string memory _name,
         string memory _symbol,
         uint8 _decimal
-    ) ERC20(_name, _symbol, _decimal) Trust(msg.sender) { }
+    ) ERC20(_name, _symbol, _decimal) Trust(msg.sender) {}
 
     function mint(address account, uint256 amount) external virtual requiresTrust {
         _mint(account, amount);

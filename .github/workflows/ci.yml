@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FORGE_REVISION: 81b9f7dbceb2d2bbf59644fa5dae88eff29fba21
+      FORGE_REVISION: a2287d9d645991c704eca66b2ca46a29bb06b6e1
 
     steps:
     - uses: actions/checkout@v2

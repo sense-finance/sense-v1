@@ -41,7 +41,7 @@ interface AdapterLike {
 /// @notice A Yieldspace implementation extended such that LPs can deposit
 /// [Zero, Yield-bearing asset], rather than [Zero, Underlying], while keeping the benefits of the
 /// yieldspace invariant (e.g. it can hold [Zero, cDAI], rather than [Zero, DAI], while still operating
-/// in "yield space" for the zero-coupon side – see the YieldSpace paper for more https://yield.is/YieldSpace.pdf)
+/// in "yield space" for the zero-coupon side. See the YieldSpace paper for more https://yield.is/YieldSpace.pdf)
 /// @dev We use much more internal storage here than in other Sense contracts because it
 /// conforms to Balancer's own style, and we're using several Balancer functions that play nicer if we do.
 /// @dev Requires an external "Adapter" contract with a `scale()` function which returns the
@@ -174,7 +174,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             uint256 underlyingIn = reqAmountsIn[_targeti].mulDown(initScale);
 
             // Just like weighted pool 2 token from the balancer v2 monorepo,
-            // we lock MINIMUM_BPT in by minting it for the zero address – this reduces potential
+            // we lock MINIMUM_BPT in by minting it for the zero address. This reduces potential
             // issues with rounding and ensures that this code path will only be executed once
             _mintPoolTokens(address(0), MINIMUM_BPT);
 
@@ -187,8 +187,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
             // Set the scale value all future deposits will be backdated to
             _initScale = initScale;
 
-            // For the first join, we don't pull any Zeros, regardless of what the caller requested –
-            // this starts this pool off as synthetic Underlying only, as the yieldspace invariant expects
+            // For the first join, we don't pull any Zeros, regardless of what the caller requested.
+            // This starts this pool off as synthetic Underlying only, as the yieldspace invariant expects
             delete reqAmountsIn[_zeroi];
 
             // Cache new reserves, post join
@@ -407,8 +407,8 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 a = (zeroIn ? g2 : g1).mulUp(t).complement();
 
         // Pow up for `x1` & `y1` and down for `xOrY2` causes the pow induced error for `xOrYPost`
-        // to tend towards higher values rather than lower –
-        // effectively we're adding a little bump up for ammountIn, and down for amountOut
+        // to tend towards higher values rather than lower.
+        // Effectively we're adding a little bump up for ammountIn, and down for amountOut
 
         // x1 = xPre ^ a; y1 = yPre ^ a
         uint256 x1 = reservesTokenIn.powUp(a);

@@ -7,8 +7,23 @@ import { Hevm } from "./Hevm.sol";
 import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Assets } from "./Assets.sol";
 
-// Uniswap
-import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+interface SwapRouterLike {
+    struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+}
 
 interface WstETHInterface {
     function unwrap(uint256 _wstETHAmount) external returns (uint256);
@@ -98,7 +113,7 @@ contract LiquidityHelper {
 
         // approve router to spend tokenIn
         ERC20(tokenIn).safeApprove(Assets.UNISWAP_ROUTER, amountIn);
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+        SwapRouterLike.ExactInputSingleParams memory params = SwapRouterLike.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             fee: UNI_POOL_FEE,
@@ -108,7 +123,7 @@ contract LiquidityHelper {
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
-        amountOut = ISwapRouter(Assets.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
+        amountOut = SwapRouterLike(Assets.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
         emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
         return amountOut;
     }

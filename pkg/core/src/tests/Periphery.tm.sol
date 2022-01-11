@@ -17,9 +17,6 @@ import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
 
-import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
-
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";

@@ -83,8 +83,8 @@ abstract contract CropAdapter is BaseAdapter {
         emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
-    /// @notice Some protocols don't airdrop reward tokens, instead users must claim them –
-    /// this method may be overriden by child contracts to Claim a protocol's rewards
+    /// @notice Some protocols don't airdrop reward tokens, instead users must claim them.
+    /// This method may be overriden by child contracts to Claim a protocol's rewards
     function _claimReward() internal virtual {
         return;
     }

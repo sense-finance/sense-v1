@@ -34,7 +34,7 @@ contract SpaceFactory is Trust {
     /// @notice Balancer Vault
     IVault public immutable vault;
 
-    /// @notice Sense Divider ᗧ···ᗣ···ᗣ··
+    /// @notice Sense Divider
     address public immutable divider;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */

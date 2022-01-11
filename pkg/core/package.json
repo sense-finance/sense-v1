@@ -28,9 +28,7 @@
         "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "5.0.2",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
-        "@sense-finance/v1-utils": "workspace:pkg/utils",
-        "@uniswap/v3-core": "^1.0.0",
-        "@uniswap/v3-periphery": "^1.2.1"
+        "@sense-finance/v1-utils": "workspace:pkg/utils"
     },
     "devDependencies": {
         "dotenv": "^10.0.0",
