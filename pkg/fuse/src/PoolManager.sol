@@ -158,7 +158,7 @@ contract PoolManager is Trust {
     function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(!tInits[target], Errors.TargetExists);
-        require(targetParams.irModel != address(0), Errors.TargetParamNotSet);
+        require(targetParams.irModel != address(0), Errors.PoolParamsNotSet);
 
         address underlying = Adapter(adapter).underlying();
 
@@ -182,7 +182,7 @@ contract PoolManager is Trust {
             ERC20(target).name(),
             ERC20(target).symbol(),
             cERC20Impl,
-            "0x00", // calldata sent to becomeImplementation (currently unused)
+            hex"", // calldata sent to becomeImplementation (currently unused)
             targetParams.reserveFactor,
             adminFee
         );
@@ -196,7 +196,7 @@ contract PoolManager is Trust {
         emit TargetAdded(target, cTarget);
     }
 
-    /// @notice queues a set of (Zero, LPShare) fora  Fuse pool once the TWAP is ready
+    /// @notice queues a set of (Zero, LPShare) for a  Fuse pool once the TWAP is ready
     /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
@@ -207,7 +207,7 @@ contract PoolManager is Trust {
 
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(sStatus[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
+        require(sStatus[adapter][maturity] == SeriesStatus.NONE, Errors.DuplicateSeries);
 
         address target = Adapter(adapter).target();
         require(tInits[target], Errors.TargetNotInFuse);
@@ -222,6 +222,9 @@ contract PoolManager is Trust {
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint48 maturity) external {
         require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
+
+        require(zeroParams.irModel != address(0), Errors.PoolParamsNotSet);
+        require(lpTokenParams.irModel != address(0), Errors.PoolParamsNotSet);
 
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
@@ -239,14 +242,14 @@ contract PoolManager is Trust {
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
         uint256 adminFee = 0;
-        bytes memory constructorDataZero = abi.encodePacked(
+        bytes memory constructorDataZero = abi.encode(
             zero,
             comptroller,
             zeroParams.irModel,
             ERC20(zero).name(),
             ERC20(zero).symbol(),
             cERC20Impl,
-            "0x00",
+            hex"",
             zeroParams.reserveFactor,
             adminFee
         );
@@ -259,14 +262,14 @@ contract PoolManager is Trust {
         require(errZero == 0, Errors.FailedAddZeroMarket);
 
         // LP Share pool token
-        bytes memory constructorDataLpToken = abi.encodePacked(
+        bytes memory constructorDataLpToken = abi.encode(
             pool,
             comptroller,
             lpTokenParams.irModel,
             ERC20(pool).name(),
             ERC20(pool).symbol(),
             cERC20Impl,
-            "0x00",
+            hex"",
             lpTokenParams.reserveFactor,
             adminFee
         );

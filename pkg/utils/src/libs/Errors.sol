@@ -44,7 +44,7 @@ library Errors {
     string constant TargetExists = "Target already added";
     string constant TargetNotInFuse = "Target for this Series not yet added to Fuse";
     string constant TargetMismatch = "Source Target must be the same a destination Target";
-    string constant TargetParamNotSet = "Target asset params not set";
+    string constant PoolParamsNotSet = "Pool Manager params not set";
     string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
     string constant ZeroBalance = "Balance must be greater than 0";
     string constant CombineRestricted = "Combine restricted to Adapter";

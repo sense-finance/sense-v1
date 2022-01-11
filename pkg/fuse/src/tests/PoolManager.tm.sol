@@ -48,25 +48,27 @@ contract PoolManagerTest is DSTest {
 
         // Enable the adapter
         divider.setPeriphery(address(this));
-        mockAdapter = new MockAdapter();
 
         MockToken underlying = new MockToken("Underlying Token", "UD", 18);
         MockToken reward = new MockToken("Reward Token", "RT", 18);
         stake = new MockToken("Stake", "SBL", 18);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            oracle: address(mockOracle),
-            ifee: 0.1e18,
-            stake: address(stake),
-            stakeSize: 1e18,
-            minm: 2 weeks,
-            maxm: 14 weeks,
-            mode: 0
-        });
+        mockAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            address(mockOracle),
+            0.1e18,
+            address(stake),
+            1e18,
+            2 weeks,
+            14 weeks,
+            0,
+            0,
+            31,
+            address(reward)
+        );
 
-        mockAdapter.initialize(address(divider), adapterParams, address(reward));
         // Ping scale to set an lscale
         mockAdapter.scale();
         divider.setAdapter(address(mockAdapter), true);

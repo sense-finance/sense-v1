@@ -137,7 +137,7 @@ contract PoolManagerLocalTest is TestHelper {
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.TargetParamNotSet);
+            assertEq(error, Errors.PoolParamsNotSet);
         }
     }
 
