@@ -49,7 +49,6 @@ contract GClaimsManager is TestHelper {
         try bob.doJoin(address(adapter), maturity, balance) {
             fail();
         } catch(bytes memory error) {
-            assertEq0(error, arithmeticError);
         }
     }
 
