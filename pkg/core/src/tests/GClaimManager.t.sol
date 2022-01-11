@@ -49,7 +49,7 @@ contract GClaimsManager is TestHelper {
         try bob.doJoin(address(adapter), maturity, balance) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 
@@ -63,7 +63,7 @@ contract GClaimsManager is TestHelper {
         try bob.doJoin(address(adapter), maturity, claimBalance) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 
@@ -96,7 +96,7 @@ contract GClaimsManager is TestHelper {
         try alice.doJoin(address(adapter), maturity, aliceClaimBalance) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 

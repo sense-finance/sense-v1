@@ -32,7 +32,7 @@ contract Dividers is TestHelper {
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 
@@ -42,7 +42,7 @@ contract Dividers is TestHelper {
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 
@@ -481,7 +481,7 @@ contract Dividers is TestHelper {
         try alice.doIssue(address(adapter), maturity, aliceBalance + 1) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 
@@ -495,7 +495,7 @@ contract Dividers is TestHelper {
         try alice.doIssue(address(adapter), maturity, aliceBalance) {
             fail();
         } catch(bytes memory error) {
-            // assertEq(error, Errors.TransferFromFailed);
+            assertEq0(error, arithmeticError);
         }
     }
 
