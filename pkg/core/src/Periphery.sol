@@ -11,7 +11,7 @@ import { BalancerPool } from "./external/balancer/Pool.sol";
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { CropAdapter as Adapter } from "./adapters/CropAdapter.sol";
+import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
@@ -28,9 +28,6 @@ contract Periphery is Trust {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
     using Errors for string;
-
-    /// @notice Configuration
-    uint32 public constant TWAP_PERIOD = 10 minutes; // ideal TWAP interval.
 
     /// @notice Program state
     Divider public immutable divider;
@@ -130,7 +127,7 @@ contract Periphery is Trust {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
         underlying.safeApprove(adapter, uBal); // approve adapter to pull uBal
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // convert target to underlying
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         return _swapTargetForZeros(adapter, maturity, tBal, minAccepted);
     }
 
@@ -233,6 +230,7 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to provide
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
+    /// @return see return description of _addLiquidity
     function addLiquidityFromTarget(
         address adapter,
         uint256 maturity,
@@ -255,6 +253,7 @@ contract Periphery is Trust {
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Underlying to provide
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
+    /// @return see return description of _addLiquidity
     function addLiquidityFromUnderlying(
         address adapter,
         uint256 maturity,
@@ -326,6 +325,7 @@ contract Periphery is Trust {
     /// @param minAmountsOut lower limits for the tokens to receive (useful to account for slippage)
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
+    /// @return see return description of _addLiquidity
     function migrateLiquidity(
         address srcAdapter,
         address dstAdapter,
@@ -351,12 +351,12 @@ contract Periphery is Trust {
     /* ========== ADMIN FUNCTIONS ========== */
 
     /// @notice Enable or disable a factory
-    /// @param factory Factory's address
+    /// @param f Factory's address
     /// @param isOn Flag setting this factory to enabled or disabled
-    function setFactory(address factory, bool isOn) external requiresTrust {
-        require(factories[factory] != isOn, Errors.ExistingValue);
-        factories[factory] = isOn;
-        emit FactoryChanged(factory, isOn);
+    function setFactory(address f, bool isOn) external requiresTrust {
+        require(factories[f] != isOn, Errors.ExistingValue);
+        factories[f] = isOn;
+        emit FactoryChanged(f, isOn);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -397,10 +397,10 @@ contract Periphery is Trust {
         uint256 zBal,
         uint256 minAccepted
     ) internal returns (uint256) {
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
-        ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal); // pull zeros
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
+        ERC20(series.zero).safeTransferFrom(msg.sender, address(this), zBal); // pull zeros
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        return _swap(zero, Adapter(adapter).target(), zBal, pool.getPoolId(), minAccepted); // swap zeros for underlying
+        return _swap(series.zero, Adapter(adapter).target(), zBal, pool.getPoolId(), minAccepted); // swap zeros for underlying
     }
 
     function _swapTargetForZeros(
@@ -409,10 +409,10 @@ contract Periphery is Trust {
         uint256 tBal,
         uint256 minAccepted
     ) internal returns (uint256) {
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        uint256 zBal = _swap(Adapter(adapter).target(), zero, tBal, pool.getPoolId(), minAccepted); // swap target for zeros
-        ERC20(zero).safeTransfer(msg.sender, zBal); // transfer bought zeros to user
+        uint256 zBal = _swap(Adapter(adapter).target(), series.zero, tBal, pool.getPoolId(), minAccepted); // swap target for zeros
+        ERC20(series.zero).safeTransfer(msg.sender, zBal); // transfer bought zeros to user
         return zBal;
     }
 
@@ -422,16 +422,16 @@ contract Periphery is Trust {
         uint256 tBal,
         uint256 minAccepted
     ) internal returns (uint256) {
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // issue zeros and claims & swap zeros for target
         uint256 issued = divider.issue(adapter, maturity, tBal);
-        tBal = _swap(zero, Adapter(adapter).target(), issued, pool.getPoolId(), minAccepted);
+        tBal = _swap(series.zero, Adapter(adapter).target(), issued, pool.getPoolId(), minAccepted);
 
         // transfer claims & target to user
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal);
-        ERC20(claim).safeTransfer(msg.sender, issued);
+        ERC20(series.claim).safeTransfer(msg.sender, issued);
         return issued;
     }
 
@@ -441,15 +441,15 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 cBal
     ) internal returns (uint256) {
-        (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
 
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable.
-        require(cBal * 10**(18 - ERC20(claim).decimals()) > 1e12, Errors.SwapTooSmall);
+        require(cBal * 10**(18 - ERC20(series.claim).decimals()) > 1e12, Errors.SwapTooSmall);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer claims into this contract if needed
-        if (sender != address(this)) ERC20(claim).safeTransferFrom(msg.sender, address(this), cBal);
+        if (sender != address(this)) ERC20(series.claim).safeTransferFrom(msg.sender, address(this), cBal);
 
         // Calculate target to borrow by calling AMM
         bytes32 poolId = pool.getPoolId();
@@ -477,6 +477,9 @@ contract Periphery is Trust {
         return _flashBorrow("0x", adapter, maturity, cBal, targetToBorrow);
     }
 
+    /// @return tAmount if mode = 0, target received from selling Claims, otherwise, returns 0  
+    /// @return issued returns amount of Claims issued (and received) except first provision which returns 0  
+    /// @return lpShares Space LP shares received given the liquidity added 
     function _addLiquidity(
         address adapter,
         uint256 maturity,
@@ -485,17 +488,16 @@ contract Periphery is Trust {
     )
         internal
         returns (
-            uint256,
-            uint256,
-            uint256
+            uint256 tAmount,
+            uint256 issued,
+            uint256 lpShares
         )
     {
-        (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
 
         // (1) compute target, issue zeros & claims & add liquidity to space
-        (uint256 issued, uint256 lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
+        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
 
-        uint256 tAmount;
         if (issued > 0) {
             // issue = 0 means that we are on the first pool provision or that the zero:target ratio is 0:target
             if (mode == 0) {
@@ -505,10 +507,9 @@ contract Periphery is Trust {
                 ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tAmount);
             } else {
                 // (4) Send Claims back to the User
-                ERC20(claim).safeTransfer(msg.sender, issued);
+                ERC20(series.claim).safeTransfer(msg.sender, issued);
             }
         }
-        return (tAmount, issued, lpShares);
     }
 
     /// @dev Calculates amount of zeros in target terms (see description on `_computeTarget`) then issues
@@ -561,7 +562,7 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) internal returns (uint256) {
         address target = Adapter(adapter).target();
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         bytes32 poolId = pool.getPoolId();
 
@@ -569,14 +570,14 @@ contract Periphery is Trust {
         ERC20(address(pool)).safeTransferFrom(msg.sender, address(this), lpBal);
 
         // (1) Remove liquidity from Space
-        (uint256 tBal, uint256 zBal) = _removeLiquidityFromSpace(poolId, zero, target, minAmountsOut, lpBal);
+        (uint256 tBal, uint256 zBal) = _removeLiquidityFromSpace(poolId, series.zero, target, minAmountsOut, lpBal);
 
         if (block.timestamp >= maturity) {
             // (2) Redeem Zeros for Target
             tBal += divider.redeemZero(adapter, maturity, zBal);
         } else {
             // (2) Sell Zeros for Target
-            tBal += _swap(zero, target, zBal, poolId, minAccepted);
+            tBal += _swap(series.zero, target, zBal, poolId, minAccepted);
         }
 
         return tBal;
@@ -621,16 +622,24 @@ contract Periphery is Trust {
     ) external returns (bytes32, uint256) {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Because Space utilizes power ofs liberally in its invariant, there is some error
         // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
         // that matched our Claim balance.
-        uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
+        uint256 acceptableError = ERC20(series.claim).decimals() < 9
+            ? 1
+            : 1e10 / 10**(18 - ERC20(series.claim).decimals());
 
         // Swap Target for Zeros
-        uint256 zBal = _swap(Adapter(adapter).target(), zero, amount, pool.getPoolId(), cBalIn - acceptableError);
+        uint256 zBal = _swap(
+            Adapter(adapter).target(),
+            series.zero,
+            amount,
+            pool.getPoolId(),
+            cBalIn - acceptableError
+        );
 
         // We take the lowest of the two balances, as long as they're within a margin of acceptable error.
         require(zBal < cBalIn + acceptableError && zBal > cBalIn - acceptableError, Errors.UnexpectedSwapAmount);

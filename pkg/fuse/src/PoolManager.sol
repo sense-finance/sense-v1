@@ -203,10 +203,10 @@ contract PoolManager is Trust {
         uint256 maturity,
         address pool
     ) external requiresTrust {
-        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
 
         require(comptroller != address(0), Errors.PoolNotDeployed);
-        require(zero != address(0), Errors.SeriesDoesntExists);
+        require(series.zero != address(0), Errors.SeriesDoesntExists);
         require(sStatus[adapter][maturity] != SeriesStatus.QUEUED, Errors.DuplicateSeries);
 
         address target = Adapter(adapter).target();
@@ -223,28 +223,28 @@ contract PoolManager is Trust {
     function addSeries(address adapter, uint256 maturity) external {
         require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
 
-        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        Divider.Series memory series = Divider(divider).series(adapter, maturity);
 
         address pool = sPools[adapter][maturity];
 
         address[] memory underlyings = new address[](2);
-        underlyings[0] = zero;
+        underlyings[0] = series.zero;
         underlyings[1] = pool;
 
         PriceOracle[] memory oracles = new PriceOracle[](2);
         oracles[0] = PriceOracle(zeroOracle);
         oracles[1] = PriceOracle(lpOracle);
 
-        ZeroOracle(zeroOracle).setZero(zero, pool);
+        ZeroOracle(zeroOracle).setZero(series.zero, pool);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
         uint256 adminFee = 0;
         bytes memory constructorDataZero = abi.encodePacked(
-            zero,
+            series.zero,
             comptroller,
             zeroParams.irModel,
-            ERC20(zero).name(),
-            ERC20(zero).symbol(),
+            ERC20(series.zero).name(),
+            ERC20(series.zero).symbol(),
             cERC20Impl,
             "0x00",
             zeroParams.reserveFactor,
@@ -280,7 +280,7 @@ contract PoolManager is Trust {
 
         sStatus[adapter][maturity] = SeriesStatus.ADDED;
 
-        emit SeriesAdded(zero, pool);
+        emit SeriesAdded(series.zero, pool);
     }
 
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {

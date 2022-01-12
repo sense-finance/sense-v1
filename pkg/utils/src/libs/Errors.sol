@@ -5,6 +5,7 @@ pragma solidity  0.8.11;
 library Errors {
     string constant AdapterExists = "An adapter for the given target already exists";
     string constant AlreadySettled = "Series has already been settled";
+    string constant CannotReenable = "Cannot re-enable an adapter";
     string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
     string constant Create2Failed = "ERC1167: create2 failed";
     string constant DuplicateSeries = "Series has already been initialized";

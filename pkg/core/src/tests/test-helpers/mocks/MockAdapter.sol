@@ -113,9 +113,9 @@ contract MockAdapter is CropAdapter {
     function doIssue(uint256 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(zero).transfer(msg.sender, MockToken(zero).balanceOf(address(this)));
-        MockToken(claim).transfer(msg.sender, MockToken(claim).balanceOf(address(this)));
+        Divider.Series memory series = Divider(divider).series(address(this), maturity);
+        MockToken(series.zero).transfer(msg.sender, MockToken(series.zero).balanceOf(address(this)));
+        MockToken(series.claim).transfer(msg.sender, MockToken(series.claim).balanceOf(address(this)));
     }
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {

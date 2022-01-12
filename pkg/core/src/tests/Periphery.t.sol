@@ -296,7 +296,7 @@ contract PeripheryTest is TestHelper {
     //        uint256 swapped = claimsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(zero).decimals());
     //
     //        // calculate target to receive after combining
-    //        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
+    //        uint256 lscale = divider.lscale(address(adapter), maturity, address(bob));
     //        uint256 tCombined = swapped.fdiv(lscale, 10**ERC20(claim).decimals());
     //
     //        // calculate excess
