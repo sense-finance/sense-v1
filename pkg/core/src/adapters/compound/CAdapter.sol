@@ -91,8 +91,9 @@ contract CAdapter is CropAdapter {
         address _reward
     ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {
         // Approve underlying contract to pull target (used on wrapUnderlying())
-        isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
-        underlying = isCETH ? WETH : CTokenInterface(_target).underlying();
+        bool _isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
+        underlying = _isCETH ? WETH : CTokenInterface(_target).underlying();
+        isCETH = _isCETH;
         ERC20(underlying).safeApprove(_target, type(uint256).max);
     }
 
