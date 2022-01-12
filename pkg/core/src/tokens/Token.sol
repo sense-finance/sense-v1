@@ -5,7 +5,7 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 // Internal references
-import { Trust } from "../external/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 /// @title Base Token
 contract Token is ERC20, Trust {

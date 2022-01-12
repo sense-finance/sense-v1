@@ -140,13 +140,12 @@ contract WstETHAdapter is BaseAdapter {
         return eth;
     }
 
-    function wrapUnderlying(uint256 amount) external override returns (uint256) {
+    function wrapUnderlying(uint256 amount) external override returns (uint256 wstETH) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
         uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
         uint256 wstETH = WstETHInterface(WSTETH).wrap(stETH); // wrap stETH into wstETH
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH); // transfer wstETH to msg.sender
-        return wstETH;
     }
 
     fallback() external payable {

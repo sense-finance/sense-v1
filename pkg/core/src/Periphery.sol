@@ -10,7 +10,7 @@ import { BalancerPool } from "./external/balancer/Pool.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Trust } from "./external/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { CropAdapter as Adapter } from "./adapters/CropAdapter.sol";
 import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
 import { Divider } from "./Divider.sol";

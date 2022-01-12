@@ -8,12 +8,12 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 import { PriceOracle } from "./external/PriceOracle.sol";
 
 // Internal references
-import { Trust } from "@sense-finance/v1-core/src/external/Trust.sol";
 import { UnderlyingOracle } from "./oracles/Underlying.sol";
 import { TargetOracle } from "./oracles/Target.sol";
 import { ZeroOracle } from "./oracles/Zero.sol";
 import { LPOracle } from "./oracles/LP.sol";
 
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";

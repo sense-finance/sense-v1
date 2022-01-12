@@ -48,8 +48,7 @@ contract GClaimsManager is TestHelper {
         bob.doApprove(address(claim), address(bob.gClaimManager()));
         try bob.doJoin(address(adapter), maturity, balance) {
             fail();
-        } catch(bytes memory error) {
-        }
+        } catch (bytes memory error) {}
     }
 
     function testFuzzCantJoinIfNotEnoughClaimAllowance(uint128 balance) public {
@@ -61,7 +60,7 @@ contract GClaimsManager is TestHelper {
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
         try bob.doJoin(address(adapter), maturity, claimBalance) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, arithmeticError);
         }
     }
@@ -94,7 +93,7 @@ contract GClaimsManager is TestHelper {
 
         try alice.doJoin(address(adapter), maturity, aliceClaimBalance) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, arithmeticError);
         }
     }

@@ -8,7 +8,7 @@ import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMat
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
 
 // Internal references
-import { Trust } from "@sense-finance/v1-core/src/external/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 

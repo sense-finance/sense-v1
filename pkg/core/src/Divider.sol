@@ -12,7 +12,7 @@ import { FixedMath } from "./external/FixedMath.sol";
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
-import { Trust } from "./external/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Claim } from "./tokens/Claim.sol";
 import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";

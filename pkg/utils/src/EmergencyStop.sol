@@ -2,7 +2,7 @@
 pragma solidity  0.8.11;
 
 // Internal references
-import { Trust } from "@sense-finance/v1-core/src/external/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 
 /// @notice Unsets multiple adapters on the divider

@@ -31,7 +31,7 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, arithmeticError);
         }
     }
@@ -41,7 +41,7 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, arithmeticError);
         }
     }
@@ -480,7 +480,7 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), aliceBalance * 2);
         try alice.doIssue(address(adapter), maturity, aliceBalance + 1) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, arithmeticError);
         }
     }
@@ -494,7 +494,7 @@ contract Dividers is TestHelper {
         bob.doApprove(address(target), address(periphery), 0);
         try alice.doIssue(address(adapter), maturity, aliceBalance) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, arithmeticError);
         }
     }

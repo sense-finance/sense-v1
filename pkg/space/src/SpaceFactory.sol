@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
 import { BasePoolFactory } from "@balancer-labs/v2-pool-utils/contracts/factories/BasePoolFactory.sol";
 import { IVault } from "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
-import { Trust } from "@sense-finance/v1-core/src/external/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 import { Space } from "./Space.sol";
 

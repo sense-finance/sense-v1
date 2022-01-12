@@ -74,7 +74,7 @@ contract CAdapter is CropAdapter {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     address public override underlying;
-    bool public isCETH;
+    bool public immutable isCETH;
 
     constructor(
         address _divider,
