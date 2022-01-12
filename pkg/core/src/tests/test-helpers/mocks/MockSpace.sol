@@ -2,7 +2,8 @@
 pragma solidity 0.8.11;
 
 // External references
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { Token } from "../../../tokens/Token.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
@@ -165,8 +166,8 @@ contract MockSpaceFactory {
         divider = Divider(_divider);
     }
 
-    function create(address _adapter, uint48 _maturity) external returns (address) {
-        (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, uint48(_maturity));
+    function create(address _adapter, uint256 _maturity) external returns (address) {
+        (address _zero, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
         address _target = Adapter(_adapter).target();
 
         pool = new MockSpacePool(address(vault), _target, _zero);

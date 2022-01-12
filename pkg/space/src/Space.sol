@@ -60,7 +60,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     address public immutable adapter;
 
     /// @notice Maturity timestamp for associated Series
-    uint48 public immutable maturity;
+    uint256 public immutable maturity;
 
     /// @notice Zero token index (there are only two tokens in this pool, so `targeti` is always just the complement)
     uint8 public immutable zeroi;
@@ -105,7 +105,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     constructor(
         IVault vault,
         address _adapter,
-        uint48 _maturity,
+        uint256 _maturity,
         address zero,
         uint256 _ts,
         uint256 _g1,
@@ -341,6 +341,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     // given the ratio of the reserves, and assuming we don't make any swaps
     function _tokensInForBptOut(uint256[] memory reqAmountsIn, uint256[] memory reserves)
         internal
+        view
         returns (uint256, uint256[] memory)
     {
         // Disambiguate reserves wrt token type
@@ -392,7 +393,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         uint256 amountDelta,
         uint256 reservesTokenIn,
         uint256 reservesTokenOut
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         // xPre = token in reserves pre swap
         // yPre = token out reserves pre swap
 
@@ -431,7 +432,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
 
     /// @notice Determine the growth in the invariant due to swap fees only
     /// @dev This can't be a view function b/c `Adapter.scale` is not a view function
-    function _bptFeeDue(uint256[] memory reserves, uint256 protocolSwapFeePercentage) internal returns (uint256) {
+    function _bptFeeDue(uint256[] memory reserves, uint256 protocolSwapFeePercentage) internal view returns (uint256) {
         uint256 ttm = maturity > block.timestamp ? uint256(maturity - block.timestamp) * FixedPoint.ONE : 0;
         uint256 a = ts.mulDown(ttm).complement();
 
@@ -494,12 +495,12 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
     }
 
     /// @notice Ensure number type is back in its base decimal if need be, rounding down
-    function _downscaleDown(uint256 amount, uint256 scalingFactor) internal returns (uint256) {
+    function _downscaleDown(uint256 amount, uint256 scalingFactor) internal pure returns (uint256) {
         return amount / scalingFactor;
     }
 
     /// @notice Ensure number type is back in its base decimal if need be, rounding up
-    function _downscaleUp(uint256 amount, uint256 scalingFactor) internal returns (uint256) {
+    function _downscaleUp(uint256 amount, uint256 scalingFactor) internal pure returns (uint256) {
         return 1 + (amount - 1) / scalingFactor;
     }
 

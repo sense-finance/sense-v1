@@ -2,18 +2,19 @@
 pragma solidity 0.8.11;
 
 // External references
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
-import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
 import { Divider } from "../Divider.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { FixedMath } from "../external/FixedMath.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 abstract contract CropAdapter is BaseAdapter {
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
     /// @notice Program state
@@ -33,15 +34,14 @@ abstract contract CropAdapter is BaseAdapter {
         uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
+        uint256 _minm,
+        uint256 _maxm,
         uint16 _mode,
         uint64 _tilt,
         uint16 _level,
         address _reward
     ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {
         reward = _reward;
-        ERC20(_stake).safeApprove(_divider, type(uint256).max);
     }
 
     function notify(

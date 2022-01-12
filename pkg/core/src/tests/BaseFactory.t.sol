@@ -33,8 +33,8 @@ contract Factories is TestHelper {
             uint64 ifee,
             address stake,
             uint256 stakeSize,
-            uint48 minm,
-            uint48 maxm,
+            uint256 minm,
+            uint256 maxm,
             uint16 mode,
             uint64 tilt
         ) = MockFactory(someFactory).factoryParams();
@@ -80,7 +80,7 @@ contract Factories is TestHelper {
         uint256 scale = IAdapter(f).scale();
         assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
-        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         (address zero, address claim) = alice.doSponsorSeries(f, maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));

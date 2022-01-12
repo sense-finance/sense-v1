@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 contract MockFuseDirectory {
     address public comptroller;

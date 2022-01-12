@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import { FixedPoint } from "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
 import { BasePoolFactory } from "@balancer-labs/v2-pool-utils/contracts/factories/BasePoolFactory.sol";
 import { IVault } from "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 import { Space } from "./Space.sol";
 
@@ -62,7 +62,7 @@ contract SpaceFactory is Trust {
     }
 
     /// @notice Deploys a new `Space` contract
-    function create(address _adapter, uint48 _maturity) external returns (address) {
+    function create(address _adapter, uint256 _maturity) external returns (address) {
         require(pools[_adapter][_maturity] == address(0), "POOL_ALREADY_EXISTS");
 
         (address zero, , , , , , , , ) = DividerLike(divider).series(_adapter, uint256(_maturity));

@@ -6,7 +6,8 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 // Internal references
 import { BaseAdapter } from "../BaseAdapter.sol";
-import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 interface WstETHInterface {
@@ -64,7 +65,7 @@ interface StEthPriceFeed {
 /// @notice Adapter contract for wstETH
 contract WstETHAdapter is BaseAdapter {
     using FixedMath for uint256;
-    using SafeERC20 for ERC20;
+    using SafeTransferLib for ERC20;
 
     address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -84,8 +85,8 @@ contract WstETHAdapter is BaseAdapter {
         uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint48 _minm,
-        uint48 _maxm,
+        uint256 _minm,
+        uint256 _maxm,
         uint16 _mode,
         uint64 _tilt
     ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
@@ -139,7 +140,7 @@ contract WstETHAdapter is BaseAdapter {
         return eth;
     }
 
-    function wrapUnderlying(uint256 amount) external override returns (uint256) {
+    function wrapUnderlying(uint256 amount) external override returns (uint256 wstETH) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
         uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)

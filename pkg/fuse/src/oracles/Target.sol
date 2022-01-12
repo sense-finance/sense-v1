@@ -2,11 +2,11 @@
 pragma solidity 0.8.11;
 
 // External references
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 
 // Internal references
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
