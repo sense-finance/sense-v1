@@ -161,7 +161,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(_canBeSettled(adapter, maturity), Errors.OutOfWindowBoundaries);
-        require(adapter == msg.sender);
+        require(adapter == msg.sender, "ONLY_PERIPHERY");
 
         // The maturity scale value is all a Series needs for us to consider it "settled"
         uint256 mscale = Adapter(adapter).scale();
@@ -190,14 +190,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBal
     ) external nonReentrant whenNotPaused returns (uint256 uBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
+        require(adapter == msg.sender, "ONLY_ADAPTER");
+
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
-        require(adapter == msg.sender);
-
-        uint256 level = uint256(Adapter(adapter).level());
-        if (level.issueRestricted()) {
-            require(msg.sender == adapter, Errors.IssuanceRestricted);
-        }
 
         ERC20 target = ERC20(Adapter(adapter).target());
 
@@ -215,7 +211,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
-        uint256 scale = level.collectDisabled() ? series[adapter][maturity].iscale : Adapter(adapter).scale();
+        uint256 scale = uint256(Adapter(adapter).level()).collectDisabled() ? series[adapter][maturity].iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale);
@@ -301,7 +297,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
-        require(adapter == msg.sender);
 
         // Burn the caller's Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
@@ -622,11 +617,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     modifier onlyClaim(address adapter, uint256 maturity) {
         require(series[adapter][maturity].claim == msg.sender, Errors.OnlyClaim);
-        _;
-    }
-
-    modifier onlyPeriphery() {
-        require(periphery == msg.sender, Errors.OnlyPeriphery);
         _;
     }
 
