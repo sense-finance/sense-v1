@@ -50,9 +50,6 @@ jobs:
     - name: Install npm dependencies
       run: yarn install
 
-    - name: Install yarn workspace tools
-      run: yarn plugin import workspace-tools
-
     # If we couldn't get forge from the cache, install it
     - name: Install forge
       if: steps.cache-forge.outputs.cache-hit != 'true'
