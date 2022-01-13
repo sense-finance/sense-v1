@@ -120,10 +120,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address adapter,
         uint256 maturity,
         address sponsor
-    ) external nonReentrant onlyPeriphery whenNotPaused returns (address zero, address claim) {
+    ) external nonReentrant whenNotPaused returns (address zero, address claim) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(!_exists(adapter, maturity), Errors.DuplicateSeries);
         require(_isValid(adapter, maturity), Errors.InvalidMaturity);
+        require(adapter == msg.sender);
 
         // Transfer stake asset stake from caller to adapter
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
@@ -160,6 +161,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(_canBeSettled(adapter, maturity), Errors.OutOfWindowBoundaries);
+        require(adapter == msg.sender);
 
         // The maturity scale value is all a Series needs for us to consider it "settled"
         uint256 mscale = Adapter(adapter).scale();
@@ -190,6 +192,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
         require(!_settled(adapter, maturity), Errors.IssueOnSettled);
+        require(adapter == msg.sender);
 
         uint256 level = uint256(Adapter(adapter).level());
         if (level.issueRestricted()) {
@@ -251,6 +254,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
         require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+        require(adapter == msg.sender);
         uint256 level = uint256(Adapter(adapter).level());
         if (level.combineRestricted() && msg.sender != adapter) revert(Errors.CombineRestricted);
 
@@ -293,13 +297,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         require(adapters[adapter], Errors.InvalidAdapter);
+        require(adapter == msg.sender, "ONLY_ADAPTER");
+
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         require(_settled(adapter, maturity), Errors.NotSettled);
-
-        uint256 level = uint256(Adapter(adapter).level());
-        if (level.redeemZeroRestricted()) {
-            require(msg.sender == adapter, Errors.RedeemZeroRestricted);
-        }
+        require(adapter == msg.sender);
 
         // Burn the caller's Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
@@ -315,7 +317,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             tBal = uBal.fdiv(series[adapter][maturity].maxscale);
         }
 
-        if (!level.redeemZeroHookDisabled()) {
+        if (!uint256(Adapter(adapter).level()).redeemZeroHookDisabled()) {
             Adapter(adapter).onZeroRedeem(
                 uBal,
                 series[adapter][maturity].mscale,
