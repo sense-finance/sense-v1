@@ -84,6 +84,11 @@ contract PoolManager is Trust {
         uint256 liquidationIncentive;
     }
 
+    struct Series {
+        SeriesStatus status;
+        address pool;
+    }
+
     AssetParams public targetParams;
     AssetParams public zeroParams;
     AssetParams public lpTokenParams;
@@ -91,11 +96,8 @@ contract PoolManager is Trust {
     /// @notice Target Inits: target -> target added to pool
     mapping(address => bool) public tInits;
 
-    /// @notice Series Status: adapter -> maturity -> series status (zeros/lp shares)
-    mapping(address => mapping(uint256 => SeriesStatus)) public sStatus;
-
-    /// @notice Series Pools: adapter -> maturity -> AMM pool
-    mapping(address => mapping(uint256 => address)) public sPools;
+    /// @notice Series Pools: adapter -> maturity -> (series status (zeros/lp shares), AMM pool)
+    mapping(address => mapping(uint256 => Series)) public sSeries;
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
@@ -207,13 +209,15 @@ contract PoolManager is Trust {
 
         require(comptroller != address(0), Errors.PoolNotDeployed);
         require(zero != address(0), Errors.SeriesDoesntExists);
-        require(sStatus[adapter][maturity] == SeriesStatus.NONE, Errors.DuplicateSeries);
+        require(sSeries[adapter][maturity].status == SeriesStatus.NONE, Errors.DuplicateSeries);
 
         address target = Adapter(adapter).target();
         require(tInits[target], Errors.TargetNotInFuse);
 
-        sStatus[adapter][maturity] = SeriesStatus.QUEUED;
-        sPools[adapter][maturity] = pool;
+        sSeries[adapter][maturity] = Series({
+            status: SeriesStatus.QUEUED,
+            pool: pool
+        });
 
         emit SeriesQueued(adapter, maturity, pool);
     }
@@ -221,14 +225,14 @@ contract PoolManager is Trust {
     /// @notice open method to add queued Zeros and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint48 maturity) external {
-        require(sStatus[adapter][maturity] == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
+        require(sSeries[adapter][maturity].status == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
 
         require(zeroParams.irModel != address(0), Errors.PoolParamsNotSet);
         require(lpTokenParams.irModel != address(0), Errors.PoolParamsNotSet);
 
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
-        address pool = sPools[adapter][maturity];
+        address pool = sSeries[adapter][maturity].pool;
 
         address[] memory underlyings = new address[](2);
         underlyings[0] = zero;
@@ -281,7 +285,7 @@ contract PoolManager is Trust {
         );
         require(errLpToken == 0, Errors.FailedAddLPMarket);
 
-        sStatus[adapter][maturity] = SeriesStatus.ADDED;
+        sSeries[adapter][maturity].status = SeriesStatus.ADDED;
 
         emit SeriesAdded(zero, pool);
     }

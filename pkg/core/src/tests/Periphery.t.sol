@@ -44,7 +44,8 @@ contract PeripheryTest is TestHelper {
         assertTrue(address(spaceFactory.pool()) != address(0));
 
         // check zeros and claims onboarded on PoolManager (Fuse)
-        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
+        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testSponsorSeriesWhenUnverifiedAdapter() public {
@@ -76,7 +77,8 @@ contract PeripheryTest is TestHelper {
         assertTrue(address(spaceFactory.pool()) == address(0));
 
         // check zeros and claims NOT onboarded on PoolManager (Fuse)
-        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.NONE);
+        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.NONE);
     }
 
     function testOnboardAdapter() public {
