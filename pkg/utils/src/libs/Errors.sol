@@ -50,4 +50,7 @@ library Errors {
     string constant CombineRestricted = "Combine restricted to Adapter";
     string constant IssuanceRestricted = "Issuance restricted to Adapter";
     string constant RedeemZeroRestricted = "Redeem Zero restricted to Adapter";
+    string constant OracleNotReady = "Price oracle is not ready";
+    string constant AdapterNotSet = "Adapter not set";
+    string constant PoolNotSet = "Pool not set";
 }

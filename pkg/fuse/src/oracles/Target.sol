@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
@@ -15,7 +16,7 @@ contract TargetOracle is PriceOracle, Trust {
     /// @notice target address -> adapter address
     mapping(address => address) public adapters;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) { }
 
     function setTarget(address target, address adapter) external requiresTrust {
         adapters[target] = adapter;
@@ -34,7 +35,7 @@ contract TargetOracle is PriceOracle, Trust {
 
     function _price(address target) internal view returns (uint256) {
         address adapter = adapters[address(target)];
-        require(adapter != address(0), "Target must have an adapter set");
+        require(adapter != address(0), Errors.AdapterNotSet);
 
         // Use the cached scale for view function compatibility
         uint256 scale = Adapter(adapter).scaleStored();

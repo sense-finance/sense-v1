@@ -5,49 +5,14 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
+import { BalancerOracle } from "../external/BalancerOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
-
-interface BalancerOracleLike {
-    function getTimeWeightedAverage(OracleAverageQuery[] memory queries)
-        external
-        view
-        returns (uint256[] memory results);
-
-    enum Variable {
-        PAIR_PRICE,
-        BPT_PRICE,
-        INVARIANT
-    }
-    struct OracleAverageQuery {
-        Variable variable;
-        uint256 secs;
-        uint256 ago;
-    }
-
-    function getSample(uint256 index)
-        external
-        view
-        returns (
-            int256 logPairPrice,
-            int256 accLogPairPrice,
-            int256 logBptPrice,
-            int256 accLogBptPrice,
-            int256 logInvariant,
-            int256 accLogInvariant,
-            uint256 timestamp
-        );
-
-    function getPoolId() external view returns (bytes32);
-
-    function getVault() external view returns (address);
-
-    function getIndices() external view returns (uint8 _zeroi, uint8 _targeti);
-}
 
 contract ZeroOracle is PriceOracle, Trust {
     using FixedPointMathLib for uint256;
@@ -55,7 +20,7 @@ contract ZeroOracle is PriceOracle, Trust {
     mapping(address => address) public pools;
     uint32 public constant TWAP_PERIOD = 1 hours;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) { }
 
     function setZero(address zero, address pool) external requiresTrust {
         pools[zero] = pool;
@@ -72,8 +37,8 @@ contract ZeroOracle is PriceOracle, Trust {
     }
 
     function _price(address zero) internal view returns (uint256) {
-        BalancerOracleLike pool = BalancerOracleLike(pools[address(zero)]);
-        require(pool != BalancerOracleLike(address(0)), "Zero must have a pool set");
+        BalancerOracle pool = BalancerOracle(pools[address(zero)]);
+        require(pool != BalancerOracle(address(0)), Errors.PoolNotSet);
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
@@ -81,12 +46,12 @@ contract ZeroOracle is PriceOracle, Trust {
         if (sampleTs == 0) {
             // revert if the pool's oracle can't be used yet, preventing this market from being deployed
             // on Fuse until we're able to read a TWAP
-            revert("Zero pool oracle not yet ready");
+            revert(Errors.OracleNotReady);
         }
 
-        BalancerOracleLike.OracleAverageQuery[] memory queries = new BalancerOracleLike.OracleAverageQuery[](1);
-        queries[0] = BalancerOracleLike.OracleAverageQuery({
-            variable: BalancerOracleLike.Variable.PAIR_PRICE,
+        BalancerOracle.OracleAverageQuery[] memory queries = new BalancerOracle.OracleAverageQuery[](1);
+        queries[0] = BalancerOracle.OracleAverageQuery({
+            variable: BalancerOracle.Variable.PAIR_PRICE,
             secs: TWAP_PERIOD,
             ago: 0
         });

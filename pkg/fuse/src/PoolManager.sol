@@ -7,6 +7,7 @@ import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
 import { PriceOracle } from "./external/PriceOracle.sol";
+import { BalancerOracle } from "./external/BalancerOracle.sol";
 
 // Internal references
 import { UnderlyingOracle } from "./oracles/Underlying.sol";
@@ -233,6 +234,13 @@ contract PoolManager is Trust {
         (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
 
         address pool = sSeries[adapter][maturity].pool;
+
+        (, , , , , , uint256 sampleTs) = BalancerOracle(pool).getSample(1023);
+        if (sampleTs == 0) {
+            // revert if the pool's oracle can't be used yet, preventing this market from being deployed
+            // on Fuse until we're able to read a TWAP
+            revert(Errors.OracleNotReady);
+        }
 
         address[] memory underlyings = new address[](2);
         underlyings[0] = zero;

@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
@@ -15,7 +16,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
     /// @notice underlying address -> adapter address
     mapping(address => address) public adapters;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) { }
 
     function setUnderlying(address underlying, address adapter) external requiresTrust {
         adapters[underlying] = adapter;
@@ -32,7 +33,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
 
     function _price(address underlying) internal view returns (uint256) {
         Adapter adapter = Adapter(adapters[address(underlying)]);
-        require(adapter != Adapter(address(0)), "Underlying must have a adapter set");
+        require(adapter != Adapter(address(0)), Errors.AdapterNotSet);
 
         return adapter.getUnderlyingPrice();
     }
