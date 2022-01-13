@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 import { Token } from "../tokens/Token.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
@@ -11,7 +11,7 @@ contract Claims is TestHelper {
 
     function testFuzzCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -36,7 +36,7 @@ contract Claims is TestHelper {
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -66,7 +66,7 @@ contract Claims is TestHelper {
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);

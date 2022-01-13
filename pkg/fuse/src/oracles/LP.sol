@@ -2,14 +2,14 @@
 pragma solidity 0.8.11;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { BalancerOracle } from "../external/BalancerOracle.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
 
 // Internal references
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 

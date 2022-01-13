@@ -12,7 +12,7 @@ import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
-import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
@@ -33,7 +33,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSponsorSeries() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // check zeros and claim deployed
@@ -66,7 +66,7 @@ contract PeripheryTest is TestHelper {
         );
         divider.addAdapter(address(adapter));
 
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = alice.doSponsorSeries(address(adapter), maturity);
 
         // check zeros and claim deployed
@@ -96,7 +96,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapTargetForZeros() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockBalancerVault
@@ -120,7 +120,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapUnderlyingForZeros() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lvalue) = adapter.lscale();
 
@@ -144,7 +144,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapTargetForClaims() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256 tBase = 10**target.decimals();
@@ -167,7 +167,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapUnderlyingForClaims() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256 tBase = 10**target.decimals();
@@ -193,7 +193,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapZerosForTarget() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
 
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
@@ -217,7 +217,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapZerosForUnderlying() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
 
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
@@ -246,7 +246,7 @@ contract PeripheryTest is TestHelper {
     function testSwapClaimsForTarget() public {
         uint256 tBal = 100e18;
         uint256 targetToBorrow = 8.55e19;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
 
@@ -313,7 +313,7 @@ contract PeripheryTest is TestHelper {
     /* ========== liquidity tests ========== */
     function testAddLiquidityFirstTimeWithSellClaimsModeShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -337,7 +337,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityFirstTimeWithHoldClaimsModeShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -361,7 +361,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndSellClaimsWith0_TargetRatioShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         // init liquidity
@@ -388,7 +388,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndHoldClaimsWith0_TargetRatioShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         // init liquidity
@@ -416,7 +416,7 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityAndSellClaims() public {
         uint256 tBal = 100e18;
 
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
 
@@ -492,7 +492,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndHoldClaims() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
@@ -541,7 +541,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityFromUnderlyingAndHoldClaims() public {
         uint256 tBal = 100e18; // we assume target = underlying as scale is 1e18
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
@@ -590,7 +590,7 @@ contract PeripheryTest is TestHelper {
 
     function testRemoveLiquidityBeforeMaturity() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
@@ -637,7 +637,7 @@ contract PeripheryTest is TestHelper {
 
     function testRemoveLiquidityOnMaturity() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
@@ -680,7 +680,7 @@ contract PeripheryTest is TestHelper {
 
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {
         uint256 tBal = 100e18;
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockUniSwapRouter

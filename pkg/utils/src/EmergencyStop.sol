@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity  0.8.11;
 
-// External references
-import { Trust } from "@rari-capital/solmate/src/auth/Trust.sol";
-
 // Internal references
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 
 /// @notice Unsets multiple adapters on the divider

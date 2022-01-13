@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.11;
 
 interface ERC20Like {
     function mint(address, uint256) external;

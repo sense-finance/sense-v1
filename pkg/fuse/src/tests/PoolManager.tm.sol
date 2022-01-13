@@ -74,13 +74,13 @@ contract PoolManagerTest is DSTest {
         divider.setAdapter(address(mockAdapter), true);
     }
 
-    function initSeries() public returns (uint48 _maturity) {
+    function initSeries() public returns (uint256 _maturity) {
         // Setup mock stake token
         stake.mint(address(this), 1000 ether);
         stake.approve(address(divider), 1000 ether);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp + 10 weeks);
-        _maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
+        _maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         divider.initSeries(address(mockAdapter), _maturity, address(this));
     }
 

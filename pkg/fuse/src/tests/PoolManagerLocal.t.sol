@@ -193,7 +193,7 @@ contract PoolManagerLocalTest is TestHelper {
     /* ========== queueSeries() tests ========== */
 
     function testCantQueueSeriesIfPoolNotDeployed() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
             address(comptroller),
@@ -209,7 +209,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testCantQueueSeriesIfSeriesNotExists() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
         } catch Error(string memory error) {
@@ -218,7 +218,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testCantQueueSeriesIfAlreadyQueued() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
@@ -241,7 +241,7 @@ contract PoolManagerLocalTest is TestHelper {
         );
         MockOracle fallbackOracle = new MockOracle();
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
@@ -254,7 +254,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testQueueSeries() public {
-        uint48 maturity = getValidMaturity(2021, 10);
+        uint256 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
