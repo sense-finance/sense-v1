@@ -1754,25 +1754,24 @@ contract Dividers is TestHelper {
         assertEq(mscale, newScale);
     }
 
-    // function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
-    //     target.mint(address(adapter), 100e18);
-    //     stake.mint(address(adapter), 100e18);
-    //     uint256 maturity = getValidMaturity(2021, 10);
-    //     sponsorSampleSeries(address(alice), maturity);
-    //     bob.doIssue(address(adapter), maturity, 10e18);
-    //     hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-    //     uint256 newScale = 1.1e18;
-    //     usrs.push(address(alice));
-    //     usrs.push(address(bob));
-    //     lscales.push(5e17);
-    //     lscales.push(4e17);
-    //     uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
-    //     divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-    //     divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-    //     uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
-    //     assertEq(cupTargetBalanceBefore, cupTargetBalanceAfter - 1e18);
-
-    // }
+    function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
+        target.mint(address(adapter), 100e18);
+        stake.mint(address(adapter), 100e18);
+        uint256 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 10e18);
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        uint256 newScale = 1.1e18;
+        usrs.push(address(alice));
+        usrs.push(address(bob));
+        lscales.push(5e17);
+        lscales.push(4e17);
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+        uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
+        assertEq(cupTargetBalanceBefore, cupTargetBalanceAfter - 1e18);
+    }
 
     // @notice if backfill happens while adapter is NOT disabled it is because the current timestamp is > cutoff so stakecoin stake and fees are to the Sense's cup multisig address
     function testFuzzBackfillScaleAfterCutoffAdapterEnabledTransfersStakeAmountAndFees(uint128 tBal) public {
@@ -2065,15 +2064,15 @@ contract Dividers is TestHelper {
         }
     }
 
-    // function testCantReAddAdapter() public {
-    //     divider.setPermissionless(true);
-    //     divider.setAdapter(address(adapter), false);
-    //     try bob.doAddAdapter(address(adapter)) {
-    //         fail();
-    //     } catch Error(string memory error) {
-    //         assertEq(error, Errors.CannotReenable);
-    //     }
-    // }
+    function testCantReAddAdapter() public {
+        divider.setPermissionless(true);
+        divider.setAdapter(address(adapter), false);
+        try bob.doAddAdapter(address(adapter)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.CannotReenable);
+        }
+    }
 
     function testAddAdapter() public {
         MockAdapter aAdapter = new MockAdapter(
