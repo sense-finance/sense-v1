@@ -11,6 +11,7 @@ import { Divider } from "../Divider.sol";
 
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
+import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeAdapter is BaseAdapter {
@@ -26,7 +27,22 @@ contract FakeAdapter is BaseAdapter {
         uint16 _mode,
         uint64 _tilt,
         uint16 _level
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {}
+    )
+        BaseAdapter(
+            _divider,
+            _target,
+            address(1),
+            _oracle,
+            _ifee,
+            _stake,
+            _stakeSize,
+            _minm,
+            _maxm,
+            _mode,
+            _tilt,
+            _level
+        )
+    {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;
@@ -34,10 +50,6 @@ contract FakeAdapter is BaseAdapter {
 
     function scaleStored() external view virtual override returns (uint256) {
         return 100e18;
-    }
-
-    function underlying() external view override returns (address) {
-        return address(1);
     }
 
     function wrapUnderlying(uint256 amount) external override returns (uint256) {
@@ -61,7 +73,8 @@ contract Adapters is TestHelper {
     using FixedMath for uint256;
 
     function testAdapterHasParams() public {
-        MockToken target = new MockToken("Compound Dai", "cDAI", 18);
+        MockToken underlying = new MockToken("Dai", "DAI", 18);
+        MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
@@ -81,6 +94,7 @@ contract Adapters is TestHelper {
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
         assertEq(adapter.target(), address(target));
+        assertEq(adapter.underlying(), address(underlying));
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.ifee(), ISSUANCE_FEE);
         assertEq(adapter.stake(), address(stake));
