@@ -41,10 +41,10 @@ contract GClaimManager {
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
 
-        Divider.Series memory series = Divider(divider).series(adapter, maturity);
-        require(series.claim != address(0), Errors.SeriesDoesntExists);
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+        require(claim != address(0), Errors.SeriesDoesntExists);
 
-        if (address(gclaims[series.claim]) == address(0)) {
+        if (address(gclaims[claim]) == address(0)) {
             // If this is the first Claim from this Series:
             // * Set the current scale value as the floor
             // * Deploy a new gClaim contract
@@ -53,24 +53,24 @@ contract GClaimManager {
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later
             uint256 scale = Adapter(adapter).scale();
-            mscales[series.claim] = scale;
-            inits[series.claim] = scale;
-            string memory name = string(abi.encodePacked("G-", ERC20(series.claim).name(), "-G"));
-            string memory symbol = string(abi.encodePacked("G-", ERC20(series.claim).symbol(), "-G"));
-            gclaims[series.claim] = new Token(name, symbol, ERC20(Adapter(adapter).target()).decimals(), address(this));
+            mscales[claim] = scale;
+            inits[claim] = scale;
+            string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
+            string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
+            gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).target()).decimals(), address(this));
         } else {
             uint256 tBal = excess(adapter, maturity, uBal);
             if (tBal > 0) {
                 // Pull the amount of Target needed to backfill the excess back to issuance
                 ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
-                totals[series.claim] += tBal;
+                totals[claim] += tBal;
             }
         }
 
         // Pull Collect Claims to this contract
-        ERC20(series.claim).safeTransferFrom(msg.sender, address(this), uBal);
+        ERC20(claim).safeTransferFrom(msg.sender, address(this), uBal);
         // Mint the user Drag Claims
-        gclaims[series.claim].mint(msg.sender, uBal);
+        gclaims[claim].mint(msg.sender, uBal);
 
         emit Joined(adapter, maturity, msg.sender, uBal);
     }
@@ -80,26 +80,26 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) external {
-        Divider.Series memory series = Divider(divider).series(adapter, maturity);
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
 
-        require(series.claim != address(0), Errors.SeriesDoesntExists);
+        require(claim != address(0), Errors.SeriesDoesntExists);
 
         // Collect excess for all Claims from this Series this contract holds
-        uint256 collected = Claim(series.claim).collect();
+        uint256 collected = Claim(claim).collect();
         // Track the total Target collected manually so that that we don't get
         // mixed up when multiple Series have the same Target
-        uint256 total = totals[series.claim] + collected;
+        uint256 total = totals[claim] + collected;
 
         // Determine how much of stored excess this caller has a right to
-        uint256 tBal = uBal.fdiv(gclaims[series.claim].totalSupply(), total);
-        totals[series.claim] = total - tBal;
+        uint256 tBal = uBal.fdiv(gclaims[claim].totalSupply(), total);
+        totals[claim] = total - tBal;
 
         // Send the excess Target back to the user
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal);
         // Transfer Collect Claims back to the user
-        ERC20(series.claim).safeTransfer(msg.sender, uBal);
+        ERC20(claim).safeTransfer(msg.sender, uBal);
         // Burn the user's gclaims
-        gclaims[series.claim].burn(msg.sender, uBal);
+        gclaims[claim].burn(msg.sender, uBal);
 
         emit Exited(adapter, maturity, msg.sender, uBal);
     }
@@ -112,14 +112,14 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
-        Divider.Series memory series = Divider(divider).series(adapter, maturity);
-        uint256 initScale = inits[series.claim];
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+        uint256 initScale = inits[claim];
         uint256 scale = Adapter(adapter).scale();
-        uint256 mscale = mscales[series.claim];
+        uint256 mscale = mscales[claim];
         if (scale <= mscale) {
             scale = mscale;
         } else {
-            mscales[series.claim] = scale;
+            mscales[claim] = scale;
         }
 
         if (scale - initScale > 0) {

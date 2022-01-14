@@ -167,10 +167,10 @@ contract MockSpaceFactory {
     }
 
     function create(address _adapter, uint256 _maturity) external returns (address) {
-        Divider.Series memory series = Divider(divider).series(_adapter, _maturity);
+        (address zero, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
         address _target = Adapter(_adapter).target();
 
-        pool = new MockSpacePool(address(vault), _target, series.zero);
+        pool = new MockSpacePool(address(vault), _target, zero);
         pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));

@@ -17,7 +17,7 @@ contract Claims is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
-        uint256 lscale = divider.lscale(address(adapter), maturity, address(bob));
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 collected = bob.doCollect(claim);
@@ -25,8 +25,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        Divider.Series memory series = divider.series(address(adapter), maturity);
-        uint256 mscale = series.mscale;
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
@@ -44,7 +43,7 @@ contract Claims is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
-        uint256 lscale = divider.lscale(address(adapter), maturity, address(bob));
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
         uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -54,8 +53,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        Divider.Series memory series = divider.series(address(adapter), maturity);
-        uint256 mscale = series.mscale;
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
@@ -75,7 +73,7 @@ contract Claims is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
-        uint256 lscale = divider.lscale(address(adapter), maturity, address(bob));
+        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
         uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -86,8 +84,7 @@ contract Claims is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        Divider.Series memory series = divider.series(address(adapter), maturity);
-        uint256 mscale = series.mscale;
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
