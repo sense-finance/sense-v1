@@ -42,7 +42,23 @@ contract MockAdapter is CropAdapter {
         uint64 _tilt,
         uint16 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {}
+    )
+        CropAdapter(
+            _divider,
+            _target,
+            MockTarget(_target).underlying(),
+            _oracle,
+            _ifee,
+            _stake,
+            _stakeSize,
+            _minm,
+            _maxm,
+            _mode,
+            _tilt,
+            _level,
+            _reward
+        )
+    {}
 
     function scale() external virtual override returns (uint256 _value) {
         if (value > 0) return value;
@@ -87,10 +103,6 @@ contract MockAdapter is CropAdapter {
 
     function getUnderlyingPrice() external view virtual override returns (uint256) {
         return 1e18;
-    }
-
-    function underlying() external view override returns (address) {
-        return MockTarget(target).underlying();
     }
 
     function onZeroRedeem(
@@ -140,7 +152,22 @@ contract MockBaseAdapter is BaseAdapter {
         uint16 _mode,
         uint64 _tilt,
         uint16 _level
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {}
+    )
+        BaseAdapter(
+            _divider,
+            _target,
+            address(1),
+            _oracle,
+            _ifee,
+            _stake,
+            _stakeSize,
+            _minm,
+            _maxm,
+            _mode,
+            _tilt,
+            _level
+        )
+    {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;
@@ -148,10 +175,6 @@ contract MockBaseAdapter is BaseAdapter {
 
     function scaleStored() external view virtual override returns (uint256) {
         return 100e18;
-    }
-
-    function underlying() external view override returns (address) {
-        return address(1);
     }
 
     function wrapUnderlying(uint256 amount) external override returns (uint256) {
