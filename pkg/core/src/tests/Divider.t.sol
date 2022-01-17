@@ -190,10 +190,10 @@ contract Dividers is TestHelper {
 
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #2 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#2");
-        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #2 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#2");
+        assertEq(ERC20(zero).name(), "Compound Dai 4-10-2021 Zero #2 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:4-10-2021:#2");
+        assertEq(ERC20(claim).name(), "Compound Dai 4-10-2021 Claim #2 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:4-10-2021:#2");
     }
 
     function testCantInitSeriesIfPaused() public {
@@ -211,10 +211,10 @@ contract Dividers is TestHelper {
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #1 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
-        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
+        assertEq(ERC20(zero).name(), "Compound Dai 1-10-2021 Zero #1 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:1-10-2021:#1");
+        assertEq(ERC20(claim).name(), "Compound Dai 1-10-2021 Claim #1 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:1-10-2021:#1");
     }
 
     function testInitSeriesWithdrawStake() public {
@@ -625,7 +625,7 @@ contract Dividers is TestHelper {
         divider.setGuarded(false);
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        (, uint256 guard, ) = divider.adapterData(address(adapter));
+        (, , uint256 guard) = divider.adapterData(address(adapter));
         alice.doIssue(address(adapter), maturity, guard + 1);
     }
 
@@ -1949,7 +1949,7 @@ contract Dividers is TestHelper {
     function testSetAdapterFirst() public {
         // check first adapter added on TestHelper.sol has ID 1
         assertEq(divider.adapterCounter(), 1);
-        (uint256 id, , ) = divider.adapterData(address(adapter));
+        (uint248 id, , ) = divider.adapterData(address(adapter));
         assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
     }
@@ -1972,7 +1972,7 @@ contract Dividers is TestHelper {
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
-        (uint256 id, , bool enabled) = divider.adapterData(address(aAdapter));
+        (uint248 id, bool enabled, ) = divider.adapterData(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
@@ -1997,7 +1997,7 @@ contract Dividers is TestHelper {
 
         // set adapter on
         divider.setAdapter(address(aAdapter), true);
-        (uint256 id, , bool enabled) = divider.adapterData(address(aAdapter));
+        (uint248 id, bool enabled, ) = divider.adapterData(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
@@ -2021,14 +2021,14 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(bAdapter), true);
-        (id, , enabled) = divider.adapterData(address(bAdapter));
+        (id, enabled, ) = divider.adapterData(address(bAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 2);
         assertEq(divider.adapterAddresses(adapterCounter + 2), address(bAdapter));
 
         // set adapter back on
         divider.setAdapter(address(aAdapter), true);
-        (id, , enabled) = divider.adapterData(address(aAdapter));
+        (id, enabled, ) = divider.adapterData(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
@@ -2070,7 +2070,7 @@ contract Dividers is TestHelper {
         try bob.doAddAdapter(address(adapter)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.CannotReenable);
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
@@ -2091,7 +2091,7 @@ contract Dividers is TestHelper {
         );
         divider.setPermissionless(true);
         bob.doAddAdapter(address(aAdapter));
-        (uint256 id, , bool enabled) = divider.adapterData(address(adapter));
+        (uint248 id, bool enabled, ) = divider.adapterData(address(adapter));
         assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
         assertTrue(enabled);

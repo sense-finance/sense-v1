@@ -53,7 +53,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     bool public guarded = true;
 
     /// @notice Number of adapters (including turned off)
-    uint256 public adapterCounter;
+    uint248 public adapterCounter;
 
     /// @notice adapter ID -> adapter address
     mapping(uint256 => address) public adapterAddresses;
@@ -92,11 +92,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     struct AdapterData {
         // Adapter ID
-        uint256 id;
-        // Max amount of Target allowed to be issued
-        uint256 guard;
+        uint248 id;
         // Adapter enabled/disabled
         bool enabled;
+        // Max amount of Target allowed to be issued
+        uint256 guard;
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -133,7 +133,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
+        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, adapterData[adapter].id, maturity);
 
         // Initialize the new Series struct
         uint256 scale = Adapter(adapter).scale();
@@ -611,7 +611,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     function _setAdapter(address adapter, bool isOn) internal {
         require(adapterData[adapter].enabled != isOn, Errors.ExistingValue);
         adapterData[adapter].enabled = isOn;
-        uint256 id = adapterData[adapter].id;
+        uint248 id = adapterData[adapter].id;
         // If this adapter is being added for the first time
         if (isOn && id == 0) {
             id = ++adapterCounter;
@@ -692,15 +692,18 @@ contract TokenHandler is Trust {
         divider = _divider;
     }
 
-    function deploy(address adapter, uint256 maturity) external returns (address zero, address claim) {
+    function deploy(
+        address adapter,
+        uint248 id,
+        uint256 maturity
+    ) external returns (address zero, address claim) {
         require(msg.sender == divider, "Must be called by the Divider");
 
         ERC20 target = ERC20(Adapter(adapter).target());
         uint8 decimals = target.decimals();
         string memory name = target.name();
-        (, string memory m, string memory y) = DateTime.toDateString(maturity);
-        string memory datestring = string(abi.encodePacked(m, "-", y));
-        (uint256 id, , ) = Divider(divider).adapterData(adapter);
+        (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
+        string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));
         string memory adapterId = DateTime.uintToString(id);
         zero = address(
             new Token(

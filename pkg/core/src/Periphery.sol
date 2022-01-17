@@ -477,9 +477,9 @@ contract Periphery is Trust {
         return _flashBorrow("0x", adapter, maturity, cBal, targetToBorrow);
     }
 
-    /// @return tAmount if mode = 0, target received from selling Claims, otherwise, returns 0  
-    /// @return issued returns amount of Claims issued (and received) except first provision which returns 0  
-    /// @return lpShares Space LP shares received given the liquidity added 
+    /// @return tAmount if mode = 0, target received from selling Claims, otherwise, returns 0
+    /// @return issued returns amount of Claims issued (and received) except first provision which returns 0
+    /// @return lpShares Space LP shares received given the liquidity added
     function _addLiquidity(
         address adapter,
         uint256 maturity,
