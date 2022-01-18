@@ -625,7 +625,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        uint256 targetBal = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        (uint256 targetBal, ) = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -639,7 +639,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
-        sponsorSampleSeries(address(alice), maturity);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
@@ -664,18 +664,91 @@ contract PeripheryTest is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         (, lscale) = adapter.lscale();
 
+        uint256 zBalBefore = ERC20(zero).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        uint256 targetBal = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        (uint256 targetBal, ) = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
 
+        uint256 zBalAfter = ERC20(zero).balanceOf(address(bob));
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
+        assertEq(zBalBefore, zBalAfter);
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertClose(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
+    }
+
+    function testRemoveLiquidityOnMaturityAndZeroRedeemRestricted() public {
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        // uint256 tBase = 10**target.decimals();
+
+        // create adapter with zeroRedeem restricted
+        MockToken underlying = new MockToken("Usdc Token", "USDC", 18);
+        MockTarget target = new MockTarget(address(underlying), "Compound USDC", "cUSDC", 18);
+
+        divider.setPermissionless(true);
+        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**5; // redeemZero restricted
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            level,
+            address(reward)
+        );
+        divider.addAdapter(address(aAdapter));
+        divider.setGuard(address(aAdapter), 10 * 2**128);
+        poolManager.addTarget(address(target), address(aAdapter));
+
+        alice.doApprove(address(target), address(divider));
+        bob.doApprove(address(target), address(periphery));
+        alice.doMint(address(target), 10000000e18);
+        bob.doMint(address(target), 10000000e18);
+
+        (address zero, ) = alice.doSponsorSeries(address(aAdapter), maturity);
+        address pool = spaceFactory.create(address(aAdapter), maturity);
+        poolManager.queueSeries(address(aAdapter), maturity, pool);
+
+        (, uint256 lscale) = aAdapter.lscale();
+        uint256[] memory minAmountsOut = new uint256[](2);
+        minAmountsOut[0] = 2e18;
+        minAmountsOut[1] = 1e18;
+
+        addLiquidityToBalancerVault(address(aAdapter), maturity, 1000e18);
+
+        bob.doAddLiquidityFromTarget(address(aAdapter), maturity, tBal, 1);
+
+        // settle series
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(aAdapter), maturity);
+        (, lscale) = aAdapter.lscale();
+
+        uint256 zBalBefore = ERC20(zero).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(address(bob));
+
+        bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), 3e18);
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
+            address(aAdapter),
+            maturity,
+            3e18,
+            minAmountsOut,
+            0
+        );
+
+        assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(address(bob)) - tBalBefore);
+        assertEq(zBalBefore, ERC20(zero).balanceOf(address(bob)) - minAmountsOut[1]);
+        assertEq(zBal, ERC20(zero).balanceOf(address(bob)) - zBalBefore);
+        assertEq(zBal, 1e18);
     }
 
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {

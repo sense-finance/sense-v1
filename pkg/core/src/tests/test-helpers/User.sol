@@ -282,7 +282,7 @@ contract User {
         uint256 tBal,
         uint256[] memory minAmountsOut,
         uint256 minAmount
-    ) public returns (uint256) {
+    ) public returns (uint256, uint256) {
         return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
     }
 
@@ -298,6 +298,7 @@ contract User {
     )
         public
         returns (
+            uint256,
             uint256,
             uint256,
             uint256
