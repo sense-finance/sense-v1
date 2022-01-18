@@ -430,6 +430,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             Adapter(adapter).notify(usr, tBalTransfer, false);
             Adapter(adapter).notify(to, tBalTransfer, true);
         }
+        series[adapter][maturity] = _series;
 
         emit Collected(adapter, maturity, collected);
     }
