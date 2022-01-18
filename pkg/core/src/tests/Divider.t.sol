@@ -190,10 +190,10 @@ contract Dividers is TestHelper {
 
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #2 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#2");
-        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #2 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#2");
+        assertEq(ERC20(zero).name(), "Compound Dai 4-10-2021 Zero #2 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:4-10-2021:#2");
+        assertEq(ERC20(claim).name(), "Compound Dai 4-10-2021 Claim #2 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:4-10-2021:#2");
     }
 
     function testCantInitSeriesIfPaused() public {
@@ -211,10 +211,10 @@ contract Dividers is TestHelper {
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #1 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
-        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
+        assertEq(ERC20(zero).name(), "Compound Dai 1-10-2021 Zero #1 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:1-10-2021:#1");
+        assertEq(ERC20(claim).name(), "Compound Dai 1-10-2021 Claim #1 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:1-10-2021:#1");
     }
 
     function testInitSeriesWithdrawStake() public {
@@ -515,7 +515,6 @@ contract Dividers is TestHelper {
     function testCantIssueIfMoreThanCap() public {
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        uint256 guard = divider.guards(address(adapter));
         uint256 targetBalance = target.balanceOf(address(alice));
         divider.setGuard(address(adapter), targetBalance);
         alice.doIssue(address(adapter), maturity, targetBalance);
@@ -626,8 +625,8 @@ contract Dividers is TestHelper {
         divider.setGuarded(false);
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        uint256 amount = divider.guards(address(target)) + 1;
-        alice.doIssue(address(adapter), maturity, amount);
+        (, , uint256 guard) = divider.adapterMeta(address(adapter));
+        alice.doIssue(address(adapter), maturity, guard + 1);
     }
 
     function testFuzzIssueMultipleTimes(uint128 bal) public {
@@ -824,6 +823,7 @@ contract Dividers is TestHelper {
     }
 
     /* ========== redeemZero() tests ========== */
+
     function testCantRedeemZeroDisabledAdapter() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
@@ -1083,6 +1083,7 @@ contract Dividers is TestHelper {
     }
 
     /* ========== redeemClaim() tests ========== */
+
     function testRedeemClaimPositiveTiltPositiveScale() public {
         // Reserve 10% of principal for Claims
         uint64 tilt = 0.1e18;
@@ -1119,7 +1120,7 @@ contract Dividers is TestHelper {
 
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
-        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, uint256 maxscale, , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) - cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
@@ -1131,7 +1132,6 @@ contract Dividers is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         collected = bob.doCollect(claim);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
-        uint256 maxscale;
         (, , , , , mscale, maxscale, , ) = divider.series(address(adapter), maturity);
         uint256 redeemed = (cBalanceAfter * FixedMath.WAD) /
             maxscale -
@@ -1197,6 +1197,7 @@ contract Dividers is TestHelper {
     }
 
     /* ========== collect() tests ========== */
+
     function testCantCollectDisabledAdapter() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -1688,6 +1689,7 @@ contract Dividers is TestHelper {
     }
 
     /* ========== backfillScale() tests ========== */
+
     function testCantBackfillScaleSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
@@ -1702,7 +1704,7 @@ contract Dividers is TestHelper {
     function testCantBackfillScaleBeforeCutoffAndAdapterEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        (, , , , uint256 iscale, , , , ) = divider.series(address(adapter), maturity);
+        (, , , , uint256 iscale, uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         try divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
@@ -1750,6 +1752,25 @@ contract Dividers is TestHelper {
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
+    }
+
+    function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
+        target.mint(address(adapter), 100e18);
+        stake.mint(address(adapter), 100e18);
+        uint256 maturity = getValidMaturity(2021, 10);
+        sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 10e18);
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+        uint256 newScale = 1.1e18;
+        usrs.push(address(alice));
+        usrs.push(address(bob));
+        lscales.push(5e17);
+        lscales.push(4e17);
+        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+        uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
+        assertEq(cupTargetBalanceBefore, cupTargetBalanceAfter - 1e18);
     }
 
     // @notice if backfill happens while adapter is NOT disabled it is because the current timestamp is > cutoff so stakecoin stake and fees are to the Sense's cup multisig address
@@ -1908,6 +1929,7 @@ contract Dividers is TestHelper {
     }
 
     /* ========== setAdapter() tests ========== */
+
     function testCantSetAdapterIfNotTrusted() public {
         try bob.doSetAdapter(address(adapter), false) {
             fail();
@@ -1927,7 +1949,8 @@ contract Dividers is TestHelper {
     function testSetAdapterFirst() public {
         // check first adapter added on TestHelper.sol has ID 1
         assertEq(divider.adapterCounter(), 1);
-        assertEq(divider.adapterIDs(address(adapter)), 1);
+        (uint248 id, , ) = divider.adapterMeta(address(adapter));
+        assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
     }
 
@@ -1949,8 +1972,9 @@ contract Dividers is TestHelper {
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
-        assertTrue(divider.adapters(address(aAdapter)));
-        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
+        (uint248 id, bool enabled, ) = divider.adapterMeta(address(aAdapter));
+        assertTrue(enabled);
+        assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
     }
 
@@ -1973,8 +1997,9 @@ contract Dividers is TestHelper {
 
         // set adapter on
         divider.setAdapter(address(aAdapter), true);
-        assertTrue(divider.adapters(address(aAdapter)));
-        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
+        (uint248 id, bool enabled, ) = divider.adapterMeta(address(aAdapter));
+        assertTrue(enabled);
+        assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
 
         // set adapter off
@@ -1996,18 +2021,21 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(bAdapter), true);
-        assertTrue(divider.adapters(address(bAdapter)));
-        assertEq(divider.adapterIDs(address(bAdapter)), adapterCounter + 2);
+        (id, enabled, ) = divider.adapterMeta(address(bAdapter));
+        assertTrue(enabled);
+        assertEq(id, adapterCounter + 2);
         assertEq(divider.adapterAddresses(adapterCounter + 2), address(bAdapter));
 
         // set adapter back on
         divider.setAdapter(address(aAdapter), true);
-        assertTrue(divider.adapters(address(aAdapter)));
-        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
+        (id, enabled, ) = divider.adapterMeta(address(aAdapter));
+        assertTrue(enabled);
+        assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
     }
 
     /* ========== addAdapter() tests ========== */
+
     function testCantAddAdapterWhenNotPermissionless() public {
         divider.setAdapter(address(adapter), false);
         try bob.doAddAdapter(address(adapter)) {
@@ -2036,12 +2064,36 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testAddAdapter() public {
+    function testCantReAddAdapter() public {
         divider.setPermissionless(true);
         divider.setAdapter(address(adapter), false);
-        bob.doAddAdapter(address(adapter));
-        assertEq(divider.adapterIDs(address(adapter)), 1);
+        try bob.doAddAdapter(address(adapter)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
+        }
+    }
+
+    function testAddAdapter() public {
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        divider.setPermissionless(true);
+        bob.doAddAdapter(address(aAdapter));
+        (uint248 id, bool enabled, ) = divider.adapterMeta(address(adapter));
+        assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
-        assertTrue(divider.adapters(address(adapter)));
+        assertTrue(enabled);
     }
 }

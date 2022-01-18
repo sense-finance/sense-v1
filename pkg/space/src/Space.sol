@@ -119,7 +119,7 @@ contract Space is IMinimalSwapInfoPool, BalancerPoolToken {
         // Ensure that the array of tokens is correctly ordered
         uint8 _zeroi = zero < target ? 0 : 1;
         tokens[_zeroi] = IERC20(zero);
-        tokens[_zeroi == 0 ? 1 : 0] = IERC20(target);
+        tokens[1 - _zeroi] = IERC20(target);
         vault.registerTokens(poolId, tokens, new address[](2));
 
         // Set Balancer-specific pool config

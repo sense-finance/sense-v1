@@ -5,6 +5,7 @@ import { Token } from "../tokens/Token.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
+import { Divider } from "../Divider.sol";
 
 contract Claims is TestHelper {
     using FixedMath for uint256;
