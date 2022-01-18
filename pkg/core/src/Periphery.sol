@@ -397,7 +397,7 @@ contract Periphery is Trust {
         uint256 zBal,
         uint256 minAccepted
     ) internal returns (uint256) {
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, ) = divider.seriesTokens(adapter, maturity);
         ERC20(zero).safeTransferFrom(msg.sender, address(this), zBal); // pull zeros
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         return _swap(zero, Adapter(adapter).target(), zBal, pool.getPoolId(), minAccepted); // swap zeros for underlying
@@ -409,7 +409,7 @@ contract Periphery is Trust {
         uint256 tBal,
         uint256 minAccepted
     ) internal returns (uint256) {
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, ) = divider.seriesTokens(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         uint256 zBal = _swap(Adapter(adapter).target(), zero, tBal, pool.getPoolId(), minAccepted); // swap target for zeros
         ERC20(zero).safeTransfer(msg.sender, zBal); // transfer bought zeros to user
@@ -422,7 +422,7 @@ contract Periphery is Trust {
         uint256 tBal,
         uint256 minAccepted
     ) internal returns (uint256) {
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, address claim) = divider.seriesTokens(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // issue zeros and claims & swap zeros for target
@@ -441,7 +441,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 cBal
     ) internal returns (uint256) {
-        (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        (, address claim) = divider.seriesTokens(adapter, maturity);
 
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable.
@@ -493,7 +493,7 @@ contract Periphery is Trust {
             uint256 lpShares
         )
     {
-        (, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        (, address claim) = divider.seriesTokens(adapter, maturity);
 
         // (1) compute target, issue zeros & claims & add liquidity to space
         (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
@@ -562,7 +562,7 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) internal returns (uint256) {
         address target = Adapter(adapter).target();
-        (address zero, , , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, ) = divider.seriesTokens(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         bytes32 poolId = pool.getPoolId();
 
@@ -622,7 +622,7 @@ contract Periphery is Trust {
     ) external returns (bytes32, uint256) {
         require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
         require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
-        (address zero, address claim, , , , , , , ) = divider.series(adapter, maturity);
+        (address zero, address claim) = divider.seriesTokens(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Because Space utilizes power ofs liberally in its invariant, there is some error

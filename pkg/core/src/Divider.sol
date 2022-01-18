@@ -621,6 +621,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit AdapterChanged(adapter, id, isOn);
     }
 
+    /* ========== PUBLIC GETTERS ========== */
+
+    /// @notice Returns address of zero and claim tokens
+    function seriesTokens(address adapter, uint256 maturity) public view returns (address, address) {
+        return (series[adapter][maturity].zero, series[adapter][maturity].claim);
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address adapter, uint256 maturity) {

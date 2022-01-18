@@ -82,4 +82,18 @@ contract MockDividerSpace is DividerLike {
     {
         return (zero, claim, address(0), uint256(0), uint256(0), uint256(0), uint256(0), uint128(0), uint128(0));
     }
+
+    function seriesTokens(
+        address, // adapter
+        uint256 // maturity
+    )
+        external
+        override
+        returns (
+            address,
+            address
+        )
+    {
+        return (zero, claim);
+    }
 }
