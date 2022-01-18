@@ -120,12 +120,14 @@ contract WstETHAdapter is BaseAdapter {
         WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
         // exchange stETH to ETH exchange on Curve
-        uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
+        // to calculate the minDy, we use Lido's safe_price_value() which should prevent from flash loan / sandwhich attacks
+        // and we are also adding a slippage tolerance of 0.5%
+        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
         eth = ICurveStableSwap(CURVESINGLESWAP).exchange(
             int128(1),
             int128(0),
             amount,
-            (minDy * (100e18 - SLIPPAGE_TOLERANCE)) / 100e18
+            (stEthEth.fmul(amount) * (100e18 - SLIPPAGE_TOLERANCE)) / 100e18
         );
 
         // deposit ETH into WETH contract
