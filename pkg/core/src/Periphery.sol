@@ -331,7 +331,7 @@ contract Periphery is Trust {
         (tBal, zBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
         ERC20(Adapter(adapter).target()).safeApprove(adapter, tBal);
         uBal = Adapter(adapter).unwrapTarget(tBal);
-        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // Send Underlying back to the User
+        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying back to the User
     }
 
     /// @notice Migrates liquidity position from one series to another
@@ -587,15 +587,16 @@ contract Periphery is Trust {
         ERC20(address(pool)).safeTransferFrom(msg.sender, address(this), lpBal);
 
         // (1) Remove liquidity from Space
-        (tBal, zBal) = _removeLiquidityFromSpace(poolId, zero, target, minAmountsOut, lpBal);
+        uint256 _zBal;
+        (tBal, _zBal) = _removeLiquidityFromSpace(poolId, zero, target, minAmountsOut, lpBal);
 
         if (block.timestamp >= maturity) {
             if (!uint256(Adapter(adapter).level()).redeemZeroRestricted()) {
                 // (2) Redeem Zeros for Target
                 tBal += divider.redeemZero(adapter, maturity, zBal);
-                zBal = 0;
             } else {
-                ERC20(zero).safeTransfer(msg.sender, zBal);
+                ERC20(zero).safeTransfer(msg.sender, _zBal);
+                zBal = _zBal;
             }
         } else {
             // (2) Sell Zeros for Target

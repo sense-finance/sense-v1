@@ -625,7 +625,13 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, ) = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
+            address(adapter),
+            maturity,
+            lpBal,
+            minAmountsOut,
+            0
+        );
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -633,6 +639,7 @@ contract PeripheryTest is TestHelper {
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertEq(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
+        assertEq(zBal, 0);
     }
 
     function testRemoveLiquidityOnMaturity() public {
