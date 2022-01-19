@@ -7,6 +7,8 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { CropAdapter } from "../CropAdapter.sol";
 
 interface IWETH {
@@ -154,7 +156,7 @@ contract CAdapter is CropAdapter {
         if (isCETH) {
             CETHTokenInterface(target).mint{ value: uBal }();
         } else {
-            require(CTokenInterface(target).mint(uBal) == 0, "MINT_FAILED");
+            if (CTokenInterface(target).mint(uBal) != 0) revert Errors.MintFailed();
         }
         uint256 tBalAfter = t.balanceOf(address(this));
 
@@ -168,7 +170,7 @@ contract CAdapter is CropAdapter {
 
         // Redeem target for underlying
         uint256 uBalBefore = isCETH ? address(this).balance : u.balanceOf(address(this));
-        require(CTokenInterface(target).redeem(tBal) == 0, "REDEEM_FAILED");
+        if (CTokenInterface(target).redeem(tBal) != 0) revert Errors.RedeemFailed();
         uint256 uBalAfter = isCETH ? address(this).balance : u.balanceOf(address(this));
         unchecked {
             uBal = uBalAfter - uBalBefore;
@@ -177,7 +179,7 @@ contract CAdapter is CropAdapter {
         if (isCETH) {
             // Deposit ETH into WETH contract
             (bool success, ) = WETH.call{ value: uBal }("");
-            require(success, "TRANSFER_FAILED");
+            if (!success) revert Errors.TransferFailed();
         }
 
         // Transfer underlying to sender

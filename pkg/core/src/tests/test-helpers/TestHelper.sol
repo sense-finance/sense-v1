@@ -21,11 +21,15 @@ import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
 import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { User } from "./User.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
+
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract TestHelper is DSTest {
     using FixedMath for uint256;
@@ -197,7 +201,7 @@ contract TestHelper is DSTest {
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
         maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
+        if (maturity < block.timestamp + 2 weeks) revert Errors.InvalidMaturityOffsets();
     }
 
     function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
@@ -272,5 +276,15 @@ contract TestHelper is DSTest {
 
     function fuzzWithBounds(uint128 number, uint128 lBound) public returns (uint128) {
         return lBound + (number % (type(uint128).max - lBound));
+    }
+
+    function getError(uint256 errCode) internal pure returns (string memory errString) {
+        return string(bytes.concat(bytes("SNS#"), bytes(Strings.toString(errCode))));
+    }
+
+    function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
+        assembly {
+            value := mload(add(_bytes, 0x20))
+        }
     }
 }

@@ -93,7 +93,7 @@ abstract contract BaseAdapter {
         uint16 _level
     ) {
         // Sanity check
-        require(_minm < _maxm, Errors.InvalidMaturityOffsets);
+        if (_minm >= _maxm) revert Errors.InvalidMaturityOffsets();
         divider = _divider;
         target = _target;
         underlying = _underlying;
@@ -137,7 +137,7 @@ abstract contract BaseAdapter {
             cBalIn,
             amount
         );
-        require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
+        if (keccak != CALLBACK_SUCCESS) revert Errors.FlashCallbackFailed();
         ERC20(target).safeTransferFrom(address(receiver), address(this), amount);
         return (true, value);
     }
@@ -213,7 +213,7 @@ abstract contract BaseAdapter {
     /* ========== MODIFIERS ========== */
 
     modifier onlyPeriphery() {
-        require(Divider(divider).periphery() == msg.sender, Errors.OnlyPeriphery);
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         _;
     }
 }

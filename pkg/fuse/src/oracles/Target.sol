@@ -7,6 +7,7 @@ import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMat
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
@@ -34,7 +35,7 @@ contract TargetOracle is PriceOracle, Trust {
 
     function _price(address target) internal view returns (uint256) {
         address adapter = adapters[address(target)];
-        require(adapter != address(0), "Target must have an adapter set");
+        if(adapter == address(0)) revert Errors.AdapterNotSet();
 
         // Use the cached scale for view function compatibility
         uint256 scale = Adapter(adapter).scaleStored();

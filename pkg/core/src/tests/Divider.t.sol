@@ -6,6 +6,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
@@ -51,8 +52,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
@@ -61,8 +62,8 @@ contract Dividers is TestHelper {
         sponsorSampleSeries(address(alice), maturity);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.DuplicateSeries);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
         }
     }
 
@@ -80,8 +81,8 @@ contract Dividers is TestHelper {
         lastDate = getValidMaturity(DateTimeFull.getYear(lastDate), DateTimeFull.getMonth(lastDate));
         try alice.doSponsorSeries(address(adapter), lastDate) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -89,8 +90,8 @@ contract Dividers is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -100,8 +101,8 @@ contract Dividers is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -111,8 +112,8 @@ contract Dividers is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -137,8 +138,8 @@ contract Dividers is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Tuesday
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -163,8 +164,8 @@ contract Dividers is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0); // Tuesday
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -202,7 +203,7 @@ contract Dividers is TestHelper {
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -261,8 +262,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
@@ -273,8 +274,8 @@ contract Dividers is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.AlreadySettled);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.AlreadySettled.selector));
         }
     }
 
@@ -284,8 +285,8 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         try bob.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OutOfWindowBoundaries);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         }
     }
 
@@ -295,8 +296,8 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try bob.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OutOfWindowBoundaries);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         }
     }
 
@@ -306,8 +307,8 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OutOfWindowBoundaries);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         }
     }
 
@@ -317,8 +318,8 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
         try bob.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OutOfWindowBoundaries);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         }
     }
 
@@ -328,7 +329,7 @@ contract Dividers is TestHelper {
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -457,8 +458,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try alice.doIssue(address(adapter), maturity, tBal) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
@@ -468,8 +469,8 @@ contract Dividers is TestHelper {
         uint256 tBal = 100 * tBase;
         try alice.doIssue(address(adapter), maturity, tBal) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesDoesntExists);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
 
@@ -507,8 +508,8 @@ contract Dividers is TestHelper {
         uint256 amount = target.balanceOf(address(alice));
         try alice.doIssue(address(adapter), maturity, amount) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.IssueOnSettled);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.IssueOnSettle.selector));
         }
     }
 
@@ -520,8 +521,8 @@ contract Dividers is TestHelper {
         alice.doIssue(address(adapter), maturity, targetBalance);
         try bob.doIssue(address(adapter), maturity, 1e18) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.GuardCapReached);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.GuardCapReached.selector));
         }
     }
 
@@ -547,8 +548,8 @@ contract Dividers is TestHelper {
         uint256 amount = target.balanceOf(address(alice));
         try alice.doIssue(address(aAdapter), maturity, amount) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.IssuanceFeeCapExceeded);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.IssuanceFeeCapExceeded.selector));
         }
     }
 
@@ -558,7 +559,7 @@ contract Dividers is TestHelper {
         try alice.doIssue(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -592,8 +593,8 @@ contract Dividers is TestHelper {
         // Can't issue directly through the divider
         try bob.doIssue(address(adapter), maturity, 1e18) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.IssuanceRestricted);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.IssuanceRestricted.selector));
         }
 
         // Can issue through adapter
@@ -689,8 +690,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try alice.doCombine(address(adapter), maturity, tBal) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
@@ -700,8 +701,8 @@ contract Dividers is TestHelper {
         uint256 tBal = 100 * tBase;
         try alice.doCombine(address(adapter), maturity, tBal) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesDoesntExists);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
 
@@ -711,7 +712,7 @@ contract Dividers is TestHelper {
         try alice.doCombine(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -741,8 +742,8 @@ contract Dividers is TestHelper {
 
         try bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob))) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.CombineRestricted);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.CombineRestricted.selector));
         }
 
         // Collect still works
@@ -832,8 +833,8 @@ contract Dividers is TestHelper {
         uint256 balance = ERC20(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
@@ -842,9 +843,9 @@ contract Dividers is TestHelper {
         uint256 balance = 1e18;
         try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
-        } catch Error(string memory error) {
+        } catch (bytes memory error) {
             // The settled check will fail if the Series does not exist
-            assertEq(error, Errors.NotSettled);
+            assertEq0(error, abi.encodeWithSelector(Errors.NotSettled.selector));
         }
     }
 
@@ -859,8 +860,8 @@ contract Dividers is TestHelper {
         uint256 balance = ERC20(zero).balanceOf(address(bob));
         try bob.doRedeemZero(address(adapter), maturity, balance) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.NotSettled);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.NotSettled.selector));
         }
     }
 
@@ -883,7 +884,7 @@ contract Dividers is TestHelper {
         try alice.doRedeemZero(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -1204,8 +1205,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try alice.doCollect(claim) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
@@ -1261,8 +1262,8 @@ contract Dividers is TestHelper {
         hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
         try bob.doCollect(claim) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.CollectNotSettled);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.CollectNotSettled.selector));
         }
     }
 
@@ -1276,7 +1277,7 @@ contract Dividers is TestHelper {
         try bob.doCollect(claim) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -1285,8 +1286,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         try divider.collect(address(bob), address(adapter), maturity, tBal, address(bob)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OnlyClaim);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OnlyClaim.selector));
         }
     }
 
@@ -1696,8 +1697,8 @@ contract Dividers is TestHelper {
         uint256 tBal = 100 * tBase;
         try divider.backfillScale(address(adapter), maturity, tBal, usrs, lscales) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesDoesntExists);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
 
@@ -1707,8 +1708,8 @@ contract Dividers is TestHelper {
         (, , , , uint256 iscale, uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         try divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OutOfWindowBoundaries);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         }
     }
 
@@ -1721,7 +1722,7 @@ contract Dividers is TestHelper {
         try alice.doBackfillScale(address(adapter), maturity, tBal, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotAuthorized);
+            assertEq(error, "UNTRUSTED");
         }
     }
 
@@ -1934,15 +1935,15 @@ contract Dividers is TestHelper {
         try bob.doSetAdapter(address(adapter), false) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.NotAuthorized);
+            assertEq(error, "UNTRUSTED");
         }
     }
 
     function testCantSetAdapterWithSameValue() public {
         try divider.setAdapter(address(adapter), true) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.ExistingValue);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.ExistingValue.selector));
         }
     }
 
@@ -2040,8 +2041,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try bob.doAddAdapter(address(adapter)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.OnlyPermissionless);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
         }
     }
 
@@ -2049,8 +2050,8 @@ contract Dividers is TestHelper {
         divider.setPermissionless(true);
         try bob.doAddAdapter(address(adapter)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.ExistingValue);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.ExistingValue.selector));
         }
     }
 
@@ -2060,7 +2061,7 @@ contract Dividers is TestHelper {
         try bob.doAddAdapter(address(adapter)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, Errors.Paused);
+            assertEq(error, "Pausable: paused");
         }
     }
 
@@ -2069,8 +2070,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try bob.doAddAdapter(address(adapter)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 

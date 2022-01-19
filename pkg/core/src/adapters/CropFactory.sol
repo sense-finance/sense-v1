@@ -8,6 +8,7 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 // Internal references
 import { Divider } from "../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { CropAdapter } from "./CropAdapter.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { BaseFactory } from "./BaseFactory.sol";

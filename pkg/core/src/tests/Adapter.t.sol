@@ -5,6 +5,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
@@ -132,8 +133,8 @@ contract Adapters is TestHelper {
 
         try fakeAdapter.doSetAdapter(divider, address(fakeAdapter)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.NotAuthorized);
+        } catch Error(string memory err) {
+            assertEq(err, "UNTRUSTED");
         }
     }
 

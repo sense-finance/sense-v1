@@ -85,7 +85,7 @@ contract Periphery is Trust {
     /// @dev Onboards Target onto Fuse. Caller must know the factory address
     /// @param target Target to onboard
     function onboardAdapter(address f, address target) external returns (address adapterClone) {
-        require(factories[f], Errors.FactoryNotSupported);
+        if (!factories[f]) revert Errors.FactoryNotSupported();
         adapterClone = Factory(f).deployAdapter(target);
         // Ping scale to ensure an lscale is cached
         Adapter(adapterClone).scale();
@@ -343,7 +343,7 @@ contract Periphery is Trust {
             uint256
         )
     {
-        require(Adapter(srcAdapter).target() == Adapter(dstAdapter).target(), Errors.TargetMismatch);
+        if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
         uint256 tBal = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted);
         return _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
@@ -354,7 +354,7 @@ contract Periphery is Trust {
     /// @param f Factory's address
     /// @param isOn Flag setting this factory to enabled or disabled
     function setFactory(address f, bool isOn) external requiresTrust {
-        require(factories[f] != isOn, Errors.ExistingValue);
+        if (factories[f] == isOn) revert Errors.ExistingValue();
         factories[f] = isOn;
         emit FactoryChanged(f, isOn);
     }
@@ -444,7 +444,7 @@ contract Periphery is Trust {
 
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable.
-        require(cBal * 10**(18 - ERC20(claim).decimals()) > 1e12, Errors.SwapTooSmall);
+        if (cBal * 10**(18 - ERC20(claim).decimals()) <= 1e12) revert Errors.SwapTooSmall();
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer claims into this contract if needed
@@ -604,7 +604,7 @@ contract Periphery is Trust {
             cBalIn,
             amount
         );
-        require(result);
+        if (!result) revert Errors.FlashBorrowFailed();
         return value;
     }
 
@@ -617,8 +617,8 @@ contract Periphery is Trust {
         uint256 cBalIn,
         uint256 amount
     ) external returns (bytes32, uint256) {
-        require(msg.sender == address(adapter), Errors.FlashUntrustedBorrower);
-        require(initiator == address(this), Errors.FlashUntrustedLoanInitiator);
+        if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
+        if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
         address claim = divider.claim(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
@@ -637,7 +637,7 @@ contract Periphery is Trust {
         );
 
         // We take the lowest of the two balances, as long as they're within a margin of acceptable error.
-        require(zBal < cBalIn + acceptableError && zBal > cBalIn - acceptableError, Errors.UnexpectedSwapAmount);
+        if (zBal >= cBalIn + acceptableError && zBal <= cBalIn - acceptableError) revert Errors.UnexpectedSwapAmount();
 
         // Combine zeros and claim
         uint256 tBal = divider.combine(adapter, maturity, zBal < cBalIn ? zBal : cBalIn);
