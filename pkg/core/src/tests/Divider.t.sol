@@ -2070,8 +2070,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         try bob.doAddAdapter(address(adapter)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidAdapter);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
     }
 
