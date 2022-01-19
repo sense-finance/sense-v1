@@ -227,10 +227,9 @@ contract TestHelper is DSTest {
     }
 
     function addLiquidityToBalancerVault(uint256 maturity, uint256 tBal) public {
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(address(adapter), maturity);
         uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
-        alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
-        alice.doTransfer(zero, address(balancerVault), issued);
+        alice.doTransfer(divider.claim(address(adapter), maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
+        alice.doTransfer(divider.zero(address(adapter), maturity), address(balancerVault), issued);
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
         MockToken(adapter.target()).mint(address(balancerVault), tBal);
     }

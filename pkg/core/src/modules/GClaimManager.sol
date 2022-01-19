@@ -40,8 +40,7 @@ contract GClaimManager {
         uint256 uBal
     ) external {
         require(maturity > block.timestamp, Errors.InvalidMaturity);
-
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+        address claim = Divider(divider).claim(adapter, maturity);
         require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
@@ -80,8 +79,7 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) external {
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
-
+        address claim = Divider(divider).claim(adapter, maturity);
         require(claim != address(0), Errors.SeriesDoesntExists);
 
         // Collect excess for all Claims from this Series this contract holds
@@ -112,7 +110,7 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
-        (address zero, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+        address claim = Divider(divider).claim(adapter, maturity);
         uint256 initScale = inits[claim];
         uint256 scale = Adapter(adapter).scale();
         uint256 mscale = mscales[claim];

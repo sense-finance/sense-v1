@@ -26,6 +26,8 @@ interface DividerLike {
             uint128, /* issuance */
             uint128 /* tilt */
         );
+    function zero(address adapter, uint256 maturity) external returns (address);
+    function claim(address adapter, uint256 maturity) external returns (address);
 }
 
 contract SpaceFactory is Trust {
@@ -65,7 +67,7 @@ contract SpaceFactory is Trust {
     function create(address _adapter, uint256 _maturity) external returns (address) {
         require(pools[_adapter][_maturity] == address(0), "POOL_ALREADY_EXISTS");
 
-        (address zero, , , , , , , , ) = DividerLike(divider).series(_adapter, uint256(_maturity));
+        address zero = DividerLike(divider).zero(_adapter, uint256(_maturity));
         address pool = address(new Space(vault, _adapter, _maturity, zero, ts, g1, g2));
 
         pools[_adapter][_maturity] = pool;
