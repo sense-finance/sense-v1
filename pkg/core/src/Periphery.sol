@@ -593,14 +593,14 @@ contract Periphery is Trust {
         if (block.timestamp >= maturity) {
             if (!uint256(Adapter(adapter).level()).redeemZeroRestricted()) {
                 // (2) Redeem Zeros for Target
-                tBal += divider.redeemZero(adapter, maturity, zBal);
+                tBal += divider.redeemZero(adapter, maturity, _zBal);
             } else {
                 ERC20(zero).safeTransfer(msg.sender, _zBal);
                 zBal = _zBal;
             }
         } else {
             // (2) Sell Zeros for Target
-            tBal += _swap(zero, target, zBal, poolId, minAccepted);
+            tBal += _swap(zero, target, _zBal, poolId, minAccepted);
         }
     }
 
