@@ -330,7 +330,6 @@ contract Periphery is Trust {
         uint256 tBal;
         (tBal, zBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
         ERC20(Adapter(adapter).target()).safeApprove(adapter, tBal);
-        uBal = Adapter(adapter).unwrapTarget(tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying back to the User
     }
 
