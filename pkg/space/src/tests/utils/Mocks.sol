@@ -80,14 +80,24 @@ contract MockDividerSpace is DividerLike {
             uint128
         )
     {
-        return (zeroAddress, claimAddress, address(0), uint256(0), uint256(0), uint256(0), uint256(0), uint128(0), uint128(0));
+        return (
+            zeroAddress,
+            claimAddress,
+            address(0),
+            uint256(0),
+            uint256(0),
+            uint256(0),
+            uint256(0),
+            uint128(0),
+            uint128(0)
+        );
     }
 
-    function zero(address,uint256) external override returns (address) {
+    function zero(address, uint256) external override returns (address) {
         return zeroAddress;
     }
 
-    function claim(address,uint256) external override returns (address) {
+    function claim(address, uint256) external override returns (address) {
         return claimAddress;
     }
 }

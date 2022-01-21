@@ -35,7 +35,7 @@ contract TargetOracle is PriceOracle, Trust {
 
     function _price(address target) internal view returns (uint256) {
         address adapter = adapters[address(target)];
-        if(adapter == address(0)) revert Errors.AdapterNotSet();
+        if (adapter == address(0)) revert Errors.AdapterNotSet();
 
         // Use the cached scale for view function compatibility
         uint256 scale = Adapter(adapter).scaleStored();

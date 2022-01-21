@@ -13,7 +13,6 @@ import { IERC20 } from "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/
 
 import { Errors, _require } from "./Errors.sol";
 
-
 interface AdapterLike {
     function scale() external returns (uint256);
 

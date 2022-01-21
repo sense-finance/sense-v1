@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >= 0.7.0;
+pragma solidity >=0.7.0;
 
 /**
  * @dev Reverts if `condition` is false, with a revert reason containing `errorCode`. Only codes up to 999 are
@@ -66,7 +66,6 @@ function _revert(uint256 errorCode) pure {
 }
 
 library Errors {
-
     // Space (using error codes as Space uses ^0.7.0)
     uint256 internal constant CALLER_NOT_VAULT = 100;
     uint256 internal constant INVALID_G1 = 101;
@@ -76,5 +75,4 @@ library Errors {
     uint256 internal constant POOL_ALREADY_DEPLOYED = 104;
     uint256 internal constant POOL_PAST_MATURITY = 105;
     uint256 internal constant SWAP_TOO_SMALL = 106;
-
 }

@@ -74,7 +74,7 @@ contract ZeroOracle is PriceOracle, Trust {
 
     function _price(address zero) internal view returns (uint256) {
         BalancerOracleLike pool = BalancerOracleLike(pools[address(zero)]);
-        if(pool == BalancerOracleLike(address(0))) revert Errors.PoolNotSet();
+        if (pool == BalancerOracleLike(address(0))) revert Errors.PoolNotSet();
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api

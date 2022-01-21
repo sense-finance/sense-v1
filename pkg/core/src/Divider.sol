@@ -211,7 +211,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 tBalSubFee = tBal - fee;
 
         // Ensure the caller won't hit the issuance cap with this action
-        if (guarded && target.balanceOf(adapter) + tBal > adapterMeta[address(adapter)].guard) revert Errors.GuardCapReached();
+        if (guarded && target.balanceOf(adapter) + tBal > adapterMeta[address(adapter)].guard)
+            revert Errors.GuardCapReached();
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);

@@ -11,7 +11,6 @@ import { PoolManager } from "../PoolManager.sol";
 import { TestHelper } from "@sense-finance/v1-core/src/tests/test-helpers/TestHelper.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-
 import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
@@ -55,7 +54,7 @@ contract PoolManagerLocalTest is TestHelper {
         );
         try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.FailedBecomeAdmin.selector));
         }
     }
@@ -63,7 +62,7 @@ contract PoolManagerLocalTest is TestHelper {
     function testCantDeployPoolIfExists() public {
         try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.PoolAlreadyDeployed.selector));
         }
     }
@@ -94,7 +93,7 @@ contract PoolManagerLocalTest is TestHelper {
         );
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
         }
     }
@@ -120,7 +119,7 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.addTarget(address(target), address(adapter));
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetExists.selector));
         }
     }
@@ -137,7 +136,7 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
         }
     }
@@ -164,7 +163,7 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.setParams("TARGET_PARAMS", params);
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.FailedAddMarket.selector));
         }
     }
@@ -204,7 +203,7 @@ contract PoolManagerLocalTest is TestHelper {
         );
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
         }
     }
@@ -213,7 +212,7 @@ contract PoolManagerLocalTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
@@ -227,7 +226,7 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.queueSeries(address(adapter), maturity, address(123));
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
         }
     }
@@ -249,7 +248,7 @@ contract PoolManagerLocalTest is TestHelper {
         divider.initSeries(address(adapter), maturity, address(alice));
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch(bytes memory error) {
+        } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
         }
     }

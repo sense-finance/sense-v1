@@ -33,7 +33,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
 
     function _price(address underlying) internal view returns (uint256) {
         Adapter adapter = Adapter(adapters[address(underlying)]);
-        if(adapter == Adapter(address(0))) revert Errors.AdapterNotSet();
+        if (adapter == Adapter(address(0))) revert Errors.AdapterNotSet();
 
         return adapter.getUnderlyingPrice();
     }

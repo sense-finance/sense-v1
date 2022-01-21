@@ -253,7 +253,7 @@ contract PoolManager is Trust {
             constructorDataZero,
             zeroParams.collateralFactor
         );
-        if(errZero != 0) revert Errors.FailedAddZeroMarket();
+        if (errZero != 0) revert Errors.FailedAddZeroMarket();
 
         // LP Share pool token
         bytes memory constructorDataLpToken = abi.encodePacked(
@@ -273,7 +273,7 @@ contract PoolManager is Trust {
             constructorDataLpToken,
             lpTokenParams.collateralFactor
         );
-        if(errLpToken != 0) revert Errors.FailedAddLpMarket();
+        if (errLpToken != 0) revert Errors.FailedAddLpMarket();
 
         sStatus[adapter][maturity] = SeriesStatus.ADDED;
 

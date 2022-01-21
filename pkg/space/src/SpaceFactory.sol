@@ -10,7 +10,6 @@ import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Space } from "./Space.sol";
 import { Errors, _require } from "./Errors.sol";
 
-
 interface DividerLike {
     function series(
         address, /* adapter */
@@ -28,7 +27,9 @@ interface DividerLike {
             uint128, /* issuance */
             uint128 /* tilt */
         );
+
     function zero(address adapter, uint256 maturity) external returns (address);
+
     function claim(address adapter, uint256 maturity) external returns (address);
 }
 
