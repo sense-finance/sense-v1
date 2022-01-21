@@ -98,6 +98,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         bool enabled;
         // Max amount of Target allowed to be issued
         uint256 guard;
+        // Target decimals
+        uint8 tDecimals;
+        // Underlying decimals
+        uint8 uDecimals;
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -607,16 +611,19 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== INTERNAL UTILS ========== */
 
     function _setAdapter(address adapter, bool isOn) internal {
-        if (adapterMeta[adapter].enabled == isOn) revert Errors.ExistingValue();
-        adapterMeta[adapter].enabled = isOn;
-        uint248 id = adapterMeta[adapter].id;
+        AdapterMeta memory am = adapterMeta[adapter];
+        if (am.enabled == isOn) revert Errors.ExistingValue();
+        am.enabled = isOn;
         // If this adapter is being added for the first time
-        if (isOn && id == 0) {
-            id = ++adapterCounter;
-            adapterAddresses[id] = adapter;
-            adapterMeta[adapter].id = id;
+        if (isOn && am.id == 0) {
+            am.id = ++adapterCounter;
+            adapterAddresses[am.id] = adapter;
         }
-        emit AdapterChanged(adapter, id, isOn);
+        // Set target and underlying decimals (can only be done once);
+        if (am.tDecimals == 0) am.tDecimals = ERC20(Adapter(adapter).target()).decimals();
+        if (am.uDecimals == 0) am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
+        adapterMeta[adapter] = am;
+        emit AdapterChanged(adapter, am.id, isOn);
     }
 
     /* ========== PUBLIC GETTERS ========== */
