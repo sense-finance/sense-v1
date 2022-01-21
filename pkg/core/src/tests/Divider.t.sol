@@ -11,6 +11,7 @@ import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
 import { MockAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+import { MockEvilTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
@@ -2100,5 +2101,38 @@ contract Dividers is TestHelper {
         assertTrue(enabled);
         assertEq(uDecimals, underlying.decimals());
         assertEq(tDecimals, target.decimals());
+
     }
+
+    // function testTargetAndUnderlyingCantMutateWithMaliciousAdapter() public {
+    //     MockEvilTarget underlying = new MockEvilTarget(address(0), "und", "UND");
+    //     MockEvilTarget target = new MockEvilTarget(address(underlying), "und", "UND");
+    //     MockAdapter aAdapter = new MockAdapter(
+    //         address(divider),
+    //         address(target),
+    //         ORACLE,
+    //         ISSUANCE_FEE,
+    //         address(stake),
+    //         STAKE_SIZE,
+    //         MIN_MATURITY,
+    //         MAX_MATURITY,
+    //         4,
+    //         0,
+    //         DEFAULT_LEVEL,
+    //         address(reward)
+    //     );
+    //     divider.setPermissionless(true);
+    //     bob.doAddAdapter(address(aAdapter));
+    //     (, , , uint8 tDecimals, uint8 uDecimals) = divider.adapterMeta(address(aAdapter));
+    //     uint8 prevTDecimals = tDecimals;
+    //     uint8 prevUDecimals = uDecimals;
+    //     hevm.warp(block.timestamp + 10 days);
+    //     (, , , tDecimals, uDecimals) = divider.adapterMeta(address(aAdapter));
+    //     assertEq(prevTDecimals, tDecimals);
+    //     assertEq(prevUDecimals, uDecimals);
+    //     hevm.warp(block.timestamp + 10 days);
+    //     (, , , tDecimals, uDecimals) = divider.adapterMeta(address(aAdapter));
+    //     assertEq(prevTDecimals, tDecimals);
+    //     assertEq(prevUDecimals, uDecimals);
+    // }
 }

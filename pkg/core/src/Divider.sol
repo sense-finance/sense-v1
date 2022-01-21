@@ -447,7 +447,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address receiver,
         uint256 scale
     ) internal view returns (uint256) {
-        uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
+        uint256 uBase = 10**adapterMeta[adapter].uDecimals;
         return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
     }
 
@@ -638,6 +638,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         return series[adapter][maturity].claim;
     }
 
+    /// @notice Returns address of claim token
+    function tDecimals(address adapter) public view returns (uint8) {
+        return adapterMeta[adapter].tDecimals;
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address adapter, uint256 maturity) {
@@ -717,7 +722,7 @@ contract TokenHandler is Trust {
         if (msg.sender != divider) revert Errors.OnlyDivider();
 
         ERC20 target = ERC20(Adapter(adapter).target());
-        uint8 decimals = target.decimals();
+        uint8 decimals = Divider(divider).tDecimals(adapter);
         string memory name = target.name();
         (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));

@@ -145,6 +145,6 @@ contract WstETHAdapter is BaseAdapter {
     }
 
     fallback() external payable {
-        if (!(msg.sender == WETH || msg.sender == CURVESINGLESWAP)) revert Errors.SenderNotEligible();
+        if (msg.sender != WETH && msg.sender != CURVESINGLESWAP) revert Errors.SenderNotEligible();
     }
 }
