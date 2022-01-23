@@ -8,6 +8,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
@@ -35,13 +36,14 @@ contract TargetOracle is PriceOracle, Trust {
 
     function _price(address target) internal view returns (uint256) {
         address adapter = adapters[address(target)];
-        require(adapter != address(0), Errors.AdapterNotSet);
+        if (adapter == address(0)) revert Errors.AdapterNotSet();
 
         // Use the cached scale for view function compatibility
         uint256 scale = Adapter(adapter).scaleStored();
 
-        // `Target/Target's underlying` * `Target's underlying/ ETH` = `Price of Target in ETH`
-        // scale and the value returned by getUnderlyingPrice are expected to be in WAD form
+        // `Target / Target's underlying` * `Target's underlying / ETH` = `Price of Target in ETH`
+        //
+        // `scale` and the value returned by `getUnderlyingPrice` are expected to be WADs
         return scale.fmul(Adapter(adapter).getUnderlyingPrice(), FixedPointMathLib.WAD);
     }
 }

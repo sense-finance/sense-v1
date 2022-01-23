@@ -7,6 +7,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
@@ -54,7 +55,7 @@ abstract contract BaseFactory {
     /// @param _adapter Address of the adapter
     function _addAdapter(address _adapter) internal {
         address target = BaseAdapter(_adapter).target();
-        require(_exists(target), Errors.NotSupported);
+        if (!_exists(target)) revert Errors.TargetNotSupported();
         Divider(divider).setAdapter(address(_adapter), true);
         emit AdapterAdded(address(_adapter), target);
     }

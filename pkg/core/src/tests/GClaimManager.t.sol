@@ -5,6 +5,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { Claim } from "../tokens/Claim.sol";
 import { GClaimManager } from "../modules/GClaimManager.sol";
 import { Periphery } from "../Periphery.sol";
@@ -25,8 +26,8 @@ contract GClaimsManager is TestHelper {
         //        uint256 balance = 1e18;
         try alice.doJoin(address(adapter), maturity, balance) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.InvalidMaturity);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
         }
     }
 
@@ -35,8 +36,8 @@ contract GClaimsManager is TestHelper {
         //        uint256 balance = 10e18;
         try alice.doJoin(address(adapter), maturity, balance) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesDoesntExists);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
 
@@ -192,11 +193,10 @@ contract GClaimsManager is TestHelper {
 
     function testFuzzCantExitIfSeriesDoesntExists(uint128 balance) public {
         uint256 maturity = getValidMaturity(2021, 10);
-        //        uint256 balance = 1e18;
         try alice.doExit(address(adapter), maturity, balance) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.SeriesDoesntExists);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
 

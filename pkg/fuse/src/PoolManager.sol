@@ -131,7 +131,7 @@ contract PoolManager is Trust {
         uint256 liqIncentive,
         address fallbackOracle
     ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
-        require(comptroller == address(0), Errors.PoolAlreadyDeployed);
+        if (comptroller != address(0)) revert Errors.PoolAlreadyDeployed();
 
         masterOracle = Clones.cloneDeterministic(oracleImpl, Bytes32AddressLib.fillLast12Bytes(address(this)));
         MasterOracleLike(masterOracle).initialize(
@@ -152,16 +152,16 @@ contract PoolManager is Trust {
         );
 
         uint256 err = ComptrollerLike(_comptroller)._acceptAdmin();
-        require(err == 0, Errors.FailedBecomeAdmin);
+        if (err != 0) revert Errors.FailedBecomeAdmin();
         comptroller = _comptroller;
 
         emit PoolDeployed(name, _comptroller, _poolIndex, closeFactor, liqIncentive);
     }
 
     function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
-        require(comptroller != address(0), Errors.PoolNotDeployed);
-        require(!tInits[target], Errors.TargetExists);
-        require(targetParams.irModel != address(0), Errors.PoolParamsNotSet);
+        if (comptroller == address(0)) revert Errors.PoolNotDeployed();
+        if (tInits[target]) revert Errors.TargetExists();
+        if (targetParams.irModel == address(0)) revert Errors.TargetParamsNotSet();
 
         address underlying = Adapter(adapter).underlying();
 
@@ -191,7 +191,7 @@ contract PoolManager is Trust {
         );
 
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
-        require(err == 0, Errors.FailedAddMarket);
+        if (err != 0) revert Errors.FailedAddMarket();
 
         cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 
@@ -206,14 +206,12 @@ contract PoolManager is Trust {
         uint256 maturity,
         address pool
     ) external requiresTrust {
-        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
-
-        require(comptroller != address(0), Errors.PoolNotDeployed);
-        require(zero != address(0), Errors.SeriesDoesntExists);
-        require(sSeries[adapter][maturity].status == SeriesStatus.NONE, Errors.DuplicateSeries);
+        if (comptroller == address(0)) revert Errors.PoolNotDeployed();
+        if (Divider(divider).zero(adapter, maturity) == address(0)) revert Errors.SeriesDoesNotExist();
+        if (sSeries[adapter][maturity].status != SeriesStatus.NONE) revert Errors.DuplicateSeries();
 
         address target = Adapter(adapter).target();
-        require(tInits[target], Errors.TargetNotInFuse);
+        if (!tInits[target]) revert Errors.TargetNotInFuse();
 
         sSeries[adapter][maturity] = Series({
             status: SeriesStatus.QUEUED,
@@ -226,12 +224,11 @@ contract PoolManager is Trust {
     /// @notice open method to add queued Zeros and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint256 maturity) external {
-        require(sSeries[adapter][maturity].status == SeriesStatus.QUEUED, Errors.SeriesNotQueued);
+        if (sSeries[adapter][maturity].status != SeriesStatus.QUEUED) revert Errors.SeriesNotQueued();
+        if (zeroParams.irModel == address(0)) revert Errors.ZeroParamsNotSet();
+        if (lpTokenParams.irModel == address(0)) revert Errors.PoolParamsNotSet();
 
-        require(zeroParams.irModel != address(0), Errors.PoolParamsNotSet);
-        require(lpTokenParams.irModel != address(0), Errors.PoolParamsNotSet);
-
-        (address zero, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        address zero = Divider(divider).zero(adapter, maturity);
 
         address pool = sSeries[adapter][maturity].pool;
 
@@ -239,7 +236,7 @@ contract PoolManager is Trust {
         if (sampleTs == 0) {
             // revert if the pool's oracle can't be used yet, preventing this market from being deployed
             // on Fuse until we're able to read a TWAP
-            revert(Errors.OracleNotReady);
+            revert Errors.OracleNotReady();
         }
 
         address[] memory underlyings = new address[](2);
@@ -271,7 +268,7 @@ contract PoolManager is Trust {
             constructorDataZero,
             zeroParams.collateralFactor
         );
-        require(errZero == 0, Errors.FailedAddZeroMarket);
+        if (errZero != 0) revert Errors.FailedAddZeroMarket();
 
         // LP Share pool token
         bytes memory constructorDataLpToken = abi.encode(
@@ -291,7 +288,7 @@ contract PoolManager is Trust {
             constructorDataLpToken,
             lpTokenParams.collateralFactor
         );
-        require(errLpToken == 0, Errors.FailedAddLPMarket);
+        if (errLpToken != 0) revert Errors.FailedAddLpMarket();
 
         sSeries[adapter][maturity].status = SeriesStatus.ADDED;
 
@@ -302,7 +299,7 @@ contract PoolManager is Trust {
         if (what == "ZERO_PARAMS") zeroParams = data;
         else if (what == "LP_TOKEN_PARAMS") lpTokenParams = data;
         else if (what == "TARGET_PARAMS") targetParams = data;
-        else revert("Invalid param");
+        else revert Errors.InvalidParam();
         emit ParamsSet(what, data);
     }
 }

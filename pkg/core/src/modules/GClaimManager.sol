@@ -9,6 +9,7 @@ import { FixedMath } from "../external/FixedMath.sol";
 // Internal references
 import { Divider } from "../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
 import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
@@ -39,10 +40,10 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) external {
-        require(maturity > block.timestamp, Errors.InvalidMaturity);
+        if (maturity <= block.timestamp) revert Errors.InvalidMaturity();
 
-        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
-        require(claim != address(0), Errors.SeriesDoesntExists);
+        address claim = Divider(divider).claim(adapter, maturity);
+        if (claim == address(0)) revert Errors.SeriesDoesNotExist();
 
         if (address(gclaims[claim]) == address(0)) {
             // If this is the first Claim from this Series:
@@ -80,9 +81,8 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) external {
-        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
-
-        require(claim != address(0), Errors.SeriesDoesntExists);
+        address claim = Divider(divider).claim(adapter, maturity);
+        if (claim == address(0)) revert Errors.SeriesDoesNotExist();
 
         // Collect excess for all Claims from this Series this contract holds
         uint256 collected = Claim(claim).collect();
@@ -112,7 +112,7 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
-        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+        address claim = Divider(divider).claim(adapter, maturity);
         uint256 initScale = inits[claim];
         uint256 scale = Adapter(adapter).scale();
         uint256 mscale = mscales[claim];

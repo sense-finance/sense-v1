@@ -18,7 +18,6 @@ contract LPOracle is PriceOracle, Trust {
 
     /// @notice zero address -> pool address for oracle reads
     mapping(address => address) public pools;
-    uint32 public constant TWAP_PERIOD = 1 hours;
 
     constructor() Trust(msg.sender) {}
 

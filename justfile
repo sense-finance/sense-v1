@@ -101,32 +101,32 @@ test-mainnet *cmds="": && _timer
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
 
 turbo-test-local-no-fuzz *cmds="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }}
 
 turbo-test-local-8-decimal-target *cmds="": && _timer
 	cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
 
 turbo-test-mainnet: && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
 turbo-test-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m {{ exp }}
 
 turbo-test-mainnet-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
 
 ## ---- Gas Metering ----
@@ -171,5 +171,5 @@ remappings-from-pkg-deps := ```
 lib-paths-from-pkg-deps := ```
     cat pkg/*/package.json |
     jq 'select(.dependencies != null) | .dependencies | to_entries | map("../../node_modules/" + .key + "/")' |
-    tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | tr '\n' ' '
+    tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | awk '{print "--lib-paths " $0}' | tr '\n' ' '
   ```

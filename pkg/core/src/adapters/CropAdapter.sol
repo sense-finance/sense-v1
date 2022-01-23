@@ -30,6 +30,7 @@ abstract contract CropAdapter is BaseAdapter {
     constructor(
         address _divider,
         address _target,
+        address _underlyng,
         address _oracle,
         uint64 _ifee,
         address _stake,
@@ -40,7 +41,22 @@ abstract contract CropAdapter is BaseAdapter {
         uint64 _tilt,
         uint16 _level,
         address _reward
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {
+    )
+        BaseAdapter(
+            _divider,
+            _target,
+            _underlyng,
+            _oracle,
+            _ifee,
+            _stake,
+            _stakeSize,
+            _minm,
+            _maxm,
+            _mode,
+            _tilt,
+            _level
+        )
+    {
         reward = _reward;
     }
 
@@ -92,7 +108,7 @@ abstract contract CropAdapter is BaseAdapter {
     /* ========== MODIFIERS ========== */
 
     modifier onlyDivider() {
-        require(divider == msg.sender, Errors.OnlyDivider);
+        if (divider != msg.sender) revert Errors.OnlyDivider();
         _;
     }
 }

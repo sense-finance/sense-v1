@@ -11,6 +11,7 @@ import { FixedMath } from "./external/FixedMath.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Claim } from "./tokens/Claim.sol";
@@ -53,19 +54,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     bool public guarded = true;
 
     /// @notice Number of adapters (including turned off)
-    uint256 public adapterCounter;
-
-    /// @notice adapter -> is supported
-    mapping(address => bool) public adapters;
+    uint248 public adapterCounter;
 
     /// @notice adapter ID -> adapter address
     mapping(uint256 => address) public adapterAddresses;
 
-    /// @notice adapter address -> adapter ID
-    mapping(address => uint256) public adapterIDs;
-
-    /// @notice adaper -> max amount of Target allowed to be issued
-    mapping(address => uint256) public guards;
+    /// @notice adapter data
+    mapping(address => AdapterMeta) public adapterMeta;
 
     /// @notice adapter -> maturity -> Series
     mapping(address => mapping(uint256 => Series)) public series;
@@ -96,6 +91,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint128 tilt;
     }
 
+    struct AdapterMeta {
+        // Adapter ID
+        uint248 id;
+        // Adapter enabled/disabled
+        bool enabled;
+        // Max amount of Target allowed to be issued
+        uint256 guard;
+    }
+
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
         cup = _cup;
         tokenHandler = _tokenHandler;
@@ -106,7 +110,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Enable an adapter
     /// @param adapter Adapter's address
     function addAdapter(address adapter) external whenPermissionless whenNotPaused {
-        require(adapter != address(0), Errors.InvalidAddress);
+        if (adapter == address(0)) revert Errors.InvalidAdapter();
+        if (adapterMeta[adapter].id > 0 && !adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         _setAdapter(adapter, true);
     }
 
@@ -121,15 +126,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         address sponsor
     ) external nonReentrant onlyPeriphery whenNotPaused returns (address zero, address claim) {
-        require(adapters[adapter], Errors.InvalidAdapter);
-        require(!_exists(adapter, maturity), Errors.DuplicateSeries);
-        require(_isValid(adapter, maturity), Errors.InvalidMaturity);
+        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
+        if (_exists(adapter, maturity)) revert Errors.DuplicateSeries();
+        if (!_isValid(adapter, maturity)) revert Errors.InvalidMaturity();
 
         // Transfer stake asset stake from caller to adapter
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Deploy Zeros and Claims for this new Series
-        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, maturity);
+        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, adapterMeta[adapter].id, maturity);
 
         // Initialize the new Series struct
         uint256 scale = Adapter(adapter).scale();
@@ -157,9 +162,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series
     function settleSeries(address adapter, uint256 maturity) external nonReentrant whenNotPaused {
-        require(adapters[adapter], Errors.InvalidAdapter);
-        require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        require(_canBeSettled(adapter, maturity), Errors.OutOfWindowBoundaries);
+        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
+        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
+        if (_settled(adapter, maturity)) revert Errors.AlreadySettled();
+        if (!_canBeSettled(adapter, maturity)) revert Errors.OutOfWindowBoundaries();
 
         // The maturity scale value is all a Series needs for us to consider it "settled"
         uint256 mscale = Adapter(adapter).scale();
@@ -187,27 +193,26 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         uint256 tBal
     ) external nonReentrant whenNotPaused returns (uint256 uBal) {
-        require(adapters[adapter], Errors.InvalidAdapter);
-        require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
-        require(!_settled(adapter, maturity), Errors.IssueOnSettled);
+        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
+        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
+        if (_settled(adapter, maturity)) revert Errors.IssueOnSettle();
 
         uint256 level = uint256(Adapter(adapter).level());
-        if (level.issueRestricted()) {
-            require(msg.sender == adapter, Errors.IssuanceRestricted);
-        }
+        if (level.issueRestricted() && msg.sender != adapter) revert Errors.IssuanceRestricted();
 
         ERC20 target = ERC20(Adapter(adapter).target());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
         uint256 issuanceFee = Adapter(adapter).ifee();
-        require(issuanceFee <= ISSUANCE_FEE_CAP, Errors.IssuanceFeeCapExceeded);
+        if (issuanceFee > ISSUANCE_FEE_CAP) revert Errors.IssuanceFeeCapExceeded();
         uint256 fee = tBal.fmul(issuanceFee);
 
         series[adapter][maturity].reward += fee;
         uint256 tBalSubFee = tBal - fee;
 
         // Ensure the caller won't hit the issuance cap with this action
-        if (guarded) require(target.balanceOf(adapter) + tBal <= guards[address(adapter)], Errors.GuardCapReached);
+        if (guarded && target.balanceOf(adapter) + tBal > adapterMeta[address(adapter)].guard)
+            revert Errors.GuardCapReached();
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
@@ -249,10 +254,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
-        require(adapters[adapter], Errors.InvalidAdapter);
-        require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
+        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
         uint256 level = uint256(Adapter(adapter).level());
-        if (level.combineRestricted() && msg.sender != adapter) revert(Errors.CombineRestricted);
+        if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();
 
         // Burn the Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
@@ -292,14 +297,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
-        require(adapters[adapter], Errors.InvalidAdapter);
+        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
-        require(_settled(adapter, maturity), Errors.NotSettled);
+        if (!_settled(adapter, maturity)) revert Errors.NotSettled();
 
         uint256 level = uint256(Adapter(adapter).level());
-        if (level.redeemZeroRestricted()) {
-            require(msg.sender == adapter, Errors.RedeemZeroRestricted);
-        }
+        if (level.redeemZeroRestricted() && msg.sender == adapter) revert Errors.RedeemZeroRestricted();
 
         // Burn the caller's Zeros
         Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
@@ -355,8 +358,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBalTransfer,
         address to
     ) internal returns (uint256 collected) {
-        require(adapters[adapter], Errors.InvalidAdapter);
-        require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
+        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
         Series memory _series = series[adapter][maturity];
 
@@ -382,7 +385,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             // If we're not settled and we're past maturity + the sponsor window,
             // anyone can settle this Series so revert until someone does
             if (block.timestamp > maturity + SPONSOR_WINDOW) {
-                revert(Errors.CollectNotSettled);
+                revert Errors.CollectNotSettled();
                 // Otherwise, this is a valid pre-settlement collect and we need to determine the scale value
             } else {
                 uint256 cscale = Adapter(adapter).scale();
@@ -425,6 +428,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             Adapter(adapter).notify(usr, tBalTransfer, false);
             Adapter(adapter).notify(to, tBalTransfer, true);
         }
+        series[adapter][maturity] = _series;
 
         emit Collected(adapter, maturity, collected);
     }
@@ -490,7 +494,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param adapter Adapter address
     /// @param cap The max target that can be deposited on the Adapter
     function setGuard(address adapter, uint256 cap) external requiresTrust {
-        guards[adapter] = cap;
+        adapterMeta[adapter].guard = cap;
         emit GuardChanged(adapter, cap);
     }
 
@@ -534,11 +538,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address[] calldata _usrs,
         uint256[] calldata _lscales
     ) external requiresTrust {
-        require(_exists(adapter, maturity), Errors.SeriesDoesntExists);
+        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the adapter is disabled, it will allow the admin to backfill no matter the maturity
-        require(!adapters[adapter] || block.timestamp > cutoff, Errors.OutOfWindowBoundaries);
+        if (adapterMeta[adapter].enabled && block.timestamp <= cutoff) revert Errors.OutOfWindowBoundaries();
 
         // Set user's last scale values the Series (needed for the `collect` method)
         for (uint256 i = 0; i < _usrs.length; i++) {
@@ -555,9 +559,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
             (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
-            // Determine where the stake should go depending on where we are relative to the maturity date
-            address stakeDst = adapters[adapter] ? cup : _series.sponsor;
+            address stakeDst = adapterMeta[adapter].enabled ? cup : _series.sponsor;
             ERC20(target).safeTransferFrom(adapter, cup, _series.reward);
+            series[adapter][maturity].reward = 0;
             ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);
         }
 
@@ -575,7 +579,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     }
 
     function _canBeSettled(address adapter, uint256 maturity) internal view returns (bool) {
-        require(!_settled(adapter, maturity), Errors.AlreadySettled);
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
         // If the sender is the sponsor for the Series
         if (msg.sender == series[adapter][maturity].sponsor) {
@@ -604,32 +607,44 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== INTERNAL FUNCTIONS & HELPERS ========== */
 
     function _setAdapter(address adapter, bool isOn) internal {
-        require(adapters[adapter] != isOn, Errors.ExistingValue);
-        adapters[adapter] = isOn;
-        uint256 id = adapterIDs[adapter];
+        if (adapterMeta[adapter].enabled == isOn) revert Errors.ExistingValue();
+        adapterMeta[adapter].enabled = isOn;
+        uint248 id = adapterMeta[adapter].id;
         // If this adapter is being added for the first time
         if (isOn && id == 0) {
             id = ++adapterCounter;
             adapterAddresses[id] = adapter;
-            adapterIDs[adapter] = id;
+            adapterMeta[adapter].id = id;
         }
         emit AdapterChanged(adapter, id, isOn);
+    }
+
+    /* ========== PUBLIC GETTERS ========== */
+
+    /// @notice Returns address of zero token
+    function zero(address adapter, uint256 maturity) public view returns (address) {
+        return series[adapter][maturity].zero;
+    }
+
+    /// @notice Returns address of claim token
+    function claim(address adapter, uint256 maturity) public view returns (address) {
+        return series[adapter][maturity].claim;
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address adapter, uint256 maturity) {
-        require(series[adapter][maturity].claim == msg.sender, Errors.OnlyClaim);
+        if (series[adapter][maturity].claim != msg.sender) revert Errors.OnlyClaim();
         _;
     }
 
     modifier onlyPeriphery() {
-        require(periphery == msg.sender, Errors.OnlyPeriphery);
+        if (periphery != msg.sender) revert Errors.OnlyPeriphery();
         _;
     }
 
     modifier whenPermissionless() {
-        require(permissionless, Errors.OnlyPermissionless);
+        if (!permissionless) revert Errors.OnlyPermissionless();
         _;
     }
 
@@ -683,20 +698,23 @@ contract TokenHandler is Trust {
     constructor() Trust(msg.sender) {}
 
     function init(address _divider) external requiresTrust {
-        require(divider == address(0));
+        if (divider != address(0)) revert Errors.AlreadyInitialized();
         divider = _divider;
     }
 
-    function deploy(address adapter, uint256 maturity) external returns (address zero, address claim) {
-        require(msg.sender == divider, "Must be called by the Divider");
+    function deploy(
+        address adapter,
+        uint248 id,
+        uint256 maturity
+    ) external returns (address zero, address claim) {
+        if (msg.sender != divider) revert Errors.OnlyDivider();
 
         ERC20 target = ERC20(Adapter(adapter).target());
         uint8 decimals = target.decimals();
         string memory name = target.name();
-        (, string memory m, string memory y) = DateTime.toDateString(maturity);
-        string memory datestring = string(abi.encodePacked(m, "-", y));
-
-        string memory adapterId = DateTime.uintToString(Divider(divider).adapterIDs(adapter));
+        (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
+        string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));
+        string memory adapterId = DateTime.uintToString(id);
         zero = address(
             new Token(
                 string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),

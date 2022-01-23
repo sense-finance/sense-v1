@@ -51,7 +51,8 @@ contract Factories is TestHelper {
 
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someTarget = new MockToken("Some Target", "ST", 18);
+        MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
+        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         address adapter = someFactory.deployAdapter(address(someTarget));
         assertTrue(adapter != address(0));
@@ -87,22 +88,24 @@ contract Factories is TestHelper {
     }
 
     function testCantDeployAdapterIfTargetIsNotSupported() public {
-        MockToken newTarget = new MockToken("Not Supported", "NS", 18);
+        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+        MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         try factory.deployAdapter(address(newTarget)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.NotSupported);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
     }
 
     function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someTarget = new MockToken("Some Target", "ST", 18);
+        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         try factory.deployAdapter(address(someTarget)) {
             fail();
-        } catch Error(string memory error) {
-            assertEq(error, Errors.NotSupported);
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
         someFactory.deployAdapter(address(someTarget));
     }

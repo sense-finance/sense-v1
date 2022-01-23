@@ -73,7 +73,7 @@ contract WstETHAdapter is BaseAdapter {
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
-    uint256 public constant SLIPPAGE_TOLERANCE = 0.5e18;
+    uint256 public constant SLIPPAGE_TOLERANCE = 0.005e18;
 
     /// @notice Cached scale value from the last call to `scale()`
     uint256 public override scaleStored;
@@ -89,7 +89,7 @@ contract WstETHAdapter is BaseAdapter {
         uint256 _maxm,
         uint16 _mode,
         uint64 _tilt
-    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
+    ) BaseAdapter(_divider, _target, WETH, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
         // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
@@ -111,44 +111,40 @@ contract WstETHAdapter is BaseAdapter {
         return _value;
     }
 
-    function underlying() external pure override returns (address) {
-        return WETH;
+    function getUnderlyingPrice() external pure override returns (uint256 price) {
+        price = 1e18;
     }
 
-    function getUnderlyingPrice() external pure override returns (uint256) {
-        return 1e18;
-    }
-
-    function unwrapTarget(uint256 amount) external override returns (uint256) {
+    function unwrapTarget(uint256 amount) external override returns (uint256 eth) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
         WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
         // exchange stETH to ETH exchange on Curve
-        uint256 minDy = ICurveStableSwap(CURVESINGLESWAP).get_dy(int128(1), int128(0), amount);
-        uint256 eth = ICurveStableSwap(CURVESINGLESWAP).exchange(
+        // to calculate the minDy, we use Lido's safe_price_value() which should prevent from flash loan / sandwhich attacks
+        // and we are also adding a slippage tolerance of 0.5%
+        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+        eth = ICurveStableSwap(CURVESINGLESWAP).exchange(
             int128(1),
             int128(0),
             amount,
-            (minDy * (100e18 - SLIPPAGE_TOLERANCE)) / 100e18
+            stEthEth.fmul(amount).fmul(1e18 - SLIPPAGE_TOLERANCE)
         );
 
         // deposit ETH into WETH contract
         (bool success, ) = WETH.call{ value: eth }("");
-        require(success, "Transfer failed.");
+        if (!success) revert Errors.TransferFailed();
 
         ERC20(WETH).safeTransfer(msg.sender, eth); // transfer WETH back to sender (periphery)
-        return eth;
     }
 
     function wrapUnderlying(uint256 amount) external override returns (uint256 wstETH) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
         uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
-        uint256 wstETH = WstETHInterface(WSTETH).wrap(stETH); // wrap stETH into wstETH
-        ERC20(WSTETH).safeTransfer(msg.sender, wstETH); // transfer wstETH to msg.sender
+        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHInterface(WSTETH).wrap(stETH)); // transfer wstETH to msg.sender
     }
 
     fallback() external payable {
-        require(msg.sender == WETH || msg.sender == CURVESINGLESWAP, Errors.SenderNotEligible);
+        if (!(msg.sender == WETH || msg.sender == CURVESINGLESWAP)) revert Errors.SenderNotEligible();
     }
 }

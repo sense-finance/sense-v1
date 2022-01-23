@@ -133,7 +133,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetCantSendEtherIfNotEligible() public {
-        Hevm(HEVM_ADDRESS).expectRevert(abi.encode(Errors.SenderNotEligible));
+        Hevm(HEVM_ADDRESS).expectRevert(abi.encodeWithSelector(Errors.SenderNotEligible.selector));
         payable(address(adapter)).call{ value: 1 ether }("");
     }
 }

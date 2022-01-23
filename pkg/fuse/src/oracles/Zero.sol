@@ -11,6 +11,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
@@ -38,7 +39,7 @@ contract ZeroOracle is PriceOracle, Trust {
 
     function _price(address zero) internal view returns (uint256) {
         BalancerOracle pool = BalancerOracle(pools[address(zero)]);
-        require(pool != BalancerOracle(address(0)), Errors.PoolNotSet);
+        if (pool == BalancerOracle(address(0))) revert Errors.PoolNotSet();
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
@@ -46,7 +47,7 @@ contract ZeroOracle is PriceOracle, Trust {
         if (sampleTs == 0) {
             // revert if the pool's oracle can't be used yet, preventing this market from being deployed
             // on Fuse until we're able to read a TWAP
-            revert(Errors.OracleNotReady);
+            revert Errors.OracleNotReady();
         }
 
         BalancerOracle.OracleAverageQuery[] memory queries = new BalancerOracle.OracleAverageQuery[](1);
@@ -70,7 +71,8 @@ contract ZeroOracle is PriceOracle, Trust {
         }
 
         // `Zero/underlying` * `underlying/ETH` = `Price of Zero in ETH`
-        // assumes the caller is the maser oracle, which will have its own way to get the underlying price
+        //
+        // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
         return zeroPrice.fmul(PriceOracle(msg.sender).price(underlying), FixedPointMathLib.WAD);
     }
 }

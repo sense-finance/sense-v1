@@ -97,7 +97,7 @@ contract PoolManagerTest is DSTest {
         // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();
-        } catch Error(string memory error) {
+        } catch (bytes memory error) {
             assertEq(error, "Pool not yet deployed");
         }
 

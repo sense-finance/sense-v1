@@ -8,6 +8,7 @@ import { IVault } from "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol"
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 import { Space } from "./Space.sol";
+import { Errors, _require } from "./Errors.sol";
 
 interface DividerLike {
     function series(
@@ -26,6 +27,10 @@ interface DividerLike {
             uint128, /* issuance */
             uint128 /* tilt */
         );
+
+    function zero(address adapter, uint256 maturity) external returns (address);
+
+    function claim(address adapter, uint256 maturity) external returns (address);
 }
 
 contract SpaceFactory is Trust {
@@ -63,9 +68,9 @@ contract SpaceFactory is Trust {
 
     /// @notice Deploys a new `Space` contract
     function create(address _adapter, uint256 _maturity) external returns (address) {
-        require(pools[_adapter][_maturity] == address(0), "POOL_ALREADY_EXISTS");
+        _require(pools[_adapter][_maturity] == address(0), Errors.POOL_ALREADY_DEPLOYED);
 
-        (address zero, , , , , , , , ) = DividerLike(divider).series(_adapter, uint256(_maturity));
+        address zero = DividerLike(divider).zero(_adapter, uint256(_maturity));
         address pool = address(new Space(vault, _adapter, _maturity, zero, ts, g1, g2));
 
         pools[_adapter][_maturity] = pool;
@@ -78,9 +83,9 @@ contract SpaceFactory is Trust {
         uint256 _g2
     ) public requiresTrust {
         // g1 is for swapping Targets to Zeros and should discount the effective interest
-        require(_g1 <= FixedPoint.ONE, "INVALID_G1");
+        _require(_g1 <= FixedPoint.ONE, Errors.INVALID_G1);
         // g2 is for swapping Zeros to Target and should mark the effective interest up
-        require(_g2 >= FixedPoint.ONE, "INVALID_G2");
+        _require(_g2 >= FixedPoint.ONE, Errors.INVALID_G2);
 
         ts = _ts;
         g1 = _g1;

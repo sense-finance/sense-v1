@@ -7,6 +7,8 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+
 import { CropAdapter } from "../CropAdapter.sol";
 
 interface IWETH {
@@ -73,7 +75,6 @@ contract CAdapter is CropAdapter {
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    address public override underlying;
     bool public immutable isCETH;
 
     constructor(
@@ -89,11 +90,26 @@ contract CAdapter is CropAdapter {
         uint64 _tilt,
         uint16 _level,
         address _reward
-    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {
-        // Approve underlying contract to pull target (used on wrapUnderlying())
-        bool _isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
-        underlying = _isCETH ? WETH : CTokenInterface(_target).underlying();
-        isCETH = _isCETH;
+    )
+        CropAdapter(
+            _divider,
+            _target,
+            keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"))
+                ? WETH
+                : CTokenInterface(_target).underlying(),
+            _oracle,
+            _ifee,
+            _stake,
+            _stakeSize,
+            _minm,
+            _maxm,
+            _mode,
+            _tilt,
+            _level,
+            _reward
+        )
+    {
+        isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
         ERC20(underlying).safeApprove(_target, type(uint256).max);
     }
 
@@ -125,51 +141,49 @@ contract CAdapter is CropAdapter {
         ComptrollerInterface(COMPTROLLER).claimComp(address(this));
     }
 
-    function getUnderlyingPrice() external view override returns (uint256) {
-        return isCETH ? 1e18 : PriceOracleInterface(oracle).price(underlying);
+    function getUnderlyingPrice() external view override returns (uint256 price) {
+        price = isCETH ? 1e18 : PriceOracleInterface(oracle).price(underlying);
     }
 
-    function wrapUnderlying(uint256 uBal) external override returns (uint256) {
-        ERC20 u = ERC20(underlying);
+    function wrapUnderlying(uint256 uBal) external override returns (uint256 tBal) {
         ERC20 t = ERC20(target);
 
-        u.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        ERC20(underlying).safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
         if (isCETH) IWETH(WETH).withdraw(uBal); // unwrap WETH into ETH
 
-        // mint target
+        // Mint target
         uint256 tBalBefore = t.balanceOf(address(this));
         if (isCETH) {
             CETHTokenInterface(target).mint{ value: uBal }();
         } else {
-            require(CTokenInterface(target).mint(uBal) == 0, "Mint failed");
+            if (CTokenInterface(target).mint(uBal) != 0) revert Errors.MintFailed();
         }
         uint256 tBalAfter = t.balanceOf(address(this));
-        uint256 tBal = tBalAfter - tBalBefore;
 
-        // transfer target to sender
-        t.safeTransfer(msg.sender, tBal);
-        return tBal;
+        // Transfer target to sender
+        t.safeTransfer(msg.sender, tBal = tBalAfter - tBalBefore);
     }
 
-    function unwrapTarget(uint256 tBal) external override returns (uint256) {
+    function unwrapTarget(uint256 tBal) external override returns (uint256 uBal) {
         ERC20 u = ERC20(underlying);
         ERC20(target).safeTransferFrom(msg.sender, address(this), tBal); // pull target
 
-        // redeem target for underlying
+        // Redeem target for underlying
         uint256 uBalBefore = isCETH ? address(this).balance : u.balanceOf(address(this));
-        require(CTokenInterface(target).redeem(tBal) == 0, "Redeem failed");
+        if (CTokenInterface(target).redeem(tBal) != 0) revert Errors.RedeemFailed();
         uint256 uBalAfter = isCETH ? address(this).balance : u.balanceOf(address(this));
-        uint256 uBal = uBalAfter - uBalBefore;
-
-        if (isCETH) {
-            // deposit ETH into WETH contract
-            (bool success, ) = WETH.call{ value: uBal }("");
-            require(success, "Transfer failed.");
+        unchecked {
+            uBal = uBalAfter - uBalBefore;
         }
 
-        // transfer underlying to sender
-        u.safeTransfer(msg.sender, uBal);
-        return uBal;
+        if (isCETH) {
+            // Deposit ETH into WETH contract
+            (bool success, ) = WETH.call{ value: uBal }("");
+            if (!success) revert Errors.TransferFailed();
+        }
+
+        // Transfer underlying to sender
+        ERC20(underlying).safeTransfer(msg.sender, uBal);
     }
 
     fallback() external payable {}

@@ -21,8 +21,7 @@ interface IPeriphery {
     ) external returns (bytes32, uint256);
 }
 
-/// @title Assign time-based value to Target tokens
-/// @dev In most cases, the only method that will be unique to each adapter type is `_scale`
+/// @title Assign value to Target tokens
 abstract contract BaseAdapter {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
@@ -38,6 +37,9 @@ abstract contract BaseAdapter {
 
     /// @notice Target token to divide
     address public immutable target;
+
+    /// @notice Underlying for the Target
+    address public immutable underlying;
 
     /// @notice Oracle address
     address public immutable oracle;
@@ -79,6 +81,7 @@ abstract contract BaseAdapter {
     constructor(
         address _divider,
         address _target,
+        address _underlying,
         address _oracle,
         uint64 _ifee,
         address _stake,
@@ -90,9 +93,10 @@ abstract contract BaseAdapter {
         uint16 _level
     ) {
         // Sanity check
-        require(_minm < _maxm, Errors.InvalidMaturityOffsets);
+        if (_minm >= _maxm) revert Errors.InvalidMaturityOffsets();
         divider = _divider;
         target = _target;
+        underlying = _underlying;
         oracle = _oracle;
         ifee = _ifee;
         stake = _stake;
@@ -133,7 +137,7 @@ abstract contract BaseAdapter {
             cBalIn,
             amount
         );
-        require(keccak == CALLBACK_SUCCESS, Errors.FlashCallbackFailed);
+        if (keccak != CALLBACK_SUCCESS) revert Errors.FlashCallbackFailed();
         ERC20(target).safeTransferFrom(address(receiver), address(this), amount);
         return (true, value);
     }
@@ -151,9 +155,6 @@ abstract contract BaseAdapter {
     /// @notice Cached scale value getter
     /// @dev For situations where you need scale from a view function
     function scaleStored() external view virtual returns (uint256);
-
-    /// @notice Underlying token address getter that must be overriden by child contracts
-    function underlying() external view virtual returns (address);
 
     /// @notice Returns the current price of the underlying in ETH terms
     function getUnderlyingPrice() external view virtual returns (uint256);
@@ -212,7 +213,7 @@ abstract contract BaseAdapter {
     /* ========== MODIFIERS ========== */
 
     modifier onlyPeriphery() {
-        require(Divider(divider).periphery() == msg.sender, Errors.OnlyPeriphery);
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         _;
     }
 }

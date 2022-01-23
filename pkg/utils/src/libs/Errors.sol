@@ -1,57 +1,71 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity  0.8.11;
+pragma solidity >= 0.8.4;
 
-/// @notice Program error types
 library Errors {
-    string constant AdapterExists = "An adapter for the given target already exists";
-    string constant AlreadySettled = "Series has already been settled";
-    string constant CollectNotSettled = "Cannot collect if Series is at or after maturity and it has not been settled";
-    string constant Create2Failed = "ERC1167: create2 failed";
-    string constant DuplicateSeries = "Series has already been initialized";
-    string constant ExistingValue = "New value must be different than previous";
-    string constant FactoryNotSupported = "Factory is not supported";
-    string constant FailedBecomeAdmin = "Failed to become admin";
-    string constant FailedAddMarket = "Failed to add market";
-    string constant FailedAddZeroMarket = "Failed to add Zero market";
-    string constant FailedAddLPMarket = "Failed to add LP market";
-    string constant FlashCallbackFailed = "FlashLender: Callback failed";
-    string constant FlashUntrustedBorrower = "FlashBorrower: Untrusted lender";
-    string constant FlashUntrustedLoanInitiator = "FlashBorrower: Untrusted loan initiator";
-    string constant UnexpectedSwapAmount = "Unexpected swap amount";
-    string constant SwapTooSmall = "Requested Stop amount is to low";
-    string constant GuardCapReached = "Issuance cap reached";
-    string constant IssuanceFeeCapExceeded = "Issuance fee cannot exceed 10%";
-    string constant IssueOnSettled = "Cannot issue if Series is settled";
-    string constant InvalidAddress = "Invalid address";
-    string constant InvalidAdapter = "Invalid adapter address or adapter is not enabled";
-    string constant InvalidMaturity = "Maturity date is not valid";
-    string constant InvalidMaturityOffsets = "Invalid maturity offsets";
-    string constant InvalidScaleValue = "Scale value is invalid";
-    string constant NotAuthorized = "UNTRUSTED"; // We copy the error message used by solmate's `Trust` auth lib
-    string constant NotEnoughClaims = "Not enough claims to collect given target balance";
-    string constant SeriesDoesntExists = "Series does not exist";
-    string constant SeriesNotQueued = "Series must be queued";
-    string constant NotSettled = "Series must be settled";
-    string constant NotSupported = "Target is not supported";
-    string constant OnlyClaim = "Can only be invoked by the Claim contract";
-    string constant OnlyDivider = "Can only be invoked by the Divider contract";
-    string constant OnlyPeriphery = "Can only be invoked by the Periphery contract";
-    string constant OnlyPermissionless = "Can only be invoked if permissionless mode is enabled";
-    string constant OutOfWindowBoundaries = "Can not settle Series outside the time window boundaries";
-    string constant Paused = "Pausable: paused";
-    string constant PoolAlreadyDeployed = "Pool already deployed";
-    string constant PoolNotDeployed = "Pool not yet deployed";
-    string constant SenderNotEligible = "Sender is not eligible";
-    string constant TargetExists = "Target already added";
-    string constant TargetNotInFuse = "Target for this Series not yet added to Fuse";
-    string constant TargetMismatch = "Source Target must be the same a destination Target";
-    string constant PoolParamsNotSet = "Pool Manager params not set";
-    string constant TransferFromFailed = "TRANSFER_FROM_FAILED";
-    string constant ZeroBalance = "Balance must be greater than 0";
-    string constant CombineRestricted = "Combine restricted to Adapter";
-    string constant IssuanceRestricted = "Issuance restricted to Adapter";
-    string constant RedeemZeroRestricted = "Redeem Zero restricted to Adapter";
-    string constant OracleNotReady = "Price oracle is not ready";
-    string constant AdapterNotSet = "Adapter not set";
-    string constant PoolNotSet = "Pool not set";
+
+    // Auth
+    error CombineRestricted();
+    error IssuanceRestricted();
+    error NotAuthorized();
+    error OnlyClaim();
+    error OnlyDivider();
+    error OnlyPeriphery();
+    error OnlyPermissionless();
+    error RedeemZeroRestricted();
+    error Untrusted();
+
+    // Adapters
+    error FlashCallbackFailed();
+    error InvalidMaturityOffsets();
+    error SenderNotEligible();
+    error TargetMismatch();
+    error TargetNotSupported();
+
+    // Divider
+    error AlreadySettled();
+    error CollectNotSettled();
+    error GuardCapReached();
+    error IssuanceFeeCapExceeded();
+    error IssueOnSettle();
+    error NotSettled();
+
+    // Input & validations
+    error AlreadyInitialized();
+    error DuplicateSeries();
+    error ExistingValue();
+    error InvalidAdapter();
+    error InvalidMaturity();
+    error InvalidParam();
+    error OutOfWindowBoundaries();
+    error SeriesDoesNotExist();
+    error SwapTooSmall();
+    error TargetParamsNotSet();
+    error PoolParamsNotSet();
+    error ZeroParamsNotSet();
+
+    // Periphery
+    error FactoryNotSupported();
+    error FlashBorrowFailed();
+    error FlashUntrustedBorrower();
+    error FlashUntrustedLoanInitiator();
+    error UnexpectedSwapAmount();
+
+    // Fuse
+    error AdapterNotSet();
+    error FailedBecomeAdmin();
+    error FailedAddMarket();
+    error FailedAddZeroMarket();
+    error FailedAddLpMarket();
+    error OracleNotReady();
+    error PoolAlreadyDeployed();
+    error PoolNotDeployed();
+    error PoolNotSet();
+    error SeriesNotQueued();
+    error TargetExists();
+    error TargetNotInFuse();
+
+    // Tokens
+    error MintFailed();
+    error RedeemFailed();
+    error TransferFailed();
 }
