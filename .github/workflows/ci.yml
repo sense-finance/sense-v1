@@ -94,7 +94,7 @@ jobs:
 
     - name: Run fuse mainnet tests
       run: |
-        yarn workspace @sense-finance/v1-fuse run turbo-test:mainnet tee _out.txt
+        yarn workspace @sense-finance/v1-fuse run turbo-test:mainnet | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
         grep -vz CompilerError _out.txt 1> /dev/null
       env:

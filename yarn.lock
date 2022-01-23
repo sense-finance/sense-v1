@@ -618,6 +618,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sense-finance/sense-v1@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@sense-finance/sense-v1@workspace:."
+  languageName: unknown
+  linkType: soft
+
 "@sense-finance/v1-core@workspace:pkg/core":
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
@@ -4702,12 +4708,6 @@ resolve@1.17.0:
   checksum: c53624ddf4b9779bcbf55a1eb8b37074cc44bfeca416f3cc263429408202a8a3c59b00eef8c647d697303bc39b95c022a5c61959221d3814bfb1270ff7c14986
   languageName: node
   linkType: hard
-
-"sense-v1@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "sense-v1@workspace:."
-  languageName: unknown
-  linkType: soft
 
 "set-blocking@npm:^2.0.0":
   version: 2.0.0
