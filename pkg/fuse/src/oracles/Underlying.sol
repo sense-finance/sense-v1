@@ -13,6 +13,7 @@ import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/Base
 
 contract UnderlyingOracle is PriceOracle, Trust {
     using FixedPointMathLib for uint256;
+    
     /// @notice underlying address -> adapter address
     mapping(address => address) public adapters;
 
