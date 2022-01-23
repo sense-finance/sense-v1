@@ -9,10 +9,8 @@
     "pkg/*"
   ],
   "scripts": {
-    "build": "yarn workspaces foreach --parallel --verbose run build",
-    "test": "yarn workspaces foreach --parallel --verbose --interlaced run test",
     "turbo-test": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test",
-    "turbo-test:8-decimal-target": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test:8-decimal-target",
+    "turbo-test:8-decimal-target": "yarn workspaces @sense-finance/v1-core run turbo-test:8-decimal-target",
     "turbo-test:mainnet": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test:mainnet",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
     "fix": "yarn workspaces foreach --parallel --verbose run fix",

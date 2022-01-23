@@ -188,9 +188,8 @@ These are libraries we need as part of the protocol that we've imported from oth
 |---	|---	|
 | `yarn build` | compiles code  |
 | `yarn debug` | run tests using HEVM interactive debugger |
-| `yarn test`  | run tests   	|
-| `yarn testcov`  | run tests with coverage  	|
-| `yarn test-mainnet`  | run tests using a fork from mainnet* |
+| `yarn turbo-test`  | run tests   	|
+| `yarn turbo-test-mainnet`  | run tests using a fork from mainnet* |
 | `yarn lint`  | run linter |
 | `yarn fix`   | runs both prettier and solhint and automatically fix errors |
 
