@@ -57,39 +57,44 @@ interface MasterOracleLike {
 /// @title Fuse Pool Manager
 /// @notice Consolidated Fuse interactions
 contract PoolManager is Trust {
+    /* ========== PUBLIC IMMUTABLES ========== */
+
+    /// @notice Implementation of Fuse's comptroller
     address public immutable comptrollerImpl;
+
+    /// @notice Implementation of Fuse's cERC20
     address public immutable cERC20Impl;
+
+    /// @notice Fuse's pool directory
     address public immutable fuseDirectory;
+
+    /// @notice Sense core Divider address
     address public immutable divider;
 
-    address public immutable oracleImpl; // master oracle from Fuse
+    /// @notice Implementation of Fuse's master oracle that routes to individual asset oracles
+    address public immutable oracleImpl;
+
+    /// @notice Sense oracle for SEnse Targets
     address public immutable targetOracle;
+
+    /// @notice Sense oracle for Sense Zeros
     address public immutable zeroOracle;
+
+    /// @notice Sense oracle for Space LP Shares
     address public immutable lpOracle;
+
+    /// @notice Sense oracle for Underlying assets
     address public immutable underlyingOracle;
 
+    /* ========== PUBLIC MUTABLE STORAGE ========== */
+
+    /// @notice Fuse comptroller for the Sense pool
     address public comptroller;
+
+    /// @notice Master oracle for Sense's assets deployed on Fuse
     address public masterOracle;
 
-    enum SeriesStatus {
-        NONE,
-        QUEUED,
-        ADDED
-    }
-
-    struct AssetParams {
-        address irModel;
-        uint256 reserveFactor;
-        uint256 collateralFactor;
-        uint256 closeFactor;
-        uint256 liquidationIncentive;
-    }
-
-    struct Series {
-        SeriesStatus status;
-        address pool;
-    }
-
+    /// @notice Fuse param config
     AssetParams public targetParams;
     AssetParams public zeroParams;
     AssetParams public lpTokenParams;
@@ -100,11 +105,30 @@ contract PoolManager is Trust {
     /// @notice Series Pools: adapter -> maturity -> (series status (zeros/lp shares), AMM pool)
     mapping(address => mapping(uint256 => Series)) public sSeries;
 
-    event ParamsSet(bytes32 indexed what, AssetParams data);
-    event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
-    event TargetAdded(address indexed target, address indexed cTarget);
-    event SeriesAdded(address indexed zero, address indexed lpToken);
-    event SeriesQueued(address indexed adapter, uint256 indexed maturity, address indexed pool);
+    /* ========== ENUMS ========== */
+
+    enum SeriesStatus {
+        NONE,
+        QUEUED,
+        ADDED
+    }
+
+    /* ========== DATA STRUCTURES ========== */
+
+    struct AssetParams {
+        address irModel;
+        uint256 reserveFactor;
+        uint256 collateralFactor;
+        uint256 closeFactor;
+        uint256 liquidationIncentive;
+    }
+
+    struct Series {
+        // Series addition status
+        SeriesStatus status;
+        // Space pool for this Series
+        address pool;
+    }
 
     constructor(
         address _fuseDirectory,
@@ -131,15 +155,13 @@ contract PoolManager is Trust {
         uint256 liqIncentive,
         address fallbackOracle
     ) external requiresTrust returns (uint256 _poolIndex, address _comptroller) {
-        if (comptroller != address(0)) revert Errors.PoolAlreadyDeployed();
-
         masterOracle = Clones.cloneDeterministic(oracleImpl, Bytes32AddressLib.fillLast12Bytes(address(this)));
         MasterOracleLike(masterOracle).initialize(
             new address[](0),
             new PriceOracle[](0),
-            PriceOracle(fallbackOracle),
-            address(this),
-            true
+            PriceOracle(fallbackOracle), // default oracle used if asset prices can't be found otherwise
+            address(this), // admin
+            true // admin can override existing oracle routes
         );
 
         (_poolIndex, _comptroller) = FuseDirectoryLike(fuseDirectory).deployPool(
@@ -160,8 +182,9 @@ contract PoolManager is Trust {
 
     function addTarget(address target, address adapter) external requiresTrust returns (address cTarget) {
         if (comptroller == address(0)) revert Errors.PoolNotDeployed();
-        if (tInits[target]) revert Errors.TargetExists();
         if (targetParams.irModel == address(0)) revert Errors.TargetParamsNotSet();
+
+        if (tInits[target]) revert Errors.TargetExists();
 
         address underlying = Adapter(adapter).underlying();
 
@@ -177,7 +200,6 @@ contract PoolManager is Trust {
         TargetOracle(targetOracle).setTarget(target, adapter);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
-        uint256 adminFee = 0;
         bytes memory constructorData = abi.encode(
             target,
             comptroller,
@@ -187,7 +209,7 @@ contract PoolManager is Trust {
             cERC20Impl,
             hex"", // calldata sent to becomeImplementation (currently unused)
             targetParams.reserveFactor,
-            adminFee
+            0 // no admin fee
         );
 
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
@@ -206,7 +228,6 @@ contract PoolManager is Trust {
         uint256 maturity,
         address pool
     ) external requiresTrust {
-        if (comptroller == address(0)) revert Errors.PoolNotDeployed();
         if (Divider(divider).zero(adapter, maturity) == address(0)) revert Errors.SeriesDoesNotExist();
         if (sSeries[adapter][maturity].status != SeriesStatus.NONE) revert Errors.DuplicateSeries();
 
@@ -229,13 +250,11 @@ contract PoolManager is Trust {
         if (lpTokenParams.irModel == address(0)) revert Errors.PoolParamsNotSet();
 
         address zero = Divider(divider).zero(adapter, maturity);
-
         address pool = sSeries[adapter][maturity].pool;
 
         (, , , , , , uint256 sampleTs) = BalancerOracle(pool).getSample(1023);
         if (sampleTs == 0) {
-            // revert if the pool's oracle can't be used yet, preventing this market from being deployed
-            // on Fuse until we're able to read a TWAP
+            // Prevent this market from being deployed on Fuse if we're able to read a TWAP
             revert Errors.OracleNotReady();
         }
 
@@ -295,6 +314,8 @@ contract PoolManager is Trust {
         emit SeriesAdded(zero, pool);
     }
 
+    /* ========== ADMIN ========== */
+
     function setParams(bytes32 what, AssetParams calldata data) external requiresTrust {
         if (what == "ZERO_PARAMS") zeroParams = data;
         else if (what == "LP_TOKEN_PARAMS") lpTokenParams = data;
@@ -302,4 +323,18 @@ contract PoolManager is Trust {
         else revert Errors.InvalidParam();
         emit ParamsSet(what, data);
     }
+
+    /* ========== LOGS ========== */
+
+    event ParamsSet(bytes32 indexed what, AssetParams data);
+    event PoolDeployed(
+        string name, 
+        address comptroller, 
+        uint256 poolIndex, 
+        uint256 closeFactor, 
+        uint256 liqIncentive
+    );
+    event TargetAdded(address indexed target, address indexed cTarget);
+    event SeriesQueued(address indexed adapter, uint256 indexed maturity, address indexed pool);
+    event SeriesAdded(address indexed zero, address indexed lpToken);
 }
