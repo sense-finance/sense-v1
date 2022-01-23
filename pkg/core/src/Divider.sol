@@ -604,7 +604,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         return false;
     }
 
-    /* ========== INTERNAL FUNCTIONS & HELPERS ========== */
+    /* ========== INTERNAL UTILS ========== */
 
     function _setAdapter(address adapter, bool isOn) internal {
         if (adapterMeta[adapter].enabled == isOn) revert Errors.ExistingValue();
