@@ -62,8 +62,8 @@ contract PoolManagerLocalTest is TestHelper {
     function testCantDeployPoolIfExists() public {
         try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.PoolAlreadyDeployed.selector));
+        } catch Error(string memory err) {
+            assertEq(err, "ERC1167: create2 failed");
         }
     }
 
@@ -204,7 +204,7 @@ contract PoolManagerLocalTest is TestHelper {
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
         } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
+            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         }
     }
 
