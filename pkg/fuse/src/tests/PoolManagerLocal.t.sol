@@ -260,7 +260,10 @@ contract PoolManagerLocalTest is TestHelper {
         stake.mint(address(this), 1000e18);
         divider.initSeries(address(adapter), maturity, address(alice));
         poolManager.queueSeries(address(adapter), maturity, address(123));
-        (PoolManager.SeriesStatus status, address pool) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        (PoolManager.SeriesStatus status, address pool) = PoolManager(address(poolManager)).sSeries(
+            address(adapter),
+            maturity
+        );
         assertEq(uint256(status), 1); // 1 == QUEUED
         assertEq(pool, address(123));
     }

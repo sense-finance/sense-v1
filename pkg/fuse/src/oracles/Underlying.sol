@@ -17,7 +17,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
     /// @notice underlying address -> adapter address
     mapping(address => address) public adapters;
 
-    constructor() Trust(msg.sender) { }
+    constructor() Trust(msg.sender) {}
 
     function setUnderlying(address underlying, address adapter) external requiresTrust {
         adapters[underlying] = adapter;

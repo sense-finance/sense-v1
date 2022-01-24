@@ -204,13 +204,16 @@ contract PoolManagerTest is DSTest {
             assertEq0(error, abi.encodeWithSelector(Errors.ZeroParamsNotSet.selector));
         }
 
-        poolManager.setParams("ZERO_PARAMS", PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
-        }));
+        poolManager.setParams(
+            "ZERO_PARAMS",
+            PoolManager.AssetParams({
+                irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+                reserveFactor: 0.1 ether,
+                collateralFactor: 0.5 ether,
+                closeFactor: 0.051 ether,
+                liquidationIncentive: 1 ether
+            })
+        );
 
         try poolManager.addSeries(address(mockAdapter), maturity) {
             fail();
@@ -218,13 +221,16 @@ contract PoolManagerTest is DSTest {
             assertEq0(error, abi.encodeWithSelector(Errors.PoolParamsNotSet.selector));
         }
 
-        poolManager.setParams("LP_TOKEN_PARAMS", PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
-        }));
+        poolManager.setParams(
+            "LP_TOKEN_PARAMS",
+            PoolManager.AssetParams({
+                irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+                reserveFactor: 0.1 ether,
+                collateralFactor: 0.5 ether,
+                closeFactor: 0.051 ether,
+                liquidationIncentive: 1 ether
+            })
+        );
 
         poolManager.addSeries(address(mockAdapter), maturity);
     }

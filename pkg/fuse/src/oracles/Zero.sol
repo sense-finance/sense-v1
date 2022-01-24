@@ -21,7 +21,7 @@ contract ZeroOracle is PriceOracle, Trust {
     mapping(address => address) public pools;
     uint32 public constant TWAP_PERIOD = 1 hours;
 
-    constructor() Trust(msg.sender) { }
+    constructor() Trust(msg.sender) {}
 
     function setZero(address zero, address pool) external requiresTrust {
         pools[zero] = pool;

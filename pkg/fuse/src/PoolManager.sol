@@ -234,10 +234,7 @@ contract PoolManager is Trust {
         address target = Adapter(adapter).target();
         if (!tInits[target]) revert Errors.TargetNotInFuse();
 
-        sSeries[adapter][maturity] = Series({
-            status: SeriesStatus.QUEUED,
-            pool: pool
-        });
+        sSeries[adapter][maturity] = Series({ status: SeriesStatus.QUEUED, pool: pool });
 
         emit SeriesQueued(adapter, maturity, pool);
     }
@@ -327,13 +324,7 @@ contract PoolManager is Trust {
     /* ========== LOGS ========== */
 
     event ParamsSet(bytes32 indexed what, AssetParams data);
-    event PoolDeployed(
-        string name, 
-        address comptroller, 
-        uint256 poolIndex, 
-        uint256 closeFactor, 
-        uint256 liqIncentive
-    );
+    event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
     event TargetAdded(address indexed target, address indexed cTarget);
     event SeriesQueued(address indexed adapter, uint256 indexed maturity, address indexed pool);
     event SeriesAdded(address indexed zero, address indexed lpToken);

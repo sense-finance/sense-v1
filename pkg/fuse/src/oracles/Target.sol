@@ -17,7 +17,7 @@ contract TargetOracle is PriceOracle, Trust {
     /// @notice target address -> adapter address
     mapping(address => address) public adapters;
 
-    constructor() Trust(msg.sender) { }
+    constructor() Trust(msg.sender) {}
 
     function setTarget(address target, address adapter) external requiresTrust {
         adapters[target] = adapter;
