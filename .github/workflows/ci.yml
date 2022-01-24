@@ -60,23 +60,17 @@ jobs:
     - name: Run linter
       run: yarn lint
 
-    - name: Run local tests
-      run: |
-        yarn turbo-test | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
-
     - name: Run local core tests
       run: |
         yarn workspace @sense-finance/v1-core run turbo-test | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
+        grep -vz "Compiler run failed" _out.txt 1> /dev/null
 
     - name: Run local fuse tests
       run: |
         yarn workspace @sense-finance/v1-fuse run turbo-test | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
+        grep -vz "Compiler run failed" _out.txt 1> /dev/null
 
     - name: Run local core tests where the mock Target token uses 8 decimals
       run: |
@@ -87,7 +81,7 @@ jobs:
       run: |
         yarn workspace @sense-finance/v1-core run turbo-test:mainnet | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
+        grep -vz "Compiler run failed" _out.txt 1> /dev/null
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
@@ -96,7 +90,7 @@ jobs:
       run: |
         yarn workspace @sense-finance/v1-fuse run turbo-test:mainnet | tee _out.txt
         grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
+        grep -vz "Compiler run failed" _out.txt 1> /dev/null
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
