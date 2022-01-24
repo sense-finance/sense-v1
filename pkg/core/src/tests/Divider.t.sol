@@ -1974,7 +1974,7 @@ contract Dividers is TestHelper {
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
-        (uint248 id, bool enabled, , uint8 uDecimals, ) = divider.adapterMeta(address(aAdapter));
+        (uint248 id, bool enabled, , uint256 uDecimals, ) = divider.adapterMeta(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
@@ -2094,7 +2094,7 @@ contract Dividers is TestHelper {
         );
         divider.setPermissionless(true);
         bob.doAddAdapter(address(aAdapter));
-        (uint248 id, bool enabled, , uint8 uDecimals, ) = divider.adapterMeta(address(adapter));
+        (uint248 id, bool enabled, , uint256 uDecimals, ) = divider.adapterMeta(address(adapter));
         assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
         assertTrue(enabled);
@@ -2120,8 +2120,8 @@ contract Dividers is TestHelper {
         );
         divider.setPermissionless(true);
         bob.doAddAdapter(address(aAdapter));
-        (, , , uint8 uDecimals, ) = divider.adapterMeta(address(aAdapter));
-        uint8 prevUDecimals = uDecimals;
+        (, , , uint256 uDecimals, ) = divider.adapterMeta(address(aAdapter));
+        uint256 prevUDecimals = uDecimals;
         hevm.warp(block.timestamp + 10 days);
         (, , , uDecimals, ) = divider.adapterMeta(address(aAdapter));
         assertEq(prevUDecimals, uDecimals);

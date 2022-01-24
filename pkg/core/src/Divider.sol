@@ -99,7 +99,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Max amount of Target allowed to be issued
         uint256 guard;
         // Underlying decimals
-        uint8 uDecimals;
+        uint256 uDecimals;
         // Adapter level
         uint256 level;
     }
@@ -636,11 +636,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Returns address of claim token
     function claim(address adapter, uint256 maturity) public view returns (address) {
         return series[adapter][maturity].claim;
-    }
-
-    /// @notice Returns address of claim token
-    function uDecimals(address adapter) public view returns (uint8) {
-        return adapterMeta[adapter].uDecimals;
     }
 
     /* ========== MODIFIERS ========== */
