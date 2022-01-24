@@ -54,10 +54,6 @@ dapp:
 forge:
     cargo install --git https://github.com/gakonst/dapptools-rs --locked
 
-
-## ---- Building ----
-
-
 ## ---- Building ----
 
 # build using dapp
