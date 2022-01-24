@@ -32,43 +32,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-asset-manager-utils@npm:0.2.0":
-  version: 0.2.0
-  resolution: "@balancer-labs/v2-asset-manager-utils@npm:0.2.0"
-  dependencies:
-    "@balancer-labs/v2-solidity-utils": 2.0.0
-    "@balancer-labs/v2-vault": 2.0.0
-  checksum: 9e203d041db1e2d513e86eec587e9c2a0dff01c99eba0a900bce6a091812a262488a91cff7cc45d929bfe99780b0602fcbda8d1defc2ceac544996f62744680e
-  languageName: node
-  linkType: hard
-
-"@balancer-labs/v2-pool-utils@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "@balancer-labs/v2-pool-utils@npm:2.0.1"
-  dependencies:
-    "@balancer-labs/v2-asset-manager-utils": 0.2.0
-    "@balancer-labs/v2-solidity-utils": 2.0.0
-    "@balancer-labs/v2-vault": 2.0.0
-  checksum: 207b08b9275f6180713e9674b718667a83851fc43c684752c8d3c9f398cb53ba5c68c291d6e22b32cb47d06fce77b238676937e70f0ae6be9090b6a3a705b1ca
-  languageName: node
-  linkType: hard
-
-"@balancer-labs/v2-solidity-utils@npm:2.0.0, @balancer-labs/v2-solidity-utils@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@balancer-labs/v2-solidity-utils@npm:2.0.0"
-  checksum: 8314ed1e330b1cbe3273edb93ae0d77faebc9302fd9e823728c5fd6fa08fe67a91f9e2c69e2dafefd35385570b631be1a263f0b0111af4eab99f8b5064a27cbb
-  languageName: node
-  linkType: hard
-
-"@balancer-labs/v2-vault@npm:2.0.0, @balancer-labs/v2-vault@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@balancer-labs/v2-vault@npm:2.0.0"
-  dependencies:
-    "@balancer-labs/v2-solidity-utils": 2.0.0
-  checksum: b596a889febea6d65c26cd6ea0eddb490096e3e8e7c09b63336841ba9e085e0794c9bcd765864405ef8d97e2afa6071e0470a93fb254429b8373a826ff33276c
-  languageName: node
-  linkType: hard
-
 "@ethereumjs/block@npm:^3.5.0, @ethereumjs/block@npm:^3.6.0":
   version: 3.6.0
   resolution: "@ethereumjs/block@npm:3.6.0"
@@ -650,7 +613,7 @@ __metadata:
     "@openzeppelin/contracts": 4.3.2
     "@rari-capital/solmate": ^6.2.0
     "@sense-finance/v1-core": "workspace:pkg/core"
-    "@sense-finance/v1-space": "workspace:pkg/space"
+    "@sense-finance/v1-space": "github:sense-finance/space-v1"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.0.12
     dayjs: ^1.10.7
@@ -687,24 +650,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@sense-finance/v1-space@workspace:pkg/space":
-  version: 0.0.0-use.local
-  resolution: "@sense-finance/v1-space@workspace:pkg/space"
-  dependencies:
-    "@balancer-labs/v2-pool-utils": ^2.0.1
-    "@balancer-labs/v2-solidity-utils": ^2.0.0
-    "@balancer-labs/v2-vault": ^2.0.0
-    "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
-    "@sense-finance/v1-core": "workspace:pkg/core"
-    dotenv: ^10.0.0
-    husky: ^7.0.2
-    prettier: ^2.3.2
-    prettier-plugin-solidity: ^1.0.0-beta.17
-    solhint: ^3.3.6
-    solhint-plugin-prettier: ^0.0.5
-  languageName: unknown
-  linkType: soft
+"@sense-finance/v1-space@github:sense-finance/space-v1":
+  version: 0.4.2-beta
+  resolution: "@sense-finance/v1-space@https://github.com/sense-finance/space-v1.git#commit=a0dc90068a8a881a5a089ef292c1b91c839ac652"
+  checksum: 5cd26253b81a3f33d3bb3ae9a6233c97fb89e993698981cf3bf15200bebd0530e2644149f00b3512235acc6e3229489056162794dc353580a22adbb0438bc085
+  languageName: node
+  linkType: hard
 
 "@sense-finance/v1-utils@workspace:pkg/utils":
   version: 0.0.0-use.local
