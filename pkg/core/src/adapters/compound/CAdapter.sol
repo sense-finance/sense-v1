@@ -7,6 +7,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
+import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { CropAdapter } from "../CropAdapter.sol";
@@ -76,6 +77,7 @@ contract CAdapter is CropAdapter {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     bool public immutable isCETH;
+    uint8 public immutable uDecimals;
 
     constructor(
         address _divider,
@@ -111,11 +113,11 @@ contract CAdapter is CropAdapter {
     {
         isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
         ERC20(underlying).safeApprove(_target, type(uint256).max);
+        uDecimals = CTokenInterface(underlying).decimals();
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function scale() external override returns (uint256) {
-        uint256 uDecimals = CTokenInterface(underlying).decimals();
         uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
         // From the Compound docs:
         // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
@@ -132,7 +134,6 @@ contract CAdapter is CropAdapter {
     }
 
     function scaleStored() external view override returns (uint256) {
-        uint256 uDecimals = CTokenInterface(underlying).decimals();
         uint256 exRate = CTokenInterface(target).exchangeRateStored();
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }

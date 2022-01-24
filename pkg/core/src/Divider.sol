@@ -98,6 +98,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         bool enabled;
         // Max amount of Target allowed to be issued
         uint256 guard;
+        // Underlying decimals
+        uint256 uDecimals;
+        // Adapter level
+        uint256 level;
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -197,7 +201,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
         if (_settled(adapter, maturity)) revert Errors.IssueOnSettle();
 
-        uint256 level = uint256(Adapter(adapter).level());
+        uint256 level = adapterMeta[adapter].level;
         if (level.issueRestricted() && msg.sender != adapter) revert Errors.IssuanceRestricted();
 
         ERC20 target = ERC20(Adapter(adapter).target());
@@ -256,7 +260,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
-        uint256 level = uint256(Adapter(adapter).level());
+        uint256 level = adapterMeta[adapter].level;
         if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();
 
         // Burn the Zeros
@@ -301,7 +305,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         if (!_settled(adapter, maturity)) revert Errors.NotSettled();
 
-        uint256 level = uint256(Adapter(adapter).level());
+        uint256 level = adapterMeta[adapter].level;
         if (level.redeemZeroRestricted() && msg.sender == adapter) revert Errors.RedeemZeroRestricted();
 
         // Burn the caller's Zeros
@@ -366,7 +370,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Get the scale value from the last time this holder collected (default to maturity)
         uint256 lscale = lscales[adapter][maturity][usr];
 
-        uint256 level = uint256(Adapter(adapter).level());
+        uint256 level = adapterMeta[adapter].level;
         if (level.collectDisabled()) {
             // If this Series has been settled, we ensure everyone's Claims will
             // collect yield accrued since issuance
@@ -443,7 +447,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address receiver,
         uint256 scale
     ) internal view returns (uint256) {
-        uint256 uBase = 10**ERC20(Adapter(adapter).underlying()).decimals();
+        uint256 uBase = 10**adapterMeta[adapter].uDecimals;
         return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
     }
 
@@ -607,16 +611,19 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== INTERNAL UTILS ========== */
 
     function _setAdapter(address adapter, bool isOn) internal {
-        if (adapterMeta[adapter].enabled == isOn) revert Errors.ExistingValue();
-        adapterMeta[adapter].enabled = isOn;
-        uint248 id = adapterMeta[adapter].id;
+        AdapterMeta memory am = adapterMeta[adapter];
+        if (am.enabled == isOn) revert Errors.ExistingValue();
+        am.enabled = isOn;
         // If this adapter is being added for the first time
-        if (isOn && id == 0) {
-            id = ++adapterCounter;
-            adapterAddresses[id] = adapter;
-            adapterMeta[adapter].id = id;
+        if (isOn && am.id == 0) {
+            am.id = ++adapterCounter;
+            adapterAddresses[am.id] = adapter;
         }
-        emit AdapterChanged(adapter, id, isOn);
+        // Set level, target and underlying decimals (can only be done once);
+        am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
+        am.level = Adapter(adapter).level();
+        adapterMeta[adapter] = am;
+        emit AdapterChanged(adapter, am.id, isOn);
     }
 
     /* ========== PUBLIC GETTERS ========== */

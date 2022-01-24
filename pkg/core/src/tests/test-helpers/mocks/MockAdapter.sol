@@ -156,7 +156,7 @@ contract MockBaseAdapter is BaseAdapter {
         BaseAdapter(
             _divider,
             _target,
-            address(1),
+            MockTarget(_target).underlying(),
             _oracle,
             _ifee,
             _stake,
