@@ -11,6 +11,7 @@ import { PoolManager } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
