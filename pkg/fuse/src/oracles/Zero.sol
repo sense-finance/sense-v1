@@ -5,7 +5,6 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
 import { BalancerOracle } from "../external/BalancerOracle.sol";
-import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -13,10 +12,12 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
+import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
 contract ZeroOracle is PriceOracle, Trust {
-    using FixedPointMathLib for uint256;
+    using FixedMath for uint256;
+
     /// @notice zero address -> pool address for oracle reads
     mapping(address => address) public pools;
     uint32 public constant TWAP_PERIOD = 1 hours;
@@ -67,6 +68,6 @@ contract ZeroOracle is PriceOracle, Trust {
         // `Zero / underlying` * `underlying / ETH` = `Price of Zero in ETH`
         //
         // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
-        return zeroPrice.fmul(PriceOracle(msg.sender).price(underlying), FixedPointMathLib.WAD);
+        return zeroPrice.fmul(PriceOracle(msg.sender).price(underlying));
     }
 }
