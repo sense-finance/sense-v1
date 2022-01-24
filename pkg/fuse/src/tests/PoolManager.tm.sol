@@ -10,6 +10,7 @@ import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { PoolManager } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
@@ -48,25 +49,13 @@ contract PoolManagerTest is DSTest {
 
         // Enable the adapter
         divider.setPeriphery(address(this));
-        mockAdapter = new MockAdapter();
+        mockAdapter = new MockAdapter(address(divider), address(target), address(mockOracle), 0.1e18, address(stake), 1e18, 2 weeks, 14 weeks, 0, 0, 31, address(0)); // default level
 
         MockToken underlying = new MockToken("Underlying Token", "UD", 18);
         MockToken reward = new MockToken("Reward Token", "RT", 18);
         stake = new MockToken("Stake", "SBL", 18);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            oracle: address(mockOracle),
-            ifee: 0.1e18,
-            stake: address(stake),
-            stakeSize: 1e18,
-            minm: 2 weeks,
-            maxm: 14 weeks,
-            mode: 0
-        });
-
-        mockAdapter.initialize(address(divider), adapterParams, address(reward));
         // Ping scale to set an lscale
         mockAdapter.scale();
         divider.setAdapter(address(mockAdapter), true);
@@ -95,8 +84,8 @@ contract PoolManagerTest is DSTest {
         // Cannot add a Target before deploying a pool
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq(error, "Pool not yet deployed");
+        } catch(bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
         }
 
         // Can add a Target after deploying a pool
