@@ -147,7 +147,7 @@ abstract contract BaseAdapter {
     /// @notice Calculate and return this adapter's Scale value for the current timestamp. To be overriden by child contracts
     /// @dev For some Targets, such as cTokens, this is simply the exchange rate, or `supply cToken / supply underlying`
     /// @dev For other Targets, such as AMM LP shares, specialized logic will be required
-    /// @dev This function _must_ return an WAD number representing the current exchange rate
+    /// @dev This function _must_ return a WAD number representing the current exchange rate
     /// between the Target and the Underlying.
     /// @return value WAD Scale value
     function scale() external virtual returns (uint256);

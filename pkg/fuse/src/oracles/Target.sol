@@ -14,7 +14,7 @@ import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/Base
 
 contract TargetOracle is PriceOracle, Trust {
     using FixedMath for uint256;
-    
+
     /// @notice target address -> adapter address
     mapping(address => address) public adapters;
 
