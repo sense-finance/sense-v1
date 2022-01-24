@@ -53,7 +53,7 @@ abstract contract BaseFactory {
 
     /// @notice Performs sanity checks and adds the adapter to Divider
     /// @param _adapter Address of the adapter
-    function _addAdapter(address _adapter) internal {
+    function _addAdapter(address _adapter) internal onlyPeriphery {
         address target = BaseAdapter(_adapter).target();
         if (!_exists(target)) revert Errors.TargetNotSupported();
         Divider(divider).setAdapter(address(_adapter), true);
@@ -71,6 +71,13 @@ abstract contract BaseFactory {
 
     /// @notice Target validity check that must be overriden by child contracts
     function _exists(address _target) internal virtual returns (bool);
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyPeriphery() {
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
+        _;
+    }
 
     /* ========== LOGS ========== */
 

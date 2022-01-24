@@ -54,6 +54,7 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        divider.setPeriphery(address(this));
         address adapter = someFactory.deployAdapter(address(someTarget));
         assertTrue(adapter != address(0));
         assertEq(IAdapter(adapter).divider(), address(divider));
@@ -90,6 +91,7 @@ contract Factories is TestHelper {
     function testCantDeployAdapterIfTargetIsNotSupported() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        divider.setPeriphery(address(this));
         try factory.deployAdapter(address(newTarget)) {
             fail();
         } catch (bytes memory error) {
@@ -102,6 +104,7 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        divider.setPeriphery(address(this));
         try factory.deployAdapter(address(someTarget)) {
             fail();
         } catch (bytes memory error) {
@@ -110,7 +113,16 @@ contract Factories is TestHelper {
         someFactory.deployAdapter(address(someTarget));
     }
 
+    function testCantDeployAdapterIfNotPeriphery() public {
+        try factory.deployAdapter(address(target)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
+        }
+    }
+
     function testFailDeployAdapterIfAlreadyExists() public {
+        divider.setPeriphery(address(this));
         factory.deployAdapter(address(target));
     }
 }
