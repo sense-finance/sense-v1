@@ -2,7 +2,7 @@
 pragma solidity >= 0.7.0;
 
 /// @notice Ultra minimal authorization logic for smart contracts.
-/// @author Taken from https://github.com/Rari-Capital/solmate/blob/fab107565a51674f3a3b5bfdaacc67f6179b1a9b/src/auth/Trust.sol
+/// @author From https://github.com/Rari-Capital/solmate/blob/fab107565a51674f3a3b5bfdaacc67f6179b1a9b/src/auth/Trust.sol
 abstract contract Trust {
     event UserTrustUpdated(address indexed user, bool trusted);
 
