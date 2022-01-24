@@ -42,7 +42,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-pool-utils@npm:^2.0.1":
+"@balancer-labs/v2-pool-utils@npm:2.0.1":
   version: 2.0.1
   resolution: "@balancer-labs/v2-pool-utils@npm:2.0.1"
   dependencies:
@@ -53,14 +53,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-solidity-utils@npm:2.0.0, @balancer-labs/v2-solidity-utils@npm:^2.0.0":
+"@balancer-labs/v2-solidity-utils@npm:2.0.0":
   version: 2.0.0
   resolution: "@balancer-labs/v2-solidity-utils@npm:2.0.0"
   checksum: 8314ed1e330b1cbe3273edb93ae0d77faebc9302fd9e823728c5fd6fa08fe67a91f9e2c69e2dafefd35385570b631be1a263f0b0111af4eab99f8b5064a27cbb
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-vault@npm:2.0.0, @balancer-labs/v2-vault@npm:^2.0.0":
+"@balancer-labs/v2-vault@npm:2.0.0":
   version: 2.0.0
   resolution: "@balancer-labs/v2-vault@npm:2.0.0"
   dependencies:
@@ -645,12 +645,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-deployments@workspace:pkg/deployments"
   dependencies:
+    "@balancer-labs/v2-pool-utils": 2.0.1
+    "@balancer-labs/v2-solidity-utils": 2.0.0
+    "@balancer-labs/v2-vault": 2.0.0
     "@nomiclabs/hardhat-ethers": ^2.0.2
     "@nomiclabs/hardhat-etherscan": ^2.1.6
     "@openzeppelin/contracts": 4.3.2
     "@rari-capital/solmate": ^6.2.0
     "@sense-finance/v1-core": "workspace:pkg/core"
-    "@sense-finance/v1-space": "workspace:pkg/space"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.0.12
     dayjs: ^1.10.7
@@ -678,25 +680,6 @@ __metadata:
     "@rari-capital/solmate": ^6.2.0
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
-    dotenv: ^10.0.0
-    husky: ^7.0.2
-    prettier: ^2.3.2
-    prettier-plugin-solidity: ^1.0.0-beta.17
-    solhint: ^3.3.6
-    solhint-plugin-prettier: ^0.0.5
-  languageName: unknown
-  linkType: soft
-
-"@sense-finance/v1-space@workspace:pkg/space":
-  version: 0.0.0-use.local
-  resolution: "@sense-finance/v1-space@workspace:pkg/space"
-  dependencies:
-    "@balancer-labs/v2-pool-utils": ^2.0.1
-    "@balancer-labs/v2-solidity-utils": ^2.0.0
-    "@balancer-labs/v2-vault": ^2.0.0
-    "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
-    "@sense-finance/v1-core": "workspace:pkg/core"
     dotenv: ^10.0.0
     husky: ^7.0.2
     prettier: ^2.3.2

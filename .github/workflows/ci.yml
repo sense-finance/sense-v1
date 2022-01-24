@@ -11,10 +11,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        token: ${{ secrets.ACCESS_TOKEN }}
     - uses: actions/setup-node@v2
       with:
         node-version: 14
-        cache: 'yarn'
+        cache: yarn
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal

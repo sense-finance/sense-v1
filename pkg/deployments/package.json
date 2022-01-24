@@ -20,13 +20,15 @@
         "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
         "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
         "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod",
-        "prepare": "mkdir -p exports && cp -n ../../.env ./.env || true"
+        "prepare": "mkdir -p exports && cp -n ../../.env ./.env || true && git submodule update --init --recursive"
     },
     "dependencies": {
+        "@balancer-labs/v2-pool-utils": "2.0.1",
+        "@balancer-labs/v2-solidity-utils": "2.0.0",
+        "@balancer-labs/v2-vault": "2.0.0",
         "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "^6.2.0",
         "@sense-finance/v1-core": "workspace:pkg/core",
-        "@sense-finance/v1-space": "workspace:pkg/space",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
     },
     "devDependencies": {
@@ -47,10 +49,5 @@
         "prettier-plugin-solidity": "^1.0.0-beta.17",
         "solhint": "^3.3.6",
         "solhint-plugin-prettier": "^0.0.5"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "yarn fix"
-        }
     }
 }
