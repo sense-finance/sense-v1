@@ -44,11 +44,9 @@ contract ZeroOracle is PriceOracle, Trust {
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
         (, , , , , , uint256 sampleTs) = pool.getSample(1023);
-        if (sampleTs == 0) {
-            // revert if the pool's oracle can't be used yet, preventing this market from being deployed
-            // on Fuse until we're able to read a TWAP
-            revert Errors.OracleNotReady();
-        }
+        // Revert if the pool's oracle can't be used yet, preventing this market from being deployed
+        // on Fuse until we're able to read a TWAP
+        if (sampleTs == 0) revert Errors.OracleNotReady();
 
         BalancerOracle.OracleAverageQuery[] memory queries = new BalancerOracle.OracleAverageQuery[](1);
         queries[0] = BalancerOracle.OracleAverageQuery({
