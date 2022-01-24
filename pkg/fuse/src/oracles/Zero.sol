@@ -30,8 +30,7 @@ contract ZeroOracle is PriceOracle, Trust {
 
     function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
         // The underlying here will be a Zero
-        address zero = cToken.underlying();
-        return _price(zero);
+        return _price(cToken.underlying());
     }
 
     function price(address zero) external view override returns (uint256) {
