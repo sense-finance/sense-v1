@@ -98,8 +98,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         bool enabled;
         // Max amount of Target allowed to be issued
         uint256 guard;
-        // Target decimals
-        uint8 tDecimals;
         // Underlying decimals
         uint8 uDecimals;
         // Adapter level
@@ -621,10 +619,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             am.id = ++adapterCounter;
             adapterAddresses[am.id] = adapter;
         }
-        // Set target and underlying decimals (can only be done once);
-        if (am.tDecimals == 0) am.tDecimals = ERC20(Adapter(adapter).target()).decimals();
-        if (am.uDecimals == 0) am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
-        if (am.level == 0) am.level = Adapter(adapter).level();
+        // Set level, target and underlying decimals (can only be done once);
+        am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
+        am.level = Adapter(adapter).level();
         adapterMeta[adapter] = am;
         emit AdapterChanged(adapter, am.id, isOn);
     }
@@ -639,11 +636,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Returns address of claim token
     function claim(address adapter, uint256 maturity) public view returns (address) {
         return series[adapter][maturity].claim;
-    }
-
-    /// @notice Returns address of claim token
-    function tDecimals(address adapter) public view returns (uint8) {
-        return adapterMeta[adapter].tDecimals;
     }
 
     /// @notice Returns address of claim token
@@ -730,7 +722,7 @@ contract TokenHandler is Trust {
         if (msg.sender != divider) revert Errors.OnlyDivider();
 
         ERC20 target = ERC20(Adapter(adapter).target());
-        uint8 decimals = Divider(divider).tDecimals(adapter);
+        uint8 decimals = target.decimals();
         string memory name = target.name();
         (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));

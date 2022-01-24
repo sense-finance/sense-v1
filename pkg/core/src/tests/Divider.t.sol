@@ -627,7 +627,7 @@ contract Dividers is TestHelper {
         divider.setGuarded(false);
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        (, , uint256 guard, , , ) = divider.adapterMeta(address(adapter));
+        (, , uint256 guard, , ) = divider.adapterMeta(address(adapter));
         alice.doIssue(address(adapter), maturity, guard + 1);
     }
 
@@ -1951,7 +1951,7 @@ contract Dividers is TestHelper {
     function testSetAdapterFirst() public {
         // check first adapter added on TestHelper.sol has ID 1
         assertEq(divider.adapterCounter(), 1);
-        (uint248 id, , , , , ) = divider.adapterMeta(address(adapter));
+        (uint248 id, , , , ) = divider.adapterMeta(address(adapter));
         assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
     }
@@ -1974,12 +1974,11 @@ contract Dividers is TestHelper {
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
-        (uint248 id, bool enabled, , uint8 tDecimals, uint8 uDecimals, ) = divider.adapterMeta(address(aAdapter));
+        (uint248 id, bool enabled, , uint8 uDecimals, ) = divider.adapterMeta(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
         assertEq(uDecimals, underlying.decimals());
-        assertEq(tDecimals, target.decimals());
     }
 
     function testSetAdapterBackOnKeepsExistingId() public {
@@ -2001,7 +2000,7 @@ contract Dividers is TestHelper {
 
         // set adapter on
         divider.setAdapter(address(aAdapter), true);
-        (uint248 id, bool enabled, , , , ) = divider.adapterMeta(address(aAdapter));
+        (uint248 id, bool enabled, , , ) = divider.adapterMeta(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
@@ -2025,14 +2024,14 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(bAdapter), true);
-        (id, enabled, , , , ) = divider.adapterMeta(address(bAdapter));
+        (id, enabled, , , ) = divider.adapterMeta(address(bAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 2);
         assertEq(divider.adapterAddresses(adapterCounter + 2), address(bAdapter));
 
         // set adapter back on
         divider.setAdapter(address(aAdapter), true);
-        (id, enabled, , , , ) = divider.adapterMeta(address(aAdapter));
+        (id, enabled, , , ) = divider.adapterMeta(address(aAdapter));
         assertTrue(enabled);
         assertEq(id, adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
@@ -2095,43 +2094,39 @@ contract Dividers is TestHelper {
         );
         divider.setPermissionless(true);
         bob.doAddAdapter(address(aAdapter));
-        (uint248 id, bool enabled, , uint8 tDecimals, uint8 uDecimals, ) = divider.adapterMeta(address(adapter));
+        (uint248 id, bool enabled, , uint8 uDecimals, ) = divider.adapterMeta(address(adapter));
         assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
         assertTrue(enabled);
         assertEq(uDecimals, underlying.decimals());
-        assertEq(tDecimals, target.decimals());
     }
 
-    // function testTargetAndUnderlyingCantMutateWithMaliciousAdapter() public {
-    //     MockEvilTarget underlying = new MockEvilTarget(address(0), "und", "UND");
-    //     MockEvilTarget target = new MockEvilTarget(address(underlying), "und", "UND");
-    //     MockAdapter aAdapter = new MockAdapter(
-    //         address(divider),
-    //         address(target),
-    //         ORACLE,
-    //         ISSUANCE_FEE,
-    //         address(stake),
-    //         STAKE_SIZE,
-    //         MIN_MATURITY,
-    //         MAX_MATURITY,
-    //         4,
-    //         0,
-    //         DEFAULT_LEVEL,
-    //         address(reward)
-    //     );
-    //     divider.setPermissionless(true);
-    //     bob.doAddAdapter(address(aAdapter));
-    //     (, , , uint8 tDecimals, uint8 uDecimals) = divider.adapterMeta(address(aAdapter));
-    //     uint8 prevTDecimals = tDecimals;
-    //     uint8 prevUDecimals = uDecimals;
-    //     hevm.warp(block.timestamp + 10 days);
-    //     (, , , tDecimals, uDecimals) = divider.adapterMeta(address(aAdapter));
-    //     assertEq(prevTDecimals, tDecimals);
-    //     assertEq(prevUDecimals, uDecimals);
-    //     hevm.warp(block.timestamp + 10 days);
-    //     (, , , tDecimals, uDecimals) = divider.adapterMeta(address(aAdapter));
-    //     assertEq(prevTDecimals, tDecimals);
-    //     assertEq(prevUDecimals, uDecimals);
-    // }
+    function testTargetAndUnderlyingCantMutateWithMaliciousAdapter() public {
+        MockEvilTarget underlying = new MockEvilTarget(address(0), "und", "UND");
+        MockEvilTarget target = new MockEvilTarget(address(underlying), "und", "UND");
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        divider.setPermissionless(true);
+        bob.doAddAdapter(address(aAdapter));
+        (, , , uint8 uDecimals, ) = divider.adapterMeta(address(aAdapter));
+        uint8 prevUDecimals = uDecimals;
+        hevm.warp(block.timestamp + 10 days);
+        (, , , uDecimals, ) = divider.adapterMeta(address(aAdapter));
+        assertEq(prevUDecimals, uDecimals);
+        hevm.warp(block.timestamp + 10 days);
+        (, , , uDecimals, ) = divider.adapterMeta(address(aAdapter));
+        assertEq(prevUDecimals, uDecimals);
+    }
 }

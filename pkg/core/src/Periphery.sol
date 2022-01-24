@@ -562,8 +562,7 @@ contract Periphery is Trust {
         uint256 targetiBal,
         uint256 tBal
     ) internal returns (uint256) {
-        uint8 tDecimals = Divider(divider).tDecimals(adapter);
-        uint256 tBase = 10**uint256(tDecimals);
+        uint256 tBase = 10**ERC20(Adapter(adapter).target()).decimals();
         return
             tBal.fmul(zeroiBal.fdiv(Adapter(adapter).scale().fmul(targetiBal, tBase) + zeroiBal, FixedMath.WAD), tBase); // ABDK formula
     }

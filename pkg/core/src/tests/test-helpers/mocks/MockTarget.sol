@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 // External references
 import { MockToken, AuthdMockToken } from "./MockToken.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 as ZeppelinERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockTarget is MockToken {
     address public underlying;
@@ -31,14 +31,14 @@ contract AuthdMockTarget is AuthdMockToken {
     }
 }
 
-contract MockEvilTarget is ERC20 {
+contract MockEvilTarget is ZeppelinERC20 {
     address public underlying;
 
     constructor(
         address _underlying,
         string memory _name,
         string memory _symbol
-    ) ERC20(_name, _symbol) {
+    ) ZeppelinERC20(_name, _symbol) {
         underlying = _underlying;
     }
 
