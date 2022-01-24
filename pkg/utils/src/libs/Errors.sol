@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >= 0.7.0;
+pragma solidity >= 0.8.4;
 
 library Errors {
 
@@ -40,6 +40,8 @@ library Errors {
     error SeriesDoesNotExist();
     error SwapTooSmall();
     error TargetParamsNotSet();
+    error PoolParamsNotSet();
+    error ZeroParamsNotSet();
 
     // Periphery
     error FactoryNotSupported();
@@ -66,6 +68,4 @@ library Errors {
     error MintFailed();
     error RedeemFailed();
     error TransferFailed();
-
-
 }

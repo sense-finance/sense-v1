@@ -27,16 +27,30 @@ interface SpaceFactoryLike {
 contract Periphery is Trust {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
-    using Errors for string;
 
-    /// @notice Program state
+    /* ========== PUBLIC IMMUTABLES ========== */
+
+    /// @notice Sense core Divider address
     Divider public immutable divider;
+
+    /// @notice Sense core Divider address
     PoolManager public immutable poolManager;
+
+    /// @notice Sense core Divider address
     SpaceFactoryLike public immutable spaceFactory;
+
+    /// @notice Sense core Divider address
     BalancerVault public immutable balancerVault;
 
-    mapping(address => bool) public factories; // adapter factories -> is supported
-    mapping(address => address) public factory; // adapter -> factory
+    /* ========== PUBLIC MUTABLE STORAGE ========== */
+
+    /// @notice adapter factories -> is supported
+    mapping(address => bool) public factories;
+
+    /// @notice adapter -> factory
+    mapping(address => address) public factory;
+
+    /* ========== DATA STRUCTURES ========== */
 
     struct PoolLiquidity {
         ERC20[] tokens;
@@ -55,7 +69,7 @@ contract Periphery is Trust {
         balancerVault = BalancerVault(_balancerVault);
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== SERIES / ADAPTER MANAGEMENT ========== */
 
     /// @notice Sponsor a new Series
     /// @dev Calls divider to initalise a new series
@@ -95,6 +109,8 @@ contract Periphery is Trust {
         factory[adapterClone] = f;
         emit AdapterOnboarded(adapterClone);
     }
+
+    /* ========== LIQUIDITY UTILS ========== */
 
     /// @notice Swap Target to Zeros of a particular series
     /// @param adapter Adapter address for the Series
@@ -348,7 +364,7 @@ contract Periphery is Trust {
         return _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
+    /* ========== ADMIN ========== */
 
     /// @notice Enable or disable a factory
     /// @param f Factory's address
@@ -359,7 +375,7 @@ contract Periphery is Trust {
         emit FactoryChanged(f, isOn);
     }
 
-    /* ========== INTERNAL FUNCTIONS ========== */
+    /* ========== INTERNAL UTILS ========== */
 
     function _swap(
         address assetIn,
@@ -689,8 +705,8 @@ contract Periphery is Trust {
         return (tBalAfter - tBalBefore, zBalAfter - zBalBefore);
     }
 
-    // @author https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
-    // @dev This helper function is a fast and cheap way to convert between IERC20[] and IAsset[] types
+    /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
+    /// @dev This helper function is a fast and cheap way to convert between IERC20[] and IAsset[] types
     function _convertERC20sToAssets(ERC20[] memory tokens) internal pure returns (IAsset[] memory assets) {
         assembly {
             assets := tokens

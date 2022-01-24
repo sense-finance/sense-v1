@@ -139,6 +139,7 @@ contract PeripheryTests is PeripheryTestHelper {
         assertTrue(claim != address(0));
 
         // Check zeros and claims onboarded on PoolManager (Fuse)
-        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
+        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 }

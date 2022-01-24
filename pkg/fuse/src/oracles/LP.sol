@@ -13,7 +13,6 @@ import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
-
 contract LPOracle is PriceOracle, Trust {
     using FixedMath for uint256;
 
@@ -44,13 +43,13 @@ contract LPOracle is PriceOracle, Trust {
         uint256 balanceB = balances[1];
         address tokenB = address(tokens[1]);
 
-        // pool value in 18 decimals = price of tokenA * amount of tokenA held + price of tokenB * amount of tokenB held
+        // pool value as a WAD = price of tokenA * amount of tokenA held + price of tokenB * amount of tokenB held
         uint256 value = PriceOracle(msg.sender).price(tokenA).fmul(balanceA, 10**ERC20(tokenA).decimals()) +
             PriceOracle(msg.sender).price(tokenB).fmul(balanceB, 10**ERC20(tokenB).decimals());
 
         // price per lp token = pool value / total supply of lp tokens
         //
-        // As per Balancer's convention, lp shares will also be in 18 decimals
+        // As per Balancer's convention, lp shares will also be a WAD
         return value.fdiv(pool.totalSupply());
     }
 }

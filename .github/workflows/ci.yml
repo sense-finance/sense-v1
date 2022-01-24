@@ -7,11 +7,14 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FORGE_REVISION: a2287d9d645991c704eca66b2ca46a29bb06b6e1
+      FORGE_REVISION: d92753b7fc1923ff22eafd146e87a41eb916a424
 
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
+      with:
+        node-version: 14
+        cache: 'yarn'
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -41,12 +44,6 @@ jobs:
         path: ~/.cargo/bin/just
         key: ${{ runner.os }}-build-${{ env.cache-name }}
 
-    # Try to get node_modules from cache
-    - uses: actions/cache@v2
-      with:
-        path: 'node_modules'
-        key: ${{ runner.os }}-modules-${{ hashFiles('yarn.lock') }}
-
     - name: Install npm dependencies
       run: yarn install
 
@@ -63,21 +60,23 @@ jobs:
     - name: Run linter
       run: yarn lint
 
-    - name: Run local tests
-      run: |
-        yarn turbo-test | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
-        grep -vz CompilerError _out.txt 1> /dev/null
+    - name: Run local core tests
+      run: yarn workspace @sense-finance/v1-core run turbo-test
 
-    - name: Run local tests where the mock Target token uses 8 decimals
-      run: |
-        yarn turbo-test:8-decimal-target | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
+    - name: Run local fuse tests
+      run: yarn workspace @sense-finance/v1-fuse run turbo-test
 
-    - name: Run mainnet tests
-      run: |
-        yarn turbo-test:mainnet | tee _out.txt
-        grep -vz FAIL _out.txt 1> /dev/null
+    - name: Run local core tests where the mock Target token uses 8 decimals
+      run: yarn workspace @sense-finance/v1-core run turbo-test:8-decimal-target
+
+    - name: Run core mainnet tests
+      run: yarn workspace @sense-finance/v1-core run turbo-test:mainnet
+      env:
+        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}
+
+    - name: Run fuse mainnet tests
+      run: yarn workspace @sense-finance/v1-fuse run turbo-test:mainnet
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
