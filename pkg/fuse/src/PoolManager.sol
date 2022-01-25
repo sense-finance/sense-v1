@@ -99,9 +99,6 @@ contract PoolManager is Trust {
     AssetParams public zeroParams;
     AssetParams public lpTokenParams;
 
-    /// @notice Target Inits: target -> target added to pool
-    mapping(address => bool) public tInits;
-
     /// @notice Series Pools: adapter -> maturity -> (series status (zeros/lp shares), AMM pool)
     mapping(address => mapping(uint256 => Series)) public sSeries;
 
@@ -184,8 +181,6 @@ contract PoolManager is Trust {
         if (comptroller == address(0)) revert Errors.PoolNotDeployed();
         if (targetParams.irModel == address(0)) revert Errors.TargetParamsNotSet();
 
-        if (tInits[target]) revert Errors.TargetExists();
-
         address underlying = Adapter(adapter).underlying();
 
         address[] memory underlyings = new address[](2);
@@ -212,12 +207,12 @@ contract PoolManager is Trust {
             0 // no admin fee
         );
 
+        // Trying to deploy the same market twice will fail
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
         if (err != 0) revert Errors.FailedAddMarket();
 
         cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 
-        tInits[target] = true;
         emit TargetAdded(target, cTarget);
     }
 
@@ -231,8 +226,8 @@ contract PoolManager is Trust {
         if (Divider(divider).zero(adapter, maturity) == address(0)) revert Errors.SeriesDoesNotExist();
         if (sSeries[adapter][maturity].status != SeriesStatus.NONE) revert Errors.DuplicateSeries();
 
-        address target = Adapter(adapter).target();
-        if (!tInits[target]) revert Errors.TargetNotInFuse();
+        address target = ComptrollerLike(comptroller).cTokensByUnderlying(Adapter(adapter).target());
+        if (target == address(0)) revert Errors.TargetNotInFuse();
 
         sSeries[adapter][maturity] = Series({ status: SeriesStatus.QUEUED, pool: pool });
 
@@ -264,7 +259,6 @@ contract PoolManager is Trust {
         ZeroOracle(zeroOracle).setZero(zero, pool);
         MasterOracleLike(masterOracle).add(underlyings, oracles);
 
-        uint256 adminFee = 0;
         bytes memory constructorDataZero = abi.encode(
             zero,
             comptroller,
@@ -274,7 +268,7 @@ contract PoolManager is Trust {
             cERC20Impl,
             hex"",
             zeroParams.reserveFactor,
-            adminFee
+            0 // no admin fee
         );
 
         uint256 errZero = ComptrollerLike(comptroller)._deployMarket(
@@ -294,7 +288,7 @@ contract PoolManager is Trust {
             cERC20Impl,
             hex"",
             lpTokenParams.reserveFactor,
-            adminFee
+            0 // no admin fee
         );
 
         uint256 errLpToken = ComptrollerLike(comptroller)._deployMarket(
@@ -317,6 +311,17 @@ contract PoolManager is Trust {
         else if (what == "TARGET_PARAMS") targetParams = data;
         else revert Errors.InvalidParam();
         emit ParamsSet(what, data);
+    }
+
+    function execute(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 txGas
+    ) external requiresTrust returns (bool success) {
+        assembly {
+            success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
+        }
     }
 
     /* ========== LOGS ========== */
