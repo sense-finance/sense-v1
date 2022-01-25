@@ -127,7 +127,8 @@ abstract contract BaseAdapter {
         uint256 maturity,
         uint256 cBalIn,
         uint256 amount
-    ) external onlyPeriphery returns (bool, uint256) {
+    ) external returns (bool, uint256) {
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         ERC20(target).safeTransfer(address(receiver), amount);
         (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
             data,
@@ -208,12 +209,5 @@ abstract contract BaseAdapter {
         )
     {
         return (target, stake, stakeSize);
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyPeriphery() {
-        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
-        _;
     }
 }

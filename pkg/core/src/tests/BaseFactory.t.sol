@@ -114,7 +114,9 @@ contract Factories is TestHelper {
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {
-        try factory.deployAdapter(address(target)) {
+        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        try factory.deployAdapter(address(someTarget)) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
