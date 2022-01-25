@@ -84,6 +84,7 @@ contract CFactories is CAdapterTestHelper {
     }
 
     function testMainnetDeployAdapter() public {
+        divider.setPeriphery(address(this));
         address f = factory.deployAdapter(Assets.cDAI);
         CAdapter adapter = CAdapter(payable(f));
         assertTrue(address(adapter) != address(0));

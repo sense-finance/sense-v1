@@ -54,6 +54,7 @@ abstract contract BaseFactory {
     /// @notice Performs sanity checks and adds the adapter to Divider
     /// @param _adapter Address of the adapter
     function _addAdapter(address _adapter) internal {
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         address target = BaseAdapter(_adapter).target();
         if (!_exists(target)) revert Errors.TargetNotSupported();
         Divider(divider).setAdapter(address(_adapter), true);
