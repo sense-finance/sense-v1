@@ -39,7 +39,7 @@ contract Claim is Token {
         address to,
         uint256 value
     ) public override returns (bool) {
-        Divider(divider).collect(from, adapter, maturity, value, to);
+        if (value > 0) Divider(divider).collect(from, adapter, maturity, value, to);
         return super.transferFrom(from, to, value);
     }
 }
