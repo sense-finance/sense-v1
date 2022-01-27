@@ -77,7 +77,11 @@ contract Periphery is Trust, ReentrancyGuard {
     /// @dev Calls divider to initalise a new series
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
-    function sponsorSeries(address adapter, uint256 maturity) external nonReentrant returns (address zero, address claim) {
+    function sponsorSeries(address adapter, uint256 maturity)
+        external
+        nonReentrant
+        returns (address zero, address claim)
+    {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Transfer stakeSize from sponsor into this contract
