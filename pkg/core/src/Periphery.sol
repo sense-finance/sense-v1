@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ReentrancyGuard } from "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 import { BalancerVault, IAsset } from "./external/balancer/Vault.sol";
 import { BalancerPool } from "./external/balancer/Pool.sol";
@@ -24,7 +25,7 @@ interface SpaceFactoryLike {
 }
 
 /// @title Periphery
-contract Periphery is Trust {
+contract Periphery is Trust, ReentrancyGuard {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
     using Levels for uint256;
@@ -76,7 +77,7 @@ contract Periphery is Trust {
     /// @dev Calls divider to initalise a new series
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
-    function sponsorSeries(address adapter, uint256 maturity) external returns (address zero, address claim) {
+    function sponsorSeries(address adapter, uint256 maturity) external nonReentrant returns (address zero, address claim) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Transfer stakeSize from sponsor into this contract
@@ -129,7 +130,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 tBal,
         uint256 minAccepted
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal); // pull target
         return _swapTargetForZeros(adapter, maturity, tBal, minAccepted);
     }
@@ -145,7 +146,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 uBal,
         uint256 minAccepted
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
         underlying.safeApprove(adapter, uBal); // approve adapter to pull uBal
@@ -164,7 +165,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 tBal,
         uint256 minAccepted
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
         return _swapTargetForClaims(adapter, maturity, tBal, minAccepted);
     }
@@ -180,7 +181,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 uBal,
         uint256 minAccepted
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
         underlying.safeApprove(adapter, uBal); // approve adapter to pull underlying
@@ -198,7 +199,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 zBal,
         uint256 minAccepted
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         uint256 tBal = _swapZerosForTarget(adapter, maturity, zBal, minAccepted); // swap zeros for target
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal); // transfer target to msg.sender
         return tBal;
@@ -214,7 +215,7 @@ contract Periphery is Trust {
         uint256 maturity,
         uint256 zBal,
         uint256 minAccepted
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         uint256 tBal = _swapZerosForTarget(adapter, maturity, zBal, minAccepted); // swap zeros for target
         ERC20(Adapter(adapter).target()).safeApprove(adapter, tBal); // approve adapter to pull target
         uint256 uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
@@ -230,7 +231,7 @@ contract Periphery is Trust {
         address adapter,
         uint256 maturity,
         uint256 cBal
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         uint256 tBal = _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal);
         return tBal;
@@ -244,7 +245,7 @@ contract Periphery is Trust {
         address adapter,
         uint256 maturity,
         uint256 cBal
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         uint256 tBal = _swapClaimsForTarget(msg.sender, adapter, maturity, cBal);
         uint256 uBal = Adapter(adapter).unwrapTarget(tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal);
@@ -264,6 +265,7 @@ contract Periphery is Trust {
         uint8 mode
     )
         external
+        nonReentrant
         returns (
             uint256,
             uint256,
@@ -287,6 +289,7 @@ contract Periphery is Trust {
         uint8 mode
     )
         external
+        nonReentrant
         returns (
             uint256,
             uint256,
@@ -315,7 +318,7 @@ contract Periphery is Trust {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
-    ) external returns (uint256 tBal, uint256 zBal) {
+    ) external nonReentrant returns (uint256 tBal, uint256 zBal) {
         (tBal, zBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal); // Send Target back to the User
     }
@@ -334,7 +337,7 @@ contract Periphery is Trust {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted
-    ) external returns (uint256 uBal, uint256 zBal) {
+    ) external nonReentrant returns (uint256 uBal, uint256 zBal) {
         uint256 tBal;
         (tBal, zBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
         ERC20(Adapter(adapter).target()).safeApprove(adapter, tBal);
@@ -363,6 +366,7 @@ contract Periphery is Trust {
         uint8 mode
     )
         external
+        nonReentrant
         returns (
             uint256 tAmount,
             uint256 issued,
