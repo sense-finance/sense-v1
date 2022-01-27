@@ -117,5 +117,4 @@ contract Claims is TestHelper {
         assertEq(bcBalanceBefore, bcBalanceAfter);
         assertEq(collected, 0);
     }
-    
 }
