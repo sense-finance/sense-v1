@@ -21,7 +21,7 @@ contract MockFactory is CropFactory {
         address _reward
     ) CropFactory(_divider, address(0), _factoryParams, _reward) {}
 
-    function _exists(address _target) external virtual override returns (bool) {
+    function exists(address _target) external virtual override returns (bool) {
         return targets[_target];
     }
 

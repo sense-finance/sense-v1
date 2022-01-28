@@ -100,13 +100,13 @@ contract Periphery is Trust {
     /// @param target Target to onboard
     function deployAdapter(address f, address target) external returns (address adapter) {
         if (!factories[f]) revert Errors.FactoryNotSupported();
-        if (!Factory(f)._exists(target)) revert Errors.TargetNotSupported();
+        if (!Factory(f).exists(target)) revert Errors.TargetNotSupported();
         adapter = Factory(f).deployAdapter(target);
         onboardAdapter(adapter);
         emit AdapterDeployed(adapter);
     }
 
-    /// @dev Onboards an existing Adapter
+    /// @dev Onboards an Adapter
     /// @dev Onboards Adapter's target onto Fuse (only if called from a trusted address). Caller must know the factory address
     /// @param adapter Adaper to onboard
     function onboardAdapter(address adapter) public {

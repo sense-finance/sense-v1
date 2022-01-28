@@ -33,7 +33,7 @@ contract CFactory is CropFactory {
         address _reward
     ) CropFactory(_divider, COMPTROLLER, _factoryParams, _reward) {}
 
-    function _exists(address _target) external virtual override returns (bool isListed) {
+    function exists(address _target) external virtual override returns (bool isListed) {
         (isListed, , ) = ComptrollerLike(protocol).markets(_target);
     }
 

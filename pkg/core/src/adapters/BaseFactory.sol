@@ -60,7 +60,7 @@ abstract contract BaseFactory {
     /* ========== REQUIRED INTERNAL GUARD ========== */
 
     /// @notice Target validity check that must be overriden by child contracts
-    function _exists(address _target) external virtual returns (bool);
+    function exists(address _target) external virtual returns (bool);
 
     /* ========== LOGS ========== */
 
