@@ -102,14 +102,18 @@ contract Periphery is Trust {
         if (!factories[f]) revert Errors.FactoryNotSupported();
         if (!Factory(f).exists(target)) revert Errors.TargetNotSupported();
         adapter = Factory(f).deployAdapter(target);
-        onboardAdapter(adapter);
         emit AdapterDeployed(adapter);
+        onboardAdapter(adapter);
     }
 
     /// @dev Onboards an Adapter
     /// @dev Onboards Adapter's target onto Fuse (only if called from a trusted address). Caller must know the factory address
     /// @param adapter Adaper to onboard
     function onboardAdapter(address adapter) public {
+        _onboardAdapter(adapter);
+    }
+
+    function _onboardAdapter(address adapter) internal {
         ERC20 target = ERC20(Adapter(adapter).target());
         target.safeApprove(address(divider), type(uint256).max);
         target.safeApprove(address(adapter), type(uint256).max);
@@ -119,14 +123,6 @@ contract Periphery is Trust {
         }
         divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
-    }
-
-    /// @dev Verifies an unverified adapter
-    /// @param adapter Adaper to verify
-    function verifyAdapter(address adapter) external requiresTrust {
-        if (verified[adapter] == true) revert Errors.AlreadyVerified();
-        verified[adapter] = true;
-        emit AdapterVerified(adapter);
     }
 
     /* ========== LIQUIDITY UTILS ========== */
@@ -394,6 +390,14 @@ contract Periphery is Trust {
         if (factories[f] == isOn) revert Errors.ExistingValue();
         factories[f] = isOn;
         emit FactoryChanged(f, isOn);
+    }
+
+    /// @dev Verifies an unverified adapter
+    /// @param adapter Adaper to verify
+    function verifyAdapter(address adapter) external requiresTrust {
+        if (verified[adapter]) revert Errors.AlreadyVerified();
+        verified[adapter] = true;
+        emit AdapterVerified(adapter);
     }
 
     /* ========== INTERNAL UTILS ========== */
