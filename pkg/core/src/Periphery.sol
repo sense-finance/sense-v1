@@ -49,9 +49,6 @@ contract Periphery is Trust {
     /// @notice adapter factories -> is supported
     mapping(address => bool) public factories;
 
-    /// @notice adapter -> factory
-    mapping(address => address) public factory;
-
     /// @notice adapter -> bool
     mapping(address => bool) public verified;
 
