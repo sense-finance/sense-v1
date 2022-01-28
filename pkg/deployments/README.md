@@ -1,1 +1,1 @@
-# Sense v1 Deployments and Deployment Scripts
+# Sense v1 Deployments
