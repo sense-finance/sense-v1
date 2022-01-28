@@ -153,7 +153,7 @@ contract TestHelper is DSTest {
 
         // adapter, target wrapper & factory
         factory = createFactory(address(target), address(reward));
-        address f = periphery.onboardAdapter(address(factory), address(target)); // onboard target through Periphery
+        address f = periphery.deployAdapter(address(factory), address(target)); // deploy & onboard target through Periphery
         adapter = MockAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
 

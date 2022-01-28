@@ -111,9 +111,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Enable an adapter
+    /// @notice Enable an adapter (only when permissionless mode on or if called from periphery)
     /// @param adapter Adapter's address
-    function addAdapter(address adapter) external whenPermissionless whenNotPaused {
+    function addAdapter(address adapter) external whenNotPaused {
+        if (!permissionless && msg.sender != periphery) revert Errors.OnlyPermissionless();
         if (adapter == address(0)) revert Errors.InvalidAdapter();
         if (adapterMeta[adapter].id > 0 && !adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         _setAdapter(adapter, true);
@@ -647,11 +648,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     modifier onlyPeriphery() {
         if (periphery != msg.sender) revert Errors.OnlyPeriphery();
-        _;
-    }
-
-    modifier whenPermissionless() {
-        if (!permissionless) revert Errors.OnlyPermissionless();
         _;
     }
 

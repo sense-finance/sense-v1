@@ -21,7 +21,7 @@ contract MockFactory is CropFactory {
         address _reward
     ) CropFactory(_divider, address(0), _factoryParams, _reward) {}
 
-    function _exists(address _target) internal virtual override returns (bool) {
+    function _exists(address _target) external virtual override returns (bool) {
         return targets[_target];
     }
 
@@ -29,27 +29,28 @@ contract MockFactory is CropFactory {
         targets[_target] = status;
     }
 
-    function deployAdapter(address _target) external override returns (address adapterAddress) {
+    function deployAdapter(address _target) external override returns (address) {
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
+
         // Use the CREATE2 opcode to deploy a new Adapter contract.
         // This will revert if a CAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
-        MockAdapter adapter = new MockAdapter{ salt: _target.fillLast12Bytes() }(
-            divider,
-            _target,
-            factoryParams.oracle,
-            factoryParams.ifee,
-            factoryParams.stake,
-            factoryParams.stakeSize,
-            factoryParams.minm,
-            factoryParams.maxm,
-            factoryParams.mode,
-            factoryParams.tilt,
-            DEFAULT_LEVEL,
-            reward
-        );
-
-        _addAdapter(address(adapter));
-
-        return address(adapter);
+        return
+            address(
+                new MockAdapter{ salt: _target.fillLast12Bytes() }(
+                    divider,
+                    _target,
+                    factoryParams.oracle,
+                    factoryParams.ifee,
+                    factoryParams.stake,
+                    factoryParams.stakeSize,
+                    factoryParams.minm,
+                    factoryParams.maxm,
+                    factoryParams.mode,
+                    factoryParams.tilt,
+                    DEFAULT_LEVEL,
+                    reward
+                )
+            );
     }
 }

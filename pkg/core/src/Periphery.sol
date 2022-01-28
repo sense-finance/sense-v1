@@ -52,6 +52,9 @@ contract Periphery is Trust {
     /// @notice adapter -> factory
     mapping(address => address) public factory;
 
+    /// @notice adapter -> bool
+    mapping(address => bool) public verified;
+
     /* ========== DATA STRUCTURES ========== */
 
     struct PoolLiquidity {
@@ -88,28 +91,45 @@ contract Periphery is Trust {
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        // If it is a Sense verified adapter
-        if (factory[adapter] != address(0)) {
-            address pool = spaceFactory.create(adapter, maturity);
-            poolManager.queueSeries(adapter, maturity, pool);
-        }
+        address pool = spaceFactory.create(adapter, maturity);
+        // Queueing series is only for verified adapters
+        if (verified[adapter]) poolManager.queueSeries(adapter, maturity, pool);
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
     /// @notice Onboards a target
-    /// @dev Deploys a new Adapter via the AdapterFactory
-    /// @dev Onboards Target onto Fuse. Caller must know the factory address
+    /// @dev Deploys a new Adapter via the AdapterFactory and onboards it
+    /// @param f Factory to use
     /// @param target Target to onboard
-    function onboardAdapter(address f, address target) external returns (address adapterClone) {
+    function deployAdapter(address f, address target) external returns (address adapter) {
         if (!factories[f]) revert Errors.FactoryNotSupported();
-        adapterClone = Factory(f).deployAdapter(target);
-        // Ping scale to ensure an lscale is cached
-        Adapter(adapterClone).scale();
-        ERC20(target).safeApprove(address(divider), type(uint256).max);
-        ERC20(target).safeApprove(address(adapterClone), type(uint256).max);
-        poolManager.addTarget(target, adapterClone);
-        factory[adapterClone] = f;
-        emit AdapterOnboarded(adapterClone);
+        if (!Factory(f)._exists(target)) revert Errors.TargetNotSupported();
+        adapter = Factory(f).deployAdapter(target);
+        onboardAdapter(adapter);
+        emit AdapterDeployed(adapter);
+    }
+
+    /// @dev Onboards an existing Adapter
+    /// @dev Onboards Adapter's target onto Fuse (only if called from a trusted address). Caller must know the factory address
+    /// @param adapter Adaper to onboard
+    function onboardAdapter(address adapter) public {
+        ERC20 target = ERC20(Adapter(adapter).target());
+        target.safeApprove(address(divider), type(uint256).max);
+        target.safeApprove(address(adapter), type(uint256).max);
+        if (isTrusted[msg.sender]) {
+            poolManager.addTarget(address(target), adapter);
+            verified[adapter] = true;
+        }
+        divider.addAdapter(adapter);
+        emit AdapterOnboarded(adapter);
+    }
+
+    /// @dev Verifies an unverified adapter
+    /// @param adapter Adaper to verify
+    function verifyAdapter(address adapter) external requiresTrust {
+        if (verified[adapter] == true) revert Errors.AlreadyVerified();
+        verified[adapter] = true;
+        emit AdapterVerified(adapter);
     }
 
     /* ========== LIQUIDITY UTILS ========== */
@@ -724,7 +744,9 @@ contract Periphery is Trust {
 
     event FactoryChanged(address indexed adapter, bool indexed isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
-    event AdapterOnboarded(address adapter);
+    event AdapterDeployed(address indexed adapter);
+    event AdapterOnboarded(address indexed adapter);
+    event AdapterVerified(address indexed adapter);
     event Swapped(
         address indexed sender,
         bytes32 indexed poolId,

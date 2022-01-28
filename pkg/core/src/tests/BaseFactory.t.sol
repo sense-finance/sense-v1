@@ -77,7 +77,7 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        address f = periphery.onboardAdapter(address(someFactory), address(someTarget));
+        address f = periphery.deployAdapter(address(someFactory), address(someTarget));
         assertTrue(f != address(0));
         uint256 scale = IAdapter(f).scale();
         assertEq(scale, 1e18);
@@ -86,31 +86,6 @@ contract Factories is TestHelper {
         (address zero, address claim) = alice.doSponsorSeries(f, maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-    }
-
-    function testCantDeployAdapterIfTargetIsNotSupported() public {
-        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        divider.setPeriphery(address(this));
-        try factory.deployAdapter(address(newTarget)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
-    }
-
-    function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        divider.setPeriphery(address(this));
-        try factory.deployAdapter(address(someTarget)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
-        someFactory.deployAdapter(address(someTarget));
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {

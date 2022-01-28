@@ -15,6 +15,7 @@ library Errors {
     error Untrusted();
 
     // Adapters
+    error AlreadyVerified();
     error FlashCallbackFailed();
     error InvalidMaturityOffsets();
     error SenderNotEligible();
