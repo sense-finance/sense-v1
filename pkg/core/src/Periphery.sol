@@ -607,7 +607,7 @@ contract Periphery is Trust {
         }
     }
 
-    /// @notice Initiates a flash loan of Target, swaps target amount to zeros and combines  
+    /// @notice Initiates a flash loan of Target, swaps target amount to zeros and combines
     /// @param adapter adapter
     /// @param maturity maturity
     /// @param cBalIn Claim amount the user has sent in
