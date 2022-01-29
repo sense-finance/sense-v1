@@ -110,10 +110,6 @@ contract Periphery is Trust {
     /// @dev Onboards Adapter's target onto Fuse (only if called from a trusted address). Caller must know the factory address
     /// @param adapter Adaper to onboard
     function onboardAdapter(address adapter) public {
-        _onboardAdapter(adapter);
-    }
-
-    function _onboardAdapter(address adapter) internal {
         ERC20 target = ERC20(Adapter(adapter).target());
         target.safeApprove(address(divider), type(uint256).max);
         target.safeApprove(address(adapter), type(uint256).max);
