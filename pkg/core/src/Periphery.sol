@@ -153,6 +153,8 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to sell
+    /// @param minAccepted Min accepted amount of Claims
+    /// @return amount of Claims received
     function swapTargetForClaims(
         address adapter,
         uint256 maturity,
@@ -167,6 +169,8 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Underlying to sell
+    /// @param minAccepted Min accepted amount of Claims
+    /// @return amount of Claims received
     function swapUnderlyingForClaims(
         address adapter,
         uint256 maturity,
@@ -298,7 +302,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut lower limits for the tokens to receive (useful to account for slippage)
+    /// @param minAmountsOut minimum accepted amounts of Zero and Target given the amount of LP shares provided
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
     /// @return tBal amount of target received and zBal amount of zeros (in case it's called after maturity and redeemZero is restricted)
     function removeLiquidityToTarget(
@@ -317,7 +321,7 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut lower limits for the tokens to receive (useful to account for slippage)
+    /// @param minAmountsOut minimum accepted amounts of Zero and Target given the amount of LP shares provided
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
     /// @return uBal amount of underlying received and zBal zeros (in case it's called after maturity and redeemZero is restricted)
     function removeLiquidityToUnderlying(
@@ -340,8 +344,8 @@ contract Periphery is Trust {
     /// @param srcMaturity Maturity date for the source Series
     /// @param dstMaturity Maturity date for the destination Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut lower limits for the tokens to receive (useful to account for slippage)
-    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Zeros to underlying
+    /// @param minAmountsOut Minimum accepted amounts of Zero and Target given the amount of LP shares provided
+    /// @param minAccepted Min accepted amount of target when swapping Zeros (only used when removing liquidity on/after maturity)
     /// @param mode 0 = issues and sell Claims, 1 = issue and hold Claims
     /// @notice see return description of _addLiquidity. It also returns amount of zeros (in case it's called after maturity and redeemZero is restricted)
     function migrateLiquidity(
@@ -459,7 +463,7 @@ contract Periphery is Trust {
         address adapter,
         uint256 maturity,
         uint256 cBal
-    ) internal returns (uint256) {
+    ) internal returns (uint256 tBal) {
         address claim = divider.claim(adapter, maturity);
 
         // Because there's some margin of error in the pricing functions here, smaller
@@ -474,7 +478,7 @@ contract Periphery is Trust {
         bytes32 poolId = pool.getPoolId();
         (uint8 zeroi, uint256 targeti) = pool.getIndices();
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
-        // Determine how much Target we'll need in to get `cBal` balance of Target out
+        // Determine how much Target we'll need in to get `cBal` balance of Zeros out
         // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after are placeholders)
         uint256 targetToBorrow = BalancerPool(pool).onSwap(
             BalancerPool.SwapRequest({
@@ -493,7 +497,7 @@ contract Periphery is Trust {
         );
 
         // Flash borrow target (following actions in `onFlashLoan`)
-        return _flashBorrow("0x", adapter, maturity, cBal, targetToBorrow);
+        tBal = _flashBorrowAndSwap("0x", adapter, maturity, cBal, targetToBorrow);
     }
 
     /// @return tAmount if mode = 0, target received from selling Claims, otherwise, returns 0
@@ -603,13 +607,13 @@ contract Periphery is Trust {
         }
     }
 
-    /// @notice Initiate a flash loan
+    /// @notice Initiates a flash loan of Target, swaps target amount to zeros and combines  
     /// @param adapter adapter
     /// @param maturity maturity
     /// @param cBalIn Claim amount the user has sent in
     /// @param amount target amount to borrow
     /// @return amount of Target obtained from a sale of Claims
-    function _flashBorrow(
+    function _flashBorrowAndSwap(
         bytes memory data,
         address adapter,
         uint256 maturity,

@@ -281,9 +281,9 @@ contract User {
         uint256 maturity,
         uint256 tBal,
         uint256[] memory minAmountsOut,
-        uint256 minAmount
+        uint256 minAccepted
     ) public returns (uint256, uint256) {
-        return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAmount);
+        return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAccepted);
     }
 
     function doMigrateLiquidity(
