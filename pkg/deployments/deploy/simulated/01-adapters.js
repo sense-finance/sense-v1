@@ -65,24 +65,31 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const multiMint = await ethers.getContract("MultiMint");
 
+  const underlyingNames = new Set();
   console.log("Deploying Targets & Adapters");
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
-    const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`;
-    const { address: mockUnderlyingAddress } = await deploy(underlyingName, {
-      contract: "AuthdMockToken",
-      from: deployer,
-      args: [underlyingName, underlyingName, 18],
-      log: true,
-    });
+    const matchedName = underlyingRegexRes && underlyingRegexRes[1];
+    const underlyingName = matchedName === "ETH" ? "WETH" : matchedName || `UNDERLYING-${targetName}`;
+
+    if (!underlyingNames.has(underlyingName)) {
+      await deploy(underlyingName, {
+        contract: "AuthdMockToken",
+        from: deployer,
+        args: [underlyingName, underlyingName, 18],
+        log: true,
+      });
+
+      underlyingNames.add(underlyingName);
+    }
 
     const underlying = await ethers.getContract(underlyingName);
 
     await deploy(targetName, {
       contract: "AuthdMockTarget",
       from: deployer,
-      args: [mockUnderlyingAddress, targetName, targetName, 18],
+      args: [underlying.address, targetName, targetName, 18],
       log: true,
     });
 
