@@ -84,8 +84,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       underlyingNames.add(underlyingName);
     }
 
-    console.log([...underlyingNames.keys()]);
-
     const underlying = await ethers.getContract(underlyingName);
 
     await deploy(targetName, {
