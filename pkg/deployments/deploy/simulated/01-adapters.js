@@ -65,30 +65,33 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const multiMint = await ethers.getContract("MultiMint");
 
-  const underlyingAddresses = {};
+  const underlyingNames = new Set();
   console.log("Deploying Targets & Adapters");
   for (let targetName of global.TARGETS) {
     console.log(`Deploying simulated ${targetName}`);
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
-    const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`;
+    const matchedName = underlyingRegexRes && underlyingRegexRes[1];
+    const underlyingName = matchedName === "ETH" ? "WETH" : matchedName || `UNDERLYING-${targetName}`;
 
-    if (!underlyingAddresses[underlyingName]) {
-      underlyingAddresses[underlyingName] = (
-        await deploy(underlyingName, {
-          contract: "AuthdMockToken",
-          from: deployer,
-          args: [underlyingName, underlyingName, 18],
-          log: true,
-        })
-      ).address;
+    if (!underlyingNames.has(underlyingName)) {
+      await deploy(underlyingName, {
+        contract: "AuthdMockToken",
+        from: deployer,
+        args: [underlyingName, underlyingName, 18],
+        log: true,
+      });
+
+      underlyingNames.add(underlyingName);
     }
+
+    console.log([...underlyingNames.keys()]);
 
     const underlying = await ethers.getContract(underlyingName);
 
     await deploy(targetName, {
       contract: "AuthdMockTarget",
       from: deployer,
-      args: [underlyingAddresses[underlyingName], targetName, targetName, 18],
+      args: [underlying.address, targetName, targetName, 18],
       log: true,
     });
 
