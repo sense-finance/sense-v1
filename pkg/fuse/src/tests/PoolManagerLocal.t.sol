@@ -187,7 +187,6 @@ contract PoolManagerLocalTest is TestHelper {
         });
         poolManager.setParams("TARGET_PARAMS", params);
         poolManager.addTarget(address(target), address(adapter));
-        assertTrue(poolManager.tInits(address(target)));
     }
 
     /* ========== queueSeries() tests ========== */

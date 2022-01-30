@@ -130,8 +130,6 @@ contract PoolManagerTest is DSTest {
         // Can now add Target
         poolManager.addTarget(address(target), address(mockAdapter));
 
-        assertTrue(poolManager.tInits(address(target)));
-
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();
         } catch (bytes memory error) {
@@ -151,14 +149,22 @@ contract PoolManagerTest is DSTest {
 
         _initSeries(maturity);
 
-        // Cannot queue if the Target has not been deployed in Fuse
+        // Cannot queue if the Fuse pool has not been deployed (no comptroller)
+        try poolManager.queueSeries(address(mockAdapter), maturity, address(0)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, hex"");
+        }
+
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+
+        // Cannot queue if Target has not been added to the Fuse pool
         try poolManager.queueSeries(address(mockAdapter), maturity, address(0)) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
         }
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -235,6 +241,27 @@ contract PoolManagerTest is DSTest {
         // );
 
         // poolManager.addSeries(address(mockAdapter), maturity);
+    }
+
+    function testAdminPassthrough() public {
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        PoolManager.AssetParams memory params = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether,
+            closeFactor: 0.051 ether,
+            liquidationIncentive: 1 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", params);
+
+        // Can now add Target
+        poolManager.addTarget(address(target), address(mockAdapter));
+
+        try poolManager.addTarget(address(target), address(mockAdapter)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetExists.selector));
+        }
     }
 
     function _getValidMaturity() internal view returns (uint256 maturity) {

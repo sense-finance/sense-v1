@@ -39,7 +39,9 @@ interface ComptrollerLike {
 
     function _acceptAdmin() external returns (uint256);
 
-    function cTokensByUnderlying(address underlying) external returns (address);
+    function cTokensByUnderlying(address underlying) external view returns (address);
+
+    function markets(address cToken) external view returns (bool, uint256);
 }
 
 interface MasterOracleLike {
@@ -226,8 +228,11 @@ contract PoolManager is Trust {
         if (Divider(divider).zero(adapter, maturity) == address(0)) revert Errors.SeriesDoesNotExist();
         if (sSeries[adapter][maturity].status != SeriesStatus.NONE) revert Errors.DuplicateSeries();
 
-        address target = ComptrollerLike(comptroller).cTokensByUnderlying(Adapter(adapter).target());
-        if (target == address(0)) revert Errors.TargetNotInFuse();
+        address cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(Adapter(adapter).target());
+        if (cTarget == address(0)) revert Errors.TargetNotInFuse();
+
+        (bool isListed, ) = ComptrollerLike(comptroller).markets(cTarget);
+        if (!isListed) revert Errors.TargetNotInFuse();
 
         sSeries[adapter][maturity] = Series({ status: SeriesStatus.QUEUED, pool: pool });
 
