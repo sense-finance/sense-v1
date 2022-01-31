@@ -8,7 +8,7 @@ import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
 import { Claim } from "../../../tokens/Claim.sol";
 import { MockTarget } from "./MockTarget.sol";
-import { MockToken } from "./MockTarget.sol";
+import { MockToken } from "./MockToken.sol";
 
 contract MockAdapter is CropAdapter {
     using FixedMath for uint256;
@@ -61,7 +61,11 @@ contract MockAdapter is CropAdapter {
     {}
 
     function scale() external virtual override returns (uint256 _value) {
-        if (value > 0) return value;
+        if (value > 0) {
+            _value = value;
+            lscale.value = _value;
+            lscale.timestamp = block.timestamp;
+        }
         if (INITIAL_VALUE == 0) {
             INITIAL_VALUE = 1e18;
         }
