@@ -145,7 +145,7 @@ forge-gas-snapshot: && _timer
 
 forge-gas-snapshot-diff: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot --diff \
-		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
 
 ## ---- Appendix ----
