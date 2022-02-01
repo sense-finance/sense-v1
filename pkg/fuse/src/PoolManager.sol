@@ -31,16 +31,21 @@ interface FuseDirectoryLike {
 }
 
 interface ComptrollerLike {
+    /// Deploy cToken, add the market to the markets mapping, and set it as listed and set the collateral factor
+    /// Admin function to deploy cToken, set isListed, and add support for the market and set the collateral factor
     function _deployMarket(
         bool isCEther,
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
     ) external returns (uint256);
 
+    /// Accepts transfer of admin rights. msg.sender must be pendingAdmin
     function _acceptAdmin() external returns (uint256);
 
+    /// All cTokens addresses mapped by their underlying token addresses
     function cTokensByUnderlying(address underlying) external view returns (address);
 
+    /// A list of all markets
     function markets(address cToken) external view returns (bool, uint256);
 }
 
@@ -204,7 +209,7 @@ contract PoolManager is Trust {
             ERC20(target).name(),
             ERC20(target).symbol(),
             cERC20Impl,
-            hex"", // calldata sent to becomeImplementation (currently unused)
+            hex"", // calldata sent to becomeImplementation (empty bytes b/c it's currently unused)
             targetParams.reserveFactor,
             0 // no admin fee
         );
