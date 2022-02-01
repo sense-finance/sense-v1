@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >= 0.7.0;
+pragma solidity >=0.7.0;
 
 library Levels {
     uint256 private constant _INIT_BIT = 0;
