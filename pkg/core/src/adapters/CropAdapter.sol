@@ -6,11 +6,9 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Periphery } from "../Periphery.sol";
 import { Divider } from "../Divider.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { FixedMath } from "../external/FixedMath.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 abstract contract CropAdapter is BaseAdapter {
