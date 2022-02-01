@@ -11,6 +11,10 @@
     "files": [
         "src/**/*"
     ],
+    "scripts": {
+        "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
+        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix"
+    },
     "dependencies": {
         "@sense-finance/v1-core": "workspace:pkg/core"
     },
