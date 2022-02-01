@@ -30,7 +30,7 @@ contract Factories is TestHelper {
         assertEq(MockFactory(someFactory).divider(), address(divider));
         (
             address oracle,
-            uint64 ifee,
+            uint256 ifee,
             address stake,
             uint256 stakeSize,
             uint256 minm,

@@ -9,8 +9,8 @@ import { Token } from "./Token.sol";
 /// @notice Strips off excess before every transfer
 contract Claim is Token {
     address public immutable adapter;
-    uint256 public immutable maturity;
     address public immutable divider;
+    uint256 public immutable maturity;
 
     constructor(
         address _adapter,

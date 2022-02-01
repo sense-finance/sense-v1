@@ -82,7 +82,7 @@ contract WstETHAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint64 _ifee,
+        uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
         uint256 _minm,
