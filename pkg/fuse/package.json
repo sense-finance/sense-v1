@@ -25,7 +25,6 @@
         "gas-snapshot": "just gas-snapshot"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "^6.2.0",
         "@sense-finance/v1-core": "workspace:pkg/core",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
