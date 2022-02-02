@@ -5,6 +5,11 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 contract MockComptroller {
+    struct Market {
+        bool isListed;
+        uint collateralFactorMantissa;
+    }
+
     function _deployMarket(
         bool isCEther,
         bytes calldata constructorData,
@@ -19,6 +24,10 @@ contract MockComptroller {
 
     function cTokensByUnderlying(address) external virtual returns (address) {
         return address(1337);
+    }
+
+    function markets(address) external virtual returns (Market memory) {
+        return Market({ isListed: true, collateralFactorMantissa: 1 });
     }
 }
 
