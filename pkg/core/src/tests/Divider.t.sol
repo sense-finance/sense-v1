@@ -1737,7 +1737,7 @@ contract Dividers is TestHelper {
         lscales.push(5e17);
         lscales.push(4e17);
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale , ) = divider.series(address(adapter), maturity);
+        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(alice));
         assertEq(lscale, lscales[0]);
