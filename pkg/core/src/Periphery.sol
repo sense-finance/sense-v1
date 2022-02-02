@@ -13,10 +13,9 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
-import { BaseFactory as Factory } from "./adapters/BaseFactory.sol";
+import { BaseFactory as AdapterFactory } from "./adapters/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
-import { Token } from "./tokens/Token.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
@@ -102,7 +101,7 @@ contract Periphery is Trust {
     /// @param target Target to onboard
     function onboardAdapter(address f, address target) external returns (address adapterClone) {
         if (!factories[f]) revert Errors.FactoryNotSupported();
-        adapterClone = Factory(f).deployAdapter(target);
+        adapterClone = AdapterFactory(f).deployAdapter(target);
         // Ping scale to ensure an lscale is cached
         Adapter(adapterClone).scale();
         ERC20(target).safeApprove(address(divider), type(uint256).max);
