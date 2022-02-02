@@ -98,32 +98,6 @@ contract PoolManagerLocalTest is TestHelper {
         }
     }
 
-    function testCantAddTargetIfTargetExists() public {
-        PoolManager poolManager = new PoolManager(
-            address(fuseDirectory),
-            address(comptroller),
-            address(1),
-            address(divider),
-            address(masterOracle) // oracle impl
-        );
-        MockOracle fallbackOracle = new MockOracle();
-        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        PoolManager.AssetParams memory params = PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
-        });
-        poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adapter));
-        try poolManager.addTarget(address(target), address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetExists.selector));
-        }
-    }
-
     function testCantAddTargetIfTargetParamsNotSet() public {
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
@@ -164,7 +138,7 @@ contract PoolManagerLocalTest is TestHelper {
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
         } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.FailedAddMarket.selector));
+            assertEq0(error, abi.encodeWithSelector(Errors.FailedAddTargetMarket.selector));
         }
     }
 
@@ -187,7 +161,6 @@ contract PoolManagerLocalTest is TestHelper {
         });
         poolManager.setParams("TARGET_PARAMS", params);
         poolManager.addTarget(address(target), address(adapter));
-        assertTrue(poolManager.tInits(address(target)));
     }
 
     /* ========== queueSeries() tests ========== */
@@ -228,28 +201,6 @@ contract PoolManagerLocalTest is TestHelper {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
-        }
-    }
-
-    function testCantQueueSeriesIfTargetNotExists() public {
-        PoolManager poolManager = new PoolManager(
-            address(fuseDirectory),
-            address(comptroller),
-            address(1),
-            address(divider),
-            address(masterOracle) // oracle impl
-        );
-        MockOracle fallbackOracle = new MockOracle();
-        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        uint256 maturity = getValidMaturity(2021, 10);
-        divider.setPeriphery(address(this));
-        stake.approve(address(divider), type(uint256).max);
-        stake.mint(address(this), 1000e18);
-        divider.initSeries(address(adapter), maturity, address(alice));
-        try poolManager.queueSeries(address(adapter), maturity, address(123)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
         }
     }
 

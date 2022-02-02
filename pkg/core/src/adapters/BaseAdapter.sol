@@ -4,7 +4,6 @@ pragma solidity 0.8.11;
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
@@ -23,7 +22,6 @@ interface IPeriphery {
 
 /// @title Assign value to Target tokens
 abstract contract BaseAdapter {
-    using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
     /* ========== CONSTANTS ========== */

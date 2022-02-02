@@ -7,8 +7,6 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
@@ -25,8 +23,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
     }
 
     function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
-        Token underlying = Token(cToken.underlying());
-        return _price(address(underlying));
+        return _price(address(cToken.underlying()));
     }
 
     function price(address underlying) external view override returns (uint256) {

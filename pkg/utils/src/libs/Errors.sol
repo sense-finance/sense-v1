@@ -52,7 +52,7 @@ library Errors {
     // Fuse
     error AdapterNotSet();
     error FailedBecomeAdmin();
-    error FailedAddMarket();
+    error FailedAddTargetMarket();
     error FailedAddZeroMarket();
     error FailedAddLpMarket();
     error OracleNotReady();

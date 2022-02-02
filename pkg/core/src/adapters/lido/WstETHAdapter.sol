@@ -21,19 +21,15 @@ interface WstETHInterface {
 }
 
 interface StETHInterface {
-    /**
-     * @notice Send funds to the pool with optional _referral parameter
-     * @dev This function is alternative way to submit funds. Supports optional referral address.
-     * @return Amount of StETH shares generated
-     */
+    /// @notice Send funds to the pool with optional _referral parameter
+    /// @dev This function is alternative way to submit funds. Supports optional referral address.
+    /// @return Amount of StETH shares generated
     function submit(address _referral) external payable returns (uint256);
 
-    /**
-     * @return the amount of tokens owned by the `_account`.
-     *
-     * @dev Balances are dynamic and equal the `_account`'s share in the amount of the
-     * total Ether controlled by the protocol. See `sharesOf`.
-     */
+    /// @return the amount of tokens owned by the `_account`.
+    ///
+    /// @dev Balances are dynamic and equal the `_account`'s share in the amount of the
+    /// total Ether controlled by the protocol. See `sharesOf`.
     function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
 }
 
@@ -102,7 +98,7 @@ contract WstETHAdapter is BaseAdapter {
         // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
         uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
         uint256 wstETHstETH = StETHInterface(STETH).getPooledEthByShares(1 ether); // stETH tokens corresponding to one wstETH
-        uint256 _value = stEthEth.fmul(wstETHstETH, FixedMath.WAD);
+        uint256 _value = stEthEth.fmul(wstETHstETH);
 
         if (_value != scaleStored) {
             // update value only if different than the previous

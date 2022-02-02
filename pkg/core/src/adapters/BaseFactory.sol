@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-// External references
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
