@@ -115,7 +115,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param adapter Adapter's address
     function addAdapter(address adapter) external whenNotPaused {
         if (!permissionless && msg.sender != periphery) revert Errors.OnlyPermissionless();
-        if (adapter == address(0)) revert Errors.InvalidAdapter();
         if (adapterMeta[adapter].id > 0 && !adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         _setAdapter(adapter, true);
     }
@@ -615,11 +614,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         AdapterMeta memory am = adapterMeta[adapter];
         if (am.enabled == isOn) revert Errors.ExistingValue();
         am.enabled = isOn;
+
         // If this adapter is being added for the first time
         if (isOn && am.id == 0) {
             am.id = ++adapterCounter;
             adapterAddresses[am.id] = adapter;
         }
+
         // Set level, target and underlying decimals (can only be done once);
         am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
         am.level = Adapter(adapter).level();

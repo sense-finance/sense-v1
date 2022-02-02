@@ -700,7 +700,9 @@ contract Periphery is Trust {
         });
         uint256 lpSharesBefore = ERC20(address(pool)).balanceOf(msg.sender);
         balancerVault.joinPool(poolId, address(this), msg.sender, request);
-        return ERC20(address(pool)).balanceOf(msg.sender) - lpSharesBefore;
+        unchecked {
+            return ERC20(address(pool)).balanceOf(msg.sender) - lpSharesBefore;
+        }
     }
 
     function _removeLiquidityFromSpace(
@@ -726,7 +728,9 @@ contract Periphery is Trust {
 
         uint256 zBalAfter = ERC20(zero).balanceOf(address(this));
         uint256 tBalAfter = ERC20(target).balanceOf(address(this));
-        return (tBalAfter - tBalBefore, zBalAfter - zBalBefore);
+        unchecked {
+            return (tBalAfter - tBalBefore, zBalAfter - zBalBefore);
+        }
     }
 
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
