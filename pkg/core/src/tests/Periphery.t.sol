@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
-import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { PoolManager, ComptrollerLike } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
@@ -89,7 +89,8 @@ contract PeripheryTest is TestHelper {
 
         // onboard target
         periphery.onboardAdapter(address(factory), address(newTarget));
-        assertTrue(poolManager.tInits(address(target)));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        assertTrue(cTarget != address(0));
     }
 
     /* ========== swap tests ========== */
