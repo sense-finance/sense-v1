@@ -35,6 +35,7 @@ contract PeripheryTest is TestHelper {
 
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
+        periphery.verifyAdapter(address(adapter), true);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // check zeros and claim deployed
@@ -43,7 +44,6 @@ contract PeripheryTest is TestHelper {
 
         // check Balancer pool deployed
         assertTrue(address(spaceFactory.pool()) != address(0));
-
         // check zeros and claims onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
@@ -89,8 +89,9 @@ contract PeripheryTest is TestHelper {
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.deployAdapter(address(factory), address(newTarget));
-        assertTrue(poolManager.tInits(address(target)));
+        address adapter = periphery.deployAdapter(address(factory), address(newTarget));
+        periphery.verifyAdapter(adapter, true);
+        assertTrue(poolManager.tInits(address(newTarget)));
     }
 
     function testDeployAdapterWhenPermissionless() public {
@@ -101,6 +102,7 @@ contract PeripheryTest is TestHelper {
         factory.addTarget(address(newTarget), true);
 
         // onboard target
+        periphery.verifyAdapter(address(adapter), true);
         periphery.deployAdapter(address(factory), address(newTarget));
         assertTrue(poolManager.tInits(address(target)));
     }
@@ -145,7 +147,7 @@ contract PeripheryTest is TestHelper {
             DEFAULT_LEVEL,
             address(reward)
         );
-
+        periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter));
         assertTrue(poolManager.tInits(address(otherTarget)));
     }

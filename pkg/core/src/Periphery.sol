@@ -89,13 +89,13 @@ contract Periphery is Trust {
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
         address pool = spaceFactory.create(adapter, maturity);
-        // Queueing series is only for verified adapters
+        // Automatically queueing series is only for verified adapters
         if (verified[adapter]) poolManager.queueSeries(adapter, maturity, pool);
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
-    /// @notice Onboards a target
-    /// @dev Deploys a new Adapter via the AdapterFactory and onboards it
+    /// @notice Deploy and onboard an Adapter
+    /// @dev Deploys a new Adapter via an Adapter Factory
     /// @param f Factory to use
     /// @param target Target to onboard
     function deployAdapter(address f, address target) external returns (address adapter) {
@@ -107,16 +107,12 @@ contract Periphery is Trust {
     }
 
     /// @dev Onboards an Adapter
-    /// @dev Onboards Adapter's target onto Fuse (only if called from a trusted address). Caller must know the factory address
+    /// @dev Onboards Adapter's target onto Fuse if called from a trusted address
     /// @param adapter Adaper to onboard
     function onboardAdapter(address adapter) public {
         ERC20 target = ERC20(Adapter(adapter).target());
         target.safeApprove(address(divider), type(uint256).max);
         target.safeApprove(address(adapter), type(uint256).max);
-        if (isTrusted[msg.sender]) {
-            poolManager.addTarget(address(target), adapter);
-            verified[adapter] = true;
-        }
         divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
@@ -388,11 +384,11 @@ contract Periphery is Trust {
         emit FactoryChanged(f, isOn);
     }
 
-    /// @dev Verifies an unverified adapter
+    /// @dev Verifies an Adapter and optionally adds the Target to the money market
     /// @param adapter Adaper to verify
-    function verifyAdapter(address adapter) external requiresTrust {
-        if (verified[adapter]) revert Errors.AlreadyVerified();
+    function verifyAdapter(address adapter, bool addToPool) external requiresTrust {
         verified[adapter] = true;
+        if (addToPool) poolManager.addTarget(Adapter(adapter).target(), adapter);
         emit AdapterVerified(adapter);
     }
 
@@ -583,8 +579,7 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256) {
         uint256 tBase = 10**ERC20(Adapter(adapter).target()).decimals();
-        return
-            tBal.fmul(zeroiBal.fdiv(Adapter(adapter).scale().fmul(targetiBal, tBase) + zeroiBal, FixedMath.WAD), tBase); // ABDK formula
+        return tBal.fmul(zeroiBal.fdiv(Adapter(adapter).scale().fmul(targetiBal, tBase) + zeroiBal), tBase);
     }
 
     function _removeLiquidity(
@@ -689,13 +684,16 @@ contract Periphery is Trust {
         bytes32 poolId = pool.getPoolId();
         IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
         for (uint8 i; i < liq.tokens.length; i++) {
-            // tokens and amounts must be in same order
+            // Tokens and amounts must be in same order
             liq.tokens[i].safeApprove(address(balancerVault), liq.amounts[i]);
         }
+
+        // Behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens,
+        // and receives an estimated but unknown (computed at run time) quantity of BPT
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({
             assets: assets,
             maxAmountsIn: liq.amounts,
-            userData: abi.encode(liq.amounts), // behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens, and receives an estimated but unknown (computed at run time) quantity of BPT. (more info here https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-joins.md)
+            userData: abi.encode(liq.amounts),
             fromInternalBalance: false
         });
         uint256 lpSharesBefore = ERC20(address(pool)).balanceOf(msg.sender);
