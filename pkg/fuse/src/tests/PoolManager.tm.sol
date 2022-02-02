@@ -9,7 +9,6 @@ import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { PoolManager } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
@@ -22,6 +21,7 @@ import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
 import { MockBalancerVault, MockSpaceFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
+import { PriceOracle } from "../external/PriceOracle.sol";
 
 contract PoolManagerTest is DSTest {
     using FixedMath for uint256;
@@ -254,13 +254,68 @@ contract PoolManagerTest is DSTest {
         });
         poolManager.setParams("TARGET_PARAMS", params);
 
-        // Can now add Target
-        poolManager.addTarget(address(target), address(mockAdapter));
+        // re-create add target
 
+        address underlying = mockAdapter.underlying();
+
+        address[] memory underlyings = new address[](2);
+        underlyings[0] = address(target);
+        underlyings[1] = underlying;
+
+        PriceOracle[] memory oracles = new PriceOracle[](2);
+        oracles[0] = PriceOracle(poolManager.targetOracle());
+        oracles[1] = PriceOracle(poolManager.masterOracle());
+
+        poolManager.execute(
+            poolManager.underlyingOracle(),
+            0,
+            abi.encodeWithSignature("setUnderlying(address,address)", underlying, address(mockAdapter)),
+            gasleft() - 100000
+        );
+        poolManager.execute(
+            poolManager.targetOracle(),
+            0,
+            abi.encodeWithSignature("setTarget(address,address)", address(target), address(mockAdapter)),
+            gasleft() - 100000
+        );
+
+        poolManager.execute(
+            poolManager.masterOracle(),
+            0,
+            abi.encodeWithSignature("add(address[],address[])", underlyings, oracles),
+            gasleft() - 100000
+        );
+
+        bytes memory constructorData = abi.encode(
+            target,
+            poolManager.comptroller(),
+            0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            target.name(),
+            target.symbol(),
+            poolManager.cERC20Impl(),
+            hex"", // calldata sent to becomeImplementation (empty bytes b/c it's currently unused)
+            0.1 ether,
+            0 // no admin fee
+        );
+
+        // Can now add Target with the passthrough
+        bool success = poolManager.execute(
+            poolManager.comptroller(),
+            0,
+            abi.encodeWithSignature("_deployMarket(bool,bytes,uint256)", false, constructorData, 0.5 ether),
+            gasleft() - 100000
+        );
+        
+
+        assertTrue(success);
+
+        assertTrue(false);
+
+        // shouldn't be able to add target again
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();
         } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetExists.selector));
+            assertEq0(error, hex"");
         }
     }
 
