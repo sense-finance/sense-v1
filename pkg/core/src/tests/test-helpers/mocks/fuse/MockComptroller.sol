@@ -7,7 +7,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 contract MockComptroller {
     struct Market {
         bool isListed;
-        uint collateralFactorMantissa;
+        uint256 collateralFactorMantissa;
     }
 
     function _deployMarket(
