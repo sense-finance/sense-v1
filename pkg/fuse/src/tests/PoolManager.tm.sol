@@ -305,7 +305,6 @@ contract PoolManagerTest is DSTest {
             abi.encodeWithSignature("_deployMarket(bool,bytes,uint256)", false, constructorData, 0.5 ether),
             gasleft() - 100000
         );
-        
 
         assertTrue(success);
 

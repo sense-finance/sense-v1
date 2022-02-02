@@ -5,8 +5,8 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 contract MockComptroller {
-    mapping (address => address) public ctokens;
-    mapping (address => address) public underlyings;
+    mapping(address => address) public ctokens;
+    mapping(address => address) public underlyings;
     uint256 public nonce;
 
     struct Market {
@@ -19,8 +19,11 @@ contract MockComptroller {
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
     ) external virtual returns (uint256) {
-        (address token, ,,,,,,,) = abi.decode(constructorData, (address, address, address, string, string, address, bytes, uint256, uint256));
-        ctokens[token] = address(uint160(uint(keccak256(abi.encodePacked(++nonce, blockhash(block.number))))));
+        (address token, , , , , , , , ) = abi.decode(
+            constructorData,
+            (address, address, address, string, string, address, bytes, uint256, uint256)
+        );
+        ctokens[token] = address(uint160(uint256(keccak256(abi.encodePacked(++nonce, blockhash(block.number))))));
         underlyings[ctokens[token]] = token;
         return 0;
     }
