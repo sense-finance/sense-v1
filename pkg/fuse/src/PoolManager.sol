@@ -216,7 +216,7 @@ contract PoolManager is Trust {
 
         // Trying to deploy the same market twice will fail
         uint256 err = ComptrollerLike(comptroller)._deployMarket(false, constructorData, targetParams.collateralFactor);
-        if (err != 0) revert Errors.FailedAddMarket();
+        if (err != 0) revert Errors.FailedAddTargetMarket();
 
         cTarget = ComptrollerLike(comptroller).cTokensByUnderlying(target);
 

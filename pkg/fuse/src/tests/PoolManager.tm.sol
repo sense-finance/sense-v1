@@ -133,7 +133,7 @@ contract PoolManagerTest is DSTest {
         try poolManager.addTarget(address(target), address(mockAdapter)) {
             fail();
         } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetExists.selector));
+            assertEq0(error, hex"");
         }
     }
 
@@ -243,7 +243,7 @@ contract PoolManagerTest is DSTest {
         // poolManager.addSeries(address(mockAdapter), maturity);
     }
 
-    function testAdminPassthrough() public {
+    function testMainnetAdminPassthrough() public {
         poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
