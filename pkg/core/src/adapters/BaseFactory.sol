@@ -46,27 +46,16 @@ abstract contract BaseFactory {
         factoryParams = _factoryParams;
     }
 
-    /// @notice Performs sanity checks and adds the adapter to Divider
-    /// @param _adapter Address of the adapter
-    function _addAdapter(address _adapter) internal {
-        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
-        address target = BaseAdapter(_adapter).target();
-        if (!_exists(target)) revert Errors.TargetNotSupported();
-        Divider(divider).setAdapter(address(_adapter), true);
-        emit AdapterAdded(address(_adapter), target);
-    }
-
     /* ========== REQUIRED DEPLOY ========== */
 
     /// @notice Deploys both an adapter and a target wrapper for the given _target
     /// @param _target Address of the Target token
-    /// @dev Must call _addAdapter()
     function deployAdapter(address _target) external virtual returns (address adapter) {}
 
     /* ========== REQUIRED INTERNAL GUARD ========== */
 
     /// @notice Target validity check that must be overriden by child contracts
-    function _exists(address _target) internal virtual returns (bool);
+    function exists(address _target) external virtual returns (bool);
 
     /* ========== LOGS ========== */
 

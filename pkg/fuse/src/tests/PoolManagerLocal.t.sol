@@ -196,6 +196,27 @@ contract PoolManagerLocalTest is TestHelper {
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
         divider.initSeries(address(adapter), maturity, address(alice));
+
+        PoolManager poolManager = new PoolManager(
+            address(fuseDirectory),
+            address(comptroller),
+            address(1),
+            address(divider),
+            address(masterOracle) // oracle impl
+        );
+
+        MockOracle fallbackOracle = new MockOracle();
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
+        PoolManager.AssetParams memory params = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether,
+            closeFactor: 0.051 ether,
+            liquidationIncentive: 1 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", params);
+        poolManager.addTarget(address(target), address(adapter));
+
         poolManager.queueSeries(address(adapter), maturity, address(123));
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
@@ -210,6 +231,26 @@ contract PoolManagerLocalTest is TestHelper {
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
         divider.initSeries(address(adapter), maturity, address(alice));
+        PoolManager poolManager = new PoolManager(
+            address(fuseDirectory),
+            address(comptroller),
+            address(1),
+            address(divider),
+            address(masterOracle) // oracle impl
+        );
+
+        MockOracle fallbackOracle = new MockOracle();
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
+        PoolManager.AssetParams memory params = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether,
+            closeFactor: 0.051 ether,
+            liquidationIncentive: 1 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", params);
+        poolManager.addTarget(address(target), address(adapter));
+
         poolManager.queueSeries(address(adapter), maturity, address(123));
         (PoolManager.SeriesStatus status, address pool) = PoolManager(address(poolManager)).sSeries(
             address(adapter),

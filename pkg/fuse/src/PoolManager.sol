@@ -223,7 +223,7 @@ contract PoolManager is Trust {
         emit TargetAdded(target, cTarget);
     }
 
-    /// @notice queues a set of (Zero, LPShare) for a  Fuse pool once the TWAP is ready
+    /// @notice queues a set of (Zero, LPShare) for a Fuse pool to be deployed once the TWAP is ready
     /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,

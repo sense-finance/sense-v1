@@ -116,7 +116,7 @@ contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
     function testMainnetSponsorSeries() public {
-        address f = periphery.onboardAdapter(address(factory), Assets.cDAI);
+        address f = periphery.deployAdapter(address(factory), Assets.cDAI);
         adapter = CAdapter(payable(f));
         // Mint this address MAX_UINT Assets.DAI
         giveTokens(Assets.DAI, type(uint256).max, hevm);
@@ -132,6 +132,7 @@ contract PeripheryTests is PeripheryTestHelper {
         );
 
         ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);
+        periphery.verifyAdapter(address(adapter), true);
         (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity);
 
         // Check zeros and claim deployed

@@ -106,9 +106,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log(`Add ${targetName} support for mocked Factory`);
     await (await factory.addTarget(target.address, true)).wait();
 
-    const adapterAddress = await periphery.callStatic.onboardAdapter(factory.address, target.address);
+    const adapterAddress = await periphery.callStatic.deployAdapter(factory.address, target.address);
     console.log(`Onboard target ${target.address} via Periphery`);
-    await (await periphery.onboardAdapter(factory.address, target.address)).wait();
+    await (await periphery.deployAdapter(factory.address, target.address)).wait();
     global.ADAPTERS[targetName] = adapterAddress;
 
     console.log("Give the adapter minter permission on Target");

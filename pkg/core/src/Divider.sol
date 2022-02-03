@@ -111,10 +111,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Enable an adapter
+    /// @notice Enable an adapter (only when permissionless mode on or if called from periphery)
     /// @param adapter Adapter's address
-    function addAdapter(address adapter) external whenPermissionless whenNotPaused {
-        if (adapter == address(0)) revert Errors.InvalidAdapter();
+    function addAdapter(address adapter) external whenNotPaused {
+        if (!permissionless && msg.sender != periphery) revert Errors.OnlyPermissionless();
         if (adapterMeta[adapter].id > 0 && !adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         _setAdapter(adapter, true);
     }
@@ -614,11 +614,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         AdapterMeta memory am = adapterMeta[adapter];
         if (am.enabled == isOn) revert Errors.ExistingValue();
         am.enabled = isOn;
+
         // If this adapter is being added for the first time
         if (isOn && am.id == 0) {
             am.id = ++adapterCounter;
             adapterAddresses[am.id] = adapter;
         }
+
         // Set level, target and underlying decimals (can only be done once);
         am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
         am.level = Adapter(adapter).level();
@@ -647,11 +649,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     modifier onlyPeriphery() {
         if (periphery != msg.sender) revert Errors.OnlyPeriphery();
-        _;
-    }
-
-    modifier whenPermissionless() {
-        if (!permissionless) revert Errors.OnlyPermissionless();
         _;
     }
 

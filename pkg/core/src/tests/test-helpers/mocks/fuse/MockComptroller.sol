@@ -23,6 +23,7 @@ contract MockComptroller {
             constructorData,
             (address, address, address, string, string, address, bytes, uint256, uint256)
         );
+        require(ctokens[token] == address(0));
         ctokens[token] = address(uint160(uint256(keccak256(abi.encodePacked(++nonce, blockhash(block.number))))));
         underlyings[ctokens[token]] = token;
         return 0;

@@ -10,6 +10,7 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
@@ -34,6 +35,7 @@ contract PeripheryTest is TestHelper {
 
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
+        periphery.verifyAdapter(address(adapter), true);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // check zeros and claim deployed
@@ -42,7 +44,6 @@ contract PeripheryTest is TestHelper {
 
         // check Balancer pool deployed
         assertTrue(address(spaceFactory.pool()) != address(0));
-
         // check zeros and claims onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
@@ -73,23 +74,132 @@ contract PeripheryTest is TestHelper {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // check Balancer pool is NOT deployed
-        assertTrue(address(spaceFactory.pool()) == address(0));
+        // check Space pool is deployed
+        assertTrue(address(spaceFactory.pool()) != address(0));
 
         // check zeros and claims NOT onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.NONE);
     }
 
-    function testOnboardAdapter() public {
+    function testDeployAdapter() public {
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
         MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.onboardAdapter(address(factory), address(newTarget));
+        address adapter = periphery.deployAdapter(address(factory), address(newTarget));
+        periphery.verifyAdapter(adapter, true);
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        assertTrue(cTarget != address(0));
+    }
+
+    function testDeployAdapterWhenPermissionless() public {
+        divider.setPermissionless(true);
+        // add a new target to the factory supported targets
+        MockToken underlying = new MockToken("New Underlying", "NT", 18);
+        MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
+        factory.addTarget(address(newTarget), true);
+
+        // onboard target
+        periphery.verifyAdapter(address(adapter), true);
+        periphery.deployAdapter(address(factory), address(newTarget));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        assertTrue(cTarget != address(0));
+    }
+
+    function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        try periphery.deployAdapter(address(factory), address(someTarget)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        }
+        periphery.deployAdapter(address(someFactory), address(someTarget));
+    }
+
+    function testCantDeployAdapterIfTargetIsNotSupported() public {
+        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+        MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        try periphery.deployAdapter(address(factory), address(newTarget)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        }
+    }
+
+    function testOnboardAdapterVerified() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.verifyAdapter(address(otherAdapter), true);
+        periphery.onboardAdapter(address(otherAdapter));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
+        assertTrue(cTarget != address(0));
+    }
+
+    function testOnboardAdapterUnverified() public {
+        divider.setPermissionless(true);
+        periphery.setIsTrusted(address(this), false);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+
+        periphery.onboardAdapter(address(otherAdapter));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
+        assertTrue(cTarget != address(0));
+    }
+
+    function testCantOnboardAdapterUnverifiedWhenNotPermissionless() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        periphery.setIsTrusted(address(this), false);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.onboardAdapter(address(otherAdapter));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
         assertTrue(cTarget != address(0));
     }
 
@@ -769,7 +879,7 @@ contract PeripheryTest is TestHelper {
 
         MockTarget otherTarget = new MockTarget(address(underlying), "Compound Usdc", "cUSDC", 8);
         factory.addTarget(address(otherTarget), true);
-        address dstAdapter = periphery.onboardAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
+        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
 
         (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
         uint256[] memory minAmountsOut = new uint256[](2);
