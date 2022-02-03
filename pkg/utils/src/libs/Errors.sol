@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >= 0.8.4;
+pragma solidity >=0.8.4;
 
 library Errors {
-
     // Auth
     error CombineRestricted();
     error IssuanceRestricted();
@@ -53,7 +52,7 @@ library Errors {
     // Fuse
     error AdapterNotSet();
     error FailedBecomeAdmin();
-    error FailedAddMarket();
+    error FailedAddTargetMarket();
     error FailedAddZeroMarket();
     error FailedAddLpMarket();
     error OracleNotReady();

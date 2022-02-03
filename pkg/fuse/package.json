@@ -19,13 +19,11 @@
         "turbo-test": "just turbo-test-local",
         "turbo-test:mainnet": "just turbo-test-mainnet",
         "testcov": "just test-local --coverage",
-        "lint": "solhint -f table src/**/*.sol",
+        "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
-        "size-contracts": "hardhat compile && hardhat size-contracts",
         "gas-snapshot": "just gas-snapshot"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "^6.2.0",
         "@sense-finance/v1-core": "workspace:pkg/core",
         "@sense-finance/v1-utils": "workspace:pkg/utils"

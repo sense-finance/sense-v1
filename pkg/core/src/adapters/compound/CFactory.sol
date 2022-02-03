@@ -4,8 +4,6 @@ pragma solidity 0.8.11;
 // Internal references
 import { CropFactory } from "../CropFactory.sol";
 import { CAdapter } from "./CAdapter.sol";
-import { Divider } from "../../Divider.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";

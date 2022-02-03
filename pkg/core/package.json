@@ -20,7 +20,7 @@
         "turbo-test:8-decimal-target": "just turbo-test-local-8-decimal-target",
         "turbo-test:mainnet": "just turbo-test-mainnet",
         "testcov": "just test-local --coverage",
-        "lint": "solhint -f table src/**/*.sol",
+        "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
         "gas-snapshot": "just gas-snapshot"
     },

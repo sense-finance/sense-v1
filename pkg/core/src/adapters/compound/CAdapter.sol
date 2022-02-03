@@ -2,14 +2,11 @@
 pragma solidity 0.8.11;
 
 // External references
-import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { CropAdapter } from "../CropAdapter.sol";
 
 interface IWETH {
@@ -70,7 +67,6 @@ interface PriceOracleInterface {
 
 /// @notice Adapter contract for cTokens
 contract CAdapter is CropAdapter {
-    using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
