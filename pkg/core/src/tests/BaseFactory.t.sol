@@ -30,11 +30,11 @@ contract Factories is TestHelper {
         assertEq(MockFactory(someFactory).divider(), address(divider));
         (
             address oracle,
-            uint256 ifee,
+            uint64 ifee,
             address stake,
             uint256 stakeSize,
-            uint256 minm,
-            uint256 maxm,
+            uint48 minm,
+            uint48 maxm,
             uint16 mode,
             uint64 tilt
         ) = MockFactory(someFactory).factoryParams();
@@ -51,10 +51,8 @@ contract Factories is TestHelper {
 
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockToken someTarget = new MockToken("Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        divider.setPeriphery(address(this));
         address adapter = someFactory.deployAdapter(address(someTarget));
         assertTrue(adapter != address(0));
         assertEq(IAdapter(adapter).divider(), address(divider));
@@ -77,29 +75,39 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        address f = periphery.deployAdapter(address(someFactory), address(someTarget));
+        address f = periphery.onboardAdapter(address(someFactory), address(someTarget));
         assertTrue(f != address(0));
         uint256 scale = IAdapter(f).scale();
         assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
         (address zero, address claim) = alice.doSponsorSeries(f, maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
     }
 
-    function testCantDeployAdapterIfNotPeriphery() public {
-        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        try factory.deployAdapter(address(someTarget)) {
+    function testCantDeployAdapterIfTargetIsNotSupported() public {
+        MockToken newTarget = new MockToken("Not Supported", "NS", 18);
+        try factory.deployAdapter(address(newTarget)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotSupported);
         }
     }
 
+    function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        MockToken someTarget = new MockToken("Some Target", "ST", 18);
+        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        try factory.deployAdapter(address(someTarget)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotSupported);
+        }
+        someFactory.deployAdapter(address(someTarget));
+    }
+
     function testFailDeployAdapterIfAlreadyExists() public {
-        divider.setPeriphery(address(this));
         factory.deployAdapter(address(target));
     }
 }

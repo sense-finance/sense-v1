@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
 
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 
 contract FakeAdapter is BaseAdapter {
@@ -20,30 +18,15 @@ contract FakeAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _ifee,
+        uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
+        uint48 _minm,
+        uint48 _maxm,
         uint16 _mode,
         uint64 _tilt,
         uint16 _level
-    )
-        BaseAdapter(
-            _divider,
-            _target,
-            address(1),
-            _oracle,
-            _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            _level
-        )
-    {}
+    ) BaseAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level) {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;
@@ -51,6 +34,10 @@ contract FakeAdapter is BaseAdapter {
 
     function scaleStored() external view virtual override returns (uint256) {
         return 100e18;
+    }
+
+    function underlying() external view override returns (address) {
+        return address(1);
     }
 
     function wrapUnderlying(uint256 amount) external override returns (uint256) {
@@ -74,8 +61,7 @@ contract Adapters is TestHelper {
     using FixedMath for uint256;
 
     function testAdapterHasParams() public {
-        MockToken underlying = new MockToken("Dai", "DAI", 18);
-        MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
+        MockToken target = new MockToken("Compound Dai", "cDAI", 18);
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
@@ -95,7 +81,6 @@ contract Adapters is TestHelper {
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
         assertEq(adapter.target(), address(target));
-        assertEq(adapter.underlying(), address(underlying));
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.ifee(), ISSUANCE_FEE);
         assertEq(adapter.stake(), address(stake));
@@ -133,14 +118,14 @@ contract Adapters is TestHelper {
 
         try fakeAdapter.doSetAdapter(divider, address(fakeAdapter)) {
             fail();
-        } catch Error(string memory err) {
-            assertEq(err, "UNTRUSTED");
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotAuthorized);
         }
     }
 
     // distribution tests
     function testDistribution() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -165,7 +150,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionSimple() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -193,7 +178,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionProportionally() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -235,7 +220,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionSimpleCollect() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
@@ -251,7 +236,7 @@ contract Adapters is TestHelper {
     }
 
     function testDistributionCollectAndTransferMultiStep() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 

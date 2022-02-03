@@ -2,30 +2,14 @@
 pragma solidity 0.8.11;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 
 contract MockComptroller {
-    mapping(address => address) public ctokens;
-    mapping(address => address) public underlyings;
-    uint256 public nonce;
-
-    struct Market {
-        bool isListed;
-        uint256 collateralFactorMantissa;
-    }
-
     function _deployMarket(
         bool isCEther,
         bytes calldata constructorData,
         uint256 collateralFactorMantissa
     ) external virtual returns (uint256) {
-        (address token, , , , , , , , ) = abi.decode(
-            constructorData,
-            (address, address, address, string, string, address, bytes, uint256, uint256)
-        );
-        require(ctokens[token] == address(0));
-        ctokens[token] = address(uint160(uint256(keccak256(abi.encodePacked(++nonce, blockhash(block.number))))));
-        underlyings[ctokens[token]] = token;
         return 0;
     }
 
@@ -33,15 +17,8 @@ contract MockComptroller {
         return 0;
     }
 
-    function cTokensByUnderlying(address token) external virtual returns (address) {
-        if (ctokens[token] != address(0)) {
-            return ctokens[token];
-        }
+    function cTokensByUnderlying(address) external virtual returns (address) {
         return address(1337);
-    }
-
-    function markets(address token) external virtual returns (Market memory) {
-        return Market({ isListed: underlyings[token] != address(0), collateralFactorMantissa: 0 });
     }
 }
 

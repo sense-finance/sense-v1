@@ -9,6 +9,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
+  // for Space
+  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("31622400"));
+  const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
+  const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
+
   // IMPORTANT: this must be run *first*, so that it has the same address across deployments
   // (has the same deployment address and nonce)
   const pkgjson = JSON.parse(fs.readFileSync(`${__dirname}/../../package.json`, "utf-8"));
@@ -21,7 +26,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const versioning = await ethers.getContract("Versioning");
   console.log("Deploying Sense version", await versioning.version());
 
-  console.log("Deploy a token handler for the Divider to use");
+  console.log("Deploy a token handler for the Divider will use");
   const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
     args: [],
@@ -95,11 +100,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     args: [authorizerAddress, WETH, 0, 0],
     log: true,
   });
-
-  // For Space.
-  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("31622400"));
-  const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
-  const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
 
   const { address: spaceFactory } = await deploy("SpaceFactory", {
     from: deployer,

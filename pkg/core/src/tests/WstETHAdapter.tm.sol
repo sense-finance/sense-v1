@@ -2,8 +2,7 @@
 pragma solidity 0.8.11;
 
 import { FixedMath } from "../external/FixedMath.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
@@ -57,8 +56,8 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant MIN_MATURITY = 2 weeks;
+    uint48 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
         address[] memory assets = new address[](1);
@@ -133,7 +132,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetCantSendEtherIfNotEligible() public {
-        Hevm(HEVM_ADDRESS).expectRevert(abi.encodeWithSelector(Errors.SenderNotEligible.selector));
+        Hevm(HEVM_ADDRESS).expectRevert(abi.encode(Errors.SenderNotEligible));
         payable(address(adapter)).call{ value: 1 ether }("");
     }
 }

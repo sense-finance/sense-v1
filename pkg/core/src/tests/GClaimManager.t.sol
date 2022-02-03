@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { Claim } from "../tokens/Claim.sol";
 import { GClaimManager } from "../modules/GClaimManager.sol";
 import { Periphery } from "../Periphery.sol";
@@ -22,38 +21,40 @@ contract GClaimsManager is TestHelper {
     /* ========== join() tests ========== */
 
     function testFuzzCantJoinIfInvalidMaturity(uint128 balance) public {
-        uint256 maturity = block.timestamp - 1 days;
+        uint48 maturity = uint48(block.timestamp - 1 days);
         //        uint256 balance = 1e18;
         try alice.doJoin(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
     function testFuzzCantJoinIfSeriesDoesntExists(uint128 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         //        uint256 balance = 10e18;
         try alice.doJoin(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
     function testFuzzCantJoinIfNotEnoughClaim(uint128 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance) == 0) return;
         hevm.warp(block.timestamp + 1 days);
         bob.doApprove(address(claim), address(bob.gClaimManager()));
         try bob.doJoin(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {}
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
+        }
     }
 
     function testFuzzCantJoinIfNotEnoughClaimAllowance(uint128 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance) == 0) return;
         hevm.warp(block.timestamp + 1 days);
@@ -61,14 +62,14 @@ contract GClaimsManager is TestHelper {
         uint256 claimBalance = Claim(claim).balanceOf(address(bob));
         try bob.doJoin(address(adapter), maturity, claimBalance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
     function testCantJoinAfterFirstGClaimNotEnoughTargetBalance() public {
         adapter.setScale(0.1e18); // freeze scale so no excess is generated
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // bob issues and joins
@@ -94,8 +95,8 @@ contract GClaimsManager is TestHelper {
 
         try alice.doJoin(address(adapter), maturity, aliceClaimBalance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
@@ -115,7 +116,7 @@ contract GClaimsManager is TestHelper {
     //     poolManager.setIsTrusted(address(periphery), true);
     //     alice.doApprove(address(stake), address(periphery));
 
-    //     uint256 maturity = getValidMaturity(2021, 10);
+    //     uint48 maturity = getValidMaturity(2021, 10);
     //     (, address claim) = sponsorSampleSeries(address(alice), maturity);
     //     if (calculateAmountToIssue(balance) == 0) return;
 
@@ -192,11 +193,12 @@ contract GClaimsManager is TestHelper {
     /* ========== exit() tests ========== */
 
     function testFuzzCantExitIfSeriesDoesntExists(uint128 balance) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
+        //        uint256 balance = 1e18;
         try alice.doExit(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
@@ -216,7 +218,7 @@ contract GClaimsManager is TestHelper {
         poolManager.setIsTrusted(address(periphery), true);
         alice.doApprove(address(stake), address(periphery));
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance) == 0) return;
 
@@ -238,7 +240,7 @@ contract GClaimsManager is TestHelper {
     // TODO: re-add this test once we use glcaims again
     // function testFuzzExitGClaimWithCollected(uint128 balance) public {
     //     balance = fuzzWithBounds(balance, 1e12);
-    //     uint256 maturity = getValidMaturity(2021, 10);
+    //     uint48 maturity = getValidMaturity(2021, 10);
     //     (, address claim) = sponsorSampleSeries(address(alice), maturity);
     //     // avoid fuzz tests in which nothing is issued
     //     if (calculateAmountToIssue(balance) == 0) return;

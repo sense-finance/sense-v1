@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
-import { MockAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
-import { MockEvilTarget } from "./test-helpers/mocks/MockTarget.sol";
+import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
@@ -30,91 +28,91 @@ contract Dividers is TestHelper {
     function testCantInitSeriesNotEnoughStakeBalance() public {
         uint256 balance = stake.balanceOf(address(alice));
         alice.doTransfer(address(stake), address(bob), balance - convertToBase(STAKE_SIZE, stake.decimals()) / 2);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
         alice.doApprove(address(stake), address(periphery), 0);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
     function testCantInitSeriesAdapterNotEnabled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         divider.setAdapter(address(adapter), false);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
     function testCantInitSeriesIfAlreadyExists() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.DuplicateSeries);
         }
     }
 
     function testCantInitSeriesActiveSeriesReached() public {
         uint256 SERIES_TO_INIT = 3;
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
-            uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
+            uint48 nextMonthDate = uint48(DateTimeFull.addMonths(block.timestamp, i));
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = sponsorSampleSeries(address(alice), nextMonthDate);
             hevm.warp(block.timestamp + 1 days);
             assertTrue(address(zero) != address(0));
             assertTrue(address(claim) != address(0));
         }
-        uint256 lastDate = DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1);
+        uint48 lastDate = uint48(DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1));
         lastDate = getValidMaturity(DateTimeFull.getYear(lastDate), DateTimeFull.getMonth(lastDate));
         try alice.doSponsorSeries(address(adapter), lastDate) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
     function testCantInitSeriesWithMaturityBeforeTimestamp() public {
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0));
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
     function testCantInitSeriesLessThanMinMaturity() public {
         hevm.warp(1631923200);
         // 18-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
     function testCantInitSeriesMoreThanMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0));
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
@@ -136,11 +134,11 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Tuesday
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0)); // Tuesday
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
@@ -162,11 +160,11 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0); // Tuesday
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0)); // Tuesday
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidMaturity);
         }
     }
 
@@ -187,40 +185,40 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0)); // Monday
         (address zero, address claim) = alice.doSponsorSeries(address(adapter), maturity);
 
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 4-10-2021 Zero #2 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:4-10-2021:#2");
-        assertEq(ERC20(claim).name(), "Compound Dai 4-10-2021 Claim #2 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:4-10-2021:#2");
+        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #2 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#2");
+        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #2 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#2");
     }
 
     function testCantInitSeriesIfPaused() public {
         divider.setPaused(true);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doSponsorSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
+            assertEq(error, Errors.Paused);
         }
     }
 
     function testInitSeries() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 1-10-2021 Zero #1 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:1-10-2021:#1");
-        assertEq(ERC20(claim).name(), "Compound Dai 1-10-2021 Claim #1 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:1-10-2021:#1");
+        assertEq(ERC20(zero).name(), "Compound Dai 10-2021 Zero #1 by Sense");
+        assertEq(ERC20(zero).symbol(), "zcDAI:10-2021:#1");
+        assertEq(ERC20(claim).name(), "Compound Dai 10-2021 Claim #1 by Sense");
+        assertEq(ERC20(claim).symbol(), "ccDAI:10-2021:#1");
     }
 
     function testInitSeriesWithdrawStake() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(address(alice));
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(address(zero) != address(0));
@@ -232,7 +230,7 @@ contract Dividers is TestHelper {
     function testInitThreeSeries() public {
         uint256 SERIES_TO_INIT = 3;
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
-            uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
+            uint48 nextMonthDate = uint48(DateTimeFull.addMonths(block.timestamp, i));
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
             (address zero, address claim) = sponsorSampleSeries(address(alice), nextMonthDate);
             hevm.warp(block.timestamp + 1 days);
@@ -244,140 +242,140 @@ contract Dividers is TestHelper {
     function testInitSeriesOnMinMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0));
         sponsorSampleSeries(address(alice), maturity);
     }
 
     function testInitSeriesOnMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
-        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 12, 1, 0, 0, 0);
+        uint48 maturity = uint48(DateTimeFull.timestampFromDateTime(2021, 12, 1, 0, 0, 0));
         sponsorSampleSeries(address(alice), maturity);
     }
 
     /* ========== settleSeries() tests ========== */
 
     function testCantSettleSeriesIfDisabledAdapter() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         divider.setAdapter(address(adapter), false);
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
     function testCantSettleSeriesAlreadySettled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.AlreadySettled.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.AlreadySettled);
         }
     }
 
     function testCantSettleSeriesIfNotSponsorAndSponsorWindow() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         try bob.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OutOfWindowBoundaries);
         }
     }
 
     function testCantSettleSeriesIfNotSponsorCutoffTime() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try bob.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OutOfWindowBoundaries);
         }
     }
 
     function testCantSettleSeriesIfSponsorAndCutoffTime() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OutOfWindowBoundaries);
         }
     }
 
     function testCantSettleSeriesIfNotSponsorAndSponsorTime() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
         try bob.doSettleSeries(address(adapter), maturity) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OutOfWindowBoundaries);
         }
     }
 
     function testCantSettleSeriesIfPaused() public {
         divider.setPaused(true);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doSettleSeries(address(adapter), maturity) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
+            assertEq(error, Errors.Paused);
         }
     }
 
     function testSettleSeries() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSponsorWindow() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMinLimit() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.subSeconds(maturity, SPONSOR_WINDOW));
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMaxLimit() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW));
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSettlementWindow() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         alice.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfNotSponsorAndSettlementWindow() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         bob.doSettleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesStakeIsTransferredIfSponsor() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
@@ -387,7 +385,7 @@ contract Dividers is TestHelper {
     }
 
     function testSettleSeriesStakeIsTransferredIfNotSponsor() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(address(bob));
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
@@ -396,30 +394,8 @@ contract Dividers is TestHelper {
         assertEq(afterBalance, beforeBalance + convertToBase(STAKE_SIZE, stake.decimals()));
     }
 
-    function testSettleSeriesWithMockBaseAdapter() public {
-        divider.setPermissionless(true);
-        MockBaseAdapter aAdapter = new MockBaseAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            1e18,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL
-        );
-        divider.addAdapter(address(aAdapter));
-        uint256 maturity = getValidMaturity(2021, 10);
-        User(alice).doSponsorSeries(address(aAdapter), maturity);
-        hevm.warp(maturity);
-        alice.doSettleSeries(address(aAdapter), maturity);
-    }
-
     function testFuzzSettleSeriesFeesAreTransferredIfSponsor(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = target.balanceOf(address(alice));
         sponsorSampleSeries(address(alice), maturity);
         alice.doIssue(address(adapter), maturity, tBal);
@@ -433,7 +409,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzSettleSeriesFeesAreTransferredIfNotSponsor(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 aliceBeforeBalance = target.balanceOf(address(alice));
         uint256 bobBeforeBalance = target.balanceOf(address(bob));
         sponsorSampleSeries(address(alice), maturity);
@@ -452,38 +428,38 @@ contract Dividers is TestHelper {
     /* ========== issue() tests ========== */
 
     function testCantIssueAdapterDisabled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         divider.setAdapter(address(adapter), false);
         try alice.doIssue(address(adapter), maturity, tBal) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
     function testCantIssueSeriesDoesntExists() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         try alice.doIssue(address(adapter), maturity, tBal) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
     function testCantIssueNotEnoughBalance() public {
         uint256 aliceBalance = target.balanceOf(address(alice));
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         divider.setGuard(address(adapter), aliceBalance * 2);
         try alice.doIssue(address(adapter), maturity, aliceBalance + 1) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
@@ -491,39 +467,40 @@ contract Dividers is TestHelper {
         uint256 aliceBalance = target.balanceOf(address(alice));
         alice.doApprove(address(target), address(divider), 0);
         divider.setGuard(address(adapter), aliceBalance);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         bob.doApprove(address(target), address(periphery), 0);
         try alice.doIssue(address(adapter), maturity, aliceBalance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TransferFromFailed);
         }
     }
 
     function testCantIssueIfSeriesSettled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
         uint256 amount = target.balanceOf(address(alice));
         try alice.doIssue(address(adapter), maturity, amount) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.IssueOnSettle.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssueOnSettled);
         }
     }
 
     function testCantIssueIfMoreThanCap() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
+        uint256 guard = divider.guards(address(adapter));
         uint256 targetBalance = target.balanceOf(address(alice));
         divider.setGuard(address(adapter), targetBalance);
         alice.doIssue(address(adapter), maturity, targetBalance);
         try bob.doIssue(address(adapter), maturity, 1e18) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.GuardCapReached.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.GuardCapReached);
         }
     }
 
@@ -544,23 +521,23 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.addAdapter(address(aAdapter));
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         User(address(alice)).doSponsorSeries(address(aAdapter), maturity);
         uint256 amount = target.balanceOf(address(alice));
         try alice.doIssue(address(aAdapter), maturity, amount) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.IssuanceFeeCapExceeded.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssuanceFeeCapExceeded);
         }
     }
 
     function testCantIssueSeriesIfPaused() public {
         divider.setPaused(true);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doIssue(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
+            assertEq(error, Errors.Paused);
         }
     }
 
@@ -584,7 +561,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
 
         bob.doApprove(address(target), address(adapter), type(uint256).max);
 
@@ -594,8 +571,8 @@ contract Dividers is TestHelper {
         // Can't issue directly through the divider
         try bob.doIssue(address(adapter), maturity, 1e18) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.IssuanceRestricted.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.IssuanceRestricted);
         }
 
         // Can issue through adapter
@@ -606,7 +583,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzIssue(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
@@ -625,17 +602,14 @@ contract Dividers is TestHelper {
         uint256 aliceBalance = target.balanceOf(address(alice));
         divider.setGuard(address(adapter), aliceBalance - 1);
         divider.setGuarded(false);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        (, , uint256 guard, , ) = divider.adapterMeta(address(adapter));
-        alice.doIssue(address(adapter), maturity, guard + 1);
+        uint256 amount = divider.guards(address(target)) + 1;
+        alice.doIssue(address(adapter), maturity, amount);
     }
 
     function testFuzzIssueMultipleTimes(uint128 bal) public {
-        // if issuing multiple times with bal = 0, the 2nd issue will fail on _reweightLScale because
-        // it will attempt to do a division by 0.
-        bal = fuzzWithBounds(bal, 1000);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
@@ -656,7 +630,7 @@ contract Dividers is TestHelper {
 
     function testIssueReweightScale() public {
         uint256 tBal = 1e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         alice.doIssue(address(adapter), maturity, tBal);
@@ -684,36 +658,36 @@ contract Dividers is TestHelper {
     /* ========== combine() tests ========== */
 
     function testCantCombineAdapterDisabled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         divider.setAdapter(address(adapter), false);
         try alice.doCombine(address(adapter), maturity, tBal) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
     function testCantCombineSeriesDoesntExists() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         try alice.doCombine(address(adapter), maturity, tBal) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
     function testCantCombineSeriesIfPaused() public {
         divider.setPaused(true);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doCombine(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
+            assertEq(error, Errors.Paused);
         }
     }
 
@@ -737,14 +711,14 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
         try bob.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(bob))) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.CombineRestricted.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.CombineRestricted);
         }
 
         // Collect still works
@@ -761,7 +735,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 issued = bob.doIssue(address(adapter), maturity, tBal);
         try bob.doCombine(address(adapter), maturity, issued + 1) {
@@ -772,7 +746,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCombineNotEnoughAllowance(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         uint256 issued = bob.doIssue(address(adapter), maturity, tBal);
         bob.doApprove(address(target), address(periphery), 0);
@@ -784,7 +758,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombine(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -803,7 +777,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombineAtMaturity(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -825,33 +799,32 @@ contract Dividers is TestHelper {
     }
 
     /* ========== redeemZero() tests ========== */
-
     function testCantRedeemZeroDisabledAdapter() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         divider.setAdapter(address(adapter), false);
         uint256 balance = ERC20(zero).balanceOf(address(alice));
         try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
     function testCantRedeemZeroSeriesDoesntExists() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
         try alice.doRedeemZero(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {
+        } catch Error(string memory error) {
             // The settled check will fail if the Series does not exist
-            assertEq0(error, abi.encodeWithSelector(Errors.NotSettled.selector));
+            assertEq(error, Errors.NotSettled);
         }
     }
 
     function testCantRedeemZeroSeriesNotSettled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         uint256 tBase = 10**target.decimals();
@@ -861,13 +834,13 @@ contract Dividers is TestHelper {
         uint256 balance = ERC20(zero).balanceOf(address(bob));
         try bob.doRedeemZero(address(adapter), maturity, balance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.NotSettled.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.NotSettled);
         }
     }
 
     function testCantRedeemZeroMoreThanBalance() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
@@ -881,17 +854,17 @@ contract Dividers is TestHelper {
 
     function testCantRedeemZeroIfPaused() public {
         divider.setPaused(true);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try alice.doRedeemZero(address(adapter), maturity, 100e18) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
+            assertEq(error, Errors.Paused);
         }
     }
 
     function testFuzzRedeemZero(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -904,15 +877,15 @@ contract Dividers is TestHelper {
         uint256 zBalanceAfter = ERC20(zero).balanceOf(address(bob));
 
         // Formula: tBal = balance / mscale
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
-        uint256 redeemed = balanceToRedeem.fdiv(mscale);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
+        uint256 redeemed = balanceToRedeem.fdiv(mscale, FixedMath.WAD);
         // Amount of Zeros burned == underlying amount
-        assertClose(redeemed.fmul(mscale), zBalanceBefore);
+        assertClose(redeemed.fmul(mscale, FixedMath.WAD), zBalanceBefore);
         assertEq(zBalanceBefore, zBalanceAfter + balanceToRedeem);
     }
 
     function testRedeemZeroBalanceIsZero() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
@@ -951,7 +924,7 @@ contract Dividers is TestHelper {
 
         adapter.setScale(1e18);
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
@@ -992,7 +965,7 @@ contract Dividers is TestHelper {
 
         adapter.setScale(1e18);
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
@@ -1045,7 +1018,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
@@ -1074,7 +1047,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
 
@@ -1085,7 +1058,6 @@ contract Dividers is TestHelper {
     }
 
     /* ========== redeemClaim() tests ========== */
-
     function testRedeemClaimPositiveTiltPositiveScale() public {
         // Reserve 10% of principal for Claims
         uint64 tilt = 0.1e18;
@@ -1107,7 +1079,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // Can collect normally
@@ -1122,7 +1094,7 @@ contract Dividers is TestHelper {
 
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
-        (, , , , , , , uint256 mscale, uint256 maxscale) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD) - cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
@@ -1134,11 +1106,9 @@ contract Dividers is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         collected = bob.doCollect(claim);
         assertEq(ERC20(claim).balanceOf(address(bob)), 0);
-        (, , , , , , , mscale, maxscale) = divider.series(address(adapter), maturity);
-        uint256 redeemed = (cBalanceAfter * FixedMath.WAD) /
-            maxscale -
-            (cBalanceAfter * (FixedMath.WAD - tilt)) /
-            mscale;
+        uint256 maxscale;
+        (, , , , , mscale, maxscale, ,) = divider.series(address(adapter), maturity);
+        uint256 redeemed = cBalanceAfter * FixedMath.WAD / maxscale - cBalanceAfter * (FixedMath.WAD - tilt) / mscale;
         assertEq(target.balanceOf(address(bob)), tBalanceAfter + collected + redeemed);
         assertClose(adapter.tBalance(address(bob)), 0);
         collected = bob.doCollect(claim); // try collecting after redemption
@@ -1174,7 +1144,7 @@ contract Dividers is TestHelper {
         // Sanity check
         assertEq(adapter.scale(), 1e18);
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         uint256 tBal = 100e18;
@@ -1199,15 +1169,14 @@ contract Dividers is TestHelper {
     }
 
     /* ========== collect() tests ========== */
-
     function testCantCollectDisabledAdapter() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         divider.setAdapter(address(adapter), false);
         try alice.doCollect(claim) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.InvalidAdapter);
         }
     }
 
@@ -1231,7 +1200,7 @@ contract Dividers is TestHelper {
         );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 initScale = adapter.scale();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, 1e18);
@@ -1256,20 +1225,20 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCantCollectIfMaturityAndNotSettled(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
         try bob.doCollect(claim) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.CollectNotSettled.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.CollectNotSettled);
         }
     }
 
     function testFuzzCantCollectIfPaused(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1278,23 +1247,23 @@ contract Dividers is TestHelper {
         try bob.doCollect(claim) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
+            assertEq(error, Errors.Paused);
         }
     }
 
     function testCantCollectIfNotClaimContract() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try divider.collect(address(bob), address(adapter), maturity, tBal, address(bob)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyClaim.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OnlyClaim);
         }
     }
 
     function testCollectSmallTBal(uint128 tBal) public {
         tBal = 1;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
@@ -1322,7 +1291,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
@@ -1349,7 +1318,7 @@ contract Dividers is TestHelper {
     function testFuzzCollectReward(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         bob.doIssue(address(adapter), maturity, tBal);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
@@ -1380,7 +1349,7 @@ contract Dividers is TestHelper {
     function testFuzzCollectRewardMultipleUsers(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         User[3] memory users = [alice, bob, jim];
 
@@ -1418,7 +1387,7 @@ contract Dividers is TestHelper {
     function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
         adapter.setScale(1e18);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         alice.doIssue(address(adapter), maturity, tBal);
@@ -1440,7 +1409,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectAtMaturityBurnClaimsAndDoesNotCallBurnTwice(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1457,7 +1426,7 @@ contract Dividers is TestHelper {
 
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
 
@@ -1472,7 +1441,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1481,14 +1450,14 @@ contract Dividers is TestHelper {
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales); // fix invalid scale value
         divider.setAdapter(address(adapter), true); // re-enable adapter after emergency
         bob.doCollect(claim);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         // TODO: check .scale() is not called (like to add the lscale). We can't?
     }
 
     function testFuzzCollectBeforeMaturityAndSettled(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1501,7 +1470,7 @@ contract Dividers is TestHelper {
         uint256 collected = bob.doCollect(claim);
         uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
         // Formula: collect = tBal / lscale - tBal / cscale
@@ -1515,7 +1484,7 @@ contract Dividers is TestHelper {
     // test transferring claims to user calls collect()
     function testFuzzCollectTransferAndCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
@@ -1550,7 +1519,7 @@ contract Dividers is TestHelper {
     // it also checks that receiver receives corresp. target collected from the claims he already had
     function testFuzzCollectTransferAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e10);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1607,7 +1576,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectTransferLessThanBalanceAndCollectWithReceiverHoldingClaims(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1666,7 +1635,7 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectTransferToMyselfAndCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -1691,31 +1660,30 @@ contract Dividers is TestHelper {
     }
 
     /* ========== backfillScale() tests ========== */
-
     function testCantBackfillScaleSeriesDoesntExists() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         try divider.backfillScale(address(adapter), maturity, tBal, usrs, lscales) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
     function testCantBackfillScaleBeforeCutoffAndAdapterEnabled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        (, , , , , , uint256 iscale, uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , uint256 iscale, , , , ) = divider.series(address(adapter), maturity);
         try divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OutOfWindowBoundaries);
         }
     }
 
     function testCantBackfillScaleSeriesNotGov() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 tBase = 10**target.decimals();
@@ -1723,12 +1691,12 @@ contract Dividers is TestHelper {
         try alice.doBackfillScale(address(adapter), maturity, tBal, usrs, lscales) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "UNTRUSTED");
+            assertEq(error, Errors.NotAuthorized);
         }
     }
 
     function testBackfillScale() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 newScale = 1.1e18;
@@ -1737,7 +1705,7 @@ contract Dividers is TestHelper {
         lscales.push(5e17);
         lscales.push(4e17);
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(alice));
         assertEq(lscale, lscales[0]);
@@ -1746,38 +1714,19 @@ contract Dividers is TestHelper {
     }
 
     function testBackfillScaleBeforeCutoffAndAdapterDisabled() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 1.5e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
-    }
-
-    function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
-        target.mint(address(adapter), 100e18);
-        stake.mint(address(adapter), 100e18);
-        uint256 maturity = getValidMaturity(2021, 10);
-        sponsorSampleSeries(address(alice), maturity);
-        bob.doIssue(address(adapter), maturity, 10e18);
-        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        uint256 newScale = 1.1e18;
-        usrs.push(address(alice));
-        usrs.push(address(bob));
-        lscales.push(5e17);
-        lscales.push(4e17);
-        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
-        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
-        assertEq(cupTargetBalanceBefore, cupTargetBalanceAfter - 1e18);
     }
 
     // @notice if backfill happens while adapter is NOT disabled it is because the current timestamp is > cutoff so stakecoin stake and fees are to the Sense's cup multisig address
     function testFuzzBackfillScaleAfterCutoffAdapterEnabledTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
@@ -1792,7 +1741,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds);
         uint256 newScale = 2e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
         assertEq(
@@ -1806,7 +1755,7 @@ contract Dividers is TestHelper {
     // @notice if backfill happens while adapter is disabled stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
     // no matter that the current timestamp is > cutoff
     function testFuzzBackfillScaleAfterCutoffAdapterDisabledTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
@@ -1822,7 +1771,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 2e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
         assertEq(stake.balanceOf(address(alice)), sponsorStakeBalanceBefore);
@@ -1833,7 +1782,7 @@ contract Dividers is TestHelper {
     // @notice if backfill happens before the maturity and sponsor window, stakecoin stake is transferred to the
     // sponsor and issuance fees are returned to Sense's cup multisig address
     function testFuzzBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
         uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
@@ -1849,7 +1798,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 2e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
         assertEq(stake.balanceOf(address(alice)), sponsorStakeBalanceBefore);
@@ -1862,7 +1811,7 @@ contract Dividers is TestHelper {
     function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal)
         public
     {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
@@ -1879,7 +1828,7 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 2e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, newScale);
         uint256 sponsorTargetBalanceAfter = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceAfter = stake.balanceOf(address(alice));
@@ -1892,7 +1841,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzBackfillOnlyLScale(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
         uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
@@ -1914,7 +1863,7 @@ contract Dividers is TestHelper {
         lscales.push(4e17);
         divider.backfillScale(address(adapter), maturity, 0, usrs, lscales);
 
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         assertEq(mscale, 0);
         assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
         assertEq(
@@ -1931,28 +1880,26 @@ contract Dividers is TestHelper {
     }
 
     /* ========== setAdapter() tests ========== */
-
     function testCantSetAdapterIfNotTrusted() public {
         try bob.doSetAdapter(address(adapter), false) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "UNTRUSTED");
+            assertEq(error, Errors.NotAuthorized);
         }
     }
 
     function testCantSetAdapterWithSameValue() public {
         try divider.setAdapter(address(adapter), true) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.ExistingValue.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.ExistingValue);
         }
     }
 
     function testSetAdapterFirst() public {
         // check first adapter added on TestHelper.sol has ID 1
         assertEq(divider.adapterCounter(), 1);
-        (uint248 id, , , , ) = divider.adapterMeta(address(adapter));
-        assertEq(id, 1);
+        assertEq(divider.adapterIDs(address(adapter)), 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
     }
 
@@ -1974,11 +1921,9 @@ contract Dividers is TestHelper {
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
-        (uint248 id, bool enabled, , uint256 uDecimals, ) = divider.adapterMeta(address(aAdapter));
-        assertTrue(enabled);
-        assertEq(id, adapterCounter + 1);
+        assertTrue(divider.adapters(address(aAdapter)));
+        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
-        assertEq(uDecimals, underlying.decimals());
     }
 
     function testSetAdapterBackOnKeepsExistingId() public {
@@ -2000,9 +1945,8 @@ contract Dividers is TestHelper {
 
         // set adapter on
         divider.setAdapter(address(aAdapter), true);
-        (uint248 id, bool enabled, , , ) = divider.adapterMeta(address(aAdapter));
-        assertTrue(enabled);
-        assertEq(id, adapterCounter + 1);
+        assertTrue(divider.adapters(address(aAdapter)));
+        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
 
         // set adapter off
@@ -2024,27 +1968,24 @@ contract Dividers is TestHelper {
             address(reward)
         );
         divider.setAdapter(address(bAdapter), true);
-        (id, enabled, , , ) = divider.adapterMeta(address(bAdapter));
-        assertTrue(enabled);
-        assertEq(id, adapterCounter + 2);
+        assertTrue(divider.adapters(address(bAdapter)));
+        assertEq(divider.adapterIDs(address(bAdapter)), adapterCounter + 2);
         assertEq(divider.adapterAddresses(adapterCounter + 2), address(bAdapter));
 
         // set adapter back on
         divider.setAdapter(address(aAdapter), true);
-        (id, enabled, , , ) = divider.adapterMeta(address(aAdapter));
-        assertTrue(enabled);
-        assertEq(id, adapterCounter + 1);
+        assertTrue(divider.adapters(address(aAdapter)));
+        assertEq(divider.adapterIDs(address(aAdapter)), adapterCounter + 1);
         assertEq(divider.adapterAddresses(adapterCounter + 1), address(aAdapter));
     }
 
     /* ========== addAdapter() tests ========== */
-
     function testCantAddAdapterWhenNotPermissionless() public {
         divider.setAdapter(address(adapter), false);
         try bob.doAddAdapter(address(adapter)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.OnlyPermissionless);
         }
     }
 
@@ -2052,8 +1993,8 @@ contract Dividers is TestHelper {
         divider.setPermissionless(true);
         try bob.doAddAdapter(address(adapter)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.ExistingValue.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.ExistingValue);
         }
     }
 
@@ -2063,70 +2004,16 @@ contract Dividers is TestHelper {
         try bob.doAddAdapter(address(adapter)) {
             fail();
         } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
-    }
-
-    function testCantReAddAdapter() public {
-        divider.setPermissionless(true);
-        divider.setAdapter(address(adapter), false);
-        try bob.doAddAdapter(address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+            assertEq(error, Errors.Paused);
         }
     }
 
     function testAddAdapter() public {
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
         divider.setPermissionless(true);
-        bob.doAddAdapter(address(aAdapter));
-        (uint248 id, bool enabled, , uint256 uDecimals, ) = divider.adapterMeta(address(adapter));
-        assertEq(id, 1);
+        divider.setAdapter(address(adapter), false);
+        bob.doAddAdapter(address(adapter));
+        assertEq(divider.adapterIDs(address(adapter)), 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
-        assertTrue(enabled);
-        assertEq(uDecimals, underlying.decimals());
-    }
-
-    function testTargetAndUnderlyingCantMutateWithMaliciousAdapter() public {
-        MockEvilTarget underlying = new MockEvilTarget(address(0), "und", "UND");
-        MockEvilTarget target = new MockEvilTarget(address(underlying), "und", "UND");
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
-        divider.setPermissionless(true);
-        bob.doAddAdapter(address(aAdapter));
-        (, , , uint256 uDecimals, ) = divider.adapterMeta(address(aAdapter));
-        uint256 prevUDecimals = uDecimals;
-        hevm.warp(block.timestamp + 10 days);
-        (, , , uDecimals, ) = divider.adapterMeta(address(aAdapter));
-        assertEq(prevUDecimals, uDecimals);
-        hevm.warp(block.timestamp + 10 days);
-        (, , , uDecimals, ) = divider.adapterMeta(address(aAdapter));
-        assertEq(prevUDecimals, uDecimals);
+        assertTrue(divider.adapters(address(adapter)));
     }
 }

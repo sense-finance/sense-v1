@@ -2,17 +2,16 @@
 pragma solidity 0.8.11;
 
 import { Token } from "../tokens/Token.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
-import { Divider } from "../Divider.sol";
 
 contract Claims is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -37,7 +36,7 @@ contract Claims is TestHelper {
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -67,7 +66,7 @@ contract Claims is TestHelper {
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
@@ -94,27 +93,5 @@ contract Claims is TestHelper {
         uint256 collected = tBalanceAfter - tBalanceBefore;
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
-    }
-
-    function testEmptyTransferFromDoesNotCollect() public {
-        uint256 tBal = 10e18;
-        uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        hevm.warp(block.timestamp + 1 days);
-        bob.doIssue(address(adapter), maturity, tBal);
-        hevm.warp(block.timestamp + 10 days);
-
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
-        uint256 tBalanceBefore = target.balanceOf(address(bob));
-        bob.doApprove(address(claim), address(alice));
-        alice.doTransferFrom(address(claim), address(bob), address(alice), 0);
-        uint256 acBalanceAfter = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(claim).balanceOf(address(bob));
-        uint256 tBalanceAfter = target.balanceOf(address(bob));
-        uint256 collected = tBalanceAfter - tBalanceBefore;
-        assertEq(acBalanceBefore, acBalanceAfter);
-        assertEq(bcBalanceBefore, bcBalanceAfter);
-        assertEq(collected, 0);
     }
 }

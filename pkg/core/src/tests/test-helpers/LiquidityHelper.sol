@@ -4,27 +4,11 @@ pragma solidity 0.8.11;
 import { Hevm } from "./Hevm.sol";
 
 // Internal references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { Assets } from "./Assets.sol";
 
-interface SwapRouterLike {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-    /// @notice Swaps `amountIn` of one token for as much as possible of another token
-    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
-    /// @return amountOut The amount of the received token
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
-}
+// Uniswap
+import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 interface WstETHInterface {
     function unwrap(uint256 _wstETHAmount) external returns (uint256);
@@ -46,7 +30,7 @@ interface CETHTokenInterface {
 }
 
 contract LiquidityHelper {
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
 
     uint24 public constant UNI_POOL_FEE = 3000; // denominated in hundredths of a bip
 
@@ -114,7 +98,7 @@ contract LiquidityHelper {
 
         // approve router to spend tokenIn
         ERC20(tokenIn).safeApprove(Assets.UNISWAP_ROUTER, amountIn);
-        SwapRouterLike.ExactInputSingleParams memory params = SwapRouterLike.ExactInputSingleParams({
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             fee: UNI_POOL_FEE,
@@ -124,7 +108,7 @@ contract LiquidityHelper {
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
-        amountOut = SwapRouterLike(Assets.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
+        amountOut = ISwapRouter(Assets.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
         emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
         return amountOut;
     }

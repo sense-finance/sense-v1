@@ -22,7 +22,7 @@ DAPP_BUILD_OPTIMIZE := "1"
 ## forge testing configuration
 DAPP_COVERAGE       := "1"
 # when developing we only want to fuzz briefly
-DAPP_TEST_FUZZ_RUNS := "100"
+DAPP_TEST_FUZZ_RUNS := "5"
 # user with DAI
 DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 DAPP_REMAPPINGS   := remappings-from-pkg-deps
@@ -53,6 +53,10 @@ dapp:
 # install forge
 forge:
     cargo install --git https://github.com/gakonst/dapptools-rs --locked
+
+
+## ---- Building ----
+
 
 ## ---- Building ----
 
@@ -97,32 +101,32 @@ test-mainnet *cmds="": && _timer
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
 
 turbo-test-local-no-fuzz *cmds="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }}
 
 turbo-test-local-8-decimal-target *cmds="": && _timer
 	cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
 
 turbo-test-mainnet: && _timer
 	@cd {{ invocation_directory() }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
 
 turbo-test-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m {{ exp }}
 
 turbo-test-mainnet-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
 
 ## ---- Gas Metering ----
@@ -140,12 +144,12 @@ gas-snapshot-local:
 
 forge-gas-snapshot: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 3 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
 
 forge-gas-snapshot-diff: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot --diff \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
+		--lib-paths {{ lib-paths-from-pkg-deps }} --verbosity 1 --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
 
 ## ---- Appendix ----
@@ -167,5 +171,5 @@ remappings-from-pkg-deps := ```
 lib-paths-from-pkg-deps := ```
     cat pkg/*/package.json |
     jq 'select(.dependencies != null) | .dependencies | to_entries | map("../../node_modules/" + .key + "/")' |
-    tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | awk '{print "--lib-paths " $0}' | tr '\n' ' '
+    tr -d '[],"' | xargs | tr ' ' '\n' | sort | uniq | tr '\n' ' '
   ```

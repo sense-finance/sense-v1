@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-utils",
-    "version": "0.4.0-beta",
+    "version": "0.3.2",
     "description": "Sense V1 Contract Utils",
     "license": "UNLICENSED",
     "repository": {
@@ -11,10 +11,6 @@
     "files": [
         "src/**/*"
     ],
-    "scripts": {
-        "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
-        "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix"
-    },
     "dependencies": {
         "@sense-finance/v1-core": "workspace:pkg/core"
     },

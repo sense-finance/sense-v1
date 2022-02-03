@@ -37,7 +37,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       await periphery.sponsorSeries(adapter.address, seriesMaturity).then(tx => tx.wait());
 
       console.log("Have the deployer issue the first 1,000,000 Target worth of Zeros/Claims for this Series");
-      await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+      await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000"));
 
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const zero = new ethers.Contract(zeroAddress, tokenAbi, signer);

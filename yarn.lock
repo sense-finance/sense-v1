@@ -42,7 +42,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-pool-utils@npm:2.0.1":
+"@balancer-labs/v2-pool-utils@npm:2.0.1, @balancer-labs/v2-pool-utils@npm:^2.0.1":
   version: 2.0.1
   resolution: "@balancer-labs/v2-pool-utils@npm:2.0.1"
   dependencies:
@@ -53,14 +53,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-solidity-utils@npm:2.0.0":
+"@balancer-labs/v2-pool-weighted@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@balancer-labs/v2-pool-weighted@npm:2.0.1"
+  dependencies:
+    "@balancer-labs/v2-pool-utils": 2.0.1
+    "@balancer-labs/v2-solidity-utils": 2.0.0
+    "@balancer-labs/v2-vault": 2.0.0
+  checksum: 53e90f4886eed0319f9cb52f80e46c7e470e7ec1f421ec56f7b6e11f67c1d5ec805bc917cbadda62034208c7d84cd07246658eae311436a97b28cce4c5446c11
+  languageName: node
+  linkType: hard
+
+"@balancer-labs/v2-solidity-utils@npm:2.0.0, @balancer-labs/v2-solidity-utils@npm:^2.0.0":
   version: 2.0.0
   resolution: "@balancer-labs/v2-solidity-utils@npm:2.0.0"
   checksum: 8314ed1e330b1cbe3273edb93ae0d77faebc9302fd9e823728c5fd6fa08fe67a91f9e2c69e2dafefd35385570b631be1a263f0b0111af4eab99f8b5064a27cbb
   languageName: node
   linkType: hard
 
-"@balancer-labs/v2-vault@npm:2.0.0":
+"@balancer-labs/v2-vault@npm:2.0.0, @balancer-labs/v2-vault@npm:^2.0.0":
   version: 2.0.0
   resolution: "@balancer-labs/v2-vault@npm:2.0.0"
   dependencies:
@@ -604,6 +615,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts@npm:3.4.1-solc-0.7-2":
+  version: 3.4.1-solc-0.7-2
+  resolution: "@openzeppelin/contracts@npm:3.4.1-solc-0.7-2"
+  checksum: 190147d83fac3b9aad9f163de2bb8dbe464cb12ea1e411a88e0fa141bda03e0a21c8b45904c40a6fff343adf8b0c322a185fd31c83107ff02d6b0a3479b30496
+  languageName: node
+  linkType: hard
+
 "@openzeppelin/contracts@npm:4.3.2":
   version: 4.3.2
   resolution: "@openzeppelin/contracts@npm:4.3.2"
@@ -611,27 +629,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rari-capital/solmate@npm:^6.2.0":
-  version: 6.2.0
-  resolution: "@rari-capital/solmate@npm:6.2.0"
-  checksum: 4fba71d5f9cba1facc84c02e735b6815d6b0c41d926f92e3f27fe5a0bbe7e47851ee382557662f3f739a071433e4cbf0709b41a663f248f528c8f7aa04aab530
+"@rari-capital/solmate@npm:5.0.2":
+  version: 5.0.2
+  resolution: "@rari-capital/solmate@npm:5.0.2"
+  checksum: 70cf648cb2a133bf965ce8b6a9608943061df204b0412886ad01c2457319c8398af971a7f06b48ddaa58b6ec6d1108738a060443d548415d46fd8e379cdac09c
   languageName: node
   linkType: hard
-
-"@sense-finance/sense-v1@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "@sense-finance/sense-v1@workspace:."
-  languageName: unknown
-  linkType: soft
 
 "@sense-finance/v1-core@workspace:pkg/core":
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
     "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
+    "@rari-capital/solmate": 5.0.2
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
+    "@uniswap/v3-core": ^1.0.0
+    "@uniswap/v3-periphery": ^1.2.1
     dotenv: ^10.0.0
     husky: ^7.0.2
     prettier: ^2.3.2
@@ -645,14 +659,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-deployments@workspace:pkg/deployments"
   dependencies:
-    "@balancer-labs/v2-pool-utils": 2.0.1
-    "@balancer-labs/v2-solidity-utils": 2.0.0
-    "@balancer-labs/v2-vault": 2.0.0
     "@nomiclabs/hardhat-ethers": ^2.0.2
     "@nomiclabs/hardhat-etherscan": ^2.1.6
     "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
+    "@rari-capital/solmate": 5.0.2
     "@sense-finance/v1-core": "workspace:pkg/core"
+    "@sense-finance/v1-space": "workspace:pkg/space"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.0.12
     dayjs: ^1.10.7
@@ -677,9 +689,29 @@ __metadata:
   resolution: "@sense-finance/v1-fuse@workspace:pkg/fuse"
   dependencies:
     "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
+    "@rari-capital/solmate": 5.0.2
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
+    dotenv: ^10.0.0
+    husky: ^7.0.2
+    prettier: ^2.3.2
+    prettier-plugin-solidity: ^1.0.0-beta.17
+    solhint: ^3.3.6
+    solhint-plugin-prettier: ^0.0.5
+  languageName: unknown
+  linkType: soft
+
+"@sense-finance/v1-space@workspace:pkg/space":
+  version: 0.0.0-use.local
+  resolution: "@sense-finance/v1-space@workspace:pkg/space"
+  dependencies:
+    "@balancer-labs/v2-pool-utils": ^2.0.1
+    "@balancer-labs/v2-pool-weighted": ^2.0.1
+    "@balancer-labs/v2-solidity-utils": ^2.0.0
+    "@balancer-labs/v2-vault": ^2.0.0
+    "@openzeppelin/contracts": 4.3.2
+    "@rari-capital/solmate": 5.0.2
+    "@sense-finance/v1-core": "workspace:pkg/core"
     dotenv: ^10.0.0
     husky: ^7.0.2
     prettier: ^2.3.2
@@ -901,6 +933,41 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: d689734a6dfaf31ac5bf5276617df33bb1ff2356272b7cfcdf629f712540b3f7c9bea35e548ac3c69c4b7e10b05c0ea5ba72f5e99f65be6adc4d336d3fca1088
+  languageName: node
+  linkType: hard
+
+"@uniswap/lib@npm:^4.0.1-alpha":
+  version: 4.0.1-alpha
+  resolution: "@uniswap/lib@npm:4.0.1-alpha"
+  checksum: ce30f7f6dde6d7c955267dc1a631874aaab4df2b591550c334acf70935da8fc27802998e4d585641feac8277c221babd31c16d4038a5c812de4d9f6e969061b4
+  languageName: node
+  linkType: hard
+
+"@uniswap/v2-core@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@uniswap/v2-core@npm:1.0.1"
+  checksum: e3dcbe72500530249b68d2f2c92062f3f21919267123262578a34cac2862edf7eeda8fcdc808a370d109f26e357635b1cf546e35dbd902a18768ac88d9a8fb0f
+  languageName: node
+  linkType: hard
+
+"@uniswap/v3-core@npm:1.0.0, @uniswap/v3-core@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@uniswap/v3-core@npm:1.0.0"
+  checksum: 594f6fb2959c24e2e98e2db95223d52da6b7a81a1d9e0ae002450c2ce8756972c11c6afd58f9331080248d6582f691e0b320840e59aef586d92165d5bce430d0
+  languageName: node
+  linkType: hard
+
+"@uniswap/v3-periphery@npm:^1.2.1":
+  version: 1.3.0
+  resolution: "@uniswap/v3-periphery@npm:1.3.0"
+  dependencies:
+    "@openzeppelin/contracts": 3.4.1-solc-0.7-2
+    "@uniswap/lib": ^4.0.1-alpha
+    "@uniswap/v2-core": 1.0.1
+    "@uniswap/v3-core": 1.0.0
+    base64-sol: 1.0.1
+    hardhat-watcher: ^2.1.1
+  checksum: 8182d59568ccea45628de69a76bd4bf67ad41fb3fb3deb7021b71ccda48efa136b01cc89e40eee2b3a44f0861d60f23bf06c00d203b48114cb30e9b0da982049
   languageName: node
   linkType: hard
 
@@ -1216,6 +1283,13 @@ __metadata:
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: c1b41a26ddc6620eb7f1ee6c29c812f5942a4e328e74263f995872cfb8ca3aee08542beb25cd10fd7ef16e4f16603e25c35a26e776c01fd55277e5035e829e0e
+  languageName: node
+  linkType: hard
+
+"base64-sol@npm:1.0.1":
+  version: 1.0.1
+  resolution: "base64-sol@npm:1.0.1"
+  checksum: 82a774b228a1659b8494cb855aadd4e93baa86ad383a5d83104c9c0012ccb1722ae2254b7b71a7883d1989ffcdc6b6e245429dde11a942dfcc3e48a18beff87e
   languageName: node
   linkType: hard
 
@@ -4691,6 +4765,12 @@ resolve@1.17.0:
   checksum: c53624ddf4b9779bcbf55a1eb8b37074cc44bfeca416f3cc263429408202a8a3c59b00eef8c647d697303bc39b95c022a5c61959221d3814bfb1270ff7c14986
   languageName: node
   linkType: hard
+
+"sense-v1@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "sense-v1@workspace:."
+  languageName: unknown
+  linkType: soft
 
 "set-blocking@npm:^2.0.0":
   version: 2.0.0

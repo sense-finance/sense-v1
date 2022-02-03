@@ -4,16 +4,15 @@ pragma solidity 0.8.11;
 import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
-import { PoolManager, ComptrollerLike } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
-import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
@@ -34,8 +33,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSponsorSeries() public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        periphery.verifyAdapter(address(adapter), true);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // check zeros and claim deployed
@@ -44,9 +42,9 @@ contract PeripheryTest is TestHelper {
 
         // check Balancer pool deployed
         assertTrue(address(spaceFactory.pool()) != address(0));
+
         // check zeros and claims onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testSponsorSeriesWhenUnverifiedAdapter() public {
@@ -67,147 +65,36 @@ contract PeripheryTest is TestHelper {
         );
         divider.addAdapter(address(adapter));
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = alice.doSponsorSeries(address(adapter), maturity);
 
         // check zeros and claim deployed
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // check Space pool is deployed
-        assertTrue(address(spaceFactory.pool()) != address(0));
+        // check Balancer pool is NOT deployed
+        assertTrue(address(spaceFactory.pool()) == address(0));
 
         // check zeros and claims NOT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.NONE);
+        assertTrue(poolManager.sStatus(address(adapter), maturity) == PoolManager.SeriesStatus.NONE);
     }
 
-    function testDeployAdapter() public {
+    function testOnboardAdapter() public {
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
         MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        address adapter = periphery.deployAdapter(address(factory), address(newTarget));
-        periphery.verifyAdapter(adapter, true);
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
-        assertTrue(cTarget != address(0));
-    }
-
-    function testDeployAdapterWhenPermissionless() public {
-        divider.setPermissionless(true);
-        // add a new target to the factory supported targets
-        MockToken underlying = new MockToken("New Underlying", "NT", 18);
-        MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
-        factory.addTarget(address(newTarget), true);
-
-        // onboard target
-        periphery.verifyAdapter(address(adapter), true);
-        periphery.deployAdapter(address(factory), address(newTarget));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
-        assertTrue(cTarget != address(0));
-    }
-
-    function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        try periphery.deployAdapter(address(factory), address(someTarget)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
-        periphery.deployAdapter(address(someFactory), address(someTarget));
-    }
-
-    function testCantDeployAdapterIfTargetIsNotSupported() public {
-        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        try periphery.deployAdapter(address(factory), address(newTarget)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
-    }
-
-    function testOnboardAdapterVerified() public {
-        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
-        periphery.verifyAdapter(address(otherAdapter), true);
-        periphery.onboardAdapter(address(otherAdapter));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget != address(0));
-    }
-
-    function testOnboardAdapterUnverified() public {
-        divider.setPermissionless(true);
-        periphery.setIsTrusted(address(this), false);
-        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
-
-        periphery.onboardAdapter(address(otherAdapter));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget != address(0));
-    }
-
-    function testCantOnboardAdapterUnverifiedWhenNotPermissionless() public {
-        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        periphery.setIsTrusted(address(this), false);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
-        periphery.onboardAdapter(address(otherAdapter));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget != address(0));
+        periphery.onboardAdapter(address(factory), address(newTarget));
+        assertTrue(poolManager.tInits(address(target)));
     }
 
     /* ========== swap tests ========== */
 
     function testSwapTargetForZeros() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockBalancerVault
@@ -231,7 +118,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapUnderlyingForZeros() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lvalue) = adapter.lscale();
 
@@ -255,7 +142,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapTargetForClaims() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256 tBase = 10**target.decimals();
@@ -278,7 +165,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapUnderlyingForClaims() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256 tBase = 10**target.decimals();
@@ -304,7 +191,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapZerosForTarget() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
 
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
@@ -328,7 +215,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapZerosForUnderlying() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
 
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
 
@@ -357,7 +244,7 @@ contract PeripheryTest is TestHelper {
     function testSwapClaimsForTarget() public {
         uint256 tBal = 100e18;
         uint256 targetToBorrow = 8.55e19;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
 
@@ -424,7 +311,7 @@ contract PeripheryTest is TestHelper {
     /* ========== liquidity tests ========== */
     function testAddLiquidityFirstTimeWithSellClaimsModeShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -448,7 +335,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityFirstTimeWithHoldClaimsModeShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -472,7 +359,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndSellClaimsWith0_TargetRatioShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         // init liquidity
@@ -499,7 +386,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndHoldClaimsWith0_TargetRatioShouldNotIssue() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         // init liquidity
@@ -527,7 +414,7 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityAndSellClaims() public {
         uint256 tBal = 100e18;
 
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
 
@@ -603,7 +490,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityAndHoldClaims() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
@@ -652,7 +539,7 @@ contract PeripheryTest is TestHelper {
 
     function testAddLiquidityFromUnderlyingAndHoldClaims() public {
         uint256 tBal = 100e18; // we assume target = underlying as scale is 1e18
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
 
@@ -701,7 +588,7 @@ contract PeripheryTest is TestHelper {
 
     function testRemoveLiquidityBeforeMaturity() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
@@ -736,13 +623,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
-            address(adapter),
-            maturity,
-            lpBal,
-            minAmountsOut,
-            0
-        );
+        uint256 targetBal = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
@@ -750,14 +631,13 @@ contract PeripheryTest is TestHelper {
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertEq(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
-        assertEq(zBal, 0);
     }
 
     function testRemoveLiquidityOnMaturity() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
-        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+        sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
@@ -782,96 +662,23 @@ contract PeripheryTest is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         (, lscale) = adapter.lscale();
 
-        uint256 zBalBefore = ERC20(zero).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, ) = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        uint256 targetBal = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
 
-        uint256 zBalAfter = ERC20(zero).balanceOf(address(bob));
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
-        assertEq(zBalBefore, zBalAfter);
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertClose(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
     }
 
-    function testRemoveLiquidityOnMaturityAndZeroRedeemRestricted() public {
-        uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
-        // uint256 tBase = 10**target.decimals();
-
-        // create adapter with zeroRedeem restricted
-        MockToken underlying = new MockToken("Usdc Token", "USDC", 18);
-        MockTarget target = new MockTarget(address(underlying), "Compound USDC", "cUSDC", 18);
-
-        divider.setPermissionless(true);
-        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**5; // redeemZero restricted
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
-            address(reward)
-        );
-        divider.addAdapter(address(aAdapter));
-        divider.setGuard(address(aAdapter), 10 * 2**128);
-        poolManager.addTarget(address(target), address(aAdapter));
-
-        alice.doApprove(address(target), address(divider));
-        bob.doApprove(address(target), address(periphery));
-        alice.doMint(address(target), 10000000e18);
-        bob.doMint(address(target), 10000000e18);
-
-        (address zero, ) = alice.doSponsorSeries(address(aAdapter), maturity);
-        address pool = spaceFactory.create(address(aAdapter), maturity);
-        poolManager.queueSeries(address(aAdapter), maturity, pool);
-
-        (, uint256 lscale) = aAdapter.lscale();
-        uint256[] memory minAmountsOut = new uint256[](2);
-        minAmountsOut[0] = 2e18;
-        minAmountsOut[1] = 1e18;
-
-        addLiquidityToBalancerVault(address(aAdapter), maturity, 1000e18);
-
-        bob.doAddLiquidityFromTarget(address(aAdapter), maturity, tBal, 1);
-
-        // settle series
-        hevm.warp(maturity);
-        alice.doSettleSeries(address(aAdapter), maturity);
-        (, lscale) = aAdapter.lscale();
-
-        uint256 zBalBefore = ERC20(zero).balanceOf(address(bob));
-        uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(address(bob));
-
-        bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), 3e18);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
-            address(aAdapter),
-            maturity,
-            3e18,
-            minAmountsOut,
-            0
-        );
-
-        assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(address(bob)) - tBalBefore);
-        assertEq(zBalBefore, ERC20(zero).balanceOf(address(bob)) - minAmountsOut[1]);
-        assertEq(zBal, ERC20(zero).balanceOf(address(bob)) - zBalBefore);
-        assertEq(zBal, 1e18);
-    }
-
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {
         uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
 
         // add liquidity to mockUniSwapRouter
@@ -879,14 +686,14 @@ contract PeripheryTest is TestHelper {
 
         MockTarget otherTarget = new MockTarget(address(underlying), "Compound Usdc", "cUSDC", 8);
         factory.addTarget(address(otherTarget), true);
-        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
+        address dstAdapter = periphery.onboardAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
 
         (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
         uint256[] memory minAmountsOut = new uint256[](2);
         try bob.doMigrateLiquidity(address(adapter), dstAdapter, maturity, maturity, lpShares, minAmountsOut, 0, 0) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetMismatch.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TargetMismatch);
         }
     }
 

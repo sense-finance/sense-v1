@@ -27,16 +27,6 @@ contract DSTest {
 
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
 
-    bytes public constant assertionError = abi.encodeWithSignature("Panic(uint256)", 0x01);
-    bytes public constant arithmeticError = abi.encodeWithSignature("Panic(uint256)", 0x11);
-    bytes public constant divisionError = abi.encodeWithSignature("Panic(uint256)", 0x12);
-    bytes public constant enumConversionError = abi.encodeWithSignature("Panic(uint256)", 0x21);
-    bytes public constant encodeStorageError = abi.encodeWithSignature("Panic(uint256)", 0x22);
-    bytes public constant popError = abi.encodeWithSignature("Panic(uint256)", 0x31);
-    bytes public constant indexOOBError = abi.encodeWithSignature("Panic(uint256)", 0x32);
-    bytes public constant memOverflowError = abi.encodeWithSignature("Panic(uint256)", 0x41);
-    bytes public constant zeroVarError = abi.encodeWithSignature("Panic(uint256)", 0x51);
-
     modifier mayRevert() {
         _;
     }
@@ -158,27 +148,6 @@ contract DSTest {
         if (a != b) {
             emit log_named_string("Error", err);
             assertEq(a, b);
-        }
-    }
-
-    function assertEq(string memory a, uint256 b) internal {
-        string memory errCode = string(abi.encodePacked("SNS#", toString(b)));
-        if (keccak256(abi.encodePacked(a)) != keccak256(abi.encodePacked(errCode))) {
-            emit log("Error: a == b not satisfied [string|uint]");
-            emit log_named_string("  Expected", errCode);
-            emit log_named_string("    Actual", a);
-            fail();
-        }
-    }
-
-    function stringToBytes32(string memory source) public pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
         }
     }
 
@@ -643,29 +612,5 @@ contract DSTest {
             emit log_named_string("Error", err);
             assertEq0(a, b);
         }
-    }
-
-    /// @dev Converts a `uint256` to its ASCII `string` decimal representation.
-    /// @notice Taken from OpenZeppelin
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }

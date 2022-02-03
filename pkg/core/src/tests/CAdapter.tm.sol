@@ -2,8 +2,7 @@
 pragma solidity 0.8.11;
 
 import { FixedMath } from "../external/FixedMath.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ERC20, SafeERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 
 // Internal references
 import { Divider, TokenHandler } from "../Divider.sol";
@@ -31,8 +30,8 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant MIN_MATURITY = 2 weeks;
+    uint48 public constant MAX_MATURITY = 14 weeks;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
+import { ERC20 } from "@rari-capital/solmate/src/erc20/ERC20.sol";
 import { CropAdapter } from "../../../adapters/CropAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
 import { Claim } from "../../../tokens/Claim.sol";
 import { MockTarget } from "./MockTarget.sol";
-import { MockToken } from "./MockToken.sol";
+import { MockToken } from "./MockTarget.sol";
 
 contract MockAdapter is CropAdapter {
     using FixedMath for uint256;
@@ -33,39 +32,19 @@ contract MockAdapter is CropAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint256 _ifee,
+        uint64 _ifee,
         address _stake,
         uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
+        uint48 _minm,
+        uint48 _maxm,
         uint16 _mode,
         uint64 _tilt,
-        uint256 _level,
+        uint16 _level,
         address _reward
-    )
-        CropAdapter(
-            _divider,
-            _target,
-            MockTarget(_target).underlying(),
-            _oracle,
-            _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            _level,
-            _reward
-        )
-    {}
+    ) CropAdapter(_divider, _target, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, _level, _reward) {}
 
     function scale() external virtual override returns (uint256 _value) {
-        if (value > 0) {
-            _value = value;
-            lscale.value = _value;
-            lscale.timestamp = block.timestamp;
-        }
+        if (value > 0) return value;
         if (INITIAL_VALUE == 0) {
             INITIAL_VALUE = 1e18;
         }
@@ -109,6 +88,10 @@ contract MockAdapter is CropAdapter {
         return 1e18;
     }
 
+    function underlying() external view override returns (address) {
+        return MockTarget(target).underlying();
+    }
+
     function onZeroRedeem(
         uint256, /* uBal */
         uint256, /* mscale */
@@ -122,78 +105,23 @@ contract MockAdapter is CropAdapter {
         value = _value;
     }
 
-    function doInitSeries(uint256 maturity, address sponsor) external {
+    function doInitSeries(uint48 maturity, address sponsor) external {
         Divider(divider).initSeries(address(this), maturity, sponsor);
     }
 
-    function doIssue(uint256 maturity, uint256 tBal) external {
+    function doIssue(uint48 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
-        (address zero, , address claim, , , , , , ) = Divider(divider).series(address(this), maturity);
+        (address zero, address claim, , , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(zero).transfer(msg.sender, MockToken(zero).balanceOf(address(this)));
         MockToken(claim).transfer(msg.sender, MockToken(claim).balanceOf(address(this)));
     }
 
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
+    function doCombine(uint48 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 
-    function doRedeemZero(uint256 maturity, uint256 uBal) external {
+    function doRedeemZero(uint48 maturity, uint256 uBal) external {
         Divider(divider).redeemZero(address(this), maturity, uBal);
-    }
-}
-
-contract MockBaseAdapter is BaseAdapter {
-    constructor(
-        address _divider,
-        address _target,
-        address _oracle,
-        uint256 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint256 _level
-    )
-        BaseAdapter(
-            _divider,
-            _target,
-            MockTarget(_target).underlying(),
-            _oracle,
-            _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            _level
-        )
-    {}
-
-    function scale() external virtual override returns (uint256 _value) {
-        return 100e18;
-    }
-
-    function scaleStored() external view virtual override returns (uint256) {
-        return 100e18;
-    }
-
-    function wrapUnderlying(uint256 amount) external override returns (uint256) {
-        return 0;
-    }
-
-    function unwrapTarget(uint256 amount) external override returns (uint256) {
-        return 0;
-    }
-
-    function getUnderlyingPrice() external view override returns (uint256) {
-        return 1e18;
-    }
-
-    function doSetAdapter(Divider d, address _adapter) public {
-        d.setAdapter(_adapter, true);
     }
 }

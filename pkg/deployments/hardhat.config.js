@@ -66,20 +66,6 @@ module.exports = {
       chainId: 1,
       saveDeployments: true,
     },
-    kovan: {
-      url: `https://eth-kovan.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-      accounts,
-      gasPrice: 120 * 1000000000, // 12 GWei
-      chainId: 42,
-      saveDeployments: true,
-    },
-    goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-      accounts,
-      gasPrice: 120 * 1000000000, // 12 GWei
-      chainId: 5,
-      saveDeployments: true,
-    },
     hardhat: {
       mining: {
         auto: true,
@@ -122,12 +108,6 @@ module.exports = {
       },
       {
         version: "0.7.5",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
       },
     ],
   },

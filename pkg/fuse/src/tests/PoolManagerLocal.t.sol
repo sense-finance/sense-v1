@@ -54,16 +54,16 @@ contract PoolManagerLocalTest is TestHelper {
         );
         try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.FailedBecomeAdmin.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.FailedBecomeAdmin);
         }
     }
 
     function testCantDeployPoolIfExists() public {
         try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
             fail();
-        } catch Error(string memory err) {
-            assertEq(err, "ERC1167: create2 failed");
+        } catch Error(string memory error) {
+            assertEq(error, Errors.PoolAlreadyDeployed);
         }
     }
 
@@ -93,8 +93,34 @@ contract PoolManagerLocalTest is TestHelper {
         );
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.PoolNotDeployed);
+        }
+    }
+
+    function testCantAddTargetIfTargetExists() public {
+        PoolManager poolManager = new PoolManager(
+            address(fuseDirectory),
+            address(comptroller),
+            address(1),
+            address(divider),
+            address(masterOracle) // oracle impl
+        );
+        MockOracle fallbackOracle = new MockOracle();
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
+        PoolManager.AssetParams memory params = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether,
+            closeFactor: 0.051 ether,
+            liquidationIncentive: 1 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", params);
+        poolManager.addTarget(address(target), address(adapter));
+        try poolManager.addTarget(address(target), address(adapter)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TargetExists);
         }
     }
 
@@ -110,8 +136,8 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TargetParamNotSet);
         }
     }
 
@@ -137,8 +163,8 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.setParams("TARGET_PARAMS", params);
         try poolManager.addTarget(address(target), address(adapter)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.FailedAddTargetMarket.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.FailedAddMarket);
         }
     }
 
@@ -161,12 +187,13 @@ contract PoolManagerLocalTest is TestHelper {
         });
         poolManager.setParams("TARGET_PARAMS", params);
         poolManager.addTarget(address(target), address(adapter));
+        assertTrue(poolManager.tInits(address(target)));
     }
 
     /* ========== queueSeries() tests ========== */
 
     function testCantQueueSeriesIfPoolNotDeployed() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
             address(comptroller),
@@ -176,27 +203,35 @@ contract PoolManagerLocalTest is TestHelper {
         );
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.PoolNotDeployed);
         }
     }
 
     function testCantQueueSeriesIfSeriesNotExists() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.SeriesDoesntExists);
         }
     }
 
     function testCantQueueSeriesIfAlreadyQueued() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
         divider.initSeries(address(adapter), maturity, address(alice));
+        poolManager.queueSeries(address(adapter), maturity, address(123));
+        try poolManager.queueSeries(address(adapter), maturity, address(123)) {
+            fail();
+        } catch Error(string memory error) {
+            assertEq(error, Errors.DuplicateSeries);
+        }
+    }
 
+    function testCantQueueSeriesIfTargetNotExists() public {
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
             address(comptroller),
@@ -204,60 +239,29 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-
         MockOracle fallbackOracle = new MockOracle();
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        PoolManager.AssetParams memory params = PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
-        });
-        poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adapter));
-
-        poolManager.queueSeries(address(adapter), maturity, address(123));
+        uint48 maturity = getValidMaturity(2021, 10);
+        divider.setPeriphery(address(this));
+        stake.approve(address(divider), type(uint256).max);
+        stake.mint(address(this), 1000e18);
+        divider.initSeries(address(adapter), maturity, address(alice));
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
+        } catch Error(string memory error) {
+            assertEq(error, Errors.TargetNotInFuse);
         }
     }
 
     function testQueueSeries() public {
-        uint256 maturity = getValidMaturity(2021, 10);
+        uint48 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
         stake.mint(address(this), 1000e18);
         divider.initSeries(address(adapter), maturity, address(alice));
-        PoolManager poolManager = new PoolManager(
-            address(fuseDirectory),
-            address(comptroller),
-            address(1),
-            address(divider),
-            address(masterOracle) // oracle impl
-        );
-
-        MockOracle fallbackOracle = new MockOracle();
-        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        PoolManager.AssetParams memory params = PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
-        });
-        poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adapter));
-
         poolManager.queueSeries(address(adapter), maturity, address(123));
-        (PoolManager.SeriesStatus status, address pool) = PoolManager(address(poolManager)).sSeries(
-            address(adapter),
-            maturity
-        );
-        assertEq(uint256(status), 1); // 1 == QUEUED
-        assertEq(pool, address(123));
+        assertEq(uint256(poolManager.sStatus(address(adapter), maturity)), 1); // 1 == QUEUED
+        assertEq(poolManager.sPools(address(adapter), maturity), address(123));
     }
 
     /* ========== addSeries() tests ========== */
