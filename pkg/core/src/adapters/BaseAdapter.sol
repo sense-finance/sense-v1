@@ -55,20 +55,20 @@ abstract contract BaseAdapter {
     uint256 public immutable maxm;
 
     /// @notice 0 for monthly, 1 for weekly
-    uint16 public immutable mode;
+    uint256 public immutable mode;
 
     /// @notice Issuance fee
-    uint64 public immutable ifee;
+    uint256 public immutable ifee;
 
     /// @notice WAD number representing the percentage of the total
     /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
     /// @notice If `0`, it means no principal is set aside for Claims
-    uint64 public immutable tilt;
+    uint256 public immutable tilt;
 
     /// @notice The number this function returns will be used to determine its access by checking for binary
     /// digits using the following scheme: <onRedeemZero(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
     /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
-    uint16 public immutable level;
+    uint256 public immutable level;
 
     /* ========== METADATA STORAGE ========== */
 
@@ -81,14 +81,14 @@ abstract contract BaseAdapter {
         address _target,
         address _underlying,
         address _oracle,
-        uint64 _ifee,
+        uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
         uint256 _minm,
         uint256 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint16 _level
+        uint256 _mode,
+        uint256 _tilt,
+        uint256 _level
     ) {
         // Sanity check
         if (_minm >= _maxm) revert Errors.InvalidMaturityOffsets();

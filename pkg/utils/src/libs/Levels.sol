@@ -2,34 +2,34 @@
 pragma solidity >=0.7.0;
 
 library Levels {
-    uint256 private constant _INIT_BIT = 0;
-    uint256 private constant _ISSUE_BIT = 1;
-    uint256 private constant _COMBINE_BIT = 2;
-    uint256 private constant _COLLECT_BIT = 3;
-    uint256 private constant _REDEEM_ZERO_BIT = 4;
-    uint256 private constant _REDEEM_ZERO_HOOK_BIT = 5;
+    uint256 private constant _INIT_BIT = 1;
+    uint256 private constant _ISSUE_BIT = 2;
+    uint256 private constant _COMBINE_BIT = 4;
+    uint256 private constant _COLLECT_BIT = 8;
+    uint256 private constant _REDEEM_ZERO_BIT = 16;
+    uint256 private constant _REDEEM_ZERO_HOOK_BIT = 32;
 
     function initRestricted(uint256 level) internal pure returns (bool) {
-        return level & (2**_INIT_BIT) != 2**_INIT_BIT;
+        return level & _INIT_BIT != _INIT_BIT;
     }
 
     function issueRestricted(uint256 level) internal pure returns (bool) {
-        return level & (2**_ISSUE_BIT) != 2**_ISSUE_BIT;
+        return level & _ISSUE_BIT != _ISSUE_BIT;
     }
 
     function combineRestricted(uint256 level) internal pure returns (bool) {
-        return level & (2**_COMBINE_BIT) != 2**_COMBINE_BIT;
+        return level & _COMBINE_BIT != _COMBINE_BIT;
     }
 
     function collectDisabled(uint256 level) internal pure returns (bool) {
-        return level & (2**_COLLECT_BIT) != 2**_COLLECT_BIT;
+        return level & _COLLECT_BIT != _COLLECT_BIT;
     }
 
     function redeemZeroRestricted(uint256 level) internal pure returns (bool) {
-        return level & (2**_REDEEM_ZERO_BIT) != 2**_REDEEM_ZERO_BIT;
+        return level & _REDEEM_ZERO_BIT != _REDEEM_ZERO_BIT;
     }
 
     function redeemZeroHookDisabled(uint256 level) internal pure returns (bool) {
-        return level & (2**_REDEEM_ZERO_HOOK_BIT) != 2**_REDEEM_ZERO_HOOK_BIT;
+        return level & _REDEEM_ZERO_HOOK_BIT != _REDEEM_ZERO_HOOK_BIT;
     }
 }

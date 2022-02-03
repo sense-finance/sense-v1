@@ -488,7 +488,7 @@ contract Periphery is Trust {
 
         // Calculate target to borrow by calling AMM
         bytes32 poolId = pool.getPoolId();
-        (uint8 zeroi, uint256 targeti) = pool.getIndices();
+        (uint256 zeroi, uint256 targeti) = pool.getIndices();
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
         // Determine how much Target we'll need in to get `cBal` balance of Zeros out
         // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after are placeholders)
@@ -557,7 +557,7 @@ contract Periphery is Trust {
         bool isFirstProvision = pool.totalSupply() == 0;
         // Compute target
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
-        (uint8 zeroi, uint8 targeti) = pool.getIndices(); // Ensure we have the right token Indices
+        (uint256 zeroi, uint256 targeti) = pool.getIndices(); // Ensure we have the right token Indices
 
         // We do not add zeros liquidity on the first provision (hence, we skip computation)
         uint256 zBalInTarget = isFirstProvision ? 0 : _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);

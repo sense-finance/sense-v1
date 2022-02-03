@@ -57,7 +57,7 @@ contract ZeroOracle is PriceOracle, Trust {
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
         // get the price of Zeros in terms of underlying
-        (uint8 zeroi, uint8 targeti) = pool.getIndices();
+        (uint256 zeroi, uint256 targeti) = pool.getIndices();
         uint256 zeroPrice = results[zeroi];
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());

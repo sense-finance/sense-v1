@@ -73,8 +73,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     struct Series {
         // Zero ERC20 token
         address zero;
+        // Timestamp of series initialization
+        uint48 issuance;
         // Claim ERC20 token
         address claim;
+        // % of underlying principal initially reserved for Claims
+        uint96 tilt;
         // Actor who initialized the Series
         address sponsor;
         // Tracks fees due to the series' settler
@@ -85,10 +89,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 mscale;
         // Max scale value from this series' lifetime
         uint256 maxscale;
-        // Timestamp of series initialization
-        uint128 issuance;
-        // % of underlying principal initially reserved for Claims
-        uint128 tilt;
     }
 
     struct AdapterMeta {
@@ -99,9 +99,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Max amount of Target allowed to be issued
         uint256 guard;
         // Underlying decimals
-        uint256 uDecimals;
+        uint8 uDecimals;
         // Adapter level
-        uint256 level;
+        uint248 level;
     }
 
     constructor(address _cup, address _tokenHandler) Trust(msg.sender) {
@@ -142,18 +142,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Initialize the new Series struct
         uint256 scale = Adapter(adapter).scale();
-        Series memory newSeries = Series({
-            zero: zero,
-            claim: claim,
-            sponsor: sponsor,
-            reward: 0,
-            iscale: scale,
-            mscale: 0,
-            maxscale: scale,
-            issuance: uint128(block.timestamp),
-            tilt: Adapter(adapter).tilt()
-        });
-        series[adapter][maturity] = newSeries;
+
+        series[adapter][maturity].zero = zero;
+        series[adapter][maturity].issuance = uint48(block.timestamp);
+        series[adapter][maturity].claim = claim;
+        series[adapter][maturity].tilt = uint96(Adapter(adapter).tilt());
+        series[adapter][maturity].sponsor = sponsor;
+        series[adapter][maturity].iscale = scale;
+        series[adapter][maturity].maxscale = scale;
 
         ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize);
 
@@ -598,7 +594,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
-        uint16 mode = Adapter(adapter).mode();
+        uint256 mode = Adapter(adapter).mode();
         if (mode == 0) {
             return day == 1;
         }
@@ -623,7 +619,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Set level, target and underlying decimals (can only be done once);
         am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
-        am.level = Adapter(adapter).level();
+        am.level = uint248(Adapter(adapter).level());
         adapterMeta[adapter] = am;
         emit AdapterChanged(adapter, am.id, isOn);
     }

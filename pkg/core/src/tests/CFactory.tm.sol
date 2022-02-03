@@ -62,7 +62,7 @@ contract CFactories is CAdapterTestHelper {
         assertTrue(address(otherCFactory) != address(0));
         (
             address oracle,
-            uint64 ifee,
+            uint256 ifee,
             address stake,
             uint256 stakeSize,
             uint256 minm,

@@ -79,14 +79,14 @@ contract CAdapter is CropAdapter {
         address _divider,
         address _target,
         address _oracle,
-        uint64 _ifee,
+        uint256 _ifee,
         address _stake,
         uint256 _stakeSize,
         uint256 _minm,
         uint256 _maxm,
         uint16 _mode,
         uint64 _tilt,
-        uint16 _level,
+        uint256 _level,
         address _reward
     )
         CropAdapter(

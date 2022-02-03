@@ -60,7 +60,7 @@ contract MockSpacePool is MockToken {
         }
     }
 
-    function getIndices() public view returns (uint8 zeroi, uint8 targeti) {
+    function getIndices() public view returns (uint256 zeroi, uint256 targeti) {
         // Indices to match MockBalancerVault's balances array
         zeroi = 1;
         targeti = 0;
