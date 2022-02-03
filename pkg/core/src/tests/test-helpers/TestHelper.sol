@@ -21,15 +21,11 @@ import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
 import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { DSTest } from "./DSTest.sol";
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { User } from "./User.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract TestHelper is DSTest {
     using FixedMath for uint256;
@@ -67,8 +63,8 @@ contract TestHelper is DSTest {
     address public ORACLE = address(123);
     uint64 public ISSUANCE_FEE = 0.1e18;
     uint256 public STAKE_SIZE = 1e18;
-    uint256 public MIN_MATURITY = 2 weeks;
-    uint256 public MAX_MATURITY = 14 weeks;
+    uint48 public MIN_MATURITY = 2 weeks;
+    uint48 public MAX_MATURITY = 14 weeks;
     uint16 public DEFAULT_LEVEL = 31;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
@@ -153,7 +149,7 @@ contract TestHelper is DSTest {
 
         // adapter, target wrapper & factory
         factory = createFactory(address(target), address(reward));
-        address f = periphery.deployAdapter(address(factory), address(target)); // deploy & onboard target through Periphery
+        address f = periphery.onboardAdapter(address(factory), address(target)); // onboard target through Periphery
         adapter = MockAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
 
@@ -199,12 +195,12 @@ contract TestHelper is DSTest {
         periphery.setFactory(address(someFactory), true);
     }
 
-    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
-        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        if (maturity < block.timestamp + 2 weeks) revert Errors.InvalidMaturityOffsets();
+    function getValidMaturity(uint256 year, uint256 month) public view returns (uint48 maturity) {
+        maturity = uint48(DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0));
+        require(maturity >= block.timestamp + 2 weeks, "Maturity must be 2 weeks from current timestamp");
     }
 
-    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
+    function sponsorSampleSeries(address sponsor, uint48 maturity) public returns (address zero, address claim) {
         (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
@@ -230,28 +226,13 @@ contract TestHelper is DSTest {
         assertClose(a, b, variance);
     }
 
-    function addLiquidityToBalancerVault(
-        address adapter,
-        uint256 maturity,
-        uint256 tBal
-    ) public {
-        return _addLiquidityToBalancerVault(adapter, maturity, tBal);
-    }
-
-    function addLiquidityToBalancerVault(uint256 maturity, uint256 tBal) public {
-        return _addLiquidityToBalancerVault(address(adapter), maturity, tBal);
-    }
-
-    function _addLiquidityToBalancerVault(
-        address adapter,
-        uint256 maturity,
-        uint256 tBal
-    ) internal {
-        uint256 issued = alice.doIssue(adapter, maturity, tBal);
-        alice.doTransfer(divider.claim(address(adapter), maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
-        alice.doTransfer(divider.zero(address(adapter), maturity), address(balancerVault), issued);
+    function addLiquidityToBalancerVault(uint48 maturity, uint256 tBal) public {
+        (address zero, address claim, , , , , , , ) = divider.series(address(adapter), maturity);
+        uint256 issued = alice.doIssue(address(adapter), maturity, tBal);
+        alice.doTransfer(claim, address(balancerVault), issued); // we don't really need this but we transfer them anyways
+        alice.doTransfer(zero, address(balancerVault), issued);
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
-        MockToken(MockAdapter(adapter).target()).mint(address(balancerVault), tBal);
+        MockToken(adapter.target()).mint(address(balancerVault), tBal);
     }
 
     function convertBase(uint256 decimals) public pure returns (uint256) {
@@ -275,7 +256,7 @@ contract TestHelper is DSTest {
 
     function calculateExcess(
         uint256 tBal,
-        uint256 maturity,
+        uint48 maturity,
         address claim
     ) public returns (uint256 gap) {
         uint256 toIssue = calculateAmountToIssue(tBal);
@@ -292,15 +273,5 @@ contract TestHelper is DSTest {
 
     function fuzzWithBounds(uint128 number, uint128 lBound) public returns (uint128) {
         return lBound + (number % (type(uint128).max - lBound));
-    }
-
-    function getError(uint256 errCode) internal pure returns (string memory errString) {
-        return string(bytes.concat(bytes("SNS#"), bytes(Strings.toString(errCode))));
-    }
-
-    function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
-        assembly {
-            value := mload(add(_bytes, 0x20))
-        }
     }
 }

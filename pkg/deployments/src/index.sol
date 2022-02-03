@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@sense-finance/v1-core/src/Divider.sol";
-import "@sense-finance/v1-core/src/Periphery.sol";
 import "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 import "@sense-finance/v1-core/src/adapters/compound/CAdapter.sol";
 import "@sense-finance/v1-core/src/adapters/compound/CFactory.sol";

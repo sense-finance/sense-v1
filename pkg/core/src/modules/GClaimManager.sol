@@ -2,14 +2,12 @@
 pragma solidity 0.8.11;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeERC20, ERC20 } from "@rari-capital/solmate/src/erc20/SafeERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-
 import { Claim } from "../tokens/Claim.sol";
 import { Token } from "../tokens/Token.sol";
 import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
@@ -17,7 +15,7 @@ import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 /// @title Grounded Claims (gClaims)
 /// @notice The GClaim Manager contract turns Collect Claims into Drag Claims
 contract GClaimManager {
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for ERC20;
     using FixedMath for uint256;
 
     /// @notice "Issuance" scale value all claims of the same Series must backfill to separated by Claim address
@@ -37,13 +35,13 @@ contract GClaimManager {
 
     function join(
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 uBal
     ) external {
-        if (maturity <= block.timestamp) revert Errors.InvalidMaturity();
+        require(maturity > block.timestamp, Errors.InvalidMaturity);
 
-        address claim = Divider(divider).claim(adapter, maturity);
-        if (claim == address(0)) revert Errors.SeriesDoesNotExist();
+        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+        require(claim != address(0), Errors.SeriesDoesntExists);
 
         if (address(gclaims[claim]) == address(0)) {
             // If this is the first Claim from this Series:
@@ -78,11 +76,12 @@ contract GClaimManager {
 
     function exit(
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 uBal
     ) external {
-        address claim = Divider(divider).claim(adapter, maturity);
-        if (claim == address(0)) revert Errors.SeriesDoesNotExist();
+        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
+
+        require(claim != address(0), Errors.SeriesDoesntExists);
 
         // Collect excess for all Claims from this Series this contract holds
         uint256 collected = Claim(claim).collect();
@@ -109,10 +108,10 @@ contract GClaimManager {
     /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
     function excess(
         address adapter,
-        uint256 maturity,
+        uint48 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
-        address claim = Divider(divider).claim(adapter, maturity);
+        (, address claim, , , , , , , ) = Divider(divider).series(adapter, maturity);
         uint256 initScale = inits[claim];
         uint256 scale = Adapter(adapter).scale();
         uint256 mscale = mscales[claim];
@@ -132,6 +131,6 @@ contract GClaimManager {
 
     /* ========== EVENTS ========== */
 
-    event Joined(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
-    event Exited(address indexed adapter, uint256 maturity, address indexed guy, uint256 balance);
+    event Joined(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
+    event Exited(address indexed adapter, uint48 maturity, address indexed guy, uint256 balance);
 }
