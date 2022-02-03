@@ -91,7 +91,8 @@ contract PeripheryTest is TestHelper {
         // onboard target
         address adapter = periphery.deployAdapter(address(factory), address(newTarget));
         periphery.verifyAdapter(adapter, true);
-        assertTrue(poolManager.tInits(address(newTarget)));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        assertTrue(cTarget != address(0));
     }
 
     function testDeployAdapterWhenPermissionless() public {
@@ -150,7 +151,8 @@ contract PeripheryTest is TestHelper {
         );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter));
-        assertTrue(poolManager.tInits(address(otherTarget)));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
+        assertTrue(cTarget != address(0));
     }
 
     function testOnboardAdapterUnverified() public {
@@ -174,7 +176,8 @@ contract PeripheryTest is TestHelper {
         );
 
         periphery.onboardAdapter(address(otherAdapter));
-        assertTrue(!poolManager.tInits(address(otherTarget)));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
+        assertTrue(cTarget != address(0));
     }
 
     function testCantOnboardAdapterUnverifiedWhenNotPermissionless() public {
@@ -196,7 +199,8 @@ contract PeripheryTest is TestHelper {
             address(reward)
         );
         periphery.onboardAdapter(address(otherAdapter));
-        assertTrue(!poolManager.tInits(address(otherAdapter)));
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
+        assertTrue(cTarget != address(0));
     }
 
     /* ========== swap tests ========== */
