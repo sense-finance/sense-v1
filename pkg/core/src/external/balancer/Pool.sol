@@ -59,5 +59,5 @@ interface BalancerPool {
         uint256 currentBalanceTokenOut
     ) external returns (uint256 amount);
 
-    function getIndices() external view returns (uint8 zeroi, uint8 targeti);
+    function getIndices() external view returns (uint256 zeroi, uint256 targeti);
 }
