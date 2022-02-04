@@ -699,11 +699,8 @@ contract Periphery is Trust {
             userData: abi.encode(liq.amounts),
             fromInternalBalance: false
         });
-        uint256 lpSharesBefore = ERC20(address(pool)).balanceOf(msg.sender);
         balancerVault.joinPool(poolId, address(this), msg.sender, request);
-        unchecked {
-            return ERC20(address(pool)).balanceOf(msg.sender) - lpSharesBefore;
-        }
+        return ERC20(address(pool)).balanceOf(msg.sender);
     }
 
     function _removeLiquidityFromSpace(
@@ -713,9 +710,6 @@ contract Periphery is Trust {
         uint256[] memory minAmountsOut,
         uint256 lpBal
     ) internal returns (uint256, uint256) {
-        uint256 tBalBefore = ERC20(target).balanceOf(address(this));
-        uint256 zBalBefore = ERC20(zero).balanceOf(address(this));
-
         // ExitPoolRequest params
         (ERC20[] memory tokens, , ) = balancerVault.getPoolTokens(poolId);
         IAsset[] memory assets = _convertERC20sToAssets(tokens);
@@ -727,11 +721,7 @@ contract Periphery is Trust {
         });
         balancerVault.exitPool(poolId, address(this), payable(address(this)), request);
 
-        uint256 zBalAfter = ERC20(zero).balanceOf(address(this));
-        uint256 tBalAfter = ERC20(target).balanceOf(address(this));
-        unchecked {
-            return (tBalAfter - tBalBefore, zBalAfter - zBalBefore);
-        }
+        return (ERC20(target).balanceOf(address(this)), ERC20(zero).balanceOf(address(this)));
     }
 
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
