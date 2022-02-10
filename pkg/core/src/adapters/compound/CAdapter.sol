@@ -108,7 +108,7 @@ contract CAdapter is CropAdapter {
         )
     {
         isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
-        ERC20(underlying).safeApprove(_target, type(uint256).max);
+        ERC20(underlying).approve(_target, type(uint256).max);
         uDecimals = CTokenInterface(underlying).decimals();
     }
 

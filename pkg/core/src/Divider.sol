@@ -636,6 +636,10 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         return series[adapter][maturity].claim;
     }
 
+    function mscale(address adapter, uint256 maturity) public view returns (uint256) {
+        return series[adapter][maturity].mscale;
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyClaim(address adapter, uint256 maturity) {

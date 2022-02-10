@@ -87,9 +87,9 @@ contract WstETHAdapter is BaseAdapter {
         uint64 _tilt
     ) BaseAdapter(_divider, _target, WETH, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
-        ERC20(STETH).safeApprove(WSTETH, type(uint256).max);
+        ERC20(STETH).approve(WSTETH, type(uint256).max);
         // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
-        ERC20(STETH).safeApprove(CURVESINGLESWAP, type(uint256).max);
+        ERC20(STETH).approve(CURVESINGLESWAP, type(uint256).max);
     }
 
     /// @return Eth per wstEtH (natively in 18 decimals)
