@@ -129,7 +129,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address adapter,
         uint256 maturity,
         address sponsor
-    ) external nonReentrant onlyPeriphery whenNotPaused returns (address zero, address claim) {
+    ) external nonReentrant whenNotPaused returns (address zero, address claim) {
+         if (periphery != msg.sender) revert Errors.OnlyPeriphery();
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (_exists(adapter, maturity)) revert Errors.DuplicateSeries();
         if (!_isValid(adapter, maturity)) revert Errors.InvalidMaturity();
@@ -644,11 +645,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     modifier onlyClaim(address adapter, uint256 maturity) {
         if (series[adapter][maturity].claim != msg.sender) revert Errors.OnlyClaim();
-        _;
-    }
-
-    modifier onlyPeriphery() {
-        if (periphery != msg.sender) revert Errors.OnlyPeriphery();
         _;
     }
 
