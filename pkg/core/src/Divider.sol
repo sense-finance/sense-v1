@@ -297,7 +297,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
-        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         if (!_settled(adapter, maturity)) revert Errors.NotSettled();
 
@@ -358,8 +357,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBalTransfer,
         address to
     ) internal returns (uint256 collected) {
-        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
+
+        bool settled = _settled(adapter, maturity);
+
+        // If the adapter is disabled, its Claims can only collect
+        // if associated Series has been settled, which implies that an admin
+        // has backfilled it
+        if (!adapterMeta[adapter].enabled && !settled) revert Errors.InvalidAdapter();
 
         Series memory _series = series[adapter][maturity];
 
@@ -370,7 +375,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (level.collectDisabled()) {
             // If this Series has been settled, we ensure everyone's Claims will
             // collect yield accrued since issuance
-            if (_settled(adapter, maturity)) {
+            if (settled) {
                 lscale = series[adapter][maturity].iscale;
                 // If the Series is not settled, we ensure no collections can happen
             } else {
@@ -379,7 +384,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // If the Series has been settled, this should be their last collect, so redeem the user's claims for them
-        if (_settled(adapter, maturity)) {
+        if (settled) {
             _redeemClaim(usr, adapter, maturity, uBal);
         } else {
             // If we're not settled and we're past maturity + the sponsor window,
