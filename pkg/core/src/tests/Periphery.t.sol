@@ -42,8 +42,9 @@ contract PeripheryTest is TestHelper {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
 
-        // check Balancer pool deployed
+        // check Space pool is deployed
         assertTrue(address(spaceFactory.pool()) != address(0));
+
         // check zeros and claims onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
@@ -76,6 +77,39 @@ contract PeripheryTest is TestHelper {
 
         // check Space pool is deployed
         assertTrue(address(spaceFactory.pool()) != address(0));
+
+        // check zeros and claims NOT onboarded on PoolManager (Fuse)
+        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.NONE);
+    }
+
+    function testSponsorSeriesWhenUnverifiedAdapterAndWithPoolFalse() public {
+        divider.setPermissionless(true);
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            ORACLE,
+            1e18,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            MODE,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        divider.addAdapter(address(adapter));
+
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, address claim) = alice.doSponsorSeriesWithoutPool(address(adapter), maturity);
+
+        // check zeros and claim deployed
+        assertTrue(zero != address(0));
+        assertTrue(claim != address(0));
+
+        // check Space pool is NOT deployed
+        assertTrue(address(spaceFactory.pool()) == address(0));
 
         // check zeros and claims NOT onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);

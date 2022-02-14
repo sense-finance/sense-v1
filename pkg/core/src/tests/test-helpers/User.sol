@@ -113,7 +113,14 @@ contract User {
     }
 
     function doSponsorSeries(address adapter, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = periphery.sponsorSeries(adapter, maturity);
+        (zero, claim) = periphery.sponsorSeries(adapter, maturity, true);
+    }
+
+    function doSponsorSeriesWithoutPool(address adapter, uint256 maturity)
+        public
+        returns (address zero, address claim)
+    {
+        (zero, claim) = periphery.sponsorSeries(adapter, maturity, false);
     }
 
     function doSettleSeries(address adapter, uint256 maturity) public {
