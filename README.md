@@ -82,7 +82,7 @@ The core is surrounded by the following `modules`:
 - `Pool Manager`, manager of the [Sense Fuse Lending Facility](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4)
 
 ### Divider
-The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re-`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity.
+The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re-`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity. We assume Target tokens to have <=18 decimals.
 
 ### Adapter
 Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application, such as stripping yield from yield-bearing assets. Once an Adapter is onboarded, users can initialize/settle series, issue Zeros/Claims, and collect/redeem their Target via the Divider.
@@ -140,6 +140,8 @@ This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 
     1. inherits from `Token`
     2. adds `maturity`, `divider` and `adapter` address variables
     3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
+
+When Series are initialized, Zeros and Claims are deployed and they take the same number of decimals as the their Target token (which cannot be >= 18 decimals). 
 
 ### Modules
 A Collection of Modules and Utilities for Sense V1

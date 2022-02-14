@@ -479,7 +479,7 @@ contract Periphery is Trust {
         address claim = divider.claim(adapter, maturity);
 
         // Because there's some margin of error in the pricing functions here, smaller
-        // swaps will be unreliable.
+        // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (cBal * 10**(18 - ERC20(claim).decimals()) <= 1e12) revert Errors.SwapTooSmall();
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
@@ -662,7 +662,7 @@ contract Periphery is Trust {
 
         // Because Space utilizes power ofs liberally in its invariant, there is some error
         // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
-        // that matched our Claim balance.
+        // that matched our Claim balance. Tokens with more than 18 decimals are not supported.
         uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
 
         // Swap Target for Zeros
