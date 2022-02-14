@@ -32,9 +32,10 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       const { zero: zeroAddress, claim: claimAddress } = await periphery.callStatic.sponsorSeries(
         adapter.address,
         seriesMaturity,
+        true
       );
       console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
-      await periphery.sponsorSeries(adapter.address, seriesMaturity).then(tx => tx.wait());
+      await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
 
       console.log("Have the deployer issue the first 1,000,000 Target worth of Zeros/Claims for this Series");
       await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());

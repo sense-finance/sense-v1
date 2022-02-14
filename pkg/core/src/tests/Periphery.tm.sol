@@ -133,7 +133,7 @@ contract PeripheryTests is PeripheryTestHelper {
 
         ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);
         periphery.verifyAdapter(address(adapter), true);
-        (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity);
+        (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity, false);
 
         // Check zeros and claim deployed
         assertTrue(zero != address(0));
