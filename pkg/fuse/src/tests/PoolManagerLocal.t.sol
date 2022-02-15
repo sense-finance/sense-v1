@@ -143,6 +143,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testAddTarget() public {
+        MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
             address(comptroller),
@@ -160,7 +161,7 @@ contract PoolManagerLocalTest is TestHelper {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adapter));
+        poolManager.addTarget(address(otherTarget), address(adapter));
     }
 
     /* ========== queueSeries() tests ========== */
@@ -191,6 +192,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testCantQueueSeriesIfAlreadyQueued() public {
+        MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         uint256 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
@@ -215,7 +217,7 @@ contract PoolManagerLocalTest is TestHelper {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adapter));
+        poolManager.addTarget(address(otherTarget), address(adapter));
 
         poolManager.queueSeries(address(adapter), maturity, address(123));
         try poolManager.queueSeries(address(adapter), maturity, address(123)) {
@@ -226,6 +228,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testQueueSeries() public {
+        MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         uint256 maturity = getValidMaturity(2021, 10);
         divider.setPeriphery(address(this));
         stake.approve(address(divider), type(uint256).max);
@@ -249,7 +252,7 @@ contract PoolManagerLocalTest is TestHelper {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        poolManager.addTarget(address(target), address(adapter));
+        poolManager.addTarget(address(otherTarget), address(adapter));
 
         poolManager.queueSeries(address(adapter), maturity, address(123));
         (PoolManager.SeriesStatus status, address pool) = PoolManager(address(poolManager)).sSeries(
