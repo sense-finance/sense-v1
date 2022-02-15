@@ -72,6 +72,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
     const underlyingName = (underlyingRegexRes && underlyingRegexRes[1]) || `UNDERLYING-${targetName}`;
 
+    console.log(underlyingName, "underlyingName");
+
     if (!underlyingAddresses[underlyingName]) {
       underlyingAddresses[underlyingName] = (
         await deploy(underlyingName, {
@@ -84,6 +86,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     }
 
     const underlying = await ethers.getContract(underlyingName);
+
+    console.log(underlyingAddresses[underlyingName], underlying.address, "address");
 
     await deploy(targetName, {
       contract: "AuthdMockTarget",
