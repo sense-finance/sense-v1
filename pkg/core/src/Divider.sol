@@ -130,7 +130,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         address sponsor
     ) external nonReentrant whenNotPaused returns (address zero, address claim) {
-         if (periphery != msg.sender) revert Errors.OnlyPeriphery();
+        if (periphery != msg.sender) revert Errors.OnlyPeriphery();
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (_exists(adapter, maturity)) revert Errors.DuplicateSeries();
         if (!_isValid(adapter, maturity)) revert Errors.InvalidMaturity();
