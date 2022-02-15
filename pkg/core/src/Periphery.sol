@@ -76,7 +76,12 @@ contract Periphery is Trust {
     /// @dev Calls divider to initalise a new series
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
-    function sponsorSeries(address adapter, uint256 maturity) external returns (address zero, address claim) {
+    /// @param withPool Whether to deploy a Space pool or not (only works for unverified adapters)
+    function sponsorSeries(
+        address adapter,
+        uint256 maturity,
+        bool withPool
+    ) external returns (address zero, address claim) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Transfer stakeSize from sponsor into this contract
@@ -87,9 +92,15 @@ contract Periphery is Trust {
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
-        address pool = spaceFactory.create(adapter, maturity);
+        // Space pool is always created for verified adapters whilst is optional for unverified ones.
         // Automatically queueing series is only for verified adapters
-        if (verified[adapter]) poolManager.queueSeries(adapter, maturity, pool);
+        if (verified[adapter]) {
+            poolManager.queueSeries(adapter, maturity, spaceFactory.create(adapter, maturity));
+        } else {
+            if (withPool) {
+                spaceFactory.create(adapter, maturity);
+            }
+        }
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
@@ -479,7 +490,7 @@ contract Periphery is Trust {
         address claim = divider.claim(adapter, maturity);
 
         // Because there's some margin of error in the pricing functions here, smaller
-        // swaps will be unreliable.
+        // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (cBal * 10**(18 - ERC20(claim).decimals()) <= 1e12) revert Errors.SwapTooSmall();
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
@@ -662,7 +673,7 @@ contract Periphery is Trust {
 
         // Because Space utilizes power ofs liberally in its invariant, there is some error
         // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
-        // that matched our Claim balance.
+        // that matched our Claim balance. Tokens with more than 18 decimals are not supported.
         uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
 
         // Swap Target for Zeros

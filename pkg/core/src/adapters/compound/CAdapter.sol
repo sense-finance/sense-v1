@@ -71,6 +71,7 @@ contract CAdapter is CropAdapter {
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
 
     bool public immutable isCETH;
     uint8 public immutable uDecimals;
@@ -92,9 +93,7 @@ contract CAdapter is CropAdapter {
         CropAdapter(
             _divider,
             _target,
-            keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"))
-                ? WETH
-                : CTokenInterface(_target).underlying(),
+            _target == CETH ? WETH : CTokenInterface(_target).underlying(),
             _oracle,
             _ifee,
             _stake,
@@ -107,7 +106,7 @@ contract CAdapter is CropAdapter {
             _reward
         )
     {
-        isCETH = keccak256(abi.encodePacked(ERC20(_target).symbol())) == keccak256(abi.encodePacked("cETH"));
+        isCETH = _target == CETH;
         ERC20(underlying).approve(_target, type(uint256).max);
         uDecimals = CTokenInterface(underlying).decimals();
     }
