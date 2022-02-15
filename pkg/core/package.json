@@ -2,7 +2,7 @@
     "name": "@sense-finance/v1-core",
     "version": "0.4.2-beta",
     "description": "Sense V1 Core Contracts",
-    "license": "UNLICENSED",
+    "license": "AGPL-3.0-only",
     "repository": {
         "type": "git",
         "url": "https://github.com/sense-finance/sense-v1.git",

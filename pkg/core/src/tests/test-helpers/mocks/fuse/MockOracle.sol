@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
 import { PriceOracle, CTokenLike } from "@sense-finance/v1-fuse/src/external/PriceOracle.sol";
