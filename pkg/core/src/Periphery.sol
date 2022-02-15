@@ -113,6 +113,7 @@ contract Periphery is Trust {
         if (!AdapterFactory(f).exists(target)) revert Errors.TargetNotSupported();
         adapter = AdapterFactory(f).deployAdapter(target);
         emit AdapterDeployed(adapter);
+        verifyAdapter(adapter, true);
         onboardAdapter(adapter);
     }
 
@@ -400,7 +401,7 @@ contract Periphery is Trust {
 
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
     /// @param adapter Adaper to verify
-    function verifyAdapter(address adapter, bool addToPool) external requiresTrust {
+    function verifyAdapter(address adapter, bool addToPool) public requiresTrust {
         verified[adapter] = true;
         if (addToPool) poolManager.addTarget(Adapter(adapter).target(), adapter);
         emit AdapterVerified(adapter);

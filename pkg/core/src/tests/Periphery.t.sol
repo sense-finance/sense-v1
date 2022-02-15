@@ -35,7 +35,6 @@ contract PeripheryTest is TestHelper {
 
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.verifyAdapter(address(adapter), true);
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
 
         // check zeros and claim deployed
@@ -124,7 +123,6 @@ contract PeripheryTest is TestHelper {
 
         // onboard target
         address adapter = periphery.deployAdapter(address(factory), address(newTarget));
-        periphery.verifyAdapter(adapter, true);
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -137,7 +135,6 @@ contract PeripheryTest is TestHelper {
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.verifyAdapter(address(adapter), true);
         periphery.deployAdapter(address(factory), address(newTarget));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
