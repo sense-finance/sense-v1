@@ -2,7 +2,7 @@
     "name": "@sense-finance/v1-utils",
     "version": "0.4.0-beta",
     "description": "Sense V1 Contract Utils",
-    "license": "UNLICENSED",
+    "license": "AGPL-3.0-only",
     "repository": {
         "type": "git",
         "url": "https://github.com/sense-finance/sense-v1.git",
