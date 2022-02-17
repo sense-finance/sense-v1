@@ -298,7 +298,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         uint256 uBal
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
-        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         // If a Series is settled, we know that it must have existed as well, so that check is unnecessary
         if (!_settled(adapter, maturity)) revert Errors.NotSettled();
 
@@ -359,8 +358,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 uBalTransfer,
         address to
     ) internal returns (uint256 collected) {
-        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
+
+        // If the adapter is disabled, its Claims can only collect
+        // if associated Series has been settled, which implies that an admin
+        // has backfilled it
+        if (!adapterMeta[adapter].enabled && !_settled(adapter, maturity)) revert Errors.InvalidAdapter();
 
         Series memory _series = series[adapter][maturity];
 
@@ -421,7 +424,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // the time elapsed, and the current scale
         if (to != address(0)) {
             uint256 cBal = Claim(_series.claim).balanceOf(to);
-            // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, for the updated claim balance, still assigns the correct amount of yield.
+            // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that,
+            // for the updated claim balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
                 : _series.maxscale;
