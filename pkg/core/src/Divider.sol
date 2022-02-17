@@ -423,7 +423,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // the time elapsed, and the current scale
         if (to != address(0)) {
             uint256 cBal = Claim(_series.claim).balanceOf(to);
-            // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that, 
+            // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that,
             // for the updated claim balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)

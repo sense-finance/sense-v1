@@ -826,11 +826,11 @@ contract Dividers is TestHelper {
 
     /* ========== redeemZero() tests ========== */
 
-      function testCanRedeemZero() public {
+    function testCanRedeemZero() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        bob.doIssue(address(adapter), maturity, 10 ** target.decimals());
+        bob.doIssue(address(adapter), maturity, 10**target.decimals());
         hevm.warp(maturity);
         uint256 balance = ERC20(zero).balanceOf(address(alice));
 
@@ -850,7 +850,7 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        bob.doIssue(address(adapter), maturity, 10 ** target.decimals());
+        bob.doIssue(address(adapter), maturity, 10**target.decimals());
         hevm.warp(maturity);
         uint256 balance = ERC20(zero).balanceOf(address(alice));
 
@@ -1262,7 +1262,7 @@ contract Dividers is TestHelper {
             assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
 
-        divider.backfillScale(address(adapter), maturity, initScale * 1.2e18 / 1e18, usrs, lscales);
+        divider.backfillScale(address(adapter), maturity, (initScale * 1.2e18) / 1e18, usrs, lscales);
 
         // Collect succeeds if the Series has been backfilled
         uint256 collected = bob.doCollect(claim);
