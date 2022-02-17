@@ -88,7 +88,7 @@ contract Periphery is Trust {
         ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize);
 
         // Approve divider to withdraw stake assets
-        ERC20(stake).safeApprove(address(divider), stakeSize);
+        ERC20(stake).approve(address(divider), stakeSize);
 
         (zero, claim) = divider.initSeries(adapter, maturity, msg.sender);
 
@@ -122,8 +122,8 @@ contract Periphery is Trust {
     /// @param adapter Adaper to onboard
     function onboardAdapter(address adapter) public {
         ERC20 target = ERC20(Adapter(adapter).target());
-        target.safeApprove(address(divider), type(uint256).max);
-        target.safeApprove(address(adapter), type(uint256).max);
+        target.approve(address(divider), type(uint256).max);
+        target.approve(address(adapter), type(uint256).max);
         divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
@@ -160,7 +160,7 @@ contract Periphery is Trust {
     ) external returns (uint256) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        underlying.safeApprove(adapter, uBal); // approve adapter to pull uBal
+        underlying.approve(adapter, uBal); // approve adapter to pull uBal
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         return _swapTargetForZeros(adapter, maturity, tBal, minAccepted);
     }
@@ -195,7 +195,7 @@ contract Periphery is Trust {
     ) external returns (uint256) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
-        underlying.safeApprove(adapter, uBal); // approve adapter to pull underlying
+        underlying.approve(adapter, uBal); // approve adapter to pull underlying
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         return _swapTargetForClaims(adapter, maturity, tBal, minAccepted);
     }
@@ -228,7 +228,7 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) external returns (uint256) {
         uint256 tBal = _swapZerosForTarget(adapter, maturity, zBal, minAccepted); // swap zeros for target
-        ERC20(Adapter(adapter).target()).safeApprove(adapter, tBal); // approve adapter to pull target
+        ERC20(Adapter(adapter).target()).approve(adapter, tBal); // approve adapter to pull target
         uint256 uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // transfer underlying to msg.sender
         return uBal;
@@ -307,7 +307,7 @@ contract Periphery is Trust {
     {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal);
-        underlying.safeApprove(adapter, uBal);
+        underlying.approve(adapter, uBal);
         // Wrap Underlying into Target
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
         return _addLiquidity(adapter, maturity, tBal, mode);
@@ -349,7 +349,7 @@ contract Periphery is Trust {
     ) external returns (uint256 uBal, uint256 zBal) {
         uint256 tBal;
         (tBal, zBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted);
-        ERC20(Adapter(adapter).target()).safeApprove(adapter, tBal);
+        ERC20(Adapter(adapter).target()).approve(adapter, tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying back to the User
     }
 
@@ -417,7 +417,7 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) internal returns (uint256 amountOut) {
         // approve vault to spend tokenIn
-        ERC20(assetIn).safeApprove(address(balancerVault), amountIn);
+        ERC20(assetIn).approve(address(balancerVault), amountIn);
 
         BalancerVault.SingleSwap memory request = BalancerVault.SingleSwap({
             poolId: poolId,
@@ -616,7 +616,7 @@ contract Periphery is Trust {
         uint256 _zBal;
         (tBal, _zBal) = _removeLiquidityFromSpace(poolId, zero, target, minAmountsOut, lpBal);
 
-        if (block.timestamp >= maturity) {
+        if (divider.mscale(adapter, maturity) > 0) {
             if (uint256(Adapter(adapter).level()).redeemZeroRestricted()) {
                 ERC20(zero).safeTransfer(msg.sender, _zBal);
                 zBal = _zBal;
@@ -645,7 +645,7 @@ contract Periphery is Trust {
     ) internal returns (uint256) {
         ERC20 target = ERC20(Adapter(adapter).target());
         uint256 _allowance = target.allowance(address(this), address(adapter));
-        if (_allowance < amount) target.safeApprove(address(adapter), type(uint256).max);
+        if (_allowance < amount) target.approve(address(adapter), type(uint256).max);
         (bool result, uint256 value) = Adapter(adapter).flashLoan(
             data,
             address(this),
@@ -700,7 +700,7 @@ contract Periphery is Trust {
         IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
         for (uint8 i; i < liq.tokens.length; i++) {
             // Tokens and amounts must be in same order
-            liq.tokens[i].safeApprove(address(balancerVault), liq.amounts[i]);
+            liq.tokens[i].approve(address(balancerVault), liq.amounts[i]);
         }
 
         // Behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens,

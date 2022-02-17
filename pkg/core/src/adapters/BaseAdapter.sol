@@ -107,8 +107,8 @@ abstract contract BaseAdapter {
         symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
         level = _level;
 
-        ERC20(_target).safeApprove(_divider, type(uint256).max);
-        ERC20(_stake).safeApprove(_divider, type(uint256).max);
+        ERC20(_target).approve(_divider, type(uint256).max);
+        ERC20(_stake).approve(_divider, type(uint256).max);
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.

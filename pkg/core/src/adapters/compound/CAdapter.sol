@@ -107,7 +107,7 @@ contract CAdapter is CropAdapter {
         )
     {
         isCETH = _target == CETH;
-        ERC20(underlying).safeApprove(_target, type(uint256).max);
+        ERC20(underlying).approve(_target, type(uint256).max);
         uDecimals = CTokenInterface(underlying).decimals();
     }
 

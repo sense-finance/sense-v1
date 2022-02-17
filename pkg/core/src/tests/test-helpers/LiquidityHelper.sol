@@ -92,13 +92,13 @@ contract LiquidityHelper {
         uint256 amountOut = 0;
         if (tokenOut == Assets.WSTETH) {
             uint256 stETH = StETHInterface(Assets.STETH).submit{ value: amountIn }(address(0));
-            ERC20(Assets.STETH).safeApprove(Assets.WSTETH, stETH);
+            ERC20(Assets.STETH).approve(Assets.WSTETH, stETH);
             amountOut = WstETHInterface(Assets.WSTETH).wrap(stETH);
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
         }
         if (tokenOut == Assets.cDAI) {
-            ERC20(Assets.DAI).safeApprove(Assets.cDAI, amountIn);
+            ERC20(Assets.DAI).approve(Assets.cDAI, amountIn);
             amountOut = CTokenInterface(Assets.cDAI).mint(amountIn);
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
@@ -113,7 +113,7 @@ contract LiquidityHelper {
         }
 
         // approve router to spend tokenIn
-        ERC20(tokenIn).safeApprove(Assets.UNISWAP_ROUTER, amountIn);
+        ERC20(tokenIn).approve(Assets.UNISWAP_ROUTER, amountIn);
         SwapRouterLike.ExactInputSingleParams memory params = SwapRouterLike.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
