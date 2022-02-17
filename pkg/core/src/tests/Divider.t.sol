@@ -1353,7 +1353,6 @@ contract Dividers is TestHelper {
     function testFuzzCollectSmallTBal(uint128 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
-        uint256 claimBaseUnit = 10**Token(claim).decimals();
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
@@ -1365,9 +1364,7 @@ contract Dividers is TestHelper {
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
-        (, , , , , uint256 mscale, uint256 maxscale, , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        (, , , , , , , , uint256 maxscale) = divider.series(address(adapter), maturity);
         uint256 tBalNow = cBalanceBefore.fdivUp(maxscale, FixedMath.WAD); // preventive round-up towards the protocol
         uint256 tBalPrev = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
         uint256 collect = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
