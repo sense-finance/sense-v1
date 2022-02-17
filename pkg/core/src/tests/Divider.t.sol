@@ -826,17 +826,46 @@ contract Dividers is TestHelper {
 
     /* ========== redeemZero() tests ========== */
 
-    function testCantRedeemZeroDisabledAdapter() public {
+      function testCanRedeemZero() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (address zero, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
-        divider.setAdapter(address(adapter), false);
+        bob.doIssue(address(adapter), maturity, 10 ** target.decimals());
+        hevm.warp(maturity);
         uint256 balance = ERC20(zero).balanceOf(address(alice));
-        try alice.doRedeemZero(address(adapter), maturity, balance) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        hevm.warp(block.timestamp + 1 days);
+
+        uint256 redeemed = alice.doRedeemZero(address(adapter), maturity, balance);
+
+        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        // Amount of Zeros burned == underlying amount
+        assertClose(redeemed.fmul(mscale), balance);
+        assertEq(balance, ERC20(zero).balanceOf(address(alice)) + balance);
+    }
+
+    function testCanRedeemZeroDisabledAdapter() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address zero, ) = sponsorSampleSeries(address(alice), maturity);
+        hevm.warp(block.timestamp + 1 days);
+        bob.doIssue(address(adapter), maturity, 10 ** target.decimals());
+        hevm.warp(maturity);
+        uint256 balance = ERC20(zero).balanceOf(address(alice));
+
+        hevm.warp(maturity);
+        alice.doSettleSeries(address(adapter), maturity);
+        divider.setAdapter(address(adapter), false);
+
+        hevm.warp(block.timestamp + 1 days);
+
+        uint256 redeemed = alice.doRedeemZero(address(adapter), maturity, balance);
+
+        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        // Amount of Zeros burned == underlying amount
+        assertClose(redeemed.fmul(mscale), balance);
+        assertEq(balance, ERC20(zero).balanceOf(address(alice)) + balance);
     }
 
     function testCantRedeemZeroSeriesDoesntExists() public {
@@ -1200,15 +1229,44 @@ contract Dividers is TestHelper {
 
     /* ========== collect() tests ========== */
 
-    function testCantCollectDisabledAdapter() public {
+    function testCanCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
+        uint256 initScale = adapter.scale();
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+        hevm.warp(block.timestamp + 1 days);
+
+        // Scale has grown so there should be excess yield available
+        assertTrue(initScale < adapter.scale());
+
+        uint256 collected = bob.doCollect(claim);
+        // Collect succeeds
+        assertGt(collected, 0);
+    }
+
+    function testCanCollectDisabledAdapterIfSettled() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 initScale = adapter.scale();
+        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        bob.doIssue(address(adapter), maturity, 1e18);
+        hevm.warp(block.timestamp + 1 days);
+
+        assertTrue(initScale < adapter.scale());
+
         divider.setAdapter(address(adapter), false);
-        try alice.doCollect(claim) {
+
+        // Collect fails if the Series has not been settled
+        try bob.doCollect(claim) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
+
+        divider.backfillScale(address(adapter), maturity, initScale * 1.2e18 / 1e18, usrs, lscales);
+
+        // Collect succeeds if the Series has been backfilled
+        uint256 collected = bob.doCollect(claim);
+        assertGt(collected, 0);
     }
 
     function testCantCollectIfProperLevelIsntSet() public {
@@ -1292,8 +1350,7 @@ contract Dividers is TestHelper {
         }
     }
 
-    function testCollectSmallTBal(uint128 tBal) public {
-        tBal = 1;
+    function testFuzzCollectSmallTBal(uint128 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
         uint256 claimBaseUnit = 10**Token(claim).decimals();
