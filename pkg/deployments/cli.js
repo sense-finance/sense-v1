@@ -40,14 +40,15 @@ task("localhost-faucet", "Sends the provided address ETH and Target")
 
     const targetToMint = ethers.utils.parseEther("100");
 
-    for (let targetName of global.TARGETS) {
+    for (let targe of global.dev.TARGETS) {
+      const { name } = targe;
       const tokenContract = new ethers.Contract(
-        contracts[targetName].address,
+        contracts[name].address,
         ["function mint(address,uint256) external"],
         signer,
       );
 
-      console.log(`Minting ${targetToMint} ${targetName} to ${address}`);
+      console.log(`Minting ${targetToMint} ${name} to ${address}`);
       await tokenContract.mint(address, targetToMint).then(tx => tx.wait());
     }
   });

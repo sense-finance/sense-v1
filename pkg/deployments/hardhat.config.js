@@ -8,34 +8,7 @@ require("hardhat-deploy-ethers");
 require("hardhat-spdx-license-identifier");
 require("hardhat-watcher");
 require("./cli");
-
-const dayjs = require("dayjs");
-const utc = require("dayjs/plugin/utc");
-const weekOfYear = require("dayjs/plugin/weekOfYear");
-
-// For dev scenarios ------------
-global.TARGETS = ["cDAI", "cETH", "cUSDT", "cUSDC", "f6-DAI", "f8-DAI"];
-global.ADAPTERS = {};
-
-dayjs.extend(weekOfYear);
-dayjs.extend(utc);
-global.SERIES_MATURITIES = [
-  // beginning of the week falling between 0 and 1 weeks from now
-  dayjs
-    .utc()
-    .week(dayjs().week() + 1)
-    .startOf("week")
-    .add(1, "day")
-    .unix(),
-  // beginning of the week falling between 1 and 2 weeks from now
-  dayjs
-    .utc()
-    .week(dayjs().week() + 2)
-    .startOf("week")
-    .add(1, "day")
-    .unix(),
-];
-// ------------------------------------
+require("./hardhat.seed");
 
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",

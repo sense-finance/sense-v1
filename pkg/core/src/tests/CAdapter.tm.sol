@@ -53,7 +53,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         adapter = new CAdapter(
             address(divider),
             Assets.cDAI,
-            Assets.RARI_ORACLE,
+            Assets.COMPOUND_PRICE_FEED,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
@@ -68,7 +68,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         cEthAdapter = new CAdapter(
             address(divider),
             Assets.cETH,
-            Assets.RARI_ORACLE,
+            Assets.COMPOUND_PRICE_FEED,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
@@ -84,7 +84,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         cUsdcAdapter = new CAdapter(
             address(divider),
             Assets.cUSDC,
-            Assets.RARI_ORACLE,
+            Assets.COMPOUND_PRICE_FEED,
             ISSUANCE_FEE,
             Assets.DAI,
             STAKE_SIZE,
@@ -111,8 +111,8 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        PriceOracleInterface oracle = PriceOracleInterface(Assets.RARI_ORACLE);
-        uint256 price = oracle.price(Assets.DAI);
+        PriceOracleInterface oracle = PriceOracleInterface(Assets.COMPOUND_PRICE_FEED);
+        uint256 price = oracle.getUnderlyingPrice(Assets.cDAI);
         assertEq(adapter.getUnderlyingPrice(), price);
     }
 
