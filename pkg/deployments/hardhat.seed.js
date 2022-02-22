@@ -47,7 +47,8 @@ const DEV_FACTORIES = [(chainId) => ({
 })]
 // ------------------------------------
 
-// For mainnet scenarios (TBD BEFORE DEPLOYING!!) ------------
+// For mainnet scenarios ------------
+// TODO(launch)
 const MAINNET_SERIES_MATURITIES = [
   // beginning of the week falling between 2 and 3 weeks from now
   dayjs
@@ -64,8 +65,10 @@ const MAINNET_SERIES_MATURITIES = [
     .add(1, "day")
     .unix(),
 ];
+// TODO(launch)
 const MAINNET_TARGETS = (chainId) => [{ name: "cDAI", address: CDAI_TOKEN.get(chainId), guard: ethers.constants.MaxUint256, series: MAINNET_SERIES_MATURITIES }];
 
+// TODO(launch)
 const MAINNET_FACTORIES = [(chainId) => ({
   contractName: "CFactory",
   adapterContract: "CAdapter",
