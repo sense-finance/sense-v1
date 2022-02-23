@@ -576,15 +576,12 @@ contract PeripheryTest is TestHelper {
             uint256 zeroiBal = ERC20(zero).balanceOf(address(balancerVault));
             uint256 targetiBal = target.balanceOf(address(balancerVault));
             uint256 computedTarget = tBal.fmul(
-                zeroiBal.fdiv(
-                    adapter.scale().fmul(targetiBal, tBase).fmul(FixedMath.WAD - adapter.ifee()) + zeroiBal,
-                    FixedMath.WAD
-                ),
+                zeroiBal.fdiv(adapter.scale().fmul(targetiBal).fmul(FixedMath.WAD - adapter.ifee()) + zeroiBal, tBase),
                 tBase
             ); // ABDK formula
 
             // to issue
-            uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(computedTarget, tBase);
+            uint256 fee = computedTarget.fmul(adapter.ifee());
             uint256 toBeIssued = (computedTarget - fee).fmul(lscale, FixedMath.WAD);
 
             MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
@@ -658,14 +655,11 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             (, uint256 lscale) = adapter.lscale();
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(
-                    lscale.fmul(balances[0], tBase).fmul(FixedMath.WAD - adapter.ifee()) + balances[1],
-                    FixedMath.WAD
-                ),
+                balances[1].fdiv(lscale.fmul(balances[0]).fmul(FixedMath.WAD - adapter.ifee()) + balances[1], tBase),
                 tBase
             ); // ABDK formula
 
-            uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(proportionalTarget, tBase);
+            uint256 fee = proportionalTarget.fmul(adapter.ifee());
             toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
         }
 
@@ -710,15 +704,13 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 scale = 1e18;
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(
-                    scale.fmul(balances[0], tBase).fmul(FixedMath.WAD - adapter.ifee()) + balances[1],
-                    FixedMath.WAD
-                ),
+                balances[1].fdiv(scale.fmul(balances[0]).fmul(FixedMath.WAD - adapter.ifee()) + balances[1], tBase),
                 tBase
             ); // ABDK formula
+
             (, uint256 lscale) = adapter.lscale();
-            uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(proportionalTarget, tBase);
-            toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
+            uint256 fee = adapter.ifee().fmul(proportionalTarget);
+            toBeIssued = (proportionalTarget - fee).fmul(lscale);
         }
 
         {
