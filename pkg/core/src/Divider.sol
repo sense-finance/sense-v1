@@ -279,7 +279,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         // Convert from units of Underlying to units of Target
         ERC20 target = ERC20(Adapter(adapter).target());
-        tBal = uBal.fdiv(cscale, FixedMath.WAD);
+        tBal = uBal.fdiv(cscale);
         target.safeTransferFrom(adapter, msg.sender, tBal);
 
         // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify

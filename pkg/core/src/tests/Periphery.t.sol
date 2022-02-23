@@ -576,7 +576,10 @@ contract PeripheryTest is TestHelper {
             uint256 zeroiBal = ERC20(zero).balanceOf(address(balancerVault));
             uint256 targetiBal = target.balanceOf(address(balancerVault));
             uint256 computedTarget = tBal.fmul(
-                zeroiBal.fdiv(adapter.scale().fmul(targetiBal, tBase) + zeroiBal, FixedMath.WAD),
+                zeroiBal.fdiv(
+                    adapter.scale().fmul(targetiBal, tBase).fmul(FixedMath.WAD - adapter.ifee()) + zeroiBal,
+                    FixedMath.WAD
+                ),
                 tBase
             ); // ABDK formula
 
@@ -653,12 +656,15 @@ contract PeripheryTest is TestHelper {
         {
             // calculate claims to be issued
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            uint256 scale = 1e18;
+            (, uint256 lscale) = adapter.lscale();
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], FixedMath.WAD),
+                balances[1].fdiv(
+                    lscale.fmul(balances[0], tBase).fmul(FixedMath.WAD - adapter.ifee()) + balances[1],
+                    FixedMath.WAD
+                ),
                 tBase
             ); // ABDK formula
-            (, uint256 lscale) = adapter.lscale();
+
             uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(proportionalTarget, tBase);
             toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
         }
@@ -704,7 +710,10 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 scale = 1e18;
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(scale.fmul(balances[0], tBase) + balances[1], FixedMath.WAD),
+                balances[1].fdiv(
+                    scale.fmul(balances[0], tBase).fmul(FixedMath.WAD - adapter.ifee()) + balances[1],
+                    FixedMath.WAD
+                ),
                 tBase
             ); // ABDK formula
             (, uint256 lscale) = adapter.lscale();
@@ -744,7 +753,8 @@ contract PeripheryTest is TestHelper {
         {
             // calculate zeros to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
+            uint256 proportionalTarget = tBal *
+                (balances[1] / ((1e18 * balances[0] * (FixedMath.WAD - adapter.ifee())) / FixedMath.WAD + balances[1])); // ABDK formula
             uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(proportionalTarget, tBase);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
 
@@ -855,9 +865,10 @@ contract PeripheryTest is TestHelper {
             level,
             address(reward)
         );
-        divider.addAdapter(address(aAdapter));
+
+        periphery.verifyAdapter(address(aAdapter), true);
+        periphery.onboardAdapter(address(aAdapter));
         divider.setGuard(address(aAdapter), 10 * 2**128);
-        poolManager.addTarget(address(target), address(aAdapter));
 
         alice.doApprove(address(target), address(divider));
         bob.doApprove(address(target), address(periphery));
@@ -866,7 +877,6 @@ contract PeripheryTest is TestHelper {
 
         (address zero, ) = alice.doSponsorSeries(address(aAdapter), maturity);
         address pool = spaceFactory.create(address(aAdapter), maturity);
-        poolManager.queueSeries(address(aAdapter), maturity, pool);
 
         (, uint256 lscale) = aAdapter.lscale();
         uint256[] memory minAmountsOut = new uint256[](2);

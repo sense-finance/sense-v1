@@ -566,13 +566,13 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256, uint256) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        bool isFirstProvision = pool.totalSupply() == 0;
         // Compute target
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
         (uint256 zeroi, uint256 targeti) = pool.getIndices(); // Ensure we have the right token Indices
 
-        // We do not add zeros liquidity on the first provision (hence, we skip computation)
-        uint256 zBalInTarget = isFirstProvision ? 0 : _computeTarget(adapter, balances[zeroi], balances[targeti], tBal);
+        // We do not add Zeros liquidity if it haven't been initialized yet
+        bool zerosInitialized = balances[zeroi] != 0;
+        uint256 zBalInTarget = zerosInitialized ? _computeTarget(adapter, balances[zeroi], balances[targeti], tBal) : 0;
 
         // Issue Zeros & Claim (skip if first pool provision)
         uint256 issued = zBalInTarget > 0 ? divider.issue(adapter, maturity, zBalInTarget) : 0;
@@ -594,7 +594,12 @@ contract Periphery is Trust {
         uint256 tBal
     ) internal returns (uint256) {
         uint256 tBase = 10**ERC20(Adapter(adapter).target()).decimals();
-        return tBal.fmul(zeroiBal.fdiv(Adapter(adapter).scale().fmul(targetiBal, tBase) + zeroiBal), tBase);
+        uint256 ifee = Adapter(adapter).ifee();
+        return
+            tBal.fmul(
+                zeroiBal.fdiv(Adapter(adapter).scale().fmul(FixedMath.WAD - ifee).fmul(targetiBal, tBase) + zeroiBal),
+                tBase
+            );
     }
 
     function _removeLiquidity(
