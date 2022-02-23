@@ -597,7 +597,7 @@ contract Periphery is Trust {
         uint256 ifee = Adapter(adapter).ifee();
         return
             tBal.fmul(
-                zeroiBal.fdiv(Adapter(adapter).scale().fmul(FixedMath.WAD - ifee).fmul(targetiBal, tBase) + zeroiBal),
+                zeroiBal.fdiv(Adapter(adapter).scale().fmul(FixedMath.WAD - ifee).fmul(targetiBal) + zeroiBal, tBase),
                 tBase
             );
     }

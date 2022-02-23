@@ -32,7 +32,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       const { zero: zeroAddress, claim: claimAddress } = await periphery.callStatic.sponsorSeries(
         adapter.address,
         seriesMaturity,
-        true
+        true,
       );
       console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
@@ -160,6 +160,12 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
         .then(t => t.wait());
+
+      const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
+      // If there's anything more than dust in the Periphery, throw
+      if (peripheryDust > 100) {
+        throw new Error("Periphery has an unexpected amount of Target dust");
+      }
 
       console.log("removing liquidity to target");
       await periphery
