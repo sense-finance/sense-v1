@@ -32,7 +32,7 @@ contract Claims is TestHelper {
         collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
-        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {

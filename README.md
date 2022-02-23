@@ -147,7 +147,7 @@ When Series are initialized, Zeros and Claims are deployed and they take the sam
 A Collection of Modules and Utilities for Sense V1
 
 #### Space
-`Space` is an Zero/Target AMM Pool built on Balancer V2. It implements the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant but introduces a meaningful improvement by allowing LPs to deposit a yield-generating _quote_ asset, i.e. the Target, instead of the Zero's Underlying, as was originally concieved. Because its TWAP price is utilized by the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol) and its oracle functionality. Each Series will have a unique `Space` for Zero/Target trading, which will be deployed and initialized through the `Space Factory`. More context on `Space`'s development can be found here (TODO, add link)
+`Space` is an Zero/Target AMM Pool built on Balancer V2. It implements the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant but introduces a meaningful improvement by allowing LPs to deposit a yield-generating _quote_ asset, i.e. the Target, instead of the Zero's Underlying, as was originally concieved. Because its TWAP price is utilized by the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol) and its oracle functionality. Each Series will have a unique `Space` for Zero/Target trading, which will be deployed and initialized through the `Space Factory`. More context on `Space`'s development can be found [here](https://github.com/sense-finance/space-v1)
 
 #### Pool Manager
 `PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros, the Space LP Shares, and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`), Zeros and their Space LP shares (`queueSeries()` & `addSeries()`). Once new assets are onboarded, the Sense Fuse Pool will query price data from the `Master Oracle` which exposes a mapping, linking token addresses to oracle addresses. 
@@ -202,7 +202,7 @@ These are libraries we need as part of the protocol that we've imported from oth
 2. Set `ALCHEMY_KEY` to a valid Alchemy API key
 3. Set `MNEMONIC` to a valid seed phrase for deployments
 
-## Branching (TBD)
+## Branching TODO(launch)
 
 Right now, we will be just using `dev` and  `master` branches.
 

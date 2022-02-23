@@ -73,18 +73,6 @@ contract TestHelper is DSTest {
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
 
-    struct Series {
-        address zero; // Zero address for this Series (deployed on Series initialization)
-        address claim; // Claim address for this Series (deployed on Series initialization)
-        address sponsor; // Series initializer/sponsor
-        uint256 issuance; // Issuance date for this Series (needed for Zero redemption)
-        uint256 reward; // Tracks the fees due to the settler on Settlement
-        uint256 iscale; // Scale value at issuance
-        uint256 mscale; // Scale value at maturity
-        uint256 stakeBal; // Balance staked at initialisation TODO: do we want to keep this?
-        address stake; // Address of the stake stakeBal token TODO: do we want to keep this?
-    }
-
     function setUp() public virtual {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
