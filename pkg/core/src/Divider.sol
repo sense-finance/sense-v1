@@ -208,12 +208,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (issuanceFee > ISSUANCE_FEE_CAP) revert Errors.IssuanceFeeCapExceeded();
         uint256 fee = tBal.fmul(issuanceFee);
 
-        series[adapter][maturity].reward += fee;
+        unchecked {
+            // Safety: bounded by the Target's total token supply
+            series[adapter][maturity].reward += fee;
+        }
         uint256 tBalSubFee = tBal - fee;
 
         // Ensure the caller won't hit the issuance cap with this action
-        if (guarded && target.balanceOf(adapter) + tBal > adapterMeta[address(adapter)].guard)
-            revert Errors.GuardCapReached();
+        unchecked {
+            // Safety: bounded by the Target's total token supply
+            if (guarded && target.balanceOf(adapter) + tBal > adapterMeta[address(adapter)].guard)
+                revert Errors.GuardCapReached();
+        }
 
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
@@ -257,6 +263,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external nonReentrant whenNotPaused returns (uint256 tBal) {
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
+
         uint256 level = adapterMeta[adapter].level;
         if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();
 
@@ -278,13 +285,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         // Convert from units of Underlying to units of Target
-        ERC20 target = ERC20(Adapter(adapter).target());
         tBal = uBal.fdiv(cscale);
-        target.safeTransferFrom(adapter, msg.sender, tBal);
+        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
 
         // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify
         if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
-        tBal += collected;
+        unchecked {
+            // Safety: bounded by the Target's total token supply
+            tBal += collected;
+        }
         emit Combined(adapter, maturity, tBal, msg.sender);
     }
 
@@ -415,7 +424,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // is what Claim holders are collecting
         uint256 tBalNow = uBal.fdivUp(_series.maxscale); // preventive round-up towards the protocol
         uint256 tBalPrev = uBal.fdiv(lscale);
-        collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
+        unchecked {
+            collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
+        }
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, collected);
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
