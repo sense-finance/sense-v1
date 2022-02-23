@@ -1,7 +1,8 @@
 const fs = require("fs");
 const { exec } = require("child_process");
+const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const signer = await ethers.getSigner(deployer);
@@ -10,11 +11,15 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
   
+  log("\n-------------------------------------------------------")
+  log("DEPLOY FACTORIES & ADAPTERS")
+  log("-------------------------------------------------------")
   for (let factory of global.mainnet.FACTORIES) {
     const { contractName, adapterContract, reward, ifee, stake, stakeSize, minm, maxm, mode, oracle, tilt, targets } = factory(chainId);
     if (!reward) throw Error("No reward token found");
     if (!stake) throw Error("No stake token found");
-    console.log(`\nDeploy ${contractName}`);
+
+    log(`\nDeploy ${contractName}`);
     const factoryParams = [oracle, ifee, stake, stakeSize, minm, maxm, mode, tilt];
     const { address: cFactoryAddress } = await deploy("CFactory", {
       from: deployer,
@@ -22,30 +27,33 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
       log: true,
     });
 
-    console.log(`Trust ${contractName} on the divider`);
+    log(`Trust ${contractName} on the divider`);
     await (await divider.setIsTrusted(cFactoryAddress, true)).wait();
   
-    console.log(`Add ${contractName} support to Periphery`);
+    log(`Add ${contractName} support to Periphery`);
     await (await periphery.setFactory(cFactoryAddress, true)).wait();
     
-    console.log(`\nDeploy Adapters for ${contractName} adapter factory`);
+    log("\n-------------------------------------------------------")
+    log(`DEPLOY ADAPTERS FOR: ${contractName}`);
+    log("-------------------------------------------------------")
     for (let target of targets) {
       const { name, address, guard } = target;
       
-      console.log(`Deploy ${name} adapter`);
+      log(`\nDeploy ${name} adapter`);
       const adapterAddress = await periphery.callStatic.deployAdapter(cFactoryAddress, address);
       await (await periphery.deployAdapter(cFactoryAddress, address)).wait();
 
-      console.log(`Set ${name} adapter issuance cap to max uint so we don't have to worry about it`);
+      log(`Set ${name} adapter issuance cap to max uint so we don't have to worry about it`);
       await divider.setGuard(adapterAddress, guard).then(tx => tx.wait());
       
-      console.log(`Can call scale value`);
+      log(`Can call scale value`);
       const { abi: adapterAbi } = await deployments.getArtifact(adapterContract);
       const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
       const scale = await adapter.callStatic.scale();
-      console.log(`-> scale: ${scale.toString()}`);
+      log(`-> scale: ${scale.toString()}`);
 
       global.mainnet.ADAPTERS[name] = { address: adapterAddress, abi: adapterAbi }
+
     }
   }
 

@@ -4,14 +4,16 @@ const {
   MASTER_ORACLE,
   INTEREST_RATE_MODEL,
 } = require("../../hardhat.addresses");
+const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
   const divider = await ethers.getContract("Divider");
 
+  log("\n-------------------------------------------------------")
   console.log("\nDeploy mocked fuse & comp dependencies");
   const { address: mockComptrollerAddress } = await deploy("MockComptroller", {
     from: deployer,
@@ -24,6 +26,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     log: true,
   });
 
+  log("\n-------------------------------------------------------")
   console.log("\nDeploy a pool manager with mocked dependencies");
   await deploy("PoolManager", {
     from: deployer,
@@ -32,6 +35,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   });
   const poolManager = await ethers.getContract("PoolManager");
 
+  log("\n-------------------------------------------------------")
   console.log("\nDeploy Sense Fuse pool via Pool Manager");
   await (
     await poolManager.deployPool(
@@ -42,7 +46,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
     )
   ).wait();
 
-  console.log("Set target params via Pool Manager");
+  log("Set target params via Pool Manager");
   const params = {
     irModel: INTEREST_RATE_MODEL.get(chainId),
     reserveFactor: ethers.utils.parseEther("0.1"),

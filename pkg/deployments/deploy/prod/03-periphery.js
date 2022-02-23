@@ -1,6 +1,7 @@
 const { BALANCER_VAULT } = require("../../hardhat.addresses");
+const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -12,17 +13,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   const spaceFactory = await ethers.getContract("SpaceFactory");
   const poolManager = await ethers.getContract("PoolManager");
 
-  console.log("\nDeploy Periphery");
+  log("\n-------------------------------------------------------")
+  log("\nDeploy Periphery");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
     args: [divider.address, poolManager.address, spaceFactory.address, balancerVault],
     log: true,
   });
 
-  console.log("Set the periphery on the Divider");
+  log("Set the periphery on the Divider");
   await (await divider.setPeriphery(peripheryAddress)).wait();
 
-  console.log("Give the periphery auth over the pool manager");
+  log("Give the periphery auth over the pool manager");
   await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
 };
 

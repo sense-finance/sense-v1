@@ -1,13 +1,15 @@
+const log = console.log;
 const { WETH_TOKEN } = require("../../hardhat.addresses");
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
   const divider = await ethers.getContract("Divider");
-
-  console.log("\nDeploy Space & Space dependencies");
+  
+  log("\n-------------------------------------------------------")
+  log("\nDeploy Space & Space dependencies");
   const { address: authorizerAddress } = await deploy("Authorizer", {
     from: deployer,
     args: [deployer],

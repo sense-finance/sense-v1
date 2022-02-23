@@ -6,8 +6,9 @@ const {
   MASTER_ORACLE, 
   INTEREST_RATE_MODEL 
 } = require("../../hardhat.addresses");
+const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deployer } = await getNamedAccounts();
   const { deploy } = deployments;
   const chainId = await getChainId();
@@ -27,49 +28,51 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   const divider = await ethers.getContract("Divider");
 
-  console.log("\nDeploy the Fuse Pool Manager");
+  log("\n-------------------------------------------------------")
+  log("\nDeploy the Fuse Pool Manager");
   await deploy("PoolManager", {
     from: deployer,
     args: [fusePoolDir, comptrollerImpl, fuseCERC20Impl, divider.address, masterOracleImpl],
     log: true,
   });
 
-  console.log("\nDeploy Sense Fuse pool via Pool Manager");
+  log("\n-------------------------------------------------------")
+  log("\nDeploy Sense Fuse pool via Pool Manager");
   const poolManager = await ethers.getContract("PoolManager");
   await (
     await poolManager.deployPool(
       "Sense Pool",
-      ethers.utils.parseEther("0.051"), // TBD
-      ethers.utils.parseEther("1"), // TBD
+      ethers.utils.parseEther("0.051"), // TODO(launch)
+      ethers.utils.parseEther("1"), // TODO(launch)
       masterOracle,
     )
   ).wait();
 
-  console.log("Set target params via Pool Manager");
+  log("Set target params via Pool Manager");
   const targetParams = {
-    irModel: interestRateModel, // TBD
-    reserveFactor: ethers.utils.parseEther("0.1"), // TBD
-    collateralFactor: ethers.utils.parseEther("0.5"), // TBD
-    closeFactor: ethers.utils.parseEther("0.051"), // TBD
-    liquidationIncentive: ethers.utils.parseEther("1"), // TBD
+    irModel: interestRateModel, // TODO(launch)
+    reserveFactor: ethers.utils.parseEther("0.1"), // TODO(launch)
+    collateralFactor: ethers.utils.parseEther("0.5"), // TODO(launch)
+    closeFactor: ethers.utils.parseEther("0.051"), // TODO(launch)
+    liquidationIncentive: ethers.utils.parseEther("1"), // TODO(launch)
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)).wait();
 
   const zeroParams = {
-    irModel: interestRateModel, // TBD
-    reserveFactor: ethers.utils.parseEther("0.1"), // TBD
-    collateralFactor: ethers.utils.parseEther("0.5"), // TBD
-    closeFactor: ethers.utils.parseEther("0.051"), // TBD
-    liquidationIncentive: ethers.utils.parseEther("1"), // TBD
+    irModel: interestRateModel, // TODO(launch)
+    reserveFactor: ethers.utils.parseEther("0.1"), // TODO(launch)
+    collateralFactor: ethers.utils.parseEther("0.5"), // TODO(launch)
+    closeFactor: ethers.utils.parseEther("0.051"), // TODO(launch)
+    liquidationIncentive: ethers.utils.parseEther("1"), // TODO(launch)
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("ZERO_PARAMS"), zeroParams)).wait();
 
   const lpParams = {
-    irModel: interestRateModel, // TBD
-    reserveFactor: ethers.utils.parseEther("0.1"), // TBD
-    collateralFactor: ethers.utils.parseEther("0.5"), // TBD
-    closeFactor: ethers.utils.parseEther("0.051"), // TBD
-    liquidationIncentive: ethers.utils.parseEther("1"), // TBD
+    irModel: interestRateModel, // TODO(launch)
+    reserveFactor: ethers.utils.parseEther("0.1"), // TODO(launch)
+    collateralFactor: ethers.utils.parseEther("0.5"), // TODO(launch)
+    closeFactor: ethers.utils.parseEther("0.051"), // TODO(launch)
+    liquidationIncentive: ethers.utils.parseEther("1"), // TODO(launch)
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("LP_TOKEN_PARAMS"), lpParams)).wait();
 };

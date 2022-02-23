@@ -1,3 +1,5 @@
+const log = console.log;
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -7,17 +9,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const balancerVault = await ethers.getContract("Vault");
   const spaceFactory = await ethers.getContract("SpaceFactory");
 
-  console.log("\nDeploy a Periphery with mocked dependencies");
+  log("\n-------------------------------------------------------")
+  log("\nDeploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
     args: [divider.address, poolManager.address, spaceFactory.address, balancerVault.address],
     log: true,
   });
 
-  console.log("Set the periphery on the Divider");
+  log("Set the periphery on the Divider");
   await (await divider.setPeriphery(peripheryAddress)).wait();
 
-  console.log("Give the periphery auth over the pool manager");
+  log("Give the periphery auth over the pool manager");
   await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
 };
 

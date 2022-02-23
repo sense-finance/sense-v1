@@ -1,7 +1,8 @@
 const fs = require("fs");
 const { exec } = require("child_process");
+const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const signer = await ethers.getSigner(deployer);
@@ -10,6 +11,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
 
+  log("\n-------------------------------------------------------")
+  log("DEPLOY DEPENDENCIES, FACTORIES & ADAPTERS")
+  log("-------------------------------------------------------")
+
   const stake = await deployStake();
   const airdrop = await deployAirdrop();
 
@@ -17,7 +22,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   for (let factory of global.dev.FACTORIES) {
     const { contractName, ifee, stakeSize, minm, maxm, mode, oracle, tilt, targets } = factory(chainId);
-    console.log(`\nDeploy ${contractName} with mocked dependencies`);
+    log(`\nDeploy ${contractName} with mocked dependencies`);
     // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
     const factoryParams = [oracle, ifee, stake.address, stakeSize, minm, maxm, mode, tilt];
     const { address: mockFactoryAddress } = await deploy(contractName, {
@@ -27,10 +32,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     });
     const factoryContract = await ethers.getContract(contractName);
 
-    console.log(`Trust ${contractName} on the divider`);
+    log(`Trust ${contractName} on the divider`);
     await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
   
-    console.log(`Add ${contractName} support to Periphery`);
+    log(`Add ${contractName} support to Periphery`);
     await (await periphery.setFactory(mockFactoryAddress, true)).wait();
   
     await deploy("MultiMint", {
@@ -40,39 +45,41 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     });
     const multiMint = await ethers.getContract("MultiMint");
 
-    console.log(`\nDeploy Underlyings, Targets & Adapters for ${contractName}`);
+    log("\n-------------------------------------------------------")
+    log(`DEPLOY UNDERLYINGS, TARGETS & ADAPTERS FOR: ${contractName}`);
+    log("-------------------------------------------------------")
     for (let t of targets) {
       const targetName = t.name;
-      console.log(`\nDeploy simulated ${targetName}`);
+      log(`\nDeploy simulated ${targetName}`);
       
       const underlying = await getUnderlyingForTarget(targetName);
       const target = await deployTarget(targetName, underlying.address);
       await new Promise(res => setTimeout(res, 500));
   
-      console.log("Give the multi minter permission on Target");
+      log("Give the multi minter permission on Target");
       await (await target.setIsTrusted(multiMint.address, true)).wait();
   
-      console.log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
+      log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
       await multiMint.mint([target.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
   
-      console.log(`Add ${targetName} support for mocked Factory`);
+      log(`Add ${targetName} support for mocked Factory`);
       await (await factoryContract.addTarget(target.address, true)).wait();
   
       const adapterAddress = await deployAdapter(targetName, target.address, mockFactoryAddress);
   
-      console.log("Give the adapter minter permission on Target");
+      log("Give the adapter minter permission on Target");
       await (await target.setIsTrusted(adapterAddress, true)).wait();
   
-      console.log("Give the adapter minter permission on Underlying");
+      log("Give the adapter minter permission on Underlying");
       await (await underlying.setIsTrusted(adapterAddress, true)).wait();
   
-      console.log("Grant minting authority on the Reward token to the mock TWrapper");
+      log("Grant minting authority on the Reward token to the mock TWrapper");
       await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
   
-      console.log(`Set ${targetName} adapter issuance cap to max uint so we don't have to worry about it`);
+      log(`Set ${targetName} adapter issuance cap to max uint so we don't have to worry about it`);
       await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
   
-      console.log(`Can call and set scale value`);
+      log(`Can call and set scale value`);
       await setScale(adapterAddress);
     }
   }
@@ -113,7 +120,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   async function deployAdapter(targetName, targetAddress, factoryAddress) {
     const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, targetAddress);
-    console.log(`Onboard target ${targetName} via Periphery`);
+    log(`Onboard target ${targetName} via Periphery`);
     await (await periphery.deployAdapter(factoryAddress, targetAddress)).wait();
     global.dev.ADAPTERS[targetName] = adapterAddress;
     return adapterAddress;
@@ -123,12 +130,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
     const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
     const scale = await adapter.callStatic.scale();
-    console.log(`-> scale: ${scale.toString()}`);
+    log(`-> scale: ${scale.toString()}`);
     await adapter.setScale(ethers.utils.parseEther("1.1")).then(tx => tx.wait());
   }
 
   async function deployStake() {
-    console.log("\nDeploy a simulated stake token named STAKE");
+    log("\nDeploy a simulated stake token named STAKE");
     await deploy("STAKE", {
       contract: "Token",
       from: deployer,
@@ -137,13 +144,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     });
     const stake = await ethers.getContract("STAKE");
 
-    console.log("Mint the deployer a balance of 1,000,000 STAKE");
+    log("Mint the deployer a balance of 1,000,000 STAKE");
     await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
     return stake;
   }
   async function deployAirdrop() {
-    console.log("\nDeploy a simulated airdrop reward token named Airdrop");
+    log("\nDeploy a simulated airdrop reward token named Airdrop");
     await deploy("Airdrop", {
       contract: "Token",
       from: deployer,

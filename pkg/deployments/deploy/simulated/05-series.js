@@ -1,10 +1,11 @@
+const log = console.log;
 const dayjs = require("dayjs");
 
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
 
-module.exports = async function ({ ethers, getNamedAccounts }) {
+module.exports = async function () {
   const divider = await ethers.getContract("Divider");
   const stake = await ethers.getContract("STAKE");
   const periphery = await ethers.getContract("Periphery");
@@ -13,7 +14,10 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
   const chainId = await getChainId();
   const signer = await ethers.getSigner(deployer);
 
-  console.log("Enable the Periphery to move the Deployer's STAKE for Series sponsorship");
+  log("\n-------------------------------------------------------")
+  log("SPONSOR SERIES & SANITY CHECK SWAPS")
+  log("-------------------------------------------------------")
+  log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
   await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
   const balancerVault = await ethers.getContract("Vault");
@@ -22,10 +26,10 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
   for (let factory of global.dev.FACTORIES) {
     for (let t of factory(chainId).targets) {
       const { name: targetName, series } = t;
-      console.log(JSON.stringify(t));
       const target = await ethers.getContract(targetName);
-
-      console.log("Enable the Divider to move the deployer's Target for issuance");
+      
+      log("\n-------------------------------------------------------")
+      log(`\nEnable the Divider to move the deployer's ${targetName} for issuance`);
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       for (let seriesMaturity of series) {
@@ -38,10 +42,10 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
           seriesMaturity,
           true
         );
-        console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
+        log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
         await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
 
-        console.log("Have the deployer issue the first 1,000,000 Target worth of Zeros/Claims for this Series");
+        log("Have the deployer issue the first 1,000,000 Target worth of Zeros/Claims for this Series");
         await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
         const { abi: tokenAbi } = await deployments.getArtifact("Token");
@@ -57,13 +61,13 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
 
         const { tokens } = await balancerVault.getPoolTokens(poolId);
 
-        console.log("Sending Zeros to mock Balancer Vault");
+        log("Sending Zeros to mock Balancer Vault");
         await zero.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
         await target.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
         const { defaultAbiCoder } = ethers.utils;
 
-        console.log("Initializing Target in pool with the first Join");
+        log("Initializing Target in pool with the first Join");
         const { _zeroi, _targeti } = await pool.getIndices();
         const initialBalances = [null, null];
         initialBalances[_zeroi] = 0;
@@ -79,7 +83,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
           })
           .then(tx => tx.wait());
 
-        console.log("Making swap to init Zeros");
+        log("Making swap to init Zeros");
         await balancerVault
           .swap(
             {
@@ -121,7 +125,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
             1) *
           100;
 
-        console.log(
+        log(
           `
             Target ${targetName}
             Maturity: ${dayjs(seriesMaturity * 1000).format("YYYY-MM-DD")}
@@ -132,35 +136,35 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
         );
 
         // Sanity check that all the swaps on this testchain are working
-        console.log(`--- Sanity check swaps ---`);
+        log(`--- Sanity check swaps ---`);
 
         await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
         await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
         await claim.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
         await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
-        console.log("swapping target for zeros");
+        log("swapping target for zeros");
         await periphery
           .swapTargetForZeros(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
           .then(tx => tx.wait());
 
-        console.log("swapping target for claims");
+        log("swapping target for claims");
         await periphery
           .swapTargetForClaims(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
           .then(tx => tx.wait());
 
-        console.log("swapping zeros for target");
+        log("swapping zeros for target");
         await zero.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
         await periphery
           .swapZerosForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"), 0)
           .then(tx => tx.wait());
 
-        console.log("swapping claims for target");
+        log("swapping claims for target");
         await periphery
           .swapClaimsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
           .then(tx => tx.wait());
 
-        console.log("adding liquidity via target");
+        log("adding liquidity via target");
         await periphery
           .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
           .then(t => t.wait());
@@ -171,7 +175,7 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
           throw new Error("Periphery has an unexpected amount of Target dust");
         }
 
-        console.log("removing liquidity to target");
+        log("removing liquidity to target");
         await periphery
           .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), [0, 0], 0)
           .then(t => t.wait());

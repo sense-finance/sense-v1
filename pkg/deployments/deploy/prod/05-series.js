@@ -1,11 +1,7 @@
 const dayjs = require("dayjs");
-const { BALANCER_VAULT } = require("../../hardhat.addresses");
+const log = console.log;
 
-const ONE_MINUTE_MS = 60 * 1000;
-const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
-const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
-
-module.exports = async function ({ ethers, getNamedAccounts }) {
+module.exports = async function () {
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
   const { deployer } = await getNamedAccounts();
@@ -13,20 +9,23 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
   const chainId = await getChainId();
   const signer = await ethers.getSigner(deployer);
 
+  log("\n-------------------------------------------------------")
+  log("SPONSOR SERIES")
+  log("-------------------------------------------------------")
   for (let factory of global.mainnet.FACTORIES) {
     for (let t of factory(chainId).targets) {
       const { name: targetName, series, address: targetAddress } = t;
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const target = new ethers.Contract(targetAddress, tokenAbi, signer);
-    
-      console.log("Enable the Divider to move the deployer's Target for issuance");
+      
+      log("\nEnable the Divider to move the deployer's Target for issuance");
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       for (let seriesMaturity of series) {
         const { address: adapterAddress, abi: adapterAbi } = global.mainnet.ADAPTERS[targetName];
         const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
         
-        console.log("Enable the Periphery to move the Deployer's STAKE for Series sponsorship");
+        log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
         const stakeAddress = await adapter.stake();
         const { abi: tokenAbi } = await deployments.getArtifact("Token");
         const stake = new ethers.Contract(stakeAddress, tokenAbi, signer);
@@ -45,9 +44,10 @@ module.exports = async function ({ ethers, getNamedAccounts }) {
           await stake.transfer(deployer, ethers.utils.parseEther("10000")).then(tx => tx.wait()); // 10'000 DAI
         }
         
-        console.log(`Initializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
+        log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
         await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
       }
+      log("\n-------------------------------------------------------")
     }
   }
 };
