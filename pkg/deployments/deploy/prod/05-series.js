@@ -31,24 +31,37 @@ module.exports = async function () {
         const stake = new ethers.Contract(stakeAddress, tokenAbi, signer);
         await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
         
-        // if fork from mainnet
-        if (chainId == '111') {
-          // TODO: maybe use hardhat_setStorageAt instead?
-          const DAI_HOLDER_ADDRESS = "0x1e3d6eab4bcf24bcd04721caa11c478a2e59852d"; // account with DAI balance
-          await hre.network.provider.request({
-            method: "hardhat_impersonateAccount",
-            params: [DAI_HOLDER_ADDRESS], 
-          });
-          const signer = await ethers.getSigner(DAI_HOLDER_ADDRESS);
-          const stake = new ethers.Contract(stakeAddress, tokenAbi, signer);
-          await stake.transfer(deployer, ethers.utils.parseEther("10000")).then(tx => tx.wait()); // 10'000 DAI
+        const stakeSize = await adapter.stakeSize();
+        const balance = await stake.balanceOf(deployer); // deployer's stake balance
+        if (balance.lt(stakeSize)) {
+          // if fork from mainnet
+          if (chainId == '111' && process.env.FORK_TOP_UP) {
+            await getStakeTokens(stakeAddress, tokenAbi)
+          } else {
+            throw Error("Not enough stake funds on wallet")
+          }
         }
-        
         log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
         await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
+
       }
       log("\n-------------------------------------------------------")
     }
+  }
+
+  // TODO: make it extensible to other tokens than just DAI
+  async function getStakeTokens(stakeAddress) {
+    const { abi } = await deployments.getArtifact("Token");
+    // TODO: maybe use hardhat_setStorageAt instead?
+    const DAI_HOLDER_ADDRESS = "0x1e3d6eab4bcf24bcd04721caa11c478a2e59852d"; // account with DAI balance
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [DAI_HOLDER_ADDRESS], 
+    });
+    const signer = await ethers.getSigner(DAI_HOLDER_ADDRESS);
+    const stake = new ethers.Contract(stakeAddress, abi, signer);
+    await stake.transfer(deployer, ethers.utils.parseEther("10000")).then(tx => tx.wait()); // 10'000 DAI
+    log(`\n10'000 ${await stake.symbol()} transferred to deployer: ${deployer}`);
   }
 };
 

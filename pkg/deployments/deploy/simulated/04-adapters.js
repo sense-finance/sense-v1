@@ -1,5 +1,4 @@
-const fs = require("fs");
-const { exec } = require("child_process");
+const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile } = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -86,6 +85,9 @@ module.exports = async function () {
 
 
   if (!process.env.CI) {
+    log("\n-------------------------------------------------------")
+    await moveDeployments();
+    await writeDeploymentsToFile();
     await writeAdaptersToFile();
   }
 
@@ -158,22 +160,6 @@ module.exports = async function () {
       log: true,
     });
     return await ethers.getContract("Airdrop");
-  }
-
-  async function writeAdaptersToFile() {
-    const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
-    const currentTag = await new Promise((resolve, reject) => {
-      exec("git describe --abbrev=0", (error, stdout, stderr) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(stdout ? stdout : stderr);
-      });
-    });
-
-    const deploymentDir = `./adapter-deployments/${currentTag.trim().replace(/(\r\n|\n|\r)/gm, "")}/`;
-    fs.mkdirSync(deploymentDir, { recursive: true });
-    fs.writeFileSync(`./${deploymentDir}/adapters.json`, JSON.stringify({ addresses: global.dev.ADAPTERS, adapterAbi }));
   }
 
 };

@@ -1,7 +1,7 @@
 const fs = require("fs");
 const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
