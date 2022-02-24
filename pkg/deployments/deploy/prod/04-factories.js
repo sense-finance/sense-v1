@@ -1,3 +1,4 @@
+const { network } = require("hardhat");
 const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile } = require("../../hardhat.utils");
 const log = console.log;
 
@@ -50,13 +51,9 @@ module.exports = async function () {
       const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
       const scale = await adapter.callStatic.scale();
       log(`-> scale: ${scale.toString()}`);
-
-      global.mainnet.ADAPTERS[name] = { address: adapterAddress, abi: adapterAbi }
-
     }
   }
-
-  if (!process.env.CI) {
+  if (!process.env.CI && hre.config.networks[network.name].saveDeployments) {
     log("\n-------------------------------------------------------")
     await moveDeployments();
     await writeDeploymentsToFile();

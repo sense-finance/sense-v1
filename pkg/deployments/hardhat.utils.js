@@ -40,7 +40,21 @@ exports.writeDeploymentsToFile = async function() {
 
 // Writes deployed adapters addresses (without ABI) into adapters.json 
 exports.writeAdaptersToFile = async function() {
-  const tag = await currentTag();
+  try {
+    const tag = await currentTag();
+    const signer = (await ethers.getSigners())[0];
+    const divider = await ethers.getContract("Divider");
+    const events = await divider.queryFilter(divider.filters.AdapterChanged(null, null, 1)); // fetch all deployed Adapters
+    const deployedAdapters = await getDeployedAdapters(); 
+    const destinationPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}`);
+    await fs.writeJson(`${destinationPath}/adapters.json`, deployedAdapters);
+    log(`\Deployed adapters addresses successfully saved to ${destinationPath}/adapters.json`);
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+async function getDeployedAdapters() {
   const signer = (await ethers.getSigners())[0];
   const divider = await ethers.getContract("Divider");
   const events = await divider.queryFilter(divider.filters.AdapterChanged(null, null, 1)); // fetch all deployed Adapters
@@ -48,19 +62,17 @@ exports.writeAdaptersToFile = async function() {
   await Promise.all(events.map(async (e) => {
     const ABI = [
       "function target() public view returns (address)",
-      "function name() public view returns (string)",
+      "function symbol() public view returns (string)",
     ];
     const adapter = new ethers.Contract(e.args.adapter, ABI, signer);
     const targetAddress = await adapter.target();
     const target = new ethers.Contract(targetAddress, ABI, signer);
-    const name = await target.name();
-    deployedAdapters[name] = e.args.adapter;
+    const symbol = await target.symbol();
+    deployedAdapters[symbol] = e.args.adapter;
   }));
-  const destinationPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}`);
-  await fs.writeJson(`${destinationPath}/adapters.json`, deployedAdapters);
-  log(`\Deployed adapters addresses successfully saved to ${destinationPath}/adapters.json`);
+  return deployedAdapters;
 }
-
+exports.getDeployedAdapters = getDeployedAdapters;
 
 async function currentTag() {
   const tag = await new Promise((resolve, reject) => {

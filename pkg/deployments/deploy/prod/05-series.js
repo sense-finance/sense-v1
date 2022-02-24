@@ -1,4 +1,5 @@
 const dayjs = require("dayjs");
+const { getDeployedAdapters } = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -8,6 +9,12 @@ module.exports = async function () {
 
   const chainId = await getChainId();
   const signer = await ethers.getSigner(deployer);
+
+  const ADAPTER_ABI = [
+    "function stake() public view returns (address)",
+    "function stakeSize() public view returns (uint256)",
+  ];
+  const adapters = await getDeployedAdapters();
 
   log("\n-------------------------------------------------------")
   log("SPONSOR SERIES")
@@ -22,8 +29,7 @@ module.exports = async function () {
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       for (let seriesMaturity of series) {
-        const { address: adapterAddress, abi: adapterAbi } = global.mainnet.ADAPTERS[targetName];
-        const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
+        const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
         
         log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
         const stakeAddress = await adapter.stake();

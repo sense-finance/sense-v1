@@ -84,7 +84,7 @@ module.exports = async function () {
   }
 
 
-  if (!process.env.CI) {
+  if (!process.env.CI && hre.config.networks[network.name].saveDeployments) {
     log("\n-------------------------------------------------------")
     await moveDeployments();
     await writeDeploymentsToFile();
@@ -124,7 +124,6 @@ module.exports = async function () {
     const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, targetAddress);
     log(`Onboard target ${targetName} via Periphery`);
     await (await periphery.deployAdapter(factoryAddress, targetAddress)).wait();
-    global.dev.ADAPTERS[targetName] = adapterAddress;
     return adapterAddress;
   }
   

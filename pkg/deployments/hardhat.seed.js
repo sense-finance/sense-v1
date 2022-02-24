@@ -85,6 +85,6 @@ const MAINNET_FACTORIES = [(chainId) => ({
 })]
 // ------------------------------------
 
-global.dev = { FACTORIES: DEV_FACTORIES, ADAPTERS: {} };
-global.mainnet = { FACTORIES: MAINNET_FACTORIES, ADAPTERS: {}};
+global.dev = { FACTORIES: DEV_FACTORIES };
+global.mainnet = { FACTORIES: MAINNET_FACTORIES };
 

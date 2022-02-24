@@ -1,5 +1,6 @@
 const log = console.log;
 const dayjs = require("dayjs");
+const { getDeployedAdapters } = require("../../hardhat.utils");
 
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
@@ -14,6 +15,12 @@ module.exports = async function () {
   const chainId = await getChainId();
   const signer = await ethers.getSigner(deployer);
 
+  const ADAPTER_ABI = [
+    "function stake() public view returns (address)",
+    "function stakeSize() public view returns (uint256)",
+    "function scale() public view returns (uint256)",
+  ];
+  const adapters = await getDeployedAdapters();
   log("\n-------------------------------------------------------")
   log("SPONSOR SERIES & SANITY CHECK SWAPS")
   log("-------------------------------------------------------")
@@ -33,10 +40,7 @@ module.exports = async function () {
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       for (let seriesMaturity of series) {
-        const adapterAddress = global.dev.ADAPTERS[targetName];
-        const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
-        const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
-
+        const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
         const { zero: zeroAddress, claim: claimAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
