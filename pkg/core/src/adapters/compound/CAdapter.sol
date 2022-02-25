@@ -59,10 +59,10 @@ interface ComptrollerInterface {
 
 interface PriceOracleInterface {
     /// @notice Get the price of an underlying asset.
-    /// @param underlying The underlying asset to get the price of.
+    /// @param target The target asset to get the underlying price of.
     /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
     /// Zero means the price is unavailable.
-    function price(address underlying) external view returns (uint256);
+    function getUnderlyingPrice(address target) external view returns (uint256);
 }
 
 /// @notice Adapter contract for cTokens
@@ -138,7 +138,7 @@ contract CAdapter is CropAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
-        price = isCETH ? 1e18 : PriceOracleInterface(oracle).price(underlying);
+        price = isCETH ? 1e18 : PriceOracleInterface(oracle).getUnderlyingPrice(target);
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256 tBal) {

@@ -1,12 +1,7 @@
-const DIVIDER_CUP = new Map();
-// FIXME: real cup address (destination for unclaimed issuance fees)
-DIVIDER_CUP.set("1", "0x0000000000000000000000000000000000000000");
-// Local Mainnet fork
-DIVIDER_CUP.set("111", "0x0000000000000000000000000000000000000000");
-// TODO: Arbitrum
-// DIVIDER_CUP.set("42161", "0x")
+const { DIVIDER_CUP } = require("../../hardhat.addresses");
+const log = console.log;
 
-module.exports = async function ({ ethers, deployments, getNamedAccounts, getChainId }) {
+module.exports = async function () {
   const { deploy } = deployments;
   const { deployer, dev } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -14,13 +9,16 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");
   const cup = DIVIDER_CUP.get(chainId);
 
+  log("\n-------------------------------------------------------")
+  log("\nDeploy the TokenHandler");
   const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
     args: [],
     log: true,
   });
 
-  console.log("Deploy the divider");
+  log("\n-------------------------------------------------------")
+  log("\nDeploy the Divider");
   await deploy("Divider", {
     from: deployer,
     args: [cup, tokenHandlerAddress],
@@ -29,11 +27,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, getCha
 
   const divider = await ethers.getContract("Divider");
 
-  console.log("Trust the dev address on the divider");
+  log("Trust the dev address on the divider");
   await (await divider.setIsTrusted(dev, true)).wait();
 
   const tokenHandler = await ethers.getContract("TokenHandler");
-  console.log("Add the divider to the token hanlder");
+  log("Add the divider to the token handler");
   await (await tokenHandler.init(divider.address)).wait();
 };
 

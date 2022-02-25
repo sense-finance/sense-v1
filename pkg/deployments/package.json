@@ -13,14 +13,14 @@
         "src/**/*"
     ],
     "scripts": {
-        "deploy:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat deploy --export exports/localhost --tags scenario:prod",
-        "deploy:hardhat-fork:sim": "yarn prepare && hardhat --network hardhat deploy --export exports/localhost --tags scenario:simulated",
-        "node:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat node --export exports/localhost --tags scenario:prod",
-        "node:hardhat-fork:sim": "yarn prepare && hardhat --network hardhat node --export exports/localhost --tags scenario:simulated",
+        "deploy:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat deploy --tags scenario:prod",
+        "deploy:hardhat-fork:sim": "yarn prepare && hardhat --network hardhat deploy --tags scenario:simulated",
+        "node:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat node --tags scenario:prod",
+        "node:hardhat-fork:sim": "yarn prepare && hardhat --network hardhat node --tags scenario:simulated",
         "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
         "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
         "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod",
-        "prepare": "mkdir -p exports && cp -n ../../.env ./.env || true && git submodule update --init --recursive"
+        "prepare": "cp -n ../../.env ./.env || true && git submodule update --init --recursive"
     },
     "dependencies": {
         "@balancer-labs/v2-pool-utils": "2.0.1",
@@ -29,7 +29,8 @@
         "@openzeppelin/contracts": "4.3.2",
         "@rari-capital/solmate": "^6.2.0",
         "@sense-finance/v1-core": "workspace:pkg/core",
-        "@sense-finance/v1-utils": "workspace:pkg/utils"
+        "@sense-finance/v1-utils": "workspace:pkg/utils",
+        "fs-extra": "^10.0.1"
     },
     "devDependencies": {
         "@nomiclabs/hardhat-ethers": "^2.0.2",

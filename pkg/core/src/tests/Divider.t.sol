@@ -1371,7 +1371,7 @@ contract Dividers is TestHelper {
 
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
-        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
 
     function testFuzzCollect(uint128 tBal) public {
@@ -1397,7 +1397,7 @@ contract Dividers is TestHelper {
         collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(cBalanceBefore, cBalanceAfter);
         assertEq(collected, collect);
-        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
 
     function testFuzzCollectReward(uint128 tBal) public {
@@ -1520,7 +1520,7 @@ contract Dividers is TestHelper {
         collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
-        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
         assertClose(adapter.tBalance(address(bob)), 1);
     }
 
@@ -1563,7 +1563,7 @@ contract Dividers is TestHelper {
         collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
         assertEq(collected, collect);
         assertEq(cBalanceAfter, 0);
-        assertEq(tBalanceAfter, tBalanceBefore + collected); // TODO: double check!
+        assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
 
     // test transferring claims to user calls collect()

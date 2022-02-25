@@ -228,7 +228,7 @@ contract PoolManagerTest is DSTest {
             assertEq0(error, abi.encodeWithSelector(Errors.PoolParamsNotSet.selector));
         }
 
-        // TODO(josh): finish mainnet test when the oracle is ready
+        // TODO(launch): @josh to finish mainnet test when the oracle is ready
         // poolManager.setParams(
         //     "LP_TOKEN_PARAMS",
         //     PoolManager.AssetParams({

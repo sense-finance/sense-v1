@@ -28,14 +28,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== PUBLIC CONSTANTS ========== */
 
-    /// @notice TODO: TBD
+    /// @notice TODO(launch)
     uint256 public constant SPONSOR_WINDOW = 4 hours;
 
-    /// @notice TODO: TBD
+    /// @notice TODO(launch)
     uint256 public constant SETTLEMENT_WINDOW = 2 hours;
 
     /// @notice 10% issuance fee cap
-    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18;
+    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // TODO(launch)
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
 
