@@ -89,7 +89,7 @@ jobs:
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
-        FORK_TOP_UP: ${{ secrets. FORK_TOP_UP }}
+        FORK_TOP_UP: ${{ secrets.FORK_TOP_UP }}
 
     - name: Check simulated testchain env scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:sim
