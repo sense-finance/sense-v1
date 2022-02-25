@@ -96,7 +96,7 @@ jobs:
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
-        FORK_TOP_UP: ${{ secrets.MNEMONIC }}
+        FORK_TOP_UP: ${{ secrets.FORK_TOP_UP }}
 
     - name: Generate gas snapshot
       run: yarn gas-snapshot

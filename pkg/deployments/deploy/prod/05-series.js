@@ -41,7 +41,7 @@ module.exports = async function () {
         const balance = await stake.balanceOf(deployer); // deployer's stake balance
         if (balance.lt(stakeSize)) {
           // if fork from mainnet
-          if (chainId == '111' && process.env.FORK_TOP_UP) {
+          if (chainId == '111' && process.env.FORK_TOP_UP == 'true') {
             await getStakeTokens(stakeAddress, tokenAbi)
           } else {
             throw Error("Not enough stake funds on wallet")
