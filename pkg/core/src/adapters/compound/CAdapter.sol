@@ -114,23 +114,12 @@ contract CAdapter is CropAdapter {
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function scale() external override returns (uint256) {
         uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
-        // From the Compound docs:
-        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
-        //
-        // The equation to norm an asset to 18 decimals is:
-        // `num * 10**(18 - decimals)`
-        //
-        // So, when we try to norm exRate to 18 decimals, we get the following:
-        // `exRate * 10**(18 - exRateDecimals)`
-        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
-        // -> `exRate * 10**(8 - uDecimals)`
-        // -> `exRate / 10**(uDecimals - 8)`
-        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+        return _to18Decimals(exRate);
     }
 
     function scaleStored() external view override returns (uint256) {
         uint256 exRate = CTokenInterface(target).exchangeRateStored();
-        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+        return _to18Decimals(exRate);
     }
 
     function _claimReward() internal virtual override {
@@ -180,6 +169,21 @@ contract CAdapter is CropAdapter {
 
         // Transfer underlying to sender
         ERC20(underlying).safeTransfer(msg.sender, uBal);
+    }
+
+    function _to18Decimals(uint256 exRate) internal view returns (uint256) {
+        // From the Compound docs:
+        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
+        //
+        // The equation to norm an asset to 18 decimals is:
+        // `num * 10**(18 - decimals)`
+        //
+        // So, when we try to norm exRate to 18 decimals, we get the following:
+        // `exRate * 10**(18 - exRateDecimals)`
+        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
+        // -> `exRate * 10**(8 - uDecimals)`
+        // -> `exRate / 10**(uDecimals - 8)`
+        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
     fallback() external payable {}

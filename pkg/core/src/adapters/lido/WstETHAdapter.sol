@@ -123,7 +123,7 @@ contract WstETHAdapter is BaseAdapter {
             int128(1),
             int128(0),
             amount,
-            stEthEth.fmul(amount).fmul(1e18 - SLIPPAGE_TOLERANCE)
+            stEthEth.fmul(amount).fmul(FixedMath.WAD - SLIPPAGE_TOLERANCE)
         );
 
         // deposit ETH into WETH contract
