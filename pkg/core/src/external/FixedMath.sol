@@ -7,7 +7,11 @@ library FixedMath {
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
 
-    function fmul(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256) {
+    function fmul(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256) {
         return mulDivDown(x, y, baseUnit); // Equivalent to (x * y) / baseUnit rounded down.
     }
 
@@ -15,7 +19,11 @@ library FixedMath {
         return mulDivDown(x, y, WAD); // Equivalent to (x * y) / WAD rounded down.
     }
 
-    function fmulUp(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256) {
+    function fmulUp(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256) {
         return mulDivUp(x, y, baseUnit); // Equivalent to (x * y) / baseUnit rounded up.
     }
 
@@ -23,7 +31,11 @@ library FixedMath {
         return mulDivUp(x, y, WAD); // Equivalent to (x * y) / WAD rounded up.
     }
 
-    function fdiv(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256) {
+    function fdiv(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256) {
         return mulDivDown(x, baseUnit, y); // Equivalent to (x * baseUnit) / y rounded down.
     }
 
@@ -31,7 +43,11 @@ library FixedMath {
         return mulDivDown(x, WAD, y); // Equivalent to (x * WAD) / y rounded down.
     }
 
-    function fdivUp(uint256 x, uint256 y, uint256 baseUnit) internal pure returns (uint256) {
+    function fdivUp(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256) {
         return mulDivUp(x, baseUnit, y); // Equivalent to (x * baseUnit) / y rounded up.
     }
 

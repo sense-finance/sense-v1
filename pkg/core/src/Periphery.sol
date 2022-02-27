@@ -646,14 +646,7 @@ contract Periphery is Trust {
         uint256 _allowance = target.allowance(address(this), address(adapter));
         if (_allowance < amount) target.approve(address(adapter), type(uint256).max);
         bool result;
-        (result, tBal) = Adapter(adapter).flashLoan(
-            data,
-            address(this),
-            adapter,
-            maturity,
-            cBalIn,
-            amount
-        );
+        (result, tBal) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, cBalIn, amount);
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
