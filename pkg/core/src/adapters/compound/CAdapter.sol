@@ -55,6 +55,16 @@ interface ComptrollerLike {
     /// @notice Claim all the comp accrued by holder in all markets
     /// @param holder The address to claim COMP for
     function claimComp(address holder) external;
+
+    function markets(address target)
+        external
+        returns (
+            bool isListed,
+            uint256 collateralFactorMantissa,
+            bool isComped
+        );
+
+    function oracle() external returns (address);
 }
 
 interface PriceOracleLike {
