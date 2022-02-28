@@ -4,7 +4,6 @@ pragma solidity 0.8.11;
 import { PriceOracle } from "@sense-finance/v1-fuse/src/external/PriceOracle.sol";
 import { CToken } from "@sense-finance/v1-fuse/src/external/CToken.sol";
 
-
 contract MockOracle is PriceOracle {
     uint256 public _price = 1e18;
 
