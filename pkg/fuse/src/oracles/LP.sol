@@ -3,7 +3,8 @@ pragma solidity 0.8.11;
 
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
+import { PriceOracle } from "../external/PriceOracle.sol";
+import { CToken } from "../external/CToken.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
 import { BalancerPool } from "@sense-finance/v1-core/src/external/balancer/Pool.sol";
 

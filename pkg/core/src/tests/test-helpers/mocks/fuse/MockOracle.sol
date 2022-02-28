@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { PriceOracle, CTokenLike } from "@sense-finance/v1-fuse/src/external/PriceOracle.sol";
+import { PriceOracle } from "@sense-finance/v1-fuse/src/external/PriceOracle.sol";
+import { CToken } from "@sense-finance/v1-fuse/src/external/CToken.sol";
+
 
 contract MockOracle is PriceOracle {
     uint256 public _price = 1e18;

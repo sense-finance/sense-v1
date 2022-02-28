@@ -3,7 +3,8 @@ pragma solidity 0.8.11;
 
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
+import { PriceOracle } from "../external/PriceOracle.sol";
+import { CToken } from "../external/CToken.sol";
 import { BalancerOracle } from "../external/BalancerOracle.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -62,9 +63,6 @@ contract ZeroOracle is PriceOracle, Trust {
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying = address(tokens[targeti]);
-
-        // TODO: require less than zero
-        // TODO: lower bound
 
         // `Zero / underlying` * `underlying / ETH` = `Price of Zero in ETH`
         //

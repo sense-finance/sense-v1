@@ -2,7 +2,8 @@
 pragma solidity 0.8.11;
 
 // External references
-import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
+import { PriceOracle } from "../external/PriceOracle.sol";
+import { CToken } from "../external/CToken.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
