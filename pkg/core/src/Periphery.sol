@@ -34,6 +34,9 @@ contract Periphery is Trust {
     /// @notice Lower bound on the amount of Claim tokens one can swap in for Target
     uint256 public constant MIN_CLAIM_SWAP_IN = 0.000001e18;
 
+    /// @notice Acceptable error when estimating the tokens resulting from a specific swap
+    uint256 public constant PRICE_ESTIMATE_ACCEPTABLE_ERROR = 0.00000001e18;
+
     /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Sense core Divider address
@@ -668,10 +671,12 @@ contract Periphery is Trust {
         address claim = divider.claim(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
-        // Because Space utilizes power ofs liberally in its invariant, there is some error
-        // in the amountIn we estimated that we'd need in `_swapClaimsForTarget` to get a `zBal` out
+        // Because Space utilizes powerOfs liberally in its invariant, there is some error
+        // in the amountIn we estimated we need for `_swapClaimsForTarget` to get a `zBal` out
         // that matched our Claim balance. Tokens with more than 18 decimals are not supported.
-        uint256 acceptableError = ERC20(claim).decimals() < 9 ? 1 : 1e10 / 10**(18 - ERC20(claim).decimals());
+        uint256 acceptableError = ERC20(claim).decimals() < 9
+            ? 1
+            : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - ERC20(claim).decimals());
 
         // Swap Target for Zeros
         uint256 zBal = _swap(
