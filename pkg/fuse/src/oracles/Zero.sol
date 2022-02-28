@@ -63,6 +63,9 @@ contract ZeroOracle is PriceOracle, Trust {
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying = address(tokens[targeti]);
 
+        // TODO: require less than zero
+        // TODO: lower bound
+
         // `Zero / underlying` * `underlying / ETH` = `Price of Zero in ETH`
         //
         // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
