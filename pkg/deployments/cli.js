@@ -116,12 +116,12 @@ task("init-series", "Init Series").setAction(async (_, { ethers }) => {
       .add(1, "day")
       .unix(),
     // beginning of the week falling between 1 and 2 weeks from now
-    // dayjs
-    //   .utc()
-    //   .week(dayjs().week() + 2)
-    //   .startOf("week")
-    //   .add(1, "day")
-    //   .unix(),
+    dayjs
+      .utc()
+      .week(dayjs().week() + 3)
+      .startOf("week")
+      .add(1, "day")
+      .unix(),
   ];
 
   for (let adapterAddress of adapterAddresses) {
@@ -136,6 +136,16 @@ task("init-series", "Init Series").setAction(async (_, { ethers }) => {
       );
 
       const targetAddress = await adapter.target();
+      const stake = new ethers.Contract(
+        await adapter.stake(),
+        [
+          "function approve(address,uint256) external",
+          "function symbol() external view returns (string)",
+          "function balanceOf(address) external view returns (uint256)",
+          "function mint(address,uint256) external",
+        ],
+        signer,
+      );
       const target = new ethers.Contract(
         targetAddress,
         [
@@ -147,16 +157,19 @@ task("init-series", "Init Series").setAction(async (_, { ethers }) => {
         signer,
       );
 
-      console.log("Have the deployer issue the first 1,000,000 Target worth of Zeros/Claims for this Series");
-      // try {
-      //   await periphery.sponsorSeries(adapterAddress, maturity);
-      //   await target.mint(deployer, ethers.utils.parseEther("10000000")).then(tx => tx.wait());
-      //   await divider.issue(adapterAddress, maturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
-      //   console.error("try init");
-      // } catch (err) {
-      //   console.error("error init");
-      // }
+      const symbol = await target.symbol();
+      if (symbol === "cDAI" && maturity === maturities[0]) {
+        continue;
+      }
 
+      console.log("Have the deployer issue the first 1,000,000 Target worth of Zeros/Claims for this Series");
+      console.log("Sponsord sponsorSeries");
+      await periphery.sponsorSeries(adapterAddress, maturity);
+      console.log("Sponsord mint");
+      await target.mint(deployer, ethers.utils.parseEther("10000000")).then(tx => tx.wait());
+      console.log("Sponsord issue");
+      await stake.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await divider.issue(adapterAddress, maturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
       console.log("succeeded in initializing Series");
 
       const { zero: zeroAddress, claim: claimAddress } = await divider.series(adapterAddress, maturity);
@@ -168,13 +181,8 @@ task("init-series", "Init Series").setAction(async (_, { ethers }) => {
       );
       const claim = new ethers.Contract(claimAddress, ["function approve(address,uint256) external"], signer);
 
-      const symbol = await target.symbol();
-      if (symbol !== "cDAI" && symbol !== "cETH") {
-        continue;
-      }
-
-      console.log(symbol, "adding liq");
       const poolAddress = await spaceFactory.pools(adapterAddress, maturity);
+      console.log(symbol, "adding liq", "pool address: ", poolAddress);
       const pool = new ethers.Contract(
         poolAddress,
         [
@@ -206,15 +214,16 @@ task("init-series", "Init Series").setAction(async (_, { ethers }) => {
         initialBalances[_zeroi] = ethers.utils.parseEther("100000");
         initialBalances[_targeti] = ethers.utils.parseEther("100000");
 
-        // const userData = defaultAbiCoder.encode(["uint[]"], [initialBalances]);
-        // await balancerVault
-        //   .joinPool(poolId, deployer, deployer, {
-        //     assets: tokens,
-        //     maxAmountsIn: [ethers.constants.MaxUint256, ethers.constants.MaxUint256],
-        //     fromInternalBalance: false,
-        //     userData,
-        //   })
-        //   .then(tx => tx.wait());
+        console.log("joining pool");
+        const userData = defaultAbiCoder.encode(["uint[]"], [initialBalances]);
+        await balancerVault
+          .joinPool(poolId, deployer, deployer, {
+            assets: tokens,
+            maxAmountsIn: [ethers.constants.MaxUint256, ethers.constants.MaxUint256],
+            fromInternalBalance: false,
+            userData,
+          })
+          .then(tx => tx.wait());
 
         console.log("Making swap to init Zeros");
         await balancerVault
@@ -222,9 +231,9 @@ task("init-series", "Init Series").setAction(async (_, { ethers }) => {
             {
               poolId,
               kind: 0, // given in
-              assetIn: target.address,
-              assetOut: zero.address,
-              amount: ethers.utils.parseEther("75002"),
+              assetIn: zero.address,
+              assetOut: target.address,
+              amount: ethers.utils.parseEther("5000"),
               userData: defaultAbiCoder.encode(["uint[]"], [[0, 0]]),
             },
             { sender: deployer, fromInternalBalance: false, recipient: deployer, toInternalBalance: false },
