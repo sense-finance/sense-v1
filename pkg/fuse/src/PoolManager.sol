@@ -59,6 +59,8 @@ interface MasterOracleLike {
     ) external;
 
     function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external;
+
+    function getUnderlyingPrice(address cToken) external view returns (uint256);
 }
 
 /// @title Fuse Pool Manager

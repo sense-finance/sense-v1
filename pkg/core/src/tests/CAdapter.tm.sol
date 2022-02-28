@@ -7,7 +7,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 
 // Internal references
 import { Divider, TokenHandler } from "../Divider.sol";
-import { CAdapter, CTokenInterface, PriceOracleInterface } from "../adapters/compound/CAdapter.sol";
+import { CAdapter, CTokenLike, PriceOracleLike } from "../adapters/compound/CAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 
 import { Assets } from "./test-helpers/Assets.sol";
@@ -102,8 +102,8 @@ contract CAdapters is CAdapterTestHelper {
     using FixedMath for uint256;
 
     function testMainnetCAdapterScale() public {
-        CTokenInterface underlying = CTokenInterface(Assets.DAI);
-        CTokenInterface ctoken = CTokenInterface(Assets.cDAI);
+        CTokenLike underlying = CTokenLike(Assets.DAI);
+        CTokenLike ctoken = CTokenLike(Assets.cDAI);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent() / 10**(uDecimals - 8);
@@ -111,7 +111,7 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        PriceOracleInterface oracle = PriceOracleInterface(Assets.COMPOUND_PRICE_FEED);
+        PriceOracleLike oracle = PriceOracleLike(Assets.COMPOUND_PRICE_FEED);
         uint256 price = oracle.getUnderlyingPrice(Assets.cDAI);
         assertEq(adapter.getUnderlyingPrice(), price);
     }
@@ -121,7 +121,7 @@ contract CAdapters is CAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
 
         ERC20(Assets.cDAI).approve(address(adapter), tBalanceBefore);
-        uint256 rate = CTokenInterface(Assets.cDAI).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.cDAI).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.DAI).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
@@ -139,7 +139,7 @@ contract CAdapters is CAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
 
         ERC20(Assets.DAI).approve(address(adapter), uBalanceBefore);
-        uint256 rate = CTokenInterface(Assets.cDAI).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.cDAI).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.DAI).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
@@ -154,8 +154,8 @@ contract CAdapters is CAdapterTestHelper {
 
     // test with cETH
     function testMainnetCETHAdapterScale() public {
-        CTokenInterface underlying = CTokenInterface(Assets.WETH);
-        CTokenInterface ctoken = CTokenInterface(Assets.cETH);
+        CTokenLike underlying = CTokenLike(Assets.WETH);
+        CTokenLike ctoken = CTokenLike(Assets.cETH);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent() / 10**(uDecimals - 8);
@@ -171,7 +171,7 @@ contract CAdapters is CAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.cETH).balanceOf(address(this));
 
         ERC20(Assets.cETH).approve(address(cEthAdapter), tBalanceBefore);
-        uint256 rate = CTokenInterface(Assets.cETH).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.cETH).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.WETH).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
@@ -189,7 +189,7 @@ contract CAdapters is CAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.cETH).balanceOf(address(this));
 
         ERC20(Assets.WETH).approve(address(cEthAdapter), uBalanceBefore);
-        uint256 rate = CTokenInterface(Assets.cETH).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.cETH).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.WETH).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);

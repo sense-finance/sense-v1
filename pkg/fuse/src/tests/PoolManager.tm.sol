@@ -4,10 +4,9 @@ pragma solidity 0.8.11;
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
-import { CAdapter, CTokenInterface } from "@sense-finance/v1-core/src/adapters/compound/CAdapter.sol";
+import { CAdapter, CTokenLike } from "@sense-finance/v1-core/src/adapters/compound/CAdapter.sol";
 import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
-import { PoolManager } from "../PoolManager.sol";
+import { PoolManager, MasterOracleLike } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -22,6 +21,10 @@ import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/Date
 import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
 import { MockBalancerVault, MockSpaceFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
+
+interface ComptrollerLike {
+    function enterMarkets(address[] memory cTokens) external returns (uint256[] memory);
+}
 
 contract PoolManagerTest is DSTest {
     using FixedMath for uint256;
@@ -191,7 +194,7 @@ contract PoolManagerTest is DSTest {
             liquidationIncentive: 1 ether
         });
         poolManager.setParams("TARGET_PARAMS", paramsTarget);
-        poolManager.addTarget(address(target), address(mockAdapter));
+        address cTarget = poolManager.addTarget(address(target), address(mockAdapter));
 
         address pool = spaceFactory.create(address(mockAdapter), maturity);
 
@@ -227,6 +230,23 @@ contract PoolManagerTest is DSTest {
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.PoolParamsNotSet.selector));
         }
+
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = address(target);
+        ComptrollerLike(poolManager.comptroller()).enterMarkets(cTokens);
+
+        uint256 TARGET_IN = 1.1e18;
+
+        target.mint(address(this), TARGET_IN);
+        target.approve(cTarget, TARGET_IN);
+        uint256 err = CTokenLike(cTarget).mint(TARGET_IN);
+        assertEq(err, 0);
+
+        assertEq(
+            (Token(cTarget).balanceOf(address(this)) * CTokenLike(cTarget).exchangeRateCurrent()) /
+                10**CTokenLike(cTarget).decimals(),
+            TARGET_IN
+        );
 
         // TODO(launch): @josh to finish mainnet test when the oracle is ready
         // poolManager.setParams(

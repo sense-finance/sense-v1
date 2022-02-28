@@ -29,6 +29,11 @@ contract Periphery is Trust {
     using SafeTransferLib for ERC20;
     using Levels for uint256;
 
+    /* ========== PUBLIC CONSTANTS ========== */
+
+    /// @notice Lower bound on the amount of Claim tokens one can swap in for Target
+    uint256 public constant MIN_CLAIM_SWAP_IN = 0.000001e18;
+
     /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Sense core Divider address
@@ -485,9 +490,8 @@ contract Periphery is Trust {
         address claim = divider.claim(adapter, maturity);
 
         // Because there's some margin of error in the pricing functions here, smaller
-        // swaps will be unreliable, so we put a lower bound of 0.000001 Claims tokens for the swap in.
-        // Tokens with more than 18 decimals are not supported.
-        if (cBal * 10**(18 - ERC20(claim).decimals()) <= 1e12) revert Errors.SwapTooSmall();
+        // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
+        if (cBal * 10**(18 - ERC20(claim).decimals()) <= MIN_CLAIM_SWAP_IN) revert Errors.SwapTooSmall();
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer claims into this contract if needed
