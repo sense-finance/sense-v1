@@ -43,7 +43,7 @@ module.exports = async function () {
       const adapterAddress = await periphery.callStatic.deployAdapter(cFactoryAddress, address);
       await (await periphery.deployAdapter(cFactoryAddress, address)).wait();
 
-      log(`Set ${name} adapter issuance cap to max uint so we don't have to worry about it`);
+      log(`Set ${name} adapter issuance cap to ${guard}`);
       await divider.setGuard(adapterAddress, guard).then(tx => tx.wait());
       
       log(`Can call scale value`);
@@ -53,6 +53,37 @@ module.exports = async function () {
       log(`-> scale: ${scale.toString()}`);
     }
   }
+
+  log("\n-------------------------------------------------------")
+  log("DEPLOY ADAPTERS WITHOUT FACTORY")
+  log("-------------------------------------------------------")
+  for (let adapter of global.mainnet.ADAPTERS) {
+    const { contractName, deploymentParams, target } = adapter(chainId);
+    // if (!stake) throw Error("No stake token found");
+
+    log(`\nDeploy ${contractName}`);
+    const { address: adapterAddress } = await deploy(contractName, {
+      from: deployer,
+      args: [divider.address, ...Object.values(deploymentParams)],
+      log: true,
+    });
+
+    log(`Set ${contractName} adapter issuance cap to ${target.guard}`);
+    await divider.setGuard(adapterAddress, target.guard).then(tx => tx.wait());
+    
+    log(`Verify ${contractName} adapter`);
+    await periphery.verifyAdapter(adapterAddress, true).then(tx => tx.wait());
+
+    log(`Onboard ${contractName} adapter`);
+    await periphery.onboardAdapter(adapterAddress).then(tx => tx.wait());
+
+    log(`Can call scale value`);
+    const { abi: adapterAbi } = await deployments.getArtifact(contractName);
+    const adptr = new ethers.Contract(adapterAddress, adapterAbi, signer);
+    const scale = await adptr.callStatic.scale();
+    log(`-> scale: ${scale.toString()}`);
+  }
+
   if (!process.env.CI && hre.config.networks[network.name].saveDeployments) {
     log("\n-------------------------------------------------------")
     await moveDeployments();
