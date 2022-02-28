@@ -49,46 +49,12 @@ const DEV_FACTORIES = [(chainId) => ({
 // ------------------------------------
 
 // For mainnet scenarios ------------
-// TODO(launch)
-const CDAI_SERIES_MATURITIES = [
-  // beginning of the week falling between 2 and 3 weeks from now
-  dayjs
-    .utc()
-    .week(dayjs().week() + 3)
-    .startOf("week")
-    .add(1, "day")
-    .unix(),
-  // beginning of the week falling between 3 and 4 weeks from now
-  dayjs
-    .utc()
-    .week(dayjs().week() + 4)
-    .startOf("week")
-    .add(1, "day")
-    .unix(),
-];
-// TODO(launch)
-const MAINNET_TARGETS = (chainId) => [{ name: "cDAI", address: CDAI_TOKEN.get(chainId), guard: ethers.constants.MaxUint256, series: CDAI_SERIES_MATURITIES }];
 
-// TODO(launch)
-const MAINNET_FACTORIES = [
-  (chainId) => ({
-    contractName: "CFactory",
-    adapterContract: "CAdapter",
-    reward: COMP_TOKEN.get(chainId),
-    ifee: ethers.utils.parseEther("0.01"),
-    stake: DAI_TOKEN.get(chainId),
-    stakeSize: ethers.utils.parseEther("1"),
-    minm: "1209600", // 2 weeks
-    maxm: "8467200", // 14 weeks
-    mode: 1, // 0 monthly, 1 weekly;
-    oracle: COMPOUND_PRICE_FEED.get(chainId), // oracle address
-    tilt: 0,
-    targets: MAINNET_TARGETS(chainId),
-  })
-]
+// We are not deploying any factory yet (nor adapters via factories)
+const MAINNET_FACTORIES = []
 
 // TODO(launch) 
-// Adapters without factories
+// Adapters to deploy directly (without factory)
 const CUSDC_WSTETH_SERIES_MATURITIES = [
   dayjs
     .utc()
