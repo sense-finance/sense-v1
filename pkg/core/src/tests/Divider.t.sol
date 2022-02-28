@@ -821,7 +821,7 @@ contract Dividers is TestHelper {
 
         assertEq(zBalanceAfter, 0);
         assertEq(cBalanceAfter, 0);
-        assertClose((tBalanceAfter - tBalanceBefore).fmul(adapter.scale(), FixedMath.WAD), zBalanceBefore);
+        assertClose((tBalanceAfter - tBalanceBefore).fmul(lscale, FixedMath.WAD), zBalanceBefore);
     }
 
     /* ========== redeemZero() tests ========== */
