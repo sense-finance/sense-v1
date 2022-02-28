@@ -7,7 +7,7 @@ import { CToken } from "@sense-finance/v1-fuse/src/external/CToken.sol";
 contract MockOracle is PriceOracle {
     uint256 public _price = 1e18;
 
-    function getUnderlyingPrice(CTokenLike) external view override returns (uint256) {
+    function getUnderlyingPrice(CToken) external view override returns (uint256) {
         return _price;
     }
 

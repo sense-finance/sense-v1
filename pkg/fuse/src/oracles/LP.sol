@@ -20,7 +20,7 @@ contract LPOracle is PriceOracle, Trust {
 
     constructor() Trust(msg.sender) {}
 
-    function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
+    function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         // The underlying here will be an LP Token
         return _price(cToken.underlying());
     }

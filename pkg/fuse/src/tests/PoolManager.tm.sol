@@ -240,12 +240,12 @@ contract PoolManagerTest is DSTest {
 
         target.mint(address(this), TARGET_IN);
         target.approve(cTarget, TARGET_IN);
-        uint256 err = CTokenLike(cTarget).mint(TARGET_IN);
+        uint256 err = CToken(cTarget).mint(TARGET_IN);
         assertEq(err, 0);
 
         assertEq(
-            (Token(cTarget).balanceOf(address(this)) * CTokenLike(cTarget).exchangeRateCurrent()) /
-                10**CTokenLike(cTarget).decimals(),
+            (Token(cTarget).balanceOf(address(this)) * CToken(cTarget).exchangeRateCurrent()) /
+                10**CToken(cTarget).decimals(),
             TARGET_IN
         );
 

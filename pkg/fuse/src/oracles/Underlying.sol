@@ -23,7 +23,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
         adapters[underlying] = adapter;
     }
 
-    function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
+    function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         return _price(address(cToken.underlying()));
     }
 
