@@ -7,7 +7,9 @@ const ethers = require("ethers");
 dayjs.extend(weekOfYear);
 dayjs.extend(utc);
 
-// For dev scenarios ------------
+// -------------------------------------------------------
+//  FOR DEV SCENARIOS
+// -------------------------------------------------------
 const DEV_SERIES_MATURITIES = [
   // beginning of the week falling between 0 and 1 weeks from now
   dayjs
@@ -48,13 +50,17 @@ const DEV_FACTORIES = [(chainId) => ({
 })]
 // ------------------------------------
 
-// For mainnet scenarios ------------
+// -------------------------------------------------------
+//  FOR MAINET SCENARIOS 
+// -------------------------------------------------------
 
-// We are not deploying any factory yet (nor adapters via factories)
+// TODO(launch): fill in all below fields
+
+// List of factories to deploy which includes a targets array to indicate,
+// for factory, which target adapters to deploy
+// (We are currently not deploying any factory)
 const MAINNET_FACTORIES = []
 
-// TODO(launch) 
-// Adapters to deploy directly (without factory)
 const CUSDC_WSTETH_SERIES_MATURITIES = [
   dayjs
     .utc()
@@ -63,6 +69,8 @@ const CUSDC_WSTETH_SERIES_MATURITIES = [
     .add(1, "day")
     .unix(),
 ];
+
+// List of adapters to deploy directly (without factory)
 const MAINNET_ADAPTERS = [
   (chainId) => ({
     contractName: "WstETHAdapter",

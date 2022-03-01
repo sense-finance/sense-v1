@@ -21,7 +21,7 @@ module.exports = async function () {
 
     log(`\nDeploy ${contractName}`);
     const factoryParams = [oracle, ifee, stake, stakeSize, minm, maxm, mode, tilt];
-    const { address: cFactoryAddress } = await deploy("CFactory", {
+    const { address: cFactoryAddress } = await deploy(contractName, {
       from: deployer,
       args: [divider.address, factoryParams, reward],
       log: true,

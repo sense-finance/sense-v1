@@ -32,7 +32,6 @@ module.exports = async function () {
 
   async function sponsor(t) {
     const { name: targetName, series, address: targetAddress } = t;
-    console.log('TTT', t)
     const { abi: tokenAbi } = await deployments.getArtifact("Token");
     const target = new ethers.Contract(targetAddress, tokenAbi, signer);
 
