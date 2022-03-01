@@ -14,7 +14,7 @@ import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 contract LPOracle is PriceOracle, Trust {
     using FixedMath for uint256;
 
-    /// @notice zero address -> pool address for oracle reads
+    /// @notice principal address -> pool address for oracle reads
     mapping(address => address) public pools;
 
     constructor() Trust(msg.sender) {}
@@ -24,8 +24,8 @@ contract LPOracle is PriceOracle, Trust {
         return _price(cToken.underlying());
     }
 
-    function price(address zero) external view override returns (uint256) {
-        return _price(zero);
+    function price(address principal) external view override returns (uint256) {
+        return _price(principal);
     }
 
     function _price(address _pool) internal view returns (uint256) {

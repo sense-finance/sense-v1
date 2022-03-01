@@ -35,7 +35,7 @@ interface BalancerOracle {
 
     function getVault() external view returns (address);
 
-    function getIndices() external view returns (uint256 _zeroi, uint256 _targeti);
+    function getIndices() external view returns (uint256 _principali, uint256 _targeti);
 
     function totalSupply() external view returns (uint256);
 }

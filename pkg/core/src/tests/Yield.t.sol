@@ -7,21 +7,21 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";
 
-contract Claims is TestHelper {
+contract Yield is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yield) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 cBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 cBalanceBefore = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        uint256 collected = bob.doCollect(claim);
-        uint256 cBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        uint256 collected = bob.doCollect(yield);
+        uint256 cBalanceAfter = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
@@ -38,18 +38,18 @@ contract Claims is TestHelper {
     function testFuzzCollectOnTransfer(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yield) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 acBalanceBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 bcBalanceBefore = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        bob.doTransfer(address(claim), address(alice), bcBalanceBefore);
-        uint256 acBalanceAfter = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        bob.doTransfer(address(yield), address(alice), bcBalanceBefore);
+        uint256 acBalanceAfter = ERC20(yield).balanceOf(address(alice));
+        uint256 bcBalanceAfter = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
@@ -68,19 +68,19 @@ contract Claims is TestHelper {
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yield) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
 
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 acBalanceBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 bcBalanceBefore = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        bob.doApprove(address(claim), address(alice));
-        alice.doTransferFrom(address(claim), address(bob), address(alice), bcBalanceBefore);
-        uint256 acBalanceAfter = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        bob.doApprove(address(yield), address(alice));
+        alice.doTransferFrom(address(yield), address(bob), address(alice), bcBalanceBefore);
+        uint256 acBalanceAfter = ERC20(yield).balanceOf(address(alice));
+        uint256 bcBalanceAfter = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
@@ -99,18 +99,18 @@ contract Claims is TestHelper {
     function testEmptyTransferFromDoesNotCollect() public {
         uint256 tBal = 10e18;
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yield) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 10 days);
 
-        uint256 acBalanceBefore = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(claim).balanceOf(address(bob));
+        uint256 acBalanceBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 bcBalanceBefore = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        bob.doApprove(address(claim), address(alice));
-        alice.doTransferFrom(address(claim), address(bob), address(alice), 0);
-        uint256 acBalanceAfter = ERC20(claim).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(claim).balanceOf(address(bob));
+        bob.doApprove(address(yield), address(alice));
+        alice.doTransferFrom(address(yield), address(bob), address(alice), 0);
+        uint256 acBalanceAfter = ERC20(yield).balanceOf(address(alice));
+        uint256 bcBalanceAfter = ERC20(yield).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         uint256 collected = tBalanceAfter - tBalanceBefore;
         assertEq(acBalanceBefore, acBalanceAfter);

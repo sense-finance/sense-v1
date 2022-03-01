@@ -35,7 +35,7 @@ contract PoolManagerLocalTest is TestHelper {
         assertEq(pm.divider(), address(4));
         assertEq(pm.oracleImpl(), address(5));
         assertTrue(pm.targetOracle() != address(0));
-        assertTrue(pm.zeroOracle() != address(0));
+        assertTrue(pm.principalOracle() != address(0));
         assertTrue(pm.lpOracle() != address(0));
         assertTrue(pm.underlyingOracle() != address(0));
     }

@@ -12,7 +12,7 @@ abstract contract IDivider {
             address
         );
 
-    function initSeries(address adapter, uint256 maturity) external virtual returns (address zero, address claim);
+    function initSeries(address adapter, uint256 maturity) external virtual returns (address principal, address yield);
 
     function settleSeries(address adapter, uint256 maturity) external virtual;
 
@@ -28,7 +28,7 @@ abstract contract IDivider {
         uint256 balance
     ) external virtual;
 
-    function redeemZero(
+    function redeemPrincipal(
         address adapter,
         uint256 maturity,
         uint256 balance

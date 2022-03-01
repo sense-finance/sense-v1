@@ -10,7 +10,7 @@ abstract contract BaseFactory {
     /* ========== CONSTANTS ========== */
 
     /// @notice Sets level to `31` by default, which keeps all Divider lifecycle methods public
-    /// (`issue`, `combine`, `collect`, etc), but not the `onZeroRedeem` hook.
+    /// (`issue`, `combine`, `collect`, etc), but not the `onPrincipalRedeem` hook.
     uint256 public constant DEFAULT_LEVEL = 31;
 
     /* ========== PUBLIC IMMUTABLES ========== */

@@ -14,13 +14,13 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Claim } from "./tokens/Claim.sol";
+import { Yield } from "./tokens/Yield.sol";
 import { Token } from "./tokens/Token.sol";
 import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev
-/// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Zeros and Claims
+/// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Principal and Yield Tokens
 contract Divider is Trust, ReentrancyGuard, Pausable {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
@@ -44,7 +44,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Sense team multisig
     address public immutable cup;
 
-    /// @notice Zero/Claim deployer
+    /// @notice Principal/Yield deployer
     address public immutable tokenHandler;
 
     /// @notice Permissionless flag
@@ -71,13 +71,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== DATA STRUCTURES ========== */
 
     struct Series {
-        // Zero ERC20 token
-        address zero;
+        // Principal ERC20 token
+        address principal;
         // Timestamp of series initialization
         uint48 issuance;
-        // Claim ERC20 token
-        address claim;
-        // % of underlying principal initially reserved for Claims
+        // Yield ERC20 token
+        address yield;
+        // % of underlying principal initially reserved for Yield
         uint96 tilt;
         // Actor who initialized the Series
         address sponsor;
@@ -120,7 +120,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     }
 
     /// @notice Initializes a new Series
-    /// @dev Deploys two ERC20 contracts, one for each Zero type
+    /// @dev Deploys two ERC20 contracts, one for each Principal type
     /// @dev Transfers some fixed amount of stake asset to this contract
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the new Series, in units of unix time
@@ -129,7 +129,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address adapter,
         uint256 maturity,
         address sponsor
-    ) external nonReentrant whenNotPaused returns (address zero, address claim) {
+    ) external nonReentrant whenNotPaused returns (address principal, address yield) {
         if (periphery != msg.sender) revert Errors.OnlyPeriphery();
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (_exists(adapter, maturity)) revert Errors.DuplicateSeries();
@@ -138,15 +138,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Transfer stake asset stake from caller to adapter
         (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
-        // Deploy Zeros and Claims for this new Series
-        (zero, claim) = TokenHandler(tokenHandler).deploy(adapter, adapterMeta[adapter].id, maturity);
+        // Deploy Principal and Yield Tokens for this new Series
+        (principal, yield) = TokenHandler(tokenHandler).deploy(adapter, adapterMeta[adapter].id, maturity);
 
         // Initialize the new Series struct
         uint256 scale = Adapter(adapter).scale();
 
-        series[adapter][maturity].zero = zero;
+        series[adapter][maturity].principal = principal;
         series[adapter][maturity].issuance = uint48(block.timestamp);
-        series[adapter][maturity].claim = claim;
+        series[adapter][maturity].yield = yield;
         series[adapter][maturity].tilt = uint96(Adapter(adapter).tilt());
         series[adapter][maturity].sponsor = sponsor;
         series[adapter][maturity].iscale = scale;
@@ -154,7 +154,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize);
 
-        emit SeriesInitialized(adapter, maturity, zero, claim, sponsor, target);
+        emit SeriesInitialized(adapter, maturity, principal, yield, sponsor, target);
     }
 
     /// @notice Settles a Series and transfers the settlement reward to the caller
@@ -184,11 +184,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit SeriesSettled(adapter, maturity, msg.sender);
     }
 
-    /// @notice Mint Zeros and Claims of a specific Series
+    /// @notice Mint Principal and Yield Tokens of a specific Series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series [unix time]
     /// @param tBal Balance of Target to deposit
-    /// @dev The balance of Zeros/Claims minted will be the same value in units of underlying (less fees)
+    /// @dev The balance of Principal/Yield minted will be the same value in units of underlying (less fees)
     function issue(
         address adapter,
         uint256 maturity,
@@ -229,33 +229,33 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
         uBal = tBalSubFee.fmul(scale);
 
-        // If the caller has not collected on Claims before, use the current scale, otherwise
+        // If the caller has not collected on Yield before, use the current scale, otherwise
         // use the harmonic mean of the last and the current scale value
         lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0
             ? scale
             : _reweightLScale(
                 adapter,
                 maturity,
-                Claim(series[adapter][maturity].claim).balanceOf(msg.sender),
+                Yield(series[adapter][maturity].yield).balanceOf(msg.sender),
                 uBal,
                 msg.sender,
                 scale
             );
 
-        // Mint equal amounts of Zeros and Claims
-        Token(series[adapter][maturity].zero).mint(msg.sender, uBal);
-        Claim(series[adapter][maturity].claim).mint(msg.sender, uBal);
+        // Mint equal amounts of Principal and Yield Tokens
+        Token(series[adapter][maturity].principal).mint(msg.sender, uBal);
+        Yield(series[adapter][maturity].yield).mint(msg.sender, uBal);
 
         target.safeTransferFrom(msg.sender, adapter, tBal);
 
         emit Issued(adapter, maturity, uBal, msg.sender);
     }
 
-    /// @notice Reconstitute Target by burning Zeros and Claims
-    /// @dev Explicitly burns claims before maturity, and implicitly does it at/after maturity through `_collect()`
+    /// @notice Reconstitute Target by burning Principal and Yield Tokens
+    /// @dev Explicitly burns yields before maturity, and implicitly does it at/after maturity through `_collect()`
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Balance of Zeros and Claims to burn
+    /// @param uBal Balance of Principal and Yield Tokens to burn
     function combine(
         address adapter,
         uint256 maturity,
@@ -267,8 +267,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 level = adapterMeta[adapter].level;
         if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();
 
-        // Burn the Zeros
-        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        // Burn the Principal
+        Token(series[adapter][maturity].principal).burn(msg.sender, uBal);
 
         // Collect whatever excess is due
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
@@ -276,8 +276,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 cscale = series[adapter][maturity].mscale;
         bool settled = _settled(adapter, maturity);
         if (!settled) {
-            // If it's not settled, then Claims won't be burned automatically in `_collect()`
-            Claim(series[adapter][maturity].claim).burn(msg.sender, uBal);
+            // If it's not settled, then Yield won't be burned automatically in `_collect()`
+            Yield(series[adapter][maturity].yield).burn(msg.sender, uBal);
             // If collect has been restricted, use the initial scale, otherwise use the current scale
             cscale = level.collectDisabled()
                 ? series[adapter][maturity].iscale
@@ -288,7 +288,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         tBal = uBal.fdiv(cscale);
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
 
-        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemClaim which will call notify
+        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a redeemYield which will call notify
         if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         unchecked {
             // Safety: bounded by the Target's total token supply
@@ -297,12 +297,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         emit Combined(adapter, maturity, tBal, msg.sender);
     }
 
-    /// @notice Burn Zeros of a Series once it's been settled
+    /// @notice Burn Principal of a Series once it's been settled
     /// @dev The balance of redeemable Target is a function of the change in Scale
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Amount of Zeros to burn, which should be equivalent to the amount of Underlying owed to the caller
-    function redeemZero(
+    /// @param uBal Amount of Principal to burn, which should be equivalent to the amount of Underlying owed to the caller
+    function redeemPrincipal(
         address adapter,
         uint256 maturity,
         uint256 uBal
@@ -311,24 +311,24 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_settled(adapter, maturity)) revert Errors.NotSettled();
 
         uint256 level = adapterMeta[adapter].level;
-        if (level.redeemZeroRestricted() && msg.sender == adapter) revert Errors.RedeemZeroRestricted();
+        if (level.redeemPrincipalRestricted() && msg.sender == adapter) revert Errors.RedeemPrincipalRestricted();
 
-        // Burn the caller's Zeros
-        Token(series[adapter][maturity].zero).burn(msg.sender, uBal);
+        // Burn the caller's Principal
+        Token(series[adapter][maturity].principal).burn(msg.sender, uBal);
 
-        // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
+        // Principal holder's share of the principal = (1 - part of the principal that belongs to Yield)
         uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
-        // If Zeros are at a loss and Claims have some principal to help cover the shortfall,
-        // take what we can from Claim's principal
+        // If Principal are at a loss and Yield have some principal to help cover the shortfall,
+        // take what we can from Yield's principal
         if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
             tBal = (uBal * zShare) / series[adapter][maturity].mscale;
         } else {
             tBal = uBal.fdiv(series[adapter][maturity].maxscale);
         }
 
-        if (!level.redeemZeroHookDisabled()) {
-            Adapter(adapter).onZeroRedeem(
+        if (!level.redeemPrincipalHookDisabled()) {
+            Adapter(adapter).onPrincipalRedeem(
                 uBal,
                 series[adapter][maturity].mscale,
                 series[adapter][maturity].maxscale,
@@ -337,7 +337,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
-        emit ZeroRedeemed(adapter, maturity, tBal);
+        emit PrincipalRedeemed(adapter, maturity, tBal);
     }
 
     function collect(
@@ -346,17 +346,17 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 maturity,
         uint256 uBalTransfer,
         address to
-    ) external nonReentrant onlyClaim(adapter, maturity) whenNotPaused returns (uint256 collected) {
-        uint256 uBal = Claim(msg.sender).balanceOf(usr);
+    ) external nonReentrant onlyYield(adapter, maturity) whenNotPaused returns (uint256 collected) {
+        uint256 uBal = Yield(msg.sender).balanceOf(usr);
         return _collect(usr, adapter, maturity, uBal, uBalTransfer > 0 ? uBalTransfer : uBal, to);
     }
 
-    /// @notice Collect Claim excess before, at, or after maturity
+    /// @notice Collect Yield excess before, at, or after maturity
     /// @dev If `to` is set, we copy the lscale value from usr to this address
-    /// @param usr User who's collecting for their Claims
+    /// @param usr User who's collecting for their Yield
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal claim balance
+    /// @param uBal yield balance
     /// @param uBalTransfer original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
@@ -369,7 +369,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) internal returns (uint256 collected) {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
-        // If the adapter is disabled, its Claims can only collect
+        // If the adapter is disabled, its Yield can only collect
         // if associated Series has been settled, which implies that an admin
         // has backfilled it
         if (!adapterMeta[adapter].enabled && !_settled(adapter, maturity)) revert Errors.InvalidAdapter();
@@ -381,7 +381,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         uint256 level = adapterMeta[adapter].level;
         if (level.collectDisabled()) {
-            // If this Series has been settled, we ensure everyone's Claims will
+            // If this Series has been settled, we ensure everyone's Yield will
             // collect yield accrued since issuance
             if (_settled(adapter, maturity)) {
                 lscale = series[adapter][maturity].iscale;
@@ -391,9 +391,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             }
         }
 
-        // If the Series has been settled, this should be their last collect, so redeem the user's claims for them
+        // If the Series has been settled, this should be their last collect, so redeem the user's yields for them
         if (_settled(adapter, maturity)) {
-            _redeemClaim(usr, adapter, maturity, uBal);
+            _redeemYield(usr, adapter, maturity, uBal);
         } else {
             // If we're not settled and we're past maturity + the sponsor window,
             // anyone can settle this Series so revert until someone does
@@ -421,7 +421,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // "Balance of Target that equaled `u` at the last collection _minus_ Target that equals `u` now"
         //
         // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that "excess"
-        // is what Claim holders are collecting
+        // is what Yield holders are collecting
         uint256 tBalNow = uBal.fdivUp(_series.maxscale); // preventive round-up towards the protocol
         uint256 tBalPrev = uBal.fdiv(lscale);
         unchecked {
@@ -434,9 +434,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // last collection to a synthetic scale weighted based on the scale on their last collect,
         // the time elapsed, and the current scale
         if (to != address(0)) {
-            uint256 cBal = Claim(_series.claim).balanceOf(to);
-            // If receiver holds claims, we set lscale to a computed "synthetic" lscales value that,
-            // for the updated claim balance, still assigns the correct amount of yield.
+            uint256 cBal = Yield(_series.yield).balanceOf(to);
+            // If receiver holds yields, we set lscale to a computed "synthetic" lscales value that,
+            // for the updated yield balance, still assigns the correct amount of yield.
             lscales[adapter][maturity][to] = cBal > 0
                 ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
                 : _series.maxscale;
@@ -463,23 +463,23 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
     }
 
-    function _redeemClaim(
+    function _redeemYield(
         address usr,
         address adapter,
         uint256 maturity,
         uint256 uBal
     ) internal {
-        // Burn the users's Claims
-        Claim(series[adapter][maturity].claim).burn(usr, uBal);
+        // Burn the users's Yield
+        Yield(series[adapter][maturity].yield).burn(usr, uBal);
 
-        // Default principal for Claim
+        // Default principal for Yield
         uint256 tBal = 0;
 
-        // Zero holder's share of the principal = (1 - part of the principal that belongs to Claims)
+        // Principal holder's share of the principal = (1 - part of the principal that belongs to Yield)
         uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
-        // If Zeros are at a loss and Claims had their principal cut to help cover the shortfall,
-        // calculate how much Claims have left
+        // If Principal are at a loss and Yield had their principal cut to help cover the shortfall,
+        // calculate how much Yield have left
         if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
             tBal =
                 (uBal * FixedMath.WAD) /
@@ -494,7 +494,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // have its rewards distributed
         Adapter(adapter).notify(usr, uBal.fdivUp(series[adapter][maturity].maxscale), false);
 
-        emit ClaimRedeemed(adapter, maturity, tBal);
+        emit YieldRedeemed(adapter, maturity, tBal);
     }
 
     /* ========== ADMIN ========== */
@@ -587,7 +587,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /* ========== INTERNAL VIEWS ========== */
 
     function _exists(address adapter, uint256 maturity) internal view returns (bool) {
-        return series[adapter][maturity].zero != address(0);
+        return series[adapter][maturity].principal != address(0);
     }
 
     function _settled(address adapter, uint256 maturity) internal view returns (bool) {
@@ -642,14 +642,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== PUBLIC GETTERS ========== */
 
-    /// @notice Returns address of zero token
-    function zero(address adapter, uint256 maturity) public view returns (address) {
-        return series[adapter][maturity].zero;
+    /// @notice Returns address of principal token
+    function principal(address adapter, uint256 maturity) public view returns (address) {
+        return series[adapter][maturity].principal;
     }
 
-    /// @notice Returns address of claim token
-    function claim(address adapter, uint256 maturity) public view returns (address) {
-        return series[adapter][maturity].claim;
+    /// @notice Returns address of yield token
+    function yield(address adapter, uint256 maturity) public view returns (address) {
+        return series[adapter][maturity].yield;
     }
 
     function mscale(address adapter, uint256 maturity) public view returns (uint256) {
@@ -658,8 +658,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyClaim(address adapter, uint256 maturity) {
-        if (series[adapter][maturity].claim != msg.sender) revert Errors.OnlyClaim();
+    modifier onlyYield(address adapter, uint256 maturity) {
+        if (series[adapter][maturity].yield != msg.sender) revert Errors.OnlyYield();
         _;
     }
 
@@ -682,8 +682,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     event SeriesInitialized(
         address adapter,
         uint256 indexed maturity,
-        address zero,
-        address claim,
+        address principal,
+        address yield,
         address indexed sponsor,
         address indexed target
     );
@@ -693,8 +693,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     event Collected(address indexed adapter, uint256 indexed maturity, uint256 collected);
     /// ----* end
     event SeriesSettled(address indexed adapter, uint256 indexed maturity, address indexed settler);
-    event ZeroRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
-    event ClaimRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event PrincipalRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event YieldRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
     /// *----* misc
     event GuardedChanged(bool indexed guarded);
     event PermissionlessChanged(bool indexed permissionless);
@@ -715,7 +715,7 @@ contract TokenHandler is Trust {
         address adapter,
         uint248 id,
         uint256 maturity
-    ) external returns (address zero, address claim) {
+    ) external returns (address principal, address yield) {
         if (msg.sender != divider) revert Errors.OnlyDivider();
 
         ERC20 target = ERC20(Adapter(adapter).target());
@@ -725,7 +725,7 @@ contract TokenHandler is Trust {
         string memory date = DateTime.format(maturity);
         string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));
         string memory adapterId = DateTime.uintToString(id);
-        zero = address(
+        principal = address(
             new Token(
                 string(abi.encodePacked(date, " ", target.symbol(), " Sense Principal Token, A", adapterId)),
                 string(abi.encodePacked("sP-", adapterId, "-", target.symbol(), ":", datestring)),
@@ -734,8 +734,8 @@ contract TokenHandler is Trust {
             )
         );
 
-        claim = address(
-            new Claim(
+        yield = address(
+            new Yield(
                 adapter,
                 maturity,
                 string(abi.encodePacked(date, " ", target.symbol(), " Sense Yield Token, A", adapterId)),

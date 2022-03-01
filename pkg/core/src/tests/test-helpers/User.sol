@@ -6,8 +6,8 @@ import { MockToken } from "./mocks/MockToken.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { Periphery } from "../../Periphery.sol";
-import { GClaimManager } from "../../modules/GClaimManager.sol";
-import { Claim } from "../../tokens/Claim.sol";
+import { GYieldManager } from "../../modules/GYieldManager.sol";
+import { Yield } from "../../tokens/Yield.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 
 contract User {
@@ -17,7 +17,7 @@ contract User {
     MockToken target;
     Divider divider;
     Periphery periphery;
-    GClaimManager public gClaimManager;
+    GYieldManager public gYieldManager;
     BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -44,7 +44,7 @@ contract User {
 
     function setPeriphery(Periphery _periphery) public {
         periphery = _periphery;
-        gClaimManager = new GClaimManager(address(divider));
+        gYieldManager = new GYieldManager(address(divider));
     }
 
     function doDeployAdapter(address _target) public returns (address clone) {
@@ -112,15 +112,15 @@ contract User {
         divider.addAdapter(adapter);
     }
 
-    function doSponsorSeries(address adapter, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = periphery.sponsorSeries(adapter, maturity, true);
+    function doSponsorSeries(address adapter, uint256 maturity) public returns (address principal, address yield) {
+        (principal, yield) = periphery.sponsorSeries(adapter, maturity, true);
     }
 
     function doSponsorSeriesWithoutPool(address adapter, uint256 maturity)
         public
-        returns (address zero, address claim)
+        returns (address principal, address yield)
     {
-        (zero, claim) = periphery.sponsorSeries(adapter, maturity, false);
+        (principal, yield) = periphery.sponsorSeries(adapter, maturity, false);
     }
 
     function doSettleSeries(address adapter, uint256 maturity) public {
@@ -153,16 +153,16 @@ contract User {
         divider.backfillScale(adapter, maturity, scale, usrs, lscales);
     }
 
-    function doRedeemZero(
+    function doRedeemPrincipal(
         address adapter,
         uint256 maturity,
         uint256 balance
     ) public returns (uint256 redeemed) {
-        redeemed = divider.redeemZero(adapter, maturity, balance);
+        redeemed = divider.redeemPrincipal(adapter, maturity, balance);
     }
 
-    function doCollect(address claim) public returns (uint256 collected) {
-        collected = Claim(claim).collect();
+    function doCollect(address yield) public returns (uint256 collected) {
+        collected = Yield(yield).collect();
     }
 
     function doJoin(
@@ -170,7 +170,7 @@ contract User {
         uint256 maturity,
         uint256 balance
     ) public {
-        gClaimManager.join(adapter, maturity, balance);
+        gYieldManager.join(adapter, maturity, balance);
     }
 
     function doExit(
@@ -178,77 +178,77 @@ contract User {
         uint256 maturity,
         uint256 balance
     ) public {
-        gClaimManager.exit(adapter, maturity, balance);
+        gYieldManager.exit(adapter, maturity, balance);
     }
 
-    function doSwapTargetForZeros(
+    function doSwapTargetForPrincipal(
         address adapter,
         uint256 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
-        periphery.swapTargetForZeros(adapter, maturity, balance, minAccepted);
+        periphery.swapTargetForPrincipal(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapUnderlyingForZeros(
+    function doSwapUnderlyingForPrincipal(
         address adapter,
         uint256 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
-        periphery.swapUnderlyingForZeros(adapter, maturity, balance, minAccepted);
+        periphery.swapUnderlyingForPrincipal(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapTargetForClaims(
+    function doSwapTargetForYield(
         address adapter,
         uint256 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
-        periphery.swapTargetForClaims(adapter, maturity, balance, minAccepted);
+        periphery.swapTargetForYield(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapUnderlyingForClaims(
+    function doSwapUnderlyingForYield(
         address adapter,
         uint256 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
-        periphery.swapUnderlyingForClaims(adapter, maturity, balance, minAccepted);
+        periphery.swapUnderlyingForYield(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapZerosForTarget(
+    function doSwapPrincipalForTarget(
         address adapter,
         uint256 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
-        periphery.swapZerosForTarget(adapter, maturity, balance, minAccepted);
+        periphery.swapPrincipalForTarget(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapZerosForUnderlying(
+    function doSwapPrincipalForUnderlying(
         address adapter,
         uint256 maturity,
         uint256 balance,
         uint256 minAccepted
     ) public {
-        periphery.swapZerosForUnderlying(adapter, maturity, balance, minAccepted);
+        periphery.swapPrincipalForUnderlying(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapClaimsForTarget(
+    function doSwapYieldForTarget(
         address adapter,
         uint256 maturity,
         uint256 balance
     ) public {
-        periphery.swapClaimsForTarget(adapter, maturity, balance);
+        periphery.swapYieldForTarget(adapter, maturity, balance);
     }
 
-    function doSwapClaimsForUnderlying(
+    function doSwapYieldForUnderlying(
         address adapter,
         uint256 maturity,
         uint256 balance
     ) public {
-        periphery.swapClaimsForUnderlying(adapter, maturity, balance);
+        periphery.swapYieldForUnderlying(adapter, maturity, balance);
     }
 
     function doAddLiquidityFromTarget(
@@ -348,7 +348,7 @@ contract User {
         return MockAdapter(adapter).doCombine(maturity, balance);
     }
 
-    function doAdapterRedeemZero(
+    function doAdapterRedeemPrincipal(
         address adapter,
         uint256 maturity,
         uint256 balance

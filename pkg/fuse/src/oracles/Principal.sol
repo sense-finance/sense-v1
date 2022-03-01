@@ -15,30 +15,30 @@ import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
-contract ZeroOracle is PriceOracle, Trust {
+contract PrincipalOracle is PriceOracle, Trust {
     using FixedMath for uint256;
 
-    /// @notice zero address -> pool address for oracle reads
+    /// @notice principal address -> pool address for oracle reads
     mapping(address => address) public pools;
     uint32 public constant TWAP_PERIOD = 1 hours;
 
     constructor() Trust(msg.sender) {}
 
-    function setZero(address zero, address pool) external requiresTrust {
-        pools[zero] = pool;
+    function setPrincipal(address principal, address pool) external requiresTrust {
+        pools[principal] = pool;
     }
 
     function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
-        // The underlying here will be a Zero
+        // The underlying here will be a Principal
         return _price(cToken.underlying());
     }
 
-    function price(address zero) external view override returns (uint256) {
-        return _price(zero);
+    function price(address principal) external view override returns (uint256) {
+        return _price(principal);
     }
 
-    function _price(address zero) internal view returns (uint256) {
-        BalancerOracle pool = BalancerOracle(pools[address(zero)]);
+    function _price(address principal) internal view returns (uint256) {
+        BalancerOracle pool = BalancerOracle(pools[address(principal)]);
         if (pool == BalancerOracle(address(0))) revert Errors.PoolNotSet();
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
@@ -56,16 +56,16 @@ contract ZeroOracle is PriceOracle, Trust {
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
-        // get the price of Zeros in terms of underlying
-        (uint256 zeroi, uint256 targeti) = pool.getIndices();
-        uint256 zeroPrice = results[zeroi];
+        // get the price of Principal in terms of underlying
+        (uint256 principali, uint256 targeti) = pool.getIndices();
+        uint256 principalPrice = results[principali];
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address underlying = address(tokens[targeti]);
 
-        // `Zero / underlying` * `underlying / ETH` = `Price of Zero in ETH`
+        // `Principal / underlying` * `underlying / ETH` = `Price of Principal in ETH`
         //
         // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
-        return zeroPrice.fmul(PriceOracle(msg.sender).price(underlying));
+        return principalPrice.fmul(PriceOracle(msg.sender).price(underlying));
     }
 }

@@ -6,8 +6,8 @@ library Levels {
     uint256 private constant _ISSUE_BIT = 2;
     uint256 private constant _COMBINE_BIT = 4;
     uint256 private constant _COLLECT_BIT = 8;
-    uint256 private constant _REDEEM_ZERO_BIT = 16;
-    uint256 private constant _REDEEM_ZERO_HOOK_BIT = 32;
+    uint256 private constant _REDEEM_PRINCIPAL_BIT = 16;
+    uint256 private constant _REDEEM_PRINCIPAL_HOOK_BIT = 32;
 
     function initRestricted(uint256 level) internal pure returns (bool) {
         return level & _INIT_BIT != _INIT_BIT;
@@ -25,11 +25,11 @@ library Levels {
         return level & _COLLECT_BIT != _COLLECT_BIT;
     }
 
-    function redeemZeroRestricted(uint256 level) internal pure returns (bool) {
-        return level & _REDEEM_ZERO_BIT != _REDEEM_ZERO_BIT;
+    function redeemPrincipalRestricted(uint256 level) internal pure returns (bool) {
+        return level & _REDEEM_PRINCIPAL_BIT != _REDEEM_PRINCIPAL_BIT;
     }
 
-    function redeemZeroHookDisabled(uint256 level) internal pure returns (bool) {
-        return level & _REDEEM_ZERO_HOOK_BIT != _REDEEM_ZERO_HOOK_BIT;
+    function redeemPrincipalHookDisabled(uint256 level) internal pure returns (bool) {
+        return level & _REDEEM_PRINCIPAL_HOOK_BIT != _REDEEM_PRINCIPAL_HOOK_BIT;
     }
 }

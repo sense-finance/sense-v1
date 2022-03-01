@@ -10,23 +10,23 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { Claim } from "../tokens/Claim.sol";
+import { Yield } from "../tokens/Yield.sol";
 import { Token } from "../tokens/Token.sol";
 import { BaseAdapter as Adapter } from "../adapters/BaseAdapter.sol";
 
-/// @title Grounded Claims (gClaims)
-/// @notice The GClaim Manager contract turns Collect Claims into Drag Claims
-contract GClaimManager {
+/// @title Grounded Yield (gYield)
+/// @notice The GYield Manager contract turns Collect Yield into Drag Yield
+contract GYieldManager {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
-    /// @notice "Issuance" scale value all claims of the same Series must backfill to separated by Claim address
+    /// @notice "Issuance" scale value all yields of the same Series must backfill to separated by Yield address
     mapping(address => uint256) public inits;
-    /// @notice Total amount of interest collected separated by Claim address
+    /// @notice Total amount of interest collected separated by Yield address
     mapping(address => uint256) public totals;
     /// @notice The max scale value of different Series
     mapping(address => uint256) public mscales;
-    mapping(address => Token) public gclaims;
+    mapping(address => Token) public gyields;
     address public divider;
 
     constructor(address _divider) {
@@ -42,36 +42,36 @@ contract GClaimManager {
     ) external {
         if (maturity <= block.timestamp) revert Errors.InvalidMaturity();
 
-        address claim = Divider(divider).claim(adapter, maturity);
-        if (claim == address(0)) revert Errors.SeriesDoesNotExist();
+        address yield = Divider(divider).yield(adapter, maturity);
+        if (yield == address(0)) revert Errors.SeriesDoesNotExist();
 
-        if (address(gclaims[claim]) == address(0)) {
-            // If this is the first Claim from this Series:
+        if (address(gyields[yield]) == address(0)) {
+            // If this is the first Yield from this Series:
             // * Set the current scale value as the floor
-            // * Deploy a new gClaim contract
+            // * Deploy a new gYield contract
 
-            // NOTE: Because we're transferring Claims in this same TX, we could technically
+            // NOTE: Because we're transferring Yield in this same TX, we could technically
             // get the scale value from the divider, but that's a little opaque as it relies on side-effects,
             // so i've gone with the clearest solution for now and we can optimize later
             uint256 scale = Adapter(adapter).scale();
-            mscales[claim] = scale;
-            inits[claim] = scale;
-            string memory name = string(abi.encodePacked("G-", ERC20(claim).name(), "-G"));
-            string memory symbol = string(abi.encodePacked("G-", ERC20(claim).symbol(), "-G"));
-            gclaims[claim] = new Token(name, symbol, ERC20(Adapter(adapter).target()).decimals(), address(this));
+            mscales[yield] = scale;
+            inits[yield] = scale;
+            string memory name = string(abi.encodePacked("G-", ERC20(yield).name(), "-G"));
+            string memory symbol = string(abi.encodePacked("G-", ERC20(yield).symbol(), "-G"));
+            gyields[yield] = new Token(name, symbol, ERC20(Adapter(adapter).target()).decimals(), address(this));
         } else {
             uint256 tBal = excess(adapter, maturity, uBal);
             if (tBal > 0) {
                 // Pull the amount of Target needed to backfill the excess back to issuance
                 ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
-                totals[claim] += tBal;
+                totals[yield] += tBal;
             }
         }
 
-        // Pull Collect Claims to this contract
-        ERC20(claim).safeTransferFrom(msg.sender, address(this), uBal);
-        // Mint the user Drag Claims
-        gclaims[claim].mint(msg.sender, uBal);
+        // Pull Collect Yield to this contract
+        ERC20(yield).safeTransferFrom(msg.sender, address(this), uBal);
+        // Mint the user Drag Yield
+        gyields[yield].mint(msg.sender, uBal);
 
         emit Joined(adapter, maturity, msg.sender, uBal);
     }
@@ -81,45 +81,45 @@ contract GClaimManager {
         uint256 maturity,
         uint256 uBal
     ) external {
-        address claim = Divider(divider).claim(adapter, maturity);
-        if (claim == address(0)) revert Errors.SeriesDoesNotExist();
+        address yield = Divider(divider).yield(adapter, maturity);
+        if (yield == address(0)) revert Errors.SeriesDoesNotExist();
 
-        // Collect excess for all Claims from this Series this contract holds
-        uint256 collected = Claim(claim).collect();
+        // Collect excess for all Yield from this Series this contract holds
+        uint256 collected = Yield(yield).collect();
         // Track the total Target collected manually so that that we don't get
         // mixed up when multiple Series have the same Target
-        uint256 total = totals[claim] + collected;
+        uint256 total = totals[yield] + collected;
 
         // Determine how much of stored excess this caller has a right to
-        uint256 tBal = uBal.fdiv(gclaims[claim].totalSupply(), total);
-        totals[claim] = total - tBal;
+        uint256 tBal = uBal.fdiv(gyields[yield].totalSupply(), total);
+        totals[yield] = total - tBal;
 
         // Send the excess Target back to the user
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal);
-        // Transfer Collect Claims back to the user
-        ERC20(claim).safeTransfer(msg.sender, uBal);
-        // Burn the user's gclaims
-        gclaims[claim].burn(msg.sender, uBal);
+        // Transfer Collect Yield back to the user
+        ERC20(yield).safeTransfer(msg.sender, uBal);
+        // Burn the user's gyields
+        gyields[yield].burn(msg.sender, uBal);
 
         emit Exited(adapter, maturity, msg.sender, uBal);
     }
 
     /* ========== VIEWS ========== */
 
-    /// @notice Calculates the amount of excess that has accrued since the first Claim from a Series was deposited
+    /// @notice Calculates the amount of excess that has accrued since the first Yield from a Series was deposited
     function excess(
         address adapter,
         uint256 maturity,
         uint256 uBal
     ) public returns (uint256 tBal) {
-        address claim = Divider(divider).claim(adapter, maturity);
-        uint256 initScale = inits[claim];
+        address yield = Divider(divider).yield(adapter, maturity);
+        uint256 initScale = inits[yield];
         uint256 scale = Adapter(adapter).scale();
-        uint256 mscale = mscales[claim];
+        uint256 mscale = mscales[yield];
         if (scale <= mscale) {
             scale = mscale;
         } else {
-            mscales[claim] = scale;
+            mscales[yield] = scale;
         }
 
         if (scale - initScale > 0) {

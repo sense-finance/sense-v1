@@ -81,7 +81,7 @@ abstract contract CropAdapter is BaseAdapter {
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
     /// @param _usr User to distribute reward tokens to
     function _distribute(address _usr) internal {
-        _claimReward();
+        _yieldReward();
 
         uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
         if (totalTarget > 0) share += (crop.fdiv(totalTarget, FixedMath.RAY));
@@ -97,9 +97,9 @@ abstract contract CropAdapter is BaseAdapter {
         emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
-    /// @notice Some protocols don't airdrop reward tokens, instead users must claim them.
-    /// This method may be overriden by child contracts to Claim a protocol's rewards
-    function _claimReward() internal virtual {
+    /// @notice Some protocols don't airdrop reward tokens, instead users must yield them.
+    /// This method may be overriden by child contracts to Yield a protocol's rewards
+    function _yieldReward() internal virtual {
         return;
     }
 

@@ -6,11 +6,11 @@ library Errors {
     error CombineRestricted();
     error IssuanceRestricted();
     error NotAuthorized();
-    error OnlyClaim();
+    error OnlyYield();
     error OnlyDivider();
     error OnlyPeriphery();
     error OnlyPermissionless();
-    error RedeemZeroRestricted();
+    error RedeemPrincipalRestricted();
     error Untrusted();
 
     // Adapters
@@ -40,7 +40,7 @@ library Errors {
     error SwapTooSmall();
     error TargetParamsNotSet();
     error PoolParamsNotSet();
-    error ZeroParamsNotSet();
+    error PrincipalParamsNotSet();
 
     // Periphery
     error FactoryNotSupported();
@@ -53,7 +53,7 @@ library Errors {
     error AdapterNotSet();
     error FailedBecomeAdmin();
     error FailedAddTargetMarket();
-    error FailedAddZeroMarket();
+    error FailedAddPrincipalMarket();
     error FailedAddLpMarket();
     error OracleNotReady();
     error PoolAlreadyDeployed();

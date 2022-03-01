@@ -52,16 +52,16 @@ interface CETHTokenInterface {
 }
 
 interface ComptrollerInterface {
-    /// @notice Claim all the comp accrued by holder in all markets
-    /// @param holder The address to claim COMP for
-    function claimComp(address holder) external;
+    /// @notice Yield all the comp accrued by holder in all markets
+    /// @param holder The address to yield COMP for
+    function yieldComp(address holder) external;
 }
 
 interface PriceOracleInterface {
     /// @notice Get the price of an underlying asset.
     /// @param target The target asset to get the underlying price of.
     /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
-    /// Zero means the price is unavailable.
+    /// Principal means the price is unavailable.
     function getUnderlyingPrice(address target) external view returns (uint256);
 }
 
@@ -133,8 +133,8 @@ contract CAdapter is CropAdapter {
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
-    function _claimReward() internal virtual override {
-        ComptrollerInterface(COMPTROLLER).claimComp(address(this));
+    function _yieldReward() internal virtual override {
+        ComptrollerInterface(COMPTROLLER).yieldComp(address(this));
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
