@@ -21,17 +21,17 @@ module.exports = async function () {
 
     log(`\nDeploy ${contractName}`);
     const factoryParams = [oracle, ifee, stake, stakeSize, minm, maxm, mode, tilt];
-    const { address: cFactoryAddress } = await deploy(contractName, {
+    const { address: factoryAddress } = await deploy(contractName, {
       from: deployer,
       args: [divider.address, factoryParams, reward],
       log: true,
     });
 
     log(`Trust ${contractName} on the divider`);
-    await (await divider.setIsTrusted(cFactoryAddress, true)).wait();
+    await (await divider.setIsTrusted(factoryAddress, true)).wait();
   
     log(`Add ${contractName} support to Periphery`);
-    await (await periphery.setFactory(cFactoryAddress, true)).wait();
+    await (await periphery.setFactory(factoryAddress, true)).wait();
     
     log("\n-------------------------------------------------------")
     log(`DEPLOY ADAPTERS FOR: ${contractName}`);
@@ -40,8 +40,8 @@ module.exports = async function () {
       const { name, address, guard } = target;
       
       log(`\nDeploy ${name} adapter`);
-      const adapterAddress = await periphery.callStatic.deployAdapter(cFactoryAddress, address);
-      await (await periphery.deployAdapter(cFactoryAddress, address)).wait();
+      const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, address);
+      await (await periphery.deployAdapter(factoryAddress, address)).wait();
 
       log(`Set ${name} adapter issuance cap to ${guard}`);
       await divider.setGuard(adapterAddress, guard).then(tx => tx.wait());
