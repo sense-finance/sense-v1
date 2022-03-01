@@ -69,6 +69,10 @@ contract WstETHAdapter is BaseAdapter {
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
+
+    // On 2022.02.28, a swap from 100k stETH ($250m+ worth) to ETH was quoted 
+    // by https://curve.fi/steth to incur 0.39% slippage, so we went with 0.5% 
+    // to capture practically all unwrap/wrap sizes through the Sense adapter."
     uint256 public constant SLIPPAGE_TOLERANCE = 0.005e18;
 
     /// @notice Cached scale value from the last call to `scale()`
