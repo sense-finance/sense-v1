@@ -55,7 +55,7 @@ interface WETHLike {
 }
 
 interface StEthPriceFeedLike {
-    function safe_price_value() external returns (uint256);
+    function safe_price_value() external view returns (uint256);
 }
 
 /// @notice Adapter contract for wstETH
@@ -144,8 +144,8 @@ contract WstETHAdapter is BaseAdapter {
         // In order to account for the stETH/ETH CurveStableSwap rate,
         // we use `safe_price_value` from Lido's stETH price feed.
         // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
-        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
-        uint256 wstETHstETH = StETHInterface(STETH).getPooledEthByShares(1 ether); // stETH tokens per one wstETH
+        uint256 stEthEth = StEthPriceFeedLike(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+        uint256 wstETHstETH = StETHLike(STETH).getPooledEthByShares(1 ether); // stETH tokens per one wstETH
         exRate = stEthEth.fmul(wstETHstETH);
     }
 
