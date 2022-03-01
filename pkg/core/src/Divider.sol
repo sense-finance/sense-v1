@@ -715,7 +715,6 @@ contract TokenHandler is Trust {
 
         ERC20 target = ERC20(Adapter(adapter).target());
         uint8 decimals = target.decimals();
-        string memory symbol = target.symbol();
         (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory date = DateTime.format(maturity);
         string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));
