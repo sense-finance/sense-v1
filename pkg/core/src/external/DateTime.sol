@@ -52,6 +52,32 @@ library DateTime {
         d = uintToString(day);
         m = uintToString(month);
         y = uintToString(year);
+        // append a 0 to numbers < 10 so we should, e.g, 01 instead of just 1
+        if (day < 10) d = string(abi.encodePacked("0", d));
+        if (month < 10) m = string(abi.encodePacked("0", m));
+    }
+
+    function format(uint256 _timestamp) internal pure returns (string memory datestring) {
+        string[12] memory months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "June",
+            "July",
+            "Aug",
+            "Sept",
+            "Oct",
+            "Nov",
+            "Dec"
+        ];
+        (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);
+        uint256 last = day % 10;
+        string memory suffix = "th";
+        if (last == 1) suffix = "st";
+        if (last == 2) suffix = "nd";
+        return string(abi.encodePacked(uintToString(day), suffix, " ", months[month - 1], " ", uintToString(year)));
     }
 
     function getDayOfWeek(uint256 timestamp) internal pure returns (uint256 dayOfWeek) {
