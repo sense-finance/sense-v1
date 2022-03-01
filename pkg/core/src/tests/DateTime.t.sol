@@ -69,5 +69,4 @@ contract DateTimeTest is DSTest {
         uint256 timestamp = 1642032000; // 13/01/2022
         assertEq(DateTime.format(timestamp), "13th Jan 2022");
     }
-    
 }
