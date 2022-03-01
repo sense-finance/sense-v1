@@ -696,12 +696,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 }
 
 contract TokenHandler is Trust {
-    /// @notice Configuration
-    string private constant ZERO_SYMBOL_PREFIX = "z";
-    string private constant ZERO_NAME_PREFIX = "Zero";
-    string private constant CLAIM_SYMBOL_PREFIX = "c";
-    string private constant CLAIM_NAME_PREFIX = "Claim";
-
     /// @notice Program state
     address public divider;
 
@@ -721,14 +715,15 @@ contract TokenHandler is Trust {
 
         ERC20 target = ERC20(Adapter(adapter).target());
         uint8 decimals = target.decimals();
-        string memory name = target.name();
+        string memory symbol = target.symbol();
         (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
+        string memory date = DateTime.format(maturity);
         string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));
         string memory adapterId = DateTime.uintToString(id);
         zero = address(
             new Token(
-                string(abi.encodePacked(name, " ", datestring, " ", ZERO_NAME_PREFIX, " #", adapterId, " by Sense")),
-                string(abi.encodePacked(ZERO_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
+                string(abi.encodePacked(date, " ", target.symbol(), " Sense Principal Token, A", adapterId)),
+                string(abi.encodePacked("sP-", target.symbol(), ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
@@ -738,8 +733,8 @@ contract TokenHandler is Trust {
             new Claim(
                 adapter,
                 maturity,
-                string(abi.encodePacked(name, " ", datestring, " ", CLAIM_NAME_PREFIX, " #", adapterId, " by Sense")),
-                string(abi.encodePacked(CLAIM_SYMBOL_PREFIX, target.symbol(), ":", datestring, ":#", adapterId)),
+                string(abi.encodePacked(date, " ", target.symbol(), " Sense Yield Token, A", adapterId)),
+                string(abi.encodePacked("sY-", target.symbol(), ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )

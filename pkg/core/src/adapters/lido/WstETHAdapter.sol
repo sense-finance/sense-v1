@@ -55,7 +55,7 @@ interface WETHLike {
 }
 
 interface StEthPriceFeedLike {
-    function safe_price_value() external returns (uint256);
+    function safe_price_value() external view returns (uint256);
 }
 
 /// @notice Adapter contract for wstETH
@@ -69,6 +69,10 @@ contract WstETHAdapter is BaseAdapter {
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant CURVESINGLESWAP = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
+
+    // On 2022.02.28, a swap from 100k stETH ($250m+ worth) to ETH was quoted
+    // by https://curve.fi/steth to incur 0.39% slippage, so we went with 0.5%
+    // to capture practically all unwrap/wrap sizes through the Sense adapter."
     uint256 public constant SLIPPAGE_TOLERANCE = 0.005e18;
 
     /// @notice Cached scale value from the last call to `scale()`
@@ -76,7 +80,6 @@ contract WstETHAdapter is BaseAdapter {
 
     constructor(
         address _divider,
-        address _target,
         address _oracle,
         uint256 _ifee,
         address _stake,
@@ -85,26 +88,23 @@ contract WstETHAdapter is BaseAdapter {
         uint256 _maxm,
         uint16 _mode,
         uint64 _tilt
-    ) BaseAdapter(_divider, _target, WETH, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
+    ) BaseAdapter(_divider, WSTETH, WETH, _oracle, _ifee, _stake, _stakeSize, _minm, _maxm, _mode, _tilt, 31) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).approve(WSTETH, type(uint256).max);
         // approve Curve stETH/ETH pool to pull stETH (used on unwrapTarget())
         ERC20(STETH).approve(CURVESINGLESWAP, type(uint256).max);
+        // set an inital cached scale value
+        scaleStored = _wstEthToEthRate();
     }
 
-    /// @return Eth per wstEtH (natively in 18 decimals)
-    function scale() external virtual override returns (uint256) {
-        // In order to account for the stETH/ETH CurveStableSwap rate, we use `safe_price_value` from Lido's stETH price feed.
-        // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
-        uint256 stEthEth = StEthPriceFeedLike(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
-        uint256 wstETHstETH = StETHLike(STETH).getPooledEthByShares(1 ether); // stETH tokens corresponding to one wstETH
-        uint256 _value = stEthEth.fmul(wstETHstETH);
+    /// @return exRate Eth per wstEtH (natively in 18 decimals)
+    function scale() external virtual override returns (uint256 exRate) {
+        exRate = _wstEthToEthRate();
 
-        if (_value != scaleStored) {
+        if (exRate != scaleStored) {
             // update value only if different than the previous
-            scaleStored = _value;
+            scaleStored = exRate;
         }
-        return _value;
     }
 
     function getUnderlyingPrice() external pure override returns (uint256 price) {
@@ -138,6 +138,15 @@ contract WstETHAdapter is BaseAdapter {
         WETHLike(WETH).withdraw(amount); // unwrap WETH into ETH
         uint256 stETH = StETHLike(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(stETH)); // transfer wstETH to msg.sender
+    }
+
+    function _wstEthToEthRate() internal view returns (uint256 exRate) {
+        // In order to account for the stETH/ETH CurveStableSwap rate,
+        // we use `safe_price_value` from Lido's stETH price feed.
+        // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
+        uint256 stEthEth = StEthPriceFeedLike(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+        uint256 wstETHstETH = StETHLike(STETH).getPooledEthByShares(1 ether); // stETH tokens per one wstETH
+        exRate = stEthEth.fmul(wstETHstETH);
     }
 
     fallback() external payable {

@@ -70,7 +70,6 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         tokenHandler.init(address(divider));
         adapter = new WstETHAdapter(
             address(divider),
-            Assets.WSTETH,
             Assets.RARI_ORACLE,
             ISSUANCE_FEE,
             Assets.DAI,

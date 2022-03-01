@@ -66,7 +66,7 @@ module.exports = {
       gas: 12000000,
       saveDeployments: false,
       blockGasLimit: 21000000,
-      blockNumber: 13491969,
+      // blockNumber: 13491969,
       // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
     },

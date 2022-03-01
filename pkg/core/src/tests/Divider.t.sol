@@ -192,10 +192,10 @@ contract Dividers is TestHelper {
 
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 4-10-2021 Zero #2 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:4-10-2021:#2");
-        assertEq(ERC20(claim).name(), "Compound Dai 4-10-2021 Claim #2 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:4-10-2021:#2");
+        assertEq(ERC20(zero).name(), "4th Oct 2021 cDAI Sense Principal Token, A2");
+        assertEq(ERC20(zero).symbol(), "sP-cDAI:04-10-2021:2");
+        assertEq(ERC20(claim).name(), "4th Oct 2021 cDAI Sense Yield Token, A2");
+        assertEq(ERC20(claim).symbol(), "sY-cDAI:04-10-2021:2");
     }
 
     function testCantInitSeriesIfPaused() public {
@@ -213,10 +213,10 @@ contract Dividers is TestHelper {
         (address zero, address claim) = sponsorSampleSeries(address(alice), maturity);
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
-        assertEq(ERC20(zero).name(), "Compound Dai 1-10-2021 Zero #1 by Sense");
-        assertEq(ERC20(zero).symbol(), "zcDAI:1-10-2021:#1");
-        assertEq(ERC20(claim).name(), "Compound Dai 1-10-2021 Claim #1 by Sense");
-        assertEq(ERC20(claim).symbol(), "ccDAI:1-10-2021:#1");
+        assertEq(ERC20(zero).name(), "1st Oct 2021 cDAI Sense Principal Token, A1");
+        assertEq(ERC20(zero).symbol(), "sP-cDAI:01-10-2021:1");
+        assertEq(ERC20(claim).name(), "1st Oct 2021 cDAI Sense Yield Token, A1");
+        assertEq(ERC20(claim).symbol(), "sY-cDAI:01-10-2021:1");
     }
 
     function testInitSeriesWithdrawStake() public {

@@ -3,6 +3,12 @@ const path = require('path');
 const { exec } = require("child_process");
 const log = console.log;
 
+// More info here (https://kndrck.co/posts/local_erc20_bal_mani_w_hh/)
+exports.STORAGE_SLOT = {
+  DAI: 2,
+  WETH: 3
+};
+
 // Moves deployments from `deployments_rmv` folder to `deployments` including tags folders 
 exports.moveDeployments = async function() {
   const tag = await currentTag();
@@ -42,9 +48,6 @@ exports.writeDeploymentsToFile = async function() {
 exports.writeAdaptersToFile = async function() {
   try {
     const tag = await currentTag();
-    const signer = (await ethers.getSigners())[0];
-    const divider = await ethers.getContract("Divider");
-    const events = [...new Set(await divider.queryFilter(divider.filters.AdapterChanged(null, null, 1)))]; // fetch all deployed Adapters
     const deployedAdapters = await getDeployedAdapters(); 
     const destinationPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}`);
     await fs.writeJson(`${destinationPath}/adapters.json`, deployedAdapters);
@@ -86,3 +89,12 @@ async function currentTag() {
   return tag.trim().replace(/(\r\n|\n|\r)/gm, "");
 }
 exports.currentTag = currentTag;
+
+exports.toBytes32 = (bn) => {
+  return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
+};
+
+exports.setStorageAt = async (address, index, value) => {
+  await ethers.provider.send("hardhat_setStorageAt", [address, index, value]);
+  await ethers.provider.send("evm_mine", []); // Just mines to the next block
+};
