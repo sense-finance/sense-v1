@@ -193,9 +193,9 @@ contract Dividers is TestHelper {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
         assertEq(ERC20(zero).name(), "4th Oct 2021 cDAI Sense Principal Token, A2");
-        assertEq(ERC20(zero).symbol(), "sPT-2-cDAI:04-10-2021");
+        assertEq(ERC20(zero).symbol(), "sP-2-cDAI:04-10-2021");
         assertEq(ERC20(claim).name(), "4th Oct 2021 cDAI Sense Yield Token, A2");
-        assertEq(ERC20(claim).symbol(), "sYT-2-cDAI:04-10-2021");
+        assertEq(ERC20(claim).symbol(), "sY-2-cDAI:04-10-2021");
     }
 
     function testCantInitSeriesIfPaused() public {
@@ -214,9 +214,9 @@ contract Dividers is TestHelper {
         assertTrue(zero != address(0));
         assertTrue(claim != address(0));
         assertEq(ERC20(zero).name(), "1st Oct 2021 cDAI Sense Principal Token, A1");
-        assertEq(ERC20(zero).symbol(), "sPT-1-cDAI:01-10-2021");
+        assertEq(ERC20(zero).symbol(), "sP-1-cDAI:01-10-2021");
         assertEq(ERC20(claim).name(), "1st Oct 2021 cDAI Sense Yield Token, A1");
-        assertEq(ERC20(claim).symbol(), "sYT-1-cDAI:01-10-2021");
+        assertEq(ERC20(claim).symbol(), "sY-1-cDAI:01-10-2021");
     }
 
     function testInitSeriesWithdrawStake() public {
