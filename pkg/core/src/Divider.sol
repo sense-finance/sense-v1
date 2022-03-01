@@ -715,14 +715,15 @@ contract TokenHandler is Trust {
 
         ERC20 target = ERC20(Adapter(adapter).target());
         uint8 decimals = target.decimals();
+        string memory symbol = target.symbol();
         (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);
         string memory date = DateTime.format(maturity);
         string memory datestring = string(abi.encodePacked(d, "-", m, "-", y));
         string memory adapterId = DateTime.uintToString(id);
         zero = address(
             new Token(
-                string(abi.encodePacked(date, " ", target.symbol(), " Sense Principal Token, A", adapterId)),
-                string(abi.encodePacked("sP-", target.symbol(), ":", datestring, ":", adapterId)),
+                string(abi.encodePacked(date, " ", symbol, " Sense Principal Token, A", adapterId)),
+                string(abi.encodePacked("sP-", symbol, ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
@@ -732,8 +733,8 @@ contract TokenHandler is Trust {
             new Claim(
                 adapter,
                 maturity,
-                string(abi.encodePacked(date, " ", target.symbol(), " Sense Yield Token, A", adapterId)),
-                string(abi.encodePacked("sY-", target.symbol(), ":", datestring, ":", adapterId)),
+                string(abi.encodePacked(date, " ", symbol, " Sense Yield Token, A", adapterId)),
+                string(abi.encodePacked("sY-", symbol, ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
