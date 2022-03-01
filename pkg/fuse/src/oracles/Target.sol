@@ -2,7 +2,8 @@
 pragma solidity 0.8.11;
 
 // External references
-import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
+import { PriceOracle } from "../external/PriceOracle.sol";
+import { CToken } from "../external/CToken.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
@@ -23,7 +24,7 @@ contract TargetOracle is PriceOracle, Trust {
         adapters[target] = adapter;
     }
 
-    function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
+    function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         // For the sense Fuse pool, the underlying will be the Target. The semantics here can be a little confusing
         // as we now have two layers of underlying, cToken -> Target (cToken's underlying) -> Target's underlying
         Token target = Token(cToken.underlying());

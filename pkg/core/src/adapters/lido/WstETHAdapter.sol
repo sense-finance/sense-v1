@@ -10,7 +10,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-interface WstETHInterface {
+interface WstETHLike {
     /// @notice https://github.com/lidofinance/lido-dao/blob/master/contracts/0.6.12/WstETH.sol
     /// @dev returns the current exchange rate of stETH to wstETH in wei (18 decimals)
     function stEthPerToken() external view returns (uint256);
@@ -20,7 +20,7 @@ interface WstETHInterface {
     function wrap(uint256 _stETHAmount) external returns (uint256);
 }
 
-interface StETHInterface {
+interface StETHLike {
     /// @notice Send funds to the pool with optional _referral parameter
     /// @dev This function is alternative way to submit funds. Supports optional referral address.
     /// @return Amount of StETH shares generated
@@ -33,7 +33,7 @@ interface StETHInterface {
     function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
 }
 
-interface ICurveStableSwap {
+interface CurveStableSwapLike {
     function get_dy(
         int128 i,
         int128 j,
@@ -48,13 +48,13 @@ interface ICurveStableSwap {
     ) external payable returns (uint256);
 }
 
-interface IWETH {
+interface WETHLike {
     function deposit() external payable;
 
     function withdraw(uint256 wad) external;
 }
 
-interface StEthPriceFeed {
+interface StEthPriceFeedLike {
     function safe_price_value() external returns (uint256);
 }
 
@@ -96,8 +96,8 @@ contract WstETHAdapter is BaseAdapter {
     function scale() external virtual override returns (uint256) {
         // In order to account for the stETH/ETH CurveStableSwap rate, we use `safe_price_value` from Lido's stETH price feed.
         // https://docs.lido.fi/contracts/steth-price-feed#steth-price-feed-specification
-        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
-        uint256 wstETHstETH = StETHInterface(STETH).getPooledEthByShares(1 ether); // stETH tokens corresponding to one wstETH
+        uint256 stEthEth = StEthPriceFeedLike(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+        uint256 wstETHstETH = StETHLike(STETH).getPooledEthByShares(1 ether); // stETH tokens corresponding to one wstETH
         uint256 _value = stEthEth.fmul(wstETHstETH);
 
         if (_value != scaleStored) {
@@ -113,17 +113,17 @@ contract WstETHAdapter is BaseAdapter {
 
     function unwrapTarget(uint256 amount) external override returns (uint256 eth) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
-        WstETHInterface(WSTETH).unwrap(amount); // unwrap wstETH into stETH
+        WstETHLike(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
         // exchange stETH to ETH exchange on Curve
         // to calculate the minDy, we use Lido's safe_price_value() which should prevent from flash loan / sandwhich attacks
         // and we are also adding a slippage tolerance of 0.5%
-        uint256 stEthEth = StEthPriceFeed(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
-        eth = ICurveStableSwap(CURVESINGLESWAP).exchange(
+        uint256 stEthEth = StEthPriceFeedLike(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+        eth = CurveStableSwapLike(CURVESINGLESWAP).exchange(
             int128(1),
             int128(0),
             amount,
-            stEthEth.fmul(amount).fmul(1e18 - SLIPPAGE_TOLERANCE)
+            stEthEth.fmul(amount).fmul(FixedMath.WAD - SLIPPAGE_TOLERANCE)
         );
 
         // deposit ETH into WETH contract
@@ -135,9 +135,9 @@ contract WstETHAdapter is BaseAdapter {
 
     function wrapUnderlying(uint256 amount) external override returns (uint256 wstETH) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
-        IWETH(WETH).withdraw(amount); // unwrap WETH into ETH
-        uint256 stETH = StETHInterface(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
-        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHInterface(WSTETH).wrap(stETH)); // transfer wstETH to msg.sender
+        WETHLike(WETH).withdraw(amount); // unwrap WETH into ETH
+        uint256 stETH = StETHLike(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
+        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(stETH)); // transfer wstETH to msg.sender
     }
 
     fallback() external payable {

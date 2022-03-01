@@ -2,12 +2,12 @@
 pragma solidity >=0.7.0;
 
 library Levels {
-    uint256 private constant _INIT_BIT = 1;
-    uint256 private constant _ISSUE_BIT = 2;
-    uint256 private constant _COMBINE_BIT = 4;
-    uint256 private constant _COLLECT_BIT = 8;
-    uint256 private constant _REDEEM_ZERO_BIT = 16;
-    uint256 private constant _REDEEM_ZERO_HOOK_BIT = 32;
+    uint256 private constant _INIT_BIT = 0x1;
+    uint256 private constant _ISSUE_BIT = 0x2;
+    uint256 private constant _COMBINE_BIT = 0x4;
+    uint256 private constant _COLLECT_BIT = 0x8;
+    uint256 private constant _REDEEM_ZERO_BIT = 0x10;
+    uint256 private constant _REDEEM_ZERO_HOOK_BIT = 0x20;
 
     function initRestricted(uint256 level) internal pure returns (bool) {
         return level & _INIT_BIT != _INIT_BIT;

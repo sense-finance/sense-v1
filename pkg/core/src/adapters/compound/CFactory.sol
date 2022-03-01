@@ -3,22 +3,10 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { CropFactory } from "../CropFactory.sol";
-import { CAdapter } from "./CAdapter.sol";
+import { CAdapter, ComptrollerLike } from "./CAdapter.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
-
-interface ComptrollerLike {
-    function markets(address target)
-        external
-        returns (
-            bool isListed,
-            uint256 collateralFactorMantissa,
-            bool isComped
-        );
-
-    function oracle() external returns (address);
-}
 
 contract CFactory is CropFactory {
     using Bytes32AddressLib for address;

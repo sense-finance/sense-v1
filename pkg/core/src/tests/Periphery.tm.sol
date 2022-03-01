@@ -14,7 +14,7 @@ import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Divider, TokenHandler } from "../Divider.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { CAdapter, CTokenInterface } from "../adapters/compound/CAdapter.sol";
+import { CAdapter } from "../adapters/compound/CAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";

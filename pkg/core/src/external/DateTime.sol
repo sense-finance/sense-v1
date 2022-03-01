@@ -1,7 +1,6 @@
 pragma solidity 0.8.11;
 
-// Taken from: https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
-
+/// @author Taken from: https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
 library DateTime {
     uint256 constant SECONDS_PER_DAY = 24 * 60 * 60;
     uint256 constant SECONDS_PER_HOUR = 60 * 60;

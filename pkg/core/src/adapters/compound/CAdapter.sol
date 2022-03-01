@@ -9,13 +9,13 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { CropAdapter } from "../CropAdapter.sol";
 
-interface IWETH {
+interface WETHLike {
     function deposit() external payable;
 
     function withdraw(uint256 wad) external;
 }
 
-interface CTokenInterface {
+interface CTokenLike {
     /// @notice cToken is convertible into an ever increasing quantity of the underlying asset, as interest accrues in
     /// the market. This function returns the exchange rate between a cToken and the underlying asset.
     /// @dev returns the current exchange rate as an uint, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals).
@@ -46,18 +46,28 @@ interface CTokenInterface {
     function redeem(uint256 redeemTokens) external returns (uint256);
 }
 
-interface CETHTokenInterface {
+interface CETHTokenLike {
     ///@notice Send Ether to CEther to mint
     function mint() external payable;
 }
 
-interface ComptrollerInterface {
+interface ComptrollerLike {
     /// @notice Claim all the comp accrued by holder in all markets
     /// @param holder The address to claim COMP for
     function claimComp(address holder) external;
+
+    function markets(address target)
+        external
+        returns (
+            bool isListed,
+            uint256 collateralFactorMantissa,
+            bool isComped
+        );
+
+    function oracle() external returns (address);
 }
 
-interface PriceOracleInterface {
+interface PriceOracleLike {
     /// @notice Get the price of an underlying asset.
     /// @param target The target asset to get the underlying price of.
     /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
@@ -93,7 +103,7 @@ contract CAdapter is CropAdapter {
         CropAdapter(
             _divider,
             _target,
-            _target == CETH ? WETH : CTokenInterface(_target).underlying(),
+            _target == CETH ? WETH : CTokenLike(_target).underlying(),
             _oracle,
             _ifee,
             _stake,
@@ -108,51 +118,40 @@ contract CAdapter is CropAdapter {
     {
         isCETH = _target == CETH;
         ERC20(underlying).approve(_target, type(uint256).max);
-        uDecimals = CTokenInterface(underlying).decimals();
+        uDecimals = CTokenLike(underlying).decimals();
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function scale() external override returns (uint256) {
-        uint256 exRate = CTokenInterface(target).exchangeRateCurrent();
-        // From the Compound docs:
-        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
-        //
-        // The equation to norm an asset to 18 decimals is:
-        // `num * 10**(18 - decimals)`
-        //
-        // So, when we try to norm exRate to 18 decimals, we get the following:
-        // `exRate * 10**(18 - exRateDecimals)`
-        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
-        // -> `exRate * 10**(8 - uDecimals)`
-        // -> `exRate / 10**(uDecimals - 8)`
-        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+        uint256 exRate = CTokenLike(target).exchangeRateCurrent();
+        return _to18Decimals(exRate);
     }
 
     function scaleStored() external view override returns (uint256) {
-        uint256 exRate = CTokenInterface(target).exchangeRateStored();
-        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+        uint256 exRate = CTokenLike(target).exchangeRateStored();
+        return _to18Decimals(exRate);
     }
 
     function _claimReward() internal virtual override {
-        ComptrollerInterface(COMPTROLLER).claimComp(address(this));
+        ComptrollerLike(COMPTROLLER).claimComp(address(this));
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
-        price = isCETH ? 1e18 : PriceOracleInterface(oracle).getUnderlyingPrice(target);
+        price = isCETH ? 1e18 : PriceOracleLike(oracle).getUnderlyingPrice(target);
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256 tBal) {
         ERC20 t = ERC20(target);
 
         ERC20(underlying).safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        if (isCETH) IWETH(WETH).withdraw(uBal); // unwrap WETH into ETH
+        if (isCETH) WETHLike(WETH).withdraw(uBal); // unwrap WETH into ETH
 
         // Mint target
         uint256 tBalBefore = t.balanceOf(address(this));
         if (isCETH) {
-            CETHTokenInterface(target).mint{ value: uBal }();
+            CETHTokenLike(target).mint{ value: uBal }();
         } else {
-            if (CTokenInterface(target).mint(uBal) != 0) revert Errors.MintFailed();
+            if (CTokenLike(target).mint(uBal) != 0) revert Errors.MintFailed();
         }
         uint256 tBalAfter = t.balanceOf(address(this));
 
@@ -166,7 +165,7 @@ contract CAdapter is CropAdapter {
 
         // Redeem target for underlying
         uint256 uBalBefore = isCETH ? address(this).balance : u.balanceOf(address(this));
-        if (CTokenInterface(target).redeem(tBal) != 0) revert Errors.RedeemFailed();
+        if (CTokenLike(target).redeem(tBal) != 0) revert Errors.RedeemFailed();
         uint256 uBalAfter = isCETH ? address(this).balance : u.balanceOf(address(this));
         unchecked {
             uBal = uBalAfter - uBalBefore;
@@ -180,6 +179,21 @@ contract CAdapter is CropAdapter {
 
         // Transfer underlying to sender
         ERC20(underlying).safeTransfer(msg.sender, uBal);
+    }
+
+    function _to18Decimals(uint256 exRate) internal view returns (uint256) {
+        // From the Compound docs:
+        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
+        //
+        // The equation to norm an asset to 18 decimals is:
+        // `num * 10**(18 - decimals)`
+        //
+        // So, when we try to norm exRate to 18 decimals, we get the following:
+        // `exRate * 10**(18 - exRateDecimals)`
+        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
+        // -> `exRate * 10**(8 - uDecimals)`
+        // -> `exRate / 10**(uDecimals - 8)`
+        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
     fallback() external payable {}

@@ -2,7 +2,8 @@
 pragma solidity 0.8.11;
 
 // External references
-import { PriceOracle, CTokenLike } from "../external/PriceOracle.sol";
+import { PriceOracle } from "../external/PriceOracle.sol";
+import { CToken } from "../external/CToken.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
@@ -22,7 +23,7 @@ contract UnderlyingOracle is PriceOracle, Trust {
         adapters[underlying] = adapter;
     }
 
-    function getUnderlyingPrice(CTokenLike cToken) external view override returns (uint256) {
+    function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         return _price(address(cToken.underlying()));
     }
 
