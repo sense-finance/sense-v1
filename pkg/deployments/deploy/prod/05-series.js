@@ -53,7 +53,7 @@ module.exports = async function () {
       if (balance.lt(stakeSize)) {
         // if fork from mainnet
         if (chainId == '111' && process.env.FORK_TOP_UP == 'true') {
-          await getStakeTokens(stakeAddress, tokenAbi)
+          await generateStakeTokens(stakeAddress, tokenAbi)
         } else {
           throw Error("Not enough stake funds on wallet")
         }
@@ -64,7 +64,7 @@ module.exports = async function () {
     }
   }
 
-  async function getStakeTokens(stakeAddress) {
+  async function generateStakeTokens(stakeAddress) {
     const { abi } = await deployments.getArtifact("Token");
     const stake = new ethers.Contract(stakeAddress, abi, signer);
     const symbol = await stake.symbol();
