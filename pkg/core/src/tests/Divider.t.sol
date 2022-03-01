@@ -566,7 +566,7 @@ contract Dividers is TestHelper {
 
     function testIssueLevelRestrictions() public {
         // Restrict issuance, enable all other lifecycle methods
-        uint16 level = 2**0 + 2**2 + 2**3 + 2**4;
+        uint16 level = 0x1 + 0x4 + 0x8 + 0x10;
 
         adapter = new MockAdapter(
             address(divider),
@@ -719,7 +719,7 @@ contract Dividers is TestHelper {
 
     function testCantCombineIfProperLevelIsntSet() public {
         // Restrict combine, enable all other lifecycle methods
-        uint16 level = 2**0 + 2**1 + 2**3 + 2**4;
+        uint16 level = 0x1 + 0x2 + 0x8 + 0x10;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1056,7 +1056,7 @@ contract Dividers is TestHelper {
 
     function testRedeenZeroHookIsntCalledIfProperLevelIsntSet() public {
         // Enable all Divider lifecycle methods, but not the adapter zero redeem hook
-        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**4;
+        uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1085,7 +1085,7 @@ contract Dividers is TestHelper {
     }
 
     function testRedeenZeroHookIsCalledIfProperLevelIsntSet() public {
-        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**4 + 2**5;
+        uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10 + 0x20;
 
         adapter = new MockAdapter(
             address(divider),
@@ -1271,7 +1271,7 @@ contract Dividers is TestHelper {
 
     function testCantCollectIfProperLevelIsntSet() public {
         // Disable collection, enable all other lifecycle methods
-        uint16 level = 2**0 + 2**1 + 2**2 + 2**4;
+        uint16 level = 0x1 + 0x2 + 0x4 + 0x10;
 
         adapter = new MockAdapter(
             address(divider),

@@ -842,7 +842,7 @@ contract PeripheryTest is TestHelper {
         MockTarget target = new MockTarget(address(underlying), "Compound USDC", "cUSDC", 18);
 
         divider.setPermissionless(true);
-        uint16 level = 2**0 + 2**1 + 2**2 + 2**3 + 2**5; // redeemZero restricted
+        uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10; // redeemZero restricted
         MockAdapter aAdapter = new MockAdapter(
             address(divider),
             address(target),
@@ -860,7 +860,7 @@ contract PeripheryTest is TestHelper {
 
         periphery.verifyAdapter(address(aAdapter), true);
         periphery.onboardAdapter(address(aAdapter));
-        divider.setGuard(address(aAdapter), 10 * 2**128);
+        divider.setGuard(address(aAdapter), 10 * 0x228);
 
         alice.doApprove(address(target), address(divider));
         bob.doApprove(address(target), address(periphery));
