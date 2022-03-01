@@ -860,7 +860,7 @@ contract PeripheryTest is TestHelper {
 
         periphery.verifyAdapter(address(aAdapter), true);
         periphery.onboardAdapter(address(aAdapter));
-        divider.setGuard(address(aAdapter), 10 * 0x228);
+        divider.setGuard(address(aAdapter), 10 * 2**128);
 
         alice.doApprove(address(target), address(divider));
         bob.doApprove(address(target), address(periphery));
