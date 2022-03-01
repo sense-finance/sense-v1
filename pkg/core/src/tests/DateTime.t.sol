@@ -5,7 +5,6 @@ import { DSTest } from "./test-helpers/DSTest.sol";
 import { DateTime } from "../external/DateTime.sol";
 
 contract DateTimeTest is DSTest {
-
     function testFormatFirstAndJan() public {
         uint256 timestamp = 1640995200; // 01/01/2022
         assertEq(DateTime.format(timestamp), "1st Jan 2022");
@@ -65,5 +64,4 @@ contract DateTimeTest is DSTest {
         uint256 timestamp = 1672444800; // 31/12/2022
         assertEq(DateTime.format(timestamp), "31st Dec 2022");
     }
-
 }
