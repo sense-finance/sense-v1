@@ -13,6 +13,7 @@ import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
+import { CAdapter } from "@sense-finance/v1-core/src/adapters/compound/CAdapter.sol";
 
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 
