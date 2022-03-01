@@ -1261,7 +1261,7 @@ contract Dividers is TestHelper {
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         }
-
+        hevm.warp(maturity + divider.SPONSOR_WINDOW() + divider.SETTLEMENT_WINDOW() + 1);
         divider.backfillScale(address(adapter), maturity, (initScale * 1.2e18) / 1e18, usrs, lscales);
 
         // Collect succeeds if the Series has been backfilled
@@ -1524,7 +1524,7 @@ contract Dividers is TestHelper {
         assertClose(adapter.tBalance(address(bob)), 1);
     }
 
-    function testFuzzCollectBeforeMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
+    function testFuzzCollectAfterMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
         tBal = fuzzWithBounds(tBal, 1e12);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address claim) = sponsorSampleSeries(address(alice), maturity);
@@ -1532,6 +1532,7 @@ contract Dividers is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
         divider.setAdapter(address(adapter), false); // emergency stop
         uint256 newScale = 20e17;
+        hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 days);
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales); // fix invalid scale value
         divider.setAdapter(address(adapter), true); // re-enable adapter after emergency
         bob.doCollect(claim);
@@ -1799,15 +1800,17 @@ contract Dividers is TestHelper {
         assertEq(lscale, lscales[1]);
     }
 
-    function testBackfillScaleBeforeCutoffAndAdapterDisabled() public {
+    function testCantBackfillScaleBeforeCutoffAndAdapterDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
         hevm.warp(maturity);
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 1.5e18;
-        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
-        assertEq(mscale, newScale);
+        try divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        }
     }
 
     function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
@@ -1884,38 +1887,8 @@ contract Dividers is TestHelper {
         assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore);
     }
 
-    // @notice if backfill happens before the maturity and sponsor window, stakecoin stake is transferred to the
-    // sponsor and issuance fees are returned to Sense's cup multisig address
-    function testFuzzBackfillScaleBeforeSponsorWindowTransfersStakeAmountAndFees(uint128 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        uint256 cupTargetBalanceBefore = target.balanceOf(address(this));
-        uint256 cupStakeBalanceBefore = stake.balanceOf(address(this));
-        uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
-        uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
-        sponsorSampleSeries(address(alice), maturity);
-        hevm.warp(block.timestamp + 1 days);
-        uint256 tDecimals = target.decimals();
-        uint256 tBase = 10**tDecimals;
-        uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, tBase); // 1 target
-        bob.doIssue(address(adapter), maturity, tBal);
-
-        hevm.warp(maturity - SPONSOR_WINDOW);
-        divider.setAdapter(address(adapter), false);
-        uint256 newScale = 2e18;
-        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
-        assertEq(mscale, newScale);
-        assertEq(target.balanceOf(address(alice)), sponsorTargetBalanceBefore);
-        assertEq(stake.balanceOf(address(alice)), sponsorStakeBalanceBefore);
-        assertEq(target.balanceOf(address(this)), cupTargetBalanceBefore + fee);
-        assertEq(stake.balanceOf(address(this)), cupStakeBalanceBefore);
-    }
-
-    // @notice if backfill happens while adapter is disabled, stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
-    // no matter that the current timestamp is > SPONSOR WINDOW
-    function testFuzzBackfillScaleAfterSponsorBeforeSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal)
-        public
-    {
+    // @notice if backfill happens while adapter is disabled, stake is transferred to Sponsor and fees are sent to the Sense's cup multisig address
+    function testFuzzBackfillScaleAfterSponsorAndSettlementWindowsTransfersStakecoinStakeAndFees(uint128 tBal) public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 sponsorTargetBalanceBefore = target.balanceOf(address(alice));
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(address(alice));
@@ -1929,7 +1902,7 @@ contract Dividers is TestHelper {
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, tBase); // 1 target
         bob.doIssue(address(adapter), maturity, tBal);
 
-        hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
+        hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds);
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 2e18;
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
@@ -1959,7 +1932,7 @@ contract Dividers is TestHelper {
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, tBase); // 1 target
         bob.doIssue(address(adapter), maturity, tBal);
 
-        hevm.warp(maturity + SPONSOR_WINDOW + 1 seconds);
+        hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds);
         divider.setAdapter(address(adapter), false);
 
         usrs.push(address(alice));
