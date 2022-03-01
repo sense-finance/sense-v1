@@ -723,7 +723,7 @@ contract TokenHandler is Trust {
         zero = address(
             new Token(
                 string(abi.encodePacked(date, " ", target.symbol(), " Sense Principal Token, A", adapterId)),
-                string(abi.encodePacked("sP-", adapterId, "-", target.symbol(), ":", datestring)),
+                string(abi.encodePacked("sP-", target.symbol(), ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
@@ -734,7 +734,7 @@ contract TokenHandler is Trust {
                 adapter,
                 maturity,
                 string(abi.encodePacked(date, " ", target.symbol(), " Sense Yield Token, A", adapterId)),
-                string(abi.encodePacked("sY-", adapterId, "-", target.symbol(), ":", datestring)),
+                string(abi.encodePacked("sY-", target.symbol(), ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
