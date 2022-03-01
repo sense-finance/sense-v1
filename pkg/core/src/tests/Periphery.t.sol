@@ -842,7 +842,7 @@ contract PeripheryTest is TestHelper {
         MockTarget target = new MockTarget(address(underlying), "Compound USDC", "cUSDC", 18);
 
         divider.setPermissionless(true);
-        uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10; // redeemZero restricted
+        uint16 level = 0x1 + 0x2 + 0x4 + 0x8; // redeemZero restricted
         MockAdapter aAdapter = new MockAdapter(
             address(divider),
             address(target),
