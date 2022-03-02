@@ -65,7 +65,7 @@ module.exports = async function () {
     closeFactor: ethers.utils.parseEther("0.051"), // TODO(launch)
     liquidationIncentive: ethers.utils.parseEther("1"), // TODO(launch)
   };
-  await (await poolManager.setParams(ethers.utils.formatBytes32String("PRINCIPAL_PARAMS"), principalParams)).wait();
+  await (await poolManager.setParams(ethers.utils.formatBytes32String("PT_PARAMS"), ptParams)).wait();
 
   const lpParams = {
     irModel: interestRateModel, // TODO(launch)

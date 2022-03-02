@@ -216,7 +216,7 @@ contract PoolManagerTest is DSTest {
         }
 
         poolManager.setParams(
-            "PRINCIPAL_PARAMS",
+            "PT_PARAMS",
             PoolManager.AssetParams({
                 irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
                 reserveFactor: 0.1 ether,
