@@ -1,0 +1,29 @@
+const { getDeployedAdapters } = require("../../hardhat.utils");
+const log = console.log;
+
+module.exports = async function () {
+  const { deploy } = deployments;
+  const { deployer, dev } = await getNamedAccounts();
+  const chainId = await getChainId();
+
+  const divider = await ethers.getContract("Divider");
+
+  log("\n-------------------------------------------------------")
+  log("\nDeploy the EmergencyStop");
+  const { address: emergencyAddress } = await deploy("EmergencyStop", {
+    from: deployer,
+    args: [divider.address],
+    log: true,
+  });
+
+  log("Trust the emergency address on the divider");
+  await (await divider.setIsTrusted(emergencyAddress, true)).wait();
+
+  log("Can call stop");
+  const adapters = await getDeployedAdapters();
+  const emergency = await ethers.getContract("EmergencyStop");
+  await emergency.callStatic.stop(Object.values(adapters));
+};
+
+module.exports.tags = ["prod:emergency", "scenario:prod"];
+module.exports.dependencies = ["prod:factories"];
