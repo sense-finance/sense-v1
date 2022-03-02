@@ -75,8 +75,11 @@ library DateTime {
         (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);
         uint256 last = day % 10;
         string memory suffix = "th";
-        if (last == 1) suffix = "st";
-        if (last == 2) suffix = "nd";
+        if (day < 11 || day > 20) {
+            if (last == 1) suffix = "st";
+            if (last == 2) suffix = "nd";
+            if (last == 3) suffix = "rd";
+        }
         return string(abi.encodePacked(uintToString(day), suffix, " ", months[month - 1], " ", uintToString(year)));
     }
 

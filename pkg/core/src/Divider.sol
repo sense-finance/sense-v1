@@ -722,8 +722,8 @@ contract TokenHandler is Trust {
         string memory adapterId = DateTime.uintToString(id);
         zero = address(
             new Token(
-                string(abi.encodePacked(date, " ", target.symbol(), " Sense Principal Token, A", adapterId)),
-                string(abi.encodePacked("sP-", target.symbol(), ":", datestring, ":", adapterId)),
+                string(abi.encodePacked(date, " ", symbol, " Sense Principal Token, A", adapterId)),
+                string(abi.encodePacked("sP-", symbol, ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
@@ -733,8 +733,8 @@ contract TokenHandler is Trust {
             new Claim(
                 adapter,
                 maturity,
-                string(abi.encodePacked(date, " ", target.symbol(), " Sense Yield Token, A", adapterId)),
-                string(abi.encodePacked("sY-", target.symbol(), ":", datestring, ":", adapterId)),
+                string(abi.encodePacked(date, " ", symbol, " Sense Yield Token, A", adapterId)),
+                string(abi.encodePacked("sY-", symbol, ":", datestring, ":", adapterId)),
                 decimals,
                 divider
             )
