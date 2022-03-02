@@ -58,14 +58,14 @@ module.exports = async function () {
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)).wait();
 
-  const zeroParams = {
+  const ptParams = {
     irModel: interestRateModel, // TODO(launch)
     reserveFactor: ethers.utils.parseEther("0.1"), // TODO(launch)
     collateralFactor: ethers.utils.parseEther("0.5"), // TODO(launch)
     closeFactor: ethers.utils.parseEther("0.051"), // TODO(launch)
     liquidationIncentive: ethers.utils.parseEther("1"), // TODO(launch)
   };
-  await (await poolManager.setParams(ethers.utils.formatBytes32String("ZERO_PARAMS"), zeroParams)).wait();
+  await (await poolManager.setParams(ethers.utils.formatBytes32String("PRINCIPAL_PARAMS"), principalParams)).wait();
 
   const lpParams = {
     irModel: interestRateModel, // TODO(launch)

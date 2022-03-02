@@ -83,9 +83,9 @@ contract Factories is TestHelper {
         assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        (address zero, address claim) = alice.doSponsorSeries(f, maturity);
-        assertTrue(zero != address(0));
-        assertTrue(claim != address(0));
+        (address principal, address yield) = alice.doSponsorSeries(f, maturity);
+        assertTrue(principal != address(0));
+        assertTrue(yield != address(0));
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {
