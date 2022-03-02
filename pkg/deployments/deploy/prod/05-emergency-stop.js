@@ -25,5 +25,5 @@ module.exports = async function () {
   await emergency.callStatic.stop(Object.values(adapters));
 };
 
-module.exports.tags = ["simulated:emergency", "scenario:simulated"];
-module.exports.dependencies = ["simulated:adapters"];
+module.exports.tags = ["prod:emergency-stop", "scenario:prod"];
+module.exports.dependencies = ["prod:factories"];
