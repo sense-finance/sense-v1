@@ -82,7 +82,7 @@ The core is surrounded by the following `modules`:
 - `Pool Manager`, manager of the [Sense Fuse Lending Facility](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4)
 
 ### Divider
-The Divider contract contains the logic to `issue()` ERC20 Principal and Yield Tokens, re-`combine()` those assets into Target before their `maturity`, `collect()` Target with Yield tokens, and `redeem()` at or after maturity. Note: we assume Target tokens will always have <=18 decimals.
+The Divider contract contains the logic to `issue()` ERC20 Principal and Yield Tokens, re-`combine()` those assets into Target before their `maturity`, `collect()` Target with Yield Tokens, and `redeem()` at or after maturity. Note: we assume Target tokens will always have <=18 decimals.
 
 ### Adapter
 Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application, such as stripping yield from yield-bearing assets. Once an Adapter is onboarded, users can initialize/settle series, issue Principal/Yield tokens, and collect/redeem their Target via the Divider.
