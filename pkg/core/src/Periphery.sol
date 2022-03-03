@@ -429,7 +429,7 @@ contract Periphery is Trust {
             assetIn: IAsset(assetIn),
             assetOut: IAsset(assetOut),
             amount: amountIn,
-            userData: "0x" // TODO(launch): are we sure about this?
+            userData: hex""
         });
 
         BalancerVault.FundManagement memory funds = BalancerVault.FundManagement({
