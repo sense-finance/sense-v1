@@ -153,9 +153,7 @@ module.exports = async function () {
     const stake = await ethers.getContract("STAKE");
 
     log("Mint the deployer a balance of 1,000,000 STAKE");
-    if ((await stake.balanceOf(deployer)).toNumber() > 0) {
-      await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
-    }
+    await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
     return stake;
   }
