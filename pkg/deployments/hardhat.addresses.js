@@ -1,4 +1,5 @@
 // 1 -> Mainnet
+// 5 -> Goerli
 // 111 -> Local Mainnet fork
 // 42161 -> Arbitrum
 
@@ -29,6 +30,7 @@ CDAI_TOKEN.set("111", "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643");
 // TODO(launch): Arbitrum
 
 const WETH_TOKEN = new Map();
+WETH_TOKEN.set("5", "0xffc94fb06b924e6dba5f0325bbed941807a018cd");
 WETH_TOKEN.set("111", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
 // TODO(launch): Arbitrum
 

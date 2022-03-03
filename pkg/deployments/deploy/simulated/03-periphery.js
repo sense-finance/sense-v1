@@ -9,7 +9,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const balancerVault = await ethers.getContract("Vault");
   const spaceFactory = await ethers.getContract("SpaceFactory");
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nDeploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
@@ -20,7 +20,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   log("Set the periphery on the Divider");
   await (await divider.setPeriphery(peripheryAddress)).wait();
 
-  log("Give the periphery auth over the pool manager");
+  // log("Give the periphery auth over the pool manager");
   await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
 };
 
