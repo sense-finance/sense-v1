@@ -1,4 +1,4 @@
-const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile } = require("../../hardhat.utils");
+const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile, getDeployedAdapters } = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -9,7 +9,7 @@ module.exports = async function () {
 
   const divider = await ethers.getContract("Divider");
   const periphery = await ethers.getContract("Periphery");
-
+  
   log("\n-------------------------------------------------------");
   log("DEPLOY DEPENDENCIES, FACTORIES & ADAPTERS");
   log("-------------------------------------------------------");
@@ -35,7 +35,9 @@ module.exports = async function () {
     await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
 
     log(`Add ${contractName} support to Periphery`);
-    await (await periphery.setFactory(mockFactoryAddress, true)).wait();
+    if (!(await periphery.factories(mockFactoryAddress))) {
+      await (await periphery.setFactory(mockFactoryAddress, true)).wait();
+    }
 
     await deploy("MultiMint", {
       from: deployer,
@@ -62,10 +64,15 @@ module.exports = async function () {
       await multiMint.mint([target.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
 
       log(`Add ${targetName} support for mocked Factory`);
-      await (await factoryContract.addTarget(target.address, true)).wait();
+      if (!(await factoryContract.targets(target.address))) {
+        await (await factoryContract.addTarget(target.address, true)).wait();
+      }
 
       log(`Deploy adapter for ${targetName}`);
-      const adapterAddress = await deployAdapter(targetName, target.address, mockFactoryAddress);
+      let adapterAddress = (await getDeployedAdapters())[targetName]
+      if (!adapterAddress) {
+        adapterAddress = await deployAdapter(targetName, target.address, mockFactoryAddress);
+      }
 
       log("Give the adapter minter permission on Target");
       await (await target.setIsTrusted(adapterAddress, true)).wait();
@@ -146,7 +153,9 @@ module.exports = async function () {
     const stake = await ethers.getContract("STAKE");
 
     log("Mint the deployer a balance of 1,000,000 STAKE");
-    await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+    if ((await stake.balanceOf(deployer)).toNumber() > 0) {
+      await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+    }
 
     return stake;
   }

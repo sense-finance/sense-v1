@@ -41,22 +41,20 @@ module.exports = async function () {
 
       for (let seriesMaturity of series) {
         const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
-        const { pt: principalAddress, yt: yieldAddress } = await periphery.callStatic.sponsorSeries(
+        log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
+        const { pt: ptAddress, yt: ytAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
-          true
+          false
         );
-        log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
         await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
 
         log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
         await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
         const { abi: tokenAbi } = await deployments.getArtifact("Token");
-        const pt = new ethers.Contract(principalAddress, tokenAbi, signer);
-        const yt = new ethers.Contract(yieldAddress, tokenAbi, signer);
-
-        const principalTokenBalance = await pt.balanceOf(deployer);
+        const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
+        const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
 
         const { abi: spaceAbi } = await deployments.getArtifact("Space");
         const poolAddress = await spaceFactory.pools(adapter.address, seriesMaturity);

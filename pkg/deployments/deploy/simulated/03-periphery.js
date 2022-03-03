@@ -18,7 +18,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 
   log("Set the periphery on the Divider");
-  await (await divider.setPeriphery(peripheryAddress)).wait();
+  if (await divider.periphery() !== peripheryAddress) {
+    await (await divider.setPeriphery(peripheryAddress)).wait();
+  }
 
   // log("Give the periphery auth over the pool manager");
   await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();

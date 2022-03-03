@@ -38,8 +38,10 @@ module.exports = async function () {
 
   const divider = await ethers.getContract("Divider");
   const tokenHandler = await ethers.getContract("TokenHandler");
-  log("Add the divider to the asset deployer");
-  await (await tokenHandler.init(divider.address)).wait();
+  if (await tokenHandler.divider() !== divider.address) {
+    log("Add the divider to the asset deployer");
+    await (await tokenHandler.init(divider.address)).wait();
+  }
 };
 
 module.exports.tags = ["simulated:divider", "scenario:simulated"];
