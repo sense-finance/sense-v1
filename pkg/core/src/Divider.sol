@@ -41,7 +41,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     address public periphery;
 
-    /// @notice Sense team multisig
+    /// @notice Sense community multisig
     address public immutable cup;
 
     /// @notice Principal/Yield tokens deployer
