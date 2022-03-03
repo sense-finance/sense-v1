@@ -23,7 +23,7 @@ module.exports = {
   // },
   namedAccounts: {
     deployer: {
-      default: 1,
+      default: parseInt(process.env.DEPLOYER_INDEX || 0),
     },
     dev: {
       default: 1,
