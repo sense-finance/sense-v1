@@ -1,4 +1,5 @@
 const { getDeployedAdapters } = require("../../hardhat.utils");
+const { OZ_RELAYER } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function () {
@@ -23,6 +24,10 @@ module.exports = async function () {
   const adapters = await getDeployedAdapters();
   const emergency = await ethers.getContract("EmergencyStop");
   await emergency.callStatic.stop(Object.values(adapters));
+
+  log("Trust the OZ Defender Relay address on the emergency stop contract");
+  await (await divider.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
+  
 };
 
 module.exports.tags = ["prod:emergency-stop", "scenario:prod"];
