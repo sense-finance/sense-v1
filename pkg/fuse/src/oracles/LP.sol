@@ -50,9 +50,7 @@ contract LPOracle is PriceOracle, Trust {
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
-        (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(
-            pool.getPoolId()
-        );
+        (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
 
         // The BPT price is in terms of token 0, which we should have an oracle price for, regardless of which it is
         return PriceOracle(msg.sender).price(tokens[0]).fmul(results[0]);

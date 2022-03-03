@@ -25,6 +25,7 @@ import { PriceOracle } from "../external/PriceOracle.sol";
 
 interface ComptrollerLike {
     function enterMarkets(address[] memory cTokens) external returns (uint256[] memory);
+
     function cTokensByUnderlying(address underlying) external view returns (address);
 }
 
@@ -245,7 +246,6 @@ contract PoolManagerTest is DSTest {
 
         address[] memory cTokens = new address[](1);
         cTokens[0] = address(target);
-
 
         mockOracle.setPrice(0);
 
