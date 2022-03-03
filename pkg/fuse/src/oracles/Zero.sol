@@ -7,7 +7,6 @@ import { PriceOracle } from "../external/PriceOracle.sol";
 import { CToken } from "../external/CToken.sol";
 import { BalancerOracle } from "../external/BalancerOracle.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";

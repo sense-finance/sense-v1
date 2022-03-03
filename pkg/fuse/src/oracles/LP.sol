@@ -12,6 +12,7 @@ import { BalancerOracle } from "../external/BalancerOracle.sol";
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract LPOracle is PriceOracle, Trust {
     using FixedMath for uint256;
