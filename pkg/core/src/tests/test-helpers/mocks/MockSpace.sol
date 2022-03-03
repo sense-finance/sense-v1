@@ -8,7 +8,7 @@ import { Token } from "../../../tokens/Token.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
 import { BalancerPool } from "../../../external/balancer/Pool.sol";
-import { BalancerOracle } from  "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
+import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
@@ -43,7 +43,19 @@ contract MockSpacePool is MockToken {
         return address(vault);
     }
 
-    function getSample(uint256) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
+    function getSample(uint256)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         return (0, 0, 0, 0, 0, 0, 100);
     }
 
