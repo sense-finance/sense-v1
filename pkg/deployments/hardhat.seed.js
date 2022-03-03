@@ -38,10 +38,6 @@ const DEV_SERIES_MATURITIES = [
 const DEV_TARGETS = [
   { name: "cDAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
   { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cUSDT", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cUSDC", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "f6-DAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "f8-DAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
 const DEV_ADAPTERS = [chainId => ({})];

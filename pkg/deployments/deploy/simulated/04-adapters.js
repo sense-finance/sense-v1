@@ -1,4 +1,9 @@
-const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile, getDeployedAdapters } = require("../../hardhat.utils");
+const {
+  moveDeployments,
+  writeDeploymentsToFile,
+  writeAdaptersToFile,
+  getDeployedAdapters,
+} = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -7,9 +12,9 @@ module.exports = async function () {
   const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
-  const divider = await ethers.getContract("Divider");
-  const periphery = await ethers.getContract("Periphery");
-  
+  const divider = await ethers.getContract("Divider", signer);
+  const periphery = await ethers.getContract("Periphery", signer);
+
   log("\n-------------------------------------------------------");
   log("DEPLOY DEPENDENCIES, FACTORIES & ADAPTERS");
   log("-------------------------------------------------------");
@@ -29,7 +34,7 @@ module.exports = async function () {
       args: [divider.address, factoryParams, airdrop.address],
       log: true,
     });
-    const factoryContract = await ethers.getContract(contractName);
+    const factoryContract = await ethers.getContract(contractName, signer);
 
     log(`Trust ${contractName} on the divider`);
     await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
@@ -44,7 +49,7 @@ module.exports = async function () {
       args: [],
       log: true,
     });
-    const multiMint = await ethers.getContract("MultiMint");
+    const multiMint = await ethers.getContract("MultiMint", signer);
 
     log("\n-------------------------------------------------------");
     log(`DEPLOY UNDERLYINGS, TARGETS & ADAPTERS FOR: ${contractName}`);
@@ -69,7 +74,7 @@ module.exports = async function () {
       }
 
       log(`Deploy adapter for ${targetName}`);
-      let adapterAddress = (await getDeployedAdapters())[targetName]
+      let adapterAddress = (await getDeployedAdapters())[targetName];
       if (!adapterAddress) {
         adapterAddress = await deployAdapter(targetName, target.address, mockFactoryAddress);
       }
@@ -114,7 +119,7 @@ module.exports = async function () {
 
       underlyingNames.add(underlyingName);
     }
-    return await ethers.getContract(underlyingName);
+    return await ethers.getContract(underlyingName, signer);
   }
 
   async function deployTarget(targetName, underlyingAddress) {
@@ -124,7 +129,7 @@ module.exports = async function () {
       args: [underlyingAddress, targetName, targetName, 18],
       log: true,
     });
-    return await ethers.getContract(targetName);
+    return await ethers.getContract(targetName, signer);
   }
 
   async function deployAdapter(targetName, targetAddress, factoryAddress) {
@@ -150,7 +155,7 @@ module.exports = async function () {
       args: ["STAKE", "STAKE", 18, deployer],
       log: true,
     });
-    const stake = await ethers.getContract("STAKE");
+    const stake = await ethers.getContract("STAKE", signer);
 
     log("Mint the deployer a balance of 1,000,000 STAKE");
     await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
@@ -165,7 +170,7 @@ module.exports = async function () {
       args: ["Aidrop Reward Token", "ADP", 18, deployer],
       log: true,
     });
-    return await ethers.getContract("Airdrop");
+    return await ethers.getContract("Airdrop", signer);
   }
 };
 

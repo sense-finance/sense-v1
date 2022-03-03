@@ -4,9 +4,9 @@ const { WETH_TOKEN } = require("../../hardhat.addresses");
 module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-
+  const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
-  const divider = await ethers.getContract("Divider");
+  const divider = await ethers.getContract("Divider", signer);
 
   log("\n-------------------------------------------------------");
   log("\nDeploy Space & Space dependencies");

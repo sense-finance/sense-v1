@@ -6,8 +6,8 @@ module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  const chainId = await getChainId();
-  const divider = await ethers.getContract("Divider");
+  const signer = await ethers.getSigner(deployer);
+  const divider = await ethers.getContract("Divider", signer);
 
   log("\n-------------------------------------------------------");
   console.log("\nDeploy mocked fuse & comp dependencies");
@@ -41,7 +41,7 @@ module.exports = async function () {
     log: true,
   });
 
-  const poolManager = await ethers.getContract("PoolManager");
+  const poolManager = await ethers.getContract("PoolManager", signer);
   log("\n-------------------------------------------------------");
   console.log("\nDeploy Sense Fuse pool via Pool Manager");
   if (await poolManager.comptroller() == ethers.constants.AddressZero) {

@@ -23,7 +23,7 @@ module.exports = {
   // },
   namedAccounts: {
     deployer: {
-      default: 0,
+      default: 1,
     },
     dev: {
       default: 1,
@@ -49,7 +49,6 @@ module.exports = {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       accounts,
-      gasPrice: 120 * 1000000000, // 12 GWei
       chainId: 5,
       saveDeployments: true,
     },
@@ -81,7 +80,7 @@ module.exports = {
   },
   paths: {
     sources: "src/",
-    deployments: 'deployments',
+    deployments: "deployments_rmv",
   },
   solidity: {
     compilers: [

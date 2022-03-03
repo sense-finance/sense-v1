@@ -4,6 +4,7 @@ const log = console.log;
 module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
 
   // IMPORTANT: this must be run *first*, so that it has the same address across deployments
   // (has the same deployment address and nonce)
@@ -14,7 +15,7 @@ module.exports = async function () {
     log: true,
   });
 
-  const versioning = await ethers.getContract("Versioning");
+  const versioning = await ethers.getContract("Versioning", signer);
 
   log(`\nDeploy Sense version ${await versioning.version()}`);
   log("\n-------------------------------------------------------");
@@ -36,9 +37,9 @@ module.exports = async function () {
     log: true,
   });
 
-  const divider = await ethers.getContract("Divider");
-  const tokenHandler = await ethers.getContract("TokenHandler");
-  if (await tokenHandler.divider() !== divider.address) {
+  const divider = await ethers.getContract("Divider", signer);
+  const tokenHandler = await ethers.getContract("TokenHandler", signer);
+  if ((await tokenHandler.divider()) !== divider.address) {
     log("Add the divider to the asset deployer");
     await (await tokenHandler.init(divider.address)).wait();
   }

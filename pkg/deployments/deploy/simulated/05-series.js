@@ -1,5 +1,6 @@
 const log = console.log;
 const dayjs = require("dayjs");
+const { ethers } = require("hardhat");
 const { getDeployedAdapters } = require("../../hardhat.utils");
 
 const ONE_MINUTE_MS = 60 * 1000;
@@ -7,13 +8,14 @@ const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
 
 module.exports = async function () {
-  const divider = await ethers.getContract("Divider");
-  const stake = await ethers.getContract("STAKE");
-  const periphery = await ethers.getContract("Periphery");
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
+
+  const divider = await ethers.getContract("Divider", signer);
+  const stake = await ethers.getContract("STAKE", signer);
+  const periphery = await ethers.getContract("Periphery", signer);
 
   const chainId = await getChainId();
-  const signer = await ethers.getSigner(deployer);
 
   const ADAPTER_ABI = [
     "function stake() public view returns (address)",
@@ -21,33 +23,40 @@ module.exports = async function () {
     "function scale() public view returns (uint256)",
   ];
   const adapters = await getDeployedAdapters();
-  log("\n-------------------------------------------------------")
-  log("SPONSOR SERIES & SANITY CHECK SWAPS")
-  log("-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
+  log("SPONSOR SERIES & SANITY CHECK SWAPS");
+  log("-------------------------------------------------------");
   log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
   await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
-  const balancerVault = await ethers.getContract("Vault");
-  const spaceFactory = await ethers.getContract("SpaceFactory");
+  const balancerVault = await ethers.getContract("Vault", signer);
+  const spaceFactory = await ethers.getContract("SpaceFactory", signer);
 
   for (let factory of global.dev.FACTORIES) {
     for (let t of factory(chainId).targets) {
       const { name: targetName, series } = t;
-      const target = await ethers.getContract(targetName);
-      
-      log("\n-------------------------------------------------------")
+      const target = await ethers.getContract(targetName, signer);
+
+      log("\n-------------------------------------------------------");
       log(`\nEnable the Divider to move the deployer's ${targetName} for issuance`);
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       for (let seriesMaturity of series) {
         const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
         log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
-        const { pt: ptAddress, yt: ytAddress } = await periphery.callStatic.sponsorSeries(
-          adapter.address,
-          seriesMaturity,
-          false
-        );
-        await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
+        let { pt: ptAddress, yt: ytAddress } = await divider.series(adapter.address, seriesMaturity);
+        console.log(ptAddress, ytAddress, "ytAddress");
+        if (ptAddress === ethers.constants.AddressZero) {
+          console.log("sponsoring series");
+          const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
+            adapter.address,
+            seriesMaturity,
+            true,
+          );
+          ptAddress = _ptAddress;
+          ytAddress = _ytAddress;
+          await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
+        }
 
         log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
         await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
@@ -93,7 +102,7 @@ module.exports = async function () {
               kind: 0, // given in
               assetIn: pt.address,
               assetOut: target.address,
-              amount: ethers.utils.parseEther("100000"),
+              amount: ethers.utils.parseEther("40000"),
               userData: defaultAbiCoder.encode(["uint[]"], [[0, 0]]),
             },
             { sender: deployer, fromInternalBalance: false, recipient: deployer, toInternalBalance: false },
@@ -170,7 +179,7 @@ module.exports = async function () {
         await periphery
           .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
           .then(t => t.wait());
-          
+
         const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
         // If there's anything more than dust in the Periphery, throw
         if (peripheryDust > 100) {
