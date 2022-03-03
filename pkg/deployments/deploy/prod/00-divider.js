@@ -3,7 +3,7 @@ const log = console.log;
 
 module.exports = async function () {
   const { deploy } = deployments;
-  const { deployer, dev } = await getNamedAccounts();
+  const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");
@@ -26,10 +26,6 @@ module.exports = async function () {
   });
 
   const divider = await ethers.getContract("Divider");
-
-  log("Trust the dev address on the divider");
-  await (await divider.setIsTrusted(dev, true)).wait();
-
   const tokenHandler = await ethers.getContract("TokenHandler");
   log("Add the divider to the token handler");
   await (await tokenHandler.init(divider.address)).wait();

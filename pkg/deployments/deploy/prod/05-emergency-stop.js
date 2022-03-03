@@ -4,7 +4,7 @@ const log = console.log;
 
 module.exports = async function () {
   const { deploy } = deployments;
-  const { deployer, dev } = await getNamedAccounts();
+  const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
   const divider = await ethers.getContract("Divider");
