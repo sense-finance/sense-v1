@@ -61,12 +61,12 @@ abstract contract BaseAdapter {
     uint256 public immutable ifee;
 
     /// @notice WAD number representing the percentage of the total
-    /// principal that's set aside for Claims (e.g. 0.1e18 means that 10% of the principal is reserved).
-    /// @notice If `0`, it means no principal is set aside for Claims
+    /// principal that's set aside for Yield Tokens (e.g. 0.1e18 means that 10% of the principal is reserved).
+    /// @notice If `0`, it means no principal is set aside for Yield Tokens
     uint256 public immutable tilt;
 
     /// @notice The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <onRedeemZero(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
+    /// digits using the following scheme: <onRedeem(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
     /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
     uint256 public immutable level;
 
@@ -116,7 +116,7 @@ abstract contract BaseAdapter {
     /// `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.
     /// @param adapter adapter address
     /// @param maturity maturity
-    /// @param cBalIn Claim amount the user has sent in
+    /// @param cBalIn YT amount the user has sent in
     /// @param amount The amount of target lent.
     function flashLoan(
         bytes calldata data,
@@ -181,8 +181,8 @@ abstract contract BaseAdapter {
         return;
     }
 
-    /// @notice Hook called whenever a user redeems Zeros
-    function onZeroRedeem(
+    /// @notice Hook called whenever a user redeems PT
+    function onRedeem(
         uint256, /* uBal */
         uint256, /* mscale */
         uint256, /* maxscale */

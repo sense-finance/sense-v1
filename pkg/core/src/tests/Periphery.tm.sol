@@ -132,13 +132,13 @@ contract PeripheryTests is PeripheryTestHelper {
         );
 
         ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);
-        (address zero, address claim) = periphery.sponsorSeries(address(adapter), maturity, false);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, false);
 
-        // Check zeros and claim deployed
-        assertTrue(zero != address(0));
-        assertTrue(claim != address(0));
+        // Check pt and yt deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
 
-        // Check zeros and claims onboarded on PoolManager (Fuse)
+        // Check PT and YT onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }

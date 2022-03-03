@@ -166,7 +166,7 @@ contract Adapters is TestHelper {
 
     function testDistributionSimple() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yt) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 100 * 1e18);
@@ -180,7 +180,7 @@ contract Adapters is TestHelper {
         alice.doIssue(address(adapter), maturity, 100 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
-        alice.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(alice)));
+        alice.doCombine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
         alice.doIssue(address(adapter), maturity, 50 * 1e18);
@@ -194,7 +194,7 @@ contract Adapters is TestHelper {
 
     function testDistributionProportionally() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yt) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
@@ -231,12 +231,12 @@ contract Adapters is TestHelper {
         assertClose(ERC20(reward).balanceOf(address(alice)), 80 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 50 * 1e18);
 
-        alice.doCombine(address(adapter), maturity, ERC20(claim).balanceOf(address(alice)));
+        alice.doCombine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
     }
 
     function testDistributionSimpleCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yt) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
@@ -246,13 +246,13 @@ contract Adapters is TestHelper {
 
         reward.mint(address(adapter), 60 * 1e18);
 
-        bob.doCollect(claim);
+        bob.doCollect(yt);
         assertClose(reward.balanceOf(address(bob)), 24 * 1e18);
     }
 
     function testDistributionCollectAndTransferMultiStep() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address claim) = sponsorSampleSeries(address(alice), maturity);
+        (, address yt) = sponsorSampleSeries(address(alice), maturity);
         adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
@@ -274,9 +274,9 @@ contract Adapters is TestHelper {
         // 20 should go to bob, 30 to alice, and 50 to jim
         reward.mint(address(adapter), 100 * 1e18);
 
-        // bob transfers all of his Claims to jim
+        // bob transfers all of his Yield to jim
         // now the pool is 70% jim and 30% alice
-        bob.doTransfer(claim, address(jim), ERC20(claim).balanceOf(address(bob)));
+        bob.doTransfer(yt, address(jim), ERC20(yt).balanceOf(address(bob)));
         // bob collected on transfer, so he should now
         // have his 24 rewards from the first drop, and 20 from the second
         assertClose(reward.balanceOf(address(bob)), 44 * 1e18);
@@ -285,17 +285,17 @@ contract Adapters is TestHelper {
         assertClose(reward.balanceOf(address(jim)), 50 * 1e18);
 
         // similarly, once alice collects, she should have her 36 fom the first airdrop and 30 from the second
-        alice.doCollect(claim);
+        alice.doCollect(yt);
         assertClose(reward.balanceOf(address(alice)), 66 * 1e18);
 
-        // now if another airdop happens, jim should get shares proportional to his new claim balance
+        // now if another airdop happens, jim should get shares proportional to his new yt balance
         hevm.warp(block.timestamp + 1 days);
         // 100 more reward tokens are airdropped after bob has transferred to jim
         // 30 should go to alice and 70 to jim
         reward.mint(address(adapter), 100 * 1e18);
-        jim.doCollect(claim);
+        jim.doCollect(yt);
         assertClose(reward.balanceOf(address(jim)), 120 * 1e18);
-        alice.doCollect(claim);
+        alice.doCollect(yt);
         assertClose(reward.balanceOf(address(alice)), 96 * 1e18);
     }
 }

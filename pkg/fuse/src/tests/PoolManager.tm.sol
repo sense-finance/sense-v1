@@ -212,11 +212,11 @@ contract PoolManagerTest is DSTest {
         try poolManager.addSeries(address(mockAdapter), maturity) {
             fail();
         } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.ZeroParamsNotSet.selector));
+            assertEq0(error, abi.encodeWithSelector(Errors.PTParamsNotSet.selector));
         }
 
         poolManager.setParams(
-            "ZERO_PARAMS",
+            "PT_PARAMS",
             PoolManager.AssetParams({
                 irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
                 reserveFactor: 0.1 ether,
