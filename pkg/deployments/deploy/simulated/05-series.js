@@ -1,5 +1,6 @@
 const log = console.log;
 const dayjs = require("dayjs");
+const { ethers } = require("hardhat");
 const { getDeployedAdapters } = require("../../hardhat.utils");
 
 const ONE_MINUTE_MS = 60 * 1000;
@@ -42,12 +43,17 @@ module.exports = async function () {
       for (let seriesMaturity of series) {
         const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
         log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
-        const { pt: ptAddress, yt: ytAddress } = await periphery.callStatic.sponsorSeries(
-          adapter.address,
-          seriesMaturity,
-          false
-        );
-        await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
+        let { pt: ptAddress, yt: ytAddress } =  await divider.series(adapter.address, seriesMaturity);
+        if (ptAddress == ethers.constants.AddressZero) {
+          const data = await periphery.callStatic.sponsorSeries(
+            adapter.address,
+            seriesMaturity,
+            true
+          );
+          ptAddress = data.pt;
+          ytAddress = data.yt;
+          await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
+        }
 
         log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
         await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
