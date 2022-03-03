@@ -1826,7 +1826,7 @@ contract Dividers is TestHelper {
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
         uint256 cupTargetBalanceAfter = target.balanceOf(address(this));
-        assertEq(cupTargetBalanceBefore, cupTargetBalanceAfter - 1e18);
+        assertEq(cupTargetBalanceBefore, cupTargetBalanceAfter - 0.5e18);
     }
 
     // @notice if backfill happens while adapter is NOT disabled it is because the current timestamp is > cutoff so stakecoin stake and fees are to the Sense's cup multisig address
