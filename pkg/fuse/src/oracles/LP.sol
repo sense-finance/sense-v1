@@ -7,6 +7,7 @@ import { PriceOracle } from "../external/PriceOracle.sol";
 import { CToken } from "../external/CToken.sol";
 import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
 import { BalancerPool } from "@sense-finance/v1-core/src/external/balancer/Pool.sol";
+import { BalancerOracle } from "../external/BalancerOracle.sol";
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
@@ -17,6 +18,7 @@ contract LPOracle is PriceOracle, Trust {
 
     /// @notice zero address -> pool address for oracle reads
     mapping(address => address) public pools;
+    uint32 public constant TWAP_PERIOD = 6 hours;
 
     constructor() Trust(msg.sender) {}
 
@@ -30,25 +32,29 @@ contract LPOracle is PriceOracle, Trust {
     }
 
     function _price(address _pool) internal view returns (uint256) {
-        BalancerPool pool = BalancerPool(_pool);
+        BalancerPool pool = BalancerOracle(_pool);
+        if (pool == BalancerOracle(address(0))) revert Errors.PoolNotSet();
 
-        (ERC20[] memory tokens, uint256[] memory balances, ) = BalancerVault(pool.getVault()).getPoolTokens(
+        // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
+        // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
+        (, , , , , , uint256 sampleTs) = pool.getSample(1023);
+        // Revert if the pool's oracle can't be used yet, preventing this market from being deployed
+        // on Fuse until we're able to read a TWAP
+        if (sampleTs == 0) revert Errors.OracleNotReady();
+
+        BalancerOracle.OracleAverageQuery[] memory queries = new BalancerOracle.OracleAverageQuery[](1);
+        queries[0] = BalancerOracle.OracleAverageQuery({
+            variable: BalancerOracle.Variable.BPT_PRICE,
+            secs: TWAP_PERIOD,
+            ago: 120 // take the oracle from 2 mins ago - TWAP_PERIOD to 2 mins ago
+        });
+
+        uint256[] memory results = pool.getTimeWeightedAverage(queries);
+        (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(
             pool.getPoolId()
         );
 
-        uint256 balanceA = balances[0];
-        address tokenA = address(tokens[0]);
-
-        uint256 balanceB = balances[1];
-        address tokenB = address(tokens[1]);
-
-        // pool value as a WAD = price of tokenA * amount of tokenA held + price of tokenB * amount of tokenB held
-        uint256 value = PriceOracle(msg.sender).price(tokenA).fmul(balanceA, 10**ERC20(tokenA).decimals()) +
-            PriceOracle(msg.sender).price(tokenB).fmul(balanceB, 10**ERC20(tokenB).decimals());
-
-        // price per lp token = pool value / total supply of lp tokens
-        //
-        // As per Balancer's convention, lp shares will also be WADs
-        return value.fdiv(pool.totalSupply());
+        // The BPT price is in terms of token 0, which we should have an oracle price for, regardless of which it is
+        return PriceOracle(msg.sender).price(tokens[0]).fmul(results[0]);
     }
 }

@@ -20,11 +20,12 @@ import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
-import { MockBalancerVault, MockSpaceFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
+import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 
 interface ComptrollerLike {
     function enterMarkets(address[] memory cTokens) external returns (uint256[] memory);
+    function cTokensByUnderlying(address underlying) external view returns (address);
 }
 
 contract PoolManagerTest is DSTest {
@@ -226,21 +227,47 @@ contract PoolManagerTest is DSTest {
             })
         );
 
-        try poolManager.addSeries(address(mockAdapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.PoolParamsNotSet.selector));
-        }
+        poolManager.setParams(
+            "LP_TOKEN_PARAMS",
+            PoolManager.AssetParams({
+                irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+                reserveFactor: 0.1 ether,
+                collateralFactor: 0.5 ether,
+                closeFactor: 0.051 ether,
+                liquidationIncentive: 1 ether
+            })
+        );
+
+        Token(MockSpacePool(pool).target()).mint(address(balancerVault), 1e18);
+        MockSpacePool(pool).mint(address(this), 1e18);
+
+        poolManager.addSeries(address(mockAdapter), maturity);
 
         address[] memory cTokens = new address[](1);
         cTokens[0] = address(target);
+
+
+        mockOracle.setPrice(0);
+
         ComptrollerLike(poolManager.comptroller()).enterMarkets(cTokens);
 
         uint256 TARGET_IN = 1.1e18;
+        uint256 ZERO_BORROW = 1e18;
 
         target.mint(address(this), TARGET_IN);
         target.approve(cTarget, TARGET_IN);
         uint256 err = CToken(cTarget).mint(TARGET_IN);
+        assertEq(err, 0);
+
+        emit log_uint(Token(cTarget).balanceOf(address(this)));
+
+        address cZero = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(MockSpacePool(pool).zero());
+        emit log_address(cZero);
+        err = CToken(cZero).borrow(ZERO_BORROW);
+
+        emit log_named_uint("err", err);
+
+        err = CToken(cTarget).redeem(Token(cTarget).balanceOf(address(this)));
         assertEq(err, 0);
 
         assertEq(
@@ -249,19 +276,9 @@ contract PoolManagerTest is DSTest {
             TARGET_IN
         );
 
-        // TODO(launch): @josh to finish mainnet test when the oracle is ready
-        // poolManager.setParams(
-        //     "LP_TOKEN_PARAMS",
-        //     PoolManager.AssetParams({
-        //         irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-        //         reserveFactor: 0.1 ether,
-        //         collateralFactor: 0.5 ether,
-        //         closeFactor: 0.051 ether,
-        //         liquidationIncentive: 1 ether
-        //     })
-        // );
+        emit log_uint(Token(cZero).balanceOf(address(this)));
 
-        // poolManager.addSeries(address(mockAdapter), maturity);
+        assertTrue(false);
     }
 
     function testMainnetAdminPassthrough() public {

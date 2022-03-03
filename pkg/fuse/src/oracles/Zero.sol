@@ -21,7 +21,7 @@ contract ZeroOracle is PriceOracle, Trust {
 
     /// @notice zero address -> pool address for oracle reads
     mapping(address => address) public pools;
-    uint32 public constant TWAP_PERIOD = 1 hours;
+    uint32 public constant TWAP_PERIOD = 6 hours;
 
     constructor() Trust(msg.sender) {}
 
@@ -53,20 +53,21 @@ contract ZeroOracle is PriceOracle, Trust {
         queries[0] = BalancerOracle.OracleAverageQuery({
             variable: BalancerOracle.Variable.PAIR_PRICE,
             secs: TWAP_PERIOD,
-            ago: 0
+            ago: 120 // take the oracle from 2 mins ago - TWAP_PERIOD to 2 mins ago
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
-        // get the price of Zeros in terms of underlying
         (uint256 zeroi, uint256 targeti) = pool.getIndices();
-        uint256 zeroPrice = results[zeroi];
+
+        // Get the price of Zeros in terms of Target
+        uint256 zeroPrice = zeroi == 1 ? results[0] : FixedMath.WAD.fdiv(results[0]);
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
-        address underlying = address(tokens[targeti]);
+        address target = address(tokens[targeti]);
 
-        // `Zero / underlying` * `underlying / ETH` = `Price of Zero in ETH`
+        // `Zero / target` * `target / ETH` = `Price of Zero in ETH`
         //
         // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
-        return zeroPrice.fmul(PriceOracle(msg.sender).price(underlying));
+        return zeroPrice.fmul(PriceOracle(msg.sender).price(target));
     }
 }
