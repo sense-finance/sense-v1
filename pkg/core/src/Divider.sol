@@ -547,8 +547,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
-        // If the adapter is disabled, it will allow the admin to backfill no matter the maturity
-        if (adapterMeta[adapter].enabled && block.timestamp <= cutoff) revert Errors.OutOfWindowBoundaries();
+        // Admin can never backfill before maturity
+        if (block.timestamp <= cutoff) revert Errors.OutOfWindowBoundaries();
 
         // Set user's last scale values the Series (needed for the `collect` method)
         for (uint256 i = 0; i < _usrs.length; i++) {
