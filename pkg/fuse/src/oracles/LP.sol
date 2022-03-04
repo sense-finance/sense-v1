@@ -18,7 +18,6 @@ interface SpaceLike {
     function getFairBPTPriceInUnderlying(uint256 ptTwapDuration) external view returns (uint256);
 }
 
-
 contract LPOracle is PriceOracle, Trust {
     using FixedMath for uint256;
 
@@ -27,7 +26,6 @@ contract LPOracle is PriceOracle, Trust {
     uint32 public constant TWAP_PERIOD = 6 hours;
 
     constructor() Trust(msg.sender) {}
-
 
     function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         // The underlying here will be an LP Token
@@ -39,10 +37,7 @@ contract LPOracle is PriceOracle, Trust {
     }
 
     function _price(address _pool) internal view returns (uint256) {
-        
         // Price per BPT in ETH terms
-        return SpaceLike(_pool)
-            .getFairBPTPriceInUnderlying(TWAP_PERIOD)
-            .fmul(Adapter(adapter).getUnderlyingPrice());
+        return SpaceLike(_pool).getFairBPTPriceInUnderlying(TWAP_PERIOD).fmul(Adapter(adapter).getUnderlyingPrice());
     }
 }
