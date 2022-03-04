@@ -26,7 +26,7 @@ module.exports = async function () {
   await emergency.callStatic.stop(Object.values(adapters));
 
   log("Trust the OZ Defender Relay address on the emergency stop contract");
-  await (await divider.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
+  await (await emergency.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
   
 };
 
