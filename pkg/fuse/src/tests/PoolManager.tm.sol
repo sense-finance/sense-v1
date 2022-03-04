@@ -214,11 +214,11 @@ contract PoolManagerTest is DSTest {
         try poolManager.addSeries(address(mockAdapter), maturity) {
             fail();
         } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.ZeroParamsNotSet.selector));
+            assertEq0(error, abi.encodeWithSelector(Errors.PTParamsNotSet.selector));
         }
 
         poolManager.setParams(
-            "ZERO_PARAMS",
+            "PT_PARAMS",
             PoolManager.AssetParams({
                 irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
                 reserveFactor: 0.1 ether,
@@ -261,9 +261,9 @@ contract PoolManagerTest is DSTest {
 
         emit log_uint(Token(cTarget).balanceOf(address(this)));
 
-        address cZero = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(MockSpacePool(pool).zero());
-        emit log_address(cZero);
-        err = CToken(cZero).borrow(ZERO_BORROW);
+        address cPT = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(MockSpacePool(pool).zero());
+        emit log_address(cPT);
+        err = CToken(cPT).borrow(ZERO_BORROW);
 
         emit log_named_uint("err", err);
 
@@ -276,7 +276,7 @@ contract PoolManagerTest is DSTest {
             TARGET_IN
         );
 
-        emit log_uint(Token(cZero).balanceOf(address(this)));
+        emit log_uint(Token(cPT).balanceOf(address(this)));
 
         assertTrue(false);
     }
