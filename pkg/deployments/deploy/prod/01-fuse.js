@@ -43,7 +43,7 @@ module.exports = async function () {
     await poolManager.deployPool(
       "Sense Pool – Core",
       ethers.utils.parseEther("0.333"),
-      ethers.utils.parseEther(".08"),
+      ethers.utils.parseEther("1.08"),
       masterOracle,
     )
   ).wait();
