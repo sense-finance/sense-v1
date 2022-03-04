@@ -5,7 +5,7 @@ contract MockPoolManager {
     mapping(address => bool) public tInits; // Target Inits: target -> target added to pool
     mapping(address => mapping(uint256 => bool)) public sInits;
 
-    //     Series Inits: adapter -> maturity -> series (zerosclaims) added to pool
+    //     Series Inits: adapter -> maturity -> series (principalyields) added to pool
 
     function deployPool(
         string calldata name,

@@ -9,14 +9,13 @@ exports.STORAGE_SLOT = {
   WETH: 3
 };
 
-// Moves deployments from `deployments_rmv` folder to `deployments` including tags folders 
+// Copy deployments from `deployments` folder to `deployments_data` including tags folders 
 exports.moveDeployments = async function() {
   const tag = await currentTag();
-  const currentPath = path.join(__dirname, `deployments_rmv/${network.name == 'hardhat' ? 'localhost' : network.name }`);
-  const destinationPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}/contracts`);
+  const currentPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }`);
+  const destinationPath = path.join(__dirname, `deployments_data/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}/contracts`);
   try {
     await fs.copySync(currentPath, destinationPath);
-    await fs.remove(path.join(__dirname, `deployments_rmv`)); 
     log(`\Deployed contracts successfully moved to ${destinationPath}`);
   } catch (err) {
     console.error(err)
@@ -26,7 +25,7 @@ exports.moveDeployments = async function() {
 // Writes deployed contracts addresses (excluding adapters) into contracts.json 
 exports.writeDeploymentsToFile = async function() {
   const tag = await currentTag();
-  const currentPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}/contracts`);
+  const currentPath = path.join(__dirname, `deployments_data/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}/contracts`);
   let addresses = {};
   try {
     const files = await fs.readdir(currentPath);
@@ -49,7 +48,7 @@ exports.writeAdaptersToFile = async function() {
   try {
     const tag = await currentTag();
     const deployedAdapters = await getDeployedAdapters(); 
-    const destinationPath = path.join(__dirname, `deployments/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}`);
+    const destinationPath = path.join(__dirname, `deployments_data/${network.name == 'hardhat' ? 'localhost' : network.name }/${tag}`);
     await fs.writeJson(`${destinationPath}/adapters.json`, deployedAdapters);
     log(`\Deployed adapters addresses successfully saved to ${destinationPath}/adapters.json`);
   } catch (err) {

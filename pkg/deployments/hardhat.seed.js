@@ -1,4 +1,13 @@
-const { COMP_TOKEN, DAI_TOKEN, CDAI_TOKEN, COMPOUND_PRICE_FEED, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE_IMPL } = require("./hardhat.addresses");
+const {
+  COMP_TOKEN,
+  DAI_TOKEN,
+  CDAI_TOKEN,
+  COMPOUND_PRICE_FEED,
+  WETH_TOKEN,
+  CUSDC_TOKEN,
+  WSTETH_TOKEN,
+  MASTER_ORACLE_IMPL,
+} = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
@@ -29,29 +38,27 @@ const DEV_SERIES_MATURITIES = [
 const DEV_TARGETS = [
   { name: "cDAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
   { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cUSDT", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cUSDC", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "f6-DAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "f8-DAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES }
 ];
 
-const DEV_ADAPTERS = [(chainId) => ({})]
-const DEV_FACTORIES = [(chainId) => ({
-  contractName: "MockFactory",
-  adapterContract: "MockAdapter",
-  ifee: ethers.utils.parseEther("0.01"),
-  stakeSize: ethers.utils.parseEther("1"),
-  minm: "0", // 2 weeks
-  maxm: "4838400", // 4 weeks
-  mode: 1, // 0 monthly, 1 weekly;
-  oracle: COMPOUND_PRICE_FEED.get(chainId), // oracle address
-  tilt: 0,
-  targets: DEV_TARGETS
-})]
+const DEV_ADAPTERS = [chainId => ({})];
+const DEV_FACTORIES = [
+  chainId => ({
+    contractName: "MockFactory",
+    adapterContract: "MockAdapter",
+    ifee: ethers.utils.parseEther("0.01"),
+    stakeSize: ethers.utils.parseEther("1"),
+    minm: "0", // 2 weeks
+    maxm: "4838400", // 4 weeks
+    mode: 1, // 0 monthly, 1 weekly;
+    oracle: ethers.constants.AddressZero, // oracle address
+    tilt: 0,
+    targets: DEV_TARGETS,
+  }),
+];
 // ------------------------------------
 
 // -------------------------------------------------------
-//  FOR MAINET SCENARIOS 
+//  FOR MAINET SCENARIOS
 // -------------------------------------------------------
 
 // TODO(launch): fill in all below fields
@@ -59,7 +66,7 @@ const DEV_FACTORIES = [(chainId) => ({
 // List of factories to deploy which includes a targets array to indicate,
 // for factory, which target adapters to deploy
 // (We are currently not deploying any factory)
-const MAINNET_FACTORIES = []
+const MAINNET_FACTORIES = [];
 
 const CUSDC_WSTETH_SERIES_MATURITIES = [
   dayjs
@@ -72,13 +79,13 @@ const CUSDC_WSTETH_SERIES_MATURITIES = [
 
 // List of adapters to deploy directly (without factory)
 const MAINNET_ADAPTERS = [
-  (chainId) => ({
+  chainId => ({
     contractName: "WstETHAdapter",
-    target: { 
-      name: "wstETH", 
-      address: WSTETH_TOKEN.get(chainId), 
+    target: {
+      name: "wstETH",
+      address: WSTETH_TOKEN.get(chainId),
       guard: ethers.utils.parseEther("1"),
-      series: CUSDC_WSTETH_SERIES_MATURITIES 
+      series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
     // deployments params MUST BE in order
     deploymentParams: {
@@ -92,14 +99,14 @@ const MAINNET_ADAPTERS = [
       tilt: 0,
     },
   }),
-  (chainId) => ({
+  chainId => ({
     contractName: "CAdapter",
     // deployment params MUST BE in order
-    target: { 
-      name: "cUSDC", 
-      address: CUSDC_TOKEN.get(chainId), 
+    target: {
+      name: "cUSDC",
+      address: CUSDC_TOKEN.get(chainId),
       guard: ethers.utils.parseEther("1"),
-      series: CUSDC_WSTETH_SERIES_MATURITIES 
+      series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
     deploymentParams: {
       target: CUSDC_TOKEN.get(chainId),
@@ -114,10 +121,9 @@ const MAINNET_ADAPTERS = [
       level: 31,
       reward: COMP_TOKEN.get(chainId),
     },
-  })
-]
+  }),
+];
 // ------------------------------------
 
 global.dev = { FACTORIES: DEV_FACTORIES, ADAPTERS: DEV_ADAPTERS };
 global.mainnet = { FACTORIES: MAINNET_FACTORIES, ADAPTERS: MAINNET_ADAPTERS };
-

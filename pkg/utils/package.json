@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-utils",
-    "version": "0.4.0-beta",
+    "version": "0.5.5-beta",
     "description": "Sense V1 Contract Utils",
     "license": "AGPL-3.0-only",
     "repository": {
