@@ -672,8 +672,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     event SeriesInitialized(
         address adapter,
         uint256 indexed maturity,
-        address principal,
-        address yield,
+        address pt,
+        address yt,
         address indexed sponsor,
         address indexed target
     );
