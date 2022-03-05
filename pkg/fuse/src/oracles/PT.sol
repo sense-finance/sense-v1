@@ -15,14 +15,27 @@ import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
+interface SpaceLike {
+    function getImpliedRateFromPrice(uint256 pTPriceInTarget) public view returns (uint256);
+
+    function getPriceFromImpliedRate(uint256 impliedRate) public view returns (uint256);
+}
+
 contract PTOracle is PriceOracle, Trust {
     using FixedMath for uint256;
 
     /// @notice PT address -> pool address for oracle reads
     mapping(address => address) public pools;
-    uint32 public constant TWAP_PERIOD = 6 hours;
+    /// @notice Minimum implied rate this oracle will tolerate for PTs
+    uint32 public floorRate;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) {
+        floorRate = 3e18; // 300%
+    }
+
+    function setFloorRate(uint256 _floorRate) external requiresTrust {
+        floorRate = _floorRate;
+    }
 
     function setPrincipal(address pt, address pool) external requiresTrust {
         pools[pt] = pool;
@@ -58,14 +71,19 @@ contract PTOracle is PriceOracle, Trust {
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
         // get the price of Principal in terms of underlying
         (uint256 pti, uint256 targeti) = pool.getIndices();
-        uint256 pTPrice = pti == 1 ? results[0] : FixedMath.WAD.fdiv(results[0]);
+        uint256 pTPriceInTarget = pti == 1 ? results[0] : FixedMath.WAD.fdiv(results[0]);
 
         (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
         address target = address(tokens[targeti]);
 
+        uint256 impliedRate = SpaceLike(address(pool)).getImpliedRateFromPrice(pTPriceInTarget);
+        if (impliedRate > FLOOR_RATE) {
+            pTPriceInTarget = SpaceLike(address(pool)).getPriceFromImpliedRate(FLOOR_RATE);
+        }
+
         // `Principal Token / target` * `target / ETH` = `Price of Principal Token in ETH`
         //
         // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
-        return pTPrice.fmul(PriceOracle(msg.sender).price(target));
+        return pTPriceInTarget.fmul(PriceOracle(msg.sender).price(target));
     }
 }
