@@ -16,7 +16,6 @@ import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOrac
 
 import { MockToken } from "./MockToken.sol";
 
-
 contract MockSpacePool is MockToken {
     using FixedMath for uint256;
 
@@ -71,21 +70,27 @@ contract MockSpacePool is MockToken {
         targeti = 0;
     }
 
-    function getSample(uint256) public view returns (
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        uint256
-    ) {
+    function getSample(uint256)
+        public
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         return (0, 0, 0, 0, 0, 0, 1);
     }
 
-    function getTimeWeightedAverage(
-        BalancerOracle.OracleAverageQuery[] memory queries
-    ) public view returns (uint256[] memory) {
+    function getTimeWeightedAverage(BalancerOracle.OracleAverageQuery[] memory queries)
+        public
+        view
+        returns (uint256[] memory)
+    {
         uint256[] memory result = new uint256[](queries.length);
         for (uint256 i = 0; i < queries.length; i++) {
             result[i] = 1e18;
@@ -97,7 +102,6 @@ contract MockSpacePool is MockToken {
         return 1e18;
     }
 }
-
 
 contract MockBalancerVault {
     using FixedMath for uint256;
