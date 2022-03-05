@@ -50,21 +50,21 @@ module.exports = async function () {
 
   log("Set target params via Pool Manager");
   const targetParams = {
-    irModel: interestRateModel, // TODO(launch)
+    irModel: interestRateModel,
     reserveFactor: ethers.utils.parseEther("0"),
     collateralFactor: ethers.utils.parseEther("0.5"),
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)).wait();
 
   const ptParams = {
-    irModel: interestRateModel, // TODO(launch)
+    irModel: interestRateModel,
     reserveFactor: ethers.utils.parseEther("0"),
     collateralFactor: ethers.utils.parseEther("0.5"),
   };
   await (await poolManager.setParams(ethers.utils.formatBytes32String("PT_PARAMS"), ptParams)).wait();
 
   const lpParams = {
-    irModel: interestRateModel, // TODO(launch)
+    irModel: interestRateModel,
     reserveFactor: ethers.utils.parseEther("0"),
     collateralFactor: ethers.utils.parseEther("0.5"),
   };
