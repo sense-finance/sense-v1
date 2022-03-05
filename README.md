@@ -75,19 +75,19 @@ yarn build
 
 [User Journey & Interaction Matrix](https://docs.google.com/spreadsheets/d/1u--kIr18av6RPTyTZbs_ryMVv2maSsd-NxDFpUkF-Uo/edit?usp=sharing)
 
-The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Zeros` & `Claims` with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and the `Periphery` contract. Each Target can have an arbitrary number of active instances or `series` of Zeros and Claims, and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Zero & Claim holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
+The `Divider` is the accounting engine of the Sense Protocol. It allows users to "divide" `Target` assets into ERC20 `Principal` & `Yield` tokens with the help of numerous auxilary contracts including `Adapters`, `Adapter Factories`, and the `Periphery` contract. Each Target can have an arbitrary number of active instances or `series` of Principal and Yield Tokens (sometimes referred to as PTs and YTs, respectively), and each series is uniquely identified by their `maturity`. The Divider reads [`Scale` values](https://docs.sense.finance/litepaper/#rate-accumulator) from Adapters to determine how much Target to distribute to Principal & Yield Token holders at or before maturity. Constituing as the "core" of Sense, these contracts fully implement the [Sense Lifecycle](https://docs.sense.finance/litepaper/#divider) as well as permissionless series management & onboarding of arbitrary Target yield-bearing assets. 
 
 The core is surrounded by the following `modules`:
-- `Space`, a Zero/Target AMM Pool that offers an LP position that is principal protected, yield-generating, and IL minimized
+- `Space`, a Principal Token/Target AMM Pool that offers an LP position that is principal protected, yield-generating, and IL minimized
 - `Pool Manager`, manager of the [Sense Fuse Lending Facility](https://medium.com/sensefinance/sense-finance-x-rari-capital-5c0e0b6289d4)
 
 ### Divider
-The Divider contract contains the logic to `issue()` ERC20 Zeros and Claims, re-`combine()` those assets into Target before their `maturity`, `collect()` Target with Claim tokens, and `redeemZero()` at or after maturity. Note: we assume Target tokens will always have <=18 decimals.
+The Divider contract contains the logic to `issue()` ERC20 Principal and Yield Tokens, re-`combine()` those assets into Target before their `maturity`, `collect()` Target with Yield Tokens, and `redeem()` at or after maturity. Note: we assume Target tokens will always have <=18 decimals.
 
 ### Adapter
-Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application, such as stripping yield from yield-bearing assets. Once an Adapter is onboarded, users can initialize/settle series, issue Zeros/Claims, and collect/redeem their Target via the Divider.
+Following a hub and spoke model, Adapters surround the Divider and hold logic related to their particular Divider Application, such as stripping yield from yield-bearing assets. Once an Adapter is onboarded, users can initialize/settle series, issue Principal/Yield tokens, and collect/redeem their Target via the Divider.
 
-The Adapter holds the Target before a series' maturity and contains logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to Claim holders in addition to the yield accrued from the Target. In addition to asset custody, Adapters store parameters related to their individual applications, which gives guidance to the Divider when performing the above-mentioned operations. The parameters include:
+The Adapter holds the Target before a series' maturity and contains logic to handle arbitrary airdrops from native or 3rd party liquidity mining programs. Typically denominated in another asset, airdropped tokens are distributed to YT holders in addition to the yield accrued from the Target. In addition to asset custody, Adapters store parameters related to their individual applications, which gives guidance to the Divider when performing the above-mentioned operations. The parameters include:
 
 1. `target` - address to the Target 
 2. `oracle` - address to the Oracle of the Target's Underlying
@@ -120,13 +120,13 @@ To create an Adapter Factory, the contract needs to inherit from `BaseFactory.so
 ### Periphery
 The Periphery contract contains bundled actions for Series Actors and general users. 
 
-For Series Actors, the Periphery exposes the public entry points to deploy Sense-Sponsored Adapters for new Targets and to initialize Series within existing adapters. The Target Sponsor calls `onboardAdapter` which will deploy an Adapter via an Adapter Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Space for Zero / Target trading.
+For Series Actors, the Periphery exposes the public entry points to deploy Sense-Sponsored Adapters for new Targets and to initialize Series within existing adapters. The Target Sponsor calls `onboardAdapter` which will deploy an Adapter via an Adapter Factory and onboard the Target to the Sense Fuse Pool. The Series Sponsor calls `sponsorSeries` to initialize a series in the Divider and create a Space for Principal Token/Target trading.
 
-Because the BalancerV2 only holds Zeros & Targets, users need to execute additional steps to `issue()` and `combine()` in order to enter/exit into/from a Claim position. The Periphery allows users to bundle the necessary calls behind a single function interface and perform the following operations atomically, flash loaning Target from an Adapter when need be:
-- swap[Target|Underlying]ForZeros
-- swap[Target|Underlying]ForClaims
-- swapZerosFor[Target|Underlying]
-- swapClaimsFor[Target|Underlying]
+Because the BalancerV2 pool only holds Principal & Target tokens, users need to execute additional steps to `issue()` and `combine()` in order to enter/exit into/from a YT position. The Periphery allows users to bundle the necessary calls behind a single function interface and perform the following operations atomically, flash loaning Target from an Adapter when need be:
+- swap[Target|Underlying]ForPTs
+- swap[Target|Underlying]ForYTs
+- swapPTsFor[Target|Underlying]
+- swapYTsFor[Target|Underlying]
 
 Similarily, the Periphery exposes several atomic transactions for LP management through Space.
 - addLiquidityFrom[Target|Underlying]
@@ -135,28 +135,28 @@ Similarily, the Periphery exposes several atomic transactions for LP management 
 
 ### Tokens
 This directory contains the tokens contracts. Sense Protocol uses [Rari's ERC20 implementation](https://github.com/Rari-Capital/solmate/blob/main/src/erc20/ERC20.sol) and defines:
-- `Token.sol` as a minimalist ERC20 implementation with auth'd `burn()` and `mint()`. Used for Zeros.
-- `Claim.sol` as a minimalist yield token implementation that:
+- `Token.sol` as a minimalist ERC20 implementation with auth'd `burn()` and `mint()`. Used for Principal.
+- `YT.sol` as a minimalist yield token implementation that:
     1. inherits from `Token`
     2. adds `maturity`, `divider` and `adapter` address variables
     3. defines `collect()` (which calls `Divider.collect()`) and overrides `transfer()` and `transferFrom()` to also call `collect()`
 
-When Series are initialized, Zeros and Claims are deployed and they take the same number of decimals as the their Target token (which cannot be >= 18 decimals). 
+When Series are initialized, Principal and Yield tokens are deployed and they take the same number of decimals as the their Target token (which cannot be >= 18 decimals). 
 
 ### Modules
 A Collection of Modules and Utilities for Sense V1
 
 #### Space
-`Space` is an Zero/Target AMM Pool built on Balancer V2. It implements the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant but introduces a meaningful improvement by allowing LPs to deposit a yield-generating _quote_ asset, i.e. the Target, instead of the Zero's Underlying, as was originally concieved. Because its TWAP price is utilized by the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol) and its oracle functionality. Each Series will have a unique `Space` for Zero/Target trading, which will be deployed and initialized through the `Space Factory`. More context on `Space`'s development can be found [here](https://github.com/sense-finance/space-v1).
+`Space` is an Principal Token/Target AMM Pool built on Balancer V2. It implements the [Yieldspace](https://yield.is/YieldSpace.pdf) invariant but introduces a meaningful improvement by allowing LPs to deposit a yield-generating _quote_ asset, i.e. the Target, instead of the Principal Token's Underlying, as was originally concieved. Because its TWAP price is utilized by the Sense Fuse Pool, Space is heavily inspired by Balancer's [Weighted 2 Token Pool](https://github.com/balancer-labs/balancer-v2-monorepo/blob/c40b9a783e328d817892693bd13b4a14e4dcff4d/pkg/pool-weighted/contracts/WeightedPool2Tokens.sol) and its oracle functionality. Each Series will have a unique `Space` for Principal Token/Target trading, which will be deployed and initialized through the `Space Factory`. More context on `Space`'s development can be found [here](https://github.com/sense-finance/space-v1).
 
 #### Pool Manager
-`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Zeros, the Space LP Shares, and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`), Zeros and their Space LP shares (`queueSeries()` & `addSeries()`). Once new assets are onboarded, the Sense Fuse Pool will query price data from the `Master Oracle` which exposes a mapping, linking token addresses to oracle addresses. 
+`PoolManager` manages the Sense Fuse Pool, a collection of borrowing/lending markets serving all Principal tokens, the Space LP Shares, and their respective Targets. It allows users to permissionlessly onboard new Target (`addTarget()`), Principal and their Space LP shares (`queueSeries()` & `addSeries()`). Once new assets are onboarded, the Sense Fuse Pool will query price data from the `Master Oracle` which exposes a mapping, linking token addresses to oracle addresses. 
 
-#### G Claim Manager [WIP]
-`GClaimManager` lets a user deposit their "Collect" Claims and receive "Drag" Claim representations. Specifically, it enables users to backfill interest accrued on their "Collect" Claim so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gClaims back to the contract to re-extract the PY and reconstitute their Collect Claims. More information between Collect and Drag Claims can [be found here](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56). Note that some Claims within Sense have PY composed of native yield as well as airdrop rewards, the latter of which can balloon and shrink in value, causing wide fluctuations in the gClaim valuation. 
+#### G Yield Manager [WIP]
+`GYTManager` lets a user deposit their "Collect" YT and receive "Drag" YT representations. Specifically, it enables users to backfill interest accrued on their "Collect" YTs so that it can be used in other DeFi projects that don't know how to collect accrued yield for the user. Similarly, users may bring existing gYTs back to the contract to re-extract the PY and reconstitute their Collect YTs. More information between Collect and Drag YTs can [be found here](https://medium.com/sensefinance/designing-yield-tokens-d20c34d96f56). Note that some YTs within Sense have PY composed of native yield as well as airdrop rewards, the latter of which can balloon and shrink in value, causing wide fluctuations in the gYTs valuation. 
 
 #### Recycling Module [WIP]
-The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Claims, which refocuses users' positions on FY.
+The Recycling Module is a contract for yield traders who want constantly-preserved IR sensitivity on their balances, and do not want to find reinvestment opportunities for their PY. The contract uses a dutch auction to automatically sell collected PY off at some interval for more Yield Tokens, which refocuses users' positions on FY.
 
 
 ### Access

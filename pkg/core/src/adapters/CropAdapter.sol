@@ -98,7 +98,7 @@ abstract contract CropAdapter is BaseAdapter {
     }
 
     /// @notice Some protocols don't airdrop reward tokens, instead users must claim them.
-    /// This method may be overriden by child contracts to Claim a protocol's rewards
+    /// This method may be overriden by child contracts to claim a protocol's rewards
     function _claimReward() internal virtual {
         return;
     }

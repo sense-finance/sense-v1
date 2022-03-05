@@ -1,4 +1,10 @@
-const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile } = require("../../hardhat.utils");
+const { OZ_RELAYER } = require("../../hardhat.addresses");
+const {
+  moveDeployments,
+  writeDeploymentsToFile,
+  writeAdaptersToFile,
+  getDeployedAdapters,
+} = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -7,12 +13,12 @@ module.exports = async function () {
   const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
-  const divider = await ethers.getContract("Divider");
-  const periphery = await ethers.getContract("Periphery");
+  const divider = await ethers.getContract("Divider", signer);
+  const periphery = await ethers.getContract("Periphery", signer);
 
-  log("\n-------------------------------------------------------")
-  log("DEPLOY DEPENDENCIES, FACTORIES & ADAPTERS")
-  log("-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
+  log("DEPLOY DEPENDENCIES, FACTORIES & ADAPTERS");
+  log("-------------------------------------------------------");
 
   const stake = await deployStake();
   const airdrop = await deployAirdrop();
@@ -29,63 +35,70 @@ module.exports = async function () {
       args: [divider.address, factoryParams, airdrop.address],
       log: true,
     });
-    const factoryContract = await ethers.getContract(contractName);
+    const factoryContract = await ethers.getContract(contractName, signer);
 
     log(`Trust ${contractName} on the divider`);
     await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
-  
+
     log(`Add ${contractName} support to Periphery`);
-    await (await periphery.setFactory(mockFactoryAddress, true)).wait();
-  
+    if (!(await periphery.factories(mockFactoryAddress))) {
+      await (await periphery.setFactory(mockFactoryAddress, true)).wait();
+    }
+
     await deploy("MultiMint", {
       from: deployer,
       args: [],
       log: true,
     });
-    const multiMint = await ethers.getContract("MultiMint");
+    const multiMint = await ethers.getContract("MultiMint", signer);
 
-    log("\n-------------------------------------------------------")
+    log("\n-------------------------------------------------------");
     log(`DEPLOY UNDERLYINGS, TARGETS & ADAPTERS FOR: ${contractName}`);
-    log("-------------------------------------------------------")
+    log("---------------------------------------------------------");
     for (let t of targets) {
       const targetName = t.name;
       log(`\nDeploy simulated ${targetName}`);
-      
+
       const underlying = await getUnderlyingForTarget(targetName);
       const target = await deployTarget(targetName, underlying.address);
       await new Promise(res => setTimeout(res, 500));
-  
+
       log("Give the multi minter permission on Target");
       await (await target.setIsTrusted(multiMint.address, true)).wait();
-  
+
       log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
       await multiMint.mint([target.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
-  
+
       log(`Add ${targetName} support for mocked Factory`);
-      await (await factoryContract.addTarget(target.address, true)).wait();
-  
-      const adapterAddress = await deployAdapter(targetName, target.address, mockFactoryAddress);
-  
+      if (!(await factoryContract.targets(target.address))) {
+        await (await factoryContract.addTarget(target.address, true)).wait();
+      }
+
+      log(`Deploy adapter for ${targetName}`);
+      let adapterAddress = (await getDeployedAdapters())[targetName];
+      if (!adapterAddress) {
+        adapterAddress = await deployAdapter(targetName, target.address, mockFactoryAddress);
+      }
+
       log("Give the adapter minter permission on Target");
       await (await target.setIsTrusted(adapterAddress, true)).wait();
-  
+
       log("Give the adapter minter permission on Underlying");
       await (await underlying.setIsTrusted(adapterAddress, true)).wait();
-  
+
       log("Grant minting authority on the Reward token to the mock TWrapper");
       await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
-  
+
       log(`Set ${targetName} adapter issuance cap to max uint so we don't have to worry about it`);
       await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
-  
+
       log(`Can call and set scale value`);
       await setScale(adapterAddress);
     }
   }
 
-
   if (!process.env.CI && hre.config.networks[network.name].saveDeployments) {
-    log("\n-------------------------------------------------------")
+    log("\n-------------------------------------------------------");
     await moveDeployments();
     await writeDeploymentsToFile();
     await writeAdaptersToFile();
@@ -96,7 +109,7 @@ module.exports = async function () {
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
     const matchedName = underlyingRegexRes && underlyingRegexRes[1];
     const underlyingName = matchedName === "ETH" ? "WETH" : matchedName || `UNDERLYING-${targetName}`;
-  
+
     if (!underlyingNames.has(underlyingName)) {
       await deploy(underlyingName, {
         contract: "AuthdMockToken",
@@ -104,12 +117,12 @@ module.exports = async function () {
         args: [underlyingName, underlyingName, 18],
         log: true,
       });
-  
+
       underlyingNames.add(underlyingName);
     }
-    return await ethers.getContract(underlyingName);
+    return await ethers.getContract(underlyingName, signer);
   }
-  
+
   async function deployTarget(targetName, underlyingAddress) {
     await deploy(targetName, {
       contract: "AuthdMockTarget",
@@ -117,16 +130,16 @@ module.exports = async function () {
       args: [underlyingAddress, targetName, targetName, 18],
       log: true,
     });
-    return await ethers.getContract(targetName);
+    return await ethers.getContract(targetName, signer);
   }
-  
+
   async function deployAdapter(targetName, targetAddress, factoryAddress) {
     const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, targetAddress);
     log(`Onboard target ${targetName} via Periphery`);
     await (await periphery.deployAdapter(factoryAddress, targetAddress)).wait();
     return adapterAddress;
   }
-  
+
   async function setScale(adapterAddress) {
     const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
     const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
@@ -143,10 +156,13 @@ module.exports = async function () {
       args: ["STAKE", "STAKE", 18, deployer],
       log: true,
     });
-    const stake = await ethers.getContract("STAKE");
+    const stake = await ethers.getContract("STAKE", signer);
 
     log("Mint the deployer a balance of 1,000,000 STAKE");
     await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+
+    log("Mint the relayer a balance of 1,000,000 STAKE");
+    await stake.mint(OZ_RELAYER.get(chainId), ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
     return stake;
   }
@@ -158,9 +174,8 @@ module.exports = async function () {
       args: ["Aidrop Reward Token", "ADP", 18, deployer],
       log: true,
     });
-    return await ethers.getContract("Airdrop");
+    return await ethers.getContract("Airdrop", signer);
   }
-
 };
 
 module.exports.tags = ["simulated:adapters", "scenario:simulated"];

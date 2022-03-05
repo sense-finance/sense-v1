@@ -50,7 +50,7 @@ const DEV_FACTORIES = [
     minm: "0", // 2 weeks
     maxm: "4838400", // 4 weeks
     mode: 1, // 0 monthly, 1 weekly;
-    oracle: COMPOUND_PRICE_FEED.get(chainId), // oracle address
+    oracle: ethers.constants.AddressZero, // oracle address
     tilt: 0,
     targets: DEV_TARGETS,
   }),

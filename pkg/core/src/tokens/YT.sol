@@ -5,9 +5,9 @@ pragma solidity 0.8.11;
 import { Divider } from "../Divider.sol";
 import { Token } from "./Token.sol";
 
-/// @title Claim Token
+/// @title Yield Token
 /// @notice Strips off excess before every transfer
-contract Claim is Token {
+contract YT is Token {
     address public immutable adapter;
     address public immutable divider;
     uint256 public immutable maturity;

@@ -6,7 +6,7 @@ import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
 import { CropAdapter } from "../../../adapters/CropAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
-import { Claim } from "../../../tokens/Claim.sol";
+import { YT } from "../../../tokens/YT.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockToken.sol";
 
@@ -17,7 +17,7 @@ contract MockAdapter is CropAdapter {
     uint256 public INITIAL_VALUE;
     address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
-    uint256 public onZeroRedeemCalls;
+    uint256 public onRedeemCalls;
 
     struct LScale {
         // Timestamp of the last scale value
@@ -109,13 +109,13 @@ contract MockAdapter is CropAdapter {
         return 1e18;
     }
 
-    function onZeroRedeem(
+    function onRedeem(
         uint256, /* uBal */
         uint256, /* mscale */
         uint256, /* maxscale */
         uint256 /* tBal */
     ) public virtual override {
-        onZeroRedeemCalls++;
+        onRedeemCalls++;
     }
 
     function setScale(uint256 _value) external {
@@ -129,17 +129,17 @@ contract MockAdapter is CropAdapter {
     function doIssue(uint256 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
-        (address zero, , address claim, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(zero).transfer(msg.sender, MockToken(zero).balanceOf(address(this)));
-        MockToken(claim).transfer(msg.sender, MockToken(claim).balanceOf(address(this)));
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
+        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
     }
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 
-    function doRedeemZero(uint256 maturity, uint256 uBal) external {
-        Divider(divider).redeemZero(address(this), maturity, uBal);
+    function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
+        Divider(divider).redeem(address(this), maturity, uBal);
     }
 }
 

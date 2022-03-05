@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { GClaimManager } from "../../modules/GClaimManager.sol";
+import { GYTManager } from "../../modules/GYTManager.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
@@ -43,7 +43,7 @@ contract TestHelper is DSTest {
     MockOracle masterOracle;
 
     PoolManager poolManager;
-    GClaimManager gClaimManager;
+    GYTManager gYTManager;
     Divider internal divider;
     TokenHandler internal tokenHandler;
     Periphery internal periphery;
@@ -135,7 +135,7 @@ contract TestHelper is DSTest {
         );
         divider.setPeriphery(address(periphery));
         poolManager.setIsTrusted(address(periphery), true);
-        gClaimManager = new GClaimManager(address(divider));
+        gYTManager = new GYTManager(address(divider));
 
         // adapter, target wrapper & factory
         factory = createFactory(address(target), address(reward));
@@ -164,7 +164,7 @@ contract TestHelper is DSTest {
         user.doMint(address(stake), sBal);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
-        user.doApprove(address(target), address(user.gClaimManager()));
+        user.doApprove(address(target), address(user.gYTManager()));
         user.doMint(address(target), tBal);
     }
 
@@ -190,8 +190,8 @@ contract TestHelper is DSTest {
         if (maturity < block.timestamp + 2 weeks) revert Errors.InvalidMaturityOffsets();
     }
 
-    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address zero, address claim) {
-        (zero, claim) = User(sponsor).doSponsorSeries(address(adapter), maturity);
+    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address pt, address yt) {
+        (pt, yt) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
     function assertClose(
@@ -234,9 +234,9 @@ contract TestHelper is DSTest {
         uint256 tBal
     ) internal {
         uint256 issued = alice.doIssue(adapter, maturity, tBal);
-        alice.doTransfer(divider.claim(address(adapter), maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
-        alice.doTransfer(divider.zero(address(adapter), maturity), address(balancerVault), issued);
-        // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued zeros.
+        alice.doTransfer(divider.yt(address(adapter), maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
+        alice.doTransfer(divider.pt(address(adapter), maturity), address(balancerVault), issued);
+        // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued PT.
         MockToken(MockAdapter(adapter).target()).mint(address(balancerVault), tBal);
     }
 
@@ -262,10 +262,10 @@ contract TestHelper is DSTest {
     function calculateExcess(
         uint256 tBal,
         uint256 maturity,
-        address claim
+        address yt
     ) public returns (uint256 gap) {
         uint256 toIssue = calculateAmountToIssue(tBal);
-        gap = gClaimManager.excess(address(adapter), maturity, toIssue);
+        gap = gYTManager.excess(address(adapter), maturity, toIssue);
     }
 
     function fuzzWithBounds(

@@ -20,17 +20,17 @@ contract MockSpacePool is MockToken {
     using FixedMath for uint256;
 
     MockBalancerVault public vault;
-    address public zero;
+    address public pt;
     address public target;
     uint256 public oraclePrice = 1e18;
 
     constructor(
         address _vault,
         address _target,
-        address _zero
+        address _principal
     ) MockToken("Mock Yield Space Pool Token", "MYSPT", 18) {
         vault = MockBalancerVault(_vault);
-        zero = _zero;
+        pt = _principal;
         target = _target;
         oraclePrice = 1e18;
     }
@@ -74,7 +74,7 @@ contract MockSpacePool is MockToken {
         uint256, /* _reservesInAmount */
         uint256 /* _reservesOutAmount */
     ) external view returns (uint256) {
-        if (address(request.tokenIn) == zero) {
+        if (address(request.tokenIn) == pt) {
             if (request.kind == BalancerVault.SwapKind.GIVEN_IN) {
                 return request.amount.fmul(vault.EXCHANGE_RATE(), 1e18);
             } else {
@@ -89,9 +89,9 @@ contract MockSpacePool is MockToken {
         }
     }
 
-    function getIndices() public view returns (uint256 zeroi, uint256 targeti) {
+    function getIndices() public view returns (uint256 pti, uint256 targeti) {
         // Indices to match MockBalancerVault's balances array
-        zeroi = 1;
+        pti = 1;
         targeti = 0;
     }
 }
@@ -115,7 +115,7 @@ contract MockBalancerVault {
     ) external payable returns (uint256) {
         Token(address(singleSwap.assetIn)).transferFrom(msg.sender, address(this), singleSwap.amount);
         uint256 amountInOrOut;
-        if (address(singleSwap.assetIn) == yieldSpacePool.zero()) {
+        if (address(singleSwap.assetIn) == yieldSpacePool.pt()) {
             if (singleSwap.kind == BalancerVault.SwapKind.GIVEN_IN) {
                 amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 1e18);
             } else {
@@ -171,11 +171,11 @@ contract MockBalancerVault {
     {
         tokens = new ERC20[](2);
         tokens[0] = ERC20(yieldSpacePool.target());
-        tokens[1] = ERC20(yieldSpacePool.zero());
+        tokens[1] = ERC20(yieldSpacePool.pt());
 
         balances = new uint256[](2);
         balances[0] = ERC20(yieldSpacePool.target()).balanceOf(address(this));
-        balances[1] = ERC20(yieldSpacePool.zero()).balanceOf(address(this));
+        balances[1] = ERC20(yieldSpacePool.pt()).balanceOf(address(this));
     }
 
     function getPool(bytes32 poolId) external view returns (address, BalancerVault.PoolSpecialization) {
@@ -196,10 +196,10 @@ contract MockSpaceFactory {
     }
 
     function create(address _adapter, uint256 _maturity) external returns (address) {
-        (address zero, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
+        (address pt, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
         address _target = Adapter(_adapter).target();
 
-        pool = new MockSpacePool(address(vault), _target, zero);
+        pool = new MockSpacePool(address(vault), _target, pt);
         pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));
