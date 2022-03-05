@@ -1,3 +1,4 @@
+const { OZ_RELAYER } = require("../../hardhat.addresses");
 const {
   moveDeployments,
   writeDeploymentsToFile,
@@ -159,6 +160,9 @@ module.exports = async function () {
 
     log("Mint the deployer a balance of 1,000,000 STAKE");
     await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+
+    log("Mint the relayer a balance of 1,000,000 STAKE");
+    await stake.mint(OZ_RELAYER.get(chainId), ethers.utils.parseEther("1000000")).then(tx => tx.wait());
 
     return stake;
   }
