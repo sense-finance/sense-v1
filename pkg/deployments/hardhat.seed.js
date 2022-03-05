@@ -40,7 +40,30 @@ const DEV_TARGETS = [
   { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
-const DEV_ADAPTERS = [chainId => ({})];
+const DEV_ADAPTERS = [
+  chainId => ({
+    contractName: "MockAdapter",
+    target: {
+      name: "cUSDC",
+      guard: ethers.utils.parseEther("1"),
+      series: DEV_SERIES_MATURITIES,
+    },
+    // deployments params MUST BE in order
+    deploymentParams: {
+      target: "0x0",
+      oracle: ethers.constants.AddressZero, // oracle address
+      ifee: ethers.utils.parseEther("0.01"),
+      stake: "0x0",
+      stakeSize: ethers.utils.parseEther("0.01"),
+      minm: "0", // 0 weeks
+      maxm: "4838400", // 4 weeks
+      mode: 1, // 0 monthly, 1 weekly;
+      tilt: 0,
+      level: 31,
+      reward: "0x0",
+    },
+  }),
+];
 const DEV_FACTORIES = [
   chainId => ({
     contractName: "MockFactory",

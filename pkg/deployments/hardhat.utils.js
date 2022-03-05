@@ -57,7 +57,8 @@ exports.writeAdaptersToFile = async function() {
 }
 
 async function getDeployedAdapters() {
-  const signer = (await ethers.getSigners())[0];
+  const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
   const divider = await ethers.getContract("Divider");
   const events = [...new Set(await divider.queryFilter(divider.filters.AdapterChanged(null, null, 1)))]; // fetch all deployed Adapters
   let deployedAdapters = {}; 
