@@ -15,7 +15,9 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
 interface SpaceLike {
-    function getFairBPTPriceInUnderlying(uint256 ptTwapDuration) external view returns (uint256);
+    function getFairBPTPriceInTarget(uint256 ptTwapDuration) external view returns (uint256);
+
+    function adapter() external view returns (address);
 }
 
 contract LPOracle is PriceOracle, Trust {
@@ -37,7 +39,10 @@ contract LPOracle is PriceOracle, Trust {
     }
 
     function _price(address _pool) internal view returns (uint256) {
-        // Price per BPT in ETH terms
-        return SpaceLike(_pool).getFairBPTPriceInUnderlying(TWAP_PERIOD).fmul(Adapter(adapter).getUnderlyingPrice());
+        SpaceLike pool = SpaceLike(_pool);
+        address target = Adapter(pool.adapter()).target();
+
+        // Price per BPT in ETH terms, where the PT side of the pool is valued using the TWAP oracle
+        return pool.getFairBPTPriceInTarget(TWAP_PERIOD).fmul(PriceOracle(msg.sender).price(target));
     }
 }

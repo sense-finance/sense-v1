@@ -27,6 +27,19 @@ interface ComptrollerLike {
     function enterMarkets(address[] memory cTokens) external returns (uint256[] memory);
 
     function cTokensByUnderlying(address underlying) external view returns (address);
+
+    function borrowAllowed(
+        address cToken,
+        address borrower,
+        uint256 borrowAmount
+    ) external returns (uint256);
+
+    struct Market {
+        bool isListed;
+        uint256 collateralFactorMantissa;
+    }
+
+    function markets(address cToken) external view returns (Market memory);
 }
 
 contract PoolManagerTest is DSTest {
@@ -143,6 +156,8 @@ contract PoolManagerTest is DSTest {
         }
     }
 
+    event A(bool);
+
     function testMainnetQueueSeries() public {
         uint256 maturity = _getValidMaturity();
 
@@ -239,46 +254,49 @@ contract PoolManagerTest is DSTest {
             })
         );
 
+        (address cPT, address cLPToken) = poolManager.addSeries(address(mockAdapter), maturity);
+        ComptrollerLike comptroller = ComptrollerLike(poolManager.comptroller());
+
+        assertTrue(cPT != address(0));
+        assertTrue(cLPToken != address(0));
+
+        address[] memory cTokens = new address[](3);
+        cTokens[0] = address(cTarget);
+        cTokens[1] = address(cPT);
+        cTokens[2] = address(cLPToken);
+
+        ComptrollerLike(comptroller).enterMarkets(cTokens);
+
+        uint256 TARGET_IN = 1.1e18;
+        uint256 PT_BORROW = 1e18;
+
+        // Mint some liquidity for lending/borrowing
         Token(MockSpacePool(pool).target()).mint(address(balancerVault), 1e18);
         MockSpacePool(pool).mint(address(this), 1e18);
 
-        poolManager.addSeries(address(mockAdapter), maturity);
-
-        address[] memory cTokens = new address[](1);
-        cTokens[0] = address(target);
-
-        mockOracle.setPrice(0);
-
-        ComptrollerLike(poolManager.comptroller()).enterMarkets(cTokens);
-
-        uint256 TARGET_IN = 1.1e18;
-        uint256 ZERO_BORROW = 1e18;
-
         target.mint(address(this), TARGET_IN);
         target.approve(cTarget, TARGET_IN);
+        uint256 originalTargetBalance = target.balanceOf(address(this));
         uint256 err = CToken(cTarget).mint(TARGET_IN);
         assertEq(err, 0);
 
-        emit log_uint(Token(cTarget).balanceOf(address(this)));
-
-        address cPT = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(MockSpacePool(pool).zero());
-        emit log_address(cPT);
-        err = CToken(cPT).borrow(ZERO_BORROW);
-
-        emit log_named_uint("err", err);
-
-        err = CToken(cTarget).redeem(Token(cTarget).balanceOf(address(this)));
-        assertEq(err, 0);
-
+        // Has the initial Target's value in cTarget
         assertEq(
             (Token(cTarget).balanceOf(address(this)) * CToken(cTarget).exchangeRateCurrent()) /
                 10**CToken(cTarget).decimals(),
             TARGET_IN
         );
 
-        emit log_uint(Token(cPT).balanceOf(address(this)));
+        err = ComptrollerLike(comptroller).borrowAllowed(address(cPT), address(this), 1e18);
+        // Insufficient liquidity
+        assertEq(err, 4);
 
-        assertTrue(false);
+        Hevm(HEVM_ADDRESS).expectRevert("borrow is paused");
+        ComptrollerLike(comptroller).borrowAllowed(address(cLPToken), address(this), 1e18);
+
+        err = CToken(cTarget).redeem(Token(cTarget).balanceOf(address(this)));
+        assertEq(err, 0);
+        assertEq(target.balanceOf(address(this)), originalTargetBalance);
     }
 
     function testMainnetAdminPassthrough() public {

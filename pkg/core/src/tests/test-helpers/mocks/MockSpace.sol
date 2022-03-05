@@ -12,8 +12,10 @@ import { BalancerPool } from "../../../external/balancer/Pool.sol";
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { BaseAdapter as Adapter } from "../../../adapters/BaseAdapter.sol";
+import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
 
 import { MockToken } from "./MockToken.sol";
+
 
 contract MockSpacePool is MockToken {
     using FixedMath for uint256;
@@ -21,15 +23,18 @@ contract MockSpacePool is MockToken {
     MockBalancerVault public vault;
     address public pt;
     address public target;
+    address public adapter;
 
     constructor(
         address _vault,
         address _target,
-        address _principal
+        address _principal,
+        address _adapter
     ) MockToken("Mock Yield Space Pool Token", "MYSPT", 18) {
         vault = MockBalancerVault(_vault);
         pt = _principal;
         target = _target;
+        adapter = _adapter;
     }
 
     function getPoolId() external view returns (bytes32) {
@@ -65,7 +70,34 @@ contract MockSpacePool is MockToken {
         pti = 1;
         targeti = 0;
     }
+
+    function getSample(uint256) public view returns (
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256
+    ) {
+        return (0, 0, 0, 0, 0, 0, 1);
+    }
+
+    function getTimeWeightedAverage(
+        BalancerOracle.OracleAverageQuery[] memory queries
+    ) public view returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](queries.length);
+        for (uint256 i = 0; i < queries.length; i++) {
+            result[i] = 1e18;
+        }
+        return result;
+    }
+
+    function getFairBPTPriceInTarget(uint256) external view returns (uint256) {
+        return 1e18;
+    }
 }
+
 
 contract MockBalancerVault {
     using FixedMath for uint256;
@@ -170,7 +202,7 @@ contract MockSpaceFactory {
         (address pt, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
         address _target = Adapter(_adapter).target();
 
-        pool = new MockSpacePool(address(vault), _target, pt);
+        pool = new MockSpacePool(address(vault), _target, pt, _adapter);
         pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));

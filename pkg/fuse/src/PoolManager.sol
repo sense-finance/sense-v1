@@ -47,6 +47,9 @@ interface ComptrollerLike {
 
     /// A list of all markets
     function markets(address cToken) external view returns (bool, uint256);
+
+    /// Pause borrowing for a specific market
+    function _setBorrowPaused(address cToken, bool state) external returns (bool);
 }
 
 interface MasterOracleLike {
@@ -225,7 +228,7 @@ contract PoolManager is Trust {
         emit TargetAdded(target, cTarget);
     }
 
-    /// @notice queues a set of (Principal, LPShare) for a Fuse pool to be deployed once the TWAP is ready
+    /// @notice queues a set of (Principal Tokens, LPShare) for a Fuse pool to be deployed once the TWAP is ready
     /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
@@ -246,7 +249,7 @@ contract PoolManager is Trust {
         emit SeriesQueued(adapter, maturity, pool);
     }
 
-    /// @notice open method to add queued Principal and LPShares to Fuse pool
+    /// @notice open method to add queued Principal Tokens and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
     function addSeries(address adapter, uint256 maturity) external returns (address cPT, address cLPToken) {
         if (sSeries[adapter][maturity].status != SeriesStatus.QUEUED) revert Errors.SeriesNotQueued();
@@ -310,11 +313,10 @@ contract PoolManager is Trust {
         );
         if (errLpToken != 0) revert Errors.FailedAddLpMarket();
 
-        cPT = ComptrollerLike(comptroller).cTokensByUnderlying(target);
-        cLPToken = ComptrollerLike(comptroller).cTokensByUnderlying(target);
+        cPT = ComptrollerLike(comptroller).cTokensByUnderlying(pt);
+        cLPToken = ComptrollerLike(comptroller).cTokensByUnderlying(pool);
 
-        errLpToken = ComptrollerLike(comptroller)._setBorrowPaused(cLPToken, true);
-        if (errLpToken != 0) revert Errors.FailedAddLpMarket();
+        ComptrollerLike(comptroller)._setBorrowPaused(cLPToken, true);
 
         sSeries[adapter][maturity].status = SeriesStatus.ADDED;
 
