@@ -32,7 +32,7 @@ contract Periphery is Trust {
     /* ========== PUBLIC CONSTANTS ========== */
 
     /// @notice Lower bound on the amount of Claim tokens one can swap in for Target
-    uint256 public constant MIN_CLAIM_SWAP_IN = 0.000001e18;
+    uint256 public constant MIN_YT_SWAP_IN = 0.000001e18;
 
     /// @notice Acceptable error when estimating the tokens resulting from a specific swap
     uint256 public constant PRICE_ESTIMATE_ACCEPTABLE_ERROR = 0.00000001e18;
@@ -494,7 +494,7 @@ contract Periphery is Trust {
 
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
-        if (ytBal * 10**(18 - ERC20(yt).decimals()) <= MIN_CLAIM_SWAP_IN) revert Errors.SwapTooSmall();
+        if (ytBal * 10**(18 - ERC20(yt).decimals()) <= MIN_YT_SWAP_IN) revert Errors.SwapTooSmall();
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer YTs into this contract if needed
