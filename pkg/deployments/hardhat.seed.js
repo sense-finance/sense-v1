@@ -1,7 +1,5 @@
 const {
   COMP_TOKEN,
-  DAI_TOKEN,
-  CDAI_TOKEN,
   COMPOUND_PRICE_FEED,
   WETH_TOKEN,
   CUSDC_TOKEN,
@@ -10,11 +8,16 @@ const {
 } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const en = require("dayjs/locale/en");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 const ethers = require("ethers");
 
 dayjs.extend(weekOfYear);
 dayjs.extend(utc);
+dayjs.locale({
+  ...en,
+  weekStart: 1,
+});
 
 // -------------------------------------------------------
 //  FOR DEV SCENARIOS
@@ -25,14 +28,12 @@ const DEV_SERIES_MATURITIES = [
     .utc()
     .week(dayjs().week() + 1)
     .startOf("week")
-    .add(1, "day")
     .unix(),
   // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
     .week(dayjs().week() + 2)
     .startOf("week")
-    .add(1, "day")
     .unix(),
 ];
 const DEV_TARGETS = [
@@ -40,7 +41,30 @@ const DEV_TARGETS = [
   { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
-const DEV_ADAPTERS = [chainId => ({})];
+const DEV_ADAPTERS = [
+  chainId => ({
+    contractName: "MockAdapter",
+    target: {
+      name: "cUSDC",
+      guard: ethers.utils.parseEther("1"),
+      series: DEV_SERIES_MATURITIES,
+    },
+    // deployments params MUST BE in order
+    deploymentParams: {
+      target: "0x0",
+      oracle: ethers.constants.AddressZero, // oracle address
+      ifee: ethers.utils.parseEther("0.01"),
+      stake: "0x0",
+      stakeSize: ethers.utils.parseEther("0.01"),
+      minm: "0", // 0 weeks
+      maxm: "4838400", // 4 weeks
+      mode: 1, // 0 monthly, 1 weekly;
+      tilt: 0,
+      level: 31,
+      reward: "0x0",
+    },
+  }),
+];
 const DEV_FACTORIES = [
   chainId => ({
     contractName: "MockFactory",
@@ -73,7 +97,6 @@ const CUSDC_WSTETH_SERIES_MATURITIES = [
     .utc()
     .week(dayjs().week() + 1)
     .startOf("week")
-    .add(1, "day")
     .unix(),
 ];
 

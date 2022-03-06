@@ -3,17 +3,18 @@ const log = console.log;
 
 module.exports = async function () {
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No sense multisig found");
   const multisig = SENSE_MULTISIG.get(chainId);
 
-  const tokenHandler = await ethers.getContract("TokenHandler");
-  const divider = await ethers.getContract("Divider");
-  const poolManager = await ethers.getContract("PoolManager");
-  const spaceFactory = await ethers.getContract("SpaceFactory");
-  const periphery = await ethers.getContract("Periphery");
-  const emergencyStop = await ethers.getContract("EmergencyStop");
+  const tokenHandler = await ethers.getContract("TokenHandler", signer);
+  const divider = await ethers.getContract("Divider", signer);
+  const poolManager = await ethers.getContract("PoolManager", signer);
+  const spaceFactory = await ethers.getContract("SpaceFactory", signer);
+  const periphery = await ethers.getContract("Periphery", signer);
+  const emergencyStop = await ethers.getContract("EmergencyStop", signer);
 
   log("\n-------------------------------------------------------")
   log("\nAdd multisig as trusted address on contracts");

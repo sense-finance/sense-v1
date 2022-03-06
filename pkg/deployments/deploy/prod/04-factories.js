@@ -8,8 +8,8 @@ module.exports = async function () {
   const signer = await ethers.getSigner(deployer);
   
   const chainId = await getChainId();
-  const divider = await ethers.getContract("Divider");
-  const periphery = await ethers.getContract("Periphery");
+  const divider = await ethers.getContract("Divider", signer);
+  const periphery = await ethers.getContract("Periphery", signer);
   
   log("\n-------------------------------------------------------")
   log("DEPLOY FACTORIES & ADAPTERS")

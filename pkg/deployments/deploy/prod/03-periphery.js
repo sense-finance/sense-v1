@@ -4,14 +4,15 @@ const log = console.log;
 module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
   if (!BALANCER_VAULT.has(chainId)) throw Error("No balancer vault found");
   const balancerVault = BALANCER_VAULT.get(chainId);
 
-  const divider = await ethers.getContract("Divider");
-  const spaceFactory = await ethers.getContract("SpaceFactory");
-  const poolManager = await ethers.getContract("PoolManager");
+  const divider = await ethers.getContract("Divider", signer);
+  const spaceFactory = await ethers.getContract("SpaceFactory", signer);
+  const poolManager = await ethers.getContract("PoolManager", signer);
 
   log("\n-------------------------------------------------------")
   log("\nDeploy Periphery");
