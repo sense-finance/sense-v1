@@ -1,7 +1,5 @@
 const {
   COMP_TOKEN,
-  DAI_TOKEN,
-  CDAI_TOKEN,
   COMPOUND_PRICE_FEED,
   WETH_TOKEN,
   CUSDC_TOKEN,
@@ -10,11 +8,16 @@ const {
 } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const en = require("dayjs/locale/en");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 const ethers = require("ethers");
 
 dayjs.extend(weekOfYear);
 dayjs.extend(utc);
+dayjs.locale({
+  ...en,
+  weekStart: 1,
+});
 
 // -------------------------------------------------------
 //  FOR DEV SCENARIOS
@@ -25,14 +28,12 @@ const DEV_SERIES_MATURITIES = [
     .utc()
     .week(dayjs().week() + 1)
     .startOf("week")
-    .add(1, "day")
     .unix(),
   // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
     .week(dayjs().week() + 2)
     .startOf("week")
-    .add(1, "day")
     .unix(),
 ];
 const DEV_TARGETS = [
@@ -96,7 +97,6 @@ const CUSDC_WSTETH_SERIES_MATURITIES = [
     .utc()
     .week(dayjs().week() + 1)
     .startOf("week")
-    .add(1, "day")
     .unix(),
 ];
 

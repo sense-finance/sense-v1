@@ -10,6 +10,7 @@ const log = console.log;
 
 module.exports = async function () {
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
   const { deploy } = deployments;
   const chainId = await getChainId();
 
@@ -26,7 +27,7 @@ module.exports = async function () {
   const masterOracle = MASTER_ORACLE.get(chainId);
   const interestRateModel = INTEREST_RATE_MODEL.get(chainId);
 
-  const divider = await ethers.getContract("Divider");
+  const divider = await ethers.getContract("Divider", signer);
 
   log("\n-------------------------------------------------------")
   log("\nDeploy the Fuse Pool Manager");
@@ -38,7 +39,7 @@ module.exports = async function () {
 
   log("\n-------------------------------------------------------")
   log("\nDeploy Sense Fuse pool via Pool Manager");
-  const poolManager = await ethers.getContract("PoolManager");
+  const poolManager = await ethers.getContract("PoolManager", signer);
   await (
     await poolManager.deployPool(
       "Sense Pool",

@@ -5,9 +5,10 @@ const log = console.log;
 module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
-  const divider = await ethers.getContract("Divider");
+  const divider = await ethers.getContract("Divider", signer);
 
   log("\n-------------------------------------------------------")
   log("\nDeploy the EmergencyStop");
@@ -22,7 +23,7 @@ module.exports = async function () {
 
   log("Can call stop");
   const adapters = await getDeployedAdapters();
-  const emergency = await ethers.getContract("EmergencyStop");
+  const emergency = await ethers.getContract("EmergencyStop", signer);
   await emergency.callStatic.stop(Object.values(adapters));
 
   log("Trust the OZ Defender Relay address on the emergency stop contract");
