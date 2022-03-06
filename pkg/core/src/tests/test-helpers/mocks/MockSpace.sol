@@ -20,6 +20,8 @@ contract MockSpacePool is MockToken {
     using FixedMath for uint256;
 
     MockBalancerVault public vault;
+    uint256 public impliedRateFromPrice;
+    uint256 public priceFromImpliedRate;
     address public pt;
     address public target;
     address public adapter;
@@ -34,6 +36,8 @@ contract MockSpacePool is MockToken {
         pt = _principal;
         target = _target;
         adapter = _adapter;
+        impliedRateFromPrice = 1e18;
+        priceFromImpliedRate = 1e18;
     }
 
     function getPoolId() external view returns (bytes32) {
@@ -100,6 +104,22 @@ contract MockSpacePool is MockToken {
 
     function getFairBPTPriceInTarget(uint256) external view returns (uint256) {
         return 1e18;
+    }
+
+    function getImpliedRateFromPrice(uint256) external view returns (uint256) {
+        return impliedRateFromPrice;
+    }
+
+    function getPriceFromImpliedRate(uint256) external view returns (uint256) {
+        return priceFromImpliedRate;
+    }
+
+    function setImpliedRateFromPrice(uint256 _rate) external {
+        impliedRateFromPrice = _rate;
+    }
+
+    function setPriceFromImpliedRate(uint256 _price) external {
+        priceFromImpliedRate = _price;
     }
 }
 
