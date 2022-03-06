@@ -25,9 +25,16 @@ contract LPOracle is PriceOracle, Trust {
 
     /// @notice PT address -> pool address for oracle reads
     mapping(address => address) public pools;
-    uint32 public constant TWAP_PERIOD = 6 hours;
+    uint256 public twapPeriod;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) {
+        floorRate = 3e18; // 300%
+        twapPeriod = 1 days;
+    }
+
+    function setTwapPeriod(uint256 _twapPeriod) external requiresTrust {
+        twapPeriod = _twapPeriod;
+    }
 
     function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         // The underlying here will be an LP Token
@@ -43,6 +50,6 @@ contract LPOracle is PriceOracle, Trust {
         address target = Adapter(pool.adapter()).target();
 
         // Price per BPT in ETH terms, where the PT side of the pool is valued using the TWAP oracle
-        return pool.getFairBPTPriceInTarget(TWAP_PERIOD).fmul(PriceOracle(msg.sender).price(target));
+        return pool.getFairBPTPriceInTarget(twapPeriod).fmul(PriceOracle(msg.sender).price(target));
     }
 }

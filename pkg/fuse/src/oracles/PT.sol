@@ -27,14 +27,20 @@ contract PTOracle is PriceOracle, Trust {
     /// @notice PT address -> pool address for oracle reads
     mapping(address => address) public pools;
     /// @notice Minimum implied rate this oracle will tolerate for PTs
-    uint32 public floorRate;
+    uint256 public floorRate;
+    uint256 public twapPeriod;
 
     constructor() Trust(msg.sender) {
         floorRate = 3e18; // 300%
+        twapPeriod = 1 days;
     }
 
     function setFloorRate(uint256 _floorRate) external requiresTrust {
         floorRate = _floorRate;
+    }
+
+    function setTwapPeriod(uint256 _twapPeriod) external requiresTrust {
+        twapPeriod = _twapPeriod;
     }
 
     function setPrincipal(address pt, address pool) external requiresTrust {
@@ -64,8 +70,8 @@ contract PTOracle is PriceOracle, Trust {
         BalancerOracle.OracleAverageQuery[] memory queries = new BalancerOracle.OracleAverageQuery[](1);
         queries[0] = BalancerOracle.OracleAverageQuery({
             variable: BalancerOracle.Variable.PAIR_PRICE,
-            secs: TWAP_PERIOD,
-            ago: 120 // take the oracle from 2 mins ago - TWAP_PERIOD to 2 mins ago
+            secs: twapPeriod,
+            ago: 120 // take the oracle from 2 mins ago to twapPeriod ago to 2 mins ago
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
@@ -77,8 +83,8 @@ contract PTOracle is PriceOracle, Trust {
         address target = address(tokens[targeti]);
 
         uint256 impliedRate = SpaceLike(address(pool)).getImpliedRateFromPrice(pTPriceInTarget);
-        if (impliedRate > FLOOR_RATE) {
-            pTPriceInTarget = SpaceLike(address(pool)).getPriceFromImpliedRate(FLOOR_RATE);
+        if (impliedRate > floorRate) {
+            pTPriceInTarget = SpaceLike(address(pool)).getPriceFromImpliedRate(floorRate);
         }
 
         // `Principal Token / target` * `target / ETH` = `Price of Principal Token in ETH`
