@@ -80,6 +80,7 @@ contract PTOracle is PriceOracle, Trust {
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
+        // note: impliedRate is pulled from the BPT price slot in BalancerOracle.OracleAverageQuery
         uint256 impliedRate = results[0];
 
         if (impliedRate > floorRate) {
