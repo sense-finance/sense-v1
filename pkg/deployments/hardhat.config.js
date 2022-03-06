@@ -35,14 +35,15 @@ module.exports = {
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       accounts,
-      gasPrice: 120 * 1000000000, // 12 GWei
+      gasPrice: "auto",
+      gasMultiplier: 1.2,
       chainId: 1,
       saveDeployments: true,
     },
     kovan: {
       url: `https://eth-kovan.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       accounts,
-      gasPrice: 120 * 1000000000, // 12 GWei
+      gasPrice: 120 * 1000000000, // 120 GWei
       chainId: 42,
       saveDeployments: true,
     },
@@ -66,7 +67,6 @@ module.exports = {
       saveDeployments: false,
       blockGasLimit: 21000000,
       // blockNumber: 13491969,
-      // FIXME: we shouldn't need to do this, is the divider really too big?
       allowUnlimitedContractSize: true,
     },
     arbitrum: {
@@ -89,7 +89,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000,
+            runs: 1000000,
           },
         },
       },
@@ -98,7 +98,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1000000,
           },
         },
       },

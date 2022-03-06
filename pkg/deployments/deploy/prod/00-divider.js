@@ -9,8 +9,9 @@ module.exports = async function () {
 
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");
   const cup = DIVIDER_CUP.get(chainId);
+  console.log(`Deploying from ${deployer}`);
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nDeploy the TokenHandler");
   const { address: tokenHandlerAddress } = await deploy("TokenHandler", {
     from: deployer,
@@ -18,7 +19,7 @@ module.exports = async function () {
     log: true,
   });
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nDeploy the Divider");
   await deploy("Divider", {
     from: deployer,
