@@ -156,8 +156,6 @@ contract PoolManagerTest is DSTest {
         }
     }
 
-    event A(bool);
-
     function testMainnetQueueSeries() public {
         uint256 maturity = _getValidMaturity();
 

@@ -19,6 +19,8 @@ interface SpaceLike {
     function getImpliedRateFromPrice(uint256 pTPriceInTarget) external view returns (uint256);
 
     function getPriceFromImpliedRate(uint256 impliedRate) external view returns (uint256);
+
+    function getTotalSamples() external pure returns (uint256);
 }
 
 contract PTOracle is PriceOracle, Trust {
@@ -62,7 +64,7 @@ contract PTOracle is PriceOracle, Trust {
 
         // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
-        (, , , , , , uint256 sampleTs) = pool.getSample(1023);
+        (, , , , , , uint256 sampleTs) = pool.getSample(SpaceLike(address(pool)).getTotalSamples() - 1);
         // Revert if the pool's oracle can't be used yet, preventing this market from being deployed
         // on Fuse until we're able to read a TWAP
         if (sampleTs == 0) revert Errors.OracleNotReady();
@@ -89,7 +91,7 @@ contract PTOracle is PriceOracle, Trust {
 
         // `Principal Token / target` * `target / ETH` = `Price of Principal Token in ETH`
         //
-        // Assumes the caller is the maser oracle, which will have its own strategy for getting the underlying price
+        // Assumes the caller is the master oracle, which will have its own strategy for getting the underlying price
         return pTPriceInTarget.fmul(PriceOracle(msg.sender).price(target));
     }
 }

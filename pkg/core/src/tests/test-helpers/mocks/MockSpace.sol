@@ -114,6 +114,10 @@ contract MockSpacePool is MockToken {
         return priceFromImpliedRate;
     }
 
+    function getTotalSamples() external pure returns (uint256) {
+        return 24;
+    }
+
     function setImpliedRateFromPrice(uint256 _rate) external {
         impliedRateFromPrice = _rate;
     }
