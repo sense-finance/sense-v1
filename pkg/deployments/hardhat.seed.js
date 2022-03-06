@@ -11,10 +11,15 @@ const {
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
+const en = require("dayjs/locale/en");
 const ethers = require("ethers");
 
 dayjs.extend(weekOfYear);
 dayjs.extend(utc);
+dayjs.locale({
+  ...en,
+  weekStart: 1,
+});
 
 // -------------------------------------------------------
 //  FOR DEV SCENARIOS
