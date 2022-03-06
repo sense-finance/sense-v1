@@ -28,14 +28,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== PUBLIC CONSTANTS ========== */
 
-    /// @notice TODO(launch)
-    uint256 public constant SPONSOR_WINDOW = 4 hours;
+    /// @notice Buffer before and after the actual maturity in which only the sponsor can settle the Series
+    uint256 public constant SPONSOR_WINDOW = 3 hours;
 
-    /// @notice TODO(launch)
-    uint256 public constant SETTLEMENT_WINDOW = 2 hours;
+    /// @notice Buffer after the sponsor window in which anyone can settle the Series
+    uint256 public constant SETTLEMENT_WINDOW = 3 hours;
 
     /// @notice 10% issuance fee cap
-    uint256 public constant ISSUANCE_FEE_CAP = 0.1e18; // TODO(launch)
+    uint256 public constant ISSUANCE_FEE_CAP = 0.05e18;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
 
@@ -672,8 +672,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     event SeriesInitialized(
         address adapter,
         uint256 indexed maturity,
-        address principal,
-        address yield,
+        address pt,
+        address yt,
         address indexed sponsor,
         address indexed target
     );

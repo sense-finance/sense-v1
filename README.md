@@ -202,13 +202,11 @@ These are libraries we need as part of the protocol that we've imported from oth
 2. Set `ALCHEMY_KEY` to a valid Alchemy API key
 3. Set `MNEMONIC` to a valid seed phrase for deployments
 
-## Branching TODO(launch)
+## Branching
 
-Right now, we will be just using `dev` and  `master` branches.
+Right now, we will be just using `dev` and  `main` branches.
 
-- `master` represents the contracts live on `mainnet` and all testnets.
-- `alpha` is for the newest version of contracts, and is reserved for deploys to `kovan`
-- `beta` is for promoted alpha contracts, and is reserved for deploys to `rinkeby`
-- `release-candidate` is for promoted beta contracts, and is reserved for deploys to `ropsten`
+- `main` represents the contracts live on `mainnet` and all testnets.
+- `dev` is for the newest version of contracts, and is reserved for deploys to `goerli`
 
-When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility).
+When a new version of the contracts makes its way through the testnet, it eventually becomes promoted in `main`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility).

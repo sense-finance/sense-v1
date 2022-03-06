@@ -387,7 +387,7 @@ contract PeripheryTest is TestHelper {
 
     function testSwapYieldForTarget() public {
         uint256 tBal = 100e18;
-        uint256 targetToBorrow = 8.55e19;
+        uint256 targetToBorrow = 9.025e19;
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yield) = sponsorSampleSeries(address(alice), maturity);
         (, uint256 lscale) = adapter.lscale();

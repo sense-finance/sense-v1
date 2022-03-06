@@ -3,12 +3,12 @@ const { getDeployedAdapters, setStorageAt, toBytes32, STORAGE_SLOT } = require("
 const log = console.log;
 
 module.exports = async function () {
-  const divider = await ethers.getContract("Divider");
-  const periphery = await ethers.getContract("Periphery");
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
+  const divider = await ethers.getContract("Divider", signer);
+  const periphery = await ethers.getContract("Periphery", signer);
 
   const chainId = await getChainId();
-  const signer = await ethers.getSigner(deployer);
 
   const ADAPTER_ABI = [
     "function stake() public view returns (address)",

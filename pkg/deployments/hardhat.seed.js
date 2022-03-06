@@ -1,7 +1,5 @@
 const {
   COMP_TOKEN,
-  DAI_TOKEN,
-  CDAI_TOKEN,
   COMPOUND_PRICE_FEED,
   WETH_TOKEN,
   CUSDC_TOKEN,
@@ -10,6 +8,7 @@ const {
 } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const en = require("dayjs/locale/en");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 const en = require("dayjs/locale/en");
 const ethers = require("ethers");
@@ -43,7 +42,30 @@ const DEV_TARGETS = [
   { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
-const DEV_ADAPTERS = [chainId => ({})];
+const DEV_ADAPTERS = [
+  chainId => ({
+    contractName: "MockAdapter",
+    target: {
+      name: "cUSDC",
+      guard: ethers.utils.parseEther("1"),
+      series: DEV_SERIES_MATURITIES,
+    },
+    // deployments params MUST BE in order
+    deploymentParams: {
+      target: "0x0",
+      oracle: ethers.constants.AddressZero, // oracle address
+      ifee: ethers.utils.parseEther("0.01"),
+      stake: "0x0",
+      stakeSize: ethers.utils.parseEther("0.01"),
+      minm: "0", // 0 weeks
+      maxm: "4838400", // 4 weeks
+      mode: 1, // 0 monthly, 1 weekly;
+      tilt: 0,
+      level: 31,
+      reward: "0x0",
+    },
+  }),
+];
 const DEV_FACTORIES = [
   chainId => ({
     contractName: "MockFactory",
@@ -94,7 +116,7 @@ const MAINNET_ADAPTERS = [
       oracle: MASTER_ORACLE_IMPL.get(chainId), // oracle address
       ifee: ethers.utils.parseEther("0.01"),
       stake: WETH_TOKEN.get(chainId),
-      stakeSize: ethers.utils.parseEther("0.01"),
+      stakeSize: ethers.utils.parseEther("0.0025"),
       minm: "0", // 0 weeks
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
@@ -113,7 +135,7 @@ const MAINNET_ADAPTERS = [
     deploymentParams: {
       target: CUSDC_TOKEN.get(chainId),
       oracle: COMPOUND_PRICE_FEED.get(chainId), // oracle address
-      ifee: ethers.utils.parseEther("0.01"),
+      ifee: ethers.utils.parseEther("0.0025"),
       stake: WETH_TOKEN.get(chainId),
       stakeSize: ethers.utils.parseEther("0.01"),
       minm: "0", // 0 weeks

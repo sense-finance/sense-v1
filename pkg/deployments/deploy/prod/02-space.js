@@ -4,12 +4,13 @@ const log = console.log;
 module.exports = async function () {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+  const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
   if (!BALANCER_VAULT.has(chainId)) throw Error("No balancer vault found");
   const balancerVault = BALANCER_VAULT.get(chainId);
 
-  const divider = await ethers.getContract("Divider");
+  const divider = await ethers.getContract("Divider", signer);
 
   log("\n-------------------------------------------------------");
   log("\nDeploy Space Factory");
@@ -18,10 +19,12 @@ module.exports = async function () {
     from: deployer,
   });
 
-  // For Space.
-  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("31622400")); // TOODO(launch)
-  const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000")); // TOODO(launch)
-  const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950")); // TOODO(launch)
+  // 1 / 10 years in seconds
+  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("316224000"));
+  // 5% of implied yield for selling Target
+  const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
+  // 5% of implied yield for selling PTs
+  const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
   const oracleEnabled = true;
 
   await deploy("SpaceFactory", {

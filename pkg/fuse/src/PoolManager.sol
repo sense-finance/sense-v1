@@ -128,8 +128,6 @@ contract PoolManager is Trust {
         address irModel;
         uint256 reserveFactor;
         uint256 collateralFactor;
-        uint256 closeFactor;
-        uint256 liquidationIncentive;
     }
 
     struct Series {

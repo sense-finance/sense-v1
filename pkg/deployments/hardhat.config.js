@@ -80,7 +80,7 @@ module.exports = {
   },
   paths: {
     sources: "src/",
-    deployments: "deployments_rmv",
+    deployments: "deployments",
   },
   solidity: {
     compilers: [
