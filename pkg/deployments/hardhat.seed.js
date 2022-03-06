@@ -10,7 +10,6 @@ const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
-const en = require("dayjs/locale/en");
 const ethers = require("ethers");
 
 dayjs.extend(weekOfYear);

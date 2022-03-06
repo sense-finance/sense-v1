@@ -28,7 +28,7 @@ contract LPOracle is PriceOracle, Trust {
     uint256 public twapPeriod;
 
     constructor() Trust(msg.sender) {
-        twapPeriod = 1 days;
+        twapPeriod = 6.5 hours;
     }
 
     function setTwapPeriod(uint256 _twapPeriod) external requiresTrust {

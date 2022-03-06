@@ -21,6 +21,8 @@ interface SpaceLike {
     function getPriceFromImpliedRate(uint256 impliedRate) external view returns (uint256);
 
     function getTotalSamples() external pure returns (uint256);
+
+    function adapter() external view returns (address);
 }
 
 contract PTOracle is PriceOracle, Trust {
@@ -34,7 +36,7 @@ contract PTOracle is PriceOracle, Trust {
 
     constructor() Trust(msg.sender) {
         floorRate = 3e18; // 300%
-        twapPeriod = 1 days;
+        twapPeriod = 6.5 days;
     }
 
     function setFloorRate(uint256 _floorRate) external requiresTrust {
@@ -62,7 +64,7 @@ contract PTOracle is PriceOracle, Trust {
         BalancerOracle pool = BalancerOracle(pools[address(pt)]);
         if (pool == BalancerOracle(address(0))) revert Errors.PoolNotSet();
 
-        // if getSample(1023) returns 0s, the oracle buffer is not full yet and a price can't be read
+        // if getSample(buffer_size) returns 0s, the oracle buffer is not full yet and a price can't be read
         // https://dev.balancer.fi/references/contracts/apis/pools/weightedpool2tokens#api
         (, , , , , , uint256 sampleTs) = pool.getSample(SpaceLike(address(pool)).getTotalSamples() - 1);
         // Revert if the pool's oracle can't be used yet, preventing this market from being deployed
@@ -70,28 +72,26 @@ contract PTOracle is PriceOracle, Trust {
         if (sampleTs == 0) revert Errors.OracleNotReady();
 
         BalancerOracle.OracleAverageQuery[] memory queries = new BalancerOracle.OracleAverageQuery[](1);
+        // The BPT price slot in Space carries the implied rate TWAP
         queries[0] = BalancerOracle.OracleAverageQuery({
-            variable: BalancerOracle.Variable.PAIR_PRICE,
+            variable: BalancerOracle.Variable.BPT_PRICE,
             secs: twapPeriod,
-            ago: 120 // take the oracle from 2 mins ago to twapPeriod ago to 2 mins ago
+            ago: 1 hours // take the oracle from 1 hour ago plus twapPeriod ago to 1 hour ago
         });
 
         uint256[] memory results = pool.getTimeWeightedAverage(queries);
-        // get the price of Principal in terms of underlying
-        (uint256 pti, uint256 targeti) = pool.getIndices();
-        uint256 pTPriceInTarget = pti == 1 ? results[0] : FixedMath.WAD.fdiv(results[0]);
+        uint256 impliedRate = results[0];
 
-        (ERC20[] memory tokens, , ) = BalancerVault(pool.getVault()).getPoolTokens(pool.getPoolId());
-        address target = address(tokens[targeti]);
-
-        uint256 impliedRate = SpaceLike(address(pool)).getImpliedRateFromPrice(pTPriceInTarget);
         if (impliedRate > floorRate) {
-            pTPriceInTarget = SpaceLike(address(pool)).getPriceFromImpliedRate(floorRate);
+            impliedRate = floorRate;
         }
+
+        address target = Adapter(SpaceLike(address(pool)).adapter()).target();
 
         // `Principal Token / target` * `target / ETH` = `Price of Principal Token in ETH`
         //
         // Assumes the caller is the master oracle, which will have its own strategy for getting the underlying price
-        return pTPriceInTarget.fmul(PriceOracle(msg.sender).price(target));
+        return
+            SpaceLike(address(pool)).getPriceFromImpliedRate(impliedRate).fmul(PriceOracle(msg.sender).price(target));
     }
 }
