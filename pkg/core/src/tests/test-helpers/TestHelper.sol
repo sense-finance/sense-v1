@@ -65,7 +65,7 @@ contract TestHelper is DSTest {
 
     uint16 public MODE = 0;
     address public ORACLE = address(123);
-    uint64 public ISSUANCE_FEE = 0.1e18;
+    uint64 public ISSUANCE_FEE = 0.05e18;
     uint256 public STAKE_SIZE = 1e18;
     uint256 public MIN_MATURITY = 2 weeks;
     uint256 public MAX_MATURITY = 14 weeks;
@@ -122,9 +122,7 @@ contract TestHelper is DSTest {
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
+            collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
 

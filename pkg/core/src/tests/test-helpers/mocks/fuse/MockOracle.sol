@@ -32,4 +32,8 @@ contract MockOracle is PriceOracle {
     function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external {
         return;
     }
+
+    function setZero(address zero, address pool) external {
+        return;
+    }
 }

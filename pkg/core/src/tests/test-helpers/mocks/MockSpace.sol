@@ -8,6 +8,7 @@ import { Token } from "../../../tokens/Token.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
 import { BalancerPool } from "../../../external/balancer/Pool.sol";
+import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
@@ -21,6 +22,7 @@ contract MockSpacePool is MockToken {
     MockBalancerVault public vault;
     address public pt;
     address public target;
+    uint256 public oraclePrice = 1e18;
 
     constructor(
         address _vault,
@@ -30,6 +32,7 @@ contract MockSpacePool is MockToken {
         vault = MockBalancerVault(_vault);
         pt = _principal;
         target = _target;
+        oraclePrice = 1e18;
     }
 
     function getPoolId() external view returns (bytes32) {
@@ -38,6 +41,32 @@ contract MockSpacePool is MockToken {
 
     function getVault() external view returns (address) {
         return address(vault);
+    }
+
+    function getSample(uint256)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (0, 0, 0, 0, 0, 0, 100);
+    }
+
+    function setOraclePrice(uint256 _price) external {
+        oraclePrice = _price;
+    }
+
+    function getTimeWeightedAverage(BalancerOracle.OracleAverageQuery[] memory) external returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](1);
+        result[0] = oraclePrice;
+        return result;
     }
 
     function onSwap(

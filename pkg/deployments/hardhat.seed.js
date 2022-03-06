@@ -115,7 +115,7 @@ const MAINNET_ADAPTERS = [
       oracle: MASTER_ORACLE_IMPL.get(chainId), // oracle address
       ifee: ethers.utils.parseEther("0.01"),
       stake: WETH_TOKEN.get(chainId),
-      stakeSize: ethers.utils.parseEther("0.01"),
+      stakeSize: ethers.utils.parseEther("0.0025"),
       minm: "0", // 0 weeks
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
@@ -134,7 +134,7 @@ const MAINNET_ADAPTERS = [
     deploymentParams: {
       target: CUSDC_TOKEN.get(chainId),
       oracle: COMPOUND_PRICE_FEED.get(chainId), // oracle address
-      ifee: ethers.utils.parseEther("0.01"),
+      ifee: ethers.utils.parseEther("0.0025"),
       stake: WETH_TOKEN.get(chainId),
       stakeSize: ethers.utils.parseEther("0.01"),
       minm: "0", // 0 weeks

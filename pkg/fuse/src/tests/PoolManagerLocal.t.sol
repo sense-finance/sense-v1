@@ -130,9 +130,7 @@ contract PoolManagerLocalTest is TestHelper {
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
+            collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
         try poolManager.addTarget(address(target), address(adapter)) {
@@ -156,9 +154,7 @@ contract PoolManagerLocalTest is TestHelper {
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
+            collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
         poolManager.addTarget(address(otherTarget), address(adapter));
@@ -212,9 +208,7 @@ contract PoolManagerLocalTest is TestHelper {
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
+            collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
         poolManager.addTarget(address(otherTarget), address(adapter));
@@ -247,9 +241,7 @@ contract PoolManagerLocalTest is TestHelper {
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether,
-            closeFactor: 0.051 ether,
-            liquidationIncentive: 1 ether
+            collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
         poolManager.addTarget(address(otherTarget), address(adapter));
