@@ -30,14 +30,12 @@ const DEV_SERIES_MATURITIES = [
     .utc()
     .week(dayjs().week() + 1)
     .startOf("week")
-    .add(1, "day")
     .unix(),
   // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
     .week(dayjs().week() + 2)
     .startOf("week")
-    .add(1, "day")
     .unix(),
 ];
 const DEV_TARGETS = [
@@ -78,7 +76,6 @@ const CUSDC_WSTETH_SERIES_MATURITIES = [
     .utc()
     .week(dayjs().week() + 1)
     .startOf("week")
-    .add(1, "day")
     .unix(),
 ];
 
