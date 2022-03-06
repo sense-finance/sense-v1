@@ -11,14 +11,29 @@ import { BalancerPool } from "@sense-finance/v1-core/src/external/balancer/Pool.
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
+
+interface SpaceLike {
+    function getFairBPTPriceInTarget(uint256 ptTwapDuration) external view returns (uint256);
+
+    function adapter() external view returns (address);
+}
 
 contract LPOracle is PriceOracle, Trust {
     using FixedMath for uint256;
 
     /// @notice PT address -> pool address for oracle reads
     mapping(address => address) public pools;
+    uint256 public twapPeriod;
 
-    constructor() Trust(msg.sender) {}
+    constructor() Trust(msg.sender) {
+        twapPeriod = 6.5 hours;
+    }
+
+    function setTwapPeriod(uint256 _twapPeriod) external requiresTrust {
+        twapPeriod = _twapPeriod;
+    }
 
     function getUnderlyingPrice(CToken cToken) external view override returns (uint256) {
         // The underlying here will be an LP Token
@@ -30,25 +45,10 @@ contract LPOracle is PriceOracle, Trust {
     }
 
     function _price(address _pool) internal view returns (uint256) {
-        BalancerPool pool = BalancerPool(_pool);
+        SpaceLike pool = SpaceLike(_pool);
+        address target = Adapter(pool.adapter()).target();
 
-        (ERC20[] memory tokens, uint256[] memory balances, ) = BalancerVault(pool.getVault()).getPoolTokens(
-            pool.getPoolId()
-        );
-
-        uint256 balanceA = balances[0];
-        address tokenA = address(tokens[0]);
-
-        uint256 balanceB = balances[1];
-        address tokenB = address(tokens[1]);
-
-        // pool value as a WAD = price of tokenA * amount of tokenA held + price of tokenB * amount of tokenB held
-        uint256 value = PriceOracle(msg.sender).price(tokenA).fmul(balanceA, 10**ERC20(tokenA).decimals()) +
-            PriceOracle(msg.sender).price(tokenB).fmul(balanceB, 10**ERC20(tokenB).decimals());
-
-        // price per lp token = pool value / total supply of lp tokens
-        //
-        // As per Balancer's convention, lp shares will also be WADs
-        return value.fdiv(pool.totalSupply());
+        // Price per BPT in ETH terms, where the PT side of the pool is valued using the TWAP oracle
+        return pool.getFairBPTPriceInTarget(twapPeriod).fmul(PriceOracle(msg.sender).price(target));
     }
 }

@@ -13,6 +13,7 @@ import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOrac
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { BaseAdapter as Adapter } from "../../../adapters/BaseAdapter.sol";
+import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
 
 import { MockToken } from "./MockToken.sol";
 
@@ -20,18 +21,25 @@ contract MockSpacePool is MockToken {
     using FixedMath for uint256;
 
     MockBalancerVault public vault;
+    uint256 public impliedRateFromPrice;
+    uint256 public priceFromImpliedRate;
     address public pt;
     address public target;
+    address public adapter;
     uint256 public oraclePrice = 1e18;
 
     constructor(
         address _vault,
         address _target,
-        address _principal
+        address _principal,
+        address _adapter
     ) MockToken("Mock Yield Space Pool Token", "MYSPT", 18) {
         vault = MockBalancerVault(_vault);
         pt = _principal;
         target = _target;
+        adapter = _adapter;
+        impliedRateFromPrice = 1e18;
+        priceFromImpliedRate = 1e18;
         oraclePrice = 1e18;
     }
 
@@ -93,6 +101,30 @@ contract MockSpacePool is MockToken {
         // Indices to match MockBalancerVault's balances array
         pti = 1;
         targeti = 0;
+    }
+
+    function getFairBPTPriceInTarget(uint256) external view returns (uint256) {
+        return 1e18;
+    }
+
+    function getImpliedRateFromPrice(uint256) external view returns (uint256) {
+        return impliedRateFromPrice;
+    }
+
+    function getPriceFromImpliedRate(uint256) external view returns (uint256) {
+        return priceFromImpliedRate;
+    }
+
+    function getTotalSamples() external pure returns (uint256) {
+        return 24;
+    }
+
+    function setImpliedRateFromPrice(uint256 _rate) external {
+        impliedRateFromPrice = _rate;
+    }
+
+    function setPriceFromImpliedRate(uint256 _price) external {
+        priceFromImpliedRate = _price;
     }
 }
 
@@ -199,7 +231,7 @@ contract MockSpaceFactory {
         (address pt, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
         address _target = Adapter(_adapter).target();
 
-        pool = new MockSpacePool(address(vault), _target, pt);
+        pool = new MockSpacePool(address(vault), _target, pt, _adapter);
         pools[_adapter][_maturity] = address(pool);
 
         vault.setYieldSpace(address(pool));

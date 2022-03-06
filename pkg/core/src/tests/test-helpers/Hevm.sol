@@ -21,4 +21,13 @@ abstract contract Hevm {
 
     // Expects an error on next call
     function expectRevert(bytes calldata) external virtual;
+
+    // Sets the *next* call's msg.sender to be the input address, and the tx.origin to be the second input
+    function prank(address, address) external virtual;
+
+    // Sets all subsequent calls' msg.sender to be the input address until `stopPrank` is called, and the tx.origin to be the second input
+    function startPrank(address, address) external virtual;
+
+    // Resets subsequent calls' msg.sender to be `address(this)`
+    function stopPrank() external virtual;
 }

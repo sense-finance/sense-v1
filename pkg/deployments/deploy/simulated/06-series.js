@@ -54,7 +54,7 @@ module.exports = async function () {
       const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
       log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       let { pt: ptAddress, yt: ytAddress } = await divider.series(adapter.address, seriesMaturity);
-      console.log(ptAddress, ytAddress, "ytAddress");
+      console.log(ptAddress, ytAddress, "ptAddress, ytAddress");
       if (ptAddress === ethers.constants.AddressZero) {
         console.log("sponsoring series");
         const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
@@ -90,8 +90,8 @@ module.exports = async function () {
       log("Initializing Target in pool with the first Join");
       const { _pti, _targeti } = await pool.getIndices();
       const initialBalances = [null, null];
-      initialBalances[_pti] = 0;
-      initialBalances[_targeti] = ethers.utils.parseEther("2000000");
+      initialBalances[_pti.toNumber()] = 0;
+      initialBalances[_targeti.toNumber()] = ethers.utils.parseEther("2000000");
 
       const userData = defaultAbiCoder.encode(["uint[]"], [initialBalances]);
       await balancerVault

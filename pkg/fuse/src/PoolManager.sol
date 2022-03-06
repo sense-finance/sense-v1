@@ -11,7 +11,7 @@ import { BalancerOracle } from "./external/BalancerOracle.sol";
 // Internal references
 import { UnderlyingOracle } from "./oracles/Underlying.sol";
 import { TargetOracle } from "./oracles/Target.sol";
-import { PTOracle } from "./oracles/PTOracle.sol";
+import { PTOracle } from "./oracles/PT.sol";
 import { LPOracle } from "./oracles/LP.sol";
 
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
@@ -47,6 +47,9 @@ interface ComptrollerLike {
 
     /// A list of all markets
     function markets(address cToken) external view returns (bool, uint256);
+
+    /// Pause borrowing for a specific market
+    function _setBorrowPaused(address cToken, bool state) external returns (bool);
 }
 
 interface MasterOracleLike {
@@ -223,7 +226,7 @@ contract PoolManager is Trust {
         emit TargetAdded(target, cTarget);
     }
 
-    /// @notice queues a set of (Principal, LPShare) for a Fuse pool to be deployed once the TWAP is ready
+    /// @notice queues a set of (Principal Tokens, LPShare) for a Fuse pool to be deployed once the TWAP is ready
     /// @dev called by the Periphery, which will know which pool address to set for this Series
     function queueSeries(
         address adapter,
@@ -244,9 +247,9 @@ contract PoolManager is Trust {
         emit SeriesQueued(adapter, maturity, pool);
     }
 
-    /// @notice open method to add queued Principal and LPShares to Fuse pool
+    /// @notice open method to add queued Principal Tokens and LPShares to Fuse pool
     /// @dev this can only be done once the yield space pool has filled its buffer and has a TWAP
-    function addSeries(address adapter, uint256 maturity) external {
+    function addSeries(address adapter, uint256 maturity) external returns (address cPT, address cLPToken) {
         if (sSeries[adapter][maturity].status != SeriesStatus.QUEUED) revert Errors.SeriesNotQueued();
         if (ptParams.irModel == address(0)) revert Errors.PTParamsNotSet();
         if (lpTokenParams.irModel == address(0)) revert Errors.PoolParamsNotSet();
@@ -307,6 +310,11 @@ contract PoolManager is Trust {
             lpTokenParams.collateralFactor
         );
         if (errLpToken != 0) revert Errors.FailedAddLpMarket();
+
+        cPT = ComptrollerLike(comptroller).cTokensByUnderlying(pt);
+        cLPToken = ComptrollerLike(comptroller).cTokensByUnderlying(pool);
+
+        ComptrollerLike(comptroller)._setBorrowPaused(cLPToken, true);
 
         sSeries[adapter][maturity].status = SeriesStatus.ADDED;
 

@@ -21,13 +21,22 @@ module.exports = async function () {
     log: true,
   });
 
+  const queryProcessor = await deploy("QueryProcessor", {
+    from: deployer,
+  });
+
   // For Space.
   const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("31622400"));
   const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
   const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
+  const oracleEnabled = true;
+
   await deploy("SpaceFactory", {
     from: deployer,
-    args: [balancerVaultAddress, divider.address, TS, G1, G2],
+    args: [balancerVaultAddress, divider.address, TS, G1, G2, oracleEnabled],
+    libraries: {
+      QueryProcessor: queryProcessor.address,
+    },
     log: true,
   });
 };

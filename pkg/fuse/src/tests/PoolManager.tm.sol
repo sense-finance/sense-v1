@@ -20,11 +20,26 @@ import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
-import { MockBalancerVault, MockSpaceFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
+import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 
 interface ComptrollerLike {
     function enterMarkets(address[] memory cTokens) external returns (uint256[] memory);
+
+    function cTokensByUnderlying(address underlying) external view returns (address);
+
+    function borrowAllowed(
+        address cToken,
+        address borrower,
+        uint256 borrowAmount
+    ) external returns (uint256);
+
+    struct Market {
+        bool isListed;
+        uint256 collateralFactorMantissa;
+    }
+
+    function markets(address cToken) external view returns (Market memory);
 }
 
 contract PoolManagerTest is DSTest {
@@ -218,42 +233,58 @@ contract PoolManagerTest is DSTest {
             })
         );
 
-        try poolManager.addSeries(address(mockAdapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.PoolParamsNotSet.selector));
-        }
+        poolManager.setParams(
+            "LP_TOKEN_PARAMS",
+            PoolManager.AssetParams({
+                irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+                reserveFactor: 0.1 ether,
+                collateralFactor: 0.5 ether
+            })
+        );
 
-        address[] memory cTokens = new address[](1);
-        cTokens[0] = address(target);
-        ComptrollerLike(poolManager.comptroller()).enterMarkets(cTokens);
+        (address cPT, address cLPToken) = poolManager.addSeries(address(mockAdapter), maturity);
+        ComptrollerLike comptroller = ComptrollerLike(poolManager.comptroller());
+
+        assertTrue(cPT != address(0));
+        assertTrue(cLPToken != address(0));
+
+        address[] memory cTokens = new address[](3);
+        cTokens[0] = address(cTarget);
+        cTokens[1] = address(cPT);
+        cTokens[2] = address(cLPToken);
+
+        ComptrollerLike(comptroller).enterMarkets(cTokens);
 
         uint256 TARGET_IN = 1.1e18;
+        uint256 PT_BORROW = 1e18;
+
+        // Mint some liquidity for lending/borrowing
+        Token(MockSpacePool(pool).target()).mint(address(balancerVault), 1e18);
+        MockSpacePool(pool).mint(address(this), 1e18);
 
         target.mint(address(this), TARGET_IN);
         target.approve(cTarget, TARGET_IN);
+        uint256 originalTargetBalance = target.balanceOf(address(this));
         uint256 err = CToken(cTarget).mint(TARGET_IN);
         assertEq(err, 0);
 
+        // Has the initial Target's value in cTarget
         assertEq(
             (Token(cTarget).balanceOf(address(this)) * CToken(cTarget).exchangeRateCurrent()) /
                 10**CToken(cTarget).decimals(),
             TARGET_IN
         );
 
-        // TODO(launch): @josh to finish mainnet test when the oracle is ready
-        // poolManager.setParams(
-        //     "LP_TOKEN_PARAMS",
-        //     PoolManager.AssetParams({
-        //         irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-        //         reserveFactor: 0.1 ether,
-        //         collateralFactor: 0.5 ether,
-        //         closeFactor: 0.051 ether,
-        //         liquidationIncentive: 1 ether
-        //     })
-        // );
+        err = ComptrollerLike(comptroller).borrowAllowed(address(cPT), address(this), 1e18);
+        // Insufficient liquidity
+        assertEq(err, 4);
 
-        // poolManager.addSeries(address(mockAdapter), maturity);
+        Hevm(HEVM_ADDRESS).expectRevert("borrow is paused");
+        ComptrollerLike(comptroller).borrowAllowed(address(cLPToken), address(this), 1e18);
+
+        err = CToken(cTarget).redeem(Token(cTarget).balanceOf(address(this)));
+        assertEq(err, 0);
+        assertEq(target.balanceOf(address(this)), originalTargetBalance);
     }
 
     function testMainnetAdminPassthrough() public {
