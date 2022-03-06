@@ -28,7 +28,6 @@ contract LPOracle is PriceOracle, Trust {
     uint256 public twapPeriod;
 
     constructor() Trust(msg.sender) {
-        floorRate = 3e18; // 300%
         twapPeriod = 1 days;
     }
 

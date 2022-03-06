@@ -16,9 +16,9 @@ import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
 interface SpaceLike {
-    function getImpliedRateFromPrice(uint256 pTPriceInTarget) public view returns (uint256);
+    function getImpliedRateFromPrice(uint256 pTPriceInTarget) external view returns (uint256);
 
-    function getPriceFromImpliedRate(uint256 impliedRate) public view returns (uint256);
+    function getPriceFromImpliedRate(uint256 impliedRate) external view returns (uint256);
 }
 
 contract PTOracle is PriceOracle, Trust {
