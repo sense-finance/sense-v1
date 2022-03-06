@@ -238,9 +238,7 @@ contract PoolManagerTest is DSTest {
             PoolManager.AssetParams({
                 irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
                 reserveFactor: 0.1 ether,
-                collateralFactor: 0.5 ether,
-                closeFactor: 0.051 ether,
-                liquidationIncentive: 1 ether
+                collateralFactor: 0.5 ether
             })
         );
 

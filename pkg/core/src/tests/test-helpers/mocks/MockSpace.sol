@@ -103,34 +103,6 @@ contract MockSpacePool is MockToken {
         targeti = 0;
     }
 
-    function getSample(uint256)
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (0, 0, 0, 0, 0, 0, 1);
-    }
-
-    function getTimeWeightedAverage(BalancerOracle.OracleAverageQuery[] memory queries)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        uint256[] memory result = new uint256[](queries.length);
-        for (uint256 i = 0; i < queries.length; i++) {
-            result[i] = 1e18;
-        }
-        return result;
-    }
-
     function getFairBPTPriceInTarget(uint256) external view returns (uint256) {
         return 1e18;
     }
