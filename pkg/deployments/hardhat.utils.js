@@ -9,13 +9,13 @@ exports.STORAGE_SLOT = {
   WETH: 3,
 };
 
-// Copy deployments from `deployments` folder to `deployments_data` including tags folders
+// Copy deployments from `deployments` folder to `deployed` including tags folders
 exports.moveDeployments = async function () {
   const tag = await currentTag();
   const currentPath = path.join(__dirname, `deployments/${network.name == "hardhat" ? "localhost" : network.name}`);
   const destinationPath = path.join(
     __dirname,
-    `deployments_data/${network.name == "hardhat" ? "localhost" : network.name}/${tag}/contracts`,
+    `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${tag}/contracts`,
   );
   try {
     await fs.copySync(currentPath, destinationPath);
@@ -30,7 +30,7 @@ exports.writeDeploymentsToFile = async function () {
   const tag = await currentTag();
   const currentPath = path.join(
     __dirname,
-    `deployments_data/${network.name == "hardhat" ? "localhost" : network.name}/${tag}/contracts`,
+    `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${tag}/contracts`,
   );
   let addresses = {};
   try {
@@ -58,7 +58,7 @@ exports.writeAdaptersToFile = async function () {
     const deployedAdapters = await getDeployedAdapters();
     const destinationPath = path.join(
       __dirname,
-      `deployments_data/${network.name == "hardhat" ? "localhost" : network.name}/${tag}`,
+      `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${tag}`,
     );
     await fs.writeJson(`${destinationPath}/adapters.json`, deployedAdapters);
     log(`\Deployed adapters addresses successfully saved to ${destinationPath}/adapters.json`);
