@@ -65,9 +65,9 @@ module.exports = {
       chainId: process.env.CHAIN_ID !== undefined ? parseInt(process.env.CHAIN_ID) : 111,
       gas: 12000000,
       saveDeployments: false,
-      blockGasLimit: 21000000,
+      // blockGasLimit: 21000000,
       // blockNumber: 13491969,
-      allowUnlimitedContractSize: true,
+      // allowUnlimitedContractSize: true,
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
@@ -89,7 +89,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000000,
+            runs: 1500,
           },
         },
       },
@@ -98,7 +98,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000000,
+            runs: 1500,
           },
         },
       },

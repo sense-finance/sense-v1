@@ -9,6 +9,7 @@ module.exports = async function () {
 
   if (!DIVIDER_CUP.has(chainId)) throw Error("No cup found");
   const cup = DIVIDER_CUP.get(chainId);
+
   console.log(`Deploying from ${deployer}`);
 
   log("\n-------------------------------------------------------");

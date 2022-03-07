@@ -10,7 +10,7 @@ module.exports = async function () {
 
   const divider = await ethers.getContract("Divider", signer);
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nDeploy the EmergencyStop");
   const { address: emergencyAddress } = await deploy("EmergencyStop", {
     from: deployer,
@@ -28,7 +28,6 @@ module.exports = async function () {
 
   log("Trust the OZ Defender Relay address on the emergency stop contract");
   await (await emergency.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
-  
 };
 
 module.exports.tags = ["prod:emergency-stop", "scenario:prod"];

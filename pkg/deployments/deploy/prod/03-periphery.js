@@ -14,7 +14,7 @@ module.exports = async function () {
   const spaceFactory = await ethers.getContract("SpaceFactory", signer);
   const poolManager = await ethers.getContract("PoolManager", signer);
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nDeploy Periphery");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,

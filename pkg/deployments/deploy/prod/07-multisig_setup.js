@@ -16,7 +16,7 @@ module.exports = async function () {
   const periphery = await ethers.getContract("Periphery", signer);
   const emergencyStop = await ethers.getContract("EmergencyStop", signer);
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nAdd multisig as trusted address on contracts");
 
   log("Trust the multisig address on the token handler");
@@ -37,7 +37,7 @@ module.exports = async function () {
   log("Trust the multisig address on the emergency stop");
   await (await emergencyStop.setIsTrusted(multisig, true)).wait();
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nRemove deployer address from trusted on contracts");
 
   log("Untrust deployer on the token handler");
@@ -58,8 +58,8 @@ module.exports = async function () {
   log("Untrust deployer on the emergency stop");
   await (await emergencyStop.setIsTrusted(deployer, false)).wait();
 
-  log("\n-------------------------------------------------------")
-  log("\Sanity checks: deployer address cannot execute trusted functions anymore...");
+  log("\n-------------------------------------------------------");
+  log("Sanity checks: deployer address cannot execute trusted functions anymore...");
 
   const calls = [
     tokenHandler.callStatic.setIsTrusted(dev, false),
@@ -70,10 +70,10 @@ module.exports = async function () {
     emergencyStop.callStatic.setIsTrusted(dev, false),
   ];
   const res = await Promise.allSettled(calls);
-  if (res.every(r => r.status === 'rejected')) {
-    log("\Sanity checks: OK!");
+  if (res.every(r => r.status === "rejected")) {
+    log("Sanity checks: OK!");
   } else {
-    throw Error('Sanity checks: FAILED');
+    throw Error("Sanity checks: FAILED");
   }
 };
 

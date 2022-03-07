@@ -49,7 +49,7 @@ module.exports = async function () {
     )
   ).wait();
 
-  log("Set target params via Pool Manager");
+  log("Set asset params via Pool Manager");
   const targetParams = {
     irModel: interestRateModel,
     reserveFactor: ethers.utils.parseEther("0"),

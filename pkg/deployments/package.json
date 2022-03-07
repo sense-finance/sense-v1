@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-deployments",
-    "version": "0.5.5-beta",
+    "version": "1.0.0",
     "description": "Sense V1 Deployments",
     "license": "AGPL-3.0-only",
     "repository": {

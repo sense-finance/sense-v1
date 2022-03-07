@@ -16,9 +16,9 @@ module.exports = async function () {
   ];
   const adapters = await getDeployedAdapters();
 
-  log("\n-------------------------------------------------------")
-  log("SPONSOR SERIES")
-  log("-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
+  log("SPONSOR SERIES");
+  log("-------------------------------------------------------");
 
   for (let factory of global.mainnet.FACTORIES) {
     for (let t of factory(chainId).targets) {
@@ -40,7 +40,7 @@ module.exports = async function () {
 
     for (let seriesMaturity of series) {
       const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
-      
+
       log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
       // TODO: should check allowance to avoid calling this multiple times
       const stakeAddress = await adapter.stake();
@@ -52,15 +52,15 @@ module.exports = async function () {
       const balance = await stake.balanceOf(deployer); // deployer's stake balance
       if (balance.lt(stakeSize)) {
         // if fork from mainnet
-        if (chainId == '111' && process.env.FORK_TOP_UP == 'true') {
-          await generateStakeTokens(stakeAddress, tokenAbi)
+        if (chainId == "111" && process.env.FORK_TOP_UP == "true") {
+          await generateStakeTokens(stakeAddress, tokenAbi);
         } else {
-          throw Error("Not enough stake funds on wallet")
+          throw Error("Not enough stake funds on wallet");
         }
       }
       log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
-      log("\n-------------------------------------------------------")
+      log("\n-------------------------------------------------------");
     }
   }
 
@@ -72,14 +72,10 @@ module.exports = async function () {
     // Get storage slot index
     const index = ethers.utils.solidityKeccak256(
       ["uint256", "uint256"],
-      [deployer, STORAGE_SLOT[symbol] || 2] // key, slot
+      [deployer, STORAGE_SLOT[symbol] || 2], // key, slot
     );
 
-    await setStorageAt(
-      stakeAddress,
-      index.toString(),
-      toBytes32(ethers.utils.parseEther("10000")).toString()
-    );
+    await setStorageAt(stakeAddress, index.toString(), toBytes32(ethers.utils.parseEther("10000")).toString());
     log(`\n10'000 ${symbol} transferred to deployer: ${deployer}`);
   }
 };
