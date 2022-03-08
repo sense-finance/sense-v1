@@ -542,7 +542,7 @@ contract Periphery is Trust {
             uint256 lpShares
         )
     {
-        // (1) compute target, issue Ps & Yts & add liquidity to space
+        // (1) compute target, issue PTs & YTs & add liquidity to space
         (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
 
         if (issued > 0) {
@@ -631,8 +631,10 @@ contract Periphery is Trust {
                 tBal += divider.redeem(adapter, maturity, _ptBal);
             }
         } else {
-            // (2) Sell Principal Tokens for Target
-            tBal += _swap(pt, target, _ptBal, poolId, minAccepted);
+            // (2) Sell Principal Tokens for Target (if there are)
+            if (_ptBal > 0) {
+                tBal += _swap(pt, target, _ptBal, poolId, minAccepted);
+            }
         }
     }
 

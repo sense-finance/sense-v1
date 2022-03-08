@@ -79,46 +79,29 @@ module.exports = async function () {
       const pool = new ethers.Contract(poolAddress, spaceAbi, signer);
       const poolId = await pool.getPoolId();
 
-      const { tokens } = await balancerVault.getPoolTokens(poolId);
-
       log("Sending PT to mock Balancer Vault");
-      await pt.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await target.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await pt.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       const { defaultAbiCoder } = ethers.utils;
 
-      log("Initializing Target in pool with the first Join");
-      const { _pti, _targeti } = await pool.getIndices();
-      const initialBalances = [null, null];
-      initialBalances[_pti.toNumber()] = 0;
-      initialBalances[_targeti.toNumber()] = ethers.utils.parseEther("2000000");
+      log("Make all Periphery approvals");
+      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await yt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
-      const userData = defaultAbiCoder.encode(["uint[]"], [initialBalances]);
-      await balancerVault
-        .joinPool(poolId, deployer, deployer, {
-          assets: tokens,
-          maxAmountsIn: [ethers.constants.MaxUint256, ethers.constants.MaxUint256],
-          fromInternalBalance: false,
-          userData,
-        })
-        .then(tx => tx.wait());
+      log("Initializing Target in pool with the first Join");
+      
+      log("- adding liquidity via target");
+      await periphery
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("2000000"), 1)
+        .then(t => t.wait()); 
 
       log("Making swap to init PT");
-      await balancerVault
-        .swap(
-          {
-            poolId,
-            kind: 0, // given in
-            assetIn: pt.address,
-            assetOut: target.address,
-            amount: ethers.utils.parseEther("40000"),
-            userData: defaultAbiCoder.encode(["uint[]"], [[0, 0]]),
-          },
-          { sender: deployer, fromInternalBalance: false, recipient: deployer, toInternalBalance: false },
-          0, // `limit` – no min expectations of return around tokens out testing GIVEN_IN
-          ethers.constants.MaxUint256, // `deadline` – no deadline
-        )
-        .then(tx => tx.wait());
+      await periphery
+        .swapPTsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("40000"), 0)
+        .then(t => t.wait()); 
 
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
@@ -158,11 +141,6 @@ module.exports = async function () {
       // Sanity check that all the swaps on this testchain are working
       log(`--- Sanity check swaps ---`);
 
-      await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await yt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-
       log("swapping target for pt");
       await periphery
         .swapTargetForPTs(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
@@ -199,6 +177,24 @@ module.exports = async function () {
       await periphery
         .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), [0, 0], 0)
         .then(t => t.wait());
+
+      // (WIP) one side liquidity removal sanity check
+      // const lpBalance = await pool.balanceOf(deployer);
+      // log("removing all liquidity to target");
+      // await periphery
+      //   .removeLiquidityToTarget(adapter.address, seriesMaturity, lpBalance, [0, 0], 0)
+      //   .then(t => t.wait());
+
+      // log("adding liquidity via target");
+      // await periphery
+      //   .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
+      //   .then(t => t.wait());
+      
+      // log("removing liquidity to target whenn one side liquidity");
+      // await periphery
+      //   .removeLiquidityToTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), [0, 0], 0)
+      //   .then(t => t.wait());
+      
     }
   }
 };

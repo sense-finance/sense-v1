@@ -145,6 +145,7 @@ contract MockBalancerVault {
         uint256 limit,
         uint256 deadline
     ) external payable returns (uint256) {
+        if (singleSwap.amount == 0) revert("BAL#510");
         Token(address(singleSwap.assetIn)).transferFrom(msg.sender, address(this), singleSwap.amount);
         uint256 amountInOrOut;
         if (address(singleSwap.assetIn) == yieldSpacePool.pt()) {

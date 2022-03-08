@@ -905,6 +905,40 @@ contract PeripheryTest is TestHelper {
         assertEq(zBal, 1e18);
     }
 
+    function testRemoveLiquidityWhenOneSideLiquidity() public {
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 tBase = 10**target.decimals();
+        (address pt, ) = sponsorSampleSeries(address(alice), maturity);
+        (, uint256 lscale) = adapter.lscale();
+        uint256[] memory minAmountsOut = new uint256[](2);
+
+        // add one side liquidity
+        bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
+
+        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
+
+        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
+            address(adapter),
+            maturity,
+            lpBal,
+            minAmountsOut,
+            0
+        );
+
+        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
+        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
+
+        assertEq(targetBal, tBalAfter - tBalBefore);
+        assertEq(lpBalAfter, 0);
+        assertEq(zBalAfter, zBalBefore);
+        assertEq(zBal, 0);
+    }
+
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
