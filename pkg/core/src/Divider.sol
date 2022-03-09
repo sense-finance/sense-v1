@@ -294,8 +294,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         tBal = uBal.fdiv(cscale);
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
 
-        // Notify only when Series is not settled as when it is, the _collect() call above 
-        // would trigger a _redeemYT which will call notify
+        // Notify the Adapter only when Series is not settled, because when it is, the _collect() call above 
+        // would trigger a _redeemYT and call notify
         if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         unchecked {
             // Safety: bounded by the Target's total token supply
