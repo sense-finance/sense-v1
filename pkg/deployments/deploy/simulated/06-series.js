@@ -92,17 +92,17 @@ module.exports = async function () {
       await yt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       log("Initializing Target in pool with the first Join");
-      
+
       let data = await balancerVault.getPoolTokens(poolId);
       let balanes = data.balances;
-      console.log('totalSupply', (await pool.totalSupply()).toString()); // its 0
-      console.log('PT balance', balanes[1].toString()); // its 0
-      console.log('Target balance', balanes[0].toString()); // its 0
+      console.log("totalSupply", (await pool.totalSupply()).toString()); // its 0
+      console.log("PT balance", balanes[1].toString()); // its 0
+      console.log("Target balance", balanes[0].toString()); // its 0
 
       // log("- adding liquidity via target");
       // await periphery
       //   .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
-      //   .then(t => t.wait()); 
+      //   .then(t => t.wait());
 
       // data = await balancerVault.getPoolTokens(poolId);
       // balanes = data.balances;
@@ -129,19 +129,19 @@ module.exports = async function () {
       log("- adding liquidity via target");
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("2000000"), 1)
-        .then(t => t.wait()); 
+        .then(t => t.wait());
       data = await balancerVault.getPoolTokens(poolId);
       balanes = data.balances;
-      console.log('totalSupply', (await pool.totalSupply()).toString()); // its 2199999780000022000997800
-      console.log('PT balance', balanes[1].toString()); // its 0
-      console.log('Target balance', balanes[0].toString()); // > its 2000000000000000000909091
+      console.log("totalSupply", (await pool.totalSupply()).toString()); // its 2199999780000022000997800
+      console.log("PT balance", balanes[1].toString()); // its 0
+      console.log("Target balance", balanes[0].toString()); // > its 2000000000000000000909091
 
       log("Making swap to init PT");
       data = await balancerVault.getPoolTokens(poolId);
       balanes = data.balances;
       await periphery
         .swapPTsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("40000"), 0)
-        .then(t => t.wait()); 
+        .then(t => t.wait());
 
       // swapPTsForTarget fails with BAL#001
       // it fails on _updateOracle when trying to calculate impliedRate
@@ -152,7 +152,7 @@ module.exports = async function () {
       // totalSupply -> 2199999780000022000997800
       // balanceTarget -> 2000000000000000000909091
       // _initScale -> 1100000000000000000
-      // ((0 + 2199999780000022000997800) / (2000000000000000000909091 * 1100000000000000000)) - 1e18 -> -1e18
+      // ((0 + 2199999780000022000997800) / (2000000000000000000909091 * 1100000000000000000)) - 1e18 -> -9.9999990000e-8
 
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
@@ -217,7 +217,7 @@ module.exports = async function () {
       await periphery
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
         .then(t => t.wait());
-      
+
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
       // If there's anything more than dust in the Periphery, throw
       if (peripheryDust > 100) {
@@ -229,9 +229,7 @@ module.exports = async function () {
       const ptBalance = await pt.balanceOf(deployer);
       const tBalance = await target.balanceOf(deployer);
       log("removing all liquidity");
-      await periphery
-        .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false)
-        .then(t => t.wait());
+      await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
       const ptBalanceAfter = await pt.balanceOf(deployer);
       const tBalanceAfter = await target.balanceOf(deployer);
       if (ptBalanceAfter.lte(ptBalance) || tBalanceAfter.lte(tBalance)) {
