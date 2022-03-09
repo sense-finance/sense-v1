@@ -955,20 +955,17 @@ contract PeripheryTest is TestHelper {
         // add liquidity to mockUniSwapRouter
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-
         uint256 ptToBeIssued;
         {
             // calculate pt to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 fee = adapter.ifee();
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(
-                    lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], 
-                    tBase),
+                balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
                 tBase
             );
             ptToBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
-            
+
             // prepare minAmountsOut for removing liquidity
             minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale, FixedMath.WAD); // underlying amount
             minAmountsOut[1] = ptToBeIssued; // pt to be issued
@@ -978,7 +975,7 @@ contract PeripheryTest is TestHelper {
 
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
-        
+
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
         (uint256 targetBal, uint256 zBal) = bob.doremoveLiquidity(
@@ -1014,7 +1011,19 @@ contract PeripheryTest is TestHelper {
 
         (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
         uint256[] memory minAmountsOut = new uint256[](2);
-        try bob.doMigrateLiquidity(address(adapter), dstAdapter, maturity, maturity, lpShares, minAmountsOut, 0, 0, true) {
+        try
+            bob.doMigrateLiquidity(
+                address(adapter),
+                dstAdapter,
+                maturity,
+                maturity,
+                lpShares,
+                minAmountsOut,
+                0,
+                0,
+                true
+            )
+        {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetMismatch.selector));
