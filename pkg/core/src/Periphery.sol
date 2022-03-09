@@ -42,13 +42,13 @@ contract Periphery is Trust {
     /// @notice Sense core Divider address
     Divider public immutable divider;
 
-    /// @notice Sense core Divider address
+    /// @notice Sense money market manager
     PoolManager public immutable poolManager;
 
-    /// @notice Sense core Divider address
+    /// @notice Sense Space Factory
     SpaceFactoryLike public immutable spaceFactory;
 
-    /// @notice Sense core Divider address
+    /// @notice Balancer Vault
     BalancerVault public immutable balancerVault;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
@@ -112,8 +112,8 @@ contract Periphery is Trust {
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
-    /// @notice Deploy and onboard an Adapter
-    /// @dev Deploys a new Adapter via an Adapter Factory
+    /// @notice Deploy and onboard a verified Adapter
+    /// @dev Deploys a new verified Adapter via a whitelisted Adapter Factory
     /// @param f Factory to use
     /// @param target Target to onboard
     function deployAdapter(address f, address target) external returns (address adapter) {
@@ -125,8 +125,7 @@ contract Periphery is Trust {
         onboardAdapter(adapter);
     }
 
-    /// @dev Onboards an Adapter
-    /// @dev Onboards Adapter's target onto Fuse if called from a trusted address
+    /// @dev Onboards an unverifeid Adapter
     /// @param adapter Adapter to onboard
     function onboardAdapter(address adapter) public {
         ERC20 target = ERC20(Adapter(adapter).target());
@@ -168,8 +167,8 @@ contract Periphery is Trust {
     ) external returns (uint256 ptBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        underlying.approve(adapter, uBal); // approve adapter to pull uBal
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
+        underlying.approve(adapter, uBal);                            // approve adapter to pull uBal
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);         // wrap underlying into target
         ptBal = _swapTargetForPTs(adapter, maturity, tBal, minAccepted);
     }
 
@@ -202,9 +201,9 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) external returns (uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
-        underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
-        underlying.approve(adapter, uBal); // approve adapter to pull underlying
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
+        underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        underlying.approve(adapter, uBal);                            // approve adapter to pull underlying
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);         // wrap underlying into target
         ytBal = _swapTargetForYTs(adapter, maturity, tBal, minAccepted);
     }
 
@@ -235,9 +234,9 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) external returns (uint256 uBal) {
         uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted); // swap Principal Tokens for target
-        ERC20(Adapter(adapter).target()).approve(adapter, tBal); // approve adapter to pull target
-        uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
-        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // transfer underlying to msg.sender
+        ERC20(Adapter(adapter).target()).approve(adapter, tBal);                 // approve adapter to pull target
+        uBal = Adapter(adapter).unwrapTarget(tBal);                              // unwrap target into underlying
+        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal);     // transfer underlying to msg.sender
     }
 
     /// @notice Swap YT for Target of a particular series
@@ -267,7 +266,7 @@ contract Periphery is Trust {
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal);
     }
 
-    /// @notice Adds liquidity providing target
+    /// @notice Adds liquidity, providing target
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to provide
@@ -322,9 +321,12 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Principal Tokens to underlying
-    /// @return tBal amount of target received and ptBal amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
+    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the
+    ///                      amount of LP shares provided
+    /// @param minAccepted only used when removing liquidity on/after maturity and 
+    ///                    its the min accepted when swapping Principal Tokens to underlying
+    /// @return tBal amount of target received and ptBal amount of Principal Tokens
+    ///              (in case it's called after maturity and redeem is restricted)
     function removeLiquidityToTarget(
         address adapter,
         uint256 maturity,
@@ -341,9 +343,12 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Principal Tokens to underlying
-    /// @return uBal amount of underlying received and ptBal Principal Tokens (in case it's called after maturity and redeem is restricted)
+    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the 
+    ///                      amount of LP shares provided
+    /// @param minAccepted only used when removing liquidity on/after maturity and its the
+    ///                    min accepted when swapping Principal Tokens to underlying
+    /// @return uBal amount of underlying received and ptBal Principal Tokens (in case it's
+    ///              called after maturity and redeem is restricted)
     function removeLiquidityToUnderlying(
         address adapter,
         uint256 maturity,
@@ -364,10 +369,13 @@ contract Periphery is Trust {
     /// @param srcMaturity Maturity date for the source Series
     /// @param dstMaturity Maturity date for the destination Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    /// @param minAccepted Min accepted amount of target when swapping Principal Tokens (only used when removing liquidity on/after maturity)
+    /// @param minAmountsOut Minimum accepted amounts of PTs and Target 
+    ///                      given the amount of LP shares provided
+    /// @param minAccepted Min accepted amount of target when swapping 
+    ///                    Principal Tokens (only used when removing liquidity on/after maturity)
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @dev see return description of _addLiquidity. It also returns amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
+    /// @dev see return description of _addLiquidity. It also returns 
+    ///      amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
     function migrateLiquidity(
         address srcAdapter,
         address dstAdapter,
@@ -495,6 +503,7 @@ contract Periphery is Trust {
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (ytBal * 10**(18 - ERC20(yt).decimals()) <= MIN_YT_SWAP_IN) revert Errors.SwapTooSmall();
+        
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer YTs into this contract if needed
@@ -622,7 +631,10 @@ contract Periphery is Trust {
         uint256 _ptBal;
         (tBal, _ptBal) = _removeLiquidityFromSpace(poolId, pt, target, minAmountsOut, lpBal);
 
+        // If the series has matured 
         if (divider.mscale(adapter, maturity) > 0) {
+
+            // Some adapters restrict redemption
             if (uint256(Adapter(adapter).level()).redeemRestricted()) {
                 ERC20(pt).safeTransfer(msg.sender, _ptBal);
                 ptBal = _ptBal;
@@ -657,7 +669,7 @@ contract Periphery is Trust {
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
-    /// @dev ERC-3156 Flash loan callback
+    /// @dev near-compatible ERC-3156 Flash loan callback
     function onFlashLoan(
         bytes calldata,
         address initiator,
