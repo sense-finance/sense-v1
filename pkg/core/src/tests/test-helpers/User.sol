@@ -280,7 +280,7 @@ contract User {
         return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode);
     }
 
-    function doremoveLiquidity(
+    function doRemoveLiquidity(
         address adapter,
         uint256 maturity,
         uint256 tBal,

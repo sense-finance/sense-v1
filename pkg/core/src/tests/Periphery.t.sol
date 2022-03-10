@@ -772,7 +772,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, uint256 zBal) = bob.doremoveLiquidity(
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBal,
@@ -824,7 +824,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, ) = bob.doremoveLiquidity(address(adapter), maturity, lpBal, minAmountsOut, 0, true);
+        (uint256 targetBal, ) = bob.doRemoveLiquidity(address(adapter), maturity, lpBal, minAmountsOut, 0, true);
 
         uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
@@ -892,7 +892,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), 3e18);
-        (uint256 targetBal, uint256 zBal) = bob.doremoveLiquidity(
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
             address(aAdapter),
             maturity,
             3e18,
@@ -923,7 +923,7 @@ contract PeripheryTest is TestHelper {
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBalBefore);
-        (uint256 targetBal, uint256 zBal) = bob.doremoveLiquidity(
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBalBefore,
@@ -978,7 +978,7 @@ contract PeripheryTest is TestHelper {
 
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, uint256 zBal) = bob.doremoveLiquidity(
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBal,

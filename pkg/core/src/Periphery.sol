@@ -324,6 +324,7 @@ contract Periphery is Trust {
     /// @param lpBal Balance of LP tokens to provide
     /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Principal Tokens to underlying
+    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
     /// @return tBal amount of target received and ptBal amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
     function removeLiquidity(
         address adapter,
@@ -331,9 +332,9 @@ contract Periphery is Trust {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
-        bool swap
+        bool intoTarget
     ) external returns (uint256 tBal, uint256 ptBal) {
-        (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, swap);
+        (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, intoTarget);
         ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal); // Send Target back to the User
     }
 
@@ -344,17 +345,18 @@ contract Periphery is Trust {
     /// @param lpBal Balance of LP tokens to provide
     /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Principal Tokens to underlying
-    /// @return uBal amount of underlying received and ptBal Principal Tokens (in case it's called after maturity and redeem is restricted)
+    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
+    /// @return uBal amount of underlying received and ptBal Principal Tokens (in case it's called after maturity and redeem is restricted or intoTarget is false)
     function removeLiquidityAndUnwrapTarget(
         address adapter,
         uint256 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
-        bool swap
+        bool intoTarget
     ) external returns (uint256 uBal, uint256 ptBal) {
         uint256 tBal;
-        (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, swap);
+        (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, intoTarget);
         ERC20(Adapter(adapter).target()).approve(adapter, tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying back to the User
     }
@@ -369,7 +371,8 @@ contract Periphery is Trust {
     /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
     /// @param minAccepted Min accepted amount of target when swapping Principal Tokens (only used when removing liquidity on/after maturity)
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @dev see return description of _addLiquidity. It also returns amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
+    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
+    /// @dev see return description of _addLiquidity. It also returns amount of PTs (in case it's called after maturity and redeem is restricted or inttoTarget is false)
     function migrateLiquidity(
         address srcAdapter,
         address dstAdapter,
@@ -379,7 +382,7 @@ contract Periphery is Trust {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         uint8 mode,
-        bool swap
+        bool intoTarget
     )
         external
         returns (
@@ -391,7 +394,7 @@ contract Periphery is Trust {
     {
         if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
         uint256 tBal;
-        (tBal, ptBal) = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted, swap);
+        (tBal, ptBal) = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted, intoTarget);
         (tAmount, issued, lpShares) = _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
     }
 
@@ -612,7 +615,7 @@ contract Periphery is Trust {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
-        bool swap
+        bool intoTarget
     ) internal returns (uint256 tBal, uint256 ptBal) {
         address target = Adapter(adapter).target();
         address pt = divider.pt(adapter, maturity);
@@ -634,7 +637,7 @@ contract Periphery is Trust {
             }
         } else {
             // (2) Sell Principal Tokens for Target (if there are)
-            if (_ptBal > 0 && swap) {
+            if (_ptBal > 0 && intoTarget) {
                 tBal += _swap(pt, target, _ptBal, poolId, minAccepted);
             } else {
                 ptBal = _ptBal;
