@@ -199,11 +199,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
         if (_settled(adapter, maturity)) revert Errors.IssueOnSettle();
 
-        // Some adapters restrict issuance from other addresses
+        // Some adapters restrict issuance
         uint256 level = adapterMeta[adapter].level;
         if (level.issueRestricted() && msg.sender != adapter) revert Errors.IssuanceRestricted();
 
-        // PTs and YTs have an eventual claim to the Target
+        // Target is the asset that PTs and YTs have a claim to
         ERC20 target = ERC20(Adapter(adapter).target());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
@@ -269,7 +269,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
-        // Some adapters restrict combination from other addresses
+        // Some adapters restrict combination
         uint256 level = adapterMeta[adapter].level;
         if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();
 
@@ -308,8 +308,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @dev The balance of redeemable Target is a function of the change in Scale
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Amount of PT to burn, which should be equivalent to the amount of Underlying owed to the caller 
-    ///             for yield stripping applications
+    /// @param uBal Amount of PT to burn, which should be equivalent to the amount of Underlying owed to the caller for yield stripping applications
     function redeem(
         address adapter,
         uint256 maturity,
@@ -579,7 +578,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
             (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
-            // If adapter has been disabled, send stake to community multisig
+            // If adapter has been disabled, send stake to Series sponsor
             address stakeDst = adapterMeta[adapter].enabled ? cup : _series.sponsor;
 
             ERC20(target).safeTransferFrom(adapter, cup, _series.reward);
@@ -618,12 +617,14 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         if (hour != 0 || minute != 0 || second != 0) return false;
 
-        // monthly mode, beginning of month, 00:00 UTC
-        // weekly mode, beginning of week, 00:00 UTC
         uint256 mode = Adapter(adapter).mode();
+
+        // monthly mode, beginning of month, 00:00 UTC
         if (mode == 0) {
             return day == 1;
         }
+
+        // weekly mode, beginning of week (Monday), 00:00 UTC
         if (mode == 1) {
             return DateTime.getDayOfWeek(maturity) == 1;
         }

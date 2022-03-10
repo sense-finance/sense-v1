@@ -321,12 +321,9 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the
-    ///                      amount of LP shares provided
-    /// @param minAccepted only used when removing liquidity on/after maturity and 
-    ///                    its the min accepted when swapping Principal Tokens to underlying
-    /// @return tBal amount of target received and ptBal amount of Principal Tokens
-    ///              (in case it's called after maturity and redeem is restricted)
+    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
+    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Principal Tokens to underlying
+    /// @return tBal amount of target received and ptBal amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
     function removeLiquidityToTarget(
         address adapter,
         uint256 maturity,
@@ -343,12 +340,9 @@ contract Periphery is Trust {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the 
-    ///                      amount of LP shares provided
-    /// @param minAccepted only used when removing liquidity on/after maturity and its the
-    ///                    min accepted when swapping Principal Tokens to underlying
-    /// @return uBal amount of underlying received and ptBal Principal Tokens (in case it's
-    ///              called after maturity and redeem is restricted)
+    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
+    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping Principal Tokens to underlying
+    /// @return uBal amount of underlying received and ptBal Principal Tokens (in case it's called after maturity and redeem is restricted)
     function removeLiquidityToUnderlying(
         address adapter,
         uint256 maturity,
@@ -369,13 +363,10 @@ contract Periphery is Trust {
     /// @param srcMaturity Maturity date for the source Series
     /// @param dstMaturity Maturity date for the destination Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut Minimum accepted amounts of PTs and Target 
-    ///                      given the amount of LP shares provided
-    /// @param minAccepted Min accepted amount of target when swapping 
-    ///                    Principal Tokens (only used when removing liquidity on/after maturity)
+    /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
+    /// @param minAccepted Min accepted amount of target when swapping Principal Tokens (only used when removing liquidity on/after maturity)
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @dev see return description of _addLiquidity. It also returns 
-    ///      amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
+    /// @dev see return description of _addLiquidity. It also returns amount of Principal Tokens (in case it's called after maturity and redeem is restricted)
     function migrateLiquidity(
         address srcAdapter,
         address dstAdapter,
@@ -669,7 +660,7 @@ contract Periphery is Trust {
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
-    /// @dev near-compatible ERC-3156 Flash loan callback
+    /// @dev inspired by the ERC-3156 Flash loan callback
     function onFlashLoan(
         bytes calldata,
         address initiator,
