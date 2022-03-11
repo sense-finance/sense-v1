@@ -36,7 +36,7 @@ contract PTOracle is PriceOracle, Trust {
 
     constructor() Trust(msg.sender) {
         floorRate = 3e18; // 300%
-        twapPeriod = 6.5 days;
+        twapPeriod = 5.5 hours;
     }
 
     function setFloorRate(uint256 _floorRate) external requiresTrust {
