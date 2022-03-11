@@ -67,7 +67,7 @@ module.exports = {
       // saveDeployments: false,
       // blockGasLimit: 21000000,
       // blockNumber: 13491969,
-      // allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: process.env.SIM === "true" ? true : false,
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",

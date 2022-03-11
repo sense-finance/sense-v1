@@ -772,12 +772,13 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBal,
             minAmountsOut,
-            0
+            0,
+            true
         );
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
@@ -823,7 +824,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, ) = bob.doRemoveLiquidityToTarget(address(adapter), maturity, lpBal, minAmountsOut, 0);
+        (uint256 targetBal, ) = bob.doRemoveLiquidity(address(adapter), maturity, lpBal, minAmountsOut, 0, true);
 
         uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
@@ -891,18 +892,109 @@ contract PeripheryTest is TestHelper {
         uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), 3e18);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidityToTarget(
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
             address(aAdapter),
             maturity,
             3e18,
             minAmountsOut,
-            0
+            0,
+            true
         );
 
         assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(address(bob)) - tBalBefore);
         assertEq(zBalBefore, ERC20(pt).balanceOf(address(bob)) - minAmountsOut[1]);
         assertEq(zBal, ERC20(pt).balanceOf(address(bob)) - zBalBefore);
         assertEq(zBal, 1e18);
+    }
+
+    function testRemoveLiquidityWhenOneSideLiquidity() public {
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 tBase = 10**target.decimals();
+        (address pt, ) = sponsorSampleSeries(address(alice), maturity);
+        (, uint256 lscale) = adapter.lscale();
+        uint256[] memory minAmountsOut = new uint256[](2);
+
+        // add one side liquidity
+        bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
+
+        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
+
+        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBalBefore);
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
+            address(adapter),
+            maturity,
+            lpBalBefore,
+            minAmountsOut,
+            0,
+            true
+        );
+
+        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
+        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
+
+        assertTrue(tBalAfter > 0);
+        assertEq(targetBal, tBalAfter - tBalBefore);
+        assertEq(zBalAfter, zBalBefore);
+        assertEq(lpBalAfter, 0);
+        assertEq(zBal, 0);
+        assertTrue(lpBalBefore > 0);
+    }
+
+    function testRemoveLiquidityAndSkipSwap() public {
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        uint256 tBase = 10**target.decimals();
+        (address pt, ) = sponsorSampleSeries(address(alice), maturity);
+        (, uint256 lscale) = adapter.lscale();
+        uint256[] memory minAmountsOut = new uint256[](2);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToBalancerVault(maturity, 1000e18);
+
+        uint256 ptToBeIssued;
+        {
+            // calculate pt to be issued when adding liquidity
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            uint256 fee = adapter.ifee();
+            uint256 proportionalTarget = tBal.fmul(
+                balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
+                tBase
+            );
+            ptToBeIssued = (proportionalTarget - fee).fmul(lscale, FixedMath.WAD);
+
+            // prepare minAmountsOut for removing liquidity
+            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale, FixedMath.WAD); // underlying amount
+            minAmountsOut[1] = ptToBeIssued; // pt to be issued
+        }
+
+        bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
+
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
+        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+
+        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
+        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
+            address(adapter),
+            maturity,
+            lpBal,
+            minAmountsOut,
+            0,
+            false
+        );
+
+        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
+        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
+        uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
+
+        assertEq(tBalAfter, tBalBefore + targetBal);
+        assertEq(lpBalAfter, 0);
+        assertEq(zBal, ptToBeIssued);
+        assertEq(zBalAfter, zBalBefore + ptToBeIssued);
     }
 
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {
@@ -919,7 +1011,19 @@ contract PeripheryTest is TestHelper {
 
         (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
         uint256[] memory minAmountsOut = new uint256[](2);
-        try bob.doMigrateLiquidity(address(adapter), dstAdapter, maturity, maturity, lpShares, minAmountsOut, 0, 0) {
+        try
+            bob.doMigrateLiquidity(
+                address(adapter),
+                dstAdapter,
+                maturity,
+                maturity,
+                lpShares,
+                minAmountsOut,
+                0,
+                0,
+                true
+            )
+        {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetMismatch.selector));

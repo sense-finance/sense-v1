@@ -280,14 +280,15 @@ contract User {
         return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode);
     }
 
-    function doRemoveLiquidityToTarget(
+    function doRemoveLiquidity(
         address adapter,
         uint256 maturity,
         uint256 tBal,
         uint256[] memory minAmountsOut,
-        uint256 minAccepted
+        uint256 minAccepted,
+        bool swap
     ) public returns (uint256, uint256) {
-        return periphery.removeLiquidityToTarget(adapter, maturity, tBal, minAmountsOut, minAccepted);
+        return periphery.removeLiquidity(adapter, maturity, tBal, minAmountsOut, minAccepted, swap);
     }
 
     function doMigrateLiquidity(
@@ -298,7 +299,8 @@ contract User {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
-        uint8 mode
+        uint8 mode,
+        bool swap
     )
         public
         returns (
@@ -317,7 +319,8 @@ contract User {
                 lpBal,
                 minAmountsOut,
                 minAccepted,
-                mode
+                mode,
+                true
             );
     }
 
