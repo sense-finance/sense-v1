@@ -99,32 +99,24 @@ module.exports = async function () {
       console.log("PT balance", balanes[1].toString()); // its 0
       console.log("Target balance", balanes[0].toString()); // its 0
 
-      // log("- adding liquidity via target");
-      // await periphery
-      //   .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
-      //   .then(t => t.wait());
+      log("- adding liquidity via target");
+      await periphery
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1)
+        .then(t => t.wait());
 
-      // data = await balancerVault.getPoolTokens(poolId);
-      // balanes = data.balances;
-      // console.log('totalSupply', (await pool.totalSupply()).toString()); // its 1100000000000000000
-      // console.log('PT balance', balanes[1].toString()); // its 0
-      // console.log('Target balance', balanes[0].toString()); // its 1000000000000000000
+      data = await balancerVault.getPoolTokens(poolId);
+      balanes = data.balances;
 
-      // // one side liquidity removal sanity check
-      // log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
-      // const lpBalance = await pool.balanceOf(deployer);
-      // data = await balancerVault.getPoolTokens(poolId);
-      // balanes = data.balances;
+      // one side liquidity removal sanity check
+      log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
+      let lpBalance = await pool.balanceOf(deployer);
+      data = await balancerVault.getPoolTokens(poolId);
+      balanes = data.balances;
 
-      // await periphery
-      //   .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false)
-      //   .then(t => t.wait());
+      await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
 
-      // data = await balancerVault.getPoolTokens(poolId);
-      // balanes = data.balances;
-      // console.log('totalSupply', (await pool.totalSupply()).toString()); // its 1000000 (should be 0? its dust from math ops?)
-      // console.log('PT balance', balanes[1].toString()); // its 0
-      // console.log('Target balance', balanes[0].toString()); // its 909091 (should be 0? its dust from math ops?)
+      data = await balancerVault.getPoolTokens(poolId);
+      balanes = data.balances;
 
       log("- adding liquidity via target");
       await periphery
@@ -142,17 +134,6 @@ module.exports = async function () {
       await periphery
         .swapPTsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("40000"), 0)
         .then(t => t.wait());
-
-      // swapPTsForTarget fails with BAL#001
-      // it fails on _updateOracle when trying to calculate impliedRate
-      // uint256 impliedRate = balancePT.add(totalSupply())
-      //     .divDown(balanceTarget.mulDown(_initScale))
-      //     .sub(FixedPoint.ONE);
-      // balancePT -> 0
-      // totalSupply -> 2199999780000022000997800
-      // balanceTarget -> 2000000000000000000909091
-      // _initScale -> 1100000000000000000
-      // ((0 + 2199999780000022000997800) / (2000000000000000000909091 * 1100000000000000000)) - 1e18 -> -9.9999990000e-8
 
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
