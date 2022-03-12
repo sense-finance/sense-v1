@@ -152,6 +152,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
     function flashFee(address token, uint256 amount) external view returns (uint256) {
+        if (token != target) revert Errors.TokenNotSupported();
         return 0;
     }
 

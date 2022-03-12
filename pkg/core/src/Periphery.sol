@@ -663,11 +663,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20 target = ERC20(Adapter(adapter).target());
         uint256 _allowance = target.allowance(address(this), address(adapter));
         if (_allowance < amount) target.approve(address(adapter), type(uint256).max);
-        bool result;
         bytes memory data = abi.encode(adapter, maturity, ytBalIn);
-        uint256 tBalBefore = target.balanceOf(address(this));
-        (result) = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amount, data);
-        tBal = target.balanceOf(address(this)) - tBalBefore;
+        bool result = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amount, data);
+        tBal = target.balanceOf(address(this));
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
