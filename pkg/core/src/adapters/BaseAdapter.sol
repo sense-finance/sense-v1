@@ -4,24 +4,15 @@ pragma solidity 0.8.11;
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { IERC3156FlashLender } from "../external/flashloan/IERC3156FlashLender.sol";
+import { IERC3156FlashBorrower } from "../external/flashloan/IERC3156FlashBorrower.sol";
 
 // Internal references
 import { Divider } from "../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-interface IPeriphery {
-    function onFlashLoan(
-        bytes calldata data,
-        address initiator,
-        address adapter,
-        uint256 maturity,
-        uint256 cBalIn,
-        uint256 amount
-    ) external returns (bytes32, uint256);
-}
-
 /// @title Assign value to Target tokens
-abstract contract BaseAdapter {
+abstract contract BaseAdapter is IERC3156FlashLender {
     using SafeTransferLib for ERC20;
 
     /* ========== CONSTANTS ========== */
@@ -113,32 +104,22 @@ abstract contract BaseAdapter {
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
     /// @param receiver The contract receiving target, needs to implement the
+    /// @param token Target address
     /// `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.
-    /// @param adapter adapter address
-    /// @param maturity maturity
-    /// @param cBalIn YT amount the user has sent in
     /// @param amount The amount of target lent.
+    /// @param data (encoded adapter address, maturity and YT amount the use has sent in)
     function flashLoan(
-        bytes calldata data,
-        address receiver,
-        address adapter,
-        uint256 maturity,
-        uint256 cBalIn,
-        uint256 amount
-    ) external returns (bool, uint256) {
+        IERC3156FlashBorrower receiver,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bool) {
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         ERC20(target).safeTransfer(address(receiver), amount);
-        (bytes32 keccak, uint256 value) = IPeriphery(receiver).onFlashLoan(
-            data,
-            msg.sender,
-            adapter,
-            maturity,
-            cBalIn,
-            amount
-        );
+        bytes32 keccak = IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, target, amount, 0, data);
         if (keccak != CALLBACK_SUCCESS) revert Errors.FlashCallbackFailed();
         ERC20(target).safeTransferFrom(address(receiver), address(this), amount);
-        return (true, value);
+        return true;
     }
 
     /* ========== REQUIRED VALUE GETTERS ========== */
@@ -169,6 +150,14 @@ abstract contract BaseAdapter {
     /// @param amount Target amount
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
+
+    function flashFee(address token, uint256 amount) external view returns (uint256) {
+        return 0;
+    }
+
+    function maxFlashLoan(address token) external view override returns (uint256) {
+        return ERC20(token).balanceOf(address(this));
+    }
 
     /* ========== OPTIONAL HOOKS ========== */
 
