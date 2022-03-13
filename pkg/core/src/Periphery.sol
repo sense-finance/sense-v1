@@ -167,8 +167,8 @@ contract Periphery is Trust {
     ) external returns (uint256 ptBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        underlying.approve(adapter, uBal);                            // approve adapter to pull uBal
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);         // wrap underlying into target
+        underlying.approve(adapter, uBal); // approve adapter to pull uBal
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ptBal = _swapTargetForPTs(adapter, maturity, tBal, minAccepted);
     }
 
@@ -202,8 +202,8 @@ contract Periphery is Trust {
     ) external returns (uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        underlying.approve(adapter, uBal);                            // approve adapter to pull underlying
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);         // wrap underlying into target
+        underlying.approve(adapter, uBal); // approve adapter to pull underlying
+        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ytBal = _swapTargetForYTs(adapter, maturity, tBal, minAccepted);
     }
 
@@ -234,9 +234,9 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) external returns (uint256 uBal) {
         uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted); // swap Principal Tokens for target
-        ERC20(Adapter(adapter).target()).approve(adapter, tBal);                 // approve adapter to pull target
-        uBal = Adapter(adapter).unwrapTarget(tBal);                              // unwrap target into underlying
-        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal);     // transfer underlying to msg.sender
+        ERC20(Adapter(adapter).target()).approve(adapter, tBal); // approve adapter to pull target
+        uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
+        ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // transfer underlying to msg.sender
     }
 
     /// @notice Swap YT for Target of a particular series
@@ -494,7 +494,7 @@ contract Periphery is Trust {
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (ytBal * 10**(18 - ERC20(yt).decimals()) <= MIN_YT_SWAP_IN) revert Errors.SwapTooSmall();
-        
+
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // Transfer YTs into this contract if needed
@@ -622,9 +622,8 @@ contract Periphery is Trust {
         uint256 _ptBal;
         (tBal, _ptBal) = _removeLiquidityFromSpace(poolId, pt, target, minAmountsOut, lpBal);
 
-        // If the series has matured 
+        // If the series has matured
         if (divider.mscale(adapter, maturity) > 0) {
-
             // Some adapters restrict redemption
             if (uint256(Adapter(adapter).level()).redeemRestricted()) {
                 ERC20(pt).safeTransfer(msg.sender, _ptBal);
