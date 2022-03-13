@@ -429,11 +429,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // last collection to a synthetic scale weighted based on the scale on their last collect,
         // the time elapsed, and the current scale
         if (to != address(0)) {
-            uint256 cBal = YT(_series.yt).balanceOf(to);
+            uint256 ytBal = YT(_series.yt).balanceOf(to);
             // If receiver holds yields, we set lscale to a computed "synthetic" lscales value that,
             // for the updated yield balance, still assigns the correct amount of yield.
-            lscales[adapter][maturity][to] = cBal > 0
-                ? _reweightLScale(adapter, maturity, cBal, uBalTransfer, to, _series.maxscale)
+            lscales[adapter][maturity][to] = ytBal > 0
+                ? _reweightLScale(adapter, maturity, ytBal, uBalTransfer, to, _series.maxscale)
                 : _series.maxscale;
             uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale);
             Adapter(adapter).notify(usr, tBalTransfer, false);
@@ -449,13 +449,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     function _reweightLScale(
         address adapter,
         uint256 maturity,
-        uint256 cBal,
+        uint256 ytBal,
         uint256 uBal,
         address receiver,
         uint256 scale
     ) internal view returns (uint256) {
         uint256 uBase = 10**adapterMeta[adapter].uDecimals;
-        return (cBal + uBal).fdiv((cBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
+        return (ytBal + uBal).fdiv((ytBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
     }
 
     function _redeemYT(
