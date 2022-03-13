@@ -104,13 +104,12 @@ abstract contract BaseAdapter is IERC3156FlashLender {
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
     /// @param receiver The contract receiving target, needs to implement the
-    /// @param token Target address
     /// `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.
     /// @param amount The amount of target lent.
     /// @param data (encoded adapter address, maturity and YT amount the use has sent in)
     function flashLoan(
         IERC3156FlashBorrower receiver,
-        address token,
+        address,
         uint256 amount,
         bytes calldata data
     ) external returns (bool) {
@@ -151,7 +150,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     /// @return amount of underlying returned
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
-    function flashFee(address token, uint256 amount) external view returns (uint256) {
+    function flashFee(address token, uint256) external view returns (uint256) {
         if (token != target) revert Errors.TokenNotSupported();
         return 0;
     }
