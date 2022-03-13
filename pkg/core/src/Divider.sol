@@ -34,7 +34,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Buffer after the sponsor window in which anyone can settle the Series
     uint256 public constant SETTLEMENT_WINDOW = 3 hours;
 
-    /// @notice 10% issuance fee cap
+    /// @notice 5% issuance fee cap
     uint256 public constant ISSUANCE_FEE_CAP = 0.05e18;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
@@ -53,7 +53,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Guarded launch flag
     bool public guarded = true;
 
-    /// @notice Number of adapters (including turned off)
+    /// @notice Number of adapters (including those turned off)
     uint248 public adapterCounter;
 
     /// @notice adapter ID -> adapter address
@@ -77,13 +77,13 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint48 issuance;
         // Yield ERC20 token
         address yt;
-        // % of underlying principal initially reserved for Yield
+        // % of underlying principal initially reserved for YTs
         uint96 tilt;
         // Actor who initialized the Series
         address sponsor;
         // Tracks fees due to the series' settler
         uint256 reward;
-        // Scale at issuance
+        // Scale at series initialization
         uint256 iscale;
         // Scale at maturity
         uint256 mscale;
@@ -172,6 +172,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         uint256 mscale = Adapter(adapter).scale();
         series[adapter][maturity].mscale = mscale;
 
+        // Update maxscale if mscale is higher
         if (mscale > series[adapter][maturity].maxscale) {
             series[adapter][maturity].maxscale = mscale;
         }
@@ -198,9 +199,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
         if (_settled(adapter, maturity)) revert Errors.IssueOnSettle();
 
+        // Some adapters restrict issuance
         uint256 level = adapterMeta[adapter].level;
         if (level.issueRestricted() && msg.sender != adapter) revert Errors.IssuanceRestricted();
 
+        // Target is the asset that PTs and YTs have a claim to
         ERC20 target = ERC20(Adapter(adapter).target());
 
         // Take the issuance fee out of the deposited Target, and put it towards the settlement reward
@@ -224,6 +227,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Update values on adapter
         Adapter(adapter).notify(msg.sender, tBalSubFee, true);
 
+        // Some adapters restrict collection
         uint256 scale = level.collectDisabled() ? series[adapter][maturity].iscale : Adapter(adapter).scale();
 
         // Determine the amount of Underlying equal to the Target being sent in (the principal)
@@ -242,10 +246,11 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
                 scale
             );
 
-        // Mint equal amounts of PT and YT
+        // Mint equal amounts of PT and YT, equivalent to the Underlying balance
         Token(series[adapter][maturity].pt).mint(msg.sender, uBal);
         YT(series[adapter][maturity].yt).mint(msg.sender, uBal);
 
+        // Move target from issuer to the adapter
         target.safeTransferFrom(msg.sender, adapter, tBal);
 
         emit Issued(adapter, maturity, uBal, msg.sender);
@@ -264,19 +269,20 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
+        // Some adapters restrict combination
         uint256 level = adapterMeta[adapter].level;
         if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();
 
-        // Burn the PT
+        // Burn the PTs
         Token(series[adapter][maturity].pt).burn(msg.sender, uBal);
 
-        // Collect whatever excess is due
+        // Collect whatever excess is due to YTs
         uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));
 
         uint256 cscale = series[adapter][maturity].mscale;
         bool settled = _settled(adapter, maturity);
         if (!settled) {
-            // If it's not settled, then YT won't be burned automatically in `_collect()`
+            // If it's not settled, then YT won't be burned automatically in `_collect()`, so burn YTs
             YT(series[adapter][maturity].yt).burn(msg.sender, uBal);
             // If collect has been restricted, use the initial scale, otherwise use the current scale
             cscale = level.collectDisabled()
@@ -288,7 +294,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         tBal = uBal.fdiv(cscale);
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
 
-        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a _redeemYT which will call notify
+        // Notify the Adapter only when Series is not settled, because when it is, the _collect() call above
+        // would trigger a _redeemYT and call notify
         if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);
         unchecked {
             // Safety: bounded by the Target's total token supply
@@ -301,7 +308,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @dev The balance of redeemable Target is a function of the change in Scale
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Amount of PT to burn, which should be equivalent to the amount of Underlying owed to the caller
+    /// @param uBal Amount of PT to burn, which should be equivalent to the amount of Underlying owed to the caller for yield stripping applications
     function redeem(
         address adapter,
         uint256 maturity,
@@ -316,17 +323,18 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         // Burn the caller's PT
         Token(series[adapter][maturity].pt).burn(msg.sender, uBal);
 
-        // Principal Token holder's share of the principal = (1 - part of the principal that belongs to Yield)
+        // PT's share of the principal = (1 - part of the principal that belongs to YTs)
         uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;
 
-        // If Principal Token are at a loss and Yield have some principal to help cover the shortfall,
-        // take what we can from Yield Token's principal
+        // If PTs are at a loss and YTs have some principal to help cover the shortfall,
+        // take what we can from YTs principal
         if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {
             tBal = (uBal * zShare) / series[adapter][maturity].mscale;
         } else {
             tBal = uBal.fdiv(series[adapter][maturity].maxscale);
         }
 
+        // Adapters can execute logic after each redemption
         if (!level.redeemHookDisabled()) {
             Adapter(adapter).onRedeem(uBal, series[adapter][maturity].mscale, series[adapter][maturity].maxscale, tBal);
         }
@@ -343,6 +351,8 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address to
     ) external nonReentrant onlyYT(adapter, maturity) whenNotPaused returns (uint256 collected) {
         uint256 uBal = YT(msg.sender).balanceOf(usr);
+
+        // Collect only from YTs transferred or collect from entire YT balance
         return _collect(usr, adapter, maturity, uBal, uBalTransfer > 0 ? uBalTransfer : uBal, to);
     }
 
@@ -351,7 +361,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @param usr User who's collecting for their YTs
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal yield Token balance
+    /// @param uBal YT balance
     /// @param uBalTransfer original transfer value
     /// @param to address to set the lscale value from usr
     function _collect(
@@ -364,7 +374,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) internal returns (uint256 collected) {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
-        // If the adapter is disabled, its Yield Token can only collect
+        // If the adapter is disabled, its YT can only collect
         // if associated Series has been settled, which implies that an admin
         // has backfilled it
         if (!adapterMeta[adapter].enabled && !_settled(adapter, maturity)) revert Errors.InvalidAdapter();
@@ -376,7 +386,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
         uint256 level = adapterMeta[adapter].level;
         if (level.collectDisabled()) {
-            // If this Series has been settled, we ensure everyone's YT will
+            // If this Series has been settled, we ensure everyone's YTs will
             // collect yield accrued since issuance
             if (_settled(adapter, maturity)) {
                 lscale = series[adapter][maturity].iscale;
@@ -386,7 +396,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             }
         }
 
-        // If the Series has been settled, this should be their last collect, so redeem the user's Yield Tokens for them
+        // If the Series has been settled, this should be their last collect, so redeem the user's YTs for them
         if (_settled(adapter, maturity)) {
             _redeemYT(usr, adapter, maturity, uBal);
         } else {
@@ -423,6 +433,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
         }
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, collected);
+
         Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens
 
         // If this collect is a part of a token transfer to another address, set the receiver's
@@ -546,7 +557,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     ) external requiresTrust {
         if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();
 
+        // Public settlement cannot occur beyond the cutoff timestamp
         uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;
+
         // Admin can never backfill before maturity
         if (block.timestamp <= cutoff) revert Errors.OutOfWindowBoundaries();
 
@@ -565,9 +578,12 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
             (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
+            // If adapter has been disabled, send stake to Series sponsor
             address stakeDst = adapterMeta[adapter].enabled ? cup : _series.sponsor;
+
             ERC20(target).safeTransferFrom(adapter, cup, _series.reward);
             series[adapter][maturity].reward = 0;
+
             ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);
         }
 
@@ -600,10 +616,15 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);
 
         if (hour != 0 || minute != 0 || second != 0) return false;
+
         uint256 mode = Adapter(adapter).mode();
+
+        // monthly mode, beginning of month, 00:00 UTC
         if (mode == 0) {
             return day == 1;
         }
+
+        // weekly mode, beginning of week (Monday), 00:00 UTC
         if (mode == 1) {
             return DateTime.getDayOfWeek(maturity) == 1;
         }
