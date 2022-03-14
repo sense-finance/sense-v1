@@ -183,7 +183,7 @@ contract PeripheryTest is TestHelper {
             address(reward)
         );
         periphery.verifyAdapter(address(otherAdapter), true);
-        periphery.onboardAdapter(address(otherAdapter));
+        periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
@@ -205,7 +205,7 @@ contract PeripheryTest is TestHelper {
             DEFAULT_LEVEL,
             address(reward)
         );
-        periphery.onboardAdapter(address(otherAdapter));
+        periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
@@ -229,7 +229,7 @@ contract PeripheryTest is TestHelper {
             address(reward)
         );
         periphery.verifyAdapter(address(otherAdapter), true);
-        periphery.onboardAdapter(address(otherAdapter));
+        periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
@@ -252,7 +252,7 @@ contract PeripheryTest is TestHelper {
             DEFAULT_LEVEL,
             address(reward)
         );
-        periphery.onboardAdapter(address(otherAdapter));
+        periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
@@ -279,7 +279,7 @@ contract PeripheryTest is TestHelper {
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
 
-        try periphery.onboardAdapter(address(otherAdapter)) {
+        try periphery.onboardAdapter(address(otherAdapter), true) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
@@ -305,7 +305,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setIsTrusted(address(this), false); // admin verification
 
-        try periphery.onboardAdapter(address(otherAdapter)) {
+        try periphery.onboardAdapter(address(otherAdapter), true) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
@@ -332,7 +332,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
-        periphery.onboardAdapter(address(otherAdapter)); // non admin onboarding
+        periphery.onboardAdapter(address(otherAdapter), true); // non admin onboarding
         (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
@@ -356,9 +356,29 @@ contract PeripheryTest is TestHelper {
             address(reward)
         );
         periphery.setIsTrusted(address(this), false);
-        periphery.onboardAdapter(address(otherAdapter)); // no-admin onboarding
+        periphery.onboardAdapter(address(otherAdapter), true); // no-admin onboarding
         (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
+    }
+
+    function testReOnboardVerifiedAdapterAfterUpgradingPeriphery() public {
+        Periphery somePeriphery = new Periphery(
+            address(divider),
+            address(poolManager),
+            address(spaceFactory),
+            address(balancerVault)
+        );
+        somePeriphery.onboardAdapter(address(adapter), false);
+
+        assertTrue(periphery.verified(address(adapter)));
+
+        (, bool enabled, , , ) = divider.adapterMeta(address(adapter));
+        assertTrue(enabled);
+
+        // try sponsoring
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yield) = sponsorSampleSeries(address(alice), maturity);
+        assertTrue(yield != address(0));
     }
 
     /* ========== adapter verification tests ========== */
@@ -1082,7 +1102,7 @@ contract PeripheryTest is TestHelper {
         );
 
         periphery.verifyAdapter(address(aAdapter), true);
-        periphery.onboardAdapter(address(aAdapter));
+        periphery.onboardAdapter(address(aAdapter), true);
         divider.setGuard(address(aAdapter), 10 * 2**128);
 
         alice.doApprove(address(target), address(divider));

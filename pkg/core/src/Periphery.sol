@@ -122,7 +122,7 @@ contract Periphery is Trust {
         adapter = AdapterFactory(f).deployAdapter(target);
         emit AdapterDeployed(adapter);
         _verifyAdapter(adapter, true);
-        _onboardAdapter(adapter);
+        _onboardAdapter(adapter, true);
     }
 
     /* ========== LIQUIDITY UTILS ========== */
@@ -413,16 +413,17 @@ contract Periphery is Trust {
     /// @notice Onboard a single Adapter w/o needing a factory
     /// @dev Called by a trusted address, approves Target for issuance, and onboards adapter to the Divider
     /// @param adapter Adapter to onboard
-    function onboardAdapter(address adapter) public {
+    /// @param addAdapter Whether to call divider.addAdapter or not (useful e.g when upgrading Periphery)
+    function onboardAdapter(address adapter, bool addAdapter) public {
         if (!divider.permissionless() && !isTrusted[msg.sender]) revert Errors.OnlyPermissionless();
-        _onboardAdapter(adapter);
+        _onboardAdapter(adapter, addAdapter);
     }
 
-    function _onboardAdapter(address adapter) private {
+    function _onboardAdapter(address adapter, bool addAdapter) private {
         ERC20 target = ERC20(Adapter(adapter).target());
         target.approve(address(divider), type(uint256).max);
         target.approve(address(adapter), type(uint256).max);
-        divider.addAdapter(adapter);
+        if (addAdapter) divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
 
