@@ -121,17 +121,8 @@ contract Periphery is Trust {
         if (!AdapterFactory(f).exists(target)) revert Errors.TargetNotSupported();
         adapter = AdapterFactory(f).deployAdapter(target);
         emit AdapterDeployed(adapter);
-        verifyAdapter(adapter, true);
-        divider.addAdapter(adapter);
-        emit AdapterOnboarded(adapter);
-    }
-
-    /// @notice Onboard a single Adapter w/o needing a factory
-    /// @dev Called by a trusted address, approves Target for issuance, and onboards adapter to the Divider
-    /// @param adapter Adapter to onboard
-    function onboardAdapter(address adapter) public requiresTrust {
-        divider.addAdapter(adapter);
-        emit AdapterOnboarded(adapter);
+        _verifyAdapter(adapter, true);
+        _onboardAdapter(adapter);
     }
 
     /* ========== LIQUIDITY UTILS ========== */
@@ -410,9 +401,29 @@ contract Periphery is Trust {
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
     /// @param adapter Adapter to verify
     function verifyAdapter(address adapter, bool addToPool) public requiresTrust {
+        _verifyAdapter(adapter, addToPool);
+    }
+
+    function _verifyAdapter(address adapter, bool addToPool) private {
         verified[adapter] = true;
         if (addToPool) poolManager.addTarget(Adapter(adapter).target(), adapter);
         emit AdapterVerified(adapter);
+    }
+
+    /// @notice Onboard a single Adapter w/o needing a factory
+    /// @dev Called by a trusted address, approves Target for issuance, and onboards adapter to the Divider
+    /// @param adapter Adapter to onboard
+    function onboardAdapter(address adapter) public {
+        if (!divider.permissionless() && !isTrusted[msg.sender]) revert Errors.OnlyPermissionless();
+        _onboardAdapter(adapter);
+    }
+
+    function _onboardAdapter(address adapter) private {
+        ERC20 target = ERC20(Adapter(adapter).target());
+        target.approve(address(divider), type(uint256).max);
+        target.approve(address(adapter), type(uint256).max);
+        divider.addAdapter(adapter);
+        emit AdapterOnboarded(adapter);
     }
 
     /* ========== INTERNAL UTILS ========== */
@@ -480,9 +491,6 @@ contract Periphery is Trust {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // issue pts and yts & swap pts for target
-        ERC20 target = ERC20(Adapter(adapter).target());
-        uint256 _allowance = target.allowance(address(this), address(divider));
-        if (_allowance != type(uint256).max) target.approve(address(divider), type(uint256).max);
         issued = divider.issue(adapter, maturity, tBal);
         tBal = _swap(divider.pt(adapter, maturity), Adapter(adapter).target(), issued, pool.getPoolId(), minAccepted);
 
@@ -584,9 +592,6 @@ contract Periphery is Trust {
         uint256 ptBalInTarget = ptInitialized ? _computeTarget(adapter, balances[pti], balances[targeti], tBal) : 0;
 
         // Issue PT & YT (skip if first pool provision)
-        ERC20 target = ERC20(Adapter(adapter).target());
-        uint256 _allowance = target.allowance(address(this), address(divider));
-        if (_allowance != type(uint256).max) target.approve(address(divider), type(uint256).max);
         issued = ptBalInTarget > 0 ? divider.issue(adapter, maturity, ptBalInTarget) : 0;
 
         // Add liquidity to Space & send the LP Shares to recipient

@@ -122,7 +122,7 @@ contract PeripheryTest is TestHelper {
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        address adapter = periphery.deployAdapter(address(factory), address(newTarget));
+        alice.doDeployAdapter(address(newTarget));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -135,7 +135,7 @@ contract PeripheryTest is TestHelper {
         factory.addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.deployAdapter(address(factory), address(newTarget));
+        alice.doDeployAdapter(address(factory), address(newTarget));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -145,25 +145,27 @@ contract PeripheryTest is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
-        try periphery.deployAdapter(address(factory), address(someTarget)) {
+        try alice.doDeployAdapter(address(factory), address(someTarget)) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
-        periphery.deployAdapter(address(someFactory), address(someTarget));
+        alice.doDeployAdapter(address(someFactory), address(someTarget));
     }
 
     function testCantDeployAdapterIfTargetIsNotSupported() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        try periphery.deployAdapter(address(factory), address(newTarget)) {
+        try alice.doDeployAdapter(address(factory), address(newTarget)) {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
     }
 
-    function testOnboardAdapterVerified() public {
+    /* ========== admin onboarding tests ========== */
+
+    function testAdminOnboardVerifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
         MockAdapter otherAdapter = new MockAdapter(
@@ -182,14 +184,13 @@ contract PeripheryTest is TestHelper {
         );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget != address(0));
+        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        assertTrue(enabled);
     }
 
-    function testCantOnboardAdapterUnverifiedWhenNotPermissionless() public {
+    function testAdminOnboardUnverifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        periphery.setIsTrusted(address(this), false);
         MockAdapter otherAdapter = new MockAdapter(
             address(divider),
             address(otherTarget),
@@ -204,15 +205,257 @@ contract PeripheryTest is TestHelper {
             DEFAULT_LEVEL,
             address(reward)
         );
-        hevm.expectRevert("UNTRUSTED");
         periphery.onboardAdapter(address(otherAdapter));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget == address(0));
+        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        assertTrue(enabled);
+    }
+
+    function testAdminOnboardVerifiedAdapterWhenPermissionlesss() public {
+        divider.setPermissionless(true);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.verifyAdapter(address(otherAdapter), true);
+        periphery.onboardAdapter(address(otherAdapter));
+        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        assertTrue(enabled);
+    }
+
+    function testAdminOnboardUnverifiedAdapterWhenPermissionlesss() public {
+        divider.setPermissionless(true);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.onboardAdapter(address(otherAdapter));
+        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        assertTrue(enabled);
+    }
+
+    /* ==========  non-admin onboarding tests ========== */
+
+    function testOnboardVerifiedAdapter() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        periphery.setIsTrusted(address(this), false);
+
+        try periphery.onboardAdapter(address(otherAdapter)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        }
+    }
+
+    function testOnboardUnverifiedAdapter() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.setIsTrusted(address(this), false); // admin verification
+
+        try periphery.onboardAdapter(address(otherAdapter)) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        }
+    }
+
+    function testOnboardVerifiedAdapterWhenPermissionlesss() public {
+        divider.setPermissionless(true);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        periphery.setIsTrusted(address(this), false);
+        periphery.onboardAdapter(address(otherAdapter)); // non admin onboarding
+        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        assertTrue(enabled);
+    }
+
+    function testOnboardUnverifiedAdapterWhenPermissionlesss() public {
+        divider.setPermissionless(true);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.setIsTrusted(address(this), false);
+        periphery.onboardAdapter(address(otherAdapter)); // no-admin onboarding
+        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        assertTrue(enabled);
+    }
+
+    /* ========== adapter verification tests ========== */
+
+    function testAdminVerifyAdapter() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        assertTrue(periphery.verified(address(otherAdapter)));
+    }
+
+    function testAdminVerifyAdapterWhenPermissionless() public {
+        divider.setPermissionless(true);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        assertTrue(periphery.verified(address(otherAdapter)));
+    }
+
+    function testCantVerifyAdapterNonAdmin() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.setIsTrusted(address(this), false);
+        hevm.expectRevert("UNTRUSTED");
+        periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
+        assertTrue(!periphery.verified(address(otherAdapter)));
+    }
+
+    function testCantVerifyAdapterNonAdminWhenPermissionless() public {
+        divider.setPermissionless(true);
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            ORACLE,
+            ISSUANCE_FEE,
+            address(stake),
+            STAKE_SIZE,
+            MIN_MATURITY,
+            MAX_MATURITY,
+            4,
+            0,
+            DEFAULT_LEVEL,
+            address(reward)
+        );
+        periphery.setIsTrusted(address(this), false);
+        hevm.expectRevert("UNTRUSTED");
+        periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
+        assertTrue(!periphery.verified(address(otherAdapter)));
     }
 
     /* ========== swap tests ========== */
 
-    function testswapTargetForPTs() public {
+    function testSwapTargetForPTs() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yield) = sponsorSampleSeries(address(alice), maturity);
@@ -230,7 +473,7 @@ contract PeripheryTest is TestHelper {
         // calculate underlying swapped to pt
         uint256 zBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
 
-        alice.doswapTargetForPTs(address(adapter), maturity, tBal, 0);
+        alice.doSwapTargetForPTs(address(adapter), maturity, tBal, 0);
 
         assertEq(cBalBefore, ERC20(yield).balanceOf(address(alice)));
         assertEq(zBalBefore + zBal, ERC20(pt).balanceOf(address(alice)));
@@ -983,7 +1226,7 @@ contract PeripheryTest is TestHelper {
 
         MockTarget otherTarget = new MockTarget(address(underlying), "Compound Usdc", "cUSDC", 8);
         factory.addTarget(address(otherTarget), true);
-        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
+        address dstAdapter = alice.doDeployAdapter(address(factory), address(otherTarget)); // onboard target through Periphery
 
         (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0);
         uint256[] memory minAmountsOut = new uint256[](2);
