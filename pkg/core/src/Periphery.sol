@@ -122,16 +122,14 @@ contract Periphery is Trust {
         adapter = AdapterFactory(f).deployAdapter(target);
         emit AdapterDeployed(adapter);
         verifyAdapter(adapter, true);
-        onboardAdapter(adapter);
+        divider.addAdapter(adapter);
+        emit AdapterOnboarded(adapter);
     }
 
     /// @dev Onboards an Adapter
-    /// @dev Onboards Adapter's target onto Fuse if called from a trusted address
+    /// @dev Onboards Adapter's target onto the Divider if called from a trusted address
     /// @param adapter Adapter to onboard
-    function onboardAdapter(address adapter) public {
-        ERC20 target = ERC20(Adapter(adapter).target());
-        target.approve(address(divider), type(uint256).max);
-        target.approve(address(adapter), type(uint256).max);
+    function onboardAdapter(address adapter) public requiresTrust {
         divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
@@ -482,6 +480,9 @@ contract Periphery is Trust {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
         // issue pts and yts & swap pts for target
+        ERC20 target = ERC20(Adapter(adapter).target());
+        uint256 _allowance = target.allowance(address(this), address(divider));
+        if (_allowance != type(uint256).max) target.approve(address(divider), type(uint256).max);
         issued = divider.issue(adapter, maturity, tBal);
         tBal = _swap(divider.pt(adapter, maturity), Adapter(adapter).target(), issued, pool.getPoolId(), minAccepted);
 
@@ -583,6 +584,9 @@ contract Periphery is Trust {
         uint256 ptBalInTarget = ptInitialized ? _computeTarget(adapter, balances[pti], balances[targeti], tBal) : 0;
 
         // Issue PT & YT (skip if first pool provision)
+        ERC20 target = ERC20(Adapter(adapter).target());
+        uint256 _allowance = target.allowance(address(this), address(divider));
+        if (_allowance != type(uint256).max) target.approve(address(divider), type(uint256).max);
         issued = ptBalInTarget > 0 ? divider.issue(adapter, maturity, ptBalInTarget) : 0;
 
         // Add liquidity to Space & send the LP Shares to recipient

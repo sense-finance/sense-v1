@@ -186,31 +186,6 @@ contract PeripheryTest is TestHelper {
         assertTrue(cTarget != address(0));
     }
 
-    function testOnboardAdapterUnverified() public {
-        divider.setPermissionless(true);
-        periphery.setIsTrusted(address(this), false);
-        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
-
-        periphery.onboardAdapter(address(otherAdapter));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget != address(0));
-    }
-
     function testCantOnboardAdapterUnverifiedWhenNotPermissionless() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
@@ -229,9 +204,10 @@ contract PeripheryTest is TestHelper {
             DEFAULT_LEVEL,
             address(reward)
         );
+        hevm.expectRevert("UNTRUSTED");
         periphery.onboardAdapter(address(otherAdapter));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(otherTarget));
-        assertTrue(cTarget != address(0));
+        assertTrue(cTarget == address(0));
     }
 
     /* ========== swap tests ========== */
