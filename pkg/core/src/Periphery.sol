@@ -669,9 +669,6 @@ contract Periphery is Trust {
         uint256 ytBalIn,
         uint256 amount
     ) internal returns (uint256 tBal) {
-        ERC20 target = ERC20(Adapter(adapter).target());
-        uint256 _allowance = target.allowance(address(this), address(adapter));
-        if (_allowance < amount) target.approve(address(adapter), type(uint256).max);
         bool result;
         (result, tBal) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, ytBalIn, amount);
         if (!result) revert Errors.FlashBorrowFailed();

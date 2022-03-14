@@ -76,7 +76,7 @@ module.exports = async function () {
     await periphery.verifyAdapter(adapterAddress, true).then(tx => tx.wait());
 
     log(`Onboard ${contractName} adapter`);
-    await periphery.onboardAdapter(adapterAddress).then(tx => tx.wait());
+    await periphery.onboardAdapter(adapterAddress, true).then(tx => tx.wait());
 
     log(`Can call scale value`);
     const { abi: adapterAbi } = await deployments.getArtifact(contractName);
