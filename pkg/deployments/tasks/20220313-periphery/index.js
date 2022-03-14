@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 const { mainnet } = require("./input");
 
-const { BALANCER_VAULT } = require("../../hardhat.addresses");
+const { BALANCER_VAULT, SENSE_MULTISIG } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const spaceFactoryAbi = require("./abi/SpaceFactory.json");
@@ -16,6 +16,8 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
     const chainId = await getChainId();
     const signer = await ethers.getSigner(deployer);
 
+    console.log(`Deploying from ${deployer} on chain ${chainId}`);
+
     if (!BALANCER_VAULT.has(chainId)) throw Error("No balancer vault found");
     const balancerVault = BALANCER_VAULT.get(chainId);
 
@@ -23,9 +25,8 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
     const poolManager = new ethers.Contract(mainnet.poolManager, poolManagerAbi, signer);
     const oldPeriphery = new ethers.Contract(mainnet.oldPeriphery, oldPeripheryAbi, signer);
 
-    log("\n-------------------------------------------------------");
-    log("\nDeploy Space Factory");
-
+    console.log("\n-------------------------------------------------------");
+    console.log("\nDeploy Space Factory");
     const queryProcessor = await deploy("QueryProcessor", {
       from: deployer,
     });
@@ -49,21 +50,21 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
 
     const spaceFactory = new ethers.Contract(spaceFactoryAddress, spaceFactoryAbi, signer);
 
-    console.log("Adding admin multisig as admin on Space Factory");
+    console.log("\nAdding admin multisig as admin on Space Factory");
     await spaceFactory.setIsTrusted(mainnet.senseAdminMultisig, true).then(t => t.wait());
 
-    console.log("Removing deployer as admin on Space Factory");
+    console.log("\nRemoving deployer as admin on Space Factory");
     await spaceFactory.setIsTrusted(deployer, false).then(t => t.wait());
 
-    log("\n-------------------------------------------------------");
-    log("\nDeploy Periphery");
+    console.log("\n-------------------------------------------------------");
+    console.log("\nDeploy Periphery");
     const { address: peripheryAddress } = await deploy("Periphery", {
       from: deployer,
       args: [divider.address, poolManager.address, spaceFactory.address, balancerVault],
       log: true,
     });
 
-    console.log("Verifying pre-approved adapters on Periphery");
+    console.log("\nVerifying pre-approved adapters on Periphery");
     const adaptersOnboarded = (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))).map(
       e => e.args.adapter,
     );
@@ -86,16 +87,43 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
       await newPeriphery.verifyAdapter(adapter, false).then(t => t.wait());
     }
 
-    console.log("Adding admin multisig as admin on Periphery");
+    console.log("\nAdding admin multisig as admin on Periphery");
     await newPeriphery.setIsTrusted(mainnet.senseAdminMultisig, true).then(t => t.wait());
 
-    console.log("Removing deployer as admin on Periphery");
+    console.log("\nRemoving deployer as admin on Periphery");
     await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
 
-    // log("Set the periphery on the Divider");
-    // await (await divider.setPeriphery(peripheryAddress)).wait();
+    // If we're in a forked environment, check the txs we need to send from the multisig as well
+    if (chainId === "111") {
+      console.log("\n-------------------------------------------------------");
+      console.log("\nChecking multisig txs by impersonating the address");
+      if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
+      const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [senseAdminMultisigAddress],
+      });
+      const signer = await hre.ethers.getSigner(senseAdminMultisigAddress);
 
-    // log("Give the periphery auth over the pool manager");
-    // await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+      const divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
+      const poolManager = new ethers.Contract(mainnet.poolManager, poolManagerAbi, signer);
+      const oldSpaceFactory = new ethers.Contract(mainnet.oldSpaceFactory, spaceFactoryAbi, signer);
+      const oldPeriphery = new ethers.Contract(mainnet.oldPeriphery, oldPeripheryAbi, signer);
+
+      console.log("\nUnset the multisig as an authority on the old Space Factory");
+      await (await oldSpaceFactory.setIsTrusted(senseAdminMultisigAddress, false)).wait();
+
+      console.log("\nUnset the multisig as an authority on the old Periphery");
+      await (await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false)).wait();
+
+      console.log("\nSet the periphery on the Divider");
+      await (await divider.setPeriphery(peripheryAddress)).wait();
+
+      console.log("\nRemove the old Periphery auth over the pool manager");
+      await (await poolManager.setIsTrusted(oldPeriphery.address, false)).wait();
+
+      console.log("\nGive the new Periphery auth over the pool manager");
+      await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+    }
   },
 );
