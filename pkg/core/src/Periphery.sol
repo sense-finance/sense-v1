@@ -157,7 +157,6 @@ contract Periphery is Trust {
     ) external returns (uint256 ptBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        underlying.approve(adapter, uBal); // approve adapter to pull uBal
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ptBal = _swapTargetForPTs(adapter, maturity, tBal, minAccepted);
     }
@@ -192,7 +191,6 @@ contract Periphery is Trust {
     ) external returns (uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
-        underlying.approve(adapter, uBal); // approve adapter to pull underlying
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ytBal = _swapTargetForYTs(adapter, maturity, tBal, minAccepted);
     }
@@ -224,7 +222,6 @@ contract Periphery is Trust {
         uint256 minAccepted
     ) external returns (uint256 uBal) {
         uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted); // swap Principal Tokens for target
-        ERC20(Adapter(adapter).target()).approve(adapter, tBal); // approve adapter to pull target
         uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // transfer underlying to msg.sender
     }
@@ -300,7 +297,6 @@ contract Periphery is Trust {
     {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal);
-        underlying.approve(adapter, uBal);
         // Wrap Underlying into Target
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
         (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode);
@@ -346,7 +342,6 @@ contract Periphery is Trust {
     ) external returns (uint256 uBal, uint256 ptBal) {
         uint256 tBal;
         (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, intoTarget);
-        ERC20(Adapter(adapter).target()).approve(adapter, tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying back to the User
     }
 
@@ -421,8 +416,10 @@ contract Periphery is Trust {
 
     function _onboardAdapter(address adapter, bool addAdapter) private {
         ERC20 target = ERC20(Adapter(adapter).target());
+        ERC20 underlying = ERC20(Adapter(adapter).underlying());
         target.approve(address(divider), type(uint256).max);
         target.approve(address(adapter), type(uint256).max);
+        underlying.approve(address(adapter), type(uint256).max);
         if (addAdapter) divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
