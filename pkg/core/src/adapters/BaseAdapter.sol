@@ -109,7 +109,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     /// @param data (encoded adapter address, maturity and YT amount the use has sent in)
     function flashLoan(
         IERC3156FlashBorrower receiver,
-        address,
+        address,  /* fee */
         uint256 amount,
         bytes calldata data
     ) external returns (bool) {

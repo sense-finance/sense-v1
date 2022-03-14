@@ -672,9 +672,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @dev ERC-3156 Flash loan callback
     function onFlashLoan(
         address initiator,
-        address,
+        address, /* token */
         uint256 amount,
-        uint256,
+        uint256, /* fee */
         bytes calldata data
     ) external returns (bytes32) {
         (address adapter, uint256 maturity, uint256 ytBalIn) = abi.decode(data, (address, uint256, uint256));
