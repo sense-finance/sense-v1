@@ -80,8 +80,8 @@ contract Periphery is Trust {
 
     /* ========== SERIES / ADAPTER MANAGEMENT ========== */
 
-    /// @notice Sponsor a new Series
-    /// @dev Calls divider to initalise a new series
+    /// @notice Sponsor a new Series in any adapter previously onboarded onto the Divider
+    /// @dev Called by an external address, initializes a new series in the Divider
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
     /// @param withPool Whether to deploy a Space pool or not (only works for unverified adapters)
@@ -112,8 +112,8 @@ contract Periphery is Trust {
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
-    /// @notice Deploy and onboard an Adapter
-    /// @dev Deploys a new Adapter via an Adapter Factory
+    /// @notice Deploy and onboard a Adapter
+    /// @dev Called by external address, deploy a new Adapter via an Adapter Factory
     /// @param f Factory to use
     /// @param target Target to onboard
     function deployAdapter(address f, address target) external returns (address adapter) {
@@ -126,8 +126,8 @@ contract Periphery is Trust {
         emit AdapterOnboarded(adapter);
     }
 
-    /// @dev Onboards an Adapter
-    /// @dev Onboards Adapter's target onto the Divider if called from a trusted address
+    /// @notice Onboard a single Adapter w/o needing a factory
+    /// @dev Called by a trusted address, approves Target for issuance, and onboards adapter to the Divider
     /// @param adapter Adapter to onboard
     function onboardAdapter(address adapter) public requiresTrust {
         divider.addAdapter(adapter);
