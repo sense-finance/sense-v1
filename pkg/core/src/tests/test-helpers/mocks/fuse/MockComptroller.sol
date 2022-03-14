@@ -37,7 +37,7 @@ contract MockComptroller {
         if (ctokens[token] != address(0)) {
             return ctokens[token];
         }
-        return address(1337);
+        return address(0);
     }
 
     function markets(address token) external virtual returns (Market memory) {
