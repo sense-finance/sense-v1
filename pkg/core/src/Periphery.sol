@@ -416,10 +416,9 @@ contract Periphery is Trust {
 
     function _onboardAdapter(address adapter, bool addAdapter) private {
         ERC20 target = ERC20(Adapter(adapter).target());
-        ERC20 underlying = ERC20(Adapter(adapter).underlying());
         target.approve(address(divider), type(uint256).max);
         target.approve(address(adapter), type(uint256).max);
-        underlying.approve(address(adapter), type(uint256).max);
+        ERC20(Adapter(adapter).underlying()).approve(address(adapter), type(uint256).max);
         if (addAdapter) divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
