@@ -111,7 +111,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// @notice Enable an adapter (only when permissionless mode on or if called from periphery)
+    /// @notice Enable an adapter
+    /// @dev when permissionless is disabled, only the Periphery can onboard adapters
+    /// @dev after permissionless is enabled, anyone can onboard adapters
     /// @param adapter Adapter's address
     function addAdapter(address adapter) external whenNotPaused {
         if (!permissionless && msg.sender != periphery) revert Errors.OnlyPermissionless();

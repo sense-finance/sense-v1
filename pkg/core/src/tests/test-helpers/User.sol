@@ -48,7 +48,11 @@ contract User {
     }
 
     function doDeployAdapter(address _target) public returns (address clone) {
-        return factory.deployAdapter(_target);
+        return periphery.deployAdapter(address(factory), _target);
+    }
+
+    function doDeployAdapter(address factory, address _target) public returns (address clone) {
+        return periphery.deployAdapter(factory, _target);
     }
 
     function doTransferFrom(
@@ -178,7 +182,7 @@ contract User {
         gYTManager.exit(adapter, maturity, balance);
     }
 
-    function doswapTargetForPTs(
+    function doSwapTargetForPTs(
         address adapter,
         uint256 maturity,
         uint256 balance,

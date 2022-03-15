@@ -81,8 +81,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     /* ========== SERIES / ADAPTER MANAGEMENT ========== */
 
-    /// @notice Sponsor a new Series
-    /// @dev Calls divider to initalise a new series
+    /// @notice Sponsor a new Series in any adapter previously onboarded onto the Divider
+    /// @dev Called by an external address, initializes a new series in the Divider
     /// @param adapter Adapter to associate with the Series
     /// @param maturity Maturity date for the Series, in units of unix time
     /// @param withPool Whether to deploy a Space pool or not (only works for unverified adapters)
@@ -113,8 +113,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
-    /// @notice Deploy and onboard an Adapter
-    /// @dev Deploys a new Adapter via an Adapter Factory
+    /// @notice Deploy and onboard a Adapter
+    /// @dev Called by external address, deploy a new Adapter via an Adapter Factory
     /// @param f Factory to use
     /// @param target Target to onboard
     function deployAdapter(address f, address target) external returns (address adapter) {
@@ -122,19 +122,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (!AdapterFactory(f).exists(target)) revert Errors.TargetNotSupported();
         adapter = AdapterFactory(f).deployAdapter(target);
         emit AdapterDeployed(adapter);
-        verifyAdapter(adapter, true);
-        onboardAdapter(adapter);
-    }
-
-    /// @dev Onboards an Adapter
-    /// @dev Onboards Adapter's target onto Fuse if called from a trusted address
-    /// @param adapter Adapter to onboard
-    function onboardAdapter(address adapter) public {
-        ERC20 target = ERC20(Adapter(adapter).target());
-        target.approve(address(divider), type(uint256).max);
-        target.approve(address(adapter), type(uint256).max);
-        divider.addAdapter(adapter);
-        emit AdapterOnboarded(adapter);
+        _verifyAdapter(adapter, true);
+        _onboardAdapter(adapter, true);
     }
 
     /* ========== LIQUIDITY UTILS ========== */
@@ -169,7 +158,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) external returns (uint256 ptBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
-        underlying.approve(adapter, uBal); // approve adapter to pull uBal
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ptBal = _swapTargetForPTs(adapter, maturity, tBal, minAccepted);
     }
@@ -204,7 +192,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) external returns (uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
-        underlying.approve(adapter, uBal); // approve adapter to pull underlying
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ytBal = _swapTargetForYTs(adapter, maturity, tBal, minAccepted);
     }
@@ -236,7 +223,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted
     ) external returns (uint256 uBal) {
         uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted); // swap Principal Tokens for target
-        ERC20(Adapter(adapter).target()).approve(adapter, tBal); // approve adapter to pull target
         uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal); // transfer underlying to msg.sender
     }
@@ -312,7 +298,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), uBal);
-        underlying.approve(adapter, uBal);
         // Wrap Underlying into Target
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
         (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode);
@@ -358,7 +343,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) external returns (uint256 uBal, uint256 ptBal) {
         uint256 tBal;
         (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, intoTarget);
-        ERC20(Adapter(adapter).target()).approve(adapter, tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(msg.sender, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying back to the User
     }
 
@@ -413,9 +397,31 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
     /// @param adapter Adapter to verify
     function verifyAdapter(address adapter, bool addToPool) public requiresTrust {
+        _verifyAdapter(adapter, addToPool);
+    }
+
+    function _verifyAdapter(address adapter, bool addToPool) private {
         verified[adapter] = true;
         if (addToPool) poolManager.addTarget(Adapter(adapter).target(), adapter);
         emit AdapterVerified(adapter);
+    }
+
+    /// @notice Onboard a single Adapter w/o needing a factory
+    /// @dev Called by a trusted address, approves Target for issuance, and onboards adapter to the Divider
+    /// @param adapter Adapter to onboard
+    /// @param addAdapter Whether to call divider.addAdapter or not (useful e.g when upgrading Periphery)
+    function onboardAdapter(address adapter, bool addAdapter) public {
+        if (!divider.permissionless() && !isTrusted[msg.sender]) revert Errors.OnlyPermissionless();
+        _onboardAdapter(adapter, addAdapter);
+    }
+
+    function _onboardAdapter(address adapter, bool addAdapter) private {
+        ERC20 target = ERC20(Adapter(adapter).target());
+        target.approve(address(divider), type(uint256).max);
+        target.approve(address(adapter), type(uint256).max);
+        ERC20(Adapter(adapter).underlying()).approve(address(adapter), type(uint256).max);
+        if (addAdapter) divider.addAdapter(adapter);
+        emit AdapterOnboarded(adapter);
     }
 
     /* ========== INTERNAL UTILS ========== */
