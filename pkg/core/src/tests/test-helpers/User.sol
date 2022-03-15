@@ -256,7 +256,8 @@ contract User {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint8 mode
+        uint8 mode,
+        uint256 minBptOut
     )
         public
         returns (
@@ -265,14 +266,15 @@ contract User {
             uint256
         )
     {
-        return periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode);
+        return periphery.addLiquidityFromTarget(adapter, maturity, tBal, mode, minBptOut);
     }
 
     function doAddLiquidityFromUnderlying(
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint8 mode
+        uint8 mode,
+        uint256 minBptOut
     )
         public
         returns (
@@ -281,7 +283,7 @@ contract User {
             uint256
         )
     {
-        return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode);
+        return periphery.addLiquidityFromUnderlying(adapter, maturity, tBal, mode, minBptOut);
     }
 
     function doRemoveLiquidity(
@@ -304,7 +306,8 @@ contract User {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         uint8 mode,
-        bool swap
+        bool swap,
+        uint256 minBptOut
     )
         public
         returns (
@@ -324,7 +327,8 @@ contract User {
                 minAmountsOut,
                 minAccepted,
                 mode,
-                true
+                true,
+                minBptOut
             );
     }
 

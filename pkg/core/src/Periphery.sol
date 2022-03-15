@@ -65,6 +65,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     struct PoolLiquidity {
         ERC20[] tokens;
         uint256[] amounts;
+        uint256 minBptOut;
     }
 
     constructor(
@@ -259,12 +260,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param tBal Balance of Target to provide
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
+    /// @param minBptOut Minimum BPT the user will accept out for this transaction
     /// @dev see return description of _addLiquidity
     function addLiquidityFromTarget(
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint8 mode
+        uint8 mode,
+        uint256 minBptOut
     )
         external
         returns (
@@ -274,7 +277,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         )
     {
         ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
-        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode);
+        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut);
     }
 
     /// @notice Adds liquidity providing underlying
@@ -282,12 +285,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param uBal Balance of Underlying to provide
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
+    /// @param minBptOut Minimum BPT the user will accept out for this transaction
     /// @dev see return description of _addLiquidity
     function addLiquidityFromUnderlying(
         address adapter,
         uint256 maturity,
         uint256 uBal,
-        uint8 mode
+        uint8 mode,
+        uint256 minBptOut
     )
         external
         returns (
@@ -300,7 +305,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         underlying.safeTransferFrom(msg.sender, address(this), uBal);
         // Wrap Underlying into Target
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
-        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode);
+        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut);
     }
 
     /// @notice Removes liquidity providing an amount of LP tokens and returns target
@@ -356,7 +361,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
     /// @param minAccepted Min accepted amount of target when swapping Principal Tokens (only used when removing liquidity on/after maturity)
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
+    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap
+    /// @param minBptOut Minimum BPT the user will accept out for this transaction
     /// @dev see return description of _addLiquidity. It also returns amount of PTs (in case it's called after maturity and redeem is restricted or inttoTarget is false)
     function migrateLiquidity(
         address srcAdapter,
@@ -367,7 +373,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         uint8 mode,
-        bool intoTarget
+        bool intoTarget,
+        uint256 minBptOut
     )
         external
         returns (
@@ -380,7 +387,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
         uint256 tBal;
         (tBal, ptBal) = _removeLiquidity(srcAdapter, srcMaturity, lpBal, minAmountsOut, minAccepted, intoTarget);
-        (tAmount, issued, lpShares) = _addLiquidity(dstAdapter, dstMaturity, tBal, mode);
+        (tAmount, issued, lpShares) = _addLiquidity(dstAdapter, dstMaturity, tBal, mode, minBptOut);
     }
 
     /* ========== ADMIN ========== */
@@ -546,7 +553,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint8 mode
+        uint8 mode,
+        uint256 minBptOut
     )
         internal
         returns (
@@ -556,7 +564,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         )
     {
         // (1) compute target, issue PTs & YTs & add liquidity to space
-        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal);
+        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal, minBptOut);
 
         if (issued > 0) {
             // issue = 0 means that we are on the first pool provision or that the pt:target ratio is 0:target
@@ -578,7 +586,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     function _computeIssueAddLiq(
         address adapter,
         uint256 maturity,
-        uint256 tBal
+        uint256 tBal,
+        uint256 minBptOut
     ) internal returns (uint256 issued, uint256 lpShares) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         // Compute target
@@ -596,7 +605,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256[] memory amounts = new uint256[](2);
         amounts[targeti] = tBal - ptBalInTarget;
         amounts[pti] = issued;
-        lpShares = _addLiquidityToSpace(pool, PoolLiquidity(tokens, amounts));
+        lpShares = _addLiquidityToSpace(pool, PoolLiquidity(tokens, amounts, minBptOut));
     }
 
     /// @dev Based on pt:target ratio from current pool reserves and tBal passed
@@ -726,7 +735,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({
             assets: assets,
             maxAmountsIn: liq.amounts,
-            userData: abi.encode(liq.amounts),
+            userData: abi.encode(liq.amounts, liq.minBptOut),
             fromInternalBalance: false
         });
         balancerVault.joinPool(poolId, address(this), msg.sender, request);
