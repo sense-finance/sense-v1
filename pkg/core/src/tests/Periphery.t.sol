@@ -483,20 +483,20 @@ contract PeripheryTest is TestHelper {
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(alice));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(alice));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // unwrap target into underlying
         (, uint256 lvalue) = adapter.lscale();
         uint256 uBal = tBal.fmul(lvalue, FixedMath.WAD);
 
         // calculate underlying swapped to pt
-        uint256 zBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
+        uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
 
         alice.doSwapTargetForPTs(address(adapter), maturity, tBal, 0);
 
-        assertEq(cBalBefore, ERC20(yield).balanceOf(address(alice)));
-        assertEq(zBalBefore + zBal, ERC20(pt).balanceOf(address(alice)));
+        assertEq(ytBalBefore, ERC20(yield).balanceOf(address(alice)));
+        assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(address(alice)));
     }
 
     function testSwapUnderlyingForPTs() public {
@@ -511,16 +511,16 @@ contract PeripheryTest is TestHelper {
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(alice));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(alice));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // calculate underlying swapped to pt
-        uint256 zBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
+        uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
 
         alice.doSwapUnderlyingForPTs(address(adapter), maturity, uBal, 0);
 
-        assertEq(cBalBefore, ERC20(yield).balanceOf(address(alice)));
-        assertEq(zBalBefore + zBal, ERC20(pt).balanceOf(address(alice)));
+        assertEq(ytBalBefore, ERC20(yield).balanceOf(address(alice)));
+        assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(address(alice)));
     }
 
     function testSwapTargetForYTs() public {
@@ -534,16 +534,16 @@ contract PeripheryTest is TestHelper {
         target.mint(address(adapter), 100000e18);
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(alice));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(alice));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.ifee() / convertBase(target.decimals())).fmul(tBal, tBase);
         uint256 yieldsAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         bob.doSwapTargetForYTs(address(adapter), maturity, tBal, 0);
 
-        assertEq(cBalBefore + yieldsAmount, ERC20(yield).balanceOf(address(bob)));
-        assertEq(zBalBefore, ERC20(pt).balanceOf(address(alice)));
+        assertEq(ytBalBefore + yieldsAmount, ERC20(yield).balanceOf(address(bob)));
+        assertEq(ptBalBefore, ERC20(pt).balanceOf(address(alice)));
     }
 
     function testSwapUnderlyingForYTs() public {
@@ -560,16 +560,16 @@ contract PeripheryTest is TestHelper {
         target.mint(address(adapter), 100000e18);
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(alice));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(alice));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(alice));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // calculate issuance fee in corresponding base
         uint256 fee = (adapter.ifee() / convertBase(target.decimals())).fmul(tBal, tBase);
         uint256 yieldsAmount = (tBal - fee).fmul(lscale, FixedMath.WAD);
         bob.doSwapUnderlyingForYTs(address(adapter), maturity, uBal, 0);
 
-        assertEq(cBalBefore + yieldsAmount, ERC20(yield).balanceOf(address(bob)));
-        assertEq(zBalBefore, ERC20(pt).balanceOf(address(alice)));
+        assertEq(ytBalBefore + yieldsAmount, ERC20(yield).balanceOf(address(bob)));
+        assertEq(ptBalBefore, ERC20(pt).balanceOf(address(alice)));
     }
 
     function testSwapPrincipalForTarget() public {
@@ -584,14 +584,14 @@ contract PeripheryTest is TestHelper {
         alice.doIssue(address(adapter), maturity, tBal);
 
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(alice));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(alice));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // calculate pt swapped to target
         uint256 rate = balancerVault.EXCHANGE_RATE();
-        uint256 swapped = zBalBefore.fmul(rate, FixedMath.WAD);
+        uint256 swapped = ptBalBefore.fmul(rate, FixedMath.WAD);
 
-        alice.doApprove(pt, address(periphery), zBalBefore);
-        alice.doSwapPrincipalForTarget(address(adapter), maturity, zBalBefore, 0);
+        alice.doApprove(pt, address(periphery), ptBalBefore);
+        alice.doSwapPrincipalForTarget(address(adapter), maturity, ptBalBefore, 0);
 
         assertEq(tBalBefore + swapped, ERC20(target).balanceOf(address(alice)));
     }
@@ -608,18 +608,18 @@ contract PeripheryTest is TestHelper {
         alice.doIssue(address(adapter), maturity, tBal);
 
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(address(alice));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(alice));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // calculate pt swapped to target
         uint256 rate = balancerVault.EXCHANGE_RATE();
-        uint256 swapped = zBalBefore.fmul(rate, FixedMath.WAD);
+        uint256 swapped = ptBalBefore.fmul(rate, FixedMath.WAD);
 
         // unwrap target into underlying
         (, uint256 lvalue) = adapter.lscale();
         uint256 uBal = swapped.fmul(lvalue, FixedMath.WAD);
 
-        alice.doApprove(pt, address(periphery), zBalBefore);
-        alice.doSwapPrincipalForUnderlying(address(adapter), maturity, zBalBefore, 0);
+        alice.doApprove(pt, address(periphery), ptBalBefore);
+        alice.doSwapPrincipalForUnderlying(address(adapter), maturity, ptBalBefore, 0);
 
         assertEq(uBalBefore + uBal, ERC20(underlying).balanceOf(address(alice)));
     }
@@ -637,7 +637,7 @@ contract PeripheryTest is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
 
         uint256 tBalBefore = ERC20(target).balanceOf(address(bob));
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(bob));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(bob));
 
         // swap underlying for Principal on Yieldspace pool
         uint256 zSwapped = targetToBorrow.fdiv(balancerVault.EXCHANGE_RATE(), FixedMath.WAD);
@@ -646,8 +646,8 @@ contract PeripheryTest is TestHelper {
         uint256 tCombined = zSwapped.fdiv(lscale, FixedMath.WAD);
         uint256 remainingYTInTarget = tCombined - targetToBorrow;
 
-        bob.doApprove(yield, address(periphery), cBalBefore);
-        bob.doSwapYieldForTarget(address(adapter), maturity, cBalBefore);
+        bob.doApprove(yield, address(periphery), ytBalBefore);
+        bob.doSwapYieldForTarget(address(adapter), maturity, ytBalBefore);
 
         assertEq(tBalBefore + remainingYTInTarget, ERC20(target).balanceOf(address(bob)));
     }
@@ -667,13 +667,13 @@ contract PeripheryTest is TestHelper {
     //        bob.doIssue(address(adapter), maturity, tBal);
     //
     //        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
-    //        uint256 cBalBefore = ERC20(yield).balanceOf(address(bob));
+    //        uint256 ytBalBefore = ERC20(yield).balanceOf(address(bob));
     //
     //        // calculate yields to be converted to gyields
     //        address gyield = address(periphery.gYTManager().gyields(yield));
     //        uint256 rate = periphery.price(pt, gyield);
     //        uint256 yieldsToConvert =
-    //          cBalBefore.fdiv(rate + 1 * 10**ERC20(pt).decimals(), 10**ERC20(yield).decimals());
+    //          ytBalBefore.fdiv(rate + 1 * 10**ERC20(pt).decimals(), 10**ERC20(yield).decimals());
     //
     //        // calculate gyields swapped to pt
     //        uint256 swapped = yieldsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(pt).decimals());
@@ -685,8 +685,8 @@ contract PeripheryTest is TestHelper {
     //        // calculate excess
     //        uint256 excess = periphery.gYTManager().excess(address(adapter), maturity, yieldsToConvert);
     //
-    //        bob.doApprove(yield, address(periphery), cBalBefore);
-    //        bob.doSwapYieldForTarget(address(adapter), maturity, cBalBefore, 0);
+    //        bob.doApprove(yield, address(periphery), ytBalBefore);
+    //        bob.doSwapYieldForTarget(address(adapter), maturity, ytBalBefore, 0);
     //
     //        assertEq(tBalBefore + tCombined - excess, ERC20(target).balanceOf(address(bob)));
     //    }
@@ -888,7 +888,7 @@ contract PeripheryTest is TestHelper {
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(bob));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(bob));
 
         // calculate amount to be issued
         uint256 toBeIssued;
@@ -919,7 +919,7 @@ contract PeripheryTest is TestHelper {
 
             assertEq(tBalBefore - tBal, ERC20(adapter.target()).balanceOf(address(bob)));
             assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)));
-            assertEq(cBalBefore + toBeIssued, ERC20(yield).balanceOf(address(bob)));
+            assertEq(ytBalBefore + toBeIssued, ERC20(yield).balanceOf(address(bob)));
         }
     }
 
@@ -937,7 +937,7 @@ contract PeripheryTest is TestHelper {
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(address(bob));
-        uint256 cBalBefore = ERC20(yield).balanceOf(address(bob));
+        uint256 ytBalBefore = ERC20(yield).balanceOf(address(bob));
 
         // calculate amount to be issued
         uint256 toBeIssued;
@@ -969,7 +969,7 @@ contract PeripheryTest is TestHelper {
 
             assertEq(uBalBefore - tBal, ERC20(adapter.underlying()).balanceOf(address(bob)));
             assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)));
-            assertEq(cBalBefore + toBeIssued, ERC20(yield).balanceOf(address(bob)));
+            assertEq(ytBalBefore + toBeIssued, ERC20(yield).balanceOf(address(bob)));
         }
     }
 
@@ -1011,7 +1011,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
+        (uint256 targetBal, uint256 ptBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBal,
@@ -1026,7 +1026,7 @@ contract PeripheryTest is TestHelper {
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertEq(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
-        assertEq(zBal, 0);
+        assertEq(ptBal, 0);
     }
 
     function testRemoveLiquidityOnMaturity() public {
@@ -1058,18 +1058,18 @@ contract PeripheryTest is TestHelper {
         alice.doSettleSeries(address(adapter), maturity);
         (, lscale) = adapter.lscale();
 
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
         (uint256 targetBal, ) = bob.doRemoveLiquidity(address(adapter), maturity, lpBal, minAmountsOut, 0, true);
 
-        uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalAfter = ERC20(pt).balanceOf(address(bob));
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
 
-        assertEq(zBalBefore, zBalAfter);
+        assertEq(ptBalBefore, ptBalAfter);
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertClose(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
@@ -1127,11 +1127,11 @@ contract PeripheryTest is TestHelper {
         alice.doSettleSeries(address(aAdapter), maturity);
         (, lscale) = aAdapter.lscale();
 
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(address(bob));
 
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), 3e18);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
+        (uint256 targetBal, uint256 ptBal) = bob.doRemoveLiquidity(
             address(aAdapter),
             maturity,
             3e18,
@@ -1141,9 +1141,9 @@ contract PeripheryTest is TestHelper {
         );
 
         assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(address(bob)) - tBalBefore);
-        assertEq(zBalBefore, ERC20(pt).balanceOf(address(bob)) - minAmountsOut[1]);
-        assertEq(zBal, ERC20(pt).balanceOf(address(bob)) - zBalBefore);
-        assertEq(zBal, 1e18);
+        assertEq(ptBalBefore, ERC20(pt).balanceOf(address(bob)) - minAmountsOut[1]);
+        assertEq(ptBal, ERC20(pt).balanceOf(address(bob)) - ptBalBefore);
+        assertEq(ptBal, 1e18);
     }
 
     function testRemoveLiquidityWhenOneSideLiquidity() public {
@@ -1157,12 +1157,12 @@ contract PeripheryTest is TestHelper {
         // add one side liquidity
         bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
 
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
 
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBalBefore);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
+        (uint256 targetBal, uint256 ptBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBalBefore,
@@ -1173,13 +1173,13 @@ contract PeripheryTest is TestHelper {
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
-        uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalAfter = ERC20(pt).balanceOf(address(bob));
 
         assertTrue(tBalAfter > 0);
         assertEq(targetBal, tBalAfter - tBalBefore);
-        assertEq(zBalAfter, zBalBefore);
+        assertEq(ptBalAfter, ptBalBefore);
         assertEq(lpBalAfter, 0);
-        assertEq(zBal, 0);
+        assertEq(ptBal, 0);
         assertTrue(lpBalBefore > 0);
     }
 
@@ -1213,11 +1213,11 @@ contract PeripheryTest is TestHelper {
         bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 1);
 
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
-        uint256 zBalBefore = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalBefore = ERC20(pt).balanceOf(address(bob));
 
         uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         bob.doApprove(address(balancerVault.yieldSpacePool()), address(periphery), lpBal);
-        (uint256 targetBal, uint256 zBal) = bob.doRemoveLiquidity(
+        (uint256 targetBal, uint256 ptBal) = bob.doRemoveLiquidity(
             address(adapter),
             maturity,
             lpBal,
@@ -1228,12 +1228,12 @@ contract PeripheryTest is TestHelper {
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(bob));
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
-        uint256 zBalAfter = ERC20(pt).balanceOf(address(bob));
+        uint256 ptBalAfter = ERC20(pt).balanceOf(address(bob));
 
         assertEq(tBalAfter, tBalBefore + targetBal);
         assertEq(lpBalAfter, 0);
-        assertEq(zBal, ptToBeIssued);
-        assertEq(zBalAfter, zBalBefore + ptToBeIssued);
+        assertEq(ptBal, ptToBeIssued);
+        assertEq(ptBalAfter, ptBalBefore + ptToBeIssued);
     }
 
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {

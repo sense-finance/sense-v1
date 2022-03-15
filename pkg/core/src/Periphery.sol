@@ -7,6 +7,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 import { FixedMath } from "./external/FixedMath.sol";
 import { BalancerVault, IAsset } from "./external/balancer/Vault.sol";
 import { BalancerPool } from "./external/balancer/Pool.sol";
+import { IERC3156FlashBorrower } from "./external/flashloan/IERC3156FlashBorrower.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -24,7 +25,7 @@ interface SpaceFactoryLike {
 }
 
 /// @title Periphery
-contract Periphery is Trust {
+contract Periphery is Trust, IERC3156FlashBorrower {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
     using Levels for uint256;
@@ -665,20 +666,22 @@ contract Periphery is Trust {
         uint256 ytBalIn,
         uint256 amount
     ) internal returns (uint256 tBal) {
-        bool result;
-        (result, tBal) = Adapter(adapter).flashLoan(data, address(this), adapter, maturity, ytBalIn, amount);
+        ERC20 target = ERC20(Adapter(adapter).target());
+        bytes memory data = abi.encode(adapter, maturity, ytBalIn);
+        bool result = Adapter(adapter).flashLoan(this, address(target), amount, data);
+        tBal = target.balanceOf(address(this));
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
     /// @dev ERC-3156 Flash loan callback
     function onFlashLoan(
-        bytes calldata,
         address initiator,
-        address adapter,
-        uint256 maturity,
-        uint256 ytBalIn,
-        uint256 amount
-    ) external returns (bytes32 id, uint256 tBalNet) {
+        address, /* token */
+        uint256 amount,
+        uint256, /* fee */
+        bytes calldata data
+    ) external returns (bytes32) {
+        (address adapter, uint256 maturity, uint256 ytBalIn) = abi.decode(data, (address, uint256, uint256));
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
         if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
         address yt = divider.yt(adapter, maturity);
@@ -705,9 +708,9 @@ contract Periphery is Trust {
             revert Errors.UnexpectedSwapAmount();
 
         // Combine PTs and YTs
-        uint256 tBal = divider.combine(adapter, maturity, ptBal < ytBalIn ? ptBal : ytBalIn);
+        divider.combine(adapter, maturity, ptBal < ytBalIn ? ptBal : ytBalIn);
 
-        return (keccak256("ERC3156FlashBorrower.onFlashLoan"), tBal - amount);
+        return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
     function _addLiquidityToSpace(BalancerPool pool, PoolLiquidity memory liq) internal returns (uint256 lpBal) {
