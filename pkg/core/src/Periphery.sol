@@ -735,7 +735,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         BalancerVault.JoinPoolRequest memory request = BalancerVault.JoinPoolRequest({
             assets: assets,
             maxAmountsIn: liq.amounts,
-            userData: abi.encode(liq.amounts),
+            userData: abi.encode(liq.amounts, liq.minBptOut),
             fromInternalBalance: false
         });
         balancerVault.joinPool(poolId, address(this), msg.sender, request);
