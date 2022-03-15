@@ -79,7 +79,7 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
 
     for (let adapter of adaptersOnboarded) {
       console.log("Onboarding adapter", adapter);
-      await newPeriphery.onboardAdapter(adapter).then(t => t.wait());
+      await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
     }
 
     for (let adapter of adaptersOnboarded) {
@@ -124,6 +124,40 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
 
       console.log("\nGive the new Periphery auth over the pool manager");
       await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+
+      const ptOracleAddress = await poolManager.ptOracle();
+      const lpOracleAddress = await poolManager.lpOracle();
+
+      const ptOracle = new ethers.Contract(
+        ptOracleAddress,
+        [
+          "function setTwapPeriod(uint256 _twapPeriod) external",
+          "function twapPeriod() external view returns (uint256)",
+        ],
+        signer,
+      );
+
+      const lpOracle = new ethers.Contract(
+        lpOracleAddress,
+        [
+          "function setTwapPeriod(uint256 _twapPeriod) external",
+          "function twapPeriod() external view returns (uint256)",
+        ],
+        signer,
+      );
+
+      const iface = new ethers.utils.Interface(["function setTwapPeriod(uint256 _twapPeriod) external"]);
+      const setTwapData = iface.encodeFunctionData("setTwapPeriod", [
+        19800, // 5.5 hours in seconds
+      ]);
+
+      console.log("\nPrevious PT oracle twap period:", (await ptOracle.twapPeriod()).toString());
+      await poolManager.execute(ptOracle.address, 0, setTwapData, 5000000).then(t => t.wait());
+      console.log("New PT oracle twap period:", (await ptOracle.twapPeriod()).toString());
+
+      console.log("\nPrevious LP oracle twap period:", (await lpOracle.twapPeriod()).toString());
+      await poolManager.execute(lpOracle.address, 0, setTwapData, 5000000).then(t => t.wait());
+      console.log("New LP oracle twap period:", (await lpOracle.twapPeriod()).toString());
     }
   },
 );
