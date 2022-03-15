@@ -204,18 +204,6 @@ module.exports = async function () {
       if (peripheryDust > 100) {
         throw new Error("Periphery has an unexpected amount of Target dust");
       }
-
-      // remove all liquidity (and skip swapping)
-      lpBalance = await pool.balanceOf(deployer);
-      const ptBalance = await pt.balanceOf(deployer);
-      const tBalance = await target.balanceOf(deployer);
-      log("removing all liquidity");
-      await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
-      const ptBalanceAfter = await pt.balanceOf(deployer);
-      const tBalanceAfter = await target.balanceOf(deployer);
-      if (ptBalanceAfter.lte(ptBalance) || tBalanceAfter.lte(tBalance)) {
-        throw new Error("Removed liquidity returned an unexpected amount of target or PT");
-      }
     }
   }
 };
