@@ -6,7 +6,7 @@
 hevm.libs.*
 
 # hardhat
-abi/
+pkg/deployments/abi/
 artifacts/
 cache/
 exports/

@@ -1,8 +1,8 @@
-// Hardhat tasks for interacting with deployed contracts
-// Usage: npx hardhat <task> --arg <value>
-
 const { task } = require("hardhat/config");
 const fs = require("fs");
+
+// Import all auxiliary tasks
+require("./tasks");
 
 task("accounts", "Prints the list of accounts", async (_, { ethers }) => {
   const signers = await ethers.getSigners();
