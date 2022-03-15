@@ -18,19 +18,19 @@ contract Yield is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 cBalanceBefore = ERC20(yt).balanceOf(address(bob));
+        uint256 ytBalanceBefore = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         uint256 collected = bob.doCollect(yt);
-        uint256 cBalanceAfter = ERC20(yt).balanceOf(address(bob));
+        uint256 ytBalanceAfter = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = cBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= cBalanceBefore.fdivUp(cscale, FixedMath.WAD);
-        assertEq(cBalanceBefore, cBalanceAfter);
+        uint256 collect = ytBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= ytBalanceBefore.fdivUp(cscale, FixedMath.WAD);
+        assertEq(ytBalanceBefore, ytBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
     }
@@ -44,22 +44,22 @@ contract Yield is TestHelper {
         hevm.warp(block.timestamp + 1 days);
 
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 acBalanceBefore = ERC20(yt).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(yt).balanceOf(address(bob));
+        uint256 aytBalanceBefore = ERC20(yt).balanceOf(address(alice));
+        uint256 bytBalanceBefore = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
-        bob.doTransfer(address(yt), address(alice), bcBalanceBefore);
-        uint256 acBalanceAfter = ERC20(yt).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(yt).balanceOf(address(bob));
+        bob.doTransfer(address(yt), address(alice), bytBalanceBefore);
+        uint256 aytBalanceAfter = ERC20(yt).balanceOf(address(alice));
+        uint256 bytBalanceAfter = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bcBalanceBefore.fdivUp(cscale, FixedMath.WAD);
-        assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
-        assertEq(bcBalanceAfter, 0);
+        uint256 collect = bytBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= bytBalanceBefore.fdivUp(cscale, FixedMath.WAD);
+        assertEq(aytBalanceBefore + bytBalanceBefore, aytBalanceAfter);
+        assertEq(bytBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -74,23 +74,23 @@ contract Yield is TestHelper {
         hevm.warp(block.timestamp + 1 days);
 
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-        uint256 acBalanceBefore = ERC20(yt).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(yt).balanceOf(address(bob));
+        uint256 aytBalanceBefore = ERC20(yt).balanceOf(address(alice));
+        uint256 bytBalanceBefore = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         bob.doApprove(address(yt), address(alice));
-        alice.doTransferFrom(address(yt), address(bob), address(alice), bcBalanceBefore);
-        uint256 acBalanceAfter = ERC20(yt).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(yt).balanceOf(address(bob));
+        alice.doTransferFrom(address(yt), address(bob), address(alice), bytBalanceBefore);
+        uint256 aytBalanceAfter = ERC20(yt).balanceOf(address(alice));
+        uint256 bytBalanceAfter = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bcBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bcBalanceBefore.fdivUp(cscale, FixedMath.WAD);
-        assertEq(acBalanceBefore + bcBalanceBefore, acBalanceAfter);
-        assertEq(bcBalanceAfter, 0);
+        uint256 collect = bytBalanceBefore.fdiv(lscale, FixedMath.WAD);
+        collect -= bytBalanceBefore.fdivUp(cscale, FixedMath.WAD);
+        assertEq(aytBalanceBefore + bytBalanceBefore, aytBalanceAfter);
+        assertEq(bytBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -104,17 +104,17 @@ contract Yield is TestHelper {
         bob.doIssue(address(adapter), maturity, tBal);
         hevm.warp(block.timestamp + 10 days);
 
-        uint256 acBalanceBefore = ERC20(yt).balanceOf(address(alice));
-        uint256 bcBalanceBefore = ERC20(yt).balanceOf(address(bob));
+        uint256 aytBalanceBefore = ERC20(yt).balanceOf(address(alice));
+        uint256 bytBalanceBefore = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
         bob.doApprove(address(yt), address(alice));
         alice.doTransferFrom(address(yt), address(bob), address(alice), 0);
-        uint256 acBalanceAfter = ERC20(yt).balanceOf(address(alice));
-        uint256 bcBalanceAfter = ERC20(yt).balanceOf(address(bob));
+        uint256 aytBalanceAfter = ERC20(yt).balanceOf(address(alice));
+        uint256 bytBalanceAfter = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceAfter = target.balanceOf(address(bob));
         uint256 collected = tBalanceAfter - tBalanceBefore;
-        assertEq(acBalanceBefore, acBalanceAfter);
-        assertEq(bcBalanceBefore, bcBalanceAfter);
+        assertEq(aytBalanceBefore, aytBalanceAfter);
+        assertEq(bytBalanceBefore, bytBalanceAfter);
         assertEq(collected, 0);
     }
 }
