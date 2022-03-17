@@ -111,6 +111,8 @@ Sense contracts have gone through different independent security audits performe
 
 ### Bug Bounties
 
+Sense has an active bug bounty on ImmuneFi, with up to $50,000 for reporting a bug. All of Sense's deployed contracts & Sense Portal are in scope for the bug bounty.
+
 ## Conventions
 
 ### Branching
