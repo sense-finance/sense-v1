@@ -44,7 +44,6 @@ task(
   let vault = new ethers.Contract(mainnet.vault, balanceVaultAbi, signer);
   let divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
   let periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, signer);
-  let poolManager = new ethers.Contract(mainnet.poolManager, poolMangerAbi, signer);
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
@@ -105,7 +104,7 @@ task(
         method: "hardhat_stopImpersonatingAccount",
         params: [senseAdminMultisigAddress],
       });
-    }
+    // }
 
     divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
     periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, signer);
