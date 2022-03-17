@@ -73,6 +73,8 @@ interface PriceOracleLike {
     /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
     /// Zero means the price is unavailable.
     function getUnderlyingPrice(address target) external view returns (uint256);
+
+    function price(address underlying) external view returns (uint256);
 }
 
 /// @notice Adapter contract for cTokens
@@ -137,7 +139,7 @@ contract CAdapter is CropAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
-        price = isCETH ? 1e18 : PriceOracleLike(oracle).getUnderlyingPrice(target);
+        price = isCETH ? 1e18 : PriceOracleLike(oracle).price(underlying);
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256 tBal) {

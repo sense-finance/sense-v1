@@ -1,11 +1,4 @@
-const {
-  COMP_TOKEN,
-  COMPOUND_PRICE_FEED,
-  WETH_TOKEN,
-  CUSDC_TOKEN,
-  WSTETH_TOKEN,
-  MASTER_ORACLE_IMPL,
-} = require("./hardhat.addresses");
+const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -112,7 +105,7 @@ const MAINNET_ADAPTERS = [
     },
     // deployments params MUST BE in order
     deploymentParams: {
-      oracle: MASTER_ORACLE_IMPL.get(chainId), // oracle address
+      oracle: MASTER_ORACLE.get(chainId), // oracle address
       ifee: ethers.utils.parseEther("0.01"),
       stake: WETH_TOKEN.get(chainId),
       stakeSize: ethers.utils.parseEther("0.0025"),
@@ -133,7 +126,7 @@ const MAINNET_ADAPTERS = [
     },
     deploymentParams: {
       target: CUSDC_TOKEN.get(chainId),
-      oracle: COMPOUND_PRICE_FEED.get(chainId), // oracle address
+      oracle: MASTER_ORACLE.get(chainId), // oracle address
       ifee: ethers.utils.parseEther("0.0025"),
       stake: WETH_TOKEN.get(chainId),
       stakeSize: ethers.utils.parseEther("0.01"),
