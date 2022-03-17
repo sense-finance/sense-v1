@@ -19,10 +19,13 @@ dayjs.locale({
   weekStart: 1,
 });
 
-const C_USDC_MATURITIES = [dayjs("05/01/2022").utc().unix(), dayjs("07/01/2022").utc().unix()];
+const C_USDC_MATURITIES = [
+  dayjs("05/01/2022").utc().startOf("month").unix(),
+  dayjs("07/01/2022").utc().startOf("month").unix(),
+];
 
 const C_FACTORY_TARGETS = [
-  { name: "cUSDC", guard: ethers.utils.parseEther("250000"), series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get("1") },
+  { name: "cUSDC", guard: ethers.utils.parseEther("100000"), series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get("1") },
 ];
 
 const MAINNET_FACTORIES = [
@@ -53,7 +56,7 @@ const MAINNET_ADAPTERS = [
     contractName: "WstETHAdapter",
     target: {
       name: "wstETH",
-      guard: ethers.utils.parseEther("100"),
+      guard: ethers.utils.parseEther("40"),
       series: WSTETH_MATURITIES,
       address: WSTETH_TOKEN.get("1"),
     },
@@ -75,6 +78,8 @@ module.exports = {
     divider: "0x6961e8650A1548825f3e17335b7Db2158955C22f",
     periphery: "0xe983Ec9a2314a46F2713A838349bB05f3e629FE5",
     poolManager: "0xEBf829fB23bb3caf7eEeD89515264C18e2CE1dFb",
+    vault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    spaceFactory: "0x6633c65e9f80c65d98abde3f9f4e6e504f4d5352",
     factories: MAINNET_FACTORIES,
     adapters: MAINNET_ADAPTERS,
   },
