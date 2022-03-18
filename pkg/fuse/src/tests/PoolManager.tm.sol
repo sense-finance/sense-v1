@@ -355,6 +355,21 @@ contract PoolManagerTest is DSTest {
         } catch (bytes memory error) {
             assertEq0(error, hex"");
         }
+
+        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(target));
+
+        Hevm(HEVM_ADDRESS).roll(1);
+
+        success = poolManager.execute(
+            poolManager.comptroller(),
+            0,
+            abi.encodeWithSignature("_unsupportMarket(address)", cTarget),
+            gasleft() - 100000
+        );
+        assertTrue(success);
+
+        // should be able to add target again after it's been un-supported
+        poolManager.addTarget(address(target), address(mockAdapter));
     }
 
     function _getValidMaturity() internal view returns (uint256 maturity) {
