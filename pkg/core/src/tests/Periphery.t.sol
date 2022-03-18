@@ -184,7 +184,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter), true);
-        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
 
@@ -206,7 +206,7 @@ contract PeripheryTest is TestHelper {
             address(reward)
         );
         periphery.onboardAdapter(address(otherAdapter), true);
-        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
 
@@ -230,7 +230,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter), true);
-        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
 
@@ -253,7 +253,7 @@ contract PeripheryTest is TestHelper {
             address(reward)
         );
         periphery.onboardAdapter(address(otherAdapter), true);
-        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
 
@@ -333,7 +333,7 @@ contract PeripheryTest is TestHelper {
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
         periphery.onboardAdapter(address(otherAdapter), true); // non admin onboarding
-        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
 
@@ -357,7 +357,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setIsTrusted(address(this), false);
         periphery.onboardAdapter(address(otherAdapter), true); // no-admin onboarding
-        (, bool enabled, , , ) = divider.adapterMeta(address(otherAdapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
     }
 
@@ -372,7 +372,7 @@ contract PeripheryTest is TestHelper {
 
         assertTrue(periphery.verified(address(adapter)));
 
-        (, bool enabled, , , ) = divider.adapterMeta(address(adapter));
+        (, bool enabled, , ) = divider.adapterMeta(address(adapter));
         assertTrue(enabled);
 
         // try sponsoring
