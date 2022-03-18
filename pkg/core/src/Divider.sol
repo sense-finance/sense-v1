@@ -34,7 +34,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     /// @notice Buffer after the sponsor window in which anyone can settle the Series
     uint256 public constant SETTLEMENT_WINDOW = 3 hours;
 
-    /// @notice 10% issuance fee cap
+    /// @notice 5% issuance fee cap
     uint256 public constant ISSUANCE_FEE_CAP = 0.05e18;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
@@ -98,8 +98,6 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         bool enabled;
         // Max amount of Target allowed to be issued
         uint256 guard;
-        // Underlying decimals
-        uint8 uDecimals;
         // Adapter level
         uint248 level;
     }
@@ -456,8 +454,9 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address receiver,
         uint256 scale
     ) internal view returns (uint256) {
-        uint256 uBase = 10**adapterMeta[adapter].uDecimals;
-        return (ytBal + uBal).fdiv((ytBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)), uBase);
+        // (Target Decimals * 18 Decimals / (Target Decimals * 18 Decimals / 18 Decimals)
+        // = 18 Decimals, which is the standard for scale values
+        return (ytBal + uBal).fdiv((ytBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)));
     }
 
     function _redeemYT(
@@ -625,8 +624,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
             adapterAddresses[am.id] = adapter;
         }
 
-        // Set level, target and underlying decimals (can only be done once);
-        am.uDecimals = ERC20(Adapter(adapter).underlying()).decimals();
+        // Set level and target (can only be done once);
         am.level = uint248(Adapter(adapter).level());
         adapterMeta[adapter] = am;
         emit AdapterChanged(adapter, am.id, isOn);
