@@ -454,7 +454,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         address receiver,
         uint256 scale
     ) internal view returns (uint256) {
-        // (Target Decimals * 18 Decimals / (Target Decimals * 18 Decimals / 18 Decimals)
+        // Target Decimals * 18 Decimals / (Target Decimals * 18 Decimals / 18 Decimals)
         // = 18 Decimals, which is the standard for scale values
         return (ytBal + uBal).fdiv((ytBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)));
     }
