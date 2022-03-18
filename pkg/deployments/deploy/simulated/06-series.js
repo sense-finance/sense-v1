@@ -101,13 +101,7 @@ module.exports = async function () {
 
       log("- adding liquidity via target");
       await periphery
-        .addLiquidityFromTarget(
-          adapter.address,
-          seriesMaturity,
-          ethers.utils.parseEther("1"),
-          1,
-          ethers.constants.MaxUint256,
-        )
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
         .then(t => t.wait());
 
       data = await balancerVault.getPoolTokens(poolId);
@@ -126,13 +120,7 @@ module.exports = async function () {
 
       log("- adding liquidity via target");
       await periphery
-        .addLiquidityFromTarget(
-          adapter.address,
-          seriesMaturity,
-          ethers.utils.parseEther("2000000"),
-          1,
-          ethers.constants.MaxUint256,
-        )
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("2000000"), 1, 0)
         .then(t => t.wait());
       data = await balancerVault.getPoolTokens(poolId);
       balanes = data.balances;
@@ -208,13 +196,7 @@ module.exports = async function () {
 
       log("adding liquidity via target");
       await periphery
-        .addLiquidityFromTarget(
-          adapter.address,
-          seriesMaturity,
-          ethers.utils.parseEther("1"),
-          1,
-          ethers.constants.MaxUint256,
-        )
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
         .then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
