@@ -69,8 +69,8 @@ jobs:
     - name: Run local fuse tests
       run: yarn workspace @sense-finance/v1-fuse run turbo-test
 
-    - name: Run local core tests where the mock Target & Underlying tokens use 8 decimals
-      run: yarn workspace @sense-finance/v1-core run turbo-test:8-decimal-target
+    - name: Run local core tests where the mock Target and Underlying tokens use unusual decimals values
+      run: yarn workspace @sense-finance/v1-core run turbo-test:unusual-decimal-val
 
     - name: Run core mainnet tests
       run: yarn workspace @sense-finance/v1-core run turbo-test:mainnet

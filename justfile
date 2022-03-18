@@ -105,7 +105,7 @@ turbo-test-local-no-fuzz *cmds="": && _timer
 		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }}
 
-turbo-test-local-8-decimal-target *cmds="": && _timer
+turbo-test-local-unusual-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; forge test \
 	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
 		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}

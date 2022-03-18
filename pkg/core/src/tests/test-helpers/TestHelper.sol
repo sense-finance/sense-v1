@@ -83,13 +83,20 @@ contract TestHelper is DSTest {
         string[] memory inputs = new string[](2);
         inputs[0] = "just";
         inputs[1] = "_forge_mock_target_decimals";
-        uint8 targetUnderlyingDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
+        uint8 decimalsValFromEnv = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
 
-        underlying = new MockToken("Dai Token", "DAI", targetUnderlyingDecimals);
-        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", targetUnderlyingDecimals);
+        uint8 underlyingDecimals = decimalsValFromEnv == 18 ? 18 : decimalsValFromEnv + 5 % 18;
+        uint8 targetDecimals = decimalsValFromEnv == 18 ? 18 : decimalsValFromEnv + 2 % 18;
+
+        underlying = new MockToken("Dai Token", "DAI", underlyingDecimals);
+        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", targetDecimals);
         emit log_named_uint(
-            "Running tests with the Mock Target & Underlying configured with the following number of decimals",
-            uint256(targetUnderlyingDecimals)
+            "Running tests with the mock Underlying token configured with the following number of decimals",
+            uint256(underlyingDecimals)
+        );
+        emit log_named_uint(
+            "Running tests with the mock Target token configured with the following number of decimals",
+            uint256(targetDecimals)
         );
 
         reward = new MockToken("Reward Token", "RT", baseDecimals);
