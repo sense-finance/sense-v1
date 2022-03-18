@@ -104,7 +104,7 @@ task(
         method: "hardhat_stopImpersonatingAccount",
         params: [senseAdminMultisigAddress],
       });
-    // }
+    }
 
     divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
     periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, signer);
