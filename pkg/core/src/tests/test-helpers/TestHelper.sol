@@ -85,8 +85,8 @@ contract TestHelper is DSTest {
         inputs[1] = "_forge_mock_target_decimals";
         uint8 decimalsValFromEnv = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
 
-        uint8 underlyingDecimals = decimalsValFromEnv == 18 ? 18 : decimalsValFromEnv + 5 % 18;
-        uint8 targetDecimals = decimalsValFromEnv == 18 ? 18 : decimalsValFromEnv + 2 % 18;
+        uint8 underlyingDecimals = decimalsValFromEnv == 18 ? 18 : decimalsValFromEnv + (5 % 18);
+        uint8 targetDecimals = decimalsValFromEnv == 18 ? 18 : decimalsValFromEnv + (2 % 18);
 
         underlying = new MockToken("Dai Token", "DAI", underlyingDecimals);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", targetDecimals);
