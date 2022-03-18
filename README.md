@@ -24,8 +24,10 @@ Active development occurs in this repository, which means some contracts in it m
 | Divider | [0x6961e8650A1548825f3e17335b7Db2158955C22f](https://etherscan.io/address/0x6961e8650A1548825f3e17335b7Db2158955C22f#code)                     |
 | Periphery  | [0xe983Ec9a2314a46F2713A838349bB05f3e629FE5](https://etherscan.io/address/0xe983Ec9a2314a46F2713A838349bB05f3e629FE5#code)      |
 | PoolManager | [0xEBf829fB23bb3caf7eEeD89515264C18e2CE1dFb](https://etherscan.io/address/0xEBf829fB23bb3caf7eEeD89515264C18e2CE1dFb#code)                     |
-| WstETHAdapter  | [0xF3B7Ecc8238f5d6EC6c8d31D667dDd1C2A708a8C](https://etherscan.io/address/0xF3B7Ecc8238f5d6EC6c8d31D667dDd1C2A708a8C#code)      |
-| cUSDC-CAdapter  | [0xf61c68a42FE0D7aA22182953B0f4aD5960f1e439](https://etherscan.io/address/0xf61c68a42FE0D7aA22182953B0f4aD5960f1e439#code)     
+| WstETHAdapter  | [0x174E9763742a9Cd53E86F1dFeE73CfF74eC1E7F1](https://etherscan.io/address/0x174E9763742a9Cd53E86F1dFeE73CfF74eC1E7F1)      |
+| cUSDC-CAdapter  | [0x1896F91d86520273A52F9e2e5AC6f105bc222294](https://etherscan.io/address/0x1896F91d86520273A52F9e2e5AC6f105bc222294)
+| EmergencyStop  | [0x1CaAc05E37dfD5CB1A3B682Cdc6E6bF7a6e7Db9f](https://etherscan.io/address/0x1CaAc05E37dfD5CB1A3B682Cdc6E6bF7a6e7Db9f)  
+
 
 ### Goerli v1.1.0
 
@@ -108,6 +110,8 @@ yarn hardhat deploy --network <network> --tags scenario:prod
 Sense contracts have gone through different independent security audits performed by [Fixed Point Solutions (Kurt Barry)](https://github.com/fixed-point-solutions), [Spearbit](https://spearbit.com), [ABDK](https://www.abdk.consulting/) and [Peckshield](https://peckshield.com). Reports are located in the [`audits`](./audits) directory.
 
 ### Bug Bounties
+
+Sense has an active bug bounty on ImmuneFi, with up to $50,000 for reporting a bug. All of Sense's deployed contracts & Sense Portal are in scope for the bug bounty.
 
 ## Conventions
 
