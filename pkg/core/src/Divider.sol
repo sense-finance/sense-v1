@@ -334,7 +334,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         }
 
         ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);
-        emit PrincipalRedeemed(adapter, maturity, tBal);
+        emit PTRedeemed(adapter, maturity, tBal);
     }
 
     function collect(
@@ -685,7 +685,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
     event Collected(address indexed adapter, uint256 indexed maturity, uint256 collected);
     /// ----* end
     event SeriesSettled(address indexed adapter, uint256 indexed maturity, address indexed settler);
-    event PrincipalRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event PTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
     event YTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
     /// *----* misc
     event GuardedChanged(bool indexed guarded);

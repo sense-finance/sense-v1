@@ -774,7 +774,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     /* ========== LOGS ========== */
 
-    event FactoryChanged(address indexed adapter, bool indexed isOn);
+    event FactoryChanged(address indexed factory, bool indexed isOn);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);
