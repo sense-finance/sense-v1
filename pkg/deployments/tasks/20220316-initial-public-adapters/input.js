@@ -31,7 +31,7 @@ const C_FACTORY_TARGETS = [
 const MAINNET_FACTORIES = [
   {
     contractName: "CFactory",
-    adapterContract: "cAdapter",
+    adapterContract: "CAdapter",
     ifee: ethers.utils.parseEther("0.0025"),
     stake: WETH_TOKEN.get("1"),
     stakeSize: ethers.utils.parseEther("0.25"),
