@@ -75,30 +75,31 @@ module.exports = async function () {
 
   // Helpers
   async function deployAdapter(t, factory) {  
-      const targetName = factory? t.name : t.target.name;
-      log(`\nDeploy simulated ${targetName}`);
+      const { name: tName, tDecimals, uDecimals } = factory ? t : t.target;
 
-      const underlying = await getUnderlyingForTarget(targetName);
-      const targetContract = await deployTarget(targetName, underlying.address);
+      log(`\nDeploy simulated ${tName} with ${tDecimals} decimals`);
+
+      const underlying = await getUnderlyingForTarget(tName, uDecimals);
+      const targetContract = await deployTarget(tName, tDecimals, underlying.address);
       await new Promise(res => setTimeout(res, 500));
 
       log("Give the multi minter permission on Target");
       const multiMint = await ethers.getContract("MultiMint", signer);
       await (await targetContract.setIsTrusted(multiMint.address, true)).wait();
 
-      log(`Mint the deployer a balance of 10,000,000 ${targetName}`);
+      log(`Mint the deployer a balance of 10,000,000 ${tName}`);
       await multiMint.mint([targetContract.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
 
-      let adapterAddress = (await getDeployedAdapters())[targetName];
+      let adapterAddress = (await getDeployedAdapters())[tName];
       if (!adapterAddress) {
-        log(`Deploy adapter for ${targetName}`);
+        log(`Deploy adapter for ${tName}`);
         if (factory) {
-          adapterAddress = await deployAdapterViaFactory(targetName, targetContract, factory);
+          adapterAddress = await deployAdapterViaFactory(tName, targetContract, factory);
         } else {
           adapterAddress = await deployAdapterWithoutFactory(t, targetContract);
         }
       } else {
-        log(`Adapter for ${targetName} already deployed, skipping...`)
+        log(`Adapter for ${tName} already deployed, skipping...`)
       }
 
       log("Give the adapter minter permission on Target");
@@ -110,23 +111,24 @@ module.exports = async function () {
       log("Grant minting authority on the Reward token to the mock TWrapper");
       await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
 
-      log(`Set ${targetName} adapter issuance cap to max uint so we don't have to worry about it`);
+      log(`Set ${tName} adapter issuance cap to max uint so we don't have to worry about it`);
       await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
 
       log(`Can call and set scale value`);
       await setScale(adapterAddress);
   }
 
-  async function getUnderlyingForTarget(targetName) {
+  async function getUnderlyingForTarget(targetName, uDecimals) {
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
     const matchedName = underlyingRegexRes && underlyingRegexRes[1];
     const underlyingName = matchedName === "ETH" ? "WETH" : matchedName || `UNDERLYING-${targetName}`;
 
     if (!underlyingNames.has(underlyingName)) {
+      log(`Deploy simulated underlying ${underlyingName} with ${uDecimals} decimals`);
       await deploy(underlyingName, {
         contract: "AuthdMockToken",
         from: deployer,
-        args: [underlyingName, underlyingName, 18],
+        args: [underlyingName, underlyingName, uDecimals],
         log: true,
       });
 
@@ -135,11 +137,11 @@ module.exports = async function () {
     return await ethers.getContract(underlyingName, signer);
   }
 
-  async function deployTarget(targetName, underlyingAddress) {
+  async function deployTarget(targetName, tDecimals, underlyingAddress) {
     await deploy(targetName, {
       contract: "AuthdMockTarget",
       from: deployer,
-      args: [underlyingAddress, targetName, targetName, 18],
+      args: [underlyingAddress, targetName, targetName, tDecimals],
       log: true,
     });
     return await ethers.getContract(targetName, signer);
