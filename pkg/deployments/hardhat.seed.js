@@ -37,33 +37,35 @@ const DEV_SERIES_MATURITIES = [
     .unix(),
 ];
 const DEV_TARGETS = [
-  { name: "cDAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "cDAI", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  // { name: "cETH", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
 const DEV_ADAPTERS = [
-  chainId => ({
-    contractName: "MockAdapter",
-    target: {
-      name: "cUSDC",
-      guard: ethers.utils.parseEther("1"),
-      series: DEV_SERIES_MATURITIES,
-    },
-    // deployments params MUST BE in order
-    deploymentParams: {
-      target: "0x0",
-      oracle: ethers.constants.AddressZero, // oracle address
-      ifee: ethers.utils.parseEther("0.01"),
-      stake: "0x0",
-      stakeSize: ethers.utils.parseEther("0.01"),
-      minm: "0", // 0 weeks
-      maxm: "4838400", // 4 weeks
-      mode: 1, // 0 monthly, 1 weekly;
-      tilt: 0,
-      level: 31,
-      reward: "0x0",
-    },
-  }),
+  // chainId => ({
+  //   contractName: "MockAdapter",
+  //   target: {
+  //     name: "cUSDC",
+  //     tDecimals: 8, 
+  //     uDecimals: 6,
+  //     guard: ethers.utils.parseEther("1"),
+  //     series: DEV_SERIES_MATURITIES,
+  //   },
+  //   // deployments params MUST BE in order
+  //   deploymentParams: {
+  //     target: "0x0",
+  //     oracle: ethers.constants.AddressZero, // oracle address
+  //     ifee: ethers.utils.parseEther("0.01"),
+  //     stake: "0x0",
+  //     stakeSize: ethers.utils.parseEther("0.01"),
+  //     minm: "0", // 0 weeks
+  //     maxm: "4838400", // 4 weeks
+  //     mode: 1, // 0 monthly, 1 weekly;
+  //     tilt: 0,
+  //     level: 31,
+  //     reward: "0x0",
+  //   },
+  // }),
 ];
 const DEV_FACTORIES = [
   chainId => ({
