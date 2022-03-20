@@ -1,0 +1,227 @@
+{
+  "address": "0x1Fe46c74017D5d35aCf1344D01c7eF4cC8aC2d9D",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "_acceptAdmin",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "isCEther",
+          "type": "bool"
+        },
+        {
+          "internalType": "bytes",
+          "name": "constructorData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "collateralFactorMantissa",
+          "type": "uint256"
+        }
+      ],
+      "name": "_deployMarket",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "cTokensByUnderlying",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "ctokens",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "markets",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "isListed",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralFactorMantissa",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MockComptroller.Market",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nonce",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "underlyings",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x6a13f35523868e10bf49550380df212a5b4f865620260cc46cc0b37dab2b9e55",
+  "receipt": {
+    "to": null,
+    "from": "0x32B4a291f1a6991B55f2F8F70194BD894C075546",
+    "contractAddress": "0x1Fe46c74017D5d35aCf1344D01c7eF4cC8aC2d9D",
+    "transactionIndex": 6,
+    "gasUsed": "351982",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x2d6570005961f3d5339f7fc857f88875d9e38b0a66353c0e349b7ee7f21def1d",
+    "transactionHash": "0x6a13f35523868e10bf49550380df212a5b4f865620260cc46cc0b37dab2b9e55",
+    "logs": [],
+    "blockNumber": 6570623,
+    "cumulativeGasUsed": "954088",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 2,
+  "solcInputHash": "75f4fcb7939c57656ec53f8d567e8f44",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.11+commit.d7f03943\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"_acceptAdmin\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"isCEther\",\"type\":\"bool\"},{\"internalType\":\"bytes\",\"name\":\"constructorData\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"collateralFactorMantissa\",\"type\":\"uint256\"}],\"name\":\"_deployMarket\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"cTokensByUnderlying\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"ctokens\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"markets\",\"outputs\":[{\"components\":[{\"internalType\":\"bool\",\"name\":\"isListed\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"collateralFactorMantissa\",\"type\":\"uint256\"}],\"internalType\":\"struct MockComptroller.Market\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nonce\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"underlyings\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol\":\"MockComptroller\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":100},\"remappings\":[]},\"sources\":{\"@rari-capital/solmate/src/tokens/ERC20.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.8.0;\\n\\n/// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.\\n/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)\\n/// @author Modified from Uniswap (https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2ERC20.sol)\\n/// @dev Do not manually set balances without updating totalSupply, as the sum of all user balances must not exceed it.\\nabstract contract ERC20 {\\n    /*///////////////////////////////////////////////////////////////\\n                                  EVENTS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    event Transfer(address indexed from, address indexed to, uint256 amount);\\n\\n    event Approval(address indexed owner, address indexed spender, uint256 amount);\\n\\n    /*///////////////////////////////////////////////////////////////\\n                             METADATA STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    string public name;\\n\\n    string public symbol;\\n\\n    uint8 public immutable decimals;\\n\\n    /*///////////////////////////////////////////////////////////////\\n                              ERC20 STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    uint256 public totalSupply;\\n\\n    mapping(address => uint256) public balanceOf;\\n\\n    mapping(address => mapping(address => uint256)) public allowance;\\n\\n    /*///////////////////////////////////////////////////////////////\\n                             EIP-2612 STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    bytes32 public constant PERMIT_TYPEHASH =\\n        keccak256(\\\"Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)\\\");\\n\\n    uint256 internal immutable INITIAL_CHAIN_ID;\\n\\n    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;\\n\\n    mapping(address => uint256) public nonces;\\n\\n    /*///////////////////////////////////////////////////////////////\\n                               CONSTRUCTOR\\n    //////////////////////////////////////////////////////////////*/\\n\\n    constructor(\\n        string memory _name,\\n        string memory _symbol,\\n        uint8 _decimals\\n    ) {\\n        name = _name;\\n        symbol = _symbol;\\n        decimals = _decimals;\\n\\n        INITIAL_CHAIN_ID = block.chainid;\\n        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();\\n    }\\n\\n    /*///////////////////////////////////////////////////////////////\\n                              ERC20 LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function approve(address spender, uint256 amount) public virtual returns (bool) {\\n        allowance[msg.sender][spender] = amount;\\n\\n        emit Approval(msg.sender, spender, amount);\\n\\n        return true;\\n    }\\n\\n    function transfer(address to, uint256 amount) public virtual returns (bool) {\\n        balanceOf[msg.sender] -= amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(msg.sender, to, amount);\\n\\n        return true;\\n    }\\n\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) public virtual returns (bool) {\\n        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.\\n\\n        if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - amount;\\n\\n        balanceOf[from] -= amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(from, to, amount);\\n\\n        return true;\\n    }\\n\\n    /*///////////////////////////////////////////////////////////////\\n                              EIP-2612 LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function permit(\\n        address owner,\\n        address spender,\\n        uint256 value,\\n        uint256 deadline,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) public virtual {\\n        require(deadline >= block.timestamp, \\\"PERMIT_DEADLINE_EXPIRED\\\");\\n\\n        // Unchecked because the only math done is incrementing\\n        // the owner's nonce which cannot realistically overflow.\\n        unchecked {\\n            bytes32 digest = keccak256(\\n                abi.encodePacked(\\n                    \\\"\\\\x19\\\\x01\\\",\\n                    DOMAIN_SEPARATOR(),\\n                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))\\n                )\\n            );\\n\\n            address recoveredAddress = ecrecover(digest, v, r, s);\\n\\n            require(recoveredAddress != address(0) && recoveredAddress == owner, \\\"INVALID_SIGNER\\\");\\n\\n            allowance[recoveredAddress][spender] = value;\\n        }\\n\\n        emit Approval(owner, spender, value);\\n    }\\n\\n    function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {\\n        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator();\\n    }\\n\\n    function computeDomainSeparator() internal view virtual returns (bytes32) {\\n        return\\n            keccak256(\\n                abi.encode(\\n                    keccak256(\\\"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)\\\"),\\n                    keccak256(bytes(name)),\\n                    keccak256(\\\"1\\\"),\\n                    block.chainid,\\n                    address(this)\\n                )\\n            );\\n    }\\n\\n    /*///////////////////////////////////////////////////////////////\\n                       INTERNAL MINT/BURN LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function _mint(address to, uint256 amount) internal virtual {\\n        totalSupply += amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(address(0), to, amount);\\n    }\\n\\n    function _burn(address from, uint256 amount) internal virtual {\\n        balanceOf[from] -= amount;\\n\\n        // Cannot underflow because a user's balance\\n        // will never be larger than the total supply.\\n        unchecked {\\n            totalSupply -= amount;\\n        }\\n\\n        emit Transfer(from, address(0), amount);\\n    }\\n}\\n\",\"keccak256\":\"0x698cdbf614109fafc2bf00057b60715fa3aba9dad447c42f4f8b749ae16ce84f\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\n// External references\\nimport { ERC20 } from \\\"@rari-capital/solmate/src/tokens/ERC20.sol\\\";\\n\\ncontract MockComptroller {\\n    mapping(address => address) public ctokens;\\n    mapping(address => address) public underlyings;\\n    uint256 public nonce;\\n\\n    struct Market {\\n        bool isListed;\\n        uint256 collateralFactorMantissa;\\n    }\\n\\n    function _deployMarket(\\n        bool isCEther,\\n        bytes calldata constructorData,\\n        uint256 collateralFactorMantissa\\n    ) external virtual returns (uint256) {\\n        (address token, , , , , , , , ) = abi.decode(\\n            constructorData,\\n            (address, address, address, string, string, address, bytes, uint256, uint256)\\n        );\\n        require(ctokens[token] == address(0));\\n        ctokens[token] = address(uint160(uint256(keccak256(abi.encodePacked(++nonce, blockhash(block.number))))));\\n        underlyings[ctokens[token]] = token;\\n        return 0;\\n    }\\n\\n    function _acceptAdmin() external virtual returns (uint256) {\\n        return 0;\\n    }\\n\\n    function cTokensByUnderlying(address token) external virtual returns (address) {\\n        if (ctokens[token] != address(0)) {\\n            return ctokens[token];\\n        }\\n        return address(0);\\n    }\\n\\n    function markets(address token) external virtual returns (Market memory) {\\n        return Market({ isListed: underlyings[token] != address(0), collateralFactorMantissa: 0 });\\n    }\\n}\\n\\ncontract MockComptrollerRejectAdmin is MockComptroller {\\n    function _acceptAdmin() external override returns (uint256) {\\n        return 1;\\n    }\\n}\\n\\ncontract MockComptrollerFailAddMarket is MockComptroller {\\n    function _deployMarket(\\n        bool isCEther,\\n        bytes calldata constructorData,\\n        uint256 collateralFactorMantissa\\n    ) external override returns (uint256) {\\n        return 1;\\n    }\\n}\\n\",\"keccak256\":\"0xc3e49a305de469d1f32bc706af1669788173727d12ebd3cba1ac4887d41f51ee\",\"license\":\"AGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610568806100206000396000f3fe608060405234801561001057600080fd5b506004361061006d5760003560e01c806331ff47fa14610072578063679a8da8146100a25780638e8f294b146100cb578063a038236414610138578063aba35b9814610161578063affed0e014610182578063e9c714f21461018b575b600080fd5b6100856100803660046102c3565b610192565b6040516001600160a01b0390911681526020015b60405180910390f35b6100856100b03660046102c3565b6001602052600090815260409020546001600160a01b031681565b61011b6100d93660046102c3565b60408051808201825260008082526020918201819052825180840184526001600160a01b03948516825260018352928120549093161515825281019190915290565b604080518251151581526020928301519281019290925201610099565b6100856101463660046102c3565b6000602081905290815260409020546001600160a01b031681565b61017461016f3660046102e7565b6101db565b604051908152602001610099565b61017460025481565b6000610174565b6001600160a01b03818116600090815260208190526040812054909116156101d357506001600160a01b039081166000908152602081905260409020541690565b506000919050565b6000806101ea8486018661042a565b5050506001600160a01b038087166000908152602081905260409020549697509590951615945061021f935050505057600080fd5b60026000815461022e90610509565b918290555060408051602081019290925243409082015260600160408051808303601f1901815291815281516020928301206001600160a01b03938416600081815280855283812080546001600160a01b031990811697909416968717905594855260019093529083208054909116909117905595945050505050565b6001600160a01b03811681146102c057600080fd5b50565b6000602082840312156102d557600080fd5b81356102e0816102ab565b9392505050565b600080600080606085870312156102fd57600080fd5b8435801515811461030d57600080fd5b9350602085013567ffffffffffffffff8082111561032a57600080fd5b818701915087601f83011261033e57600080fd5b81358181111561034d57600080fd5b88602082850101111561035f57600080fd5b95986020929092019750949560400135945092505050565b8035610382816102ab565b919050565b634e487b7160e01b600052604160045260246000fd5b600082601f8301126103ae57600080fd5b813567ffffffffffffffff808211156103c9576103c9610387565b604051601f8301601f19908116603f011681019082821181831017156103f1576103f1610387565b8160405283815286602085880101111561040a57600080fd5b836020870160208301376000602085830101528094505050505092915050565b60008060008060008060008060006101208a8c03121561044957600080fd5b6104528a610377565b985061046060208b01610377565b975061046e60408b01610377565b965060608a013567ffffffffffffffff8082111561048b57600080fd5b6104978d838e0161039d565b975060808c01359150808211156104ad57600080fd5b6104b98d838e0161039d565b96506104c760a08d01610377565b955060c08c01359150808211156104dd57600080fd5b506104ea8c828d0161039d565b93505060e08a013591506101008a013590509295985092959850929598565b600060001982141561052b57634e487b7160e01b600052601160045260246000fd5b506001019056fea2646970667358221220334099418b067f6cd3b1d917edadfafb0602efc0bce3b87ee5b5b79987413bd464736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061006d5760003560e01c806331ff47fa14610072578063679a8da8146100a25780638e8f294b146100cb578063a038236414610138578063aba35b9814610161578063affed0e014610182578063e9c714f21461018b575b600080fd5b6100856100803660046102c3565b610192565b6040516001600160a01b0390911681526020015b60405180910390f35b6100856100b03660046102c3565b6001602052600090815260409020546001600160a01b031681565b61011b6100d93660046102c3565b60408051808201825260008082526020918201819052825180840184526001600160a01b03948516825260018352928120549093161515825281019190915290565b604080518251151581526020928301519281019290925201610099565b6100856101463660046102c3565b6000602081905290815260409020546001600160a01b031681565b61017461016f3660046102e7565b6101db565b604051908152602001610099565b61017460025481565b6000610174565b6001600160a01b03818116600090815260208190526040812054909116156101d357506001600160a01b039081166000908152602081905260409020541690565b506000919050565b6000806101ea8486018661042a565b5050506001600160a01b038087166000908152602081905260409020549697509590951615945061021f935050505057600080fd5b60026000815461022e90610509565b918290555060408051602081019290925243409082015260600160408051808303601f1901815291815281516020928301206001600160a01b03938416600081815280855283812080546001600160a01b031990811697909416968717905594855260019093529083208054909116909117905595945050505050565b6001600160a01b03811681146102c057600080fd5b50565b6000602082840312156102d557600080fd5b81356102e0816102ab565b9392505050565b600080600080606085870312156102fd57600080fd5b8435801515811461030d57600080fd5b9350602085013567ffffffffffffffff8082111561032a57600080fd5b818701915087601f83011261033e57600080fd5b81358181111561034d57600080fd5b88602082850101111561035f57600080fd5b95986020929092019750949560400135945092505050565b8035610382816102ab565b919050565b634e487b7160e01b600052604160045260246000fd5b600082601f8301126103ae57600080fd5b813567ffffffffffffffff808211156103c9576103c9610387565b604051601f8301601f19908116603f011681019082821181831017156103f1576103f1610387565b8160405283815286602085880101111561040a57600080fd5b836020870160208301376000602085830101528094505050505092915050565b60008060008060008060008060006101208a8c03121561044957600080fd5b6104528a610377565b985061046060208b01610377565b975061046e60408b01610377565b965060608a013567ffffffffffffffff8082111561048b57600080fd5b6104978d838e0161039d565b975060808c01359150808211156104ad57600080fd5b6104b98d838e0161039d565b96506104c760a08d01610377565b955060c08c01359150808211156104dd57600080fd5b506104ea8c828d0161039d565b93505060e08a013591506101008a013590509295985092959850929598565b600060001982141561052b57634e487b7160e01b600052601160045260246000fd5b506001019056fea2646970667358221220334099418b067f6cd3b1d917edadfafb0602efc0bce3b87ee5b5b79987413bd464736f6c634300080b0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 12233,
+        "contract": "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol:MockComptroller",
+        "label": "ctokens",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_address,t_address)"
+      },
+      {
+        "astId": 12237,
+        "contract": "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol:MockComptroller",
+        "label": "underlyings",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_address,t_address)"
+      },
+      {
+        "astId": 12239,
+        "contract": "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol:MockComptroller",
+        "label": "nonce",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_address,t_address)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
