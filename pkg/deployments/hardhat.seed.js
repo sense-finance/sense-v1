@@ -26,19 +26,20 @@ const DEV_SERIES_MATURITIES = [
   // beginning of the week falling between 0 and 1 weeks from now
   dayjs
     .utc()
-    .week(dayjs().week() + 1)
+    .week(dayjs().week() + 2)
     .startOf("week")
     .unix(),
   // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
-    .week(dayjs().week() + 2)
+    .week(dayjs().week() + 3)
     .startOf("week")
     .unix(),
 ];
 const DEV_TARGETS = [
   { name: "cDAI", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
   { name: "cETH", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "cWBTC", tDecimals: 18, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
 const DEV_ADAPTERS = [
@@ -46,7 +47,7 @@ const DEV_ADAPTERS = [
     contractName: "MockAdapter",
     target: {
       name: "cUSDC",
-      tDecimals: 8, 
+      tDecimals: 8,
       uDecimals: 6,
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,

@@ -97,24 +97,24 @@ module.exports = async function () {
       console.log("PT balance", balanes[1].toString()); // its 0
       console.log("Target balance", balanes[0].toString()); // its 0
 
-      // log("- adding liquidity via target");
-      // await periphery
-      //   .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
-      //   .then(t => t.wait());
+      log("- adding liquidity via target");
+      await periphery
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
+        .then(t => t.wait());
 
-      // data = await balancerVault.getPoolTokens(poolId);
-      // balanes = data.balances;
+      data = await balancerVault.getPoolTokens(poolId);
+      balanes = data.balances;
 
       // one side liquidity removal sanity check
-      // log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
-      // let lpBalance = await pool.balanceOf(deployer);
-      // data = await balancerVault.getPoolTokens(poolId);
-      // balanes = data.balances;
+      log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
+      let lpBalance = await pool.balanceOf(deployer);
+      data = await balancerVault.getPoolTokens(poolId);
+      balanes = data.balances;
 
-      // await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
+      await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
 
-      // data = await balancerVault.getPoolTokens(poolId);
-      // balanes = data.balances;
+      data = await balancerVault.getPoolTokens(poolId);
+      balanes = data.balances;
 
       log("- adding liquidity via target");
       await periphery
@@ -197,11 +197,11 @@ module.exports = async function () {
         .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
         .then(t => t.wait());
 
-      // const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
-      // // If there's anything more than dust in the Periphery, throw
-      // if (peripheryDust > 100) {
-      //   throw new Error("Periphery has an unexpected amount of Target dust");
-      // }
+      const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
+      // If there's anything more than dust in the Periphery, throw
+      if (peripheryDust > 100) {
+        throw new Error("Periphery has an unexpected amount of Target dust");
+      }
     }
   }
 };
