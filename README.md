@@ -17,16 +17,16 @@ Active development occurs in this repository, which means some contracts in it m
 
 ## Deployments
 
-### Mainnet v1.1.0
+### Mainnet v1.2.0
 
 | Contract   | Address                                                                                                                                        |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Divider | [0x6961e8650A1548825f3e17335b7Db2158955C22f](https://etherscan.io/address/0x6961e8650A1548825f3e17335b7Db2158955C22f#code)                     |
-| Periphery  | [0xe983Ec9a2314a46F2713A838349bB05f3e629FE5](https://etherscan.io/address/0xe983Ec9a2314a46F2713A838349bB05f3e629FE5#code)      |
-| PoolManager | [0xEBf829fB23bb3caf7eEeD89515264C18e2CE1dFb](https://etherscan.io/address/0xEBf829fB23bb3caf7eEeD89515264C18e2CE1dFb#code)                     |
-| WstETHAdapter  | [0x174E9763742a9Cd53E86F1dFeE73CfF74eC1E7F1](https://etherscan.io/address/0x174E9763742a9Cd53E86F1dFeE73CfF74eC1E7F1)      |
-| cUSDC-CAdapter  | [0x1896F91d86520273A52F9e2e5AC6f105bc222294](https://etherscan.io/address/0x1896F91d86520273A52F9e2e5AC6f105bc222294)
-| EmergencyStop  | [0x1CaAc05E37dfD5CB1A3B682Cdc6E6bF7a6e7Db9f](https://etherscan.io/address/0x1CaAc05E37dfD5CB1A3B682Cdc6E6bF7a6e7Db9f)  
+| Divider | [0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0](https://etherscan.io/address/0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0#code)                     |
+| Periphery  | [0xf22AC51fb2711B307be463db3d830a5B680E3dD1](https://etherscan.io/address/0xf22AC51fb2711B307be463db3d830a5B680E3dD1#code)      |
+| PoolManager | [0x7a1d595690aaF08d9157988820c14348F6930de9](https://etherscan.io/address/0x7a1d595690aaF08d9157988820c14348F6930de9#code)                     |
+| WstETHAdapter  | [0x9F1e828EbCa376FDb613Aa513308769C83C451Bc](https://etherscan.io/address/0x9F1e828EbCa376FDb613Aa513308769C83C451Bc)      |
+| cUSDC-CAdapter  | [0x7923C555Df05C284916D20Dd6A73e721cd010053](https://etherscan.io/address/0x7923C555Df05C284916D20Dd6A73e721cd010053)
+| EmergencyStop  | [0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f](https://etherscan.io/address/0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f)  
 
 
 ### Goerli v1.1.0
