@@ -17,27 +17,7 @@ Active development occurs in this repository, which means some contracts in it m
 
 ## Deployments
 
-### Mainnet v1.2.0
-
-| Contract   | Address                                                                                                                                        |
-| ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Divider | [0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0](https://etherscan.io/address/0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0#code)                     |
-| Periphery  | [0xf22AC51fb2711B307be463db3d830a5B680E3dD1](https://etherscan.io/address/0xf22AC51fb2711B307be463db3d830a5B680E3dD1#code)      |
-| PoolManager | [0x7a1d595690aaF08d9157988820c14348F6930de9](https://etherscan.io/address/0x7a1d595690aaF08d9157988820c14348F6930de9#code)                     |
-| WstETHAdapter  | [0x9F1e828EbCa376FDb613Aa513308769C83C451Bc](https://etherscan.io/address/0x9F1e828EbCa376FDb613Aa513308769C83C451Bc)      |
-| cUSDC-CAdapter  | [0x7923C555Df05C284916D20Dd6A73e721cd010053](https://etherscan.io/address/0x7923C555Df05C284916D20Dd6A73e721cd010053)
-| EmergencyStop  | [0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f](https://etherscan.io/address/0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f)  
-
-
-### Goerli v1.1.0
-
-| Contract   | Address                                                                                                                                        |
-| ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Divider | [0xc8b594Bf6cC2a41e3afC3807e667B055CfBF8304](https://etherscan.io/address/0xc8b594Bf6cC2a41e3afC3807e667B055CfBF8304#code)                     |
-| Periphery  | [0x992c0A5Ad53b9f0553299EEFD79B7EBBEF22D324](https://etherscan.io/address/0x992c0A5Ad53b9f0553299EEFD79B7EBBEF22D324#code)      |
-| PoolManager | [0xDd2c59C90c7b4E03584F684A47aa7BAD03Eb91E3](https://etherscan.io/address/0xDd2c59C90c7b4E03584F684A47aa7BAD03Eb91E3#code)                     |
-| BalancerVault  | [0xB9EA2205A94E001C22421389b4165BC6e74bbd24](https://etherscan.io/address/0xB9EA2205A94E001C22421389b4165BC6e74bbd24#code)      
-
+Deployed contract addresses reside in the [Sense Docs Portal](https://docs.sense.finance/developers/deployed-contracts/).
 
 ## Development
 
@@ -111,7 +91,7 @@ Sense contracts have gone through different independent security audits performe
 
 ### Bug Bounties
 
-Sense has an active bug bounty on ImmuneFi, with up to $50,000 for reporting a bug. All of Sense's deployed contracts & Sense Portal are in scope for the bug bounty.
+Sense will have an active bug bounty on ImmuneFi, with up to $50,000 for reporting a bug. All of Sense's deployed contracts & Sense Portal are in scope for the bug bounty. See a bug before our bug bounty is live? Reach out to josh & kenton @ sense.finance.
 
 ## Conventions
 
