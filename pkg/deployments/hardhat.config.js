@@ -48,7 +48,7 @@ module.exports = {
       saveDeployments: true,
     },
     goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      url: `https://goerli.infura.io/v3/d7c51ee2450a4c81bd9ad4958ad5c82f`,
       accounts,
       chainId: 5,
       saveDeployments: true,
@@ -64,7 +64,7 @@ module.exports = {
       },
       chainId: process.env.CHAIN_ID !== undefined ? parseInt(process.env.CHAIN_ID) : 111,
       // gas: 12000000,
-      // saveDeployments: false,
+      saveDeployments: true,
       // blockGasLimit: 21000000,
       // blockNumber: 13491969,
       // allowUnlimitedContractSize: false,
@@ -79,7 +79,7 @@ module.exports = {
     },
   },
   paths: {
-    sources: "src/",
+    sources: "src",
     deployments: "deployments",
   },
   solidity: {

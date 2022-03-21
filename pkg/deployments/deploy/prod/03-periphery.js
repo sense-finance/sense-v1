@@ -26,7 +26,9 @@ module.exports = async function () {
   await (await divider.setPeriphery(peripheryAddress)).wait();
 
   log("Give the periphery auth over the pool manager");
-  await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+  if (!(await poolManager.isTrusted(peripheryAddress))) {
+    await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+  }
 };
 
 module.exports.tags = ["prod:periphery", "scenario:prod"];
