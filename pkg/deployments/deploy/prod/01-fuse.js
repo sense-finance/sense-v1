@@ -42,7 +42,7 @@ module.exports = async function () {
   const poolManager = await ethers.getContract("PoolManager", signer);
   await (
     await poolManager.deployPool(
-      "Sense Pool – Core",
+      "Sense Pool – Main",
       ethers.utils.parseEther("0.333"),
       ethers.utils.parseEther("1.08"),
       masterOracle,

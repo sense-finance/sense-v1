@@ -46,7 +46,7 @@ module.exports = async function () {
   if ((await poolManager.comptroller()) == ethers.constants.AddressZero) {
     await (
       await poolManager.deployPool(
-        "Sense Pool",
+        "Sense Pool – Main",
         ethers.utils.parseEther("0.051"),
         ethers.utils.parseEther("1"),
         mockFuseOracleAddress,

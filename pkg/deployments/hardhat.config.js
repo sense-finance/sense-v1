@@ -18,9 +18,9 @@ const accounts = {
 
 module.exports = {
   defaultNetwork: "hardhat",
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
+  // etherscan: {
+  //   apiKey: process.env.ETHERSCAN_API_KEY,
+  // },
   namedAccounts: {
     deployer: {
       default: parseInt(process.env.DEPLOYER_INDEX || 0),
@@ -33,22 +33,15 @@ module.exports = {
   },
   networks: {
     mainnet: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
       accounts,
       gasPrice: "auto",
       gasMultiplier: 1.2,
       chainId: 1,
       saveDeployments: true,
     },
-    kovan: {
-      url: `https://eth-kovan.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-      accounts,
-      gasPrice: 120 * 1000000000, // 120 GWei
-      chainId: 42,
-      saveDeployments: true,
-    },
     goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_KEY}`,
       accounts,
       chainId: 5,
       saveDeployments: true,
@@ -60,7 +53,7 @@ module.exports = {
       accounts,
       forking: {
         enabled: true,
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+        url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
       },
       chainId: process.env.CHAIN_ID !== undefined ? parseInt(process.env.CHAIN_ID) : 111,
       // gas: 12000000,

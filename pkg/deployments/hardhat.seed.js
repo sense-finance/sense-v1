@@ -1,4 +1,4 @@
-const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("./hardhat.addresses");
+const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -91,7 +91,7 @@ const MAINNET_FACTORIES = [];
 const CUSDC_WSTETH_SERIES_MATURITIES = [
   dayjs
     .utc()
-    .week(dayjs().week() + 1)
+    .week(dayjs().week() + 2)
     .startOf("week")
     .unix(),
 ];
@@ -116,29 +116,6 @@ const MAINNET_ADAPTERS = [
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
-    },
-  }),
-  chainId => ({
-    contractName: "CAdapter",
-    // deployment params MUST BE in order
-    target: {
-      name: "cUSDC",
-      address: CUSDC_TOKEN.get(chainId),
-      guard: ethers.utils.parseEther("1"),
-      series: CUSDC_WSTETH_SERIES_MATURITIES,
-    },
-    deploymentParams: {
-      target: CUSDC_TOKEN.get(chainId),
-      oracle: MASTER_ORACLE.get(chainId), // oracle address
-      ifee: ethers.utils.parseEther("0.0025"),
-      stake: WETH_TOKEN.get(chainId),
-      stakeSize: ethers.utils.parseEther("0.01"),
-      minm: "0", // 0 weeks
-      maxm: "604800", // 1 week
-      mode: 1, // 0 monthly, 1 weekly;
-      tilt: 0,
-      level: 31,
-      reward: COMP_TOKEN.get(chainId),
     },
   }),
 ];
