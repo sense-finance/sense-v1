@@ -107,7 +107,7 @@ yarn hardhat deploy --network <network> --tags scenario:prod
 
 ## Security
 
-Sense contracts have gone through different independent security audits performed by [Fixed Point Solutions (Kurt Barry)](https://github.com/fixed-point-solutions), [Spearbit](https://spearbit.com), [ABDK](https://www.abdk.consulting/) and [Peckshield](https://peckshield.com). Reports are located in the [`audits`](./audits) directory.
+Sense contracts have gone through different independent security audits performed by [Spearbit](https://spearbit.com), [Fixed Point Solutions (Kurt Barry)](https://github.com/fixed-point-solutions), [ABDK](https://www.abdk.consulting/) and [Peckshield](https://peckshield.com). Reports are located in the [`audits`](./audits) directory.
 
 ### Bug Bounties
 
