@@ -1,5 +1,4 @@
 const { ethers } = require("hardhat");
-const { FUSE_CERC20_IMPL, MASTER_ORACLE_IMPL, MASTER_ORACLE, INTEREST_RATE_MODEL } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function () {
@@ -44,7 +43,7 @@ module.exports = async function () {
   const poolManager = await ethers.getContract("PoolManager", signer);
   log("\n-------------------------------------------------------");
   console.log("\nDeploy Sense Fuse pool via Pool Manager");
-  if (await poolManager.comptroller() == ethers.constants.AddressZero) {
+  if ((await poolManager.comptroller()) == ethers.constants.AddressZero) {
     await (
       await poolManager.deployPool(
         "Sense Pool",
