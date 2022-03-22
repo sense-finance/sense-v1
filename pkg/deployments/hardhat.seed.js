@@ -1,4 +1,4 @@
-const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("./hardhat.addresses");
+const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -30,8 +30,9 @@ const DEV_SERIES_MATURITIES = [
     .unix(),
 ];
 const DEV_TARGETS = [
-  { name: "cDAI", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cETH", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "cDAI", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "cETH", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "cWBTC", tDecimals: 18, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
 const DEV_ADAPTERS = [
@@ -39,6 +40,8 @@ const DEV_ADAPTERS = [
     contractName: "MockAdapter",
     target: {
       name: "cUSDC",
+      tDecimals: 8,
+      uDecimals: 6,
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
     },
@@ -113,29 +116,6 @@ const MAINNET_ADAPTERS = [
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
-    },
-  }),
-  chainId => ({
-    contractName: "CAdapter",
-    // deployment params MUST BE in order
-    target: {
-      name: "cUSDC",
-      address: CUSDC_TOKEN.get(chainId),
-      guard: ethers.utils.parseEther("1"),
-      series: CUSDC_WSTETH_SERIES_MATURITIES,
-    },
-    deploymentParams: {
-      target: CUSDC_TOKEN.get(chainId),
-      oracle: MASTER_ORACLE.get(chainId), // oracle address
-      ifee: ethers.utils.parseEther("0.0025"),
-      stake: WETH_TOKEN.get(chainId),
-      stakeSize: ethers.utils.parseEther("0.01"),
-      minm: "0", // 0 weeks
-      maxm: "604800", // 1 week
-      mode: 1, // 0 monthly, 1 weekly;
-      tilt: 0,
-      level: 31,
-      reward: COMP_TOKEN.get(chainId),
     },
   }),
 ];

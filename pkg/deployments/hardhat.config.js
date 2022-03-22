@@ -18,9 +18,9 @@ const accounts = {
 
 module.exports = {
   defaultNetwork: "hardhat",
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
+  // etherscan: {
+  //   apiKey: process.env.ETHERSCAN_API_KEY,
+  // },
   namedAccounts: {
     deployer: {
       default: parseInt(process.env.DEPLOYER_INDEX || 0),

@@ -20,43 +20,67 @@ module.exports = async function () {
   log("\nAdd multisig as trusted address on contracts");
 
   log("Trust the multisig address on the token handler");
-  await (await tokenHandler.setIsTrusted(multisig, true)).wait();
+  if (!(await tokenHandler.isTrusted(multisig))) {
+    await (await tokenHandler.setIsTrusted(multisig, true)).wait();
+  }
 
   log("Trust the multisig address on the divider");
-  await (await divider.setIsTrusted(multisig, true)).wait();
+  if (!(await divider.isTrusted(multisig))) {
+    await (await divider.setIsTrusted(multisig, true)).wait();
+  }
 
   log("Trust the multisig address on the pool manager");
-  await (await poolManager.setIsTrusted(multisig, true)).wait();
+  if (!(await poolManager.isTrusted(multisig))) {
+    await (await poolManager.setIsTrusted(multisig, true)).wait();
+  }
 
   log("Trust the multisig address on the space factory");
-  await (await spaceFactory.setIsTrusted(multisig, true)).wait();
+  if (!(await spaceFactory.isTrusted(multisig))) {
+    await (await spaceFactory.setIsTrusted(multisig, true)).wait();
+  }
 
   log("Trust the multisig address on the periphery");
-  await (await periphery.setIsTrusted(multisig, true)).wait();
+  if (!(await periphery.isTrusted(multisig))) {
+    await (await periphery.setIsTrusted(multisig, true)).wait();
+  }
 
   log("Trust the multisig address on the emergency stop");
-  await (await emergencyStop.setIsTrusted(multisig, true)).wait();
+  if (!(await emergencyStop.isTrusted(multisig))) {
+    await (await emergencyStop.setIsTrusted(multisig, true)).wait();
+  }
 
   log("\n-------------------------------------------------------")
   log("\nRemove deployer address from trusted on contracts");
 
   log("Untrust deployer on the token handler");
-  await (await tokenHandler.setIsTrusted(deployer, false)).wait();
+  if (await tokenHandler.isTrusted(deployer)) {
+    await (await tokenHandler.setIsTrusted(deployer, false)).wait();  
+  }
 
   log("Untrust deployer on the divider");
-  await (await divider.setIsTrusted(deployer, false)).wait();
+  if (await divider.isTrusted(deployer)) {
+    await (await divider.setIsTrusted(deployer, false)).wait();  
+  }
 
   log("Untrust deployer on the pool manager");
-  await (await poolManager.setIsTrusted(deployer, false)).wait();
+  if (await poolManager.isTrusted(deployer)) {
+    await (await poolManager.setIsTrusted(deployer, false)).wait();  
+  }
 
   log("Untrust deployer on the space factory");
-  await (await spaceFactory.setIsTrusted(deployer, false)).wait();
+  if (await spaceFactory.isTrusted(deployer)) {
+    await (await spaceFactory.setIsTrusted(deployer, false)).wait();  
+  }
 
   log("Untrust deployer on the periphery");
-  await (await periphery.setIsTrusted(deployer, false)).wait();
+  if (await periphery.isTrusted(deployer)) {
+    await (await periphery.setIsTrusted(deployer, false)).wait();  
+  }
 
   log("Untrust deployer on the emergency stop");
-  await (await emergencyStop.setIsTrusted(deployer, false)).wait();
+  if (await emergencyStop.isTrusted(deployer)) {
+    await (await emergencyStop.setIsTrusted(deployer, false)).wait();  
+  }
 
   log("\n-------------------------------------------------------")
   log("\Sanity checks: checking deployer address cannot execute trusted functions anymore...");
@@ -75,6 +99,7 @@ module.exports = async function () {
   } else {
     throw Error('Sanity checks: FAILED');
   }
+
 };
 
 module.exports.tags = ["simulated:multisig", "scenario:simulated"];

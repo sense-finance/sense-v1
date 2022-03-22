@@ -100,7 +100,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         divider.setIsTrusted(address(factory), true);
         periphery.setFactory(address(factory), true);
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, Assets.RARI_ORACLE);
+        poolManager.deployPool("Sense Pool Main", 0.051 ether, 1 ether, Assets.RARI_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,

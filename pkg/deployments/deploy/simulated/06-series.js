@@ -6,6 +6,10 @@ const { getDeployedAdapters } = require("../../hardhat.utils");
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
+const TWO_MILLION_ETH = ethers.utils.parseEther("2000000");
+const ONE_ETH = ethers.utils.parseEther("1");
+const FOURTY_THOUSAND_ETH = ethers.utils.parseEther("40000");  
+const ONE_MILLION_ETH = ethers.utils.parseEther("1000000");  
 
 module.exports = async function () {
   const { deployer } = await getNamedAccounts();
@@ -27,7 +31,9 @@ module.exports = async function () {
   log("SPONSOR SERIES & SANITY CHECK SWAPS");
   log("-------------------------------------------------------");
   log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
-  await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+  if (!(await stake.allowance(deployer, periphery.address)).eq(ethers.constants.MaxUint256)) {
+    await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+  }
 
   const balancerVault = await ethers.getContract("Vault", signer);
   const spaceFactory = await ethers.getContract("SpaceFactory", signer);
@@ -48,15 +54,15 @@ module.exports = async function () {
 
     log("\n-------------------------------------------------------");
     log(`\nEnable the Divider to move the deployer's ${targetName} for issuance`);
-    await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+    if (!(await target.allowance(deployer, divider.address)).eq(ethers.constants.MaxUint256)) {
+      await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+    }
 
     for (let seriesMaturity of series) {
       const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
       log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       let { pt: ptAddress, yt: ytAddress } = await divider.series(adapter.address, seriesMaturity);
-      console.log(ptAddress, ytAddress, "ptAddress, ytAddress");
       if (ptAddress === ethers.constants.AddressZero) {
-        console.log("sponsoring series");
         const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
@@ -67,12 +73,14 @@ module.exports = async function () {
         await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
       }
 
-      log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
-      await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
-
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
+
+      log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
+      if (!(await pt.balanceOf(deployer)).gte(FOURTY_THOUSAND_ETH)) {
+        await divider.issue(adapter.address, seriesMaturity, ONE_MILLION_ETH).then(tx => tx.wait());
+      }
 
       const { abi: spaceAbi } = await deployments.getArtifact("Space");
       const poolAddress = await spaceFactory.pools(adapter.address, seriesMaturity);
@@ -80,60 +88,70 @@ module.exports = async function () {
       const poolId = await pool.getPoolId();
 
       log("Sending PT to mock Balancer Vault");
-      await target.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await pt.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      if (!(await target.allowance(deployer, balancerVault.address)).eq(ethers.constants.MaxUint256)) {
+        await target.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
+
+      if (!(await pt.allowance(deployer, balancerVault.address)).eq(ethers.constants.MaxUint256)) {
+        await pt.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
 
       const { defaultAbiCoder } = ethers.utils;
 
       log("Make all Periphery approvals");
-      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await yt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      if (!(await target.allowance(deployer, periphery.address)).eq(ethers.constants.MaxUint256)) {
+        await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
+      if (!(await pool.allowance(deployer, periphery.address)).eq(ethers.constants.MaxUint256)) {
+        await pool.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
+      if (!(await pt.allowance(deployer, periphery.address)).eq(ethers.constants.MaxUint256)) {
+        await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
+      if (!(await yt.allowance(deployer, periphery.address)).eq(ethers.constants.MaxUint256)) {
+        await yt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
 
       log("Initializing Target in pool with the first Join");
 
       let data = await balancerVault.getPoolTokens(poolId);
-      let balanes = data.balances;
-      console.log("totalSupply", (await pool.totalSupply()).toString()); // its 0
-      console.log("PT balance", balanes[1].toString()); // its 0
-      console.log("Target balance", balanes[0].toString()); // its 0
+      let balances = data.balances;
 
       log("- adding liquidity via target");
-      await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
+      if (balances[0].lt(ONE_ETH)) {
+        await periphery
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ONE_ETH, 1, 0)
         .then(t => t.wait());
-
-      data = await balancerVault.getPoolTokens(poolId);
-      balanes = data.balances;
+      }
 
       // one side liquidity removal sanity check
       log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
       let lpBalance = await pool.balanceOf(deployer);
+      if (lpBalance.gte(ethers.utils.parseEther("0"))) {
+        await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
+      }
+
       data = await balancerVault.getPoolTokens(poolId);
-      balanes = data.balances;
-
-      await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
-
-      data = await balancerVault.getPoolTokens(poolId);
-      balanes = data.balances;
-
+      balances = data.balances;
+      
       log("- adding liquidity via target");
-      await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("2000000"), 1, 0)
-        .then(t => t.wait());
+      if (balances[0].lt(TWO_MILLION_ETH)) {
+        await periphery
+          .addLiquidityFromTarget(adapter.address, seriesMaturity, TWO_MILLION_ETH, 1, 0)
+          .then(t => t.wait());
+      }
       data = await balancerVault.getPoolTokens(poolId);
-      balanes = data.balances;
-      console.log("totalSupply", (await pool.totalSupply()).toString()); // its 2199999780000022000997800
-      console.log("PT balance", balanes[1].toString()); // its 0
-      console.log("Target balance", balanes[0].toString()); // > its 2000000000000000000909091
+      balances = data.balances;
 
       log("Making swap to init PT");
       data = await balancerVault.getPoolTokens(poolId);
-      balanes = data.balances;
+      balances = data.balances;
       await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("40000"), 0)
+        .swapPTsForTarget(adapter.address, seriesMaturity, FOURTY_THOUSAND_ETH, 0)
         .then(t => t.wait());
+
+      data = await balancerVault.getPoolTokens(poolId);
+      balances = data.balances;
 
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
@@ -175,12 +193,12 @@ module.exports = async function () {
 
       log("swapping target for pt");
       await periphery
-        .swapTargetForPTs(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
+        .swapTargetForPTs(adapter.address, seriesMaturity, ONE_ETH, 0)
         .then(tx => tx.wait());
 
       log("swapping target for yields");
       await periphery
-        .swapTargetForYTs(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 0)
+        .swapTargetForYTs(adapter.address, seriesMaturity, ONE_ETH, 0)
         .then(tx => tx.wait());
 
       log("swapping pt for target");
@@ -196,7 +214,7 @@ module.exports = async function () {
 
       log("adding liquidity via target");
       await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("1"), 1, 0)
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, ONE_ETH, 1, 0)
         .then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());

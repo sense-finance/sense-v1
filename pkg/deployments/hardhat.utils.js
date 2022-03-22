@@ -9,13 +9,13 @@ exports.STORAGE_SLOT = {
   WETH: 3,
 };
 
-// Copy deployments from `deployments` folder to `deployed` including tags folders
+// Copy deployments from `deployments` folder to `deployed` including versions folders
 exports.moveDeployments = async function () {
-  const tag = await currentTag();
+  const version = await currentVersion();
   const currentPath = path.join(__dirname, `deployments/${network.name == "hardhat" ? "localhost" : network.name}`);
   const destinationPath = path.join(
     __dirname,
-    `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${tag}/contracts`,
+    `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${version}/contracts`,
   );
   try {
     await fs.copySync(currentPath, destinationPath);
@@ -27,10 +27,10 @@ exports.moveDeployments = async function () {
 
 // Writes deployed contracts addresses (excluding adapters) into contracts.json
 exports.writeDeploymentsToFile = async function () {
-  const tag = await currentTag();
+  const version = await currentVersion();
   const currentPath = path.join(
     __dirname,
-    `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${tag}/contracts`,
+    `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${version}/contracts`,
   );
   let addresses = {};
   try {
@@ -54,11 +54,11 @@ exports.writeDeploymentsToFile = async function () {
 // Writes deployed adapters addresses (without ABI) into adapters.json
 exports.writeAdaptersToFile = async function () {
   try {
-    const tag = await currentTag();
+    const version = await currentVersion();
     const deployedAdapters = await getDeployedAdapters();
     const destinationPath = path.join(
       __dirname,
-      `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${tag}`,
+      `deployed/${network.name == "hardhat" ? "localhost" : network.name}/${version}`,
     );
     await fs.writeJson(`${destinationPath}/adapters.json`, deployedAdapters);
     log(`\Deployed adapters addresses successfully saved to ${destinationPath}/adapters.json`);
@@ -99,6 +99,12 @@ async function currentTag() {
   return tag.trim().replace(/(\r\n|\n|\r)/gm, "");
 }
 exports.currentTag = currentTag;
+
+async function currentVersion() {
+  const pkgjson = JSON.parse(fs.readFileSync(`${__dirname}/../../package.json`, "utf-8"));
+  return `v${pkgjson.version}`;
+}
+exports.currentVersion = currentVersion;
 
 exports.toBytes32 = bn => {
   return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));

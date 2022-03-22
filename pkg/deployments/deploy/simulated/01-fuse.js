@@ -46,7 +46,7 @@ module.exports = async function () {
   if ((await poolManager.comptroller()) == ethers.constants.AddressZero) {
     await (
       await poolManager.deployPool(
-        "Sense Pool",
+        "Sense Pool – Main",
         ethers.utils.parseEther("0.051"),
         ethers.utils.parseEther("1"),
         mockFuseOracleAddress,
@@ -62,7 +62,10 @@ module.exports = async function () {
     closeFactor: ethers.utils.parseEther("0.051"),
     liquidationIncentive: ethers.utils.parseEther("1"),
   };
-  await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
+  const { reserveFactor } = await poolManager.targetParams();
+  if (!reserveFactor.eq(ethers.utils.parseEther("0.1"))) {
+    await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), params)).wait();
+  }
 };
 
 module.exports.tags = ["simulated:fuse", "scenario:simulated"];

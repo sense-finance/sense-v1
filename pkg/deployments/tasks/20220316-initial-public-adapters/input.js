@@ -1,11 +1,4 @@
-const {
-  COMP_TOKEN,
-  COMPOUND_PRICE_FEED,
-  WETH_TOKEN,
-  CUSDC_TOKEN,
-  WSTETH_TOKEN,
-  MASTER_ORACLE,
-} = require("../../hardhat.addresses");
+const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -25,7 +18,8 @@ const C_USDC_MATURITIES = [
 ];
 
 const C_FACTORY_TARGETS = [
-  { name: "cUSDC", guard: ethers.utils.parseEther("100000"), series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get("1") },
+  // ~ 100,000 USDC guard
+  { name: "cUSDC", guard: "500000000000000", series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get("1") },
 ];
 
 const MAINNET_FACTORIES = [
@@ -75,11 +69,11 @@ const MAINNET_ADAPTERS = [
 
 module.exports = {
   mainnet: {
-    divider: "0x6961e8650A1548825f3e17335b7Db2158955C22f",
-    periphery: "0xe983Ec9a2314a46F2713A838349bB05f3e629FE5",
-    poolManager: "0xEBf829fB23bb3caf7eEeD89515264C18e2CE1dFb",
+    divider: "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
+    periphery: "0xf22AC51fb2711B307be463db3d830a5B680E3dD1",
+    poolManager: "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
     vault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-    spaceFactory: "0x6633c65e9f80c65d98abde3f9f4e6e504f4d5352",
+    spaceFactory: "0x984682770f1EED90C00cd57B06b151EC12e7c51C",
     factories: MAINNET_FACTORIES,
     adapters: MAINNET_ADAPTERS,
   },
