@@ -13,8 +13,8 @@ HEX_12 := "0x000000000000000000000000000000000000000000000000000000000000000c"
 HEX_8  := "0x0000000000000000000000000000000000000000000000000000000000000008"
 
 ## for mainnet tests and deployments
-INFURA_KEY  := env_var_or_default("INFURA_KEY", "9e787c3211fa4d87b528b5cb0b0bb6e5")
-MAINNET_RPC := "https://mainnet.infura.io/v3/" + INFURA_KEY
+ALCHEMY_KEY := env_var_or_default("ALCHEMY_KEY", "_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC")
+MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
 MNEMONIC    := env_var_or_default("MNEMONIC", "")
 
 DAPP_SOLC_VERSION   := "0.8.11"
