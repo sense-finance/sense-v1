@@ -91,7 +91,7 @@ const MAINNET_FACTORIES = [];
 const CUSDC_WSTETH_SERIES_MATURITIES = [
   dayjs
     .utc()
-    .week(dayjs().week() + 2)
+    .week(dayjs().week() + 1)
     .startOf("week")
     .unix(),
 ];
