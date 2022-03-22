@@ -29,14 +29,14 @@ Active development occurs in this repository, which means some contracts in it m
 | EmergencyStop  | [0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f](https://etherscan.io/address/0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f)  
 
 
-### Goerli v1.1.0
+### Goerli v1.2.0
 
 | Contract   | Address                                                                                                                                        |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Divider | [0xe42fc83A7B91160E9EC549e6B3935e72C5A436F8](https://goerli.etherscan.io/address/0xe42fc83A7B91160E9EC549e6B3935e72C5A436F8#code)                     |
-| Periphery  | [0x806b03ae154E36b251A0717721e8D6a85590Bd53](https://goerli.etherscan.io/address/0x806b03ae154E36b251A0717721e8D6a85590Bd53#code)      |
-| PoolManager | [0xc2Cbeff55cEfd57Fb64e177A57463d3Ec7e29d88](https://goerli.etherscan.io/address/0xc2Cbeff55cEfd57Fb64e177A57463d3Ec7e29d88#code)                     |
-| BalancerVault  | [0x22342ca91e649fA9f9dB01Fa8FE8679e8e2ddbE2](https://goerli.etherscan.io/address/0x22342ca91e649fA9f9dB01Fa8FE8679e8e2ddbE2#code)      
+| Divider | [0x240c7D23cfFB8438ad4fdF1a4FAcF47505A4A37f](https://goerli.etherscan.io/address/0x240c7D23cfFB8438ad4fdF1a4FAcF47505A4A37f#code)                     |
+| Periphery  | [0xeEb84e2381f262e88EDB193665C017DBd965Af78](https://goerli.etherscan.io/address/0xeEb84e2381f262e88EDB193665C017DBd965Af78#code)      |
+| PoolManager | [0x57D69DF010C495aceb22D8433288C1C774Cbb77E](https://goerli.etherscan.io/address/0x57D69DF010C495aceb22D8433288C1C774Cbb77E#code)                     |
+| BalancerVault  | [0x968b38155b99B05b93c8aAF963127Fb128f812F4](https://goerli.etherscan.io/address/0x968b38155b99B05b93c8aAF963127Fb128f812F4#code)      
 
 
 ## Development
