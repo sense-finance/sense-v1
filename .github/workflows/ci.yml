@@ -6,9 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      FORGE_REVISION: d92753b7fc1923ff22eafd146e87a41eb916a424
-
     steps:
     - uses: actions/checkout@v2
       with:
@@ -27,16 +24,6 @@ jobs:
       with:
           cache-on-failure: true
 
-    # Try to get forge from cache
-    - name: Cache forge
-      id: cache-forge
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-forge
-      with:
-        path: ~/.cargo/bin/forge
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.FORGE_REVISION }}
-
     # Try to get just from cache
     - name: Cache just
       id: cache-just
@@ -47,18 +34,18 @@ jobs:
         path: ~/.cargo/bin/just
         key: ${{ runner.os }}-build-${{ env.cache-name }}
 
-    - name: Install npm dependencies
-      run: yarn install
-
-    # If we couldn't get forge from the cache, install it
-    - name: Install forge
-      if: steps.cache-forge.outputs.cache-hit != 'true'
-      run: cargo install --git https://github.com/gakonst/dapptools-rs --rev ${{ env.FORGE_REVISION }} --locked
-
-      # If we couldn't get just from the cache, install it
+    # If we couldn't get just from the cache, install it
     - name: Install just
       if: steps.cache-just.outputs.cache-hit != 'true'
       run: cargo install just
+
+    - name: Install npm dependencies
+      run: yarn install
+
+    - name: Install Foundry
+      uses: onbjerg/foundry-toolchain@v1
+      with:
+        version: nightly
 
     - name: Run linter
       run: yarn lint
