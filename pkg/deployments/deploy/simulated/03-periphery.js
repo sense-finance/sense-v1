@@ -23,8 +23,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     await (await divider.setPeriphery(peripheryAddress)).wait();
   }
 
-  // log("Give the periphery auth over the pool manager");
-  await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+  log("Give the periphery auth over the pool manager");
+  if (!(await poolManager.isTrusted(peripheryAddress))) {
+    await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+  }
 };
 
 module.exports.tags = ["simulated:periphery", "scenario:simulated"];

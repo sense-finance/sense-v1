@@ -19,13 +19,13 @@ const DEV_SERIES_MATURITIES = [
   // beginning of the week falling between 0 and 1 weeks from now
   dayjs
     .utc()
-    .week(dayjs().week() + 2)
+    .week(dayjs().week() + 1)
     .startOf("week")
     .unix(),
   // beginning of the week falling between 1 and 2 weeks from now
   dayjs
     .utc()
-    .week(dayjs().week() + 3)
+    .week(dayjs().week() + 2)
     .startOf("week")
     .unix(),
 ];

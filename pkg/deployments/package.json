@@ -18,7 +18,7 @@
         "node:hardhat-fork:prod": "yarn prepare && hardhat --network hardhat node --tags scenario:prod",
         "node:hardhat-fork:sim": "yarn prepare && SIM=true hardhat --network hardhat node --tags scenario:simulated",
         "deploy:mainnet": "hardhat --network mainnet deploy --tags scenario:prod",
-        "deploy:goerli": "hardhat --network goerli deploy --tags scenario:prod",
+        "deploy:goerli": "hardhat --network goerli deploy --tags scenario:simulated",
         "deploy:kovan": "hardhat --network kovan deploy --tags scenario:simulated",
         "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod",
         "prepare": "cp -n ../../.env ./.env || true && git submodule update --init --recursive"
