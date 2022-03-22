@@ -37,7 +37,9 @@ module.exports = async function () {
     });
 
     log(`Trust ${factoryContractName} on the divider`);
-    await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
+    if (!(await divider.isTrusted(mockFactoryAddress))) {
+      await (await divider.setIsTrusted(mockFactoryAddress, true)).wait();
+    }
 
     log(`Add ${factoryContractName} support to Periphery`);
     if (!(await periphery.factories(mockFactoryAddress))) {
@@ -85,10 +87,14 @@ module.exports = async function () {
 
       log("Give the multi minter permission on Target");
       const multiMint = await ethers.getContract("MultiMint", signer);
-      await (await targetContract.setIsTrusted(multiMint.address, true)).wait();
+      if (!(await targetContract.isTrusted(multiMint.address))) {
+        await (await targetContract.setIsTrusted(multiMint.address, true)).wait();
+      }
 
       log(`Mint the deployer a balance of 10,000,000 ${tName}`);
-      await multiMint.mint([targetContract.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
+      if (!(await targetContract.balanceOf(deployer)).gte(ethers.utils.parseEther("10000000"))) {
+        await multiMint.mint([targetContract.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
+      }
 
       let adapterAddress = (await getDeployedAdapters())[tName];
       if (!adapterAddress) {
@@ -103,16 +109,24 @@ module.exports = async function () {
       }
 
       log("Give the adapter minter permission on Target");
-      await (await targetContract.setIsTrusted(adapterAddress, true)).wait();
+      if (!(await targetContract.isTrusted(adapterAddress))) {
+        await (await targetContract.setIsTrusted(adapterAddress, true)).wait();
+      }
 
       log("Give the adapter minter permission on Underlying");
-      await (await underlying.setIsTrusted(adapterAddress, true)).wait();
+      if (!(await underlying.isTrusted(adapterAddress))) {
+        await (await underlying.setIsTrusted(adapterAddress, true)).wait();
+      }
 
       log("Grant minting authority on the Reward token to the mock TWrapper");
-      await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
+      if (!(await airdrop.isTrusted(adapterAddress))) {
+        await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
+      }
 
       log(`Set ${tName} adapter issuance cap to max uint so we don't have to worry about it`);
-      await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
+      if (!((await divider.adapterMeta(adapterAddress)).guard.eq(ethers.constants.MaxUint256))) {
+        await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
+      }
 
       log(`Can call and set scale value`);
       await setScale(adapterAddress);
@@ -144,7 +158,12 @@ module.exports = async function () {
       args: [underlyingAddress, targetName, targetName, tDecimals],
       log: true,
     });
-    return await ethers.getContract(targetName, signer);
+    const target = await ethers.getContract(targetName, signer);
+    log(`Give Relayer permission to mint target`);
+    if (!(await target.isTrusted(OZ_RELAYER.get(chainId)))) {
+      await target.setIsTrusted(OZ_RELAYER.get(chainId), true);
+    }
+    return target;
   }
 
   async function deployAdapterViaFactory(targetName, targetContract, factory) {
@@ -190,7 +209,9 @@ module.exports = async function () {
     const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
     const scale = await adapter.callStatic.scale();
     log(`-> scale: ${scale.toString()}`);
-    await adapter.setScale(ethers.utils.parseEther("1.1")).then(tx => tx.wait());
+    if (!scale.eq(ethers.utils.parseEther("1.1"))) {
+      await adapter.setScale(ethers.utils.parseEther("1.1")).then(tx => tx.wait());
+    }
   }
 
   async function deployStake() {
@@ -204,11 +225,14 @@ module.exports = async function () {
     const stake = await ethers.getContract("STAKE", signer);
 
     log("Mint the deployer a balance of 1,000,000 STAKE");
-    await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+    if (!((await stake.balanceOf(deployer)).gte(ethers.utils.parseEther("1000000")))) {
+      await stake.mint(deployer, ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+    }
 
     log("Mint the relayer a balance of 1,000,000 STAKE");
-    await stake.mint(OZ_RELAYER.get(chainId), ethers.utils.parseEther("1000000")).then(tx => tx.wait());
-
+    if (!((await stake.balanceOf(OZ_RELAYER.get(chainId))).gte(ethers.utils.parseEther("1000000")))) {
+      await stake.mint(OZ_RELAYER.get(chainId), ethers.utils.parseEther("1000000")).then(tx => tx.wait());
+    }
     return stake;
   }
   async function deployAirdrop() {

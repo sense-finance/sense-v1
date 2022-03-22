@@ -19,7 +19,9 @@ module.exports = async function () {
   });
 
   log("Trust the emergency address on the divider");
-  await (await divider.setIsTrusted(emergencyAddress, true)).wait();
+  if (!(await divider.isTrusted(emergencyAddress))) {
+    await (await divider.setIsTrusted(emergencyAddress, true)).wait();
+  }
 
   log("Can call stop");
   const adapters = await getDeployedAdapters();
@@ -27,7 +29,9 @@ module.exports = async function () {
   await emergency.callStatic.stop(Object.values(adapters));
 
   log("Trust the OZ Defender Relay address on the emergency stop contract");
-  await (await emergency.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
+  if (!(await emergency.isTrusted(OZ_RELAYER.get(chainId)))) {
+    await (await emergency.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
+  }
   
 };
 
