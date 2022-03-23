@@ -26,7 +26,7 @@ wstETH | [0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0](https://etherscan.io/addre
 cUSDC | [0x39aa39c021dfbae8fac545936693ac917d5e7563](https://etherscan.io/token/0x39aa39c021dfbae8fac545936693ac917d5e7563)
 
 
-### Mainnet v1.2.0
+### Mainnet v1.2.1
 Contract | Address
 --------- | -------------
 [Divider](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0](https://etherscan.io/address/0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0#code)
