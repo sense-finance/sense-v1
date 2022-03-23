@@ -103,7 +103,7 @@ contract MockSpacePool is MockToken {
         targeti = 0;
     }
 
-    function getFairBPTPriceInTarget(uint256) external view returns (uint256) {
+    function getFairBPTPrice(uint256) external view returns (uint256) {
         return 1e18;
     }
 
