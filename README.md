@@ -17,9 +17,7 @@ Active development occurs in this repository, which means some contracts in it m
 
 ## Deployments
 
-These are the contract addresses that are deployed to Ethereum mainnet.
-
-### Underlying & Targets
+### Mainnet Underlying & Targets
 Token | Address
 --------- | -------------
 WETH | [0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2](https://etherscan.io/token/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2)
@@ -28,7 +26,7 @@ wstETH | [0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0](https://etherscan.io/addre
 cUSDC | [0x39aa39c021dfbae8fac545936693ac917d5e7563](https://etherscan.io/token/0x39aa39c021dfbae8fac545936693ac917d5e7563)
 
 
-### v1.2.0
+### Mainnet v1.2.0
 Contract | Address
 --------- | -------------
 [Divider](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0](https://etherscan.io/address/0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0#code)
@@ -54,6 +52,15 @@ sY-cUSDC:01-07-2022:3 | [0x48c4891294Be2333A7F9B68FfeE6320317ea2c36](https://eth
 [Space LP Share-cUSDC:01-07-2022:3](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x000b87c8A4c6CBCEf7a2577e8aa0Dc134C67c3D8](https://etherscan.io/address/0x000b87c8A4c6CBCEf7a2577e8aa0Dc134C67c3D8)
 
 \* We are aware that the Name and Symbol does not include the Space LP Share. This will be fixed in the next version of Space.
+
+### Goerli v1.1.0
+
+| Contract   | Address                                                                                                                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Divider | [0xc8b594Bf6cC2a41e3afC3807e667B055CfBF8304](https://etherscan.io/address/0xc8b594Bf6cC2a41e3afC3807e667B055CfBF8304#code)                     |
+| Periphery  | [0x992c0A5Ad53b9f0553299EEFD79B7EBBEF22D324](https://etherscan.io/address/0x992c0A5Ad53b9f0553299EEFD79B7EBBEF22D324#code)      |
+| PoolManager | [0xDd2c59C90c7b4E03584F684A47aa7BAD03Eb91E3](https://etherscan.io/address/0xDd2c59C90c7b4E03584F684A47aa7BAD03Eb91E3#code)                     |
+| BalancerVault  | [0xB9EA2205A94E001C22421389b4165BC6e74bbd24](https://etherscan.io/address/0xB9EA2205A94E001C22421389b4165BC6e74bbd24#code)  
 
 ## Development
 
