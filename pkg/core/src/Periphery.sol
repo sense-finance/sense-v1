@@ -616,12 +616,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 targetiBal,
         uint256 tBal
     ) internal returns (uint256 tBalForIssuance) {
-        uint256 tBase = 10**ERC20(Adapter(adapter).target()).decimals();
-        uint256 ifee = Adapter(adapter).ifee();
         return
             tBal.fmul(
-                ptiBal.fdiv(Adapter(adapter).scale().fmul(FixedMath.WAD - ifee).fmul(targetiBal) + ptiBal, tBase),
-                tBase
+                ptiBal.fdiv(
+                    Adapter(adapter).scale().fmul(FixedMath.WAD - Adapter(adapter).ifee()).fmul(targetiBal) + ptiBal
+                )
             );
     }
 

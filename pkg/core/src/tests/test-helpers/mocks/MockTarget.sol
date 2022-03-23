@@ -30,19 +30,3 @@ contract AuthdMockTarget is AuthdMockToken {
         underlying = _underlying;
     }
 }
-
-contract MockEvilTarget is ZeppelinERC20 {
-    address public underlying;
-
-    constructor(
-        address _underlying,
-        string memory _name,
-        string memory _symbol
-    ) ZeppelinERC20(_name, _symbol) {
-        underlying = _underlying;
-    }
-
-    function decimals() public view override returns (uint8) {
-        return uint8(block.timestamp % 18);
-    }
-}

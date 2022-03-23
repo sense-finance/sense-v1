@@ -42,7 +42,7 @@ module.exports = async function () {
   const poolManager = await ethers.getContract("PoolManager", signer);
   await (
     await poolManager.deployPool(
-      "Sense Pool – Core",
+      "Sense Pool – Main",
       ethers.utils.parseEther("0.333"),
       ethers.utils.parseEther("1.08"),
       masterOracle,
@@ -55,21 +55,30 @@ module.exports = async function () {
     reserveFactor: ethers.utils.parseEther("0"),
     collateralFactor: ethers.utils.parseEther("0.5"),
   };
-  await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)).wait();
+  let params = await poolManager.targetParams();
+  if (!params.collateralFactor.eq(ethers.utils.parseEther("0.5"))) {
+    await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)).wait();
+  }
 
   const ptParams = {
     irModel: interestRateModel,
     reserveFactor: ethers.utils.parseEther("0"),
     collateralFactor: ethers.utils.parseEther("0.5"),
   };
-  await (await poolManager.setParams(ethers.utils.formatBytes32String("PT_PARAMS"), ptParams)).wait();
+  params = await poolManager.ptParams();
+  if (!params.collateralFactor.eq(ethers.utils.parseEther("0.5"))) {
+    await (await poolManager.setParams(ethers.utils.formatBytes32String("PT_PARAMS"), ptParams)).wait();
+  }
 
   const lpParams = {
     irModel: interestRateModel,
     reserveFactor: ethers.utils.parseEther("0"),
     collateralFactor: ethers.utils.parseEther("0.5"),
   };
-  await (await poolManager.setParams(ethers.utils.formatBytes32String("LP_TOKEN_PARAMS"), lpParams)).wait();
+  params = await poolManager.lpTokenParams();
+  if (!params.collateralFactor.eq(ethers.utils.parseEther("0.5"))) {
+    await (await poolManager.setParams(ethers.utils.formatBytes32String("LP_TOKEN_PARAMS"), lpParams)).wait();
+  }
 };
 
 module.exports.tags = ["prod:fuse", "scenario:prod"];

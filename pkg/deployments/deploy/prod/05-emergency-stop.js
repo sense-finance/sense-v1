@@ -8,6 +8,9 @@ module.exports = async function () {
   const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
+  if (!OZ_RELAYER.has(chainId)) throw Error("No OZ relayer found");
+  const ozRelayer = OZ_RELAYER.get(chainId);
+
   const divider = await ethers.getContract("Divider", signer);
 
   log("\n-------------------------------------------------------");
@@ -27,7 +30,7 @@ module.exports = async function () {
   await emergency.callStatic.stop(Object.values(adapters));
 
   log("Trust the OZ Defender Relay address on the emergency stop contract");
-  await (await emergency.setIsTrusted(OZ_RELAYER.get(chainId), true)).wait();
+  await (await emergency.setIsTrusted(ozRelayer, true)).wait();
 };
 
 module.exports.tags = ["prod:emergency-stop", "scenario:prod"];

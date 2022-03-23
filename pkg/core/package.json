@@ -1,6 +1,6 @@
 {
     "name": "@sense-finance/v1-core",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Sense V1 Core Contracts",
     "license": "AGPL-3.0-only",
     "repository": {
@@ -17,7 +17,7 @@
         "debug": "just debug",
         "test": "just test-local",
         "turbo-test": "just turbo-test-local",
-        "turbo-test:8-decimal-target": "just turbo-test-local-8-decimal-target",
+        "turbo-test:unusual-decimal-val": "just turbo-test-local-unusual-decimal-val",
         "turbo-test:mainnet": "just turbo-test-mainnet",
         "testcov": "just test-local --coverage",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
