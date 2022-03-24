@@ -6,10 +6,7 @@ const { getDeployedAdapters } = require("../../hardhat.utils");
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
-const TWO_MILLION_ETH = ethers.utils.parseEther("2000000");
 const ONE_ETH = ethers.utils.parseEther("1");
-const FOURTY_THOUSAND_ETH = ethers.utils.parseEther("40000");  
-const ONE_MILLION_ETH = ethers.utils.parseEther("1000000");  
 
 module.exports = async function () {
   const { deployer } = await getNamedAccounts();
@@ -76,10 +73,17 @@ module.exports = async function () {
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
+      const underlyingAddr = await adapter.underlying();
+      const underlying = new ethers.Contract(underlyingAddr, tokenAbi, signer);
+      const underlyingDecimals = await underlying.decimals();
+      const decimals = await target.decimals()
+      const one = ethers.BigNumber.from(1).mul(ethers.BigNumber.from(10).pow(decimals))
+      const fourtyThousand =  ethers.BigNumber.from(40_000).mul(ethers.BigNumber.from(10).pow(decimals))
+      const oneMillion = ethers.BigNumber.from(1_000_000).mul(ethers.BigNumber.from(10).pow(decimals))
 
       log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
-      if (!(await pt.balanceOf(deployer)).gte(FOURTY_THOUSAND_ETH)) {
-        await divider.issue(adapter.address, seriesMaturity, ONE_MILLION_ETH).then(tx => tx.wait());
+      if (!(await pt.balanceOf(deployer)).gte(fourtyThousand)) {
+        await divider.issue(adapter.address, seriesMaturity, oneMillion).then(tx => tx.wait());
       }
 
       const { abi: spaceAbi } = await deployments.getArtifact("Space");
@@ -118,9 +122,9 @@ module.exports = async function () {
       let balances = data.balances;
 
       log("- adding liquidity via target");
-      if (balances[0].lt(ONE_ETH)) {
+      if (balances[0].lt(one)) {
         await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, ONE_ETH, 1, 0)
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0)
         .then(t => t.wait());
       }
 
@@ -135,9 +139,9 @@ module.exports = async function () {
       balances = data.balances;
       
       log("- adding liquidity via target");
-      if (balances[0].lt(TWO_MILLION_ETH)) {
+      if (balances[0].lt(oneMillion.mul(2))) {
         await periphery
-          .addLiquidityFromTarget(adapter.address, seriesMaturity, TWO_MILLION_ETH, 1, 0)
+          .addLiquidityFromTarget(adapter.address, seriesMaturity, oneMillion.mul(2), 1, 0)
           .then(t => t.wait());
       }
       data = await balancerVault.getPoolTokens(poolId);
@@ -147,12 +151,13 @@ module.exports = async function () {
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
       await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, FOURTY_THOUSAND_ETH, 0)
+        .swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0)
         .then(t => t.wait());
 
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
 
+      const ptIn = one.div(10)
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
           {
@@ -160,20 +165,20 @@ module.exports = async function () {
             kind: 0, // given in
             assetIn: pt.address,
             assetOut: target.address,
-            amount: ethers.utils.parseEther("0.1"),
+            amount: ptIn,
             userData: defaultAbiCoder.encode(["uint[]"], [[0, 0]]),
           },
           { sender: deployer, fromInternalBalance: false, recipient: deployer, toInternalBalance: false },
           0, // `limit` – no min expectations of return around tokens out testing GIVEN_IN
           ethers.constants.MaxUint256, // `deadline` – no deadline
         )
-        .then(v => v.div(1e10).toNumber() / 1e7);
+        .then(v => v.mul(ethers.BigNumber.from(10).pow(decimals)).div(ptIn));
 
       const scale = await adapter.callStatic.scale();
-      const principalPriceInUnderlying = principalPriceInTarget * (scale.div(1e12).toNumber() / 1e6);
+      const principalPriceInUnderlying = principalPriceInTarget.mul(scale).div(1e18).div(ethers.BigNumber.from(10).pow(decimals - underlyingDecimals));
 
       const discountRate =
-        ((1 / principalPriceInUnderlying) **
+        ((1 / principalPriceInUnderlying.toNumber()) **
           (1 / ((dayjs(seriesMaturity * 1000).unix() - dayjs().unix()) / ONE_YEAR_SECONDS)) -
           1) *
         100;
@@ -193,28 +198,28 @@ module.exports = async function () {
 
       log("swapping target for pt");
       await periphery
-        .swapTargetForPTs(adapter.address, seriesMaturity, ONE_ETH, 0)
+        .swapTargetForPTs(adapter.address, seriesMaturity, one, 0)
         .then(tx => tx.wait());
 
       log("swapping target for yields");
       await periphery
-        .swapTargetForYTs(adapter.address, seriesMaturity, ONE_ETH, 0)
+        .swapTargetForYTs(adapter.address, seriesMaturity, one, 0)
         .then(tx => tx.wait());
 
       log("swapping pt for target");
       await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"), 0)
+        .swapPTsForTarget(adapter.address, seriesMaturity, one.div(2), 0)
         .then(tx => tx.wait());
 
       log("swapping yields for target");
       await periphery
-        .swapYTsForTarget(adapter.address, seriesMaturity, ethers.utils.parseEther("0.5"))
+        .swapYTsForTarget(adapter.address, seriesMaturity, one.div(2))
         .then(tx => tx.wait());
 
       log("adding liquidity via target");
       await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, ONE_ETH, 1, 0)
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0)
         .then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
