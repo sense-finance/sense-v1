@@ -802,6 +802,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombineAtMaturity(uint128 tBal) public {
+        if (tBal < 1e4) return;
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
