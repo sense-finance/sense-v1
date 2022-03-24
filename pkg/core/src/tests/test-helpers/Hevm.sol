@@ -25,7 +25,12 @@ abstract contract Hevm {
     // Prepare an expected log with (bool checkTopic1, bool checkTopic2, bool checkTopic3, bool checkData).
     // Call this function, then emit an event, then call a function. Internally after the call, we check if
     // logs were emitted in the expected order with the expected topics and data (as specified by the booleans)
-    function expectEmit(bool,bool,bool,bool) external virtual;
+    function expectEmit(
+        bool,
+        bool,
+        bool,
+        bool
+    ) external virtual;
 
     // Sets the *next* call's msg.sender to be the input address, and the tx.origin to be the second input
     function prank(address) external virtual;

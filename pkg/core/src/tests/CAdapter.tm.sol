@@ -21,7 +21,6 @@ interface CropAdapterLike {
     function _claimReward() external;
 }
 
-
 contract CAdapterTestHelper is LiquidityHelper, DSTest {
     CAdapter internal adapter;
     CAdapter internal cEthAdapter;
