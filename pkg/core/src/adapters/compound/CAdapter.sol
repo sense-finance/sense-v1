@@ -52,9 +52,10 @@ interface CETHTokenLike {
 }
 
 interface ComptrollerLike {
-    /// @notice Claim all the comp accrued by holder in all markets
+    /// @notice Claim all the comp accrued by holder in the specified markets
     /// @param holder The address to claim COMP for
-    function claimComp(address holder) external;
+    /// @param cTokens The list of markets to claim COMP in
+    function claimComp(address holder, address[] memory cTokens) external;
 
     function markets(address target)
         external
@@ -135,7 +136,9 @@ contract CAdapter is CropAdapter {
     }
 
     function _claimReward() internal virtual override {
-        ComptrollerLike(COMPTROLLER).claimComp(address(this));
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = target;
+        ComptrollerLike(COMPTROLLER).claimComp(address(this), cTokens);
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {

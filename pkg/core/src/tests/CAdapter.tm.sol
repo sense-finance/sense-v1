@@ -17,6 +17,10 @@ import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
 
+interface CropAdapterLike {
+    function _claimReward() external;
+}
+
 contract CAdapterTestHelper is LiquidityHelper, DSTest {
     CAdapter internal adapter;
     CAdapter internal cEthAdapter;
@@ -200,6 +204,24 @@ contract CAdapters is CAdapterTestHelper {
 
         assertEq(uBalanceAfter, 0);
         assertEq(tBalanceBefore + wrapped, tBalanceAfter);
+    }
+
+    event DistributedBorrowerComp(
+        address indexed cToken,
+        address indexed borrower,
+        uint256 compDelta,
+        uint256 compBorrowIndex
+    );
+
+    function testMainnetNotify() public {
+        // Become the divider
+        hevm.startPrank(address(divider));
+        address target = cEthAdapter.target();
+
+        // Expect a cETH distributed event when notifying
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
+        cEthAdapter.notify(address(0), 0, true);
     }
 
     function testMainnet18Decimals() public {
