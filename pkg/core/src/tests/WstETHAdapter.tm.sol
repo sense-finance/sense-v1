@@ -180,7 +180,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 postbal = ERC20(Assets.WETH).balanceOf(address(this));
 
         // within .1%
-        assertClose(prebal, prebal, prebal.fmul(0.001e18));
+        assertClose(prebal, postbal, prebal.fmul(0.001e18));
     }
 
     function testMainnetCantSendEtherIfNotEligible() public {
