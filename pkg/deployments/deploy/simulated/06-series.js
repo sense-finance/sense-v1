@@ -73,9 +73,6 @@ module.exports = async function () {
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
-      const underlyingAddr = await adapter.underlying();
-      const underlying = new ethers.Contract(underlyingAddr, tokenAbi, signer);
-      const underlyingDecimals = await underlying.decimals();
       const decimals = await target.decimals()
       const one = ethers.BigNumber.from(1).mul(ethers.BigNumber.from(10).pow(decimals))
       const fourtyThousand =  ethers.BigNumber.from(40_000).mul(ethers.BigNumber.from(10).pow(decimals))
@@ -174,11 +171,13 @@ module.exports = async function () {
         )
         .then(v => v.mul(ethers.BigNumber.from(10).pow(decimals)).div(ptIn));
 
-      const scale = await adapter.callStatic.scale();
-      const principalPriceInUnderlying = principalPriceInTarget.mul(scale).div(1e18).div(ethers.BigNumber.from(10).pow(decimals - underlyingDecimals));
+      const _scale = await adapter.callStatic.scale();
+      const scale = _scale.div(1e12).toNumber() / 1e6
+      const _principalInTarget = principalPriceInTarget.div(ethers.BigNumber(10).pow(decimals - 4)) / (10 ** Math.abs(4 - decimals))
+      const principalPriceInUnderlying = _principalInTarget.toNumber() * scale;
 
       const discountRate =
-        ((1 / principalPriceInUnderlying.toNumber()) **
+        ((1 / principalPriceInUnderlying) **
           (1 / ((dayjs(seriesMaturity * 1000).unix() - dayjs().unix()) / ONE_YEAR_SECONDS)) -
           1) *
         100;
