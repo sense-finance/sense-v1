@@ -144,8 +144,8 @@ contract WstETHAdapter is BaseAdapter {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         WETHLike(WETH).withdraw(amount); // unwrap WETH into ETH
         StETHLike(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
-        uint256 stETH = StETHLike(STETH).balanceOf(address(this));
-        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(stETH)); // transfer wstETH to msg.sender
+        uint256 stEth = StETHLike(STETH).balanceOf(address(this));
+        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(stEth)); // transfer wstETH to msg.sender
     }
 
     function _wstEthToEthRate() internal view returns (uint256 exRate) {

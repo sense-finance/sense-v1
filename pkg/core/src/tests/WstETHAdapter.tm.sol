@@ -131,13 +131,24 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
         ERC20(Assets.WSTETH).approve(address(adapter), wstETHBalanceBefore);
-        uint256 minDy = ICurveStableSwap(Assets.CURVESINGLESWAP).get_dy(int128(1), int128(0), wstETHBalanceBefore);
+        uint256 minDy = ICurveStableSwap(Assets.CURVESINGLESWAP).get_dy(
+            int128(1),
+            int128(0),
+            wstETHBalanceBefore.fmul(adapter.scale())
+        );
         adapter.unwrapTarget(wstETHBalanceBefore);
         uint256 wstETHBalanceAfter = ERC20(Assets.WSTETH).balanceOf(address(this));
         uint256 wethBalanceAfter = ERC20(Assets.WETH).balanceOf(address(this));
 
         assertEq(wstETHBalanceAfter, 0);
-        assertEq(wethBalanceBefore + minDy, wethBalanceAfter);
+        // Received at least the min expected from the curve exchange rate
+        assertGt(wethBalanceAfter, wethBalanceBefore + minDy);
+        // Unwraps close to what scale suggests it should
+        assertClose(
+            wethBalanceAfter,
+            wethBalanceBefore + wstETHBalanceBefore.fmul(adapter.scale()),
+            wethBalanceBefore.fmul(adapter.SLIPPAGE_TOLERANCE())
+        );
     }
 
     function testMainnetWrapUnderlying() public {
@@ -154,6 +165,22 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         assertEq(stEthBalanceAfter, stEthBalanceBefore);
         assertEq(wethBalanceAfter, 0);
         assertClose(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
+    }
+
+    function testMainnetWrapUnwrap(uint64 wrapAmt) public {
+        uint256 prebal = ERC20(Assets.WETH).balanceOf(address(this));
+        if (wrapAmt > prebal || wrapAmt < 1e4) return;
+
+        // Approvals
+        ERC20(Assets.WETH).approve(address(adapter), type(uint256).max);
+        ERC20(Assets.WSTETH).approve(address(adapter), type(uint256).max);
+
+        // Full cycle
+        adapter.unwrapTarget(adapter.wrapUnderlying(wrapAmt));
+        uint256 postbal = ERC20(Assets.WETH).balanceOf(address(this));
+
+        // within .1%
+        assertClose(prebal, prebal, prebal.fmul(0.001e18));
     }
 
     function testMainnetCantSendEtherIfNotEligible() public {
