@@ -31,6 +31,12 @@ interface StETHLike {
     /// @dev Balances are dynamic and equal the `_account`'s share in the amount of the
     /// total Ether controlled by the protocol. See `sharesOf`.
     function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+
+    ///@return the amount of tokens owned by the `_account`.
+    ///
+    ///@dev Balances are dynamic and equal the `_account`'s share in the amount of the
+    ///total Ether controlled by the protocol. See `sharesOf`.
+    function balanceOf(address _account) external view returns (uint256);
 }
 
 interface CurveStableSwapLike {
@@ -113,17 +119,18 @@ contract WstETHAdapter is BaseAdapter {
 
     function unwrapTarget(uint256 amount) external override returns (uint256 eth) {
         ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH
-        WstETHLike(WSTETH).unwrap(amount); // unwrap wstETH into stETH
+        uint256 stEth = WstETHLike(WSTETH).unwrap(amount); // unwrap wstETH into stETH
 
         // exchange stETH to ETH exchange on Curve
         // to calculate the minDy, we use Lido's safe_price_value() which should prevent from flash loan / sandwhich attacks
         // and we are also adding a slippage tolerance of 0.5%
         uint256 stEthEth = StEthPriceFeedLike(STETHPRICEFEED).safe_price_value(); // returns the cached stETH/ETH safe price
+
         eth = CurveStableSwapLike(CURVESINGLESWAP).exchange(
             int128(1),
             int128(0),
-            amount,
-            stEthEth.fmul(amount).fmul(FixedMath.WAD - SLIPPAGE_TOLERANCE)
+            stEth,
+            stEthEth.fmul(stEth).fmul(FixedMath.WAD - SLIPPAGE_TOLERANCE)
         );
 
         // deposit ETH into WETH contract
@@ -136,8 +143,9 @@ contract WstETHAdapter is BaseAdapter {
     function wrapUnderlying(uint256 amount) external override returns (uint256 wstETH) {
         ERC20(WETH).safeTransferFrom(msg.sender, address(this), amount); // pull WETH
         WETHLike(WETH).withdraw(amount); // unwrap WETH into ETH
-        uint256 stETH = StETHLike(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
-        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(stETH)); // transfer wstETH to msg.sender
+        StETHLike(STETH).submit{ value: amount }(address(0)); // stake ETH (returns wstETH)
+        uint256 stEth = StETHLike(STETH).balanceOf(address(this));
+        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(stEth)); // transfer wstETH to msg.sender
     }
 
     function _wstEthToEthRate() internal view returns (uint256 exRate) {
