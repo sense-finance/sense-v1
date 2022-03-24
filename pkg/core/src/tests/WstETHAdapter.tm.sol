@@ -37,6 +37,8 @@ interface ICurveStableSwap {
 
 interface StETHInterface {
     function getSharesByPooledEth(uint256 _ethAmount) external returns (uint256);
+
+    function balanceOf(address owner) external returns (uint256);
 }
 
 interface WstETHInterface {
@@ -85,6 +87,28 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         (bool success, ) = to.call{ value: amt }("");
         return success;
     }
+
+    function assertClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) public {
+        uint256 diff = a < b ? b - a : a - b;
+        if (diff > _tolerance) {
+            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
+            emit log_named_uint("  Expected", b);
+            emit log_named_uint("  Tolerance", _tolerance);
+            emit log_named_uint("    Actual", a);
+            fail();
+        }
+    }
+
+    function assertClose(uint256 a, uint256 b) public {
+        uint256 variance = 100;
+        if (b < variance) variance = 10;
+        if (b < variance) variance = 1;
+        assertClose(a, b, variance);
+    }
 }
 
 contract WstETHAdapters is WstETHAdapterTestHelper {
@@ -118,17 +142,18 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
 
     function testMainnetWrapUnderlying() public {
         uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
+        uint256 stEthBalanceBefore = ERC20(Assets.STETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
 
         ERC20(Assets.WETH).approve(address(adapter), wethBalanceBefore);
-        uint256 stETH = StETHInterface(Assets.STETH).getSharesByPooledEth(wethBalanceBefore);
-        uint256 wstETH = WstETHInterface(Assets.WSTETH).getWstETHByStETH(stETH);
+        uint256 wstETH = WstETHInterface(Assets.WSTETH).getWstETHByStETH(wethBalanceBefore);
         adapter.wrapUnderlying(wethBalanceBefore);
         uint256 wstETHBalanceAfter = ERC20(Assets.WSTETH).balanceOf(address(this));
         uint256 wethBalanceAfter = ERC20(Assets.WETH).balanceOf(address(this));
-
+        uint256 stEthBalanceAfter = ERC20(Assets.STETH).balanceOf(address(this));
+        assertEq(stEthBalanceAfter, stEthBalanceBefore);
         assertEq(wethBalanceAfter, 0);
-        assertEq(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
+        assertClose(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
     }
 
     function testMainnetCantSendEtherIfNotEligible() public {
