@@ -173,7 +173,7 @@ module.exports = async function () {
 
       const _scale = await adapter.callStatic.scale();
       const scale = _scale.div(1e12).toNumber() / 1e6
-      const _principalInTarget = principalPriceInTarget.div(ethers.BigNumber(10).pow(decimals - 4)) / (10 ** Math.abs(4 - decimals))
+      const _principalInTarget = principalPriceInTarget.div(ethers.BigNumber.from(10).pow(decimals - 4)) / (10 ** Math.abs(4 - decimals))
       const principalPriceInUnderlying = _principalInTarget.toNumber() * scale;
 
       const discountRate =
