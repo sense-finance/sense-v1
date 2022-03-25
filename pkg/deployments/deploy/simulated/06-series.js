@@ -74,9 +74,9 @@ module.exports = async function () {
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
       const decimals = await target.decimals()
-      const one = ethers.BigNumber.from(1).mul(ethers.BigNumber.from(10).pow(decimals))
-      const fourtyThousand =  ethers.BigNumber.from(40_000).mul(ethers.BigNumber.from(10).pow(decimals))
-      const oneMillion = ethers.BigNumber.from(1_000_000).mul(ethers.BigNumber.from(10).pow(decimals))
+      const one = ethers.utils.parseUnits("1", decimals)
+      const fourtyThousand =  ethers.utils.parseUnits("40000", decimals)
+      const oneMillion =  ethers.utils.parseUnits("1000000", decimals)
 
       log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
       if (!(await pt.balanceOf(deployer)).gte(fourtyThousand)) {
