@@ -13,12 +13,10 @@
         "!src/tests/*"
     ],
     "scripts": {
-        "build": "just build",
-        "debug": "just debug",
-        "test": "just test-local",
-        "turbo-test": "just turbo-test-local",
-        "turbo-test:mainnet": "just turbo-test-mainnet",
-        "testcov": "just test-local --coverage",
+        "test": "just turbo-test-local",
+        "test:mainnet": "just turbo-test-mainnet",
+        "turbo-test": "yarn test",
+        "turbo-test:mainnet": "yarn test:mainnet",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
         "gas-snapshot": "just gas-snapshot"

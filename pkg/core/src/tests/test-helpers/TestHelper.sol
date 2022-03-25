@@ -90,14 +90,18 @@ contract TestHelper is DSTest {
 
         underlying = new MockToken("Dai Token", "DAI", mockUnderlyingDecimals);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals);
-        emit log_named_uint(
-            "Running tests with the mock Underlying token configured with the following number of decimals",
-            uint256(mockUnderlyingDecimals)
-        );
-        emit log_named_uint(
-            "Running tests with the mock Target token configured with the following number of decimals",
-            uint256(mockTargetDecimals)
-        );
+        if (mockUnderlyingDecimals != 18) {
+            emit log_named_uint(
+                "Running tests with the mock Underlying token configured with the following number of decimals",
+                uint256(mockUnderlyingDecimals)
+            );
+        }
+        if (mockTargetDecimals != 18) {
+            emit log_named_uint(
+                "Running tests with the mock Target token configured with the following number of decimals",
+                uint256(mockTargetDecimals)
+            );
+        }
 
         reward = new MockToken("Reward Token", "RT", baseDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());

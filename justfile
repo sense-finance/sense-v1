@@ -31,7 +31,6 @@ DAPP_REMAPPINGS   := remappings-from-pkg-deps
 FORGE_MOCK_TARGET_DECIMALS := env_var_or_default("FORGE_MOCK_TARGET_DECIMALS", HEX_18)
 FORGE_MOCK_UNDERLYING_DECIMALS := env_var_or_default("FORGE_MOCK_UNDERLYING_DECIMALS", HEX_18)
 
-
 # export just vars as env vars
 set export
 
@@ -40,93 +39,26 @@ set export
 _default:
   just --list
 
-# install dependencies
-install: npm dapp
-
-# install npm dependencies
-npm:
-    yarn install
-
-# install dapptools
-dapp:
-    curl -L https://nixos.org/nix/install | sh
-    curl https://dapp.tools/install | sh
-
-# install forge
-forge:
-    cargo install --git https://github.com/gakonst/dapptools-rs --locked
-
-## ---- Building ----
-
-# build using dapp
-build: && _timer
-    cd {{ invocation_directory() }}; dapp build
-
-build-solc7: && _timer
-    cd {{ invocation_directory() }}; dapp --use solc:0.7.5 build
-
-turbo-build: && _timer
-    @cd {{ invocation_directory() }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
-        --root {{ invocation_directory() }}
-
-turbo-build-dir *dir="":
-    @cd {{ invocation_directory() }}; cd {{ dir }}; forge build --lib-paths {{ lib-paths-from-pkg-deps }} \
-        --root {{ dir }} >> /dev/null; printf 0x00
-
-# debug and open dapp's TTY debugger
-debug:
-    cd {{ invocation_directory() }}; dapp debug
-
 ## ---- Testing ----
-
-## ---- Testing ----
-
-# default test scripts
-test: test-local
-test-solc7: test-local-solc7
-
-# run local dapp tests (all files with the extension .t.sol)
-test-local *cmds="": && _timer
-    cd {{ invocation_directory() }}; dapp test -m ".t.sol" {{ cmds }}
-
-test-local-solc7 *cmds="": && _timer
-    cd {{ invocation_directory() }}; dapp --use solc:0.7.5 test -m ".t.sol" {{ cmds }}
-
-# run mainnet fork dapp tests (all files with the extension .tm.sol)
-test-mainnet *cmds="": && _timer
-    @cd {{ invocation_directory() }}; dapp test --rpc-url {{ MAINNET_RPC }} -m ".tm.sol" {{ cmds }}
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
-	@cd {{ invocation_directory() }}; forge test \
-		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
-
-turbo-test-local-no-fuzz *cmds="": && _timer
-	@cd {{ invocation_directory() }}; forge test \
-		{{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])" {{ cmds }}
-
-turbo-test-local-unusual-decimal-val *cmds="": && _timer
-	cd {{ invocation_directory() }}; export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
-		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_12 }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi -m "^test(M(a[^i]|[^a])|[^M])" {{ cmds }}
-
-turbo-test-mainnet: && _timer
-	@cd {{ invocation_directory() }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi --fork-url {{ MAINNET_RPC }} -m "^testMainnet"
+	@cd {{ invocation_directory() }}; forge test --no-match-path ".*tm.*" {{ cmds }}
 
 turbo-test-match *exp="": && _timer
-	@cd {{ invocation_directory() }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi -m {{ exp }}
+	@cd {{ invocation_directory() }}; forge test --no-match-path ".*tm.*" --match-test {{ exp }}
+
+turbo-test-local-unusual-decimal-val *cmds="": && _timer
+	cd {{ invocation_directory() }}; \
+		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
+		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_12 }}; \
+		forge test --no-match-path ".*tm.*" {{ cmds }}
+
+turbo-test-mainnet: && _timer
+	@cd {{ invocation_directory() }}; forge test --match-path ".*tm.*" --fork-url {{ MAINNET_RPC }}
 
 turbo-test-mainnet-match *exp="": && _timer
-	@cd {{ invocation_directory() }}; forge test \
-	    {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi --fork-url {{ MAINNET_RPC }} -m {{ exp }}
+	@cd {{ invocation_directory() }}; forge test --match-path ".*tm.*" --fork-url {{ MAINNET_RPC }} --match-test {{ exp }}
 
 ## ---- Gas Metering ----
 
@@ -136,20 +68,16 @@ gas-snapshot: gas-snapshot-local
 # get gas snapshot from local tests and save it to file
 gas-snapshot-local:
     cd {{ invocation_directory() }}; \
-    just turbo-test-local-no-fuzz | grep 'gas:' | cut -d " " -f 2-4 | sort > \
+    just turbo-test-local | grep 'gas:' | cut -d " " -f 2-4 | sort > \
     {{ justfile_directory() }}/gas-snapshots/.$( \
         cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
     )
 
 forge-gas-snapshot: && _timer
-	@cd {{ invocation_directory() }}; forge snapshot \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+	@cd {{ invocation_directory() }}; forge snapshot --no-match-path ".*tm.*"
 
 forge-gas-snapshot-diff: && _timer
-	@cd {{ invocation_directory() }}; forge snapshot --diff \
-		--lib-paths {{ lib-paths-from-pkg-deps }} -vvv --force --root {{ invocation_directory() }} \
-		--optimize --optimize-runs 20 --ffi -m "^test((M|F)((a|u)[^iz]|[^au])|[^MF])"
+	@cd {{ invocation_directory() }}; forge snapshot --no-match-path ".*tm.*" --diff
 
 ## ---- Appendix ----
 
