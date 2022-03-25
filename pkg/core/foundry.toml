@@ -1,0 +1,13 @@
+[default]
+root = "."
+libs = ['../../node_modules/', '../../']
+tests = "./src/tests"
+ffi = true
+verbosity = 3
+remappings = [
+    '@sense-finance/v1-utils=../utils',
+    '@sense-finance/v1-fuse=../fuse',
+    '@sense-finance/v1-core=./',
+    '@rari-capital/solmate=../../node_modules/@rari-capital/solmate',
+    '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts'
+]

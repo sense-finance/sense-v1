@@ -51,22 +51,22 @@ jobs:
       run: yarn lint
 
     - name: Run local core tests
-      run: yarn workspace @sense-finance/v1-core run turbo-test
+      run: yarn workspace @sense-finance/v1-core run test
 
     - name: Run local fuse tests
-      run: yarn workspace @sense-finance/v1-fuse run turbo-test
+      run: yarn workspace @sense-finance/v1-fuse run test
 
     - name: Run local core tests where the mock Target and Underlying tokens use unusual decimals values
-      run: yarn workspace @sense-finance/v1-core run turbo-test:unusual-decimal-val
+      run: yarn workspace @sense-finance/v1-core run test:unusual-decimal-val
 
     - name: Run core mainnet tests
-      run: yarn workspace @sense-finance/v1-core run turbo-test:mainnet
+      run: yarn workspace @sense-finance/v1-core run test:mainnet
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Run fuse mainnet tests
-      run: yarn workspace @sense-finance/v1-fuse run turbo-test:mainnet
+      run: yarn workspace @sense-finance/v1-fuse run test:mainnet
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
