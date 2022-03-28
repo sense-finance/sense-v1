@@ -123,10 +123,7 @@ contract GYTManager {
         }
 
         if (scale - initScale > 0) {
-            tBal = ((uBal.fmul(scale, FixedMath.WAD)).fdiv(scale - initScale, FixedMath.WAD)).fdivUp(
-                10**18,
-                FixedMath.WAD
-            );
+            tBal = ((uBal.fmul(scale)).fdiv(scale - initScale)).fdivUp(10**18, FixedMath.WAD);
         }
     }
 
