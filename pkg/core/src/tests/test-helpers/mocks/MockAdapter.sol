@@ -18,6 +18,7 @@ contract MockAdapter is CropAdapter {
     address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onRedeemCalls;
+    uint256 public scalingFactor;
 
     struct LScale {
         // Timestamp of the last scale value
@@ -58,7 +59,11 @@ contract MockAdapter is CropAdapter {
             _level,
             _reward
         )
-    {}
+    {
+        uint256 tDecimals = MockTarget(_target).decimals();
+        uint256 uDecimals = MockTarget(MockTarget(target).underlying()).decimals();
+        scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
 
     function scale() external virtual override returns (uint256 _value) {
         if (value > 0) {
@@ -93,13 +98,9 @@ contract MockAdapter is CropAdapter {
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
         uint256 mintAmount = uBal.fdivUp(lscale.value);
-        uint256 scalingFactor = 10 **
-            (
-                target.decimals() > underlying.decimals()
-                    ? target.decimals() - underlying.decimals()
-                    : underlying.decimals() - target.decimals()
-            );
-        mintAmount = mintAmount / scalingFactor;
+        mintAmount = underlying.decimals() > target.decimals()
+            ? mintAmount / scalingFactor
+            : mintAmount * scalingFactor;
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
@@ -109,13 +110,9 @@ contract MockAdapter is CropAdapter {
         MockToken underlying = MockToken(target.underlying());
         target.transferFrom(msg.sender, address(this), tBal); // pull target
         uint256 mintAmount = tBal.fmul(lscale.value);
-        uint256 scalingFactor = 10 **
-            (
-                target.decimals() > underlying.decimals()
-                    ? target.decimals() - underlying.decimals()
-                    : underlying.decimals() - target.decimals()
-            );
-        mintAmount = mintAmount * scalingFactor;
+        mintAmount = underlying.decimals() > target.decimals()
+            ? mintAmount * scalingFactor
+            : mintAmount / scalingFactor;
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
         return mintAmount;
     }
