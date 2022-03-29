@@ -118,7 +118,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 ethStEth = StEthPriceFeed(Assets.STETHPRICEFEED).safe_price_value();
         uint256 wstETHstETH = WstETHInterface(Assets.WSTETH).stEthPerToken();
 
-        uint256 scale = ethStEth.fmul(wstETHstETH, FixedMath.WAD);
+        uint256 scale = ethStEth.fmul(wstETHstETH);
         assertEq(adapter.scale(), scale);
     }
 

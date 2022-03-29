@@ -72,6 +72,7 @@ contract TestHelper is DSTest {
     uint16 public DEFAULT_LEVEL = 31;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
+    uint256 public SCALING_FACTOR;
 
     function setUp() public virtual {
         hevm.warp(1630454400);
@@ -102,6 +103,14 @@ contract TestHelper is DSTest {
                 uint256(mockTargetDecimals)
             );
         }
+
+        SCALING_FACTOR =
+            10 **
+                (
+                    mockTargetDecimals > mockUnderlyingDecimals
+                        ? mockTargetDecimals - mockUnderlyingDecimals
+                        : mockUnderlyingDecimals - mockTargetDecimals
+                );
 
         reward = new MockToken("Reward Token", "RT", baseDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
@@ -253,7 +262,7 @@ contract TestHelper is DSTest {
         MockToken(MockAdapter(adapter).target()).mint(address(balancerVault), tBal);
     }
 
-    function convertBase(uint256 decimals) public pure returns (uint256) {
+    function convertBase(uint256 decimals) internal pure returns (uint256) {
         uint256 base = 1;
         base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
         return base;
@@ -269,7 +278,7 @@ contract TestHelper is DSTest {
     function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
         (, uint256 cscale) = adapter.lscale();
         //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
-        toIssue = tBal.fmul(cscale, FixedMath.WAD);
+        toIssue = tBal.fmul(cscale);
     }
 
     function calculateExcess(

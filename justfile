@@ -11,6 +11,7 @@ set positional-arguments
 HEX_18 := "0x0000000000000000000000000000000000000000000000000000000000000012"
 HEX_12 := "0x000000000000000000000000000000000000000000000000000000000000000c"
 HEX_8  := "0x0000000000000000000000000000000000000000000000000000000000000008"
+HEX_6  := "0x0000000000000000000000000000000000000000000000000000000000000006"
 
 ## for mainnet tests and deployments
 ALCHEMY_KEY := env_var_or_default("ALCHEMY_KEY", "_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC")
@@ -48,10 +49,16 @@ turbo-test-local *cmds="": && _timer
 turbo-test-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --no-match-path ".*tm.*" --match-test {{ exp }}
 
-turbo-test-local-unusual-decimal-val *cmds="": && _timer
+turbo-test-local-greater-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
-		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_12 }}; \
+		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_6 }}; \
+		forge test --no-match-path ".*tm.*" {{ cmds }}
+
+turbo-test-local-lower-decimal-val *cmds="": && _timer
+	cd {{ invocation_directory() }}; \
+		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_6 }}; \
+		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_8 }}; \
 		forge test --no-match-path ".*tm.*" {{ cmds }}
 
 turbo-test-mainnet: && _timer

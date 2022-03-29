@@ -298,4 +298,28 @@ contract Adapters is TestHelper {
         alice.doCollect(yt);
         assertClose(reward.balanceOf(address(alice)), 96 * 1e18);
     }
+
+    function testWrapUnderlying() public {
+        uint256 uBal = 100 * (10**underlying.decimals());
+        uint256 tBal = 100 * (10**target.decimals());
+        underlying.mint(address(alice), uBal);
+        adapter.setScale(1e18);
+        adapter.scale();
+
+        alice.doApprove(address(underlying), address(adapter));
+        uint256 tBalReceived = alice.doAdapterWrapUnderlying(address(adapter), uBal);
+        assertEq(tBal, tBalReceived);
+    }
+
+    function testUnwrapTarget() public {
+        uint256 tBal = 100 * (10**target.decimals());
+        uint256 uBal = 100 * (10**underlying.decimals());
+        target.mint(address(alice), tBal);
+        adapter.setScale(1e18);
+        adapter.scale();
+
+        alice.doApprove(address(target), address(adapter));
+        uint256 uBalReceived = alice.doAdapterUnwrapTarget(address(adapter), tBal);
+        assertEq(uBal, uBalReceived);
+    }
 }

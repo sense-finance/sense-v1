@@ -18,6 +18,7 @@ contract MockAdapter is CropAdapter {
     address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onRedeemCalls;
+    uint256 public scalingFactor;
 
     struct LScale {
         // Timestamp of the last scale value
@@ -58,7 +59,11 @@ contract MockAdapter is CropAdapter {
             _level,
             _reward
         )
-    {}
+    {
+        uint256 tDecimals = MockTarget(_target).decimals();
+        uint256 uDecimals = MockTarget(MockTarget(target).underlying()).decimals();
+        scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
 
     function scale() external virtual override returns (uint256 _value) {
         if (value > 0) {
@@ -69,9 +74,9 @@ contract MockAdapter is CropAdapter {
         if (INITIAL_VALUE == 0) {
             INITIAL_VALUE = 1e18;
         }
-        uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)), FixedMath.WAD);
+        uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)));
         uint256 timeDiff = block.timestamp - lscale.timestamp;
-        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value, FixedMath.WAD) + lscale.value : INITIAL_VALUE;
+        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value) + lscale.value : INITIAL_VALUE;
 
         if (_value != lscale.value) {
             // update value only if different than the previous
@@ -88,19 +93,26 @@ contract MockAdapter is CropAdapter {
         //        MockToken(reward).mint(address(this), 1e18);
     }
 
-    function wrapUnderlying(uint256 uBal) external virtual override returns (uint256) {
+    function wrapUnderlying(uint256 uBal) public virtual override returns (uint256) {
         MockTarget target = MockTarget(target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
-        uint256 mintAmount = uBal.fdivUp(lscale.value, FixedMath.WAD);
+        uint256 mintAmount = uBal.fdivUp(lscale.value);
+        mintAmount = underlying.decimals() > target.decimals()
+            ? mintAmount / scalingFactor
+            : mintAmount * scalingFactor;
         target.mint(msg.sender, mintAmount);
         return mintAmount;
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
         MockTarget target = MockTarget(target);
+        MockToken underlying = MockToken(target.underlying());
         target.transferFrom(msg.sender, address(this), tBal); // pull target
-        uint256 mintAmount = tBal.fmul(lscale.value, FixedMath.WAD);
+        uint256 mintAmount = tBal.fmul(lscale.value);
+        mintAmount = underlying.decimals() > target.decimals()
+            ? mintAmount * scalingFactor
+            : mintAmount / scalingFactor;
         MockToken(target.underlying()).mint(msg.sender, mintAmount);
         return mintAmount;
     }
