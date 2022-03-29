@@ -506,7 +506,9 @@ contract PeripheryTest is TestHelper {
         (, uint256 lvalue) = adapter.lscale();
 
         // wrap underlying into target
-        uint256 tBal = underlying.decimals() > target.decimals() ? uBal.fmul(lvalue) / SCALING_FACTOR : uBal.fmul(lvalue) * SCALING_FACTOR;
+        uint256 tBal = underlying.decimals() > target.decimals()
+            ? uBal.fmul(lvalue) / SCALING_FACTOR
+            : uBal.fmul(lvalue) * SCALING_FACTOR;
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 100000e18);
@@ -560,7 +562,9 @@ contract PeripheryTest is TestHelper {
         (, uint256 lscale) = adapter.lscale();
 
         // unwrap target into underlying
-        uint256 uBal = underlying.decimals() > target.decimals() ? tBal.fmul(lscale) * SCALING_FACTOR : tBal.fmul(lscale) / SCALING_FACTOR;
+        uint256 uBal = underlying.decimals() > target.decimals()
+            ? tBal.fmul(lscale) * SCALING_FACTOR
+            : tBal.fmul(lscale) / SCALING_FACTOR;
 
         {
             // add liquidity to mockBalancerVault
@@ -628,7 +632,9 @@ contract PeripheryTest is TestHelper {
 
         // unwrap target into underlying
         (, uint256 lvalue) = adapter.lscale();
-        uint256 uBal = underlying.decimals() > target.decimals() ? swapped.fmul(lvalue) * SCALING_FACTOR : swapped.fmul(lvalue) / SCALING_FACTOR;
+        uint256 uBal = underlying.decimals() > target.decimals()
+            ? swapped.fmul(lvalue) * SCALING_FACTOR
+            : swapped.fmul(lvalue) / SCALING_FACTOR;
 
         alice.doApprove(pt, address(periphery), ptBalBefore);
         alice.doSwapPTsForUnderlying(address(adapter), maturity, ptBalBefore, 0);
@@ -961,7 +967,9 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
 
             // wrap underlying into target
-            uint256 tBal = underlying.decimals() > target.decimals() ? uBal.fdivUp(lscale) / SCALING_FACTOR : uBal.fdivUp(lscale) * SCALING_FACTOR;
+            uint256 tBal = underlying.decimals() > target.decimals()
+                ? uBal.fdivUp(lscale) / SCALING_FACTOR
+                : uBal.fdivUp(lscale) * SCALING_FACTOR;
 
             // calculate proportional target to add to pool
             uint256 proportionalTarget = tBal.fmul(
@@ -1305,7 +1313,12 @@ contract PeripheryTest is TestHelper {
         assertEq(ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob)), 0);
         assertEq(ptBal, ptToBeIssued);
         assertEq(uBalBefore + underlyingBal, uBalAfter);
-        assertEq(underlyingBal, underlying.decimals() > target.decimals() ? targetToBeAdded.fmul(lscale) * SCALING_FACTOR : targetToBeAdded.fmul(lscale) / SCALING_FACTOR);
+        assertEq(
+            underlyingBal,
+            underlying.decimals() > target.decimals()
+                ? targetToBeAdded.fmul(lscale) * SCALING_FACTOR
+                : targetToBeAdded.fmul(lscale) / SCALING_FACTOR
+        );
     }
 
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {
