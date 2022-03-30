@@ -20,6 +20,7 @@ library Errors {
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();
+    error BadPoolInteraction();
 
     // Divider
     error AlreadySettled();

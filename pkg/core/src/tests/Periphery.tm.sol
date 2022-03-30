@@ -117,7 +117,7 @@ contract PeripheryTests is PeripheryTestHelper {
         address f = periphery.deployAdapter(address(factory), Assets.cDAI);
         adapter = CAdapter(payable(f));
         // Mint this address MAX_UINT Assets.DAI
-        giveTokens(Assets.DAI, type(uint256).max, hevm);
+        giveTokens(Assets.DAI, type(uint256).max, address(hevm));
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 maturity = DateTimeFull.timestampFromDateTime(

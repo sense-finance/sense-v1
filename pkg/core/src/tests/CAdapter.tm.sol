@@ -228,7 +228,7 @@ contract CAdapters is CAdapterTestHelper {
         // Scale is in 18 decimals when the Underlying has 18 decimals (WETH) ----
 
         // Mint this address some cETH & give the adapter approvals (note all cTokens have 8 decimals)
-        giveTokens(Assets.cETH, ONE_CTOKEN, hevm);
+        giveTokens(Assets.cETH, ONE_CTOKEN, address(hevm));
         ERC20(Assets.cETH).approve(address(cEthAdapter), ONE_CTOKEN);
 
         uint256 wethOut = cEthAdapter.unwrapTarget(ONE_CTOKEN);
@@ -240,7 +240,7 @@ contract CAdapters is CAdapterTestHelper {
 
         // Scale is in 18 decimals when the Underlying has a non-standard number of decimals (6 for USDC) ----
 
-        giveTokens(Assets.cUSDC, ONE_CTOKEN, hevm);
+        giveTokens(Assets.cUSDC, ONE_CTOKEN, address(hevm));
         ERC20(Assets.cUSDC).approve(address(cUsdcAdapter), ONE_CTOKEN);
 
         uint256 usdcOut = cUsdcAdapter.unwrapTarget(ONE_CTOKEN);

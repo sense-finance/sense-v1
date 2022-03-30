@@ -25,4 +25,6 @@ library Assets {
     address public constant UNISWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public constant STABLE_SWAP_3_POOL = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
+    address public constant STABLE_SWAP_3_POOL_LP = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490;
 }
