@@ -631,6 +631,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rari-capital/solmate@rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846":
+  version: 6.2.0
+  resolution: "@rari-capital/solmate@https://github.com/rari-capital/solmate.git#commit=e7deddffd5206cdec1d554c5361f529c2a525846"
+  checksum: 3d964ac8710c5838b1b33afe14055af5e4b3fe0b12831d90526c0888d81c19719a609c42f9ae2bc4514d698dcb78e83e06527b16f20d0e27fb36759459a65f58
+  languageName: node
+  linkType: hard
+
 "@sense-finance/sense-v1@workspace:.":
   version: 0.0.0-use.local
   resolution: "@sense-finance/sense-v1@workspace:."
@@ -642,7 +649,7 @@ __metadata:
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
     "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
+    "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846"
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     dotenv: ^10.0.0
@@ -690,7 +697,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-fuse@workspace:pkg/fuse"
   dependencies:
-    "@rari-capital/solmate": ^6.2.0
+    "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846"
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     dotenv: ^10.0.0

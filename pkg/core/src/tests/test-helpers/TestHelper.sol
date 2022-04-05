@@ -23,7 +23,7 @@ import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "./DSTest.sol";
+import { DSTest } from "./test.sol";
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { User } from "./User.sol";

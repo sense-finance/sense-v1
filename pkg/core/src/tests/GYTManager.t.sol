@@ -61,8 +61,8 @@ contract GYTsManager is TestHelper {
         uint256 yieldBalance = YT(yt).balanceOf(address(bob));
         try bob.doJoin(address(adapter), maturity, yieldBalance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, "TRANSFER_FROM_FAILED");
         }
     }
 
@@ -94,8 +94,8 @@ contract GYTsManager is TestHelper {
 
         try alice.doJoin(address(adapter), maturity, aliceYieldBalance) {
             fail();
-        } catch (bytes memory error) {
-            assertEq0(error, arithmeticError);
+        } catch Error(string memory error) {
+            assertEq(error, "TRANSFER_FROM_FAILED");
         }
     }
 
