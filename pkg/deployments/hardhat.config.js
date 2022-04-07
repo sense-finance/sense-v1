@@ -1,6 +1,6 @@
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
-// require("@tenderly/hardhat-tenderly");
+require("@tenderly/hardhat-tenderly");
 require("hardhat-contract-sizer");
 require("hardhat-abi-exporter");
 require("hardhat-deploy");
@@ -12,7 +12,7 @@ require("./hardhat.seed");
 
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
-  // for the hardhat test network
+  // For the hardhat test network
   accountsBalance: "10000000000000000000000000",
 };
 
@@ -112,10 +112,10 @@ module.exports = {
     disambiguatePaths: true,
     strict: true,
   },
-  //   tenderly: {
-  //     project: process.env.TENDERLY_PROJECT,
-  //     username: process.env.TENDERLY_USERNAME,
-  //   },
+  tenderly: {
+    project: process.env.TENDERLY_PROJECT,
+    username: process.env.TENDERLY_USERNAME,
+  },
   watcher: {
     compile: {
       tasks: ["compile"],
