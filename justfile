@@ -44,10 +44,10 @@ _default:
 
 # run turbo dapp tests
 turbo-test-local *cmds="": && _timer
-	@cd {{ invocation_directory() }}; forge test --no-match-path ".*tm.*" {{ cmds }}
+	@cd {{ invocation_directory() }}; forge test --no-match-path "*.tm*" {{ cmds }}
 
 turbo-test-match *exp="": && _timer
-	@cd {{ invocation_directory() }}; forge test --no-match-path ".*tm.*" --match-test {{ exp }}
+	@cd {{ invocation_directory() }}; forge test --no-match-path "*.tm*" --match-test {{ exp }}
 
 turbo-test-local-greater-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
@@ -62,10 +62,10 @@ turbo-test-local-lower-decimal-val *cmds="": && _timer
 		forge test --no-match-path "*.tm*" {{ cmds }}
 
 turbo-test-mainnet: && _timer
-	@cd {{ invocation_directory() }}; forge test --match-path ".*tm.*" --fork-url {{ MAINNET_RPC }}
+	@cd {{ invocation_directory() }}; forge test --match-path "*.tm*" --fork-url {{ MAINNET_RPC }}
 
 turbo-test-mainnet-match *exp="": && _timer
-	@cd {{ invocation_directory() }}; forge test --match-path ".*tm.*" --fork-url {{ MAINNET_RPC }} --match-test {{ exp }}
+	@cd {{ invocation_directory() }}; forge test --match-path "*.tm*" --fork-url {{ MAINNET_RPC }} --match-test {{ exp }}
 
 ## ---- Gas Metering ----
 
