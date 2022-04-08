@@ -38,4 +38,6 @@ interface BalancerOracle {
     function getIndices() external view returns (uint256 _pti, uint256 _targeti);
 
     function totalSupply() external view returns (uint256);
+
+    function getTotalSamples() external pure returns (uint256);
 }

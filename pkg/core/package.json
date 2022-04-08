@@ -13,20 +13,21 @@
         "!src/tests/*"
     ],
     "scripts": {
-        "build": "just build",
-        "debug": "just debug",
-        "test": "just test-local",
-        "turbo-test": "just turbo-test-local",
-        "turbo-test:unusual-decimal-val": "just turbo-test-local-unusual-decimal-val",
-        "turbo-test:mainnet": "just turbo-test-mainnet",
-        "testcov": "just test-local --coverage",
+        "test": "just turbo-test-local",
+        "test:greater-decimal-val": "just turbo-test-local-greater-decimal-val",
+        "test:lower-decimal-val": "just turbo-test-local-lower-decimal-val",
+        "test:mainnet": "just turbo-test-mainnet",
+        "turbo-test": "yarn turbo-test",
+        "turbo-test:greater-decimal-val": "yarn test:greater-decimal-val",
+        "turbo-test:lower-decimal-val": "yarn test:lower-decimal-val",
+        "turbo-test:mainnet": "yarn test:mainnet",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
         "gas-snapshot": "just gas-snapshot"
     },
     "dependencies": {
         "@openzeppelin/contracts": "4.3.2",
-        "@rari-capital/solmate": "^6.2.0",
+        "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
     },

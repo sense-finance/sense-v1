@@ -257,8 +257,8 @@ contract PoolManager is Trust {
         address pt = Divider(divider).pt(adapter, maturity);
         address pool = sSeries[adapter][maturity].pool;
 
-        (, , , , , , uint256 sampleTs) = BalancerOracle(pool).getSample(1023);
-        // Prevent this market from being deployed on Fuse if we're able to read a TWAP
+        (, , , , , , uint256 sampleTs) = BalancerOracle(pool).getSample(BalancerOracle(pool).getTotalSamples() - 1);
+        // Prevent this market from being deployed on Fuse if we're unable to read a TWAP
         if (sampleTs == 0) revert Errors.OracleNotReady();
 
         address[] memory underlyings = new address[](2);

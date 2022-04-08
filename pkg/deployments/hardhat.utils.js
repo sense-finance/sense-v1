@@ -6,7 +6,9 @@ const log = console.log;
 // More info here (https://kndrck.co/posts/local_erc20_bal_mani_w_hh/)
 exports.STORAGE_SLOT = {
   DAI: 2,
+  wstETH: 0,
   WETH: 3,
+  USDC: 9,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders

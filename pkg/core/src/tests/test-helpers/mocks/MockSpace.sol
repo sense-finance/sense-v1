@@ -86,11 +86,11 @@ contract MockSpacePool is MockToken {
             if (request.kind == BalancerVault.SwapKind.GIVEN_IN) {
                 return request.amount.fmul(vault.EXCHANGE_RATE(), 1e18);
             } else {
-                return request.amount.fmul(FixedMath.WAD.fdiv(vault.EXCHANGE_RATE(), FixedMath.WAD), 1e18);
+                return request.amount.fmul(FixedMath.WAD.fdiv(vault.EXCHANGE_RATE()), 1e18);
             }
         } else {
             if (request.kind == BalancerVault.SwapKind.GIVEN_IN) {
-                return request.amount.fmul(FixedMath.WAD.fdiv(vault.EXCHANGE_RATE(), FixedMath.WAD), 1e18);
+                return request.amount.fmul(FixedMath.WAD.fdiv(vault.EXCHANGE_RATE()), 1e18);
             } else {
                 return request.amount.fmul(vault.EXCHANGE_RATE(), 1e18);
             }
@@ -103,7 +103,7 @@ contract MockSpacePool is MockToken {
         targeti = 0;
     }
 
-    function getFairBPTPriceInTarget(uint256) external view returns (uint256) {
+    function getFairBPTPrice(uint256) external view returns (uint256) {
         return 1e18;
     }
 
@@ -150,15 +150,15 @@ contract MockBalancerVault {
         uint256 amountInOrOut;
         if (address(singleSwap.assetIn) == yieldSpacePool.pt()) {
             if (singleSwap.kind == BalancerVault.SwapKind.GIVEN_IN) {
-                amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 1e18);
+                amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE);
             } else {
-                amountInOrOut = (singleSwap.amount).fdiv(EXCHANGE_RATE, 1e18);
+                amountInOrOut = (singleSwap.amount).fdiv(EXCHANGE_RATE);
             }
         } else {
             if (singleSwap.kind == BalancerVault.SwapKind.GIVEN_IN) {
-                amountInOrOut = (singleSwap.amount).fdiv(EXCHANGE_RATE, 1e18);
+                amountInOrOut = (singleSwap.amount).fdiv(EXCHANGE_RATE);
             } else {
-                amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE, 1e18);
+                amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE);
             }
         }
         Token(address(singleSwap.assetOut)).transfer(msg.sender, amountInOrOut);

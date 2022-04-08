@@ -218,7 +218,7 @@ contract User {
         periphery.swapUnderlyingForYTs(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapPrincipalForTarget(
+    function doSwapPTsForTarget(
         address adapter,
         uint256 maturity,
         uint256 balance,
@@ -227,7 +227,7 @@ contract User {
         periphery.swapPTsForTarget(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapPrincipalForUnderlying(
+    function doSwapPTsForUnderlying(
         address adapter,
         uint256 maturity,
         uint256 balance,
@@ -236,7 +236,7 @@ contract User {
         periphery.swapPTsForUnderlying(adapter, maturity, balance, minAccepted);
     }
 
-    function doSwapYieldForTarget(
+    function doSwapYTsForTarget(
         address adapter,
         uint256 maturity,
         uint256 balance
@@ -295,6 +295,17 @@ contract User {
         bool swap
     ) public returns (uint256, uint256) {
         return periphery.removeLiquidity(adapter, maturity, tBal, minAmountsOut, minAccepted, swap);
+    }
+
+    function doRemoveLiquidityAndUnwrapTarget(
+        address adapter,
+        uint256 maturity,
+        uint256 tBal,
+        uint256[] memory minAmountsOut,
+        uint256 minAccepted,
+        bool swap
+    ) public returns (uint256, uint256) {
+        return periphery.removeLiquidityAndUnwrapTarget(adapter, maturity, tBal, minAmountsOut, minAccepted, swap);
     }
 
     function doMigrateLiquidity(
@@ -356,11 +367,11 @@ contract User {
         return MockAdapter(adapter).doCombine(maturity, balance);
     }
 
-    function doAdapterRedeemPrincipal(
-        address adapter,
-        uint256 maturity,
-        uint256 balance
-    ) public {
-        divider.combine(adapter, maturity, balance);
+    function doAdapterUnwrapTarget(address adapter, uint256 tBal) public returns (uint256) {
+        return MockAdapter(adapter).unwrapTarget(tBal);
+    }
+
+    function doAdapterWrapUnderlying(address adapter, uint256 uBal) public returns (uint256) {
+        return MockAdapter(adapter).wrapUnderlying(uBal);
     }
 }

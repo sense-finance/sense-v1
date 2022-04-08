@@ -28,8 +28,8 @@ contract Yield is TestHelper {
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = ytBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= ytBalanceBefore.fdivUp(cscale, FixedMath.WAD);
+        uint256 collect = ytBalanceBefore.fdiv(lscale);
+        collect -= ytBalanceBefore.fdivUp(cscale);
         assertEq(ytBalanceBefore, ytBalanceAfter);
         assertEq(collected, collect);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
@@ -56,8 +56,8 @@ contract Yield is TestHelper {
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bytBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bytBalanceBefore.fdivUp(cscale, FixedMath.WAD);
+        uint256 collect = bytBalanceBefore.fdiv(lscale);
+        collect -= bytBalanceBefore.fdivUp(cscale);
         assertEq(aytBalanceBefore + bytBalanceBefore, aytBalanceAfter);
         assertEq(bytBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;
@@ -87,8 +87,8 @@ contract Yield is TestHelper {
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
         (, uint256 lvalue) = adapter.lscale();
         uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
-        uint256 collect = bytBalanceBefore.fdiv(lscale, FixedMath.WAD);
-        collect -= bytBalanceBefore.fdivUp(cscale, FixedMath.WAD);
+        uint256 collect = bytBalanceBefore.fdiv(lscale);
+        collect -= bytBalanceBefore.fdivUp(cscale);
         assertEq(aytBalanceBefore + bytBalanceBefore, aytBalanceAfter);
         assertEq(bytBalanceAfter, 0);
         uint256 collected = tBalanceAfter - tBalanceBefore;

@@ -120,7 +120,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "adapter",
+        "name": "factory",
         "type": "address"
       },
       {
@@ -273,6 +273,11 @@
         "internalType": "uint8",
         "name": "mode",
         "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minBptOut",
+        "type": "uint256"
       }
     ],
     "name": "addLiquidityFromTarget",
@@ -317,6 +322,11 @@
         "internalType": "uint8",
         "name": "mode",
         "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minBptOut",
+        "type": "uint256"
       }
     ],
     "name": "addLiquidityFromUnderlying",
@@ -474,6 +484,11 @@
         "internalType": "bool",
         "name": "intoTarget",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minBptOut",
+        "type": "uint256"
       }
     ],
     "name": "migrateLiquidity",
@@ -505,47 +520,37 @@
   {
     "inputs": [
       {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      },
-      {
         "internalType": "address",
         "name": "initiator",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "adapter",
+        "name": "",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maturity",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "ytBalIn",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
       }
     ],
     "name": "onFlashLoan",
     "outputs": [
       {
         "internalType": "bytes32",
-        "name": "id",
+        "name": "",
         "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "tBalNet",
-        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
