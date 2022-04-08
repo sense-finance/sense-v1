@@ -53,13 +53,13 @@ turbo-test-local-greater-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
 		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_6 }}; \
-		forge test --no-match-path ".*tm.*" {{ cmds }}
+		forge test --no-match-path "*.tm*" {{ cmds }}
 
 turbo-test-local-lower-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_6 }}; \
 		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_8 }}; \
-		forge test --no-match-path ".*tm.*" {{ cmds }}
+		forge test --no-match-path "*.tm*" {{ cmds }}
 
 turbo-test-mainnet: && _timer
 	@cd {{ invocation_directory() }}; forge test --match-path "*.tm*" --fork-url {{ MAINNET_RPC }}
@@ -81,10 +81,10 @@ gas-snapshot-local:
     )
 
 forge-gas-snapshot: && _timer
-	@cd {{ invocation_directory() }}; forge snapshot --no-match-path ".*tm.*"
+	@cd {{ invocation_directory() }}; forge snapshot --no-match-path "*.tm*"
 
 forge-gas-snapshot-diff: && _timer
-	@cd {{ invocation_directory() }}; forge snapshot --no-match-path ".*tm.*" --diff
+	@cd {{ invocation_directory() }}; forge snapshot --no-match-path "*.tm*" --diff
 
 ## ---- Appendix ----
 
