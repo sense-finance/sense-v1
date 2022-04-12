@@ -292,7 +292,6 @@ contract Adapters is TestHelper {
         adapter.setRewardTokens(rewardTokens);
 
         assertEq(rewardTokens.length, 2);
-        assertEq(rewardTokens.length, 5555);
         assertEq(rewardTokens[0], address(reward));
         assertEq(rewardTokens[1], address(reward2));
     }
