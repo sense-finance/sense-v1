@@ -49,6 +49,7 @@ library Errors {
     error FlashUntrustedBorrower();
     error FlashUntrustedLoanInitiator();
     error UnexpectedSwapAmount();
+    error TooMuchLeftoverTarget();
 
     // Fuse
     error AdapterNotSet();

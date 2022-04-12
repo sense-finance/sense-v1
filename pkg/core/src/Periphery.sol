@@ -166,35 +166,40 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Swap Target to Yield Tokens of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param tBal Balance of Target to sell
-    /// @param minAccepted Min accepted amount of YT
+    /// @param targetIn Balance of Target to sell
+    /// @param targetToBorrow Balance of Target to borrow
+    /// @param minOut Min accepted amount of YT
     /// @return ytBal amount of YT received
     function swapTargetForYTs(
         address adapter,
         uint256 maturity,
-        uint256 tBal,
-        uint256 minAccepted
+        uint256 targetIn,
+        uint256 targetToBorrow,
+        uint256 minOut
     ) external returns (uint256 ytBal) {
-        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
-        ytBal = _swapTargetForYTs(adapter, maturity, tBal, minAccepted);
+        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), targetIn);
+        ytBal = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
     }
 
     /// @notice Swap Underlying to Yield of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Balance of Underlying to sell
-    /// @param minAccepted Min accepted amount of YT
+    /// @param underlyingIn Balance of Underlying to sell
+    /// @param targetToBorrow Balance of Target to borrow
+    /// @param minOut Min accepted amount of YT
     /// @return ytBal amount of YT received
     function swapUnderlyingForYTs(
         address adapter,
         uint256 maturity,
-        uint256 uBal,
-        uint256 minAccepted
+        uint256 underlyingIn,
+        uint256 targetToBorrow,
+        uint256 minOut
     ) external returns (uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
-        underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull target
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
-        ytBal = _swapTargetForYTs(adapter, maturity, tBal, minAccepted);
+        underlying.safeTransferFrom(msg.sender, address(this), underlyingIn); // Pull Unerlying
+        // Wrap Underlying into Target and swap it for YTs
+        uint256 targetIn = Adapter(adapter).wrapUnderlying(underlyingIn);
+        ytBal = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
     }
 
     /// @notice Swap Principal Tokens for Target of a particular series
@@ -491,17 +496,22 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint256 minAccepted
+        uint256 targetToBorrow,
+        uint256 minOut
     ) internal returns (uint256 issued) {
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+        _flashBorrowAndSwapToYTs(
+            adapter,
+            maturity,
+            tBal,
+            targetToBorrow,
+            minOut
+        );
 
-        // issue pts and yts & swap pts for target
-        issued = divider.issue(adapter, maturity, tBal);
-        tBal = _swap(divider.pt(adapter, maturity), Adapter(adapter).target(), issued, pool.getPoolId(), minAccepted);
-
-        // transfer yts & target to user
-        ERC20(Adapter(adapter).target()).safeTransfer(msg.sender, tBal);
-        ERC20(divider.yt(adapter, maturity)).safeTransfer(msg.sender, issued);
+        // Transfer YTs & Target to user
+        ERC20 target = ERC20(Adapter(adapter).target());
+        ERC20 yt = ERC20(divider.yt(adapter, maturity));
+        target.safeTransfer(msg.sender, target.balanceOf(address(this)));
+        yt.safeTransfer(msg.sender, yt.balanceOf(address(this)));
     }
 
     function _swapYTsForTarget(
@@ -543,7 +553,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         );
 
         // Flash borrow target (following actions in `onFlashLoan`)
-        tBal = _flashBorrowAndSwap("0x", adapter, maturity, ytBal, targetToBorrow);
+        tBal = _flashBorrowAndSwapFromYTs(adapter, maturity, ytBal, targetToBorrow);
     }
 
     /// @return tAmount if mode = 0, target received from selling YTs, otherwise, returns 0
@@ -665,19 +675,30 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter adapter
     /// @param maturity maturity
     /// @param ytBalIn YT amount the user has sent in
-    /// @param amount target amount to borrow
+    /// @param amountToBorrow target amount to borrow
     /// @return tBal amount of Target obtained from a sale of YTs
-    function _flashBorrowAndSwap(
-        bytes memory data,
+    function _flashBorrowAndSwapFromYTs(
         address adapter,
         uint256 maturity,
         uint256 ytBalIn,
-        uint256 amount
+        uint256 amountToBorrow
     ) internal returns (uint256 tBal) {
         ERC20 target = ERC20(Adapter(adapter).target());
-        bytes memory data = abi.encode(adapter, maturity, ytBalIn);
-        bool result = Adapter(adapter).flashLoan(this, address(target), amount, data);
+        bytes memory data = abi.encode(adapter, uint96(maturity), ytBalIn, true);
+        bool result = Adapter(adapter).flashLoan(this, address(target), amountToBorrow, data);
         tBal = target.balanceOf(address(this));
+        if (!result) revert Errors.FlashBorrowFailed();
+    }
+
+    function _flashBorrowAndSwapToYTs(
+        address adapter,
+        uint256 maturity,
+        uint256 targetIn,
+        uint256 amountToBorrow,
+        uint256 minOut
+    ) internal returns (uint256 tBal) {
+        bytes memory data = abi.encode(adapter, uint96(maturity), targetIn, minOut, false);
+        bool result = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amountToBorrow, data);
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
@@ -685,38 +706,52 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     function onFlashLoan(
         address initiator,
         address, /* token */
-        uint256 amount,
+        uint256 amountBorrrowed,
         uint256, /* fee */
         bytes calldata data
     ) external returns (bytes32) {
-        (address adapter, uint256 maturity, uint256 ytBalIn) = abi.decode(data, (address, uint256, uint256));
+        (
+            address adapter,
+            uint96 maturity,
+            uint256 amountIn,
+            uint256 minOut,
+            bool ytToTarget
+        ) = abi.decode(data, (address, uint96, uint256, uint256, bool));
+
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
         if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
-        address yt = divider.yt(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
 
-        // Because Space utilizes power ofs liberally in its invariant, there is some error
-        // in the amountIn we estimated that we'd need in `_swapYTsForTarget` to get a `ptBal` out
-        // that matched our Yield Token balance. Tokens with more than 18 decimals are not supported.
-        uint256 acceptableError = ERC20(yt).decimals() < 9
-            ? 1
-            : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - ERC20(yt).decimals());
+        if (ytToTarget) {
+            ERC20 target = ERC20(Adapter(adapter).target());
 
-        // Swap Target for PTs
-        uint256 ptBal = _swap(
-            Adapter(adapter).target(),
-            divider.pt(adapter, maturity),
-            amount,
-            pool.getPoolId(),
-            ytBalIn - acceptableError
-        );
+            // Swap Target for PTs
+            uint256 ptBal = _swap(
+                address(target),
+                divider.pt(adapter, maturity),
+                target.balanceOf(address(this)),
+                pool.getPoolId(),
+                minOut // min pt out
+            );
 
-        // We take the lowest of the two balances, as long as they're within a margin of acceptable error.
-        if (ptBal >= ytBalIn + acceptableError && ptBal <= ytBalIn - acceptableError)
-            revert Errors.UnexpectedSwapAmount();
+            // Combine PTs and YTs
+            divider.combine(adapter, maturity, ptBal < amountIn ? ptBal : amountIn);
+        } else {
+            // Issue PTs and YTs
+            divider.issue(adapter, maturity, amountIn + amountBorrrowed);
+            ERC20 pt = ERC20(divider.pt(adapter, maturity));
 
-        // Combine PTs and YTs
-        divider.combine(adapter, maturity, ptBal < ytBalIn ? ptBal : ytBalIn);
+            // Swap PTs for Target
+            _swap(
+                address(pt),
+                Adapter(adapter).target(),
+                pt.balanceOf(address(this)),
+                pool.getPoolId(),
+                minOut // Min Target out
+            ); // minOut should be close to amountBorrrowed so that minimal Target dust is sent back to the caller
+
+            // Flashloaner contract will revert if not enough Target has been swapped out to pay back the loan
+        }
 
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
