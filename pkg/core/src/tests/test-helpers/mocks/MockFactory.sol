@@ -38,7 +38,7 @@ contract MockFactory is CropFactory {
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
 
         // Use the CREATE2 opcode to deploy a new Adapter contract.
-        // This will revert if a CAdapter with the provided target has already
+        // This will revert if a MockAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,

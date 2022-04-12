@@ -44,7 +44,6 @@ contract FFactory is CropFactory {
                 rewardTokens[i] = RewardsDistributorLike(rewardsDistributors[i]).rewardToken();
         }
 
-        // TODO: check _comptroller is valid
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: _target,
             underlying: underlying == address(0) ? WETH : underlying, // TODO: are we good witht this check right?
@@ -59,7 +58,7 @@ contract FFactory is CropFactory {
             level: DEFAULT_LEVEL
         });
         // Use the CREATE2 opcode to deploy a new Adapter contract.
-        // This will revert if a CAdapter with the provided target has already
+        // This will revert if a FAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         adapter = address(
             new FAdapter{ salt: _target.fillLast12Bytes() }(divider, _comptroller, adapterParams, rewardTokens)
