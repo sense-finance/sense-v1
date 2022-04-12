@@ -18,9 +18,6 @@ abstract contract BaseFactory {
     /// @notice Sense core Divider address
     address public immutable divider;
 
-    /// @notice Protocol's data contract address
-    address public immutable protocol;
-
     /// @notice target -> adapter
     mapping(address => address) public adapters;
 
@@ -40,13 +37,8 @@ abstract contract BaseFactory {
         uint64 tilt; // tilt
     }
 
-    constructor(
-        address _divider,
-        address _protocol,
-        FactoryParams memory _factoryParams
-    ) {
+    constructor(address _divider, FactoryParams memory _factoryParams) {
         divider = _divider;
-        protocol = _protocol;
         factoryParams = _factoryParams;
     }
 
@@ -54,12 +46,16 @@ abstract contract BaseFactory {
 
     /// @notice Deploys both an adapter and a target wrapper for the given _target
     /// @param _target Address of the Target token
-    function deployAdapter(address _target) external virtual returns (address adapter) {}
+    function deployAdapter(address _target) external virtual returns (address adapter) {
+        revert Errors.NotImplemented();
+    }
 
-    /* ========== REQUIRED INTERNAL GUARD ========== */
-
-    /// @notice Target validity check that must be overriden by child contracts
-    function exists(address _target) external virtual returns (bool);
+    /// @notice Deploys both an adapter and a target wrapper for the given _target and specifies a comptroller
+    /// @param _target Address of the Target token
+    /// @param _protocol Address of the comptroller contract
+    function deployAdapter(address _target, address _protocol) external virtual returns (address adapter) {
+        revert Errors.NotImplemented();
+    }
 
     /* ========== LOGS ========== */
 

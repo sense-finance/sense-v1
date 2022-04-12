@@ -6,7 +6,6 @@ import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
-import { IAdapter } from "./test-helpers/interfaces/IAdapter.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
@@ -24,7 +23,9 @@ contract Factories is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+        MockFactory someFactory = new MockFactory(address(divider), factoryParams, rewardTokens);
 
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).divider(), address(divider));
@@ -53,22 +54,25 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(someReward);
+        MockFactory someFactory = createFactory(address(someTarget), rewardTokens);
         divider.setPeriphery(address(this));
         address adapter = someFactory.deployAdapter(address(someTarget));
         assertTrue(adapter != address(0));
-        assertEq(IAdapter(adapter).divider(), address(divider));
-        assertEq(IAdapter(adapter).target(), address(someTarget));
-        assertEq(IAdapter(adapter).name(), "Some Target Adapter");
-        assertEq(IAdapter(adapter).symbol(), "ST-adapter");
-        assertEq(IAdapter(adapter).stake(), address(stake));
-        assertEq(IAdapter(adapter).ifee(), ISSUANCE_FEE);
-        assertEq(IAdapter(adapter).stakeSize(), STAKE_SIZE);
-        assertEq(IAdapter(adapter).minm(), MIN_MATURITY);
-        assertEq(IAdapter(adapter).maxm(), MAX_MATURITY);
-        assertEq(IAdapter(adapter).oracle(), ORACLE);
-        assertEq(IAdapter(adapter).mode(), MODE);
-        uint256 scale = IAdapter(adapter).scale();
+        assertEq(MockAdapter(adapter).divider(), address(divider));
+        assertEq(MockAdapter(adapter).target(), address(someTarget));
+        assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
+        assertEq(MockAdapter(adapter).symbol(), "ST-adapter");
+        assertEq(MockAdapter(adapter).stake(), address(stake));
+        assertEq(MockAdapter(adapter).ifee(), ISSUANCE_FEE);
+        assertEq(MockAdapter(adapter).stakeSize(), STAKE_SIZE);
+        assertEq(MockAdapter(adapter).minm(), MIN_MATURITY);
+        assertEq(MockAdapter(adapter).maxm(), MAX_MATURITY);
+        assertEq(MockAdapter(adapter).oracle(), ORACLE);
+        assertEq(MockAdapter(adapter).mode(), MODE);
+        assertEq(MockAdapter(adapter).rewardTokens(0), address(someReward));
+        uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }
 
@@ -76,10 +80,12 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(someReward);
+        MockFactory someFactory = createFactory(address(someTarget), rewardTokens);
         address f = periphery.deployAdapter(address(someFactory), address(someTarget));
         assertTrue(f != address(0));
-        uint256 scale = IAdapter(f).scale();
+        uint256 scale = MockAdapter(f).scale();
         assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
@@ -91,6 +97,7 @@ contract Factories is TestHelper {
     function testCantDeployAdapterIfNotPeriphery() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        factory.addTarget(address(someTarget), true);
         try factory.deployAdapter(address(someTarget)) {
             fail();
         } catch (bytes memory error) {

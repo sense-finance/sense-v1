@@ -7,6 +7,8 @@ library Assets {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+    address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -25,4 +27,18 @@ library Assets {
     address public constant UNISWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+
+    address public constant MASTER_PRICE_ORACLE = 0x54Bd48678fdC1Ec2EF832C2d80030E94118CCb4B;
+
+    // fuse f18 olympus pool party
+    address public constant OLYMPUS_POOL_PARTY = 0x621579DD26774022F33147D3852ef4E00024b763; // olympus pool party
+    address public constant f18DAI = 0x8E4E0257A4759559B4B1AC087fe8d80c63f20D19;
+    address public constant f18ETH = 0xFA1057d02A0C1a4885851e3F4fD496Ee7D38F56e;
+    address public constant f18USDC = 0x6f95d4d251053483f41c8718C30F4F3C404A8cf2;
+
+    // fuse f156 tribe convex pool
+    address public constant TRIBE_CONVEX = 0x07cd53380FE9B2a5E64099591b498c73F0EfaA66; // tribe convex pool
+    address public constant f156FRAX3CRV = 0x2ec70d3Ff3FD7ac5c2a72AAA64A398b6CA7428A5;
+    address public constant f156cvxFXSFXSf = 0x30916E14C139d65CAfbEEcb3eA525c59df643281;
+    address public constant f156CVX = 0x3F4a965Bff126af42FC014c20959c7b857EA4e35;
 }

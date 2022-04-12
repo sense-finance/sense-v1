@@ -10,52 +10,30 @@ import { Divider } from "../Divider.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
-abstract contract CropAdapter is BaseAdapter {
+abstract contract CropAdapter is Trust, BaseAdapter {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
     /// @notice Program state
-    address public immutable reward;
-    uint256 public share; // accumulated reward token per collected target
-    uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget;
     mapping(address => uint256) public tBalance;
-    mapping(address => uint256) public rewarded; // reward token per user
+
+    address[] public rewardTokens;
+    mapping(address => uint256) public shares; // accumulated reward token per collected target per reward token
+    mapping(address => uint256) public rewardedBalances; // last recorded balance of reward token per reward token
+    mapping(address => mapping(address => uint256)) public rewarded; // rewarded token per token per user
+    // TODO: simplify mappings into only one as they share the same key?
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
 
     constructor(
         address _divider,
-        address _target,
-        address _underlyng,
-        address _oracle,
-        uint256 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint256 _level,
-        address _reward
-    )
-        BaseAdapter(
-            _divider,
-            _target,
-            _underlyng,
-            _oracle,
-            _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            _level
-        )
-    {
-        reward = _reward;
+        BaseAdapter.AdapterParams memory _adapterParams,
+        address[] memory _rewardTokens
+    ) Trust(msg.sender) BaseAdapter(_divider, _adapterParams) {
+        rewardTokens = _rewardTokens;
     }
 
     function notify(
@@ -75,32 +53,41 @@ abstract contract CropAdapter is BaseAdapter {
             }
         }
 
-        rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            rewarded[rewardTokens[i]][_usr] = tBalance[_usr].fmulUp(shares[rewardTokens[i]], FixedMath.RAY);
+        }
     }
 
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
     /// @param _usr User to distribute reward tokens to
     function _distribute(address _usr) internal {
-        _claimReward();
+        _claimRewards();
 
-        uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
-        if (totalTarget > 0) share += (crop.fdiv(totalTarget, FixedMath.RAY));
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            uint256 crop = ERC20(rewardTokens[i]).balanceOf(address(this)) - rewardedBalances[rewardTokens[i]];
+            if (totalTarget > 0) shares[rewardTokens[i]] += (crop.fdiv(totalTarget, FixedMath.RAY));
 
-        uint256 last = rewarded[_usr];
-        uint256 curr = tBalance[_usr].fmul(share, FixedMath.RAY);
-        if (curr > last) {
-            unchecked {
-                ERC20(reward).safeTransfer(_usr, curr - last);
+            uint256 last = rewarded[rewardTokens[i]][_usr];
+            uint256 curr = tBalance[_usr].fmul(shares[rewardTokens[i]], FixedMath.RAY);
+            if (curr > last) {
+                unchecked {
+                    ERC20(rewardTokens[i]).safeTransfer(_usr, curr - last);
+                }
             }
+            rewardedBalances[rewardTokens[i]] = ERC20(rewardTokens[i]).balanceOf(address(this));
+            emit Distributed(_usr, rewardTokens[i], curr > last ? curr - last : 0);
         }
-        rewardBal = ERC20(reward).balanceOf(address(this));
-        emit Distributed(_usr, reward, curr > last ? curr - last : 0);
     }
 
     /// @notice Some protocols don't airdrop reward tokens, instead users must claim them.
     /// This method may be overriden by child contracts to claim a protocol's rewards
-    function _claimReward() internal virtual {
+    function _claimRewards() internal virtual {
         return;
+    }
+
+    function setRewardTokens(address[] memory _rewardTokens) public requiresTrust {
+        _claimRewards();
+        rewardTokens = _rewardTokens;
     }
 
     /* ========== MODIFIERS ========== */

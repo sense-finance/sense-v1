@@ -12,6 +12,7 @@ import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
 import { Assets } from "./test-helpers/Assets.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract CAdapterTestHelper is DSTest {
     CFactory internal factory;
@@ -29,6 +30,9 @@ contract CAdapterTestHelper is DSTest {
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
 
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = Assets.COMP;
+
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: Assets.DAI,
@@ -40,13 +44,16 @@ contract CAdapterTestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        factory = new CFactory(address(divider), factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
 
 contract CFactories is CAdapterTestHelper {
     function testMainnetDeployFactory() public {
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = Assets.COMP;
+
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: Assets.DAI,
             oracle: Assets.RARI_ORACLE,
@@ -57,7 +64,7 @@ contract CFactories is CAdapterTestHelper {
             mode: MODE,
             tilt: 0
         });
-        CFactory otherCFactory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        CFactory otherCFactory = new CFactory(address(divider), factoryParams);
 
         assertTrue(address(otherCFactory) != address(0));
         (
@@ -72,7 +79,7 @@ contract CFactories is CAdapterTestHelper {
         ) = CFactory(otherCFactory).factoryParams();
 
         assertEq(CFactory(otherCFactory).divider(), address(divider));
-        assertEq(CFactory(otherCFactory).reward(), Assets.COMP);
+        // assertEq(CFactory(otherCFactory).rewardTokens(0), Assets.COMP); //TODO: remove line, factoriess do not have reward tokens
         assertEq(stake, Assets.DAI);
         assertEq(ifee, ISSUANCE_FEE);
         assertEq(stakeSize, STAKE_SIZE);
@@ -95,5 +102,14 @@ contract CFactories is CAdapterTestHelper {
 
         uint256 scale = CAdapter(adapter).scale();
         assertTrue(scale > 0);
+    }
+
+    function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
+        divider.setPeriphery(address(this));
+        try factory.deployAdapter(Assets.f18DAI) {
+            fail();
+        } catch (bytes memory error) {
+            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        }
     }
 }

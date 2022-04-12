@@ -61,6 +61,9 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant DEFAULT_LEVEL = 31;
+    uint256 public constant DEFAULT_MODE = 0;
+    uint256 public constant DEFAULT_TILT = 0;
 
     function setUp() public {
         address[] memory assets = new address[](1);
@@ -70,17 +73,21 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
-        adapter = new WstETHAdapter(
-            address(divider),
-            Assets.RARI_ORACLE,
-            ISSUANCE_FEE,
-            Assets.DAI,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            0,
-            0
-        ); // wstETH adapter
+
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: Assets.WSTETH,
+            underlying: Assets.WETH,
+            oracle: Assets.RARI_ORACLE,
+            stake: Assets.DAI,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: DEFAULT_MODE,
+            ifee: ISSUANCE_FEE,
+            tilt: DEFAULT_TILT,
+            level: DEFAULT_LEVEL
+        });
+        adapter = new WstETHAdapter(address(divider), adapterParams); // wstETH adapter
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {

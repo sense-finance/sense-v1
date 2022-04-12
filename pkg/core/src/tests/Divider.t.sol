@@ -118,20 +118,9 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfModeInvalid() public {
-        MockAdapter adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.mode = 4;
+        MockAdapter adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
+
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
@@ -144,20 +133,9 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfNotTopWeek() public {
-        MockAdapter adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            1,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.mode = 1;
+        MockAdapter adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
+
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
@@ -170,20 +148,9 @@ contract Dividers is TestHelper {
     }
 
     function testInitSeriesWeekly() public {
-        MockAdapter adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            1,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.mode = 1;
+        MockAdapter adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
+
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
@@ -397,19 +364,7 @@ contract Dividers is TestHelper {
 
     function testSettleSeriesWithMockBaseAdapter() public {
         divider.setPermissionless(true);
-        MockBaseAdapter aAdapter = new MockBaseAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            1e18,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL
-        );
+        MockBaseAdapter aAdapter = new MockBaseAdapter(address(divider), DEFAULT_ADAPTER_PARAMS);
         divider.addAdapter(address(aAdapter));
         uint256 maturity = getValidMaturity(2021, 10);
         User(alice).doSponsorSeries(address(aAdapter), maturity);
@@ -528,20 +483,10 @@ contract Dividers is TestHelper {
 
     function testCantIssueIfIssuanceFeeExceedsCap() public {
         divider.setPermissionless(true);
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            1e18,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+
+        DEFAULT_ADAPTER_PARAMS.ifee = 1e18;
+        MockAdapter aAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
+
         divider.addAdapter(address(aAdapter));
         uint256 maturity = getValidMaturity(2021, 10);
         User(address(alice)).doSponsorSeries(address(aAdapter), maturity);
@@ -567,20 +512,8 @@ contract Dividers is TestHelper {
         // Restrict issuance, enable all other lifecycle methods
         uint16 level = 0x1 + 0x4 + 0x8 + 0x10;
 
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.level = level;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -720,20 +653,8 @@ contract Dividers is TestHelper {
         // Restrict combine, enable all other lifecycle methods
         uint16 level = 0x1 + 0x2 + 0x8 + 0x10;
 
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.level = level;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -961,20 +882,8 @@ contract Dividers is TestHelper {
         // The Targeted redemption value Alice will send Bob wants, in Underlying
         uint256 intendedRedemptionValue = 50e18;
 
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            tilt,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.tilt = tilt;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
@@ -1061,20 +970,8 @@ contract Dividers is TestHelper {
         // Enable all Divider lifecycle methods, but not the adapter pt redeem hook
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10;
 
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.level = level;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -1090,20 +987,8 @@ contract Dividers is TestHelper {
     function testRedeenPrincipalHookIsCalledIfProperLevelIsntSet() public {
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10 + 0x20;
 
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.level = level;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -1122,20 +1007,8 @@ contract Dividers is TestHelper {
         // Reserve 10% of pt for Yield
         uint64 tilt = 0.1e18;
 
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            tilt,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.tilt = tilt;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
@@ -1180,21 +1053,8 @@ contract Dividers is TestHelper {
     function testRedeemYieldPositiveTiltNegativeScale() public {
         // Reserve 10% of pt for Yield
         uint64 tilt = 0.1e18;
-
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            tilt,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.tilt = tilt;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
@@ -1275,21 +1135,8 @@ contract Dividers is TestHelper {
     function testCantCollectIfProperLevelIsntSet() public {
         // Disable collection, enable all other lifecycle methods
         uint16 level = 0x1 + 0x2 + 0x4 + 0x10;
-
-        adapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
-            address(reward)
-        );
+        DEFAULT_ADAPTER_PARAMS.level = level;
+        adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -1987,20 +1834,7 @@ contract Dividers is TestHelper {
     }
 
     function testSetAdapter() public {
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        MockAdapter aAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         uint256 adapterCounter = divider.adapterCounter();
 
         divider.setAdapter(address(aAdapter), true);
@@ -2011,20 +1845,7 @@ contract Dividers is TestHelper {
     }
 
     function testSetAdapterBackOnKeepsExistingId() public {
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        MockAdapter aAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         uint256 adapterCounter = divider.adapterCounter();
 
         // set adapter on
@@ -2038,20 +1859,8 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(aAdapter), false);
 
         // create new adapter
-        MockAdapter bAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        MockAdapter bAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
+
         divider.setAdapter(address(bAdapter), true);
         (id, enabled, , ) = divider.adapterMeta(address(bAdapter));
         assertTrue(enabled);
@@ -2107,20 +1916,7 @@ contract Dividers is TestHelper {
     }
 
     function testAddAdapter() public {
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
-            address(reward)
-        );
+        MockAdapter aAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, rewardTokens);
         divider.setPermissionless(true);
         bob.doAddAdapter(address(aAdapter));
         (uint248 id, bool enabled, , ) = divider.adapterMeta(address(adapter));

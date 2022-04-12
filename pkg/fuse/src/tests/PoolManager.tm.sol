@@ -79,20 +79,23 @@ contract PoolManagerTest is DSTest {
         stake = new MockToken("Stake", "SBL", 18);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
-        mockAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            address(mockOracle),
-            0.1e18,
-            address(stake),
-            1e18,
-            2 weeks,
-            14 weeks,
-            0,
-            0,
-            31,
-            address(reward)
-        );
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: address(target),
+            underlying: target.underlying(),
+            oracle: address(mockOracle),
+            stake: address(stake),
+            stakeSize: 1e18,
+            minm: 2 weeks,
+            maxm: 14 weeks,
+            mode: 0,
+            ifee: 0.1e18,
+            tilt: 0,
+            level: 31
+        });
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+
+        mockAdapter = new MockAdapter(address(divider), adapterParams, rewardTokens);
 
         // Ping scale to set an lscale
         mockAdapter.scale();

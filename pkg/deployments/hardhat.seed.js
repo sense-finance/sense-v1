@@ -45,9 +45,10 @@ const DEV_ADAPTERS = [
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
     },
-    // deployments params MUST BE in order
-    deploymentParams: {
+
+    adapterParams: {
       target: "0x0",
+      underlying: "0x0",
       oracle: ethers.constants.AddressZero, // oracle address
       ifee: ethers.utils.parseEther("0.01"),
       stake: "0x0",
@@ -57,7 +58,7 @@ const DEV_ADAPTERS = [
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
       level: 31,
-      reward: "0x0",
+      rewardTokens: [],
     },
   }),
 ];
@@ -106,8 +107,10 @@ const MAINNET_ADAPTERS = [
       guard: ethers.utils.parseEther("1"),
       series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
-    // deployments params MUST BE in order
-    deploymentParams: {
+
+    adapterParams: {
+      target: WSTETH_TOKEN.get(chainId),
+      underlying: WETH_TOKEN.get(chainId),
       oracle: MASTER_ORACLE.get(chainId), // oracle address
       ifee: ethers.utils.parseEther("0.01"),
       stake: WETH_TOKEN.get(chainId),
@@ -116,6 +119,7 @@ const MAINNET_ADAPTERS = [
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
+      level: 31,
     },
   }),
 ];

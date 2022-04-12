@@ -32,7 +32,7 @@ module.exports = async function () {
     const factoryParams = [oracle, ifee, stake.address, stakeSize, minm, maxm, mode, tilt];
     const { address: mockFactoryAddress } = await deploy(factoryContractName, {
       from: deployer,
-      args: [divider.address, factoryParams, airdrop.address],
+      args: [divider.address, factoryParams, [airdrop.address]],
       log: true,
     });
 
@@ -181,14 +181,15 @@ module.exports = async function () {
   }
 
   async function deployAdapterWithoutFactory(t, targetContract) {
-    let { contractName, deploymentParams, target } = t;
-    deploymentParams.target = targetContract.address;
-    deploymentParams.stake = stake.address;
-    deploymentParams.reward = airdrop.address;
+    let { contractName, adapterParams, target } = t;
+    adapterParams.target = targetContract.address;
+    adapterParams.underlying = await targetContract.underlying();
+    adapterParams.stake = stake.address;
+    adapterParams.rewardTokens = [airdrop.address];
 
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, ...Object.values(deploymentParams)],
+      args: [divider.address, adapterParams, [airdrop.address]],
       log: true,
     });
 

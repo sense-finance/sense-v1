@@ -18,11 +18,11 @@ import { User } from "./test-helpers/User.sol";
 import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
 
 interface CropAdapterLike {
-    function _claimReward() external;
+    function _claimRewards() external;
 }
 
 contract CAdapterTestHelper is LiquidityHelper, DSTest {
-    CAdapter internal adapter;
+    CAdapter internal cDaiAdapter;
     CAdapter internal cEthAdapter;
     CAdapter internal cUsdcAdapter;
     Divider internal divider;
@@ -53,52 +53,33 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
 
-        // cdai adapter
-        adapter = new CAdapter(
-            address(divider),
-            Assets.cDAI,
-            Assets.RARI_ORACLE,
-            ISSUANCE_FEE,
-            Assets.DAI,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            0,
-            0,
-            DEFAULT_LEVEL,
-            Assets.COMP
-        ); // Compound adapter
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = Assets.COMP;
 
-        cEthAdapter = new CAdapter(
-            address(divider),
-            Assets.cETH,
-            Assets.RARI_ORACLE,
-            ISSUANCE_FEE,
-            Assets.DAI,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            0,
-            0,
-            DEFAULT_LEVEL,
-            Assets.COMP
-        ); // Compound adapter
+        // cdai adapter
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: Assets.cDAI,
+            underlying: CTokenLike(Assets.cDAI).underlying(),
+            oracle: Assets.RARI_ORACLE,
+            stake: Assets.DAI,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: 0,
+            ifee: ISSUANCE_FEE,
+            tilt: 0,
+            level: DEFAULT_LEVEL
+        });
+        cDaiAdapter = new CAdapter(address(divider), adapterParams, rewardTokens); // Compound adapter
+
+        adapterParams.target = Assets.cETH;
+        adapterParams.underlying = Assets.WETH;
+        cEthAdapter = new CAdapter(address(divider), adapterParams, rewardTokens); // Compound adapter
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
-        cUsdcAdapter = new CAdapter(
-            address(divider),
-            Assets.cUSDC,
-            Assets.RARI_ORACLE,
-            ISSUANCE_FEE,
-            Assets.DAI,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            0,
-            0,
-            DEFAULT_LEVEL,
-            Assets.COMP
-        ); // Compound adapter
+        adapterParams.target = Assets.cUSDC;
+        adapterParams.underlying = CTokenLike(Assets.cUSDC).underlying();
+        cUsdcAdapter = new CAdapter(address(divider), adapterParams, rewardTokens); // Compound adapter
     }
 }
 
@@ -111,25 +92,25 @@ contract CAdapters is CAdapterTestHelper {
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent() / 10**(uDecimals - 8);
-        assertEq(adapter.scale(), scale);
+        assertEq(cDaiAdapter.scale(), scale);
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        PriceOracleLike oracle = PriceOracleLike(Assets.RARI_ORACLE);
+        PriceOracleLike oracle = PriceOracleLike(Assets.MASTER_PRICE_ORACLE);
         uint256 price = oracle.price(Assets.DAI);
-        assertEq(adapter.getUnderlyingPrice(), price);
+        assertEq(cDaiAdapter.getUnderlyingPrice(), price);
     }
 
     function testMainnetUnwrapTarget() public {
         uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
 
-        ERC20(Assets.cDAI).approve(address(adapter), tBalanceBefore);
+        ERC20(Assets.cDAI).approve(address(cDaiAdapter), tBalanceBefore);
         uint256 rate = CTokenLike(Assets.cDAI).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.DAI).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
-        adapter.unwrapTarget(tBalanceBefore);
+        cDaiAdapter.unwrapTarget(tBalanceBefore);
 
         uint256 tBalanceAfter = ERC20(Assets.cDAI).balanceOf(address(this));
         uint256 uBalanceAfter = ERC20(Assets.DAI).balanceOf(address(this));
@@ -142,12 +123,12 @@ contract CAdapters is CAdapterTestHelper {
         uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
 
-        ERC20(Assets.DAI).approve(address(adapter), uBalanceBefore);
+        ERC20(Assets.DAI).approve(address(cDaiAdapter), uBalanceBefore);
         uint256 rate = CTokenLike(Assets.cDAI).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.DAI).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
-        adapter.wrapUnderlying(uBalanceBefore);
+        cDaiAdapter.wrapUnderlying(uBalanceBefore);
 
         uint256 tBalanceAfter = ERC20(Assets.cDAI).balanceOf(address(this));
         uint256 uBalanceAfter = ERC20(Assets.DAI).balanceOf(address(this));

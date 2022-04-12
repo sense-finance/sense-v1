@@ -6,51 +6,54 @@ import { CropFactory } from "../../../adapters/CropFactory.sol";
 import { Divider } from "../../../Divider.sol";
 import { MockAdapter } from "./MockAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+
+interface MockTargetLike {
+    function underlying() external view returns (address);
+}
 
 contract MockFactory is CropFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public targets;
+    address[] rewardTokens;
 
     constructor(
         address _divider,
         FactoryParams memory _factoryParams,
-        address _reward
-    ) CropFactory(_divider, address(0), _factoryParams, _reward) {}
-
-    function exists(address _target) external virtual override returns (bool) {
-        return targets[_target];
+        address[] memory _rewardTokens
+    ) CropFactory(_divider, _factoryParams) {
+        rewardTokens = _rewardTokens;
     }
 
     function addTarget(address _target, bool status) external {
         targets[_target] = status;
     }
 
-    function deployAdapter(address _target) external override returns (address) {
+    function deployAdapter(address _target) external override returns (address adapter) {
+        if (!targets[_target]) revert Errors.TargetNotSupported();
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
 
         // Use the CREATE2 opcode to deploy a new Adapter contract.
         // This will revert if a CAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
-        return
-            address(
-                new MockAdapter{ salt: _target.fillLast12Bytes() }(
-                    divider,
-                    _target,
-                    factoryParams.oracle,
-                    factoryParams.ifee,
-                    factoryParams.stake,
-                    factoryParams.stakeSize,
-                    factoryParams.minm,
-                    factoryParams.maxm,
-                    factoryParams.mode,
-                    factoryParams.tilt,
-                    DEFAULT_LEVEL,
-                    reward
-                )
-            );
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: _target,
+            underlying: MockTargetLike(_target).underlying(),
+            oracle: factoryParams.oracle,
+            stake: factoryParams.stake,
+            stakeSize: factoryParams.stakeSize,
+            minm: factoryParams.minm,
+            maxm: factoryParams.maxm,
+            mode: factoryParams.mode,
+            ifee: factoryParams.ifee,
+            tilt: factoryParams.tilt,
+            level: DEFAULT_LEVEL
+        });
+
+        adapter = address(new MockAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, rewardTokens));
     }
 }

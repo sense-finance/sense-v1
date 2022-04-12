@@ -4,44 +4,49 @@ pragma solidity 0.8.11;
 // Internal references
 import { CropFactory } from "../CropFactory.sol";
 import { CAdapter, ComptrollerLike } from "./CAdapter.sol";
+import { BaseAdapter } from "../BaseAdapter.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+
+interface CTokenLike {
+    function underlying() external view returns (address);
+}
 
 contract CFactory is CropFactory {
     using Bytes32AddressLib for address;
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
-    constructor(
-        address _divider,
-        FactoryParams memory _factoryParams,
-        address _reward
-    ) CropFactory(_divider, COMPTROLLER, _factoryParams, _reward) {}
-
-    function exists(address _target) external virtual override returns (bool isListed) {
-        (isListed, , ) = ComptrollerLike(protocol).markets(_target);
-    }
+    constructor(address _divider, FactoryParams memory _factoryParams) CropFactory(_divider, _factoryParams) {}
 
     function deployAdapter(address _target) external override returns (address adapter) {
+        (bool isListed, , ) = ComptrollerLike(COMPTROLLER).markets(_target);
+        if (!isListed) revert Errors.TargetNotSupported();
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = COMP;
+
         // Use the CREATE2 opcode to deploy a new Adapter contract.
         // This will revert if a CAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
-        adapter = address(
-            new CAdapter{ salt: _target.fillLast12Bytes() }(
-                divider,
-                _target,
-                factoryParams.oracle,
-                factoryParams.ifee,
-                factoryParams.stake,
-                factoryParams.stakeSize,
-                factoryParams.minm,
-                factoryParams.maxm,
-                factoryParams.mode,
-                factoryParams.tilt,
-                DEFAULT_LEVEL,
-                reward
-            )
-        );
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: _target,
+            underlying: _target == CETH ? WETH : CTokenLike(_target).underlying(),
+            oracle: factoryParams.oracle,
+            stake: factoryParams.stake,
+            stakeSize: factoryParams.stakeSize,
+            minm: factoryParams.minm,
+            maxm: factoryParams.maxm,
+            mode: factoryParams.mode,
+            ifee: factoryParams.ifee,
+            tilt: factoryParams.tilt,
+            level: DEFAULT_LEVEL
+        });
+        adapter = address(new CAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, rewardTokens));
     }
 }

@@ -36,6 +36,7 @@ library Errors {
     error InvalidAdapter();
     error InvalidMaturity();
     error InvalidParam();
+    error NotImplemented();
     error OutOfWindowBoundaries();
     error SeriesDoesNotExist();
     error SwapTooSmall();

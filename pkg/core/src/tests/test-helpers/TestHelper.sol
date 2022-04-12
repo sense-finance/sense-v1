@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { GYTManager } from "../../modules/GYTManager.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
@@ -34,16 +35,16 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 contract TestHelper is DSTest {
     using FixedMath for uint256;
 
-    MockAdapter adapter;
-    MockToken stake;
-    MockToken underlying;
-    MockTarget target;
-    MockToken reward;
-    MockFactory factory;
-    MockOracle masterOracle;
+    MockAdapter internal adapter;
+    MockToken internal stake;
+    MockToken internal underlying;
+    MockTarget internal target;
+    MockToken internal reward;
+    MockFactory internal factory;
+    MockOracle internal masterOracle;
 
-    PoolManager poolManager;
-    GYTManager gYTManager;
+    PoolManager internal poolManager;
+    GYTManager internal gYTManager;
     Divider internal divider;
     TokenHandler internal tokenHandler;
     Periphery internal periphery;
@@ -54,15 +55,20 @@ contract TestHelper is DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     // balancer/space
-    MockSpaceFactory spaceFactory;
-    MockBalancerVault balancerVault;
+    MockSpaceFactory internal spaceFactory;
+    MockBalancerVault internal balancerVault;
 
     // fuse & compound
-    MockComptroller comptroller;
-    MockFuseDirectory fuseDirectory;
+    MockComptroller internal comptroller;
+    MockFuseDirectory internal fuseDirectory;
+
+    // default adapter params
+    BaseAdapter.AdapterParams public DEFAULT_ADAPTER_PARAMS;
+
+    // reward tokens
+    address[] public rewardTokens;
 
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
-
     uint16 public MODE = 0;
     address public ORACLE = address(123);
     uint64 public ISSUANCE_FEE = 0.05e18;
@@ -70,6 +76,7 @@ contract TestHelper is DSTest {
     uint256 public MIN_MATURITY = 2 weeks;
     uint256 public MAX_MATURITY = 14 weeks;
     uint16 public DEFAULT_LEVEL = 31;
+    uint16 public DEFAULT_TILT = 0;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
     uint256 public SCALING_FACTOR;
@@ -78,7 +85,6 @@ contract TestHelper is DSTest {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
         uint8 baseDecimals = 18;
-        stake = new MockToken("Stake Token", "ST", baseDecimals);
 
         // Get Target/Underlying decimal number from the environment
         string[] memory inputs = new string[](2);
@@ -89,8 +95,13 @@ contract TestHelper is DSTest {
         inputs[1] = "_forge_mock_target_decimals";
         uint8 mockTargetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
 
+        // Create target, underlying, stake & reward tokens
+        stake = new MockToken("Stake Token", "ST", baseDecimals);
         underlying = new MockToken("Dai Token", "DAI", mockUnderlyingDecimals);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals);
+        reward = new MockToken("Reward Token", "RT", baseDecimals);
+
+        // Log decimals setup
         if (mockUnderlyingDecimals != 18) {
             emit log_named_uint(
                 "Running tests with the mock Underlying token configured with the following number of decimals",
@@ -112,7 +123,6 @@ contract TestHelper is DSTest {
                         : mockUnderlyingDecimals - mockTargetDecimals
                 );
 
-        reward = new MockToken("Reward Token", "RT", baseDecimals);
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
 
         // divider
@@ -160,7 +170,22 @@ contract TestHelper is DSTest {
         gYTManager = new GYTManager(address(divider));
 
         // adapter, target wrapper & factory
-        factory = createFactory(address(target), address(reward));
+        DEFAULT_ADAPTER_PARAMS = BaseAdapter.AdapterParams({
+            target: address(target),
+            underlying: target.underlying(),
+            oracle: ORACLE,
+            stake: address(stake),
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            ifee: ISSUANCE_FEE,
+            tilt: 0,
+            level: DEFAULT_LEVEL
+        });
+        rewardTokens = [address(reward)];
+
+        factory = createFactory(address(target), rewardTokens);
         address f = periphery.deployAdapter(address(factory), address(target)); // deploy & onboard target through Periphery
         adapter = MockAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
@@ -190,7 +215,7 @@ contract TestHelper is DSTest {
         user.doMint(address(target), tBal);
     }
 
-    function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
+    function createFactory(address _target, address[] memory _rewardTokens) public returns (MockFactory someFactory) {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -201,7 +226,7 @@ contract TestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        someFactory = new MockFactory(address(divider), factoryParams, address(_reward)); // deploy adapter factory
+        someFactory = new MockFactory(address(divider), factoryParams, _rewardTokens); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
