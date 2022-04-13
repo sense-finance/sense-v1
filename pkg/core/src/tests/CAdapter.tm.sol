@@ -10,7 +10,7 @@ import { Divider, TokenHandler } from "../Divider.sol";
 import { CAdapter, CTokenLike, PriceOracleLike } from "../adapters/compound/CAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 
-import { Assets } from "./test-helpers/Assets.sol";
+import { AddressBook } from "./test-helpers/AddressBook.sol";
 import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -42,10 +42,10 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
 
     function setUp() public {
         address[] memory assets = new address[](4);
-        assets[0] = Assets.DAI;
-        assets[1] = Assets.cDAI;
-        assets[2] = Assets.WETH;
-        assets[3] = Assets.cETH;
+        assets[0] = AddressBook.DAI;
+        assets[1] = AddressBook.cDAI;
+        assets[2] = AddressBook.WETH;
+        assets[3] = AddressBook.cETH;
         addLiquidity(assets);
 
         tokenHandler = new TokenHandler();
@@ -56,48 +56,48 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         // cdai adapter
         adapter = new CAdapter(
             address(divider),
-            Assets.cDAI,
-            Assets.RARI_ORACLE,
+            AddressBook.cDAI,
+            AddressBook.RARI_ORACLE,
             ISSUANCE_FEE,
-            Assets.DAI,
+            AddressBook.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             0,
             0,
             DEFAULT_LEVEL,
-            Assets.COMP
+            AddressBook.COMP
         ); // Compound adapter
 
         cEthAdapter = new CAdapter(
             address(divider),
-            Assets.cETH,
-            Assets.RARI_ORACLE,
+            AddressBook.cETH,
+            AddressBook.RARI_ORACLE,
             ISSUANCE_FEE,
-            Assets.DAI,
+            AddressBook.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             0,
             0,
             DEFAULT_LEVEL,
-            Assets.COMP
+            AddressBook.COMP
         ); // Compound adapter
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
         cUsdcAdapter = new CAdapter(
             address(divider),
-            Assets.cUSDC,
-            Assets.RARI_ORACLE,
+            AddressBook.cUSDC,
+            AddressBook.RARI_ORACLE,
             ISSUANCE_FEE,
-            Assets.DAI,
+            AddressBook.DAI,
             STAKE_SIZE,
             MIN_MATURITY,
             MAX_MATURITY,
             0,
             0,
             DEFAULT_LEVEL,
-            Assets.COMP
+            AddressBook.COMP
         ); // Compound adapter
     }
 }
@@ -106,8 +106,8 @@ contract CAdapters is CAdapterTestHelper {
     using FixedMath for uint256;
 
     function testMainnetCAdapterScale() public {
-        CTokenLike underlying = CTokenLike(Assets.DAI);
-        CTokenLike ctoken = CTokenLike(Assets.cDAI);
+        CTokenLike underlying = CTokenLike(AddressBook.DAI);
+        CTokenLike ctoken = CTokenLike(AddressBook.cDAI);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent() / 10**(uDecimals - 8);
@@ -115,42 +115,42 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        PriceOracleLike oracle = PriceOracleLike(Assets.RARI_ORACLE);
-        uint256 price = oracle.price(Assets.DAI);
+        PriceOracleLike oracle = PriceOracleLike(AddressBook.RARI_ORACLE);
+        uint256 price = oracle.price(AddressBook.DAI);
         assertEq(adapter.getUnderlyingPrice(), price);
     }
 
     function testMainnetUnwrapTarget() public {
-        uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
-        uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
+        uint256 uBalanceBefore = ERC20(AddressBook.DAI).balanceOf(address(this));
+        uint256 tBalanceBefore = ERC20(AddressBook.cDAI).balanceOf(address(this));
 
-        ERC20(Assets.cDAI).approve(address(adapter), tBalanceBefore);
-        uint256 rate = CTokenLike(Assets.cDAI).exchangeRateCurrent();
-        uint256 uDecimals = ERC20(Assets.DAI).decimals();
+        ERC20(AddressBook.cDAI).approve(address(adapter), tBalanceBefore);
+        uint256 rate = CTokenLike(AddressBook.cDAI).exchangeRateCurrent();
+        uint256 uDecimals = ERC20(AddressBook.DAI).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
         adapter.unwrapTarget(tBalanceBefore);
 
-        uint256 tBalanceAfter = ERC20(Assets.cDAI).balanceOf(address(this));
-        uint256 uBalanceAfter = ERC20(Assets.DAI).balanceOf(address(this));
+        uint256 tBalanceAfter = ERC20(AddressBook.cDAI).balanceOf(address(this));
+        uint256 uBalanceAfter = ERC20(AddressBook.DAI).balanceOf(address(this));
 
         assertEq(tBalanceAfter, 0);
         assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
     }
 
     function testMainnetWrapUnderlying() public {
-        uint256 uBalanceBefore = ERC20(Assets.DAI).balanceOf(address(this));
-        uint256 tBalanceBefore = ERC20(Assets.cDAI).balanceOf(address(this));
+        uint256 uBalanceBefore = ERC20(AddressBook.DAI).balanceOf(address(this));
+        uint256 tBalanceBefore = ERC20(AddressBook.cDAI).balanceOf(address(this));
 
-        ERC20(Assets.DAI).approve(address(adapter), uBalanceBefore);
-        uint256 rate = CTokenLike(Assets.cDAI).exchangeRateCurrent();
-        uint256 uDecimals = ERC20(Assets.DAI).decimals();
+        ERC20(AddressBook.DAI).approve(address(adapter), uBalanceBefore);
+        uint256 rate = CTokenLike(AddressBook.cDAI).exchangeRateCurrent();
+        uint256 uDecimals = ERC20(AddressBook.DAI).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
         adapter.wrapUnderlying(uBalanceBefore);
 
-        uint256 tBalanceAfter = ERC20(Assets.cDAI).balanceOf(address(this));
-        uint256 uBalanceAfter = ERC20(Assets.DAI).balanceOf(address(this));
+        uint256 tBalanceAfter = ERC20(AddressBook.cDAI).balanceOf(address(this));
+        uint256 uBalanceAfter = ERC20(AddressBook.DAI).balanceOf(address(this));
 
         assertEq(uBalanceAfter, 0);
         assertEq(tBalanceBefore + wrapped, tBalanceAfter);
@@ -158,8 +158,8 @@ contract CAdapters is CAdapterTestHelper {
 
     // test with cETH
     function testMainnetCETHAdapterScale() public {
-        CTokenLike underlying = CTokenLike(Assets.WETH);
-        CTokenLike ctoken = CTokenLike(Assets.cETH);
+        CTokenLike underlying = CTokenLike(AddressBook.WETH);
+        CTokenLike ctoken = CTokenLike(AddressBook.cETH);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ctoken.exchangeRateCurrent() / 10**(uDecimals - 8);
@@ -171,36 +171,36 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testMainnetCETHUnwrapTarget() public {
-        uint256 uBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
-        uint256 tBalanceBefore = ERC20(Assets.cETH).balanceOf(address(this));
+        uint256 uBalanceBefore = ERC20(AddressBook.WETH).balanceOf(address(this));
+        uint256 tBalanceBefore = ERC20(AddressBook.cETH).balanceOf(address(this));
 
-        ERC20(Assets.cETH).approve(address(cEthAdapter), tBalanceBefore);
-        uint256 rate = CTokenLike(Assets.cETH).exchangeRateCurrent();
-        uint256 uDecimals = ERC20(Assets.WETH).decimals();
+        ERC20(AddressBook.cETH).approve(address(cEthAdapter), tBalanceBefore);
+        uint256 rate = CTokenLike(AddressBook.cETH).exchangeRateCurrent();
+        uint256 uDecimals = ERC20(AddressBook.WETH).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
         cEthAdapter.unwrapTarget(tBalanceBefore);
 
-        uint256 tBalanceAfter = ERC20(Assets.cETH).balanceOf(address(this));
-        uint256 uBalanceAfter = ERC20(Assets.WETH).balanceOf(address(this));
+        uint256 tBalanceAfter = ERC20(AddressBook.cETH).balanceOf(address(this));
+        uint256 uBalanceAfter = ERC20(AddressBook.WETH).balanceOf(address(this));
 
         assertEq(tBalanceAfter, 0);
         assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
     }
 
     function testMainnetCETHWrapUnderlying() public {
-        uint256 uBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
-        uint256 tBalanceBefore = ERC20(Assets.cETH).balanceOf(address(this));
+        uint256 uBalanceBefore = ERC20(AddressBook.WETH).balanceOf(address(this));
+        uint256 tBalanceBefore = ERC20(AddressBook.cETH).balanceOf(address(this));
 
-        ERC20(Assets.WETH).approve(address(cEthAdapter), uBalanceBefore);
-        uint256 rate = CTokenLike(Assets.cETH).exchangeRateCurrent();
-        uint256 uDecimals = ERC20(Assets.WETH).decimals();
+        ERC20(AddressBook.WETH).approve(address(cEthAdapter), uBalanceBefore);
+        uint256 rate = CTokenLike(AddressBook.cETH).exchangeRateCurrent();
+        uint256 uDecimals = ERC20(AddressBook.WETH).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
         cEthAdapter.wrapUnderlying(uBalanceBefore);
 
-        uint256 tBalanceAfter = ERC20(Assets.cETH).balanceOf(address(this));
-        uint256 uBalanceAfter = ERC20(Assets.WETH).balanceOf(address(this));
+        uint256 tBalanceAfter = ERC20(AddressBook.cETH).balanceOf(address(this));
+        uint256 uBalanceAfter = ERC20(AddressBook.WETH).balanceOf(address(this));
 
         assertEq(uBalanceAfter, 0);
         assertEq(tBalanceBefore + wrapped, tBalanceAfter);
@@ -228,26 +228,26 @@ contract CAdapters is CAdapterTestHelper {
         // Scale is in 18 decimals when the Underlying has 18 decimals (WETH) ----
 
         // Mint this address some cETH & give the adapter approvals (note all cTokens have 8 decimals)
-        giveTokens(Assets.cETH, ONE_CTOKEN, hevm);
-        ERC20(Assets.cETH).approve(address(cEthAdapter), ONE_CTOKEN);
+        giveTokens(AddressBook.cETH, ONE_CTOKEN, hevm);
+        ERC20(AddressBook.cETH).approve(address(cEthAdapter), ONE_CTOKEN);
 
         uint256 wethOut = cEthAdapter.unwrapTarget(ONE_CTOKEN);
         // WETH is in 18 decimals, so the scale and the "WETH out" from unwrapping a single
         // cToken should be the same
         assertEq(cEthAdapter.scale(), wethOut);
         // Sanity check
-        assertEq(ERC20(Assets.WETH).decimals(), 18);
+        assertEq(ERC20(AddressBook.WETH).decimals(), 18);
 
         // Scale is in 18 decimals when the Underlying has a non-standard number of decimals (6 for USDC) ----
 
-        giveTokens(Assets.cUSDC, ONE_CTOKEN, hevm);
-        ERC20(Assets.cUSDC).approve(address(cUsdcAdapter), ONE_CTOKEN);
+        giveTokens(AddressBook.cUSDC, ONE_CTOKEN, hevm);
+        ERC20(AddressBook.cUSDC).approve(address(cUsdcAdapter), ONE_CTOKEN);
 
         uint256 usdcOut = cUsdcAdapter.unwrapTarget(ONE_CTOKEN);
         // USDC is in 6 decimals, so the scale should be equal to the "USDC out"
         // scaled up to 18 decimals (after we strip the extra precision off)
         assertEq((cUsdcAdapter.scale() / 1e12) * 1e12, usdcOut * 10**(18 - 6));
         // Sanity check
-        assertEq(ERC20(Assets.USDC).decimals(), 6);
+        assertEq(ERC20(AddressBook.USDC).decimals(), 6);
     }
 }

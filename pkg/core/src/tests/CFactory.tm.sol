@@ -11,7 +11,7 @@ import { DSTest } from "./test-helpers/DSTest.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
-import { Assets } from "./test-helpers/Assets.sol";
+import { AddressBook } from "./test-helpers/AddressBook.sol";
 
 contract CAdapterTestHelper is DSTest {
     CFactory internal factory;
@@ -31,8 +31,8 @@ contract CAdapterTestHelper is DSTest {
 
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: Assets.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            oracle: AddressBook.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -40,7 +40,7 @@ contract CAdapterTestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        factory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -48,8 +48,8 @@ contract CAdapterTestHelper is DSTest {
 contract CFactories is CAdapterTestHelper {
     function testMainnetDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: Assets.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            oracle: AddressBook.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -57,7 +57,7 @@ contract CFactories is CAdapterTestHelper {
             mode: MODE,
             tilt: 0
         });
-        CFactory otherCFactory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        CFactory otherCFactory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
 
         assertTrue(address(otherCFactory) != address(0));
         (
@@ -72,23 +72,23 @@ contract CFactories is CAdapterTestHelper {
         ) = CFactory(otherCFactory).factoryParams();
 
         assertEq(CFactory(otherCFactory).divider(), address(divider));
-        assertEq(CFactory(otherCFactory).reward(), Assets.COMP);
-        assertEq(stake, Assets.DAI);
+        assertEq(CFactory(otherCFactory).reward(), AddressBook.COMP);
+        assertEq(stake, AddressBook.DAI);
         assertEq(ifee, ISSUANCE_FEE);
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(oracle, Assets.RARI_ORACLE);
+        assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
     }
 
     function testMainnetDeployAdapter() public {
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(Assets.cDAI);
+        address f = factory.deployAdapter(AddressBook.cDAI);
         CAdapter adapter = CAdapter(payable(f));
         assertTrue(address(adapter) != address(0));
-        assertEq(CAdapter(adapter).target(), address(Assets.cDAI));
+        assertEq(CAdapter(adapter).target(), address(AddressBook.cDAI));
         assertEq(CAdapter(adapter).divider(), address(divider));
         assertEq(CAdapter(adapter).name(), "Compound Dai Adapter");
         assertEq(CAdapter(adapter).symbol(), "cDAI-adapter");

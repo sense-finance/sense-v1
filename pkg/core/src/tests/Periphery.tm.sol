@@ -23,7 +23,7 @@ import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 
 // Constants/Addresses
 import { Constants } from "./test-helpers/Constants.sol";
-import { Assets } from "./test-helpers/Assets.sol";
+import { AddressBook } from "./test-helpers/AddressBook.sol";
 
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
     Periphery internal periphery;
@@ -46,10 +46,10 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         mockTarget = new MockTarget(address(underlying), "TestTarget", "TT", 18);
 
         // Mainnet contracts
-        divider = Assets.DIVIDER_1_2_0;
-        address spaceFactory = Assets.SPACE_FACTORY_1_2_0;
-        address balancerVault = Assets.BALANCER_VAULT;
-        poolManager = Assets.POOL_MANAGER_1_2_0;
+        divider = AddressBook.DIVIDER_1_2_0;
+        address spaceFactory = AddressBook.SPACE_FACTORY_1_2_0;
+        address balancerVault = AddressBook.BALANCER_VAULT;
+        poolManager = AddressBook.POOL_MANAGER_1_2_0;
 
         mockOracle = new MockOracle();
         mockAdapter = new MockAdapter(
@@ -67,7 +67,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             address(new MockToken("Reward", "R", 18))
         );
 
-        hevm.label(Assets.SPACE_FACTORY_1_2_0, "SpaceFactory");
+        hevm.label(AddressBook.SPACE_FACTORY_1_2_0, "SpaceFactory");
 
         periphery = new Periphery(
             divider,
@@ -77,7 +77,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         );
 
         // Start multisig (admin) prank calls   
-        hevm.startPrank(Assets.SENSE_ADMIN_MULTISIG);
+        hevm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
         Divider(divider).setPeriphery(address(periphery));
         Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
         PoolManager(poolManager).setIsTrusted(address(periphery), true);
