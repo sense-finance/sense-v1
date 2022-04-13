@@ -783,6 +783,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombine(uint128 tBal) public {
+        hevm.assume(tBal > 10);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
