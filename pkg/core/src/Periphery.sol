@@ -537,7 +537,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 tokenOut: tokens[pti],
                 amount: ytBal,
                 poolId: poolId,
-                lastChangeBlock: 0,
+                lastChangeBlock: block.number, // Current block so that we don't run oracle update path, saving gas
                 from: address(0),
                 to: address(0),
                 userData: ""
