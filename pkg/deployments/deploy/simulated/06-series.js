@@ -73,10 +73,10 @@ module.exports = async function () {
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
-      const decimals = await target.decimals()
-      const one = ethers.utils.parseUnits("1", decimals)
-      const fourtyThousand =  ethers.utils.parseUnits("40000", decimals)
-      const oneMillion =  ethers.utils.parseUnits("1000000", decimals)
+      const decimals = await target.decimals();
+      const one = ethers.utils.parseUnits("1", decimals);
+      const fourtyThousand = ethers.utils.parseUnits("40000", decimals);
+      const oneMillion = ethers.utils.parseUnits("1000000", decimals);
 
       log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
       if (!(await pt.balanceOf(deployer)).gte(fourtyThousand)) {
@@ -120,21 +120,21 @@ module.exports = async function () {
 
       log("- adding liquidity via target");
       if (balances[0].lt(one)) {
-        await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0)
-        .then(t => t.wait());
+        await periphery.addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0).then(t => t.wait());
       }
 
       // one side liquidity removal sanity check
       log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
       let lpBalance = await pool.balanceOf(deployer);
       if (lpBalance.gte(ethers.utils.parseEther("0"))) {
-        await periphery.removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false).then(t => t.wait());
+        await periphery
+          .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false)
+          .then(t => t.wait());
       }
 
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
-      
+
       log("- adding liquidity via target");
       if (balances[0].lt(oneMillion.mul(2))) {
         await periphery
@@ -147,14 +147,12 @@ module.exports = async function () {
       log("Making swap to init PT");
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
-      await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0)
-        .then(t => t.wait());
+      await periphery.swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0).then(t => t.wait());
 
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
 
-      const ptIn = one.div(10)
+      const ptIn = one.div(10);
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
           {
@@ -172,8 +170,9 @@ module.exports = async function () {
         .then(v => v.mul(ethers.BigNumber.from(10).pow(decimals)).div(ptIn));
 
       const _scale = await adapter.callStatic.scale();
-      const scale = _scale.div(1e12).toNumber() / 1e6
-      const _principalInTarget = principalPriceInTarget.div(ethers.BigNumber.from(10).pow(decimals - 4)) / (10 ** Math.abs(4 - decimals))
+      const scale = _scale.div(1e12).toNumber() / 1e6;
+      const _principalInTarget =
+        principalPriceInTarget.div(ethers.BigNumber.from(10).pow(decimals - 4)) / 10 ** Math.abs(4 - decimals);
       const principalPriceInUnderlying = _principalInTarget * scale;
 
       const discountRate =
@@ -196,30 +195,20 @@ module.exports = async function () {
       log(`--- Sanity check swaps ---`);
 
       log("swapping target for pt");
-      await periphery
-        .swapTargetForPTs(adapter.address, seriesMaturity, one, 0)
-        .then(tx => tx.wait());
+      await periphery.swapTargetForPTs(adapter.address, seriesMaturity, one, 0).then(tx => tx.wait());
 
       log("swapping target for yields");
-      await periphery
-        .swapTargetForYTs(adapter.address, seriesMaturity, one, 0)
-        .then(tx => tx.wait());
+      await periphery.swapTargetForYTs(adapter.address, seriesMaturity, one, one, 0).then(tx => tx.wait());
 
       log("swapping pt for target");
       await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, one.div(2), 0)
-        .then(tx => tx.wait());
+      await periphery.swapPTsForTarget(adapter.address, seriesMaturity, one.div(2), 0).then(tx => tx.wait());
 
       log("swapping yields for target");
-      await periphery
-        .swapYTsForTarget(adapter.address, seriesMaturity, one.div(2))
-        .then(tx => tx.wait());
+      await periphery.swapYTsForTarget(adapter.address, seriesMaturity, one.div(2)).then(tx => tx.wait());
 
       log("adding liquidity via target");
-      await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0)
-        .then(t => t.wait());
+      await periphery.addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0).then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
       // If there's anything more than dust in the Periphery, throw
