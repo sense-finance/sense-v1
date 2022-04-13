@@ -12,7 +12,7 @@ import { WstETHAdapter } from "../adapters/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "./test-helpers/DSTest.sol";
+import { DSTest } from "./test-helpers/test.sol";
 import { AddressBook } from "./test-helpers/AddressBook.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
