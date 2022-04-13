@@ -11,102 +11,80 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 // Internal references
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
-import { BaseFactory } from "../adapters/BaseFactory.sol";
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { CAdapter } from "../adapters/compound/CAdapter.sol";
-import { CFactory } from "../adapters/compound/CFactory.sol";
+import { Divider } from "../Divider.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { User } from "./test-helpers/User.sol";
-import { TestHelper } from "./test-helpers/TestHelper.sol";
+
+// Mocks
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+
+// Constants/Addresses
+import { Constants } from "./test-helpers/Constants.sol";
 import { Assets } from "./test-helpers/Assets.sol";
 
-// Space & Balanacer V2 mock
-import { MockSpaceFactory, MockBalancerVault } from "./test-helpers/mocks/MockSpace.sol";
-
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
-    /// @notice Fuse addresses
-    address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
-    address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
-    address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
-    address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
-
-    uint16 public constant MODE = 0;
-    uint64 public constant ISSUANCE_FEE = 0.01e18;
-    uint256 public constant STAKE_SIZE = 1e18;
-    uint256 public constant MIN_MATURITY = 2 weeks;
-    uint256 public constant MAX_MATURITY = 14 weeks;
-
     Periphery internal periphery;
-    CAdapter internal adapter;
-    CFactory internal factory;
-    Divider internal divider;
-    PoolManager internal poolManager;
-    TokenHandler internal tokenHandler;
-    MockOracle internal mockOracle;
 
-    MockBalancerVault internal balancerVault;
-    MockSpaceFactory internal spaceFactory;
+    MockAdapter internal mockAdapter;
+    MockOracle internal mockOracle;
+    MockTarget internal mockTarget;
+
+    address internal poolManager;
+    address internal divider;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        hevm.warp(firstDayOfMonth); // set to first day of the month
+        hevm.warp(firstDayOfMonth); // Set to first day of the month
 
-        // Divider
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
-        tokenHandler.init(address(divider));
+        MockToken underlying = new MockToken("TestUnderlying", "TU", 18);
+        mockTarget = new MockTarget(address(underlying), "TestTarget", "TT", 18);
 
-        // Periphery
-        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);
-
-        balancerVault = new MockBalancerVault();
-        spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
-
-        periphery = new Periphery(
-            address(divider),
-            address(poolManager),
-            address(spaceFactory),
-            address(balancerVault)
-        );
-        poolManager.setIsTrusted(address(periphery), true);
-        divider.setPeriphery(address(periphery));
+        // Mainnet contracts
+        divider = Assets.DIVIDER_1_2_0;
+        address spaceFactory = Assets.SPACE_FACTORY_1_2_0;
+        address balancerVault = Assets.BALANCER_VAULT;
+        poolManager = Assets.POOL_MANAGER_1_2_0;
 
         mockOracle = new MockOracle();
+        mockAdapter = new MockAdapter(
+            address(divider),
+            address(mockTarget),
+            address(mockOracle),
+            0, // no issuance fees
+            address(new MockToken("Stake", "ST", 18)), // stake size is 0, so the we don't actually need any stake token
+            0,
+            0, // 0 minm, so there's not lower bound on future maturity
+            type(uint64).max, // large maxm, so there's not upper bound on future maturity
+            0, // monthly maturities
+            0,
+            Constants.DEFAULT_LEVEL,
+            address(new MockToken("Reward", "R", 18))
+        );
 
-        // Deploy compound adapter factory
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: address(mockOracle),
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0
-        });
+        hevm.label(Assets.SPACE_FACTORY_1_2_0, "SpaceFactory");
 
-        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        periphery = new Periphery(
+            divider,
+            poolManager,
+            spaceFactory,
+            balancerVault
+        );
 
-        divider.setIsTrusted(address(factory), true);
-        divider.setIsTrusted(address(factory), true);
-        periphery.setFactory(address(factory), true);
+        // Start multisig (admin) prank calls   
+        hevm.startPrank(Assets.SENSE_ADMIN_MULTISIG);
+        Divider(divider).setPeriphery(address(periphery));
+        Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
+        PoolManager(poolManager).setIsTrusted(address(periphery), true);
+        hevm.stopPrank(); // Stop prank calling
 
-        poolManager.deployPool("Sense Pool Main", 0.051 ether, 1 ether, Assets.RARI_ORACLE);
-        PoolManager.AssetParams memory params = PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether
-        });
-        poolManager.setParams("TARGET_PARAMS", params);
+        periphery.onboardAdapter(address(mockAdapter), true);
+        periphery.verifyAdapter(address(mockAdapter), true);
     }
 }
 
@@ -114,13 +92,50 @@ contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
     function testMainnetSponsorSeries() public {
-        address f = periphery.deployAdapter(address(factory), Assets.cDAI);
-        adapter = CAdapter(payable(f));
-        // Mint this address MAX_UINT Assets.DAI
-        giveTokens(Assets.DAI, type(uint256).max, hevm);
+        // 1. Sponsor a Series
+        (uint256 maturity, address pt, address yt) = _sponsorSeries();
 
+        // Check PT and YT contracts deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
+
+        // Check PT and YT onboarded via the PoolManager into Fuse
+        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(mockAdapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+    }
+
+    function testMainnetSwapYTsForTarget() public {
+        // 1. Sponsor a Series
+        (uint256 maturity, address pt, address yt) = _sponsorSeries();
+
+        // 2. Issue some PTs & YTs
+        mockTarget.mint(address(this), 1e18);
+        mockTarget.approve(address(divider), 0.5e18);
+        Divider(divider).issue(address(mockAdapter), maturity, 0.5e18);
+
+        // 3. Add 0.5e18 Target to the Space pool
+        mockTarget.approve(address(periphery), 0.5e18);
+        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, 0.5e18, 1, 0);
+
+        // 4. Swap PT balance in for Target to initialize the PT side of the pool 
+        ERC20(pt).approve(address(periphery), ERC20(pt).balanceOf(address(this)));
+        periphery.swapPTsForTarget(address(mockAdapter), maturity, ERC20(pt).balanceOf(address(this)), 0);
+
+        // 5. Swap 10% of this address' YTs for Target
+        uint256 ytBalPre = ERC20(yt).balanceOf(address(this));
+        uint256 targetBalPre = mockTarget.balanceOf(address(this));
+        ERC20(yt).approve(address(periphery), ytBalPre / 10);
+        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10);
+        uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
+        uint256 targetBalPost = mockTarget.balanceOf(address(this));
+
+        assertGt(ytBalPre, ytBalPost);
+        assertLt(targetBalPre, targetBalPost);
+    }
+
+    function _sponsorSeries() internal returns (uint256 maturity, address pt, address yt) {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        uint256 maturity = DateTimeFull.timestampFromDateTime(
+        maturity = DateTimeFull.timestampFromDateTime(
             month == 12 ? year + 1 : year,
             month == 12 ? 1 : (month + 1),
             1,
@@ -129,15 +144,6 @@ contract PeripheryTests is PeripheryTestHelper {
             0
         );
 
-        ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, false);
-
-        // Check pt and yt deployed
-        assertTrue(pt != address(0));
-        assertTrue(yt != address(0));
-
-        // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false);
     }
 }
