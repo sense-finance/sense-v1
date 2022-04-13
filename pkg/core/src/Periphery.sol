@@ -684,7 +684,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amountToBorrow
     ) internal returns (uint256 tBal) {
         ERC20 target = ERC20(Adapter(adapter).target());
-        bytes memory data = abi.encode(adapter, uint96(maturity), ytBalIn, true);
+        uint256 decimals = target.decimals();
+        uint256 acceptableError = decimals < 9 ? 1
+            : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - decimals);
+        bytes memory data = abi.encode(adapter, uint96(maturity), ytBalIn, ytBalIn - acceptableError, true);
         bool result = Adapter(adapter).flashLoan(this, address(target), amountToBorrow, data);
         tBal = target.balanceOf(address(this));
         if (!result) revert Errors.FlashBorrowFailed();
