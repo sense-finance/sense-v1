@@ -28,7 +28,7 @@
         "@balancer-labs/v2-solidity-utils": "2.0.0",
         "@balancer-labs/v2-vault": "2.0.0",
         "@openzeppelin/contracts": "4.3.2",
-        "@rari-capital/solmate": "^6.2.0",
+        "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846",
         "@sense-finance/v1-core": "workspace:pkg/core",
         "@sense-finance/v1-utils": "workspace:pkg/utils",
         "fs-extra": "^10.0.1"
@@ -36,7 +36,7 @@
     "devDependencies": {
         "@nomiclabs/hardhat-ethers": "^2.0.5",
         "@nomiclabs/hardhat-etherscan": "^2.1.6",
-        "@tenderly/hardhat-tenderly": "^1.0.12",
+        "@tenderly/hardhat-tenderly": "^1.0.13",
         "dayjs": "^1.10.7",
         "ethers": "^5.5.1",
         "hardhat": "^2.9.1",

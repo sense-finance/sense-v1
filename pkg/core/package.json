@@ -27,7 +27,7 @@
     },
     "dependencies": {
         "@openzeppelin/contracts": "4.3.2",
-        "@rari-capital/solmate": "^6.2.0",
+        "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
     },
