@@ -11,7 +11,7 @@ import { PoolManager } from "../PoolManager.sol";
 import { TestHelper } from "@sense-finance/v1-core/src/tests/test-helpers/TestHelper.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
+import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/test.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import { MockComptrollerRejectAdmin, MockComptrollerFailAddMarket } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol";

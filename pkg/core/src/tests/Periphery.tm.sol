@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { DSTest } from "./test-helpers/DSTest.sol";
+import { DSTest } from "./test-helpers/test.sol";
 import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 

@@ -6,8 +6,8 @@ ffi = true
 verbosity = 3
 remappings = [
     '@sense-finance/v1-utils=../utils',
-    '@sense-finance/v1-fuse=./',
     '@sense-finance/v1-core=../core',
+    '@sense-finance/v1-fuse=./',
     '@rari-capital/solmate=../../node_modules/@rari-capital/solmate',
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts'
 ]

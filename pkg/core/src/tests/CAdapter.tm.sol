@@ -11,7 +11,7 @@ import { CAdapter, CTokenLike, PriceOracleLike } from "../adapters/compound/CAda
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 
 import { Assets } from "./test-helpers/Assets.sol";
-import { DSTest } from "./test-helpers/DSTest.sol";
+import { DSTest } from "./test-helpers/test.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
