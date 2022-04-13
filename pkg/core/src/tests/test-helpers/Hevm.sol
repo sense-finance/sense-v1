@@ -21,7 +21,9 @@ abstract contract Hevm {
 
     // Expects an error on next call
     function expectRevert(bytes calldata) external virtual;
+
     function expectRevert(bytes4) external virtual;
+
     function expectRevert() external virtual;
 
     // Prepare an expected log with (bool checkTopic1, bool checkTopic2, bool checkTopic3, bool checkData).
@@ -59,7 +61,11 @@ abstract contract Hevm {
     // Calldata can either be strict or a partial match, e.g. if you only
     // pass a Solidity selector to the expected calldata, then the entire Solidity
     // function will be mocked.
-    function mockCall(address, bytes calldata, bytes calldata) external virtual;
+    function mockCall(
+        address,
+        bytes calldata,
+        bytes calldata
+    ) external virtual;
 
     // Clears all mocked calls
     function clearMockedCalls() external virtual;

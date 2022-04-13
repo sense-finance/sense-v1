@@ -196,7 +196,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minOut
     ) external returns (uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
-        underlying.safeTransferFrom(msg.sender, address(this), underlyingIn); // Pull Unerlying
+        underlying.safeTransferFrom(msg.sender, address(this), underlyingIn); // Pull Underlying
         // Wrap Underlying into Target and swap it for YTs
         uint256 targetIn = Adapter(adapter).wrapUnderlying(underlyingIn);
         ytBal = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);

@@ -69,14 +69,9 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
         hevm.label(AddressBook.SPACE_FACTORY_1_2_0, "SpaceFactory");
 
-        periphery = new Periphery(
-            divider,
-            poolManager,
-            spaceFactory,
-            balancerVault
-        );
+        periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);
 
-        // Start multisig (admin) prank calls   
+        // Start multisig (admin) prank calls
         hevm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
         Divider(divider).setPeriphery(address(periphery));
         Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
@@ -117,7 +112,7 @@ contract PeripheryTests is PeripheryTestHelper {
         mockTarget.approve(address(periphery), 0.5e18);
         periphery.addLiquidityFromTarget(address(mockAdapter), maturity, 0.5e18, 1, 0);
 
-        // 4. Swap PT balance in for Target to initialize the PT side of the pool 
+        // 4. Swap PT balance in for Target to initialize the PT side of the pool
         ERC20(pt).approve(address(periphery), ERC20(pt).balanceOf(address(this)));
         periphery.swapPTsForTarget(address(mockAdapter), maturity, ERC20(pt).balanceOf(address(this)), 0);
 
@@ -133,7 +128,14 @@ contract PeripheryTests is PeripheryTestHelper {
         assertLt(targetBalPre, targetBalPost);
     }
 
-    function _sponsorSeries() internal returns (uint256 maturity, address pt, address yt) {
+    function _sponsorSeries()
+        internal
+        returns (
+            uint256 maturity,
+            address pt,
+            address yt
+        )
+    {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         maturity = DateTimeFull.timestampFromDateTime(
             month == 12 ? year + 1 : year,
