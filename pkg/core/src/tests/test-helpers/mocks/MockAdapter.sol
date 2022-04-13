@@ -13,7 +13,7 @@ import { MockToken } from "./MockToken.sol";
 contract MockAdapter is CropAdapter {
     using FixedMath for uint256;
 
-    uint256 internal value;
+    uint256 internal scaleOverride;
     uint256 public INITIAL_VALUE = 1e18;
     address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
@@ -65,25 +65,25 @@ contract MockAdapter is CropAdapter {
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
     }
 
-    function scale() external virtual override returns (uint256 _value) {
-        if (value > 0) {
-            _value = value;
-            lscale.value = _value;
+    function scale() external virtual override returns (uint256 _scale) {
+        if (scaleOverride > 0) {
+            _scale = scaleOverride;
+            lscale.value = scaleOverride;
             lscale.timestamp = block.timestamp;
-        }
-        
-        uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)));
-        uint256 timeDiff = block.timestamp - lscale.timestamp;
-        _value = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value) + lscale.value : INITIAL_VALUE;
+        } else {
+            uint256 gps = GROWTH_PER_SECOND.fmul(99 * (10**(18 - 2)));
+            uint256 timeDiff = block.timestamp - lscale.timestamp;
+            _scale = lscale.value > 0 ? (gps * timeDiff).fmul(lscale.value) + lscale.value : INITIAL_VALUE;
 
-        if (_value != lscale.value) {
-            // update value only if different than the previous
-            lscale.value = _value;
-            lscale.timestamp = block.timestamp;
+            if (_scale != lscale.value) {
+                // update value only if different than the previous
+                lscale.value = _scale;
+                lscale.timestamp = block.timestamp;
+            }
         }
     }
 
-    function scaleStored() external view virtual override returns (uint256 _value) {
+    function scaleStored() external view virtual override returns (uint256) {
         return lscale.value == 0 ? INITIAL_VALUE : lscale.value;
     }
 
@@ -128,8 +128,8 @@ contract MockAdapter is CropAdapter {
         onRedeemCalls++;
     }
 
-    function setScale(uint256 _value) external {
-        value = _value;
+    function setScale(uint256 _scaleOverride) external {
+        scaleOverride = _scaleOverride;
     }
 
     function doInitSeries(uint256 maturity, address sponsor) external {
