@@ -169,6 +169,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param targetIn Balance of Target to sell
     /// @param targetToBorrow Balance of Target to borrow
     /// @param minOut Min accepted amount of YT
+    /// @return targetBal amount of Target sent back
     /// @return ytBal amount of YT received
     function swapTargetForYTs(
         address adapter,
@@ -176,9 +177,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 targetIn,
         uint256 targetToBorrow,
         uint256 minOut
-    ) external returns (uint256 ytBal) {
+    ) external returns (uint256 targetBal, uint256 ytBal) {
         ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), targetIn);
-        ytBal = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
+        (targetBal, ytBal) = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
     }
 
     /// @notice Swap Underlying to Yield of a particular series
@@ -187,6 +188,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param underlyingIn Balance of Underlying to sell
     /// @param targetToBorrow Balance of Target to borrow
     /// @param minOut Min accepted amount of YT
+    /// @return targetBal amount of Target sent back
     /// @return ytBal amount of YT received
     function swapUnderlyingForYTs(
         address adapter,
@@ -194,12 +196,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 underlyingIn,
         uint256 targetToBorrow,
         uint256 minOut
-    ) external returns (uint256 ytBal) {
+    ) external returns (uint256 targetBal, uint256 ytBal) {
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
         underlying.safeTransferFrom(msg.sender, address(this), underlyingIn); // Pull Underlying
         // Wrap Underlying into Target and swap it for YTs
         uint256 targetIn = Adapter(adapter).wrapUnderlying(underlyingIn);
-        ytBal = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
+        (targetBal, ytBal) = _swapTargetForYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
     }
 
     /// @notice Swap Principal Tokens for Target of a particular series
@@ -498,14 +500,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 tBal,
         uint256 targetToBorrow,
         uint256 minOut
-    ) internal returns (uint256 issued) {
+    ) internal returns (uint256 targetBal, uint256 ytBal) {
         _flashBorrowAndSwapToYTs(adapter, maturity, tBal, targetToBorrow, minOut);
 
         // Transfer YTs & Target to user
         ERC20 target = ERC20(Adapter(adapter).target());
         ERC20 yt = ERC20(divider.yt(adapter, maturity));
-        target.safeTransfer(msg.sender, target.balanceOf(address(this)));
-        yt.safeTransfer(msg.sender, yt.balanceOf(address(this)));
+        target.safeTransfer(msg.sender, targetBal = target.balanceOf(address(this)));
+        yt.safeTransfer(msg.sender, ytBal = yt.balanceOf(address(this)));
     }
 
     function _swapYTsForTarget(
