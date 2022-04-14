@@ -41,7 +41,6 @@ interface SpaceFactoryLike {
     ) external;
 }
 
-
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
     Periphery internal periphery;
 
@@ -96,8 +95,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
         PoolManager(poolManager).setIsTrusted(address(periphery), true);
         uint256 ts = 1e18 / (uint256(31536000) * uint256(12));
-        uint256 g1 = uint256(950) * 1e18 / uint256(1000);
-        uint256 g2 = uint256(1000) * 1e18 / uint256(950);
+        uint256 g1 = (uint256(950) * 1e18) / uint256(1000);
+        uint256 g2 = (uint256(1000) * 1e18) / uint256(950);
         SpaceFactoryLike(spaceFactory).setParams(ts, g1, g2, true);
         hevm.stopPrank(); // Stop prank calling
 
@@ -185,7 +184,7 @@ contract PeripheryTests is PeripheryTestHelper {
             maturity,
             TARGET_TO_SWAP,
             TARGET_TO_BORROW,
-            TARGET_TO_BORROW * 0.999e18 / 1e18 // Min out is just below the amount of Target borrowed 
+            (TARGET_TO_BORROW * 0.999e18) / 1e18 // Min out is just below the amount of Target borrowed
             // (we expect the estimated amount to borrow to be near the optimial answer, but just a little lower)
         );
         uint256 targetBalPost = mockTarget.balanceOf(address(this));
@@ -221,14 +220,7 @@ contract PeripheryTests is PeripheryTestHelper {
         )
     {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        maturity = DateTimeFull.timestampFromDateTime(
-            year + 1,
-            month,
-            1,
-            0,
-            0,
-            0
-        );
+        maturity = DateTimeFull.timestampFromDateTime(year + 1, month, 1, 0, 0, 0);
 
         (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false);
     }
