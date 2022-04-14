@@ -25,6 +25,23 @@ import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { Constants } from "./test-helpers/Constants.sol";
 import { AddressBook } from "./test-helpers/AddressBook.sol";
 
+import { BalancerVault } from "../external/balancer/Vault.sol";
+import { BalancerPool } from "../external/balancer/Pool.sol";
+
+interface SpaceFactoryLike {
+    function create(address, uint256) external returns (address);
+
+    function pools(address adapter, uint256 maturity) external view returns (address);
+
+    function setParams(
+        uint256 _ts,
+        uint256 _g1,
+        uint256 _g2,
+        bool _oracleEnabled
+    ) external;
+}
+
+
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
     Periphery internal periphery;
 
@@ -32,6 +49,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     MockOracle internal mockOracle;
     MockTarget internal mockTarget;
 
+    address internal balancerVault;
+    address internal spaceFactory;
     address internal poolManager;
     address internal divider;
 
@@ -47,8 +66,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
         // Mainnet contracts
         divider = AddressBook.DIVIDER_1_2_0;
-        address spaceFactory = AddressBook.SPACE_FACTORY_1_2_0;
-        address balancerVault = AddressBook.BALANCER_VAULT;
+        spaceFactory = AddressBook.SPACE_FACTORY_1_2_0;
+        balancerVault = AddressBook.BALANCER_VAULT;
         poolManager = AddressBook.POOL_MANAGER_1_2_0;
 
         mockOracle = new MockOracle();
@@ -76,6 +95,10 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         Divider(divider).setPeriphery(address(periphery));
         Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
         PoolManager(poolManager).setIsTrusted(address(periphery), true);
+        uint256 ts = 1e18 / (uint256(31536000) * uint256(12));
+        uint256 g1 = uint256(950) * 1e18 / uint256(1000);
+        uint256 g2 = uint256(1000) * 1e18 / uint256(950);
+        SpaceFactoryLike(spaceFactory).setParams(ts, g1, g2, true);
         hevm.stopPrank(); // Stop prank calling
 
         periphery.onboardAdapter(address(mockAdapter), true);
@@ -124,9 +147,70 @@ contract PeripheryTests is PeripheryTestHelper {
         uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
         uint256 targetBalPost = mockTarget.balanceOf(address(this));
 
+        // Check that this address has fewer YTs and more Target
         assertGt(ytBalPre, ytBalPost);
         assertLt(targetBalPre, targetBalPost);
     }
+
+    function testMainnetSwapTargetForYTsOne() public {
+        // 1. Set adapter scale to 1
+        mockAdapter.setScale(1e18);
+
+        // 2. Sponsor a Series
+        (uint256 maturity, address pt, address yt) = _sponsorSeries();
+
+        // 3. Issue some PTs & YTs
+        mockTarget.mint(address(this), 2e18);
+        mockTarget.approve(address(divider), 1e18);
+        Divider(divider).issue(address(mockAdapter), maturity, 1e18);
+        // Sanity check that scale is 1 and there is no issuance fee. ie PTs are issued 1:1 for Target
+        assertEq(ERC20(pt).balanceOf(address(this)), 1e18);
+
+        // 4. Add 0.5e18 Target to the Space pool
+        mockTarget.approve(address(periphery), 1e18);
+        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, 1e18, 1, 0);
+
+        // 5. Swap PT balance in for Target to initialize the PT side of the pool
+        ERC20(pt).approve(address(periphery), 0.5e18);
+        periphery.swapPTsForTarget(address(mockAdapter), maturity, 0.5e18, 0);
+
+        // 6. Swap 0.005 of this address' Target for YTs
+        mockTarget.approve(address(periphery), 0.005e18);
+        uint256 targetBalPre = mockTarget.balanceOf(address(this));
+        uint256 ytBalPre = ERC20(yt).balanceOf(address(this));
+        uint256 TARGET_TO_SWAP = 0.005e18;
+        uint256 TARGET_TO_BORROW = 0.048367e18; // Calculated using sense-v1/pkg/yt-buying-lib
+        (uint256 targetBack, uint256 ytsOut) = periphery.swapTargetForYTs(
+            address(mockAdapter),
+            maturity,
+            TARGET_TO_SWAP,
+            TARGET_TO_BORROW,
+            TARGET_TO_BORROW * 0.999e18 / 1e18 // Min out is just below the amount of Target borrowed 
+            // (we expect the estimated amount to borrow to be near the optimial answer, but just a little lower)
+        );
+        uint256 targetBalPost = mockTarget.balanceOf(address(this));
+        uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
+
+        // Check that the return values reflect the token balance changes
+        assertEq(targetBalPre - targetBalPost + targetBack, TARGET_TO_SWAP);
+        assertEq(ytBalPost - ytBalPre, ytsOut);
+        // Check that the YTs returned are the result of issuing from the borrowed Target + transferred Target
+        assertEq(ytsOut, TARGET_TO_SWAP + TARGET_TO_BORROW);
+
+        // Check that we got less than 0.000001 Target back
+        assertTrue(targetBack < 0.000001e18);
+
+        // TODO violated min out
+        // TODO min out being a proxy max target received
+        // TODO borrow amount too large (cant pay back)
+
+        // address pool = SpaceFactoryLike(spaceFactory).pools(address(mockAdapter), maturity);
+        // (, uint256[] memory balances, ) = BalancerVault(balancerVault).getPoolTokens(BalancerPool(pool).getPoolId());
+        // ERC20(pt).approve(address(periphery), 0.0001e18);
+        // emit log_uint(periphery.swapPTsForTarget(address(mockAdapter), maturity, 0.0001e18, 0));
+    }
+
+    // INTERNAL HELPERS ––––––––––––
 
     function _sponsorSeries()
         internal
@@ -138,8 +222,8 @@ contract PeripheryTests is PeripheryTestHelper {
     {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         maturity = DateTimeFull.timestampFromDateTime(
-            month == 12 ? year + 1 : year,
-            month == 12 ? 1 : (month + 1),
+            year + 1,
+            month,
             1,
             0,
             0,

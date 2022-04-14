@@ -1837,6 +1837,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"decimal.js@npm:^10.3.1":
+  version: 10.3.1
+  resolution: "decimal.js@npm:10.3.1"
+  checksum: e042c676c7a934e5a2c4e02f2562e0e0d752c6cd8f933f4030f8540dd4c7074ba035e329df46c0cc46f0c9190d1804c366d0be46ea6f94af64e0096d2730b22b
+  languageName: node
+  linkType: hard
+
 "deep-is@npm:~0.1.3":
   version: 0.1.4
   resolution: "deep-is@npm:0.1.4"
@@ -5202,3 +5209,11 @@ resolve@1.17.0:
   checksum: 096c3b40beb2804659539be1605a35c58eb0c85285f94b77b3e924f42ee265c1a40bf9f4153770039517146b469a964d51742395f35ca8135fc9f7e4982b785d
   languageName: node
   linkType: hard
+
+"yt-optimization-lib@workspace:pkg/yt-optimization-lib":
+  version: 0.0.0-use.local
+  resolution: "yt-optimization-lib@workspace:pkg/yt-optimization-lib"
+  dependencies:
+    decimal.js: ^10.3.1
+  languageName: unknown
+  linkType: soft
