@@ -92,10 +92,7 @@ contract PoolManagerTest is DSTest {
             tilt: 0,
             level: 31
         });
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-
-        mockAdapter = new MockAdapter(address(divider), adapterParams, rewardTokens);
+        mockAdapter = new MockAdapter(address(divider), adapterParams, address(reward));
 
         // Ping scale to set an lscale
         mockAdapter.scale();

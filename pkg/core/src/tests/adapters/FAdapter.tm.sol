@@ -1,24 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { FixedMath } from "../external/FixedMath.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Divider, TokenHandler } from "../Divider.sol";
-import { FAdapter, FTokenLike, PriceOracleLike } from "../adapters/fuse/FAdapter.sol";
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
+import { FAdapter, FTokenLike, PriceOracleLike } from "../../adapters/fuse/FAdapter.sol";
+import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
 
-import { Assets } from "./test-helpers/Assets.sol";
-import { DSTest } from "./test-helpers/DSTest.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
-import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { User } from "./test-helpers/User.sol";
-import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
+import { Assets } from "../test-helpers/Assets.sol";
+import { DSTest } from "../test-helpers/DSTest.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
+import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { User } from "../test-helpers/User.sol";
+import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
 interface CropAdapterLike {
     function _claimRewards() external;
+}
+
+interface RewardsDistributorLike {
+    function accrue(ERC20 market, address user) external returns (uint256);
 }
 
 contract FAdapterTestHelper is LiquidityHelper, DSTest {
@@ -64,16 +68,34 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        f18DaiAdapter = new FAdapter(address(divider), Assets.OLYMPUS_POOL_PARTY, adapterParams, new address[](0)); // Fuse adapter
+        f18DaiAdapter = new FAdapter(
+            address(divider),
+            Assets.OLYMPUS_POOL_PARTY,
+            adapterParams,
+            new address[](0),
+            new address[](0)
+        ); // Fuse adapter
 
         adapterParams.target = Assets.f18ETH;
         adapterParams.underlying = Assets.WETH;
-        f18EthAdapter = new FAdapter(address(divider), Assets.OLYMPUS_POOL_PARTY, adapterParams, new address[](0)); // Fuse adapter
+        f18EthAdapter = new FAdapter(
+            address(divider),
+            Assets.OLYMPUS_POOL_PARTY,
+            adapterParams,
+            new address[](0),
+            new address[](0)
+        ); // Fuse adapter
 
         // Create a FAdapter for an underlying token (USDC) with a non-standard number of decimals
         adapterParams.target = Assets.f18USDC;
         adapterParams.underlying = FTokenLike(Assets.f18USDC).underlying();
-        f18UsdcAdapter = new FAdapter(address(divider), Assets.OLYMPUS_POOL_PARTY, adapterParams, new address[](0)); // Fuse adapter
+        f18UsdcAdapter = new FAdapter(
+            address(divider),
+            Assets.OLYMPUS_POOL_PARTY,
+            adapterParams,
+            new address[](0),
+            new address[](0)
+        ); // Fuse adapter
     }
 }
 
@@ -184,46 +206,61 @@ contract FAdapters is FAdapterTestHelper {
 
     event ClaimRewards(address indexed owner, uint256 indexed amount);
 
-    // function testMainnetNotify() public {
-    //     // At block 14563990, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
-    //     // asset --> rewards:
-    //     // FRAX3CRV --> CVX and CRV
-    //     // cvxFXSFXS-f --> CVX, CRV and FXS
-    //     // CVX --> no rewards
-    //     hevm.roll(14472645);
+    function testMainnetNotify() public {
+        // At block 14563990, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
+        // asset --> rewards:
+        // FRAX3CRV --> CVX and CRV
+        // cvxFXSFXS-f --> CVX, CRV and FXS
+        // CVX --> no rewards
+        hevm.roll(14561510);
 
-    //     // Become the divider
-    //     hevm.startPrank(address(divider));
+        // f156FRAX3CRV adapter
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            target: Assets.f156FRAX3CRV,
+            underlying: FTokenLike(Assets.f156FRAX3CRV).underlying(),
+            oracle: Assets.RARI_ORACLE,
+            stake: Assets.DAI,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: 0,
+            ifee: ISSUANCE_FEE,
+            tilt: 0,
+            level: DEFAULT_LEVEL
+        });
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = Assets.CVX;
+        rewardTokens[1] = Assets.CRV;
 
-    //     // f156FRAX3CRV adapter
-    //     BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-    //         target: Assets.f156FRAX3CRV,
-    //         underlying: FTokenLike(Assets.f156FRAX3CRV).underlying(),
-    //         oracle: Assets.RARI_ORACLE,
-    //         stake: Assets.DAI,
-    //         stakeSize: STAKE_SIZE,
-    //         minm: MIN_MATURITY,
-    //         maxm: MAX_MATURITY,
-    //         mode: 0,
-    //         ifee: ISSUANCE_FEE,
-    //         tilt: 0,
-    //         level: DEFAULT_LEVEL
-    //     });
-    //     address[] memory rewardTokens = new address[](1);
-    //     rewardTokens[0] = Assets.COMP;
+        address[] memory rewardsDistributosr = new address[](2);
+        rewardsDistributosr[0] = Assets.REWARDS_DISTRIBUTOR_CVX;
+        rewardsDistributosr[1] = Assets.REWARDS_DISTRIBUTOR_CRV;
 
-    //     FAdapter f156FRAX3CRVAdapter = new FAdapter(
-    //         address(divider),
-    //         Assets.TRIBE_CONVEX,
-    //         adapterParams,
-    //         rewardTokens
-    //     );
+        FAdapter f156FRAX3CRVAdapter = new FAdapter(
+            address(divider),
+            Assets.TRIBE_CONVEX,
+            adapterParams,
+            rewardTokens,
+            rewardsDistributosr
+        );
 
-    //     // Expect a f156FRAX3CRV distributed event when notifying
-    //     hevm.expectEmit(true, false, false, false); // TODO: won't work because if there's accrued rewards are 0, it does not trigger the event
-    //     emit ClaimRewards(address(f156FRAX3CRVAdapter), 0);
-    //     f156FRAX3CRVAdapter.notify(address(0), 0, true);
-    // }
+        hevm.prank(0x8FdD0CF22012a5FEcDbF77eF30d9e9834DC1bf0A); // user with f156FRAX3CRV balance
+        ERC20(Assets.f156FRAX3CRV).transfer(address(f156FRAX3CRVAdapter), 1000e18);
+        hevm.warp(block.timestamp + 3 days);
+        RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CVX).accrue(
+            ERC20(Assets.f156FRAX3CRV),
+            address(f156FRAX3CRVAdapter)
+        );
+
+        // Become the divider
+        hevm.startPrank(address(divider));
+
+        // Expect a f156FRAX3CRV distributed event when notifying
+        // hevm.expectEmit(true, false, false, false); // TODO: why's not working? Accrued rewards are > 0 so it should trigger the event
+        // emit ClaimRewards(address(f156FRAX3CRVAdapter), 0);
+
+        f156FRAX3CRVAdapter.notify(address(0), 0, true);
+    }
 
     function testMainnet18Decimals() public {
         // Scale is in 18 decimals when the Underlying has 18 decimals (WETH) ----

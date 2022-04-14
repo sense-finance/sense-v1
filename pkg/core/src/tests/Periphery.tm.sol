@@ -23,7 +23,6 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { Assets } from "./test-helpers/Assets.sol";
 
 // Space & Balanacer V2 mock
@@ -94,7 +93,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             tilt: 0
         });
 
-        factory = new CFactory(address(divider), factoryParams);
+        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
 
         divider.setIsTrusted(address(factory), true);
         divider.setIsTrusted(address(factory), true);
@@ -114,7 +113,7 @@ contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
     function testMainnetSponsorSeries() public {
-        address f = periphery.deployAdapter(address(factory), Assets.cDAI);
+        address f = periphery.deployAdapter(address(factory), Assets.cDAI, "");
         adapter = CAdapter(payable(f));
         // Mint this address MAX_UINT Assets.DAI
         giveTokens(Assets.DAI, type(uint256).max, hevm);

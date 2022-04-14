@@ -44,18 +44,10 @@ abstract contract BaseFactory {
 
     /* ========== REQUIRED DEPLOY ========== */
 
-    /// @notice Deploys both an adapter and a target wrapper for the given _target
-    /// @param _target Address of the Target token
-    function deployAdapter(address _target) external virtual returns (address adapter) {
-        revert Errors.NotImplemented();
-    }
-
     /// @notice Deploys both an adapter and a target wrapper for the given _target and specifies a comptroller
     /// @param _target Address of the Target token
-    /// @param _protocol Address of the comptroller contract
-    function deployAdapter(address _target, address _protocol) external virtual returns (address adapter) {
-        revert Errors.NotImplemented();
-    }
+    /// @param _data Additional data needed to deploy the adapter
+    function deployAdapter(address _target, bytes memory _data) external virtual returns (address adapter) {}
 
     /* ========== LOGS ========== */
 

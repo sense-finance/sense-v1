@@ -2,18 +2,18 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { FAdapter } from "../adapters/fuse/FAdapter.sol";
-import { FFactory } from "../adapters/fuse/FFactory.sol";
-import { BaseFactory } from "../adapters/BaseFactory.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
+import { FAdapter } from "../../adapters/fuse/FAdapter.sol";
+import { FFactory } from "../../adapters/fuse/FFactory.sol";
+import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { DSTest } from "./test-helpers/DSTest.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
-import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { User } from "./test-helpers/User.sol";
-import { Assets } from "./test-helpers/Assets.sol";
+import { DSTest } from "../test-helpers/DSTest.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
+import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { User } from "../test-helpers/User.sol";
+import { Assets } from "../test-helpers/Assets.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
 
 contract FAdapterTestHelper is DSTest {
     FFactory internal factory;
@@ -94,9 +94,9 @@ contract FFactories is FAdapterTestHelper {
         // FRAX3CRV --> CVX and CRV
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
-        hevm.roll(14570060);
+        hevm.roll(14561510);
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(Assets.f156FRAX3CRV, Assets.TRIBE_CONVEX);
+        address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
         FAdapter adapter = FAdapter(payable(f));
         assertTrue(address(adapter) != address(0));
         assertEq(FAdapter(adapter).target(), address(Assets.f156FRAX3CRV));
@@ -106,35 +106,21 @@ contract FFactories is FAdapterTestHelper {
         assertEq(FAdapter(adapter).rewardTokens(0), Assets.CVX);
         assertEq(FAdapter(adapter).rewardTokens(1), Assets.CRV);
         assertEq(FAdapter(adapter).rewardTokens(2), address(0));
+        assertEq(FAdapter(adapter).rewardTokens(3), address(0));
 
         uint256 scale = FAdapter(adapter).scale();
         assertTrue(scale > 0);
     }
 
-    function testMainnetCantDeployAdapterWithoutComptroller() public {
-        divider.setPeriphery(address(this));
-        try factory.deployAdapter(Assets.f18DAI) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.NotImplemented.selector));
-        }
-    }
-
     function testMainnetCantDeployAdapterIfInvalidComptroller() public {
         divider.setPeriphery(address(this));
-        try factory.deployAdapter(Assets.f18DAI, Assets.f18DAI) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidParam.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidParam.selector));
+        factory.deployAdapter(Assets.f18DAI, abi.encode(Assets.f18DAI));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        try factory.deployAdapter(Assets.f18DAI, Assets.TRIBE_CONVEX) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        factory.deployAdapter(Assets.f18DAI, abi.encode(Assets.TRIBE_CONVEX));
     }
 }

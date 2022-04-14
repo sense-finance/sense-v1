@@ -174,39 +174,12 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         return (adapterParams.target, adapterParams.stake, adapterParams.stakeSize);
     }
 
-    // TODO: decide if we want to add all the following getters
-
     function target() external view returns (address) {
         return adapterParams.target;
     }
 
     function underlying() external view returns (address) {
         return adapterParams.underlying;
-    }
-
-    function oracle() external view returns (address) {
-        // TODO: only used in tests
-        return adapterParams.oracle;
-    }
-
-    function stake() external view returns (address) {
-        // TODO: only used in tests
-        return adapterParams.stake;
-    }
-
-    function stakeSize() external view returns (uint256) {
-        // TODO: only used in tests
-        return adapterParams.stakeSize;
-    }
-
-    function minm() external view returns (uint256) {
-        // TODO: only used in tests
-        return adapterParams.minm;
-    }
-
-    function maxm() external view returns (uint256) {
-        // TODO: only used in tests
-        return adapterParams.maxm;
     }
 
     function mode() external view returns (uint256) {

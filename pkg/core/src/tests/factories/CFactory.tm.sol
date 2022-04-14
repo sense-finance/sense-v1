@@ -2,16 +2,16 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { CAdapter } from "../adapters/compound/CAdapter.sol";
-import { CFactory } from "../adapters/compound/CFactory.sol";
-import { BaseFactory } from "../adapters/BaseFactory.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
+import { CAdapter } from "../../adapters/compound/CAdapter.sol";
+import { CFactory } from "../../adapters/compound/CFactory.sol";
+import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { DSTest } from "./test-helpers/test.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
-import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { User } from "./test-helpers/User.sol";
-import { Assets } from "./test-helpers/Assets.sol";
+import { DSTest } from "../test-helpers/DSTest.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
+import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { User } from "../test-helpers/User.sol";
+import { Assets } from "../test-helpers/Assets.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract CAdapterTestHelper is DSTest {
@@ -44,7 +44,7 @@ contract CAdapterTestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        factory = new CFactory(address(divider), factoryParams);
+        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -64,7 +64,7 @@ contract CFactories is CAdapterTestHelper {
             mode: MODE,
             tilt: 0
         });
-        CFactory otherCFactory = new CFactory(address(divider), factoryParams);
+        CFactory otherCFactory = new CFactory(address(divider), factoryParams, Assets.COMP);
 
         assertTrue(address(otherCFactory) != address(0));
         (
@@ -92,7 +92,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetDeployAdapter() public {
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(Assets.cDAI);
+        address f = factory.deployAdapter(Assets.cDAI, "");
         CAdapter adapter = CAdapter(payable(f));
         assertTrue(address(adapter) != address(0));
         assertEq(CAdapter(adapter).target(), address(Assets.cDAI));
@@ -106,7 +106,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        try factory.deployAdapter(Assets.f18DAI) {
+        try factory.deployAdapter(Assets.f18DAI, "") {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));

@@ -49,6 +49,9 @@ turbo-test-local *cmds="": && _timer
 turbo-test-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --no-match-path "*.tm*" --match-test {{ exp }}
 
+turbo-test-match-contract *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test --match-contract {{ exp }}
+
 turbo-test-local-greater-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \

@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { FixedMath } from "../external/FixedMath.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Divider, TokenHandler } from "../Divider.sol";
-import { CAdapter, CTokenLike, PriceOracleLike } from "../adapters/compound/CAdapter.sol";
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
+import { CAdapter, CTokenLike, PriceOracleLike } from "../../adapters/compound/CAdapter.sol";
+import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
 
-import { Assets } from "./test-helpers/Assets.sol";
-import { DSTest } from "./test-helpers/test.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
-import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { User } from "./test-helpers/User.sol";
-import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
+import { Assets } from "../test-helpers/Assets.sol";
+import { DSTest } from "../test-helpers/DSTest.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
+import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { User } from "../test-helpers/User.sol";
+import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
 interface CropAdapterLike {
     function _claimRewards() external;
@@ -53,9 +53,6 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
 
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = Assets.COMP;
-
         // cdai adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: Assets.cDAI,
@@ -70,16 +67,16 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        cDaiAdapter = new CAdapter(address(divider), adapterParams, rewardTokens); // Compound adapter
+        cDaiAdapter = new CAdapter(address(divider), adapterParams, Assets.COMP); // Compound adapter
 
         adapterParams.target = Assets.cETH;
         adapterParams.underlying = Assets.WETH;
-        cEthAdapter = new CAdapter(address(divider), adapterParams, rewardTokens); // Compound adapter
+        cEthAdapter = new CAdapter(address(divider), adapterParams, Assets.COMP); // Compound adapter
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
         adapterParams.target = Assets.cUSDC;
         adapterParams.underlying = CTokenLike(Assets.cUSDC).underlying();
-        cUsdcAdapter = new CAdapter(address(divider), adapterParams, rewardTokens); // Compound adapter
+        cUsdcAdapter = new CAdapter(address(divider), adapterParams, Assets.COMP); // Compound adapter
     }
 }
 

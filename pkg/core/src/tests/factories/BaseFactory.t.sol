@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
-import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
-import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
-import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { BaseFactory } from "../adapters/BaseFactory.sol";
+import { TestHelper } from "../test-helpers/TestHelper.sol";
+import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
+import { MockToken } from "../test-helpers/mocks/MockToken.sol";
+import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
+import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract Factories is TestHelper {
@@ -23,9 +23,7 @@ contract Factories is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-        MockFactory someFactory = new MockFactory(address(divider), factoryParams, rewardTokens);
+        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
 
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).divider(), address(divider));
@@ -48,30 +46,33 @@ contract Factories is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(tilt, 0);
+        assertEq(MockFactory(someFactory).reward(), address(reward));
     }
 
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(someReward);
-        MockFactory someFactory = createFactory(address(someTarget), rewardTokens);
+        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         divider.setPeriphery(address(this));
-        address adapter = someFactory.deployAdapter(address(someTarget));
+        address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
+
+        (, , address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = MockAdapter(
+            adapter
+        ).adapterParams();
         assertEq(MockAdapter(adapter).divider(), address(divider));
         assertEq(MockAdapter(adapter).target(), address(someTarget));
         assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
         assertEq(MockAdapter(adapter).symbol(), "ST-adapter");
-        assertEq(MockAdapter(adapter).stake(), address(stake));
         assertEq(MockAdapter(adapter).ifee(), ISSUANCE_FEE);
-        assertEq(MockAdapter(adapter).stakeSize(), STAKE_SIZE);
-        assertEq(MockAdapter(adapter).minm(), MIN_MATURITY);
-        assertEq(MockAdapter(adapter).maxm(), MAX_MATURITY);
-        assertEq(MockAdapter(adapter).oracle(), ORACLE);
+        assertEq(oracle, ORACLE);
+        assertEq(stake, address(stake));
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
-        assertEq(MockAdapter(adapter).rewardTokens(0), address(someReward));
+        assertEq(MockAdapter(adapter).reward(), address(someReward));
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }
@@ -80,10 +81,8 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(someReward);
-        MockFactory someFactory = createFactory(address(someTarget), rewardTokens);
-        address f = periphery.deployAdapter(address(someFactory), address(someTarget));
+        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        address f = periphery.deployAdapter(address(someFactory), address(someTarget), "");
         assertTrue(f != address(0));
         uint256 scale = MockAdapter(f).scale();
         assertEq(scale, 1e18);
@@ -98,7 +97,7 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         factory.addTarget(address(someTarget), true);
-        try factory.deployAdapter(address(someTarget)) {
+        try factory.deployAdapter(address(someTarget), "") {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
@@ -107,6 +106,6 @@ contract Factories is TestHelper {
 
     function testFailDeployAdapterIfAlreadyExists() public {
         divider.setPeriphery(address(this));
-        factory.deployAdapter(address(target));
+        factory.deployAdapter(address(target), "");
     }
 }

@@ -9,6 +9,8 @@ library Assets {
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address public constant LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
+    address public constant FXS = 0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0;
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -38,6 +40,11 @@ library Assets {
 
     // fuse f156 tribe convex pool
     address public constant TRIBE_CONVEX = 0x07cd53380FE9B2a5E64099591b498c73F0EfaA66; // tribe convex pool
+    address public constant REWARDS_DISTRIBUTOR_CVX = 0x18B9aE8499e560bF94Ef581420c38EC4CfF8559C;
+    address public constant REWARDS_DISTRIBUTOR_CRV = 0x65DFbde18D7f12a680480aBf6e17F345d8637829;
+    address public constant REWARDS_DISTRIBUTOR_LDO = 0x506Ce4145833E55000cbd4C89AC9ba180647eB5e;
+    address public constant REWARDS_DISTRIBUTOR_FXS = 0x30E9A1Bc6A6a478fC32F9ac900C6530Ad3A1616F;
+
     address public constant f156FRAX3CRV = 0x2ec70d3Ff3FD7ac5c2a72AAA64A398b6CA7428A5;
     address public constant f156cvxFXSFXSf = 0x30916E14C139d65CAfbEEcb3eA525c59df643281;
     address public constant f156CVX = 0x3F4a965Bff126af42FC014c20959c7b857EA4e35;

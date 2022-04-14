@@ -92,12 +92,8 @@ contract CAdapter is CropAdapter {
     constructor(
         address _divider,
         AdapterParams memory _adapterParams,
-        address[] memory _rewardTokens
-    ) CropAdapter(_divider, _adapterParams, _rewardTokens) {
-        // Sanity check: underlying passed must equal to target's underlying
-        address underlying = _adapterParams.target == CETH ? WETH : CTokenLike(_adapterParams.target).underlying();
-        if (_adapterParams.underlying != underlying) revert Errors.InvalidParam(); // TODO: revert or just override with the correrct one?
-
+        address _reward
+    ) CropAdapter(_divider, _adapterParams, _reward) {
         isCETH = _adapterParams.target == CETH;
         ERC20(_adapterParams.underlying).approve(_adapterParams.target, type(uint256).max);
         uDecimals = CTokenLike(_adapterParams.underlying).decimals();

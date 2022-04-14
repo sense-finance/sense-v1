@@ -12,7 +12,7 @@ import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
-import { MockFactory } from "./mocks/MockFactory.sol";
+import { MockFactory, MockCropsFactory } from "./mocks/MockFactory.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -65,9 +65,6 @@ contract TestHelper is DSTest {
     // default adapter params
     BaseAdapter.AdapterParams public DEFAULT_ADAPTER_PARAMS;
 
-    // reward tokens
-    address[] public rewardTokens;
-
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint16 public MODE = 0;
     address public ORACLE = address(123);
@@ -81,6 +78,10 @@ contract TestHelper is DSTest {
     uint256 public SETTLEMENT_WINDOW;
     uint256 public SCALING_FACTOR;
 
+    // decimals
+    uint8 internal mockUnderlyingDecimals;
+    uint8 internal mockTargetDecimals;
+
     function setUp() public virtual {
         hevm.warp(1630454400);
         // 01-09-21 00:00 UTC
@@ -90,10 +91,10 @@ contract TestHelper is DSTest {
         string[] memory inputs = new string[](2);
         inputs[0] = "just";
         inputs[1] = "_forge_mock_underlying_decimals";
-        uint8 mockUnderlyingDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
+        mockUnderlyingDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
 
         inputs[1] = "_forge_mock_target_decimals";
-        uint8 mockTargetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
+        mockTargetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
 
         // Create target, underlying, stake & reward tokens
         stake = new MockToken("Stake Token", "ST", baseDecimals);
@@ -183,10 +184,9 @@ contract TestHelper is DSTest {
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        rewardTokens = [address(reward)];
 
-        factory = createFactory(address(target), rewardTokens);
-        address f = periphery.deployAdapter(address(factory), address(target)); // deploy & onboard target through Periphery
+        factory = createFactory(address(target), address(reward));
+        address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
         adapter = MockAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
 
@@ -215,7 +215,48 @@ contract TestHelper is DSTest {
         user.doMint(address(target), tBal);
     }
 
-    function createFactory(address _target, address[] memory _rewardTokens) public returns (MockFactory someFactory) {
+    function updateUser(
+        User user,
+        MockToken target,
+        MockToken stake,
+        uint256 amt
+    ) public {
+        // user.setFactory(factory);
+        user.setStake(stake);
+        user.setTarget(target);
+        user.setDivider(divider);
+        user.setPeriphery(periphery);
+        user.doApprove(address(underlying), address(periphery));
+        user.doApprove(address(underlying), address(divider));
+        user.doMint(address(underlying), amt);
+        user.doApprove(address(stake), address(periphery));
+        user.doApprove(address(stake), address(divider));
+        user.doMint(address(stake), amt);
+        user.doApprove(address(target), address(periphery));
+        user.doApprove(address(target), address(divider));
+        user.doApprove(address(target), address(user.gYTManager()));
+        user.doMint(address(target), amt);
+    }
+
+    function setupUser(
+        address usr,
+        address target,
+        address stake,
+        uint256 amt
+    ) public returns (User user) {
+        address underlying = MockTarget(target).underlying();
+        MockToken(underlying).approve(address(periphery), type(uint256).max);
+        MockToken(underlying).approve(address(divider), type(uint256).max);
+        MockToken(underlying).mint(usr, amt);
+        MockToken(stake).approve(address(periphery), type(uint256).max);
+        MockToken(stake).approve(address(divider), type(uint256).max);
+        MockToken(stake).mint(stake, amt);
+        MockToken(target).approve(address(periphery), type(uint256).max);
+        MockToken(target).approve(address(divider), type(uint256).max);
+        MockToken(target).mint(usr, amt);
+    }
+
+    function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -226,7 +267,27 @@ contract TestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        someFactory = new MockFactory(address(divider), factoryParams, _rewardTokens); // deploy adapter factory
+        someFactory = new MockFactory(address(divider), factoryParams, _reward); // deploy adapter factory
+        someFactory.addTarget(_target, true);
+        divider.setIsTrusted(address(someFactory), true);
+        periphery.setFactory(address(someFactory), true);
+    }
+
+    function createCropsFactory(address _target, address[] memory _rewardTokens)
+        public
+        returns (MockCropsFactory someFactory)
+    {
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0
+        });
+        someFactory = new MockCropsFactory(address(divider), factoryParams, _rewardTokens); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);

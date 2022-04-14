@@ -7,7 +7,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { CropAdapter } from "../CropAdapter.sol";
+import { CropsAdapter } from "../CropsAdapter.sol";
 
 interface WETHLike {
     function deposit() external payable;
@@ -52,11 +52,6 @@ interface FETHTokenLike {
 }
 
 interface ComptrollerLike {
-    /// @notice Claim all the comp accrued by holder in the specified markets
-    /// @param holder The address to claim COMP for
-    /// @param cTokens The list of markets to claim COMP in
-    function claimComp(address holder, address[] memory cTokens) external;
-
     function markets(address target) external returns (bool isListed, uint256 collateralFactorMantissa);
 
     function oracle() external returns (address);
@@ -65,11 +60,15 @@ interface ComptrollerLike {
 }
 
 interface RewardsDistributorLike {
-    function rewardToken() external view returns (address rewardToken);
-
-    function claimRewards(address owner) external;
+    ///
+    /// @notice Claim all the rewards accrued by holder in the specified markets
+    /// @param holder The address to claim rewards for
+    ///
+    function claimRewards(address holder) external;
 
     function marketState(address marker) external view returns (uint224 index, uint32 lastUpdatedTimestamp);
+
+    function rewardToken() external view returns (address rewardToken);
 }
 
 interface PriceOracleLike {
@@ -83,11 +82,13 @@ interface PriceOracleLike {
 }
 
 /// @notice Adapter contract for cTokens
-contract FAdapter is CropAdapter {
+contract FAdapter is CropsAdapter {
     using SafeTransferLib for ERC20;
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant FETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+
+    mapping(address => address) public rewardsDistributors; // rewards distributors for reward token
 
     address public comptroller;
     bool public isFETH;
@@ -97,28 +98,19 @@ contract FAdapter is CropAdapter {
         address _divider,
         address _comptroller,
         AdapterParams memory _adapterParams,
-        address[] memory _rewardTokens
-    ) CropAdapter(_divider, _adapterParams, _rewardTokens) {
-        // Sanity check: underlying passed must equal to target's underlying
-        // TODO: do we need this sanity check?
-        address underlying = (_adapterParams.underlying == address(0) || _adapterParams.underlying == WETH)
-            ? WETH
-            : FTokenLike(_adapterParams.target).underlying();
-        if (_adapterParams.underlying != underlying) revert Errors.InvalidParam(); // TODO: revert or just override with the correrct one?
-
+        address[] memory _rewardTokens,
+        address[] memory _rewardsDistributors
+    ) CropsAdapter(_divider, _adapterParams, _rewardTokens) {
+        rewardTokens = _rewardTokens;
         comptroller = _comptroller;
-
-        // Initialise rewardTokens by calling getRewardsDistributors() -> rewardToken(). Skip array contains addresses
-        if (_rewardTokens.length > 0) {
-            address[] memory rewardsDistributors = ComptrollerLike(comptroller).getRewardsDistributors();
-            for (uint256 i = 0; i < rewardsDistributors.length; i++) {
-                rewardTokens.push(RewardsDistributorLike(rewardsDistributors[i]).rewardToken());
-            }
-        }
-
         isFETH = _adapterParams.underlying == WETH; // TODO: is this okay?
         ERC20(_adapterParams.underlying).approve(_adapterParams.target, type(uint256).max);
         uDecimals = FTokenLike(_adapterParams.underlying).decimals();
+
+        // initialise rewardsDistributors mapping
+        for (uint256 i = 0; i < _rewardTokens.length; i++) {
+            rewardsDistributors[_rewardTokens[i]] = _rewardsDistributors[i];
+        }
     }
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
@@ -135,12 +127,8 @@ contract FAdapter is CropAdapter {
     }
 
     function _claimRewards() internal virtual override {
-        address[] memory rewardsDistributors = ComptrollerLike(comptroller).getRewardsDistributors();
-        for (uint256 i = 0; i < rewardsDistributors.length; i++) {
-            (, uint32 lastUpdatedTimestamp) = RewardsDistributorLike(rewardsDistributors[i]).marketState(
-                adapterParams.target
-            );
-            if (lastUpdatedTimestamp > 0) RewardsDistributorLike(rewardsDistributors[i]).claimRewards(address(this));
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            RewardsDistributorLike(rewardsDistributors[rewardTokens[i]]).claimRewards(address(this));
         }
     }
 
@@ -202,6 +190,17 @@ contract FAdapter is CropAdapter {
         // -> `exRate * 10**(8 - uDecimals)`
         // -> `exRate / 10**(uDecimals - 8)`
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+    }
+
+    function setRewardTokens(address[] memory _rewardTokens, address[] memory _rewardsDistributors)
+        public
+        virtual
+        requiresTrust
+    {
+        super.setRewardTokens(_rewardTokens);
+        for (uint256 i = 0; i < _rewardTokens.length; i++) {
+            rewardsDistributors[_rewardsDistributors[i]] = _rewardTokens[i];
+        }
     }
 
     fallback() external payable {}

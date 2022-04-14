@@ -22,14 +22,15 @@ contract CFactory is CropFactory {
     address public constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
-    constructor(address _divider, FactoryParams memory _factoryParams) CropFactory(_divider, _factoryParams) {}
+    constructor(
+        address _divider,
+        FactoryParams memory _factoryParams,
+        address _reward
+    ) CropFactory(_divider, _factoryParams, _reward) {}
 
-    function deployAdapter(address _target) external override returns (address adapter) {
+    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         (bool isListed, , ) = ComptrollerLike(COMPTROLLER).markets(_target);
         if (!isListed) revert Errors.TargetNotSupported();
-
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = COMP;
 
         // Use the CREATE2 opcode to deploy a new Adapter contract.
         // This will revert if a CAdapter with the provided target has already
@@ -47,6 +48,6 @@ contract CFactory is CropFactory {
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
-        adapter = address(new CAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, rewardTokens));
+        adapter = address(new CAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, reward));
     }
 }
