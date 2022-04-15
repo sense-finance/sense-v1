@@ -240,7 +240,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // 2. Initialize the pool by joining 1 Target in, then swapping 0.5 PTs in for Target
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
-        
+
         uint256 TARGET_IN = 0.0234e18;
         // Check that borrowing too much Target will make it so that we can't pay back the flashloan
         uint256 TARGET_TO_BORROW = 0.1887859e18 + 0.1e18;
@@ -264,12 +264,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
         // Check that we won't get TARGET_TO_BORROW * 1.01 out from swapping TARGET_TO_BORROW + TARGET_IN in
-        this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW * 1.01e18 / 1e18);
+        this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, (TARGET_TO_BORROW * 1.01e18) / 1e18);
 
         // Get the Target amount we'll get back once we buy YTs with these set params, then revert any state changes
         uint256 targetReturned;
-        try this._callStaticBuyYTs(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW) {}
-        catch Error(string memory retData) {
+        try this._callStaticBuyYTs(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW) {} catch Error(
+            string memory retData
+        ) {
             (targetReturned, ) = abi.decode(bytes(retData), (uint256, uint256));
         }
         // Sanity check
@@ -303,8 +304,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         _initializePool(maturity, ERC20(pt), 10**targetDecimals, 10**targetDecimals / 2);
 
         // Check buying YT params calculated using sense-v1/yt-buying-lib, adjusted for the target's decimals
-        uint256 TARGET_IN = 0.0234e18 * 10**targetDecimals / 1e18;
-        uint256 TARGET_TO_BORROW = 0.1887859e18 * 10**targetDecimals / 1e18;
+        uint256 TARGET_IN = (0.0234e18 * 10**targetDecimals) / 1e18;
+        uint256 TARGET_TO_BORROW = (0.1887859e18 * 10**targetDecimals) / 1e18;
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
     }
 
@@ -323,7 +324,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false);
     }
 
-    function _initializePool(uint256 maturity, ERC20 pt, uint256 targetToJoin, uint256 ptsToSwapIn) public {
+    function _initializePool(
+        uint256 maturity,
+        ERC20 pt,
+        uint256 targetToJoin,
+        uint256 ptsToSwapIn
+    ) public {
         // Issue some PTs & YTs
         mockTarget.mint(address(this), targetToJoin + ptsToSwapIn);
         mockTarget.approve(address(divider), ptsToSwapIn);
@@ -354,7 +360,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         );
 
         // Check that we got less than 0.01% of our Target back
-        require(targetReturned <= targetIn * 0.0001e18 / 1e18, "TOO_MANY_TARGET_RETURNED");
+        require(targetReturned <= (targetIn * 0.0001e18) / 1e18, "TOO_MANY_TARGET_RETURNED");
 
         // Check that the YTs returned are the result of issuing from the borrowed Target + transferred Target
         assertEq(ytsOut, targetIn + targetToBorrow);
