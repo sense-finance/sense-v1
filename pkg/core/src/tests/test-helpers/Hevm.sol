@@ -19,6 +19,9 @@ abstract contract Hevm {
 
     function load(address, bytes32) external virtual returns (bytes32);
 
+    // Sets an address' code, (who, newCode)
+    function etch(address, bytes calldata) external virtual;
+
     // Expects an error on next call
     function expectRevert(bytes calldata) external virtual;
 

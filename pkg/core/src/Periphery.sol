@@ -539,7 +539,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 tokenOut: tokens[pti],
                 amount: ytBal,
                 poolId: poolId,
-                lastChangeBlock: block.number, // Current block so that we don't run oracle update path, saving gas
+                lastChangeBlock: block.number, // Current block so that we don't run the oracle update path, saving gas
                 from: address(0),
                 to: address(0),
                 userData: ""
@@ -742,7 +742,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 Adapter(adapter).target(),
                 pt.balanceOf(address(this)),
                 pool.getPoolId(),
-                minOut // Min Target out
+                minOut // min Target out
             ); // minOut should be close to amountBorrrowed so that minimal Target dust is sent back to the caller
 
             // Flashloaner contract will revert if not enough Target has been swapped out to pay back the loan

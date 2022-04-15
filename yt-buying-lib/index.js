@@ -1,23 +1,31 @@
 import Decimal from "decimal.js";
 import optimjs from "optimization-js";
+import args from "minimist";
 
 // Assumes a scale of 1 and an issuance fee of 0
 class SpaceFluxer {
-  constructor(now, ttl, TS, G2) {
+  constructor(now, ttl, TS, G2, initScale, ifee) {
     this.now = now;
     this.ttl = ttl;
     this.TS = TS;
     this.G2 = G2;
+    this.initScale = initScale;
+    this.scale = initScale;
+    this.ifee = ifee;
 
     this.ptReserves = new Decimal(0);
     this.targetReserves = new Decimal(0);
     this.supply = new Decimal(0);
   }
 
+  setScale(scale) {
+    this.scale = scale;
+  }
+
   mint(supplyToMint) {
     if (this.supply.eq(0)) {
       this.supply = supplyToMint;
-      this.targetReserves = supplyToMint;
+      this.targetReserves = supplyToMint.div(this.initScale);
     } else {
       this.ptReserves = this.ptReserves.add(supplyToMint.div(this.supply).times(this.ptReserves));
       this.targetReserves = this.targetReserves.add(supplyToMint.div(this.supply).times(this.targetReserves));
@@ -33,15 +41,14 @@ class SpaceFluxer {
     return targetOut;
   }
 
-  buyYTs(initialTarget) {
+  buyYTs(initialTarget, desiredTargetBack = new Decimal("0")) {
     // Function to optimize, takes normal JS numbers
     return ([targetToBorrow]) => {
       targetToBorrow = new Decimal(targetToBorrow);
       const totalTargetBal = initialTarget.add(targetToBorrow);
-      // Issue
-      const ptsFromIssuance = totalTargetBal;
+      const ptsFromIssuance = totalTargetBal.times(new Decimal("1").minus(this.ifee)).times(this.scale);
       const targetOut = this._swapPTsForTarget(ptsFromIssuance);
-      return Math.abs(targetOut.sub(targetToBorrow).toNumber());
+      return Math.abs(targetOut.sub(desiredTargetBack).sub(targetToBorrow).toNumber());
     };
   }
 
@@ -52,31 +59,43 @@ class SpaceFluxer {
     const a = new Decimal(1).minus(this.G2.times(t));
 
     const _ptReserves = new Decimal(this.ptReserves).add(this.supply);
-    const _targetReserves = new Decimal(this.targetReserves);
-    const x1 = _ptReserves.pow(a);
-    const y1 = _targetReserves.pow(a);
+    const _underlyingReserves = new Decimal(this.targetReserves).times(this.initScale);
 
+    const x1 = _ptReserves.pow(a);
+    const y1 = _underlyingReserves.pow(a);
     const x2 = _ptReserves.add(amountIn).pow(a);
 
     const yPost = x1.add(y1).sub(x2).pow(new Decimal(1).div(a));
-    const targetOut = _targetReserves.sub(yPost);
-
+    const targetOut = _underlyingReserves.sub(yPost).div(this.scale);
     return targetOut;
   }
 }
 
 const ONE_YEAR_IN_SECONDS = 31536000;
 const TS = new Decimal("1").div(ONE_YEAR_IN_SECONDS * 12);
-console.log(ONE_YEAR_IN_SECONDS);
 const G2 = new Decimal("1000").div("950");
 
-const spaceFluxer = new SpaceFluxer(0, ONE_YEAR_IN_SECONDS, TS, G2);
+const spaceFluxer = new SpaceFluxer(0, ONE_YEAR_IN_SECONDS, TS, G2, new Decimal("1"), new Decimal("0"));
 
-spaceFluxer.mint(new Decimal("1"));
-spaceFluxer.swapPTsForTarget(new Decimal("0.5"));
-console.log(spaceFluxer);
+const {
+  _: [targetToJoin, ptsToSwapIn, targetIn, optimalTargetReturned],
+} = args(process.argv.slice(2));
 
-const buyYTTargetToBorrow = spaceFluxer.buyYTs(new Decimal("0.005"));
-console.log(optimjs.minimize_Powell(buyYTTargetToBorrow, [0.5]));
+if ([targetToJoin, ptsToSwapIn, targetIn].includes(undefined)) {
+  throw new Error(
+    `Missing at least one of the three required positional arguments:
 
-console.log(spaceFluxer.swapPTsForTarget(new Decimal("0.0001")).times(10000));
+    > node index.js <targetToJoin> <ptsToSwapIn> <targetIn> <[optional] optimalTargetReturned>
+    `,
+  );
+}
+
+spaceFluxer.mint(new Decimal(targetToJoin));
+spaceFluxer.swapPTsForTarget(new Decimal(ptsToSwapIn));
+console.log("State:", spaceFluxer);
+console.log("\nArgs:", { targetToJoin, ptsToSwapIn, targetIn, optimalTargetReturned });
+
+console.log("\nPT Price:", spaceFluxer.swapPTsForTarget(new Decimal("0.00001")).times(100000));
+
+const buyYTTargetToBorrow = spaceFluxer.buyYTs(new Decimal(targetIn), new Decimal(optimalTargetReturned));
+console.log("\nOptimal amount to borrow:", optimjs.minimize_Powell(buyYTTargetToBorrow, [0.5]).argument[0]);
