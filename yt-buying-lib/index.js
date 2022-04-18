@@ -2,7 +2,6 @@ import Decimal from "decimal.js";
 import optimjs from "optimization-js";
 import SETTINGS from "./settings.js";
 
-// Assumes a scale of 1 and an issuance fee of 0
 class SpaceFluxer {
   constructor(now, ttl, TS, G2, initScale, ifee) {
     this.now = now;
@@ -97,7 +96,7 @@ console.log("State:", spaceFluxer);
 console.log("\nArgs:", { targetToJoin, ptsToSwapIn, targetInForYTs, optimalTargetReturned });
 
 // Check price
-const ptPrice = spaceFluxer.swapPTsForTarget(new Decimal("0.00001")).times(100000);
+const ptPrice = spaceFluxer._swapPTsForTarget(new Decimal("0.00001")).times(100000);
 console.log("\nPT Price:", ptPrice);
 
 // Optimize YT buy

@@ -198,7 +198,7 @@ module.exports = async function () {
       await periphery.swapTargetForPTs(adapter.address, seriesMaturity, one, 0).then(tx => tx.wait());
 
       log("swapping target for yields");
-      await periphery.swapTargetForYTs(adapter.address, seriesMaturity, one, one, 0).then(tx => tx.wait());
+      await periphery.swapTargetForYTs(adapter.address, seriesMaturity, one, one, one).then(tx => tx.wait());
 
       log("swapping pt for target");
       await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
