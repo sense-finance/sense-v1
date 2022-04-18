@@ -115,13 +115,11 @@ contract FAdapter is CropsAdapter {
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function scale() external override returns (uint256) {
-        // return FTokenLike(adapterParams.target).exchangeRateCurrent();
         uint256 exRate = FTokenLike(adapterParams.target).exchangeRateCurrent();
         return _to18Decimals(exRate);
     }
 
     function scaleStored() external view override returns (uint256) {
-        // return FTokenLike(adapterParams.target).exchangeRateStored();
         uint256 exRate = FTokenLike(adapterParams.target).exchangeRateStored();
         return _to18Decimals(exRate);
     }

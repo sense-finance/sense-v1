@@ -15,7 +15,9 @@ import { Divider, TokenHandler } from "../Divider.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { CAdapter } from "../adapters/compound/CAdapter.sol";
+import { FAdapter } from "../adapters/fuse/FAdapter.sol";
 import { CFactory } from "../adapters/compound/CFactory.sol";
+import { FFactory } from "../adapters/fuse/FFactory.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { User } from "./test-helpers/User.sol";
@@ -42,8 +44,10 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     uint256 public constant MAX_MATURITY = 14 weeks;
 
     Periphery internal periphery;
-    CAdapter internal adapter;
-    CFactory internal factory;
+    FAdapter internal fadapter;
+    CAdapter internal cadapter;
+    CFactory internal cfactory;
+    FFactory internal ffactory;
     Divider internal divider;
     PoolManager internal poolManager;
     TokenHandler internal tokenHandler;
@@ -93,11 +97,18 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             tilt: 0
         });
 
-        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        cfactory = new CFactory(address(divider), factoryParams, Assets.COMP);
 
-        divider.setIsTrusted(address(factory), true);
-        divider.setIsTrusted(address(factory), true);
-        periphery.setFactory(address(factory), true);
+        // Deploy fuse factory
+        ffactory = new FFactory(address(divider), factoryParams);
+
+        divider.setIsTrusted(address(cfactory), true);
+        divider.setIsTrusted(address(cfactory), true);
+        periphery.setFactory(address(cfactory), true);
+        
+        divider.setIsTrusted(address(ffactory), true);
+        divider.setIsTrusted(address(ffactory), true);
+        periphery.setFactory(address(ffactory), true);
 
         poolManager.deployPool("Sense Pool Main", 0.051 ether, 1 ether, Assets.RARI_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
@@ -112,9 +123,9 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 contract PeripheryTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
-    function testMainnetSponsorSeries() public {
-        address f = periphery.deployAdapter(address(factory), Assets.cDAI, "");
-        adapter = CAdapter(payable(f));
+    function testMainnetSponsorSeriesOnCAdapter() public {
+        address f = periphery.deployAdapter(address(cfactory), Assets.cDAI, "");
+        cadapter = CAdapter(payable(f));
         // Mint this address MAX_UINT Assets.DAI
         giveTokens(Assets.DAI, type(uint256).max, hevm);
 
@@ -129,14 +140,42 @@ contract PeripheryTests is PeripheryTestHelper {
         );
 
         ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, false);
+        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false);
 
         // Check pt and yt deployed
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(cadapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+    }
+
+    function testMainnetSponsorSeriesOnFAdapter() public {
+        address f = periphery.deployAdapter(address(ffactory), Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
+        fadapter = FAdapter(payable(f));
+        // Mint this address MAX_UINT Assets.DAI for stake
+        giveTokens(Assets.DAI, type(uint256).max, hevm);
+
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
+        );
+
+        ERC20(Assets.DAI).approve(address(periphery), type(uint256).max);
+        (address pt, address yt) = periphery.sponsorSeries(address(fadapter), maturity, false);
+
+        // Check pt and yt deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
+
+        // Check PT and YT onboarded on PoolManager (Fuse)
+        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(fadapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 }

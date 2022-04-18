@@ -205,14 +205,15 @@ contract FAdapters is FAdapterTestHelper {
     }
 
     event ClaimRewards(address indexed owner, uint256 indexed amount);
+    event Transfer(address indexed from, address indexed to, uint256 amount);
 
     function testMainnetNotify() public {
-        // At block 14563990, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
+        // At block 14603884, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
         // asset --> rewards:
         // FRAX3CRV --> CVX and CRV
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
-        hevm.roll(14561510);
+        hevm.warp(14603884);
 
         // f156FRAX3CRV adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -221,7 +222,7 @@ contract FAdapters is FAdapterTestHelper {
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
+            minm: 0,
             maxm: MAX_MATURITY,
             mode: 0,
             ifee: ISSUANCE_FEE,
@@ -243,21 +244,54 @@ contract FAdapters is FAdapterTestHelper {
             rewardTokens,
             rewardsDistributosr
         );
+        divider.addAdapter(address(f156FRAX3CRVAdapter));
+        divider.setGuard(address(f156FRAX3CRVAdapter), 100e18);
 
-        hevm.prank(0x8FdD0CF22012a5FEcDbF77eF30d9e9834DC1bf0A); // user with f156FRAX3CRV balance
-        ERC20(Assets.f156FRAX3CRV).transfer(address(f156FRAX3CRVAdapter), 1000e18);
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
+        );
+
+        address prankedAddress = 0x8FdD0CF22012a5FEcDbF77eF30d9e9834DC1bf0A;
+        giveTokens(Assets.DAI, 1e18, hevm);
+        ERC20(Assets.DAI).approve(address(divider), type(uint256).max);
+        divider.initSeries(address(f156FRAX3CRVAdapter), maturity, prankedAddress);
+
+        giveTokens(Assets.f156FRAX3CRV, prankedAddress, 1e18, hevm);
+
+        // Become user with f156FRAX3CRV balance
+        hevm.startPrank(prankedAddress); 
+        ERC20(Assets.f156FRAX3CRV).approve(address(divider), type(uint256).max);
+        divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
         hevm.warp(block.timestamp + 3 days);
-        RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CVX).accrue(
+       
+        // acccrue rewardss
+        uint256 accruedCVX = RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CVX).accrue(
             ERC20(Assets.f156FRAX3CRV),
             address(f156FRAX3CRVAdapter)
         );
+        uint256 accruedCRV = RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CRV).accrue(
+            ERC20(Assets.f156FRAX3CRV),
+            address(f156FRAX3CRVAdapter)
+        );
+        hevm.stopPrank();
 
         // Become the divider
         hevm.startPrank(address(divider));
 
         // Expect a f156FRAX3CRV distributed event when notifying
-        // hevm.expectEmit(true, false, false, false); // TODO: why's not working? Accrued rewards are > 0 so it should trigger the event
+        // hevm.expectEmit(true, false, false, false); // TODO: not sure why this event is not triggering but the Transfer triggers...
         // emit ClaimRewards(address(f156FRAX3CRVAdapter), 0);
+        hevm.expectEmit(true, true, true, false);
+        emit Transfer(Assets.REWARDS_DISTRIBUTOR_CVX, address(f156FRAX3CRVAdapter), accruedCVX);
+
+        hevm.expectEmit(true, true, true, false);
+        emit Transfer(Assets.REWARDS_DISTRIBUTOR_CRV, address(f156FRAX3CRVAdapter), accruedCRV);
 
         f156FRAX3CRVAdapter.notify(address(0), 0, true);
     }
