@@ -55,6 +55,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
+    uint256 internal constant IFEE = 0.042e18; // 4.2%
+
     function setUp() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
@@ -74,7 +76,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             address(divider),
             address(mockTarget),
             address(mockOracle),
-            0, // no issuance fees
+            IFEE,
             address(new MockToken("Stake", "ST", 18)), // stake size is 0, so the we don't actually need any stake token
             0,
             0, // 0 minm, so there's not lower bound on future maturity
@@ -118,11 +120,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, address yt) = _sponsorSeries();
 
-        // Check PT and YT contracts deployed
+        // Check that the PT and YT contracts have been deployed
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
 
-        // Check PT and YT onboarded via the PoolManager into Fuse
+        // Check that PTs and YTs are onboarded via the PoolManager into Fuse
         (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(mockAdapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
@@ -143,8 +145,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetBalPost = mockTarget.balanceOf(address(this));
 
         // Check that this address has fewer YTs and more Target
-        assertGt(ytBalPre, ytBalPost);
-        assertLt(targetBalPre, targetBalPost);
+        assertLt(ytBalPost, ytBalPre);
+        assertGt(targetBalPost, targetBalPre);
     }
 
     function testMainnetSwapTargetForYTsReturnValues() public {
@@ -155,8 +157,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
 
         // 3. Swap 0.005 of this address' Target for YTs
-        uint256 TARGET_IN = 0.005e18;
-        uint256 TARGET_TO_BORROW = 0.048367e18; // Calculated using sense-v1/yt-buying-lib
+        uint256 TARGET_IN = 0.0234e18;
+        // Calculated using sense-v1/yt-buying-lib
+        uint256 TARGET_TO_BORROW = 0.1413769e18;
 
         uint256 targetBalPre = mockTarget.balanceOf(address(this));
         uint256 ytBalPre = ERC20(yt).balanceOf(address(this));
@@ -175,17 +178,10 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertEq(targetBalPre - targetBalPost + targetReturned, TARGET_IN);
         assertEq(ytBalPost - ytBalPre, ytsOut);
         // Check that the YTs returned are the result of issuing from the borrowed Target + transferred Target
-        assertEq(ytsOut, TARGET_IN + TARGET_TO_BORROW);
+        assertEq(ytsOut, (TARGET_IN + TARGET_TO_BORROW).fmul(1e18 - mockAdapter.ifee()));
 
         // Check that we got less than 0.000001 Target back
         assertTrue(targetReturned < 0.000001e18);
-
-        // TODO slippage effects
-
-        // address pool = SpaceFactoryLike(spaceFactory).pools(address(mockAdapter), maturity);
-        // (, uint256[] memory balances, ) = BalancerVault(balancerVault).getPoolTokens(BalancerPool(pool).getPoolId());
-        // ERC20(pt).approve(address(periphery), 0.0001e18);
-        // emit log_uint(periphery.swapPTsForTarget(address(mockAdapter), maturity, 0.0001e18, 0));
     }
 
     // Pattern similar to https://github.com/FrankieIsLost/gradual-dutch-auction/src/test/ContinuousGDA.t.sol#L113
@@ -198,7 +194,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check buying YT swap params calculated using sense-v1/yt-buying-lib
         uint256 TARGET_IN = 0.005e18;
-        uint256 TARGET_TO_BORROW = 0.048367e18;
+        uint256 TARGET_TO_BORROW = 0.03340541e18;
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
     }
 
@@ -211,7 +207,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check buying YT swap params calculated using sense-v1/yt-buying-lib
         uint256 TARGET_IN = 0.01e18;
-        uint256 TARGET_TO_BORROW = 0.0914916e18;
+        uint256 TARGET_TO_BORROW = 0.06489898e18;
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
     }
 
@@ -224,7 +220,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check buying YT swap params calculated using sense-v1/yt-buying-lib
         uint256 TARGET_IN = 0.0234e18;
-        uint256 TARGET_TO_BORROW = 0.1887859e18;
+        uint256 TARGET_TO_BORROW = 0.1413769e18;
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
     }
 
@@ -237,7 +233,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check buying YT swap params calculated using sense-v1/yt-buying-lib
         uint256 TARGET_IN = 0.00003e18;
-        uint256 TARGET_TO_BORROW = 0.000308950023870e18;
+        uint256 TARGET_TO_BORROW = 0.0002066353449e18;
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
     }
 
@@ -250,7 +246,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         uint256 TARGET_IN = 0.0234e18;
         // Check that borrowing too much Target will make it so that we can't pay back the flashloan
-        uint256 TARGET_TO_BORROW = 0.1887859e18 + 0.1e18;
+        uint256 TARGET_TO_BORROW = 0.1413769e18 + 0.02e18;
         hevm.expectRevert("TRANSFER_FROM_FAILED");
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
     }
@@ -263,8 +259,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
 
         uint256 TARGET_IN = 0.0234e18;
-        // Check that borrowing too few Target will make it so that we get too many Target back
-        uint256 TARGET_TO_BORROW = 0.1887859e18 - 0.1e18;
+        // Check that borrowing too few Target will cause us to get too many Target back
+        uint256 TARGET_TO_BORROW = 0.1413769e18 - 0.02e18;
         hevm.expectRevert("TOO_MANY_TARGET_RETURNED");
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
     }
@@ -276,8 +272,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 2. Initialize the pool by joining 1 Target in, then swapping 0.5 PTs in for Target
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
 
-        uint256 TARGET_IN = 0.005e18;
-        uint256 TARGET_TO_BORROW = 0.048367e18;
+        uint256 TARGET_IN = 0.0234e18;
+        uint256 TARGET_TO_BORROW = 0.1413769e18;
 
         hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
         // Check that we won't get TARGET_TO_BORROW out from swapping TARGET_TO_BORROW / 2 + TARGET_IN in
@@ -295,12 +291,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check that setting the min out to one more than the target we previewed fails
         hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
-        this._checkYTBuyingParameters(
-            maturity,
-            TARGET_IN,
-            TARGET_TO_BORROW,
-            TARGET_TO_BORROW + targetReturnedPreview + 1
-        );
+        this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW + targetReturnedPreview + 1);
 
         // Check that setting the min out to exactly the target we previewed succeeds
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW + targetReturnedPreview);
@@ -313,8 +304,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 2. Initialize the pool by joining 1 Target in, then swapping 0.5 PTs in for Target
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
 
-        uint256 TARGET_IN = 0.005e18;
-        uint256 TARGET_TO_BORROW = 0.048367e18;
+        uint256 TARGET_IN = 0.0234e18;
+        uint256 TARGET_TO_BORROW = 0.1413769e18;
         uint256 TARGET_TRANSFERRED_IN = 0.5e18;
 
         // Get the Target amount we'd get back from buying YTs with these set params, then revert any state changes
@@ -330,7 +321,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         );
 
         assertEq(targetReturnedPreview + TARGET_TRANSFERRED_IN, targetReturned);
-        assertEq(ytsOut, TARGET_IN + TARGET_TO_BORROW);
+        assertEq(ytsOut, (TARGET_IN + TARGET_TO_BORROW).fmul(1e18 - mockAdapter.ifee()));
     }
 
     function testMainnetFuzzSwapTargetForYTsDifferentDecimals(uint8 underlyingDecimals, uint8 targetDecimals) public {
@@ -354,8 +345,35 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check buying YT params calculated using sense-v1/yt-buying-lib, adjusted for the target's decimals
         uint256 TARGET_IN = uint256(0.0234e18).fmul(10**targetDecimals);
-        uint256 TARGET_TO_BORROW = uint256(0.1887859e18).fmul(10**targetDecimals);
+        uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fmul(10**targetDecimals);
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
+    }
+
+    function testMainnetFuzzSwapTargetForYTsDifferentScales(uint64 initScale, uint64 scale) public {
+        hevm.assume(initScale >= 1e9);
+        hevm.assume(scale >= initScale);
+
+        // 1. Initialize scale
+        mockAdapter.setScale(initScale);
+
+        // 2. Sponsor a Series
+        (uint256 maturity, address pt, ) = _sponsorSeries();
+
+        // 3. Initialize the pool by joining 1 Underlying worth of Target in, then swapping 0.5 PTs in for Target
+        _initializePool(
+            maturity,
+            ERC20(pt),
+            uint256(1e18).fdivUp(initScale),
+            0.5e18
+        );
+
+        // 4. Update scale
+        mockAdapter.setScale(scale);
+
+         // Check buying YT swap params calculated using sense-v1/yt-buying-lib, adjusted with the current scale
+        uint256 TARGET_IN = uint256(0.0234e18).fdivUp(scale);
+        uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fdivUp(scale);
+        _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
     }
 
     // INTERNAL HELPERS ––––––––––––
@@ -380,12 +398,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 ptsToSwapIn
     ) public {
         // Issue some PTs (& YTs) we'll use to initialize the pool with
-        uint256 targetToIssueWith = ptsToSwapIn.fdiv(1e18 - mockAdapter.ifee()).fdiv(mockAdapter.scale());
+        uint256 targetToIssueWith = ptsToSwapIn.fdivUp(1e18 - mockAdapter.ifee()).fdivUp(mockAdapter.scale());
         mockTarget.mint(address(this), targetToIssueWith + targetToJoin);
         mockTarget.approve(address(divider), targetToIssueWith);
         Divider(divider).issue(address(mockAdapter), maturity, targetToIssueWith);
-        // Sanity check that scale is 1 and there is no issuance fee. ie PTs are issued 1:1 for Target
-        assertEq(pt.balanceOf(address(this)), ptsToSwapIn);
+        // Sanity check that we have the PTs we need to swap in, either exactly, or close to (modulo rounding)
+        assertTrue(pt.balanceOf(address(this)) >= ptsToSwapIn && pt.balanceOf(address(this)) <= ptsToSwapIn + 100);
 
         // Add Target to the Space pool
         periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0);
@@ -422,7 +440,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public returns (uint256 targetReturnedPreview, uint256 ytsOutPreview) {
-        try this._callRevertBuyYTs(maturity, targetIn, targetToBorrow, minOut) {} catch Error(string memory retData) {
+        try this._callRevertBuyYTs(maturity, targetIn, targetToBorrow, minOut) {} catch Error(
+            string memory retData
+        ) {
             (targetReturnedPreview, ytsOutPreview) = abi.decode(bytes(retData), (uint256, uint256));
         }
     }
