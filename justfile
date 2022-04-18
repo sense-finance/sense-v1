@@ -69,21 +69,10 @@ turbo-test-mainnet-match *exp="": && _timer
 
 ## ---- Gas Metering ----
 
-# default gas snapshot script
-gas-snapshot: gas-snapshot-local
-
-# get gas snapshot from local tests and save it to file
-gas-snapshot-local:
-    cd {{ invocation_directory() }}; \
-    just turbo-test-local | grep 'gas:' | cut -d " " -f 2-4 | sort > \
-    {{ justfile_directory() }}/gas-snapshots/.$( \
-        cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
-    )
-
-forge-gas-snapshot: && _timer
+gas-snapshot: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot --no-match-path "*.tm*"
 
-forge-gas-snapshot-diff: && _timer
+gas-snapshot-diff: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot --no-match-path "*.tm*" --diff
 
 ## ---- Appendix ----
