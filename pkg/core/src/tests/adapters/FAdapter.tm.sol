@@ -265,11 +265,11 @@ contract FAdapters is FAdapterTestHelper {
         giveTokens(Assets.f156FRAX3CRV, prankedAddress, 1e18, hevm);
 
         // Become user with f156FRAX3CRV balance
-        hevm.startPrank(prankedAddress); 
+        hevm.startPrank(prankedAddress);
         ERC20(Assets.f156FRAX3CRV).approve(address(divider), type(uint256).max);
         divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
         hevm.warp(block.timestamp + 3 days);
-       
+
         // acccrue rewardss
         uint256 accruedCVX = RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CVX).accrue(
             ERC20(Assets.f156FRAX3CRV),
