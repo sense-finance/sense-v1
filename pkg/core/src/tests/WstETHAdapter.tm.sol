@@ -61,9 +61,9 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
-    uint256 public constant DEFAULT_LEVEL = 31;
-    uint256 public constant DEFAULT_MODE = 0;
-    uint256 public constant DEFAULT_TILT = 0;
+    uint48 public constant DEFAULT_LEVEL = 31;
+    uint16 public constant DEFAULT_MODE = 0;
+    uint64 public constant DEFAULT_TILT = 0;
 
     function setUp() public {
         address[] memory assets = new address[](1);

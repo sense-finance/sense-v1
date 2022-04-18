@@ -44,18 +44,18 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         uint256 minm;
         /// @notice Max maturity (seconds after block.timstamp)
         uint256 maxm;
-        /// @notice 0 for monthly, 1 for weekly
-        uint256 mode;
         /// @notice Issuance fee
-        uint256 ifee;
+        uint128 ifee;
         /// @notice WAD number representing the percentage of the total
         /// principal that's set aside for Yield Tokens (e.g. 0.1e18 means that 10% of the principal is reserved).
         /// @notice If `0`, it means no principal is set aside for Yield Tokens
-        uint256 tilt;
+        uint64 tilt;
         /// @notice The number this function returns will be used to determine its access by checking for binary
         /// digits using the following scheme: <onRedeem(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
         /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
-        uint256 level;
+        uint48 level;
+        /// @notice 0 for monthly, 1 for weekly
+        uint16 mode;
     }
 
     /* ========== METADATA STORAGE ========== */

@@ -11,7 +11,7 @@ abstract contract BaseFactory {
 
     /// @notice Sets level to `31` by default, which keeps all Divider lifecycle methods public
     /// (`issue`, `combine`, `collect`, etc), but not the `onRedeem` hook.
-    uint256 public constant DEFAULT_LEVEL = 31;
+    uint48 public constant DEFAULT_LEVEL = 31;
 
     /* ========== PUBLIC IMMUTABLES ========== */
 
@@ -28,11 +28,11 @@ abstract contract BaseFactory {
 
     struct FactoryParams {
         address oracle; // oracle address
-        uint256 ifee; // issuance fee
         address stake; // token to stake at issuance
         uint256 stakeSize; // amount to stake at issuance
         uint256 minm; // min maturity (seconds after block.timstamp)
         uint256 maxm; // max maturity (seconds after block.timstamp)
+        uint128 ifee; // issuance fee
         uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
     }

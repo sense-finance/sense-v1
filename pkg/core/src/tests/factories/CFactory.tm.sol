@@ -69,11 +69,11 @@ contract CFactories is CAdapterTestHelper {
         assertTrue(address(otherCFactory) != address(0));
         (
             address oracle,
-            uint256 ifee,
             address stake,
             uint256 stakeSize,
             uint256 minm,
             uint256 maxm,
+            uint256 ifee,
             uint16 mode,
             uint64 tilt
         ) = CFactory(otherCFactory).factoryParams();
