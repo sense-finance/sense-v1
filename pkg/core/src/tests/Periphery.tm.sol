@@ -291,7 +291,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check that setting the min out to one more than the target we previewed fails
         hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
-        this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW + targetReturnedPreview + 1);
+        this._checkYTBuyingParameters(
+            maturity,
+            TARGET_IN,
+            TARGET_TO_BORROW,
+            TARGET_TO_BORROW + targetReturnedPreview + 1
+        );
 
         // Check that setting the min out to exactly the target we previewed succeeds
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW + targetReturnedPreview);
@@ -360,17 +365,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         (uint256 maturity, address pt, ) = _sponsorSeries();
 
         // 3. Initialize the pool by joining 1 Underlying worth of Target in, then swapping 0.5 PTs in for Target
-        _initializePool(
-            maturity,
-            ERC20(pt),
-            uint256(1e18).fdivUp(initScale),
-            0.5e18
-        );
+        _initializePool(maturity, ERC20(pt), uint256(1e18).fdivUp(initScale), 0.5e18);
 
         // 4. Update scale
         mockAdapter.setScale(scale);
 
-         // Check buying YT swap params calculated using sense-v1/yt-buying-lib, adjusted with the current scale
+        // Check buying YT swap params calculated using sense-v1/yt-buying-lib, adjusted with the current scale
         uint256 TARGET_IN = uint256(0.0234e18).fdivUp(scale);
         uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fdivUp(scale);
         _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
@@ -440,9 +440,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public returns (uint256 targetReturnedPreview, uint256 ytsOutPreview) {
-        try this._callRevertBuyYTs(maturity, targetIn, targetToBorrow, minOut) {} catch Error(
-            string memory retData
-        ) {
+        try this._callRevertBuyYTs(maturity, targetIn, targetToBorrow, minOut) {} catch Error(string memory retData) {
             (targetReturnedPreview, ytsOutPreview) = abi.decode(bytes(retData), (uint256, uint256));
         }
     }
