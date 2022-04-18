@@ -525,14 +525,6 @@ contract PeripheryTest is TestHelper {
         assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(address(alice)));
     }
 
-    function testSwapTargetForYTs() public {
-        // TODO
-    }
-
-    function testSwapUnderlyingForYTs() public {
-        // TODO
-    }
-
     function testSwapPTsForTarget() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);

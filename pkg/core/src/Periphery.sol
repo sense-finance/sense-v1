@@ -682,7 +682,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20 target = ERC20(Adapter(adapter).target());
         uint256 decimals = target.decimals();
         uint256 acceptableError = decimals < 9 ? 1 : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - decimals);
-        bytes memory data = abi.encode(adapter, uint96(maturity), ytBalIn, ytBalIn - acceptableError, true);
+        bytes memory data = abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, true);
         bool result = Adapter(adapter).flashLoan(this, address(target), amountToBorrow, data);
         tBal = target.balanceOf(address(this));
         if (!result) revert Errors.FlashBorrowFailed();
@@ -695,7 +695,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amountToBorrow,
         uint256 minOut
     ) internal returns (uint256 tBal) {
-        bytes memory data = abi.encode(adapter, uint96(maturity), targetIn, minOut, false);
+        bytes memory data = abi.encode(adapter, uint256(maturity), targetIn, minOut, false);
         bool result = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amountToBorrow, data);
         if (!result) revert Errors.FlashBorrowFailed();
     }
@@ -708,9 +708,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256, /* fee */
         bytes calldata data
     ) external returns (bytes32) {
-        (address adapter, uint96 maturity, uint256 amountIn, uint256 minOut, bool ytToTarget) = abi.decode(
+        (address adapter, uint256 maturity, uint256 amountIn, uint256 minOut, bool ytToTarget) = abi.decode(
             data,
-            (address, uint96, uint256, uint256, bool)
+            (address, uint256, uint256, uint256, bool)
         );
 
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();

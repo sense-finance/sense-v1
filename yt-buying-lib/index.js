@@ -1,6 +1,5 @@
 import Decimal from "decimal.js";
 import optimjs from "optimization-js";
-import args from "minimist";
 
 // Assumes a scale of 1 and an issuance fee of 0
 class SpaceFluxer {
@@ -71,31 +70,39 @@ class SpaceFluxer {
   }
 }
 
+// Settings
+const NOW = 0;
 const ONE_YEAR_IN_SECONDS = 31536000;
 const TS = new Decimal("1").div(ONE_YEAR_IN_SECONDS * 12);
 const G2 = new Decimal("1000").div("950");
 
-const spaceFluxer = new SpaceFluxer(0, ONE_YEAR_IN_SECONDS, TS, G2, new Decimal("1"), new Decimal("0"));
-
-const {
-  _: [targetToJoin, ptsToSwapIn, targetIn, optimalTargetReturned],
-} = args(process.argv.slice(2));
-
-if ([targetToJoin, ptsToSwapIn, targetIn].includes(undefined)) {
+// Args
+const [targetToJoin, ptsToSwapIn, targetInForYTs, optimalTargetReturned] = process.argv.slice(2);
+if ([targetToJoin, ptsToSwapIn, targetInForYTs].includes(undefined)) {
   throw new Error(
     `Missing at least one of the three required positional arguments:
 
-    > node index.js <targetToJoin> <ptsToSwapIn> <targetIn> <[optional] optimalTargetReturned>
+    <targetToJoin> <ptsToSwapIn> <targetInForYTs> <[optional] optimalTargetReturned>
     `,
   );
 }
 
+// Main
+const spaceFluxer = new SpaceFluxer(NOW, ONE_YEAR_IN_SECONDS, TS, G2, new Decimal("1"), new Decimal("0"));
+
 spaceFluxer.mint(new Decimal(targetToJoin));
 spaceFluxer.swapPTsForTarget(new Decimal(ptsToSwapIn));
+
 console.log("State:", spaceFluxer);
-console.log("\nArgs:", { targetToJoin, ptsToSwapIn, targetIn, optimalTargetReturned });
+console.log("\nArgs:", {
+  targetToJoin,
+  ptsToSwapIn,
+  targetInForYTs,
+  optimalTargetReturned: optimalTargetReturned || 0,
+});
 
-console.log("\nPT Price:", spaceFluxer.swapPTsForTarget(new Decimal("0.00001")).times(100000));
+const ptPrice = spaceFluxer.swapPTsForTarget(new Decimal("0.00001")).times(100000);
+console.log("\nPT Price:", ptPrice);
 
-const buyYTTargetToBorrow = spaceFluxer.buyYTs(new Decimal(targetIn), new Decimal(optimalTargetReturned));
+const buyYTTargetToBorrow = spaceFluxer.buyYTs(new Decimal(targetInForYTs), new Decimal(optimalTargetReturned || 0));
 console.log("\nOptimal amount to borrow:", optimjs.minimize_Powell(buyYTTargetToBorrow, [0.5]).argument[0]);
