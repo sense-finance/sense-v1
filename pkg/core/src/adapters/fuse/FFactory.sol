@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { CropsFactory } from "../CropsFactory.sol";
-import { FAdapter, ComptrollerLike, RewardsDistributorLike } from "./FAdapter.sol";
+import { FAdapter, FComptrollerLike, RewardsDistributorLike } from "./FAdapter.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -34,11 +34,11 @@ contract FFactory is CropsFactory {
         /// Sanity checks
         /// TODO: any better way to verify this?
         if (!FusePoolLensLike(FUSE_POOL_DIRECTORY).poolExists(comptroller)) revert Errors.InvalidParam();
-        (bool isListed, ) = ComptrollerLike(comptroller).markets(_target);
+        (bool isListed, ) = FComptrollerLike(comptroller).markets(_target);
         if (!isListed) revert Errors.TargetNotSupported();
 
         // Initialise rewardTokens by calling getRewardsDistributors() -> rewardToken()
-        address[] memory rewardsDistributors = ComptrollerLike(comptroller).getRewardsDistributors();
+        address[] memory rewardsDistributors = FComptrollerLike(comptroller).getRewardsDistributors();
         address[] memory rewardTokens = new address[](rewardsDistributors.length);
         address[] memory targetRewardsDistributors = new address[](rewardsDistributors.length);
 

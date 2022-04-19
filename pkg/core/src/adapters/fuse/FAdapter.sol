@@ -51,7 +51,7 @@ interface FETHTokenLike {
     function mint() external payable;
 }
 
-interface ComptrollerLike {
+interface FComptrollerLike {
     function markets(address target) external returns (bool isListed, uint256 collateralFactorMantissa);
 
     function oracle() external returns (address);

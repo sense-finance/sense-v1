@@ -25,14 +25,20 @@ module.exports = async function () {
 
   const underlyingNames = new Set();
 
+  await deploy("MultiMint", {
+    from: deployer,
+    args: [],
+    log: true,
+  });
+
   for (let factory of global.dev.FACTORIES) {
-    const { contractName: factoryContractName, ifee, stakeSize, minm, maxm, mode, oracle, tilt, targets } = factory(chainId);
+    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, crops } = factory(chainId);
     log(`\nDeploy ${factoryContractName} with mocked dependencies`);
     // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
-    const factoryParams = [oracle, ifee, stake.address, stakeSize, minm, maxm, mode, tilt];
+    const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, tilt];
     const { address: mockFactoryAddress } = await deploy(factoryContractName, {
       from: deployer,
-      args: [divider.address, factoryParams, [airdrop.address]],
+      args: [divider.address, factoryParams, crops ? [airdrop.address] : airdrop.address],
       log: true,
     });
 
@@ -45,12 +51,6 @@ module.exports = async function () {
     if (!(await periphery.factories(mockFactoryAddress))) {
       await (await periphery.setFactory(mockFactoryAddress, true)).wait();
     }
-
-    await deploy("MultiMint", {
-      from: deployer,
-      args: [],
-      log: true,
-    });
 
     log("\n-------------------------------------------------------");
     log(`DEPLOY UNDERLYINGS, TARGETS & ADAPTERS FOR: ${factoryContractName}`);
@@ -77,8 +77,8 @@ module.exports = async function () {
 
   // Helpers
   async function deployAdapter(t, factory) {  
-      const { name: tName, tDecimals, uDecimals } = factory ? t : t.target;
-
+      const { name: tName, tDecimals, uDecimals, comptroller: data } = factory ? t : t.target;
+      
       log(`\nDeploy simulated ${tName} with ${tDecimals} decimals`);
 
       const underlying = await getUnderlyingForTarget(tName, uDecimals);
@@ -100,7 +100,7 @@ module.exports = async function () {
       if (!adapterAddress) {
         log(`Deploy adapter for ${tName}`);
         if (factory) {
-          adapterAddress = await deployAdapterViaFactory(tName, targetContract, factory);
+          adapterAddress = await deployAdapterViaFactory(tName, targetContract, data, factory);
         } else {
           adapterAddress = await deployAdapterWithoutFactory(t, targetContract);
         }
@@ -166,7 +166,7 @@ module.exports = async function () {
     return target;
   }
 
-  async function deployAdapterViaFactory(targetName, targetContract, factory) {
+  async function deployAdapterViaFactory(targetName, targetContract, data, factory) {
     const targetAddress = targetContract.address;
     const factoryContract = await ethers.getContract(factory, signer);
     const factoryAddress = factoryContract.address;
@@ -174,9 +174,12 @@ module.exports = async function () {
     if (!(await factoryContract.targets(targetAddress))) {
       await (await factoryContract.addTarget(targetAddress, true)).wait();
     }
-    const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, targetAddress);
+    if (data !== "0x") {
+      data = ethers.utils.defaultAbiCoder.encode(["address"], [data]);
+    }
+    const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, targetAddress, data);
     log(`Onboard target ${targetName} via Periphery`);
-    await (await periphery.deployAdapter(factoryAddress, targetAddress)).wait();
+    await (await periphery.deployAdapter(factoryAddress, targetAddress, data)).wait();
     return adapterAddress;
   }
 
@@ -189,7 +192,7 @@ module.exports = async function () {
 
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, adapterParams, [airdrop.address]],
+      args: [divider.address, adapterParams, target.crops ? [airdrop.address] : airdrop.address],
       log: true,
     });
 

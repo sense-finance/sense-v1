@@ -7,7 +7,7 @@ import { FFactory } from "../../adapters/fuse/FFactory.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { DSTest } from "../test-helpers/DSTest.sol";
+import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
