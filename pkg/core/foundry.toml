@@ -4,6 +4,8 @@ libs = ['../../node_modules/', '../../']
 tests = "./src/tests"
 ffi = true
 verbosity = 3
+# Fork block mined at Apr-01-2022 12:00:21 AM UTC
+fork_block_number = 14497034
 remappings = [
     '@sense-finance/v1-utils=../utils',
     '@sense-finance/v1-core=./',
