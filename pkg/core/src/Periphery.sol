@@ -44,15 +44,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     Divider public immutable divider;
 
     /// @notice Sense core Divider address
-    PoolManager public immutable poolManager;
-
-    /// @notice Sense core Divider address
-    SpaceFactoryLike public immutable spaceFactory;
-
-    /// @notice Sense core Divider address
     BalancerVault public immutable balancerVault;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
+
+    /// @notice Sense core Divider address
+    PoolManager public poolManager;
+
+    /// @notice Sense core Divider address
+    SpaceFactoryLike public spaceFactory;
 
     /// @notice adapter factories -> is supported
     mapping(address => bool) public factories;
@@ -399,6 +399,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (factories[f] == isOn) revert Errors.ExistingValue();
         factories[f] = isOn;
         emit FactoryChanged(f, isOn);
+    }
+
+    /// @notice Update the address for the Space Factory
+    /// @param newSpaceFactory The Space Factory addresss to set
+    function setSpaceFactory(address newSpaceFactory) external requiresTrust {
+        spaceFactory = SpaceFactoryLike(newSpaceFactory);
+        emit SpaceFactoryChanged(newSpaceFactory);
+    }
+
+    /// @notice Update the address for the Pool Manager
+    /// @param newPoolManager The Pool Manager addresss to set
+    function setPoolManager(address newPoolManager) external requiresTrust {
+        poolManager = PoolManager(newPoolManager);
+        emit PoolManagerChanged(newPoolManager);
     }
 
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
@@ -774,6 +788,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /* ========== LOGS ========== */
 
     event FactoryChanged(address indexed factory, bool indexed isOn);
+    event SpaceFactoryChanged(address newSpaceFactory);
+    event PoolManagerChanged(address newPoolManager);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);
