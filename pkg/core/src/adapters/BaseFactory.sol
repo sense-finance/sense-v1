@@ -44,7 +44,7 @@ abstract contract BaseFactory {
 
     /* ========== REQUIRED DEPLOY ========== */
 
-    /// @notice Deploys both an adapter and a target wrapper for the given _target and specifies a comptroller
+    /// @notice Deploys both an adapter and a target wrapper for the given _target
     /// @param _target Address of the Target token
     /// @param _data Additional data needed to deploy the adapter
     function deployAdapter(address _target, bytes memory _data) external virtual returns (address adapter) {}

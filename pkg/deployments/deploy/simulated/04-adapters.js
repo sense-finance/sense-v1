@@ -171,6 +171,7 @@ module.exports = async function () {
     const factoryContract = await ethers.getContract(factory, signer);
     const factoryAddress = factoryContract.address;
     log(`Add ${targetName} support for mocked Factory`);
+    if (!data) data = "0x";
     if (!(await factoryContract.targets(targetAddress))) {
       await (await factoryContract.addTarget(targetAddress, true)).wait();
     }

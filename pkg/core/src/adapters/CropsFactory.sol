@@ -7,8 +7,6 @@ import { BaseFactory } from "./BaseFactory.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 abstract contract CropsFactory is Trust, BaseFactory {
-    // address[] public rewardTokens;
-
     constructor(address _divider, FactoryParams memory _factoryParams)
         Trust(msg.sender)
         BaseFactory(_divider, _factoryParams)

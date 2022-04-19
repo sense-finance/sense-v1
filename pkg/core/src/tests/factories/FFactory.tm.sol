@@ -89,12 +89,12 @@ contract FFactories is FAdapterTestHelper {
     }
 
     function testMainnetDeployAdapter() public {
-        // At block 14570060, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
+        // At block 14603884, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
         // asset --> rewards:
         // FRAX3CRV --> CVX and CRV
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
-        // hevm.roll(14561510);
+        // hevm.roll(14603884);
         divider.setPeriphery(address(this));
         address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
         FAdapter adapter = FAdapter(payable(f));

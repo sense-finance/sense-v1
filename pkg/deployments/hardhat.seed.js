@@ -1,4 +1,4 @@
-const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, COMP_TOKEN, F156FRAX3CRV_TOKEN, FRAX3CRV_TOKEN, CONVEX_TOKEN, CRV_TOKEN, TRIBE_CONVEX, REWARDS_DISTRIBUTOR_CVX, REWARDS_DISTRIBUTOR_CRV, CDAI_TOKEN } = require("./hardhat.addresses");
+const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, COMP_TOKEN, F156FRAX3CRV_TOKEN, FRAX3CRV_TOKEN, CONVEX_TOKEN, CRV_TOKEN, TRIBE_CONVEX, REWARDS_DISTRIBUTOR_CVX, REWARDS_DISTRIBUTOR_CRV, CDAI_TOKEN, F18DAI_TOKEN, OLYMPUS_POOL_PARTY } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -131,7 +131,7 @@ const CTARGETS = chainId => ([
 ]);
 
 const FTARGETS = chainId => ([
-  { name: "f156FRAX3CRV", address: F156FRAX3CRV_TOKEN.get(chainId), comptroller: TRIBE_CONVEX.get(chainId), guard: ethers.constants.MaxUint256, series: [] },
+  { name: "f8DAI", address: F18DAI_TOKEN.get(chainId), comptroller: OLYMPUS_POOL_PARTY.get(chainId), guard: ethers.constants.MaxUint256, series: [] },
 ]);
 
 // List of factories to deploy which includes a targets array to indicate,

@@ -110,7 +110,7 @@ contract CAdapter is CropAdapter {
         return _to18Decimals(exRate);
     }
 
-    function _claimRewards() internal virtual override {
+    function _claimReward() internal virtual override {
         address[] memory cTokens = new address[](1);
         cTokens[0] = adapterParams.target;
         ComptrollerLike(COMPTROLLER).claimComp(address(this), cTokens);

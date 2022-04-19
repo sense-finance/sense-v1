@@ -12,7 +12,6 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
 import { MockAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
 

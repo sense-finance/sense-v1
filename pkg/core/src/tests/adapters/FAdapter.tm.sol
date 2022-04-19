@@ -213,7 +213,7 @@ contract FAdapters is FAdapterTestHelper {
         // FRAX3CRV --> CVX and CRV
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
-        // hevm.warp(14603884); rolling to a previous block males the .scale() call to fail.
+        // hevm.roll(14603884); // rolling to a previous block makes the .scale() call to fail.
 
         // f156FRAX3CRV adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({

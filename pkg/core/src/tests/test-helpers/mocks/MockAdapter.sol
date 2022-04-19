@@ -65,7 +65,7 @@ contract MockAdapter is CropAdapter {
         return lscale.value;
     }
 
-    function _claimRewards() internal virtual override {
+    function _claimReward() internal virtual override {
         // MockToken(reward).mint(address(this), 1e18);
     }
 
