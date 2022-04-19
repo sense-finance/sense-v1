@@ -204,10 +204,9 @@ contract FAdapters is FAdapterTestHelper {
         assertEq(tBalanceBefore + wrapped, tBalanceAfter);
     }
 
-    event ClaimRewards(address indexed owner, uint256 indexed amount);
-    event Transfer(address indexed from, address indexed to, uint256 amount);
+    event ClaimRewards(address indexed owner, uint256 amount);
 
-    function testMainnetNotify() public {
+    function testMainnetNotifyFAdapter() public {
         // At block 14603884, Convex Tribe Pool has 4 rewards distributors with CVX, CRV, LDO and FXS reward tokens
         // asset --> rewards:
         // FRAX3CRV --> CVX and CRV
@@ -284,14 +283,12 @@ contract FAdapters is FAdapterTestHelper {
         // Become the divider
         hevm.startPrank(address(divider));
 
-        // Expect a f156FRAX3CRV distributed event when notifying
-        // hevm.expectEmit(true, false, false, false); // TODO: not sure why this event is not triggering but the Transfer triggers...
-        // emit ClaimRewards(address(f156FRAX3CRVAdapter), 0);
-        hevm.expectEmit(true, true, true, false);
-        emit Transfer(Assets.REWARDS_DISTRIBUTOR_CVX, address(f156FRAX3CRVAdapter), accruedCVX);
+        uint256 ANY = 1337;
+        hevm.expectEmit(true, false, false, false);
+        emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
-        hevm.expectEmit(true, true, true, false);
-        emit Transfer(Assets.REWARDS_DISTRIBUTOR_CRV, address(f156FRAX3CRVAdapter), accruedCRV);
+        hevm.expectEmit(true, false, false, false);
+        emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
         f156FRAX3CRVAdapter.notify(address(0), 0, true);
     }

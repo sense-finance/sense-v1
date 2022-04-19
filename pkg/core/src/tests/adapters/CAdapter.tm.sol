@@ -191,7 +191,7 @@ contract CAdapters is CAdapterTestHelper {
         uint256 compBorrowIndex
     );
 
-    function testMainnetNotify() public {
+    function testMainnetNotifyCAdapter() public {
         // Become the divider
         hevm.startPrank(address(divider));
         address target = cEthAdapter.target();
