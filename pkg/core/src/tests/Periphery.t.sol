@@ -177,7 +177,7 @@ contract PeripheryTest is TestHelper {
 
         // 1. Update the Pool Manager address
         periphery.setPoolManager(NEW_POOL_MANAGER);
-        ( , bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
 
         // Check that the storage slot was updated correctly
         assertEq(address(periphery.poolManager()), NEW_POOL_MANAGER);
@@ -197,7 +197,7 @@ contract PeripheryTest is TestHelper {
 
         // 1. Update the Space Factory address
         periphery.setSpaceFactory(NEW_SPACE_FACTORY);
-        ( , bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
 
         // Check that the storage slot was updated correctly
         assertEq(address(periphery.spaceFactory()), NEW_SPACE_FACTORY);
@@ -215,7 +215,7 @@ contract PeripheryTest is TestHelper {
         hevm.expectRevert("UNTRUSTED");
         periphery.setPoolManager(NEW_POOL_MANAGER);
 
-        ( , bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
         // Check that only no storage slots were written to
         assertEq(writes.length, 0);
     }
@@ -230,7 +230,7 @@ contract PeripheryTest is TestHelper {
         hevm.expectRevert("UNTRUSTED");
         periphery.setSpaceFactory(NEW_SPACE_FACTORY);
 
-        ( , bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
         // Check that only no storage slots were written to
         assertEq(writes.length, 0);
     }
