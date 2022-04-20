@@ -19,8 +19,15 @@ abstract contract Hevm {
 
     function load(address, bytes32) external virtual returns (bytes32);
 
+    // Sets an address' code, (who, newCode)
+    function etch(address, bytes calldata) external virtual;
+
     // Expects an error on next call
     function expectRevert(bytes calldata) external virtual;
+
+    function expectRevert(bytes4) external virtual;
+
+    function expectRevert() external virtual;
 
     // Prepare an expected log with (bool checkTopic1, bool checkTopic2, bool checkTopic3, bool checkData).
     // Call this function, then emit an event, then call a function. Internally after the call, we check if
@@ -46,4 +53,36 @@ abstract contract Hevm {
 
     // Resets subsequent calls' msg.sender to be `address(this)`
     function stopPrank() external virtual;
+
+    // Record all storage reads and writes
+    function record() external virtual;
+
+    // Gets all accessed reads and write slot from a recording session, for a given address
+    function accesses(address) external virtual returns (bytes32[] memory reads, bytes32[] memory writes);
+
+    // Mocks a call to an address, returning specified data.
+    // Calldata can either be strict or a partial match, e.g. if you only
+    // pass a Solidity selector to the expected calldata, then the entire Solidity
+    // function will be mocked.
+    function mockCall(
+        address,
+        bytes calldata,
+        bytes calldata
+    ) external virtual;
+
+    // Clears all mocked calls
+    function clearMockedCalls() external virtual;
+
+    // Expect a call to an address with the specified calldata.
+    // Calldata can either be strict or a partial match
+    function expectCall(address, bytes calldata) external virtual;
+
+    // Gets the code from an artifact file. Takes in the relative path to the json file
+    function getCode(string calldata) external virtual returns (bytes memory);
+
+    // Labels an address in call traces
+    function label(address, string calldata) external virtual;
+
+    // If the condition is false, discard this run's fuzz inputs and generate new ones
+    function assume(bool) external virtual;
 }
