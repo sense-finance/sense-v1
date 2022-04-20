@@ -32,23 +32,22 @@ contract FFactory is CropsFactory {
         address comptroller = abi.decode(data, (address));
 
         /// Sanity checks
-        /// TODO: any better way to verify this?
         if (!FusePoolLensLike(FUSE_POOL_DIRECTORY).poolExists(comptroller)) revert Errors.InvalidParam();
         (bool isListed, ) = FComptrollerLike(comptroller).markets(_target);
         if (!isListed) revert Errors.TargetNotSupported();
 
-        // Initialise rewardTokens by calling getRewardsDistributors() -> rewardToken()
+        // Initialize rewardTokens by calling getRewardsDistributors() -> rewardToken()
         address[] memory rewardsDistributors = FComptrollerLike(comptroller).getRewardsDistributors();
         address[] memory rewardTokens = new address[](rewardsDistributors.length);
         address[] memory targetRewardsDistributors = new address[](rewardsDistributors.length);
 
-        uint256 valid;
+        uint256 idx;
         for (uint256 i = 0; i < rewardsDistributors.length; i++) {
             (, uint32 lastUpdatedTimestamp) = RewardsDistributorLike(rewardsDistributors[i]).marketState(_target);
             if (lastUpdatedTimestamp > 0) {
-                rewardTokens[valid] = RewardsDistributorLike(rewardsDistributors[i]).rewardToken();
-                targetRewardsDistributors[valid] = rewardsDistributors[i];
-                valid = valid + 1;
+                rewardTokens[idx] = RewardsDistributorLike(rewardsDistributors[i]).rewardToken();
+                targetRewardsDistributors[idx] = rewardsDistributors[i];
+                idx = idx + 1;
             }
         }
 

@@ -45,6 +45,7 @@ library Assets {
     address public constant REWARDS_DISTRIBUTOR_LDO = 0x506Ce4145833E55000cbd4C89AC9ba180647eB5e;
     address public constant REWARDS_DISTRIBUTOR_FXS = 0x30E9A1Bc6A6a478fC32F9ac900C6530Ad3A1616F;
 
+    address public constant f156USDC = 0x88d3557eB6280CC084cA36e425d6BC52d0A04429;
     address public constant f156FRAX3CRV = 0x2ec70d3Ff3FD7ac5c2a72AAA64A398b6CA7428A5;
     address public constant f156cvxFXSFXSf = 0x30916E14C139d65CAfbEEcb3eA525c59df643281;
     address public constant f156CVX = 0x3F4a965Bff126af42FC014c20959c7b857EA4e35;

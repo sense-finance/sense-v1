@@ -17,10 +17,6 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
-interface CropAdapterLike {
-    function _claimRewards() external;
-}
-
 contract CAdapterTestHelper is LiquidityHelper, DSTest {
     CAdapter internal cDaiAdapter;
     CAdapter internal cEthAdapter;

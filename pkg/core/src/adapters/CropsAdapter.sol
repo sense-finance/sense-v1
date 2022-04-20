@@ -21,12 +21,12 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
     mapping(address => uint256) public tBalance;
 
     address[] public rewardTokens;
-    mapping(address => CropMeta) public data; // rewarded token per token per user
+    mapping(address => Crop) public data;
 
-    struct CropMeta {
-        // Accumulated reward token per collected target per reward token
+    struct Crop {
+        // Accumulated reward token per collected target
         uint256 shares;
-        // Last recorded balance of reward token per reward token
+        // Last recorded balance of reward token
         uint256 rewardedBalances;
         // Rewarded token per token per user
         mapping(address => uint256) rewarded;
@@ -44,7 +44,8 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         address _usr,
         uint256 amt,
         bool join
-    ) public override onlyDivider {
+    ) public override {
+        if (divider != msg.sender) revert Errors.OnlyDivider();
         _distribute(_usr);
         if (amt > 0) {
             if (join) {
@@ -92,13 +93,6 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
     function setRewardTokens(address[] memory _rewardTokens) public requiresTrust {
         _claimRewards();
         rewardTokens = _rewardTokens;
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyDivider() {
-        if (divider != msg.sender) revert Errors.OnlyDivider();
-        _;
     }
 
     /* ========== LOGS ========== */

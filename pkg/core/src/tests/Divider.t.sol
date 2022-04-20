@@ -565,7 +565,7 @@ contract Dividers is TestHelper {
     function testFuzzIssueMultipleTimes(uint128 bal) public {
         // if issuing multiple times with bal = 0, the 2nd issue will fail on _reweightLScale because
         // it will attempt to do a division by 0.
-        bal = fuzzWithBounds(bal, 1000);
+        bal = uint128(fuzzWithBounds(bal, 1000));
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -842,7 +842,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzRedeemPrincipal(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000);
+        tBal = uint128(fuzzWithBounds(tBal, 1000));
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1224,7 +1224,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         uint256 yieldBaseUnit = 10**Token(yt).decimals();
@@ -1250,7 +1250,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectReward(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
         adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
@@ -1281,7 +1281,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectRewardMultipleUsers(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
         adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
@@ -1319,7 +1319,7 @@ contract Dividers is TestHelper {
     }
 
     function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
         adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
@@ -1342,7 +1342,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectAtMaturityBurnYieldAndDoesNotCallBurnTwice(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1374,7 +1374,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectAfterMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1391,7 +1391,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectBeforeMaturityAndSettled(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1418,7 +1418,7 @@ contract Dividers is TestHelper {
 
     // test transferring yields to user calls collect()
     function testFuzzCollectTransferAndCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         uint256 yieldBaseUnit = 10**Token(yt).decimals();
@@ -1453,7 +1453,7 @@ contract Dividers is TestHelper {
     // test transferring yields to a user calls collect()
     // it also checks that receiver receives corresp. target collected from the yields he already had
     function testFuzzCollectTransferAndCollectWithReceiverHoldingYT(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e10);
+        tBal = uint128(fuzzWithBounds(tBal, 1e10));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1510,7 +1510,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectTransferLessThanBalanceAndCollectWithReceiverHoldingYT(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1569,7 +1569,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectTransferToMyselfAndCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);

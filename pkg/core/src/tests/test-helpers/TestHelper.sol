@@ -302,28 +302,6 @@ contract TestHelper is DSTest {
         (pt, yt) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
-    function assertClose(
-        uint256 a,
-        uint256 b,
-        uint256 _tolerance
-    ) public {
-        uint256 diff = a < b ? b - a : a - b;
-        if (diff > _tolerance) {
-            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
-            emit log_named_uint("  Expected", b);
-            emit log_named_uint("  Tolerance", _tolerance);
-            emit log_named_uint("    Actual", a);
-            fail();
-        }
-    }
-
-    function assertClose(uint256 a, uint256 b) public {
-        uint256 variance = 100;
-        if (b < variance) variance = 10;
-        if (b < variance) variance = 1;
-        assertClose(a, b, variance);
-    }
-
     function addLiquidityToBalancerVault(
         address adapter,
         uint256 maturity,
@@ -374,18 +352,6 @@ contract TestHelper is DSTest {
     ) public returns (uint256 gap) {
         uint256 toIssue = calculateAmountToIssue(tBal);
         gap = gYTManager.excess(address(adapter), maturity, toIssue);
-    }
-
-    function fuzzWithBounds(
-        uint128 number,
-        uint128 lBound,
-        uint128 uBound
-    ) public returns (uint128) {
-        return lBound + (number % (uBound - lBound));
-    }
-
-    function fuzzWithBounds(uint128 number, uint128 lBound) public returns (uint128) {
-        return lBound + (number % (type(uint128).max - lBound));
     }
 
     function getError(uint256 errCode) internal pure returns (string memory errString) {

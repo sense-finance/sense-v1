@@ -7,7 +7,8 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { FAdapter, FTokenLike, PriceOracleLike } from "../../adapters/fuse/FAdapter.sol";
+import { FAdapter, PriceOracleLike } from "../../adapters/fuse/FAdapter.sol";
+import { CTokenLike } from "../../adapters/compound/CAdapter.sol";
 import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
 
 import { Assets } from "../test-helpers/Assets.sol";
@@ -17,24 +18,22 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
-interface CropAdapterLike {
-    function _claimRewards() external;
-}
-
 interface RewardsDistributorLike {
     function accrue(ERC20 market, address user) external returns (uint256);
 }
 
 contract FAdapterTestHelper is LiquidityHelper, DSTest {
-    FAdapter internal f18DaiAdapter;
-    FAdapter internal f18EthAdapter;
-    FAdapter internal f18UsdcAdapter;
+    FAdapter internal f18DaiAdapter; // olympus pool party adapters
+    FAdapter internal f18EthAdapter; // olympus pool party adapters
+    FAdapter internal f18UsdcAdapter; // olympus pool party adapters
+    FAdapter internal f156UsdcAdapter; // tribe convex adapters
     Divider internal divider;
     TokenHandler internal tokenHandler;
 
     /// @notice all cTokens have 8 decimals
     uint256 public constant ONE_FTOKEN = 1e8;
     uint16 public constant DEFAULT_LEVEL = 31;
+    uint256 public constant INITIAL_BALANCE = 1.25e18;
 
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -57,7 +56,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: Assets.f18DAI,
-            underlying: FTokenLike(Assets.f18DAI).underlying(),
+            underlying: CTokenLike(Assets.f18DAI).underlying(),
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
@@ -74,7 +73,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             adapterParams,
             new address[](0),
             new address[](0)
-        ); // Fuse adapter
+        ); // Fuse 18 DAI adapter
 
         adapterParams.target = Assets.f18ETH;
         adapterParams.underlying = Assets.WETH;
@@ -84,14 +83,24 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             adapterParams,
             new address[](0),
             new address[](0)
-        ); // Fuse adapter
+        ); // Fuse 18 ETH adapter
 
         // Create a FAdapter for an underlying token (USDC) with a non-standard number of decimals
         adapterParams.target = Assets.f18USDC;
-        adapterParams.underlying = FTokenLike(Assets.f18USDC).underlying();
+        adapterParams.underlying = CTokenLike(Assets.f18USDC).underlying();
         f18UsdcAdapter = new FAdapter(
             address(divider),
             Assets.OLYMPUS_POOL_PARTY,
+            adapterParams,
+            new address[](0),
+            new address[](0)
+        ); // Fuse 18 USDC adapter
+
+        adapterParams.target = Assets.f156USDC;
+        adapterParams.underlying = CTokenLike(Assets.f156USDC).underlying();
+        f156UsdcAdapter = new FAdapter(
+            address(divider),
+            Assets.TRIBE_CONVEX,
             adapterParams,
             new address[](0),
             new address[](0)
@@ -103,8 +112,8 @@ contract FAdapters is FAdapterTestHelper {
     using FixedMath for uint256;
 
     function testMainnetFAdapterScale() public {
-        FTokenLike underlying = FTokenLike(Assets.DAI);
-        FTokenLike ftoken = FTokenLike(Assets.f18DAI);
+        CTokenLike underlying = CTokenLike(Assets.DAI);
+        CTokenLike ftoken = CTokenLike(Assets.f18DAI);
 
         uint256 uDecimals = underlying.decimals();
         // uint256 scale = ftoken.exchangeRateCurrent();
@@ -123,7 +132,7 @@ contract FAdapters is FAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.f18DAI).balanceOf(address(this));
 
         ERC20(Assets.f18DAI).approve(address(f18DaiAdapter), tBalanceBefore);
-        uint256 rate = FTokenLike(Assets.f18DAI).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.f18DAI).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.DAI).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
@@ -141,7 +150,7 @@ contract FAdapters is FAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.f18DAI).balanceOf(address(this));
 
         ERC20(Assets.DAI).approve(address(f18DaiAdapter), uBalanceBefore);
-        uint256 rate = FTokenLike(Assets.f18DAI).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.f18DAI).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.DAI).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
@@ -156,8 +165,8 @@ contract FAdapters is FAdapterTestHelper {
 
     // test with f18ETH
     function testMainnetFETHAdapterScale() public {
-        FTokenLike underlying = FTokenLike(Assets.WETH);
-        FTokenLike ftoken = FTokenLike(Assets.f18ETH);
+        CTokenLike underlying = CTokenLike(Assets.WETH);
+        CTokenLike ftoken = CTokenLike(Assets.f18ETH);
 
         uint256 uDecimals = underlying.decimals();
         uint256 scale = ftoken.exchangeRateCurrent() / 10**(uDecimals - 8);
@@ -173,7 +182,7 @@ contract FAdapters is FAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.f18ETH).balanceOf(address(this));
 
         ERC20(Assets.f18ETH).approve(address(f18EthAdapter), tBalanceBefore);
-        uint256 rate = FTokenLike(Assets.f18ETH).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.f18ETH).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.WETH).decimals();
 
         uint256 unwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
@@ -191,7 +200,7 @@ contract FAdapters is FAdapterTestHelper {
         uint256 tBalanceBefore = ERC20(Assets.f18ETH).balanceOf(address(this));
 
         ERC20(Assets.WETH).approve(address(f18EthAdapter), uBalanceBefore);
-        uint256 rate = FTokenLike(Assets.f18ETH).exchangeRateCurrent();
+        uint256 rate = CTokenLike(Assets.f18ETH).exchangeRateCurrent();
         uint256 uDecimals = ERC20(Assets.WETH).decimals();
 
         uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
@@ -217,7 +226,7 @@ contract FAdapters is FAdapterTestHelper {
         // f156FRAX3CRV adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             target: Assets.f156FRAX3CRV,
-            underlying: FTokenLike(Assets.f156FRAX3CRV).underlying(),
+            underlying: CTokenLike(Assets.f156FRAX3CRV).underlying(),
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
@@ -256,15 +265,13 @@ contract FAdapters is FAdapterTestHelper {
             0
         );
 
-        address prankedAddress = 0x8FdD0CF22012a5FEcDbF77eF30d9e9834DC1bf0A;
         giveTokens(Assets.DAI, 1e18, hevm);
         ERC20(Assets.DAI).approve(address(divider), type(uint256).max);
-        divider.initSeries(address(f156FRAX3CRVAdapter), maturity, prankedAddress);
+        divider.initSeries(address(f156FRAX3CRVAdapter), maturity, address(this));
 
-        giveTokens(Assets.f156FRAX3CRV, prankedAddress, 1e18, hevm);
+        giveTokens(Assets.f156FRAX3CRV, address(this), 1e18, hevm);
 
         // Become user with f156FRAX3CRV balance
-        hevm.startPrank(prankedAddress);
         ERC20(Assets.f156FRAX3CRV).approve(address(divider), type(uint256).max);
         divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
         hevm.warp(block.timestamp + 3 days);
@@ -278,7 +285,6 @@ contract FAdapters is FAdapterTestHelper {
             ERC20(Assets.f156FRAX3CRV),
             address(f156FRAX3CRVAdapter)
         );
-        hevm.stopPrank();
 
         // Become the divider
         hevm.startPrank(address(divider));
@@ -309,6 +315,7 @@ contract FAdapters is FAdapterTestHelper {
 
         // Scale is in 18 decimals when the Underlying has a non-standard number of decimals (6 for USDC) ----
 
+        // Test with f18USDC
         giveTokens(Assets.f18USDC, ONE_FTOKEN, hevm);
         ERC20(Assets.f18USDC).approve(address(f18UsdcAdapter), ONE_FTOKEN);
 
@@ -318,5 +325,85 @@ contract FAdapters is FAdapterTestHelper {
         assertEq((f18UsdcAdapter.scale() / 1e12) * 1e12, usdcOut * 10**(18 - 6));
         // Sanity check
         assertEq(ERC20(Assets.USDC).decimals(), 6);
+
+        giveTokens(Assets.f18USDC, ONE_FTOKEN, hevm);
+        ERC20(Assets.f18USDC).approve(address(f18UsdcAdapter), ONE_FTOKEN);
+
+        // Test with f156USDC
+        giveTokens(Assets.f18USDC, ONE_FTOKEN, hevm);
+        ERC20(Assets.f18USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
+
+        giveTokens(Assets.f156USDC, ONE_FTOKEN, hevm);
+        ERC20(Assets.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
+
+        usdcOut = f156UsdcAdapter.unwrapTarget(ONE_FTOKEN);
+        // USDC is in 6 decimals, so the scale should be equal to the "USDC out"
+        // scaled up to 18 decimals (after we strip the extra precision off)
+        assertEq((f156UsdcAdapter.scale() / 1e12) * 1e12, usdcOut * 10**(18 - 6));
+        // Sanity check
+        assertEq(ERC20(Assets.USDC).decimals(), 6);
+
+        giveTokens(Assets.f156USDC, ONE_FTOKEN, hevm);
+        ERC20(Assets.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
+
+        giveTokens(Assets.f156USDC, ONE_FTOKEN, hevm);
+        ERC20(Assets.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
+    }
+
+    function testMainnetWrapUnwrap(uint256 wrapAmt) public {
+        wrapAmt = fuzzWithBounds(wrapAmt, 1e6, INITIAL_BALANCE);
+
+        giveTokens(Assets.USDC, INITIAL_BALANCE, hevm);
+
+        ERC20 target = ERC20(f18UsdcAdapter.target());
+        ERC20 underlying = ERC20(f18UsdcAdapter.underlying());
+
+        // Approvals
+        target.approve(address(f18UsdcAdapter), type(uint256).max);
+        underlying.approve(address(f18UsdcAdapter), type(uint256).max);
+
+        // 1. Run a full wrap -> unwrap cycle
+        uint256 preUnderlyingBal = underlying.balanceOf(address(this));
+        uint256 preTargetBal = target.balanceOf(address(this));
+        uint256 targetFromWrap = f18UsdcAdapter.wrapUnderlying(wrapAmt);
+        assertEq(preTargetBal + targetFromWrap, target.balanceOf(address(this)));
+        f18UsdcAdapter.unwrapTarget(targetFromWrap);
+        uint256 postUnderlyingBal = underlying.balanceOf(address(this));
+
+        assertClose(preUnderlyingBal, postUnderlyingBal);
+
+        // 2. Deposit underlying tokens into the vault
+        uint256 preTargetSupply = target.totalSupply();
+        preUnderlyingBal = underlying.balanceOf(address(target));
+        underlying.approve(address(target), INITIAL_BALANCE / 2);
+        CTokenLike(address(target)).mint(INITIAL_BALANCE / 4);
+        assertEq(
+            target.totalSupply(),
+            preTargetSupply + ((INITIAL_BALANCE / 4).fdiv(CTokenLike(address(target)).exchangeRateCurrent()))
+        );
+        assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
+
+        // 3. Init a greater-than-one exchange rate
+        preTargetSupply = target.totalSupply();
+        preUnderlyingBal = underlying.balanceOf(address(target));
+        CTokenLike(address(target)).mint(INITIAL_BALANCE / 4);
+        assertEq(
+            target.totalSupply(),
+            preTargetSupply + ((INITIAL_BALANCE / 4).fdiv(CTokenLike(address(target)).exchangeRateCurrent()))
+        );
+        assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
+
+        // Bound wrap amount to remaining tokens (tokens not deposited)
+        wrapAmt = fuzzWithBounds(wrapAmt, 1, INITIAL_BALANCE / 2);
+
+        // 4. Run the cycle again now that the vault has some underlying tokens of its own
+        uint256 targetBalPostDeposit = target.balanceOf(address(this));
+        preUnderlyingBal = underlying.balanceOf(address(this));
+        targetFromWrap = f18UsdcAdapter.wrapUnderlying(wrapAmt);
+        assertEq(targetFromWrap + targetBalPostDeposit, target.balanceOf(address(this)));
+        f18UsdcAdapter.unwrapTarget(targetFromWrap);
+        postUnderlyingBal = underlying.balanceOf(address(this));
+
+        assertClose(preUnderlyingBal, postUnderlyingBal);
     }
 }
