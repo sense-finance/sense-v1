@@ -23,10 +23,11 @@ interface RewardsDistributorLike {
 }
 
 contract FAdapterTestHelper is LiquidityHelper, DSTest {
-    FAdapter internal f18DaiAdapter; // olympus pool party adapters
-    FAdapter internal f18EthAdapter; // olympus pool party adapters
-    FAdapter internal f18UsdcAdapter; // olympus pool party adapters
-    FAdapter internal f156UsdcAdapter; // tribe convex adapters
+    FAdapter internal f18DaiAdapter; // olympus pool party adapter
+    FAdapter internal f18EthAdapter; // olympus pool party adapter
+    FAdapter internal f18UsdcAdapter; // olympus pool party adapter
+    FAdapter internal f156UsdcAdapter; // tribe convex adapter
+    FAdapter internal f156FRAX3CRVAdapter; // tribe convex adapter
     Divider internal divider;
     TokenHandler internal tokenHandler;
 
@@ -116,6 +117,29 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             new address[](0),
             new address[](0)
         ); // Fuse 156 USDC adapter
+
+        // Create adapter with rewards
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = Assets.CVX;
+        rewardTokens[1] = Assets.CRV;
+
+        address[] memory rewardsDistributors = new address[](2);
+        rewardsDistributors[0] = Assets.REWARDS_DISTRIBUTOR_CVX;
+        rewardsDistributors[1] = Assets.REWARDS_DISTRIBUTOR_CRV;
+
+        target = Assets.f156FRAX3CRV;
+        underlying = CTokenLike(Assets.f156FRAX3CRV).underlying();
+        adapterParams.minm = 0;
+        f156FRAX3CRVAdapter = new FAdapter(
+            address(divider),
+            target,
+            underlying,
+            ISSUANCE_FEE,
+            Assets.TRIBE_CONVEX,
+            adapterParams,
+            rewardTokens,
+            rewardsDistributors
+        ); // Fuse 156 FRAX3CRV adapter
     }
 }
 
@@ -232,37 +256,7 @@ contract FAdapters is FAdapterTestHelper {
         // FRAX3CRV --> CVX and CRV
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
-        // hevm.roll(14603884); // rolling to a previous block makes the .scale() call to fail.
 
-        // f156FRAX3CRV adapter
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: Assets.RARI_ORACLE,
-            stake: Assets.DAI,
-            stakeSize: STAKE_SIZE,
-            minm: 0,
-            maxm: MAX_MATURITY,
-            mode: 0,
-            tilt: 0,
-            level: DEFAULT_LEVEL
-        });
-        address[] memory rewardTokens = new address[](2);
-        rewardTokens[0] = Assets.CVX;
-        rewardTokens[1] = Assets.CRV;
-
-        address[] memory rewardsDistributosr = new address[](2);
-        rewardsDistributosr[0] = Assets.REWARDS_DISTRIBUTOR_CVX;
-        rewardsDistributosr[1] = Assets.REWARDS_DISTRIBUTOR_CRV;
-
-        FAdapter f156FRAX3CRVAdapter = new FAdapter(
-            address(divider),
-            Assets.f156FRAX3CRV,
-            CTokenLike(Assets.f156FRAX3CRV).underlying(),
-            ISSUANCE_FEE,
-            Assets.TRIBE_CONVEX,
-            adapterParams,
-            rewardTokens,
-            rewardsDistributosr
-        );
         divider.addAdapter(address(f156FRAX3CRVAdapter));
         divider.setGuard(address(f156FRAX3CRVAdapter), 100e18);
 
@@ -416,5 +410,30 @@ contract FAdapters is FAdapterTestHelper {
         postUnderlyingBal = underlying.balanceOf(address(this));
 
         assertClose(preUnderlyingBal, postUnderlyingBal);
+    }
+
+    function testMainnetSetRewardsTokens() public {
+        address[] memory rewardTokens = new address[](5);
+        rewardTokens[0] = Assets.LDO;
+        rewardTokens[1] = Assets.FXS;
+
+        address[] memory rewardsDistributors = new address[](5);
+        rewardsDistributors[0] = Assets.REWARDS_DISTRIBUTOR_LDO;
+        rewardsDistributors[1] = Assets.REWARDS_DISTRIBUTOR_FXS;
+
+        f156FRAX3CRVAdapter.setRewardTokens(rewardTokens, rewardsDistributors);
+
+        assertEq(f156FRAX3CRVAdapter.rewardTokens(0), Assets.LDO);
+        assertEq(f156FRAX3CRVAdapter.rewardTokens(1), Assets.FXS);
+        assertEq(f156FRAX3CRVAdapter.rewardsDistributorsList(Assets.LDO), Assets.REWARDS_DISTRIBUTOR_LDO);
+        assertEq(f156FRAX3CRVAdapter.rewardsDistributorsList(Assets.FXS), Assets.REWARDS_DISTRIBUTOR_FXS);
+    }
+
+    function testMainnetCantSetRewardsTokens() public {
+        address[] memory rewardTokens = new address[](2);
+        address[] memory rewardsDistributors = new address[](2);
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x1234567890123456789012345678901234567890));
+        f156FRAX3CRVAdapter.setRewardTokens(rewardTokens, rewardsDistributors);
     }
 }

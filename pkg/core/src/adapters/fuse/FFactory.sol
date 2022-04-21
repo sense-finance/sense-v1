@@ -79,9 +79,7 @@ contract FFactory is CropsFactory {
         );
     }
 
-    // TODO: do we want this function to receive an array of adapters? I don't think there will be a use case for it since, if
-    // we pass several adapters, it would mean that all those adapters (targets) share the same reward tokens, which would be odd...
-    /// @notice Replace existing reward tokens array with a new one for a given adapter
+    /// @notice Replace existing rewards tokens and distributorsfor a given adapter
     /// @param _adapter address of adapter to update
     /// @param _rewardTokens array of rewards tokens addresses
     /// @param _adapter array of adapters to update the rewards tokens on

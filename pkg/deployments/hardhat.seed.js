@@ -52,10 +52,9 @@ const DEV_ADAPTERS = [
       series: DEV_SERIES_MATURITIES,
       crops: false
     },
-
+    underlying: "0x0",
+    ifee: ethers.utils.parseEther("0.01"),
     adapterParams: {
-      target: "0x0",
-      underlying: "0x0",
       oracle: ethers.constants.AddressZero, // oracle address
       ifee: ethers.utils.parseEther("0.01"),
       stake: "0x0",
@@ -77,12 +76,10 @@ const DEV_ADAPTERS = [
       series: DEV_SERIES_MATURITIES,
       crops: true
     },
-
+    underlying: "0x0",
+    ifee: ethers.utils.parseEther("0.01"),
     adapterParams: {
-      target: "0x0",
-      underlying: "0x0",
       oracle: ethers.constants.AddressZero, // oracle address
-      ifee: ethers.utils.parseEther("0.01"),
       stake: "0x0",
       stakeSize: ethers.utils.parseEther("0.01"),
       minm: "0", // 0 weeks
@@ -190,12 +187,10 @@ const MAINNET_ADAPTERS = [
       guard: ethers.utils.parseEther("1"),
       series: CUSDC_WSTETH_SERIES_MATURITIES
     },
-
+    underlying: WETH_TOKEN.get(chainId),
+    ifee: ethers.utils.parseEther("0.01"),
     adapterParams: {
-      target: WSTETH_TOKEN.get(chainId),
-      underlying: WETH_TOKEN.get(chainId),
       oracle: MASTER_ORACLE.get(chainId), // oracle address
-      ifee: ethers.utils.parseEther("0.01"),
       stake: WETH_TOKEN.get(chainId),
       stakeSize: ethers.utils.parseEther("0.0025"),
       minm: "0", // 0 weeks
@@ -217,12 +212,10 @@ const MAINNET_ADAPTERS = [
       rewardsTokens: [CRV_TOKEN.get(chainId), CONVEX_TOKEN.get(chainId)],
       rewardsDistributors: [REWARDS_DISTRIBUTOR_CRV.get(chainId), REWARDS_DISTRIBUTOR_CVX.get(chainId)]
     },
-
+    underlying: FRAX3CRV_TOKEN.get(chainId),
+    ifee: ethers.utils.parseEther("0.01"),
     adapterParams: {
-      target: F156FRAX3CRV_TOKEN.get(chainId),
-      underlying: FRAX3CRV_TOKEN.get(chainId),
       oracle: MASTER_ORACLE.get(chainId), // oracle address
-      ifee: ethers.utils.parseEther("0.01"),
       stake: WETH_TOKEN.get(chainId),
       stakeSize: ethers.utils.parseEther("0.0025"),
       minm: "0", // 0 weeks

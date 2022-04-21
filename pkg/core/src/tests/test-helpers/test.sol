@@ -681,18 +681,6 @@ contract DSTest {
         return lBound + (number % (type(uint256).max - lBound));
     }
 
-    // function fuzzWithBounds(
-    //     uint128 number,
-    //     uint128 lBound,
-    //     uint128 uBound
-    // ) public pure returns (uint128) {
-    //     return lBound + (number % (uBound - lBound));
-    // }
-
-    // function fuzzWithBounds(uint128 number, uint128 lBound) public pure returns (uint128) {
-    //     return lBound + (number % (type(uint128).max - lBound));
-    // }
-
     function assertClose(
         uint256 a,
         uint256 b,
@@ -713,5 +701,14 @@ contract DSTest {
         if (b < variance) variance = 10;
         if (b < variance) variance = 1;
         assertClose(a, b, variance);
+    }
+
+    function isClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) public pure returns (bool) {
+        uint256 diff = a < b ? b - a : a - b;
+        return diff <= _tolerance;
     }
 }

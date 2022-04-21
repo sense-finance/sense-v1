@@ -62,7 +62,7 @@ contract FAdapter is CropsAdapter {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant FETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
 
-    mapping(address => address) public rewardsDistributors; // rewards distributors for reward token
+    mapping(address => address) public rewardsDistributorsList; // rewards distributors for reward token
 
     address public comptroller;
     bool public isFETH;
@@ -76,7 +76,7 @@ contract FAdapter is CropsAdapter {
         address _comptroller,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens,
-        address[] memory _rewardsDistributors
+        address[] memory _rewardsDistributorsList
     ) CropsAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _rewardTokens) {
         rewardTokens = _rewardTokens;
         comptroller = _comptroller;
@@ -85,9 +85,9 @@ contract FAdapter is CropsAdapter {
         ERC20(_underlying).approve(_target, type(uint256).max);
         uDecimals = CTokenLike(_underlying).decimals();
 
-        // Initialize rewardsDistributors mapping
+        // Initialize rewardsDistributorsList mapping
         for (uint256 i = 0; i < _rewardTokens.length; i++) {
-            rewardsDistributors[_rewardTokens[i]] = _rewardsDistributors[i];
+            rewardsDistributorsList[_rewardTokens[i]] = _rewardsDistributorsList[i];
         }
     }
 
@@ -104,7 +104,8 @@ contract FAdapter is CropsAdapter {
 
     function _claimRewards() internal virtual override {
         for (uint256 i = 0; i < rewardTokens.length; i++) {
-            RewardsDistributorLike(rewardsDistributors[rewardTokens[i]]).claimRewards(address(this));
+            if (rewardTokens[i] != address(0))
+                RewardsDistributorLike(rewardsDistributorsList[rewardTokens[i]]).claimRewards(address(this));
         }
     }
 
@@ -168,14 +169,14 @@ contract FAdapter is CropsAdapter {
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
-    function setRewardTokens(address[] memory _rewardTokens, address[] memory _rewardsDistributors)
+    function setRewardTokens(address[] memory _rewardTokens, address[] memory _rewardsDistributorsList)
         public
         virtual
         requiresTrust
     {
         super.setRewardTokens(_rewardTokens);
         for (uint256 i = 0; i < _rewardTokens.length; i++) {
-            rewardsDistributors[_rewardsDistributors[i]] = _rewardTokens[i];
+            rewardsDistributorsList[_rewardTokens[i]] = _rewardsDistributorsList[i];
         }
     }
 

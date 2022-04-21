@@ -61,14 +61,14 @@ module.exports = async function () {
   log("DEPLOY ADAPTERS WITHOUT FACTORY");
   log("-------------------------------------------------------");
   for (let adapter of global.mainnet.ADAPTERS) {
-    const { contractName, adapterParams, target } = adapter(chainId);
-    const { comptroller, rewardsTokens, rewardsDistributors } = target;
+    const { contractName, target, underlying, ifee, adapterParams } = adapter(chainId);
+    const { address: tAddress, comptroller, rewardsTokens, rewardsDistributors } = target;
     // if (!stake) throw Error("No stake token found");
 
     log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, ...(comptroller ? [comptroller] : []), adapterParams, ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : [])],
+      args: [divider.address, tAddress, underlying, ifee, ...(comptroller ? [comptroller] : []), adapterParams, ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : [])],
       log: true,
     });
 

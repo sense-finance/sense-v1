@@ -94,7 +94,6 @@ contract FFactories is FAdapterTestHelper {
         // FRAX3CRV --> CVX and CRV
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
-        // hevm.roll(14603884);
         divider.setPeriphery(address(this));
         address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
         FAdapter adapter = FAdapter(payable(f));
@@ -122,5 +121,36 @@ contract FFactories is FAdapterTestHelper {
         divider.setPeriphery(address(this));
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(Assets.f18DAI, abi.encode(Assets.TRIBE_CONVEX));
+    }
+
+    function testMainnetSetRewardsTokens() public {
+        divider.setPeriphery(address(this));
+        address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
+        FAdapter adapter = FAdapter(payable(f));
+
+        address[] memory rewardTokens = new address[](5);
+        rewardTokens[0] = Assets.LDO;
+        rewardTokens[1] = Assets.FXS;
+
+        address[] memory rewardsDistributors = new address[](5);
+        rewardsDistributors[0] = Assets.REWARDS_DISTRIBUTOR_LDO;
+        rewardsDistributors[1] = Assets.REWARDS_DISTRIBUTOR_FXS;
+
+        factory.setRewardTokens(f, rewardTokens, rewardsDistributors);
+
+        assertEq(adapter.rewardTokens(0), Assets.LDO);
+        assertEq(adapter.rewardTokens(1), Assets.FXS);
+        assertEq(adapter.rewardsDistributorsList(Assets.LDO), Assets.REWARDS_DISTRIBUTOR_LDO);
+        assertEq(adapter.rewardsDistributorsList(Assets.FXS), Assets.REWARDS_DISTRIBUTOR_FXS);
+    }
+
+    function testMainnetCantSetRewardsTokens() public {
+        hevm.prank(divider.periphery());
+        address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
+        address[] memory rewardTokens = new address[](2);
+        address[] memory rewardsDistributors = new address[](2);
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x1234567890123456789012345678901234567890));
+        factory.setRewardTokens(rewardTokens, rewardsDistributors);
     }
 }
