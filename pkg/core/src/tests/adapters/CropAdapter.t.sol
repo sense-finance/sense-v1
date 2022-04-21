@@ -22,22 +22,25 @@ contract CropAdapters is TestHelper {
         MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            underlying: target.underlying(),
             oracle: ORACLE,
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
 
-        MockAdapter adapter = new MockAdapter(address(divider), adapterParams, address(reward));
-        (, , address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
-            .adapterParams();
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            ISSUANCE_FEE,
+            adapterParams,
+            address(reward)
+        );
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(adapter.reward(), address(reward));
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");

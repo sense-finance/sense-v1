@@ -186,8 +186,8 @@ module.exports = async function () {
 
   async function deployAdapterWithoutFactory(t, targetContract) {
     let { contractName, adapterParams, target } = t;
-    adapterParams.target = targetContract.address;
-    adapterParams.underlying = await targetContract.underlying();
+    target = targetContract.address;
+    underlying = await targetContract.underlying();
     adapterParams.stake = stake.address;
     adapterParams.rewardTokens = [airdrop.address];
 

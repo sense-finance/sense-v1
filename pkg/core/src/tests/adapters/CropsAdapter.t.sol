@@ -45,21 +45,25 @@ contract CropsAdapters is TestHelper {
         MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            underlying: target.underlying(),
             oracle: ORACLE,
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
 
-        MockCropsAdapter cropsAdapter = new MockCropsAdapter(address(divider), adapterParams, rewardTokens);
-        (, , address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = cropsAdapter
+        MockCropsAdapter cropsAdapter = new MockCropsAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            ISSUANCE_FEE,
+            adapterParams,
+            rewardTokens
+        );
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = cropsAdapter
             .adapterParams();
         assertEq(cropsAdapter.rewardTokens(0), address(reward));
         assertEq(cropsAdapter.rewardTokens(1), address(reward2));

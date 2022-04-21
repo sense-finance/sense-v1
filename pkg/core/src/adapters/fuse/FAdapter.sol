@@ -70,17 +70,20 @@ contract FAdapter is CropsAdapter {
 
     constructor(
         address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
         address _comptroller,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens,
         address[] memory _rewardsDistributors
-    ) CropsAdapter(_divider, _adapterParams, _rewardTokens) {
+    ) CropsAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _rewardTokens) {
         rewardTokens = _rewardTokens;
         comptroller = _comptroller;
-        isFETH = FTokenLike(_adapterParams.target).isCEther();
+        isFETH = FTokenLike(_target).isCEther();
 
-        ERC20(_adapterParams.underlying).approve(_adapterParams.target, type(uint256).max);
-        uDecimals = CTokenLike(_adapterParams.underlying).decimals();
+        ERC20(_underlying).approve(_target, type(uint256).max);
+        uDecimals = CTokenLike(_underlying).decimals();
 
         // Initialize rewardsDistributors mapping
         for (uint256 i = 0; i < _rewardTokens.length; i++) {
@@ -90,12 +93,12 @@ contract FAdapter is CropsAdapter {
 
     /// @return Exchange rate from Target to Underlying using Compound's `exchangeRateCurrent()`, normed to 18 decimals
     function scale() external override returns (uint256) {
-        uint256 exRate = CTokenLike(adapterParams.target).exchangeRateCurrent();
+        uint256 exRate = CTokenLike(target).exchangeRateCurrent();
         return _to18Decimals(exRate);
     }
 
     function scaleStored() external view override returns (uint256) {
-        uint256 exRate = CTokenLike(adapterParams.target).exchangeRateStored();
+        uint256 exRate = CTokenLike(target).exchangeRateStored();
         return _to18Decimals(exRate);
     }
 
@@ -106,21 +109,21 @@ contract FAdapter is CropsAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
-        price = isFETH ? 1e18 : PriceOracleLike(adapterParams.oracle).price(adapterParams.underlying);
+        price = isFETH ? 1e18 : PriceOracleLike(adapterParams.oracle).price(underlying);
     }
 
     function wrapUnderlying(uint256 uBal) external override returns (uint256 tBal) {
-        ERC20 t = ERC20(adapterParams.target);
+        ERC20 t = ERC20(target);
 
-        ERC20(adapterParams.underlying).safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        ERC20(underlying).safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
         if (isFETH) WETHLike(WETH).withdraw(uBal); // unwrap WETH into ETH
 
         // Mint target
         uint256 tBalBefore = t.balanceOf(address(this));
         if (isFETH) {
-            FETHTokenLike(adapterParams.target).mint{ value: uBal }();
+            FETHTokenLike(target).mint{ value: uBal }();
         } else {
-            if (CTokenLike(adapterParams.target).mint(uBal) != 0) revert Errors.MintFailed();
+            if (CTokenLike(target).mint(uBal) != 0) revert Errors.MintFailed();
         }
         uint256 tBalAfter = t.balanceOf(address(this));
 
@@ -129,12 +132,12 @@ contract FAdapter is CropsAdapter {
     }
 
     function unwrapTarget(uint256 tBal) external override returns (uint256 uBal) {
-        ERC20 u = ERC20(adapterParams.underlying);
-        ERC20(adapterParams.target).safeTransferFrom(msg.sender, address(this), tBal); // pull target
+        ERC20 u = ERC20(underlying);
+        ERC20(target).safeTransferFrom(msg.sender, address(this), tBal); // pull target
 
         // Redeem target for underlying
         uint256 uBalBefore = isFETH ? address(this).balance : u.balanceOf(address(this));
-        if (CTokenLike(adapterParams.target).redeem(tBal) != 0) revert Errors.RedeemFailed();
+        if (CTokenLike(target).redeem(tBal) != 0) revert Errors.RedeemFailed();
         uint256 uBalAfter = isFETH ? address(this).balance : u.balanceOf(address(this));
         unchecked {
             uBal = uBalAfter - uBalBefore;
@@ -147,7 +150,7 @@ contract FAdapter is CropsAdapter {
         }
 
         // Transfer underlying to sender
-        ERC20(adapterParams.underlying).safeTransfer(msg.sender, uBal);
+        ERC20(underlying).safeTransfer(msg.sender, uBal);
     }
 
     function _to18Decimals(uint256 exRate) internal view returns (uint256) {

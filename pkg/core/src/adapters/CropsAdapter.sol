@@ -34,9 +34,12 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
 
     constructor(
         address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) Trust(msg.sender) BaseAdapter(_divider, _adapterParams) {
+    ) Trust(msg.sender) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         rewardTokens = _rewardTokens;
     }
 

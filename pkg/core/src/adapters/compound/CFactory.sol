@@ -36,18 +36,24 @@ contract CFactory is CropFactory {
         // This will revert if a CAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: _target,
-            underlying: _target == CETH ? WETH : CTokenLike(_target).underlying(),
             oracle: factoryParams.oracle,
             stake: factoryParams.stake,
             stakeSize: factoryParams.stakeSize,
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            ifee: factoryParams.ifee,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
-        adapter = address(new CAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, reward));
+        adapter = address(
+            new CAdapter{ salt: _target.fillLast12Bytes() }(
+                divider,
+                _target,
+                _target == CETH ? WETH : CTokenLike(_target).underlying(),
+                factoryParams.ifee,
+                adapterParams,
+                reward
+            )
+        );
     }
 }

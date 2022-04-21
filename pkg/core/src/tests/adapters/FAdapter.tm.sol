@@ -54,31 +54,36 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
 
+        address target = Assets.f18DAI;
+        address underlying = CTokenLike(Assets.f18DAI).underlying();
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.f18DAI,
-            underlying: CTokenLike(Assets.f18DAI).underlying(),
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
         f18DaiAdapter = new FAdapter(
             address(divider),
+            target,
+            underlying,
+            ISSUANCE_FEE,
             Assets.OLYMPUS_POOL_PARTY,
             adapterParams,
             new address[](0),
             new address[](0)
         ); // Fuse 18 DAI adapter
 
-        adapterParams.target = Assets.f18ETH;
-        adapterParams.underlying = Assets.WETH;
+        target = Assets.f18ETH;
+        underlying = Assets.WETH;
         f18EthAdapter = new FAdapter(
             address(divider),
+            target,
+            underlying,
+            ISSUANCE_FEE,
             Assets.OLYMPUS_POOL_PARTY,
             adapterParams,
             new address[](0),
@@ -86,25 +91,31 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
         ); // Fuse 18 ETH adapter
 
         // Create a FAdapter for an underlying token (USDC) with a non-standard number of decimals
-        adapterParams.target = Assets.f18USDC;
-        adapterParams.underlying = CTokenLike(Assets.f18USDC).underlying();
+        target = Assets.f18USDC;
+        underlying = CTokenLike(Assets.f18USDC).underlying();
         f18UsdcAdapter = new FAdapter(
             address(divider),
+            target,
+            underlying,
+            ISSUANCE_FEE,
             Assets.OLYMPUS_POOL_PARTY,
             adapterParams,
             new address[](0),
             new address[](0)
         ); // Fuse 18 USDC adapter
 
-        adapterParams.target = Assets.f156USDC;
-        adapterParams.underlying = CTokenLike(Assets.f156USDC).underlying();
+        target = Assets.f156USDC;
+        underlying = CTokenLike(Assets.f156USDC).underlying();
         f156UsdcAdapter = new FAdapter(
             address(divider),
+            target,
+            underlying,
+            ISSUANCE_FEE,
             Assets.TRIBE_CONVEX,
             adapterParams,
             new address[](0),
             new address[](0)
-        ); // Fuse adapter
+        ); // Fuse 156 USDC adapter
     }
 }
 
@@ -225,15 +236,12 @@ contract FAdapters is FAdapterTestHelper {
 
         // f156FRAX3CRV adapter
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.f156FRAX3CRV,
-            underlying: CTokenLike(Assets.f156FRAX3CRV).underlying(),
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
             minm: 0,
             maxm: MAX_MATURITY,
             mode: 0,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -247,6 +255,9 @@ contract FAdapters is FAdapterTestHelper {
 
         FAdapter f156FRAX3CRVAdapter = new FAdapter(
             address(divider),
+            Assets.f156FRAX3CRV,
+            CTokenLike(Assets.f156FRAX3CRV).underlying(),
+            ISSUANCE_FEE,
             Assets.TRIBE_CONVEX,
             adapterParams,
             rewardTokens,

@@ -9,9 +9,13 @@ import { Divider } from "../../Divider.sol";
 import { TestHelper } from "../test-helpers/TestHelper.sol";
 
 contract FakeAdapter is BaseAdapter {
-    constructor(address _divider, BaseAdapter.AdapterParams memory _adapterParams)
-        BaseAdapter(_divider, _adapterParams)
-    {}
+    constructor(
+        address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
+        BaseAdapter.AdapterParams memory _adapterParams
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;
@@ -53,19 +57,22 @@ contract Adapters is TestHelper {
 
     function testCantAddCustomAdapterToDivider() public {
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            underlying: target.underlying(),
             oracle: ORACLE,
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        FakeAdapter fakeAdapter = new FakeAdapter(address(divider), adapterParams);
+        FakeAdapter fakeAdapter = new FakeAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            ISSUANCE_FEE,
+            adapterParams
+        );
 
         hevm.expectRevert("UNTRUSTED");
         fakeAdapter.doSetAdapter(divider, address(fakeAdapter));

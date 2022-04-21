@@ -50,29 +50,28 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         tokenHandler.init(address(divider));
 
         // cdai adapter
+        address target = Assets.cDAI;
+        address underlying = CTokenLike(Assets.cDAI).underlying();
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.cDAI,
-            underlying: CTokenLike(Assets.cDAI).underlying(),
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        cDaiAdapter = new CAdapter(address(divider), adapterParams, Assets.COMP); // Compound adapter
+        cDaiAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
 
-        adapterParams.target = Assets.cETH;
-        adapterParams.underlying = Assets.WETH;
-        cEthAdapter = new CAdapter(address(divider), adapterParams, Assets.COMP); // Compound adapter
+        target = Assets.cETH;
+        underlying = Assets.WETH;
+        cEthAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
-        adapterParams.target = Assets.cUSDC;
-        adapterParams.underlying = CTokenLike(Assets.cUSDC).underlying();
-        cUsdcAdapter = new CAdapter(address(divider), adapterParams, Assets.COMP); // Compound adapter
+        target = Assets.cUSDC;
+        underlying = CTokenLike(Assets.cUSDC).underlying();
+        cUsdcAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
     }
 }
 

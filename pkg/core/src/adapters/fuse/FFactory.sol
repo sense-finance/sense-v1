@@ -53,15 +53,12 @@ contract FFactory is CropsFactory {
 
         address underlying = FTokenLike(_target).underlying();
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: _target,
-            underlying: FTokenLike(_target).isCEther() ? WETH : underlying,
             oracle: factoryParams.oracle,
             stake: factoryParams.stake,
             stakeSize: factoryParams.stakeSize,
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            ifee: factoryParams.ifee,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -71,6 +68,9 @@ contract FFactory is CropsFactory {
         adapter = address(
             new FAdapter{ salt: _target.fillLast12Bytes() }(
                 divider,
+                _target,
+                FTokenLike(_target).isCEther() ? WETH : underlying,
+                factoryParams.ifee,
                 comptroller,
                 adapterParams,
                 rewardTokens,

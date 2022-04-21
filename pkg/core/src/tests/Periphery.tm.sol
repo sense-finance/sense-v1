@@ -103,10 +103,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         ffactory = new FFactory(address(divider), factoryParams);
 
         divider.setIsTrusted(address(cfactory), true);
-        divider.setIsTrusted(address(cfactory), true);
         periphery.setFactory(address(cfactory), true);
 
-        divider.setIsTrusted(address(ffactory), true);
         divider.setIsTrusted(address(ffactory), true);
         periphery.setFactory(address(ffactory), true);
 

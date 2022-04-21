@@ -75,19 +75,16 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         tokenHandler.init(address(divider));
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: Assets.WSTETH,
-            underlying: Assets.WETH,
             oracle: Assets.RARI_ORACLE,
             stake: Assets.DAI,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: DEFAULT_MODE,
-            ifee: ISSUANCE_FEE,
             tilt: DEFAULT_TILT,
             level: DEFAULT_LEVEL
         });
-        adapter = new WstETHAdapter(address(divider), adapterParams); // wstETH adapter
+        adapter = new WstETHAdapter(address(divider), Assets.WSTETH, Assets.WETH, ISSUANCE_FEE, adapterParams); // wstETH adapter
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {

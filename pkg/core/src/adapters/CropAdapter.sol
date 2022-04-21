@@ -27,9 +27,12 @@ abstract contract CropAdapter is BaseAdapter {
 
     constructor(
         address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams,
         address _reward
-    ) BaseAdapter(_divider, _adapterParams) {
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         reward = _reward;
     }
 

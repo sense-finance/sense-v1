@@ -39,20 +39,26 @@ contract MockFactory is CropFactory {
         // This will revert if a MockAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: _target,
-            underlying: MockTargetLike(_target).underlying(),
             oracle: factoryParams.oracle,
             stake: factoryParams.stake,
             stakeSize: factoryParams.stakeSize,
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            ifee: factoryParams.ifee,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
 
-        adapter = address(new MockAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, reward));
+        adapter = address(
+            new MockAdapter{ salt: _target.fillLast12Bytes() }(
+                divider,
+                _target,
+                MockTargetLike(_target).underlying(),
+                factoryParams.ifee,
+                adapterParams,
+                reward
+            )
+        );
     }
 }
 
@@ -82,21 +88,25 @@ contract MockCropsFactory is CropsFactory {
         // This will revert if a MockCropsAdapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: _target,
-            underlying: MockTargetLike(_target).underlying(),
             oracle: factoryParams.oracle,
             stake: factoryParams.stake,
             stakeSize: factoryParams.stakeSize,
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            ifee: factoryParams.ifee,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
 
         adapter = address(
-            new MockCropsAdapter{ salt: _target.fillLast12Bytes() }(divider, adapterParams, rewardTokens)
+            new MockCropsAdapter{ salt: _target.fillLast12Bytes() }(
+                divider,
+                _target,
+                MockTargetLike(_target).underlying(),
+                factoryParams.ifee,
+                adapterParams,
+                rewardTokens
+            )
         );
     }
 }

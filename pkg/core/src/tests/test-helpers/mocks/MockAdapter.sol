@@ -33,11 +33,14 @@ contract MockAdapter is CropAdapter {
 
     constructor(
         address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) CropAdapter(_divider, _adapterParams, _reward) {
-        uint256 tDecimals = MockTarget(_adapterParams.target).decimals();
-        uint256 uDecimals = MockTarget(_adapterParams.underlying).decimals();
+    ) CropAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _reward) {
+        uint256 tDecimals = MockTarget(_target).decimals();
+        uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
     }
 
@@ -70,7 +73,7 @@ contract MockAdapter is CropAdapter {
     }
 
     function wrapUnderlying(uint256 uBal) public virtual override returns (uint256) {
-        MockTarget target = MockTarget(adapterParams.target);
+        MockTarget target = MockTarget(target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
         uint256 mintAmount = uBal.fdivUp(lscale.value);
@@ -82,7 +85,7 @@ contract MockAdapter is CropAdapter {
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
-        MockTarget target = MockTarget(adapterParams.target);
+        MockTarget target = MockTarget(target);
         MockToken underlying = MockToken(target.underlying());
         target.transferFrom(msg.sender, address(this), tBal); // pull target
         uint256 mintAmount = tBal.fmul(lscale.value);
@@ -115,7 +118,7 @@ contract MockAdapter is CropAdapter {
     }
 
     function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(adapterParams.target).transferFrom(msg.sender, address(this), tBal);
+        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
         (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
@@ -153,11 +156,14 @@ contract MockCropsAdapter is CropsAdapter {
 
     constructor(
         address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) CropsAdapter(_divider, _adapterParams, _rewardTokens) {
-        uint256 tDecimals = MockTarget(_adapterParams.target).decimals();
-        uint256 uDecimals = MockTarget(_adapterParams.underlying).decimals();
+    ) CropsAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _rewardTokens) {
+        uint256 tDecimals = MockTarget(_target).decimals();
+        uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
     }
 
@@ -192,7 +198,7 @@ contract MockCropsAdapter is CropsAdapter {
     }
 
     function wrapUnderlying(uint256 uBal) public virtual override returns (uint256) {
-        MockTarget target = MockTarget(adapterParams.target);
+        MockTarget target = MockTarget(target);
         MockToken underlying = MockToken(target.underlying());
         underlying.transferFrom(msg.sender, address(this), uBal);
         uint256 mintAmount = uBal.fdivUp(lscale.value);
@@ -204,7 +210,7 @@ contract MockCropsAdapter is CropsAdapter {
     }
 
     function unwrapTarget(uint256 tBal) external virtual override returns (uint256) {
-        MockTarget target = MockTarget(adapterParams.target);
+        MockTarget target = MockTarget(target);
         MockToken underlying = MockToken(target.underlying());
         target.transferFrom(msg.sender, address(this), tBal); // pull target
         uint256 mintAmount = tBal.fmul(lscale.value);
@@ -237,7 +243,7 @@ contract MockCropsAdapter is CropsAdapter {
     }
 
     function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(adapterParams.target).transferFrom(msg.sender, address(this), tBal);
+        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
         (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
@@ -254,7 +260,13 @@ contract MockCropsAdapter is CropsAdapter {
 }
 
 contract MockBaseAdapter is BaseAdapter {
-    constructor(address _divider, AdapterParams memory _adapterParams) BaseAdapter(_divider, _adapterParams) {}
+    constructor(
+        address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
+        AdapterParams memory _adapterParams
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;

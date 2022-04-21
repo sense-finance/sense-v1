@@ -58,9 +58,8 @@ contract Factories is TestHelper {
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
-        (, , address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = MockAdapter(
-            adapter
-        ).adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
+            .adapterParams();
         assertEq(MockAdapter(adapter).divider(), address(divider));
         assertEq(MockAdapter(adapter).target(), address(someTarget));
         assertEq(MockAdapter(adapter).name(), "Some Target Adapter");

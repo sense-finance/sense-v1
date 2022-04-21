@@ -24,16 +24,21 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     /// @notice Sense core Divider address
     address public immutable divider;
 
+    /// @notice Target token to divide
+    address public immutable target;
+
+    /// @notice Underlying for the Target
+    address public immutable underlying;
+
+    /// @notice Issuance fee
+    uint128 public immutable ifee;
+
     /// @notice adapter params
     AdapterParams public adapterParams;
 
     /* ========== DATA STRUCTURES ========== */
 
     struct AdapterParams {
-        /// @notice Target token to divide
-        address target;
-        /// @notice Underlying for the Target
-        address underlying;
         /// @notice Oracle address
         address oracle;
         /// @notice Token to stake at issuance
@@ -44,8 +49,6 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         uint256 minm;
         /// @notice Max maturity (seconds after block.timstamp)
         uint256 maxm;
-        /// @notice Issuance fee
-        uint128 ifee;
         /// @notice WAD number representing the percentage of the total
         /// principal that's set aside for Yield Tokens (e.g. 0.1e18 means that 10% of the principal is reserved).
         /// @notice If `0`, it means no principal is set aside for Yield Tokens
@@ -64,17 +67,26 @@ abstract contract BaseAdapter is IERC3156FlashLender {
 
     string public symbol;
 
-    constructor(address _divider, AdapterParams memory _adapterParams) {
+    constructor(
+        address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
+        AdapterParams memory _adapterParams
+    ) {
         divider = _divider;
+        target = _target;
+        underlying = _underlying;
+        ifee = _ifee;
 
         // Sanity check
         if (_adapterParams.minm >= _adapterParams.maxm) revert Errors.InvalidMaturityOffsets();
         adapterParams = _adapterParams;
 
-        name = string(abi.encodePacked(ERC20(_adapterParams.target).name(), " Adapter"));
-        symbol = string(abi.encodePacked(ERC20(_adapterParams.target).symbol(), "-adapter"));
+        name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
+        symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
 
-        ERC20(_adapterParams.target).approve(divider, type(uint256).max);
+        ERC20(_target).approve(divider, type(uint256).max);
         ERC20(_adapterParams.stake).approve(divider, type(uint256).max);
     }
 
@@ -90,10 +102,10 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         bytes calldata data
     ) external returns (bool) {
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
-        ERC20(adapterParams.target).safeTransfer(address(receiver), amount);
-        bytes32 keccak = IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, adapterParams.target, amount, 0, data);
+        ERC20(target).safeTransfer(address(receiver), amount);
+        bytes32 keccak = IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, target, amount, 0, data);
         if (keccak != CALLBACK_SUCCESS) revert Errors.FlashCallbackFailed();
-        ERC20(adapterParams.target).safeTransferFrom(address(receiver), address(this), amount);
+        ERC20(target).safeTransferFrom(address(receiver), address(this), amount);
         return true;
     }
 
@@ -127,7 +139,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     function unwrapTarget(uint256 amount) external virtual returns (uint256);
 
     function flashFee(address token, uint256) external view returns (uint256) {
-        if (token != adapterParams.target) revert Errors.TokenNotSupported();
+        if (token != target) revert Errors.TokenNotSupported();
         return 0;
     }
 
@@ -171,23 +183,11 @@ abstract contract BaseAdapter is IERC3156FlashLender {
             uint256
         )
     {
-        return (adapterParams.target, adapterParams.stake, adapterParams.stakeSize);
-    }
-
-    function target() external view returns (address) {
-        return adapterParams.target;
-    }
-
-    function underlying() external view returns (address) {
-        return adapterParams.underlying;
+        return (target, adapterParams.stake, adapterParams.stakeSize);
     }
 
     function mode() external view returns (uint256) {
         return adapterParams.mode;
-    }
-
-    function ifee() external view returns (uint256) {
-        return adapterParams.ifee;
     }
 
     function tilt() external view returns (uint256) {

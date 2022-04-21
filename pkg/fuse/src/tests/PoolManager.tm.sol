@@ -92,7 +92,7 @@ contract PoolManagerTest is DSTest {
             tilt: 0,
             level: 31
         });
-        mockAdapter = new MockAdapter(address(divider), adapterParams, address(reward));
+        mockAdapter = new MockAdapter(address(divider), address(target), target.underlying(), ISSUANCE_FEE, adapterParams, address(reward));
 
         // Ping scale to set an lscale
         mockAdapter.scale();

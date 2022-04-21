@@ -52,7 +52,14 @@ contract PeripheryTest is TestHelper {
 
     function testSponsorSeriesWhenUnverifiedAdapter() public {
         divider.setPermissionless(true);
-        MockAdapter adapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
 
         divider.addAdapter(address(adapter));
 
@@ -75,19 +82,23 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            target: address(target),
-            underlying: target.underlying(),
             oracle: ORACLE,
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        MockAdapter adapter = new MockAdapter(address(divider), adapterParams, address(reward));
+        MockAdapter adapter = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            ISSUANCE_FEE,
+            adapterParams,
+            address(reward)
+        );
 
         divider.addAdapter(address(adapter));
 
@@ -185,8 +196,14 @@ contract PeripheryTest is TestHelper {
     function testAdminOnboardVerifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
@@ -196,8 +213,14 @@ contract PeripheryTest is TestHelper {
     function testAdminOnboardUnverifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
@@ -207,8 +230,14 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
@@ -219,8 +248,14 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
@@ -231,8 +266,14 @@ contract PeripheryTest is TestHelper {
     function testOnboardVerifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
 
@@ -246,8 +287,14 @@ contract PeripheryTest is TestHelper {
     function testOnboardUnverifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.setIsTrusted(address(this), false); // admin verification
 
         try periphery.onboardAdapter(address(otherAdapter), true) {
@@ -261,8 +308,14 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
         periphery.onboardAdapter(address(otherAdapter), true); // non admin onboarding
@@ -274,8 +327,14 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.setIsTrusted(address(this), false);
         periphery.onboardAdapter(address(otherAdapter), true); // no-admin onboarding
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
@@ -307,8 +366,14 @@ contract PeripheryTest is TestHelper {
     function testAdminVerifyAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         assertTrue(periphery.verified(address(otherAdapter)));
     }
@@ -317,8 +382,14 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         assertTrue(periphery.verified(address(otherAdapter)));
     }
@@ -326,8 +397,14 @@ contract PeripheryTest is TestHelper {
     function testCantVerifyAdapterNonAdmin() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.setIsTrusted(address(this), false);
         hevm.expectRevert("UNTRUSTED");
         periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
@@ -338,8 +415,14 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
         MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        DEFAULT_ADAPTER_PARAMS.target = address(otherTarget);
-        MockAdapter otherAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter otherAdapter = new MockAdapter(
+            address(divider),
+            address(otherTarget),
+            otherTarget.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
         periphery.setIsTrusted(address(this), false);
         hevm.expectRevert("UNTRUSTED");
         periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
@@ -850,7 +933,7 @@ contract PeripheryTest is TestHelper {
             ); // ABDK formula
 
             // calculate amount of target to issue
-            uint256 fee = adapter.ifee().fmul(proportionalTarget);
+            uint256 fee = uint256(adapter.ifee()).fmul(proportionalTarget);
             toBeIssued = (proportionalTarget - fee).fmul(lscale);
         }
 
@@ -986,10 +1069,15 @@ contract PeripheryTest is TestHelper {
 
         divider.setPermissionless(true);
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted
-        DEFAULT_ADAPTER_PARAMS.target = address(target);
-        DEFAULT_ADAPTER_PARAMS.underlying = target.underlying();
         DEFAULT_ADAPTER_PARAMS.level = level;
-        MockAdapter aAdapter = new MockAdapter(address(divider), DEFAULT_ADAPTER_PARAMS, address(reward));
+        MockAdapter aAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
+            address(reward)
+        );
 
         periphery.verifyAdapter(address(aAdapter), true);
         periphery.onboardAdapter(address(aAdapter), true);

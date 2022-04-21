@@ -172,15 +172,12 @@ contract TestHelper is DSTest {
 
         // adapter, target wrapper & factory
         DEFAULT_ADAPTER_PARAMS = BaseAdapter.AdapterParams({
-            target: address(target),
-            underlying: target.underlying(),
             oracle: ORACLE,
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            ifee: ISSUANCE_FEE,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
