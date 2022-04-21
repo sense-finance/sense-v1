@@ -184,7 +184,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(targetReturned < 0.000001e18);
     }
 
-    // Pattern similar to https://github.com/FrankieIsLost/gradual-dutch-auction/src/test/ContinuousGDA.t.sol#L113
+    // Pattern similar to https://github.com/FrankieIsLost/gradual-dutch-auction/blob/master/src/test/ContinuousGDA.t.sol#L113
     function testMainnetSwapTargetForYTsBorrowCheckOne() public {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, ) = _sponsorSeries();
