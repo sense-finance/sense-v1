@@ -89,7 +89,11 @@ contract PeripheryTest is TestHelper {
             maxm: MAX_MATURITY,
             mode: 0,
             tilt: 0,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         MockAdapter adapter = new MockAdapter(
             address(divider),
@@ -139,7 +143,11 @@ contract PeripheryTest is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         MockFactory cropFactory = new MockFactory(address(divider), factoryParams, address(reward)); // deploy adapter factory
         divider.setIsTrusted(address(cropFactory), true);

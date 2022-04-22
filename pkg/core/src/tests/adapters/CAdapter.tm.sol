@@ -17,7 +17,17 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
+interface SpaceLike {
+    function ts() external returns (uint256 ts);
+
+    function g1() external returns (uint256 g1);
+
+    function g2() external returns (uint256 g2);
+}
+
 contract CAdapterTestHelper is LiquidityHelper, DSTest {
+    using FixedMath for uint256;
+
     CAdapter internal cDaiAdapter;
     CAdapter internal cEthAdapter;
     CAdapter internal cUsdcAdapter;
@@ -33,6 +43,9 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public DEFAULT_TS = FixedMath.WAD.fdiv(FixedMath.WAD * 31622400); // 1 / 1 year in seconds;
+    uint256 public DEFAULT_G1 = (FixedMath.WAD * 950).fdiv(FixedMath.WAD * 1000); // 0.95 for selling underlying
+    uint256 public DEFAULT_G2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 950); // 1 / 0.95 for selling PT
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -60,7 +73,11 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             maxm: MAX_MATURITY,
             mode: 0,
             tilt: 0,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         cDaiAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
 

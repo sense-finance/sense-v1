@@ -74,6 +74,10 @@ contract TestHelper is DSTest {
     uint256 public MAX_MATURITY = 14 weeks;
     uint16 public DEFAULT_LEVEL = 31;
     uint16 public DEFAULT_TILT = 0;
+    uint256 public DEFAULT_TS = FixedMath.WAD.fdiv(FixedMath.WAD * 31622400); // 1 / 1 year in seconds;
+    uint256 public DEFAULT_G1 = (FixedMath.WAD * 950).fdiv(FixedMath.WAD * 1000); // 0.95 for selling underlying
+    uint256 public DEFAULT_G2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 950); // 1 / 0.95 for selling PT
+    bool public DEFAULT_ORACLE_ENABLED = true;
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
     uint256 public SCALING_FACTOR;
@@ -179,7 +183,11 @@ contract TestHelper is DSTest {
             maxm: MAX_MATURITY,
             mode: MODE,
             tilt: 0,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: DEFAULT_ORACLE_ENABLED
         });
 
         factory = createFactory(address(target), address(reward));
@@ -262,7 +270,11 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         someFactory = new MockFactory(address(divider), factoryParams, _reward); // deploy adapter factory
         someFactory.addTarget(_target, true);
@@ -282,7 +294,11 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         someFactory = new MockCropsFactory(address(divider), factoryParams, _rewardTokens); // deploy adapter factory
         someFactory.addTarget(_target, true);

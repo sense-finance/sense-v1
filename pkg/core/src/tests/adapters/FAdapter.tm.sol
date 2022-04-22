@@ -23,6 +23,8 @@ interface RewardsDistributorLike {
 }
 
 contract FAdapterTestHelper is LiquidityHelper, DSTest {
+    using FixedMath for uint256;
+
     FAdapter internal f18DaiAdapter; // olympus pool party adapter
     FAdapter internal f18EthAdapter; // olympus pool party adapter
     FAdapter internal f18UsdcAdapter; // olympus pool party adapter
@@ -41,6 +43,9 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public DEFAULT_TS = FixedMath.WAD.fdiv(FixedMath.WAD * 31622400); // 1 / 1 year in seconds;
+    uint256 public DEFAULT_G1 = (FixedMath.WAD * 950).fdiv(FixedMath.WAD * 1000); // 0.95 for selling underlying
+    uint256 public DEFAULT_G2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 950); // 1 / 0.95 for selling PT
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -65,7 +70,11 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             maxm: MAX_MATURITY,
             mode: 0,
             tilt: 0,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         f18DaiAdapter = new FAdapter(
             address(divider),

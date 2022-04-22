@@ -43,7 +43,11 @@ contract CFactory is CropFactory {
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
             tilt: factoryParams.tilt,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: factoryParams.ts,
+            g1: factoryParams.g1,
+            g2: factoryParams.g2,
+            oracleEnabled: factoryParams.oracleEnabled
         });
         adapter = address(
             new CAdapter{ salt: _target.fillLast12Bytes() }(

@@ -64,7 +64,11 @@ contract Adapters is TestHelper {
             maxm: MAX_MATURITY,
             mode: MODE,
             tilt: 0,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         FakeAdapter fakeAdapter = new FakeAdapter(
             address(divider),
@@ -101,5 +105,43 @@ contract Adapters is TestHelper {
         alice.doApprove(address(target), address(adapter));
         uint256 uBalReceived = alice.doAdapterUnwrapTarget(address(adapter), tBal);
         assertEq(uBal, uBalReceived);
+    }
+
+    function testCantSetSpaceParamsIfNotTrusted() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(0x1234567890123456789012345678901234567890);
+        factory.setSpaceParams(address(adapter), 1, 2, 3, false);
+    }
+
+    function testSetSpaceParams() public {
+        uint256 newTs = FixedMath.WAD.fdiv(FixedMath.WAD * 100);
+        uint256 newG1 = (FixedMath.WAD * 900).fdiv(FixedMath.WAD * 1000);
+        uint256 newG2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 900);
+
+        // Can update space params
+        factory.setSpaceParams(address(adapter), newTs, newG1, newG2, false);
+
+        // Check adapters has new updated space params
+        (, , , , , , , , uint256 ts, uint256 g1, uint256 g2, bool oracleEnabled) = adapter.adapterParams();
+        assertEq(ts, newTs);
+        assertEq(g1, newG1);
+        assertEq(g2, newG2);
+        assertTrue(!oracleEnabled);
+
+        // // If params are updated, the new ones are used in the next deployment
+        // SpaceLike space = SpaceLike(spaceFactory.create(address(cUsdcAdapter), maturity));
+        // assertEq(space.ts(), newTs);
+        // assertEq(space.g1(), newG1);
+        // assertEq(space.g2(), newG2);
+
+        // Fee params are validated
+        newG1 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 900);
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidG1.selector));
+        factory.setSpaceParams(address(adapter), ts, newG1, g2, true);
+
+        newG1 = (FixedMath.WAD * 900).fdiv(FixedMath.WAD * 1000);
+        newG2 = (FixedMath.WAD * 900).fdiv(FixedMath.WAD * 1000);
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidG2.selector));
+        factory.setSpaceParams(address(adapter), ts, newG1, newG2, true);
     }
 }

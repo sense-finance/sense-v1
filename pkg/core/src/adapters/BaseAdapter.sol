@@ -9,15 +9,17 @@ import { IERC3156FlashBorrower } from "../external/flashloan/IERC3156FlashBorrow
 
 // Internal references
 import { Divider } from "../Divider.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 /// @title Assign value to Target tokens
-abstract contract BaseAdapter is IERC3156FlashLender {
+abstract contract BaseAdapter is Trust, IERC3156FlashLender {
     using SafeTransferLib for ERC20;
 
     /* ========== CONSTANTS ========== */
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
+    uint256 public constant WAD = 1e18;
 
     /* ========== PUBLIC IMMUTABLES ========== */
 
@@ -59,6 +61,14 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         uint48 level;
         /// @notice 0 for monthly, 1 for weekly
         uint16 mode;
+        /// @notice Yieldspace config indicating the starting point from which the curve shifts (lower numbers mean that it starts closer to the constant sum side)
+        uint256 ts;
+        /// @notice Yieldspace config indicating how much to discount the effective interest when swapping Target to PT
+        uint256 g1;
+        /// @notice Yieldspace config indicating how much to mark the effective interest up when swapping PT to Target
+        uint256 g2;
+        /// @notice Yieldspace config indicating whether the oracle is on or off
+        bool oracleEnabled;
     }
 
     /* ========== METADATA STORAGE ========== */
@@ -73,7 +83,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         address _underlying,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) {
+    ) Trust(msg.sender) {
         divider = _divider;
         target = _target;
         underlying = _underlying;
@@ -196,5 +206,24 @@ abstract contract BaseAdapter is IERC3156FlashLender {
 
     function level() external view returns (uint256) {
         return adapterParams.level;
+    }
+
+    /* ========== SPACE SETTERS ========== */
+
+    function setSpaceParams(
+        uint256 _ts,
+        uint256 _g1,
+        uint256 _g2,
+        bool _oracleEnabled
+    ) public requiresTrust {
+        // g1 is for swapping Targets to Zeros and should discount the effective interest
+        if (_g1 > WAD) revert Errors.InvalidG1();
+        // g2 is for swapping Zeros to Target and should mark the effective interest up
+        if (_g2 <= WAD) revert Errors.InvalidG2();
+
+        adapterParams.ts = _ts;
+        adapterParams.g1 = _g1;
+        adapterParams.g2 = _g2;
+        adapterParams.oracleEnabled = _oracleEnabled;
     }
 }

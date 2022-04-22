@@ -31,6 +31,8 @@ import { Assets } from "./test-helpers/Assets.sol";
 import { MockSpaceFactory, MockBalancerVault } from "./test-helpers/mocks/MockSpace.sol";
 
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
+    using FixedMath for uint256;
+
     /// @notice Fuse addresses
     address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
     address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
@@ -42,6 +44,9 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public DEFAULT_TS = FixedMath.WAD.fdiv(FixedMath.WAD * 31622400); // 1 / 1 year in seconds;
+    uint256 public DEFAULT_G1 = (FixedMath.WAD * 950).fdiv(FixedMath.WAD * 1000); // 0.95 for selling underlying
+    uint256 public DEFAULT_G2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 950); // 1 / 0.95 for selling PT
 
     Periphery internal periphery;
     FAdapter internal fadapter;
@@ -94,7 +99,11 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
 
         cfactory = new CFactory(address(divider), factoryParams, Assets.COMP);

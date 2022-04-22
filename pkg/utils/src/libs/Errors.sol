@@ -20,6 +20,9 @@ library Errors {
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();
+    // Space config
+    error InvalidG1();
+    error InvalidG2();
 
     // Divider
     error AlreadySettled();

@@ -10,9 +10,8 @@ import { Divider } from "../Divider.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
-abstract contract CropsAdapter is Trust, BaseAdapter {
+abstract contract CropsAdapter is BaseAdapter {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
@@ -39,7 +38,7 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) Trust(msg.sender) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         rewardTokens = _rewardTokens;
     }
 

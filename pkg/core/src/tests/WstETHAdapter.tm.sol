@@ -52,6 +52,8 @@ interface StEthPriceFeed {
 }
 
 contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
+    using FixedMath for uint256;
+
     WstETHAdapter adapter;
     Divider internal divider;
     Periphery internal periphery;
@@ -64,6 +66,9 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint48 public constant DEFAULT_LEVEL = 31;
     uint16 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_TILT = 0;
+    uint256 public DEFAULT_TS = FixedMath.WAD.fdiv(FixedMath.WAD * 31622400); // 1 / 1 year in seconds;
+    uint256 public DEFAULT_G1 = (FixedMath.WAD * 950).fdiv(FixedMath.WAD * 1000); // 0.95 for selling underlying
+    uint256 public DEFAULT_G2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 950); // 1 / 0.95 for selling PT
 
     function setUp() public {
         address[] memory assets = new address[](1);
@@ -82,7 +87,11 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             maxm: MAX_MATURITY,
             mode: DEFAULT_MODE,
             tilt: DEFAULT_TILT,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         adapter = new WstETHAdapter(address(divider), Assets.WSTETH, Assets.WETH, ISSUANCE_FEE, adapterParams); // wstETH adapter
     }

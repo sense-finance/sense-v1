@@ -46,7 +46,11 @@ contract MockFactory is CropFactory {
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
             tilt: factoryParams.tilt,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: factoryParams.ts,
+            g1: factoryParams.g1,
+            g2: factoryParams.g2,
+            oracleEnabled: factoryParams.oracleEnabled
         });
 
         adapter = address(
@@ -95,7 +99,11 @@ contract MockCropsFactory is CropsFactory {
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
             tilt: factoryParams.tilt,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: factoryParams.ts,
+            g1: factoryParams.g1,
+            g2: factoryParams.g2,
+            oracleEnabled: factoryParams.oracleEnabled
         });
 
         adapter = address(

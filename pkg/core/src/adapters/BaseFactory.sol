@@ -2,11 +2,12 @@
 pragma solidity 0.8.11;
 
 // Internal references
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "./BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 
-abstract contract BaseFactory {
+abstract contract BaseFactory is Trust {
     /* ========== CONSTANTS ========== */
 
     /// @notice Sets level to `31` by default, which keeps all Divider lifecycle methods public
@@ -35,9 +36,14 @@ abstract contract BaseFactory {
         uint128 ifee; // issuance fee
         uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
+        // Yieldspace config
+        uint256 ts;
+        uint256 g1;
+        uint256 g2;
+        bool oracleEnabled;
     }
 
-    constructor(address _divider, FactoryParams memory _factoryParams) {
+    constructor(address _divider, FactoryParams memory _factoryParams) Trust(msg.sender) {
         divider = _divider;
         factoryParams = _factoryParams;
     }
@@ -48,6 +54,18 @@ abstract contract BaseFactory {
     /// @param _target Address of the Target token
     /// @param _data Additional data needed to deploy the adapter
     function deployAdapter(address _target, bytes memory _data) external virtual returns (address adapter) {}
+
+    /* ========== SPACE SETTERS ========== */
+
+    function setSpaceParams(
+        address _adapter,
+        uint256 _ts,
+        uint256 _g1,
+        uint256 _g2,
+        bool _oracleEnabled
+    ) public requiresTrust {
+        BaseAdapter(_adapter).setSpaceParams(_ts, _g1, _g2, _oracleEnabled);
+    }
 
     /* ========== LOGS ========== */
 

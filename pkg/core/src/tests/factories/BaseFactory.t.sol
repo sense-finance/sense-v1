@@ -21,7 +21,11 @@ contract Factories is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
 
@@ -35,7 +39,11 @@ contract Factories is TestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 ts,
+            uint256 g1,
+            uint256 g2,
+            bool oracleEnabled
         ) = MockFactory(someFactory).factoryParams();
 
         assertEq(oracle, ORACLE);
@@ -46,6 +54,10 @@ contract Factories is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(tilt, 0);
+        assertEq(ts, DEFAULT_TS);
+        assertEq(g1, DEFAULT_G1);
+        assertEq(g2, DEFAULT_G2);
+        assertTrue(oracleEnabled);
         assertEq(MockFactory(someFactory).reward(), address(reward));
     }
 
@@ -58,8 +70,20 @@ contract Factories is TestHelper {
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
-            .adapterParams();
+        (
+            address oracle,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm,
+            ,
+            ,
+            ,
+            uint256 ts,
+            uint256 g1,
+            uint256 g2,
+            bool oracleEnabled
+        ) = MockAdapter(adapter).adapterParams();
         assertEq(MockAdapter(adapter).divider(), address(divider));
         assertEq(MockAdapter(adapter).target(), address(someTarget));
         assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
@@ -71,6 +95,10 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
+        assertEq(ts, DEFAULT_TS);
+        assertEq(g1, DEFAULT_G1);
+        assertEq(g2, DEFAULT_G2);
+        assertTrue(oracleEnabled);
         assertEq(MockAdapter(adapter).reward(), address(someReward));
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);

@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 // Internal references
+import { FixedMath } from "../../external/FixedMath.sol";
 import { FAdapter } from "../../adapters/fuse/FAdapter.sol";
 import { FFactory } from "../../adapters/fuse/FFactory.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
@@ -16,6 +17,8 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 
 contract FAdapterTestHelper is DSTest {
+    using FixedMath for uint256;
+
     FFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
@@ -26,6 +29,9 @@ contract FAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public DEFAULT_TS = FixedMath.WAD.fdiv(FixedMath.WAD * 31622400); // 1 / 1 year in seconds;
+    uint256 public DEFAULT_G1 = (FixedMath.WAD * 950).fdiv(FixedMath.WAD * 1000); // 0.95 for selling underlying
+    uint256 public DEFAULT_G2 = (FixedMath.WAD * 1000).fdiv(FixedMath.WAD * 950); // 1 / 0.95 for selling PT
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -44,7 +50,11 @@ contract FAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         factory = new FFactory(address(divider), factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -61,7 +71,11 @@ contract FFactories is FAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
         FFactory otherFFactory = new FFactory(address(divider), factoryParams);
 
@@ -74,7 +88,11 @@ contract FFactories is FAdapterTestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 ts,
+            uint256 g1,
+            uint256 g2,
+            bool oracleEnabled
         ) = FFactory(otherFFactory).factoryParams();
 
         assertEq(FFactory(otherFFactory).divider(), address(divider));
@@ -86,6 +104,10 @@ contract FFactories is FAdapterTestHelper {
         assertEq(mode, MODE);
         assertEq(oracle, Assets.RARI_ORACLE);
         assertEq(tilt, 0);
+        assertEq(ts, DEFAULT_TS);
+        assertEq(g1, DEFAULT_G1);
+        assertEq(g2, DEFAULT_G2);
+        assertTrue(oracleEnabled);
     }
 
     function testMainnetDeployAdapter() public {

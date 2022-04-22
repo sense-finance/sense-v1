@@ -60,7 +60,11 @@ contract FFactory is CropsFactory {
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
             tilt: factoryParams.tilt,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: factoryParams.ts,
+            g1: factoryParams.g1,
+            g2: factoryParams.g2,
+            oracleEnabled: factoryParams.oracleEnabled
         });
         // Use the CREATE2 opcode to deploy a new Adapter contract.
         // This will revert if a FAdapter with the provided target has already

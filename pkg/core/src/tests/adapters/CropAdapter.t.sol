@@ -29,7 +29,11 @@ contract CropAdapters is TestHelper {
             maxm: MAX_MATURITY,
             mode: MODE,
             tilt: 0,
-            level: DEFAULT_LEVEL
+            level: DEFAULT_LEVEL,
+            ts: DEFAULT_TS,
+            g1: DEFAULT_G1,
+            g2: DEFAULT_G2,
+            oracleEnabled: true
         });
 
         MockAdapter adapter = new MockAdapter(
@@ -40,7 +44,20 @@ contract CropAdapters is TestHelper {
             adapterParams,
             address(reward)
         );
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        (
+            address oracle,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm,
+            ,
+            ,
+            ,
+            uint256 ts,
+            uint256 g1,
+            uint256 g2,
+            bool oracleEnabled
+        ) = adapter.adapterParams();
         assertEq(adapter.reward(), address(reward));
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
@@ -48,12 +65,18 @@ contract CropAdapters is TestHelper {
         assertEq(adapter.underlying(), address(underlying));
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.ifee(), ISSUANCE_FEE);
+        assertEq(oracle, ORACLE);
         assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
-        assertEq(oracle, ORACLE);
         assertEq(adapter.mode(), MODE);
+        assertEq(adapter.tilt(), 0);
+        assertEq(adapter.level(), DEFAULT_LEVEL);
+        assertEq(ts, DEFAULT_TS);
+        assertEq(g1, DEFAULT_G1);
+        assertEq(g2, DEFAULT_G2);
+        assertTrue(oracleEnabled);
     }
 
     // distribution tests
