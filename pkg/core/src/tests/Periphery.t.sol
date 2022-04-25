@@ -163,6 +163,78 @@ contract PeripheryTest is TestHelper {
         }
     }
 
+    /* ========== admin update storage addresses ========== */
+
+    event PoolManagerChanged(address);
+
+    function testUpdatePoolManager() public {
+        hevm.record();
+        address NEW_POOL_MANAGER = address(0xbabe);
+
+        // Expect the new Pool Manager to be set, and for a "change" event to be emitted
+        hevm.expectEmit(false, false, false, true);
+        emit PoolManagerChanged(NEW_POOL_MANAGER);
+
+        // 1. Update the Pool Manager address
+        periphery.setPoolManager(NEW_POOL_MANAGER);
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+
+        // Check that the storage slot was updated correctly
+        assertEq(address(periphery.poolManager()), NEW_POOL_MANAGER);
+        // Check that only one storage slot was written to
+        assertEq(writes.length, 1);
+    }
+
+    event SpaceFactoryChanged(address);
+
+    function testUpdateSpaceFactory() public {
+        hevm.record();
+        address NEW_SPACE_FACTORY = address(0xbabe);
+
+        // Expect the new Space Factory to be set, and for a "change" event to be emitted
+        hevm.expectEmit(false, false, false, true);
+        emit SpaceFactoryChanged(NEW_SPACE_FACTORY);
+
+        // 1. Update the Space Factory address
+        periphery.setSpaceFactory(NEW_SPACE_FACTORY);
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+
+        // Check that the storage slot was updated correctly
+        assertEq(address(periphery.spaceFactory()), NEW_SPACE_FACTORY);
+        // Check that only one storage slot was written to
+        assertEq(writes.length, 1);
+    }
+
+    function testFuzzUpdatePoolManager(address lad) public {
+        hevm.record();
+        hevm.assume(lad != address(this)); // For any address other than the testing contract
+        address NEW_POOL_MANAGER = address(0xbabe);
+
+        // 1. Impersonate the fuzzed address and try to update the Pool Manager address
+        hevm.prank(lad);
+        hevm.expectRevert("UNTRUSTED");
+        periphery.setPoolManager(NEW_POOL_MANAGER);
+
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+        // Check that only no storage slots were written to
+        assertEq(writes.length, 0);
+    }
+
+    function testFuzzUpdateSpaceFactory(address lad) public {
+        hevm.record();
+        hevm.assume(lad != address(this)); // For any address other than the testing contract
+        address NEW_SPACE_FACTORY = address(0xbabe);
+
+        // 1. Impersonate the fuzzed address and try to update the Space Factory address
+        hevm.prank(lad);
+        hevm.expectRevert("UNTRUSTED");
+        periphery.setSpaceFactory(NEW_SPACE_FACTORY);
+
+        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+        // Check that only no storage slots were written to
+        assertEq(writes.length, 0);
+    }
+
     /* ========== admin onboarding tests ========== */
 
     function testAdminOnboardVerifiedAdapter() public {
