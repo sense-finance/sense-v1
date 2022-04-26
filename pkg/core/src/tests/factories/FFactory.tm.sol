@@ -123,6 +123,9 @@ contract FFactories is FAdapterTestHelper {
         factory.deployAdapter(Assets.f18DAI, abi.encode(Assets.TRIBE_CONVEX));
     }
 
+    event RewardTokensChanged(address[] indexed rewardTokens);
+    event RewardsDistributorsChanged(address[] indexed rewardsDistributorsList);
+
     function testMainnetSetRewardsTokens() public {
         divider.setPeriphery(address(this));
         address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
@@ -135,6 +138,12 @@ contract FFactories is FAdapterTestHelper {
         address[] memory rewardsDistributors = new address[](5);
         rewardsDistributors[0] = Assets.REWARDS_DISTRIBUTOR_LDO;
         rewardsDistributors[1] = Assets.REWARDS_DISTRIBUTOR_FXS;
+
+        hevm.expectEmit(true, false, false, false);
+        emit RewardTokensChanged(rewardTokens);
+
+        hevm.expectEmit(true, false, false, false);
+        emit RewardsDistributorsChanged(rewardsDistributors);
 
         factory.setRewardTokens(f, rewardTokens, rewardsDistributors);
 

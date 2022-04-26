@@ -17,16 +17,16 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
     using FixedMath for uint256;
 
     /// @notice Program state
-    uint256 public totalTarget;
-    mapping(address => uint256) public tBalance;
+    uint256 public totalTarget; // total target accumulated by all users
+    mapping(address => uint256) public tBalance; // target balance per user
 
-    address[] public rewardTokens;
+    address[] public rewardTokens; // reward tokens addresses
     mapping(address => Crop) public data;
 
     struct Crop {
         // Accumulated reward token per collected target
         uint256 shares;
-        // Last recorded balance of reward token
+        // Last recorded balance of this contract per reward token
         uint256 rewardedBalances;
         // Rewarded token per token per user
         mapping(address => uint256) rewarded;
@@ -93,11 +93,16 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         return;
     }
 
+    /// @notice Overrides the rewardTokens array with a new one.
+    /// @dev Calls _claimRewards() in case the new array contains less reward tokens than the old one.
+    /// @param _rewardTokens New reward tokens array
     function setRewardTokens(address[] memory _rewardTokens) public requiresTrust {
         _claimRewards();
         rewardTokens = _rewardTokens;
+        emit RewardTokensChanged(rewardTokens);
     }
 
     /* ========== LOGS ========== */
     event Distributed(address indexed usr, address indexed token, uint256 amount);
+    event RewardTokensChanged(address[] indexed rewardTokens);
 }

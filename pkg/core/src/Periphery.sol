@@ -118,6 +118,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @dev Called by external address, deploy a new Adapter via an Adapter Factory
     /// @param f Factory to use
     /// @param target Target to onboard
+    /// @param data Additional encoded data needed to deploy the adapter
     function deployAdapter(
         address f,
         address target,

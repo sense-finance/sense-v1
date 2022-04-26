@@ -169,6 +169,9 @@ contract FAdapter is CropsAdapter {
         return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
+    /// @notice Overrides both the rewardTokens and the rewardsDistributorsList arrays.
+    /// @param _rewardTokens New reward tokens array
+    /// @param _rewardsDistributorsList New rewards distributors list array
     function setRewardTokens(address[] memory _rewardTokens, address[] memory _rewardsDistributorsList)
         public
         virtual
@@ -178,7 +181,11 @@ contract FAdapter is CropsAdapter {
         for (uint256 i = 0; i < _rewardTokens.length; i++) {
             rewardsDistributorsList[_rewardTokens[i]] = _rewardsDistributorsList[i];
         }
+        emit RewardsDistributorsChanged(_rewardsDistributorsList);
     }
+
+    /* ========== LOGS ========== */
+    event RewardsDistributorsChanged(address[] indexed rewardsDistributorsList);
 
     fallback() external payable {}
 }

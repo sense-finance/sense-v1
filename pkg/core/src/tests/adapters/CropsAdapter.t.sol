@@ -378,11 +378,16 @@ contract CropsAdapters is TestHelper {
         assertClose(ERC20(reward2).balanceOf(address(alice)), 10 * 1e6);
     }
 
+    event RewardTokensChanged(address[] indexed rewardTokens);
+
     function testAddRewardsTokens() public {
         MockToken reward3 = new MockToken("Reward Token 3", "RT3", 18);
         rewardTokens.push(address(reward3));
 
         hevm.startPrank(address(cropsFactory)); // only cropsFactory can call `setRewardTokens` as it was deployed via cropsFactory
+        hevm.expectEmit(true, false, false, false);
+        emit RewardTokensChanged(rewardTokens);
+
         cropsAdapter.setRewardTokens(rewardTokens);
 
         assertEq(cropsAdapter.rewardTokens(0), address(reward));
@@ -393,7 +398,12 @@ contract CropsAdapters is TestHelper {
     function testRemoveRewardsTokens() public {
         address[] memory newRewardTokens = new address[](1);
         hevm.startPrank(address(cropsFactory)); // only cropsFactory can call `setRewardTokens` as it was deployed via cropsFactory
+
+        hevm.expectEmit(true, false, false, false);
+        emit RewardTokensChanged(newRewardTokens);
+
         cropsAdapter.setRewardTokens(newRewardTokens);
+
         assertEq(cropsAdapter.rewardTokens(0), address(0));
     }
 

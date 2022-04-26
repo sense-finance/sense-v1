@@ -412,6 +412,9 @@ contract FAdapters is FAdapterTestHelper {
         assertClose(preUnderlyingBal, postUnderlyingBal);
     }
 
+    event RewardTokensChanged(address[] indexed rewardTokens);
+    event RewardsDistributorsChanged(address[] indexed rewardsDistributorsList);
+
     function testMainnetSetRewardsTokens() public {
         address[] memory rewardTokens = new address[](5);
         rewardTokens[0] = Assets.LDO;
@@ -420,6 +423,12 @@ contract FAdapters is FAdapterTestHelper {
         address[] memory rewardsDistributors = new address[](5);
         rewardsDistributors[0] = Assets.REWARDS_DISTRIBUTOR_LDO;
         rewardsDistributors[1] = Assets.REWARDS_DISTRIBUTOR_FXS;
+
+        hevm.expectEmit(true, false, false, false);
+        emit RewardTokensChanged(rewardTokens);
+
+        hevm.expectEmit(true, false, false, false);
+        emit RewardsDistributorsChanged(rewardsDistributors);
 
         f156FRAX3CRVAdapter.setRewardTokens(rewardTokens, rewardsDistributors);
 
