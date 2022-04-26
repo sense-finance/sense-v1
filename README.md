@@ -134,7 +134,7 @@ Sense-v1 has been audited by four, independent smart contract auditors, ranked b
 
 1. 2022-02/03 Space AMM - [Fixed Point Solutions (Kurt Barry)](https://github.com/sense-finance/sense-v1/blob/dev/audits/fps/2022-03-15-twap.pdf)
 2. 2022-03 Sense - [ABDK](https://github.com/sense-finance/sense-v1/tree/dev/audits/abdk)
-3. 2022-01 Sense - [Spearbit](https://github.com/sense-finance/sense-v1/blob/dev/audits/spearbit/2022-01-21.pdf)
+3. 2022-01 Sense & Space AMM - [Spearbit](https://github.com/sense-finance/sense-v1/blob/dev/audits/spearbit/2022-01-21.pdf)
 4. 2021-11/12 Sense - [Fixed Point Solutions (Kurt Barry)](https://github.com/sense-finance/sense-v1/blob/dev/audits/fps/2022-03-15.pdf)
 5. 2021-11 Sense - [ABDK](https://github.com/sense-finance/sense-v1/tree/dev/audits/abdk)
 6. 2022-11 Sense - [Peckshield](https://github.com/sense-finance/sense-v1/blob/dev/audits/peckshield/2021-11-07.pdf)
