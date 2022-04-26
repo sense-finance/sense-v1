@@ -82,12 +82,12 @@ task("20220429-periphery", "Deploys and authenticates a new Periphery").setActio
     await (await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false)).wait();
 
     console.log("\nSet the periphery on the Divider");
-    await (await divider.setPeriphery(peripheryAddress)).wait();
+    await (await divider.setPeriphery(newPeriphery.address)).wait();
 
     console.log("\nRemove the old Periphery auth over the pool manager");
     await (await poolManager.setIsTrusted(oldPeriphery.address, false)).wait();
 
     console.log("\nGive the new Periphery auth over the pool manager");
-    await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+    await (await poolManager.setIsTrusted(newPeriphery.address, true)).wait();
   }
 });
