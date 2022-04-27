@@ -118,10 +118,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @dev Called by external address, deploy a new Adapter via an Adapter Factory
     /// @param f Factory to use
     /// @param target Target to onboard
-    function deployAdapter(address f, address target) external returns (address adapter) {
+    /// @param data Additional encoded data needed to deploy the adapter
+    function deployAdapter(
+        address f,
+        address target,
+        bytes memory data
+    ) external returns (address adapter) {
         if (!factories[f]) revert Errors.FactoryNotSupported();
-        if (!AdapterFactory(f).exists(target)) revert Errors.TargetNotSupported();
-        adapter = AdapterFactory(f).deployAdapter(target);
+        adapter = AdapterFactory(f).deployAdapter(target, data);
         emit AdapterDeployed(adapter);
         _verifyAdapter(adapter, true);
         _onboardAdapter(adapter, true);

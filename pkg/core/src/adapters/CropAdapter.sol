@@ -19,8 +19,8 @@ abstract contract CropAdapter is BaseAdapter {
     address public immutable reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
-    uint256 public totalTarget;
-    mapping(address => uint256) public tBalance;
+    uint256 public totalTarget; // total target accumulated by all users
+    mapping(address => uint256) public tBalance; // target balance per user
     mapping(address => uint256) public rewarded; // reward token per user
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
@@ -28,33 +28,11 @@ abstract contract CropAdapter is BaseAdapter {
     constructor(
         address _divider,
         address _target,
-        address _underlyng,
-        address _oracle,
-        uint256 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint256 _level,
+        address _underlying,
+        uint128 _ifee,
+        BaseAdapter.AdapterParams memory _adapterParams,
         address _reward
-    )
-        BaseAdapter(
-            _divider,
-            _target,
-            _underlyng,
-            _oracle,
-            _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            _level
-        )
-    {
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         reward = _reward;
     }
 

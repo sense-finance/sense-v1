@@ -16,7 +16,6 @@ library Errors {
     // Adapters
     error TokenNotSupported();
     error FlashCallbackFailed();
-    error InvalidMaturityOffsets();
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();
@@ -36,6 +35,7 @@ library Errors {
     error InvalidAdapter();
     error InvalidMaturity();
     error InvalidParam();
+    error NotImplemented();
     error OutOfWindowBoundaries();
     error SeriesDoesNotExist();
     error SwapTooSmall();
