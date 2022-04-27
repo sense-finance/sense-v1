@@ -16,7 +16,6 @@ library Errors {
     // Adapters
     error TokenNotSupported();
     error FlashCallbackFailed();
-    error InvalidMaturityOffsets();
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();

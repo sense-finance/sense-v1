@@ -292,7 +292,7 @@ contract TestHelper is DSTest {
 
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
         maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        if (maturity < block.timestamp + 2 weeks) revert Errors.InvalidMaturityOffsets();
+        if (maturity < block.timestamp + 2 weeks) revert("InvalidMaturityOffsets");
     }
 
     function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address pt, address yt) {

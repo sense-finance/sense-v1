@@ -78,9 +78,6 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         target = _target;
         underlying = _underlying;
         ifee = _ifee;
-
-        // Sanity check
-        if (_adapterParams.minm >= _adapterParams.maxm) revert Errors.InvalidMaturityOffsets();
         adapterParams = _adapterParams;
 
         name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
