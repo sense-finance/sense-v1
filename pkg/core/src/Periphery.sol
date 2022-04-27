@@ -702,6 +702,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (!result) revert Errors.FlashBorrowFailed();
     }
 
+    /// @notice Initiates a flash loan of Target, then issues PTs/YTs and swaps the PTs to Target
+    /// @param adapter Adapter
+    /// @param maturity Maturity
+    /// @param targetIn Target amount the user has sent in
+    /// @param amountToBorrow Target amount to borrow
+    /// @return minOut Minimum amount of Target accepted out for the issued PTs
     function _flashBorrowAndSwapToYTs(
         address adapter,
         uint256 maturity,
