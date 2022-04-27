@@ -66,9 +66,6 @@ interface ComptrollerLike {
         );
 
     function oracle() external returns (address);
-
-    /// @notice The COMP accrued but not yet transferred to each user
-    function compAccrued(address usr) external returns (uint256);
 }
 
 interface PriceOracleLike {
@@ -92,7 +89,7 @@ contract CAdapter is CropAdapter {
     bool public immutable isCETH;
     uint8 public immutable uDecimals;
 
-    uint256 internal lastCalledBlock;
+    uint256 internal lastRewardedBlock;
 
     constructor(
         address _divider,
@@ -120,8 +117,8 @@ contract CAdapter is CropAdapter {
 
     function _claimReward() internal virtual override {
         // Avoid calling _claimReward more than once per block
-        if (lastCalledBlock != block.number) {
-            lastCalledBlock = block.number;
+        if (lastRewardedBlock != block.number) {
+            lastRewardedBlock = block.number;
             address[] memory cTokens = new address[](1);
             cTokens[0] = target;
             ComptrollerLike(COMPTROLLER).claimComp(address(this), cTokens);

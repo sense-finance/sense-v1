@@ -64,11 +64,11 @@ contract FAdapter is CropsAdapter {
 
     mapping(address => address) public rewardsDistributorsList; // rewards distributors for reward token
 
-    address public comptroller;
-    bool public isFETH;
-    uint8 public uDecimals;
+    address public immutable comptroller;
+    bool public immutable isFETH;
+    uint8 public immutable uDecimals;
 
-    uint256 internal lastCalledBlock;
+    uint256 internal lastRewardedBlock;
 
     constructor(
         address _divider,
@@ -106,7 +106,7 @@ contract FAdapter is CropsAdapter {
 
     function _claimRewards() internal virtual override {
         // Avoid calling _claimRewards more than once per block
-        if (lastCalledBlock != block.number) {
+        if (lastRewardedBlock != block.number) {
             for (uint256 i = 0; i < rewardTokens.length; i++) {
                 if (rewardTokens[i] != address(0))
                     RewardsDistributorLike(rewardsDistributorsList[rewardTokens[i]]).claimRewards(address(this));
