@@ -275,8 +275,6 @@ contract FAdapters is FAdapterTestHelper {
         divider.initSeries(address(f156FRAX3CRVAdapter), maturity, address(this));
 
         giveTokens(Assets.f156FRAX3CRV, address(this), 1e18, hevm);
-
-        // Become user with f156FRAX3CRV balance
         ERC20(Assets.f156FRAX3CRV).approve(address(divider), type(uint256).max);
         divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
         hevm.warp(block.timestamp + 3 days);
@@ -298,6 +296,57 @@ contract FAdapters is FAdapterTestHelper {
         hevm.expectEmit(true, false, false, false);
         emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
+        hevm.expectEmit(true, false, false, false);
+        emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
+
+        f156FRAX3CRVAdapter.notify(address(0), 0, true);
+    }
+
+    function testFailMainnetSkipClaimRewardIfAlreadyCalled() public {
+        divider.addAdapter(address(f156FRAX3CRVAdapter));
+        divider.setGuard(address(f156FRAX3CRVAdapter), 100e18);
+
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
+        );
+
+        giveTokens(Assets.DAI, 1e18, hevm);
+        ERC20(Assets.DAI).approve(address(divider), type(uint256).max);
+        divider.initSeries(address(f156FRAX3CRVAdapter), maturity, address(this));
+
+        giveTokens(Assets.f156FRAX3CRV, address(this), 1e18, hevm);
+        ERC20(Assets.f156FRAX3CRV).approve(address(divider), type(uint256).max);
+        divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
+        hevm.warp(block.timestamp + 3 days);
+
+        // acccrue rewardss
+        uint256 accruedCVX = RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CVX).accrue(
+            ERC20(Assets.f156FRAX3CRV),
+            address(f156FRAX3CRVAdapter)
+        );
+        uint256 accruedCRV = RewardsDistributorLike(Assets.REWARDS_DISTRIBUTOR_CRV).accrue(
+            ERC20(Assets.f156FRAX3CRV),
+            address(f156FRAX3CRVAdapter)
+        );
+
+        // Become the divider
+        hevm.startPrank(address(divider));
+
+        uint256 ANY = 1337;
+
+        // Expect a f156FRAX3CRVAdapter ClaimRewards event when notifying
+        hevm.expectEmit(true, false, false, false);
+        emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
+
+        f156FRAX3CRVAdapter.notify(address(0), 0, true);
+
+        // Should fail to expect a f156FRAX3CRVAdapter ClaimRewards event when notifying again in the same block
         hevm.expectEmit(true, false, false, false);
         emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
@@ -438,7 +487,8 @@ contract FAdapters is FAdapterTestHelper {
         assertEq(f156FRAX3CRVAdapter.rewardsDistributorsList(Assets.FXS), Assets.REWARDS_DISTRIBUTOR_FXS);
     }
 
-    function testMainnetCantSetRewardsTokens() public {
+    function testFuzzMainnetCantSetRewardsTokens(address lad) public {
+        if (lad == address(this)) return;
         address[] memory rewardTokens = new address[](2);
         address[] memory rewardsDistributors = new address[](2);
         hevm.expectRevert("UNTRUSTED");

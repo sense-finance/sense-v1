@@ -17,6 +17,18 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
+interface ComptrollerLike {
+    function updateContributorRewards(address contributor) external;
+
+    function compContributorSpeeds(address contributor) external view returns (uint256);
+
+    function _setContributorCompSpeed(address contributor, uint256 compSpeed) external;
+
+    function admin() external view returns (address);
+
+    function compAccrued(address usr) external view returns (uint256);
+}
+
 contract CAdapterTestHelper is LiquidityHelper, DSTest {
     CAdapter internal cDaiAdapter;
     CAdapter internal cEthAdapter;
@@ -64,14 +76,15 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         });
         cDaiAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
 
-        target = Assets.cETH;
-        underlying = Assets.WETH;
-        cEthAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
-
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
         target = Assets.cUSDC;
         underlying = CTokenLike(Assets.cUSDC).underlying();
         cUsdcAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
+
+        target = Assets.cETH;
+        underlying = Assets.WETH;
+        adapterParams.minm = 0;
+        cEthAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, Assets.COMP); // Compound adapter
     }
 }
 
@@ -186,7 +199,65 @@ contract CAdapters is CAdapterTestHelper {
         uint256 compBorrowIndex
     );
 
+    event DistributedSupplierComp(
+        address indexed cToken,
+        address indexed supplier,
+        uint256 compDelta,
+        uint256 compSupplyIndex
+    );
+
     function testMainnetNotifyCAdapter() public {
+        divider.addAdapter(address(cEthAdapter));
+        divider.setGuard(address(cEthAdapter), 100e18);
+
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
+        );
+
+        giveTokens(Assets.DAI, 1e18, hevm);
+        ERC20(Assets.DAI).approve(address(divider), type(uint256).max);
+        divider.initSeries(address(cEthAdapter), maturity, address(this));
+
+        address target = cEthAdapter.target();
+        giveTokens(target, 1e18, hevm);
+        ERC20(target).approve(address(divider), type(uint256).max);
+        divider.issue(address(cEthAdapter), maturity, 1e18);
+
+        hevm.prank(ComptrollerLike(Assets.COMPTROLLER).admin());
+        ComptrollerLike(Assets.COMPTROLLER)._setContributorCompSpeed(address(cEthAdapter), 1e18);
+
+        hevm.roll(block.number + 10);
+        ComptrollerLike(Assets.COMPTROLLER).updateContributorRewards(address(cEthAdapter));
+
+        // Expect a cETH distributed event when notifying
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
+
+        // Become the divider
+        hevm.prank(address(divider));
+        cEthAdapter.notify(address(0), 0, true);
+
+        hevm.roll(block.number + 10);
+        // Expect a cETH distributed event when notifying
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
+
+        // Become the divider
+        hevm.prank(address(divider));
+        cEthAdapter.notify(address(0), 0, true);
+    }
+
+    function testFailMainnetSkipClaimRewardIfAlreadyCalled() public {
         // Become the divider
         hevm.startPrank(address(divider));
         address target = cEthAdapter.target();
@@ -194,6 +265,17 @@ contract CAdapters is CAdapterTestHelper {
         // Expect a cETH distributed event when notifying
         hevm.expectEmit(true, true, false, false);
         emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
+
+        cEthAdapter.notify(address(0), 0, true);
+
+        // Should fail to expect a cETH distributed event when notifying again in the same block
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
+        hevm.expectEmit(true, true, false, false);
+        emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
+
         cEthAdapter.notify(address(0), 0, true);
     }
 

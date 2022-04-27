@@ -68,6 +68,8 @@ contract FAdapter is CropsAdapter {
     bool public isFETH;
     uint8 public uDecimals;
 
+    uint256 internal lastCalledBlock;
+
     constructor(
         address _divider,
         address _target,
@@ -103,9 +105,12 @@ contract FAdapter is CropsAdapter {
     }
 
     function _claimRewards() internal virtual override {
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
-            if (rewardTokens[i] != address(0))
-                RewardsDistributorLike(rewardsDistributorsList[rewardTokens[i]]).claimRewards(address(this));
+        // Avoid calling _claimRewards more than once per block
+        if (lastCalledBlock != block.number) {
+            for (uint256 i = 0; i < rewardTokens.length; i++) {
+                if (rewardTokens[i] != address(0))
+                    RewardsDistributorLike(rewardsDistributorsList[rewardTokens[i]]).claimRewards(address(this));
+            }
         }
     }
 
@@ -185,7 +190,10 @@ contract FAdapter is CropsAdapter {
     }
 
     /* ========== LOGS ========== */
+
     event RewardsDistributorsChanged(address[] indexed rewardsDistributorsList);
+
+    /* ========== FALLBACK ========== */
 
     fallback() external payable {}
 }

@@ -108,7 +108,7 @@ contract FFactories is FAdapterTestHelper {
         assertEq(FAdapter(adapter).rewardTokens(3), address(0));
 
         uint256 scale = FAdapter(adapter).scale();
-        assertTrue(scale > 0);
+        assertGt(scale, 0);
     }
 
     function testMainnetCantDeployAdapterIfInvalidComptroller() public {
@@ -153,7 +153,8 @@ contract FFactories is FAdapterTestHelper {
         assertEq(adapter.rewardsDistributorsList(Assets.FXS), Assets.REWARDS_DISTRIBUTOR_FXS);
     }
 
-    function testMainnetCantSetRewardsTokens() public {
+    function testFuzzMainnetCantSetRewardsTokens(address lad) public {
+        if (lad == address(this)) return;
         hevm.prank(divider.periphery());
         address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
         address[] memory rewardTokens = new address[](2);
