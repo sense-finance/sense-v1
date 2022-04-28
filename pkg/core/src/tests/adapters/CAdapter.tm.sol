@@ -79,7 +79,14 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
         target = AddressBook.cUSDC;
         underlying = CTokenLike(AddressBook.cUSDC).underlying();
-        cUsdcAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, AddressBook.COMP); // Compound adapter
+        cUsdcAdapter = new CAdapter(
+            address(divider),
+            target,
+            underlying,
+            ISSUANCE_FEE,
+            adapterParams,
+            AddressBook.COMP
+        ); // Compound adapter
 
         target = AddressBook.cETH;
         underlying = AddressBook.WETH;

@@ -66,7 +66,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
-    uint256 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
+    uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
     function setUp() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
@@ -150,7 +150,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     /* ========== SERIES SPONSORING ========== */
 
-        function testMainnetSponsorSeriesOnCAdapter() public {
+    function testMainnetSponsorSeriesOnCAdapter() public {
         address f = periphery.deployAdapter(address(cfactory), AddressBook.cDAI, "");
         CAdapter cadapter = CAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI
@@ -179,7 +179,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSponsorSeriesOnFAdapter() public {
-        address f = periphery.deployAdapter(address(ffactory), AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
+        address f = periphery.deployAdapter(
+            address(ffactory),
+            AddressBook.f156FRAX3CRV,
+            abi.encode(AddressBook.TRIBE_CONVEX)
+        );
         FAdapter fadapter = FAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI for stake
         giveTokens(AddressBook.DAI, type(uint256).max, hevm);
