@@ -61,6 +61,9 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint48 public constant DEFAULT_LEVEL = 31;
+    uint16 public constant DEFAULT_MODE = 0;
+    uint64 public constant DEFAULT_TILT = 0;
 
     function setUp() public {
         address[] memory assets = new address[](1);
@@ -70,44 +73,23 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
-        adapter = new WstETHAdapter(
-            address(divider),
-            AddressBook.RARI_ORACLE,
-            ISSUANCE_FEE,
-            AddressBook.DAI,
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            0,
-            0
-        ); // wstETH adapter
+
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            oracle: AddressBook.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: DEFAULT_MODE,
+            tilt: DEFAULT_TILT,
+            level: DEFAULT_LEVEL
+        });
+        adapter = new WstETHAdapter(address(divider), AddressBook.WSTETH, AddressBook.WETH, ISSUANCE_FEE, adapterParams); // wstETH adapter
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {
         (bool success, ) = to.call{ value: amt }("");
         return success;
-    }
-
-    function assertClose(
-        uint256 a,
-        uint256 b,
-        uint256 _tolerance
-    ) public {
-        uint256 diff = a < b ? b - a : a - b;
-        if (diff > _tolerance) {
-            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
-            emit log_named_uint("  Expected", b);
-            emit log_named_uint("  Tolerance", _tolerance);
-            emit log_named_uint("    Actual", a);
-            fail();
-        }
-    }
-
-    function assertClose(uint256 a, uint256 b) public {
-        uint256 variance = 100;
-        if (b < variance) variance = 10;
-        if (b < variance) variance = 1;
-        assertClose(a, b, variance);
     }
 }
 

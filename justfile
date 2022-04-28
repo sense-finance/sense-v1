@@ -50,6 +50,9 @@ turbo-test-local *cmds="": && _timer
 turbo-test-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --no-match-path "*.tm*" --match-test {{ exp }}
 
+turbo-test-match-contract *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test --match-contract {{ exp }}
+
 turbo-test-local-greater-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
@@ -68,6 +71,8 @@ turbo-test-mainnet: && _timer
 turbo-test-mainnet-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --match-path "*.tm*" --fork-url {{ MAINNET_RPC }} --match-test {{ exp }}
 
+turbo-test-mainnet-match-contract *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test --fork-url {{ MAINNET_RPC }} --match-contract {{ exp }}
 ## ---- Gas Metering ----
 
 gas-snapshot: && _timer

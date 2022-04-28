@@ -2,95 +2,45 @@
 pragma solidity 0.8.11;
 
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { FixedMath } from "../external/FixedMath.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { CropAdapter } from "../adapters/CropAdapter.sol";
-import { Divider } from "../Divider.sol";
+import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { Divider } from "../../Divider.sol";
 
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
-import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
-import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { MockToken } from "../test-helpers/mocks/MockToken.sol";
+import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
+import { TestHelper } from "../test-helpers/TestHelper.sol";
 
-contract FakeAdapter is BaseAdapter {
-    constructor(
-        address _divider,
-        address _target,
-        address _oracle,
-        uint256 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint16 _mode,
-        uint64 _tilt,
-        uint16 _level
-    )
-        BaseAdapter(
-            _divider,
-            _target,
-            address(1),
-            _oracle,
-            _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            _level
-        )
-    {}
-
-    function scale() external virtual override returns (uint256 _value) {
-        return 100e18;
-    }
-
-    function scaleStored() external view virtual override returns (uint256) {
-        return 100e18;
-    }
-
-    function wrapUnderlying(uint256 amount) external override returns (uint256) {
-        return 0;
-    }
-
-    function unwrapTarget(uint256 amount) external override returns (uint256) {
-        return 0;
-    }
-
-    function getUnderlyingPrice() external view override returns (uint256) {
-        return 1e18;
-    }
-
-    function doSetAdapter(Divider d, address _adapter) public {
-        d.setAdapter(_adapter, true);
-    }
-}
-
-contract Adapters is TestHelper {
+contract CropAdapters is TestHelper {
     using FixedMath for uint256;
 
     function testAdapterHasParams() public {
         MockToken underlying = new MockToken("Dai", "DAI", 18);
         MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
+
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            oracle: ORACLE,
+            stake: address(stake),
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0,
+            level: DEFAULT_LEVEL
+        });
+
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
+            adapterParams,
             address(reward)
         );
-
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(adapter.reward(), address(reward));
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
@@ -98,44 +48,12 @@ contract Adapters is TestHelper {
         assertEq(adapter.underlying(), address(underlying));
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.ifee(), ISSUANCE_FEE);
-        assertEq(adapter.stake(), address(stake));
-        assertEq(adapter.stakeSize(), STAKE_SIZE);
-        assertEq(adapter.minm(), MIN_MATURITY);
-        assertEq(adapter.maxm(), MAX_MATURITY);
-        assertEq(adapter.oracle(), ORACLE);
+        assertEq(stake, address(stake));
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(oracle, ORACLE);
         assertEq(adapter.mode(), MODE);
-    }
-
-    function testScale() public {
-        assertEq(adapter.scale(), adapter.INITIAL_VALUE());
-    }
-
-    function testScaleMultipleTimes() public {
-        assertEq(adapter.scale(), adapter.INITIAL_VALUE());
-        assertEq(adapter.scale(), adapter.INITIAL_VALUE());
-        assertEq(adapter.scale(), adapter.INITIAL_VALUE());
-    }
-
-    function testCantAddCustomAdapterToDivider() public {
-        FakeAdapter fakeAdapter = new FakeAdapter(
-            address(divider),
-            address(target),
-            ORACLE,
-            ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL
-        );
-
-        try fakeAdapter.doSetAdapter(divider, address(fakeAdapter)) {
-            fail();
-        } catch Error(string memory err) {
-            assertEq(err, "UNTRUSTED");
-        }
     }
 
     // distribution tests
@@ -297,29 +215,5 @@ contract Adapters is TestHelper {
         assertClose(reward.balanceOf(address(jim)), 120 * 1e18);
         alice.doCollect(yt);
         assertClose(reward.balanceOf(address(alice)), 96 * 1e18);
-    }
-
-    function testWrapUnderlying() public {
-        uint256 uBal = 100 * (10**underlying.decimals());
-        uint256 tBal = 100 * (10**target.decimals());
-        underlying.mint(address(alice), uBal);
-        adapter.setScale(1e18);
-        adapter.scale();
-
-        alice.doApprove(address(underlying), address(adapter));
-        uint256 tBalReceived = alice.doAdapterWrapUnderlying(address(adapter), uBal);
-        assertEq(tBal, tBalReceived);
-    }
-
-    function testUnwrapTarget() public {
-        uint256 tBal = 100 * (10**target.decimals());
-        uint256 uBal = 100 * (10**underlying.decimals());
-        target.mint(address(alice), tBal);
-        adapter.setScale(1e18);
-        adapter.scale();
-
-        alice.doApprove(address(target), address(adapter));
-        uint256 uBalReceived = alice.doAdapterUnwrapTarget(address(adapter), tBal);
-        assertEq(uBal, uBalReceived);
     }
 }

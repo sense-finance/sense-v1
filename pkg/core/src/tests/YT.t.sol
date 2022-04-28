@@ -11,7 +11,7 @@ contract Yield is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -36,7 +36,7 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -66,7 +66,7 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
