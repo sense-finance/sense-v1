@@ -545,7 +545,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 tokenOut: tokens[pti],
                 amount: ytBal,
                 poolId: poolId,
-                lastChangeBlock: block.number, // Current block so that we don't run the oracle update path, saving gas
+                lastChangeBlock: 0,
                 from: address(0),
                 to: address(0),
                 userData: ""
@@ -716,18 +716,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         targetBal = ERC20(Adapter(adapter).target()).balanceOf(address(this));
         ytBal = ERC20(divider.yt(adapter, maturity)).balanceOf(address(this));
-    }
-
-    function _flashBorrowAndSwapToYTs(
-        address adapter,
-        uint256 maturity,
-        uint256 targetIn,
-        uint256 amountToBorrow,
-        uint256 minOut
-    ) internal returns (uint256 tBal) {
-        bytes memory data = abi.encode(adapter, uint256(maturity), targetIn, minOut, false);
-        bool result = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amountToBorrow, data);
-        if (!result) revert Errors.FlashBorrowFailed();
     }
 
     /// @dev ERC-3156 Flash loan callback

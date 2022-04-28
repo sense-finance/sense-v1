@@ -156,91 +156,22 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Mint this address MAX_UINT AddressBook.DAI
         giveTokens(AddressBook.DAI, type(uint256).max, hevm);
 
-        // Check buying YT params calculated using sense-v1/yt-buying-lib, adjusted for the target's decimals
-        uint256 TARGET_IN = uint256(0.0234e18).fmul(10**targetDecimals);
-        uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fmul(10**targetDecimals);
-        _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
-    }
-
-    function testMainnetFuzzSwapTargetForYTsDifferentScales(uint64 initScale, uint64 scale) public {
-        hevm.assume(initScale >= 1e9);
-        hevm.assume(scale >= initScale);
-
-        // 1. Initialize scale
-        mockAdapter.setScale(initScale);
-
-        // 2. Sponsor a Series
-        (uint256 maturity, address pt, ) = _sponsorSeries();
-
-        // 3. Initialize the pool by joining 1 Underlying worth of Target in, then swapping 0.5 PTs in for Target
-        _initializePool(maturity, ERC20(pt), uint256(1e18).fdivUp(initScale), 0.5e18);
-
-        // 4. Update scale
-        mockAdapter.setScale(scale);
-
-        // Check buying YT swap params calculated using sense-v1/yt-buying-lib, adjusted with the current scale
-        uint256 TARGET_IN = uint256(0.0234e18).fdivUp(scale);
-        uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fdivUp(scale);
-        _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
-    }
-
-    // INTERNAL HELPERS ––––––––––––
-
-    function _sponsorSeries()
-        public
-        returns (
-            uint256 maturity,
-            address pt,
-            address yt
-        )
-    {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
-        maturity = DateTimeFull.timestampFromDateTime(year + 1, month, 1, 0, 0, 0);
-        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false);
-    }
-
-    function _initializePool(
-        uint256 maturity,
-        ERC20 pt,
-        uint256 targetToJoin,
-        uint256 ptsToSwapIn
-    ) public {
-        // Issue some PTs (& YTs) we'll use to initialize the pool with
-        uint256 targetToIssueWith = ptsToSwapIn.fdivUp(1e18 - mockAdapter.ifee()).fdivUp(mockAdapter.scale());
-        mockTarget.mint(address(this), targetToIssueWith + targetToJoin);
-        mockTarget.approve(address(divider), targetToIssueWith);
-        Divider(divider).issue(address(mockAdapter), maturity, targetToIssueWith);
-        // Sanity check that we have the PTs we need to swap in, either exactly, or close to (modulo rounding)
-        assertTrue(pt.balanceOf(address(this)) >= ptsToSwapIn && pt.balanceOf(address(this)) <= ptsToSwapIn + 100);
-
-        // Add Target to the Space pool
-        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0);
-
-        // Swap PT balance in for Target to initialize the PT side of the pool
-        pt.approve(address(periphery), ptsToSwapIn);
-        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0);
-    }
-
-    function _checkYTBuyingParameters(
-        uint256 maturity,
-        uint256 targetIn,
-        uint256 targetToBorrow,
-        uint256 minOut
-    ) public {
-        (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
-            address(mockAdapter),
-            maturity,
-            targetIn,
-            targetToBorrow,
-            minOut
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
         );
 
         ERC20(AddressBook.DAI).approve(address(periphery), type(uint256).max);
         (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false);
 
-        // Check that the YTs returned are the result of issuing with Target borrowed + Target in
-        assertEq(ytsOut, (targetIn + targetToBorrow).fmulUp(1e18 - mockAdapter.ifee()).fmul(mockAdapter.scale()));
-    }
+        // Check pt and yt deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
         (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
