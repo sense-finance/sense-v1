@@ -30,36 +30,36 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     /// @notice Underlying for the Target
     address public immutable underlying;
 
-    /// @notice Oracle address
-    address public immutable oracle;
-
-    /// @notice Token to stake at issuance
-    address public immutable stake;
-
-    /// @notice Amount to stake at issuance
-    uint256 public immutable stakeSize;
-
-    /// @notice Min maturity (seconds after block.timstamp)
-    uint256 public immutable minm;
-
-    /// @notice Max maturity (seconds after block.timstamp)
-    uint256 public immutable maxm;
-
-    /// @notice 0 for monthly, 1 for weekly
-    uint256 public immutable mode;
-
     /// @notice Issuance fee
-    uint256 public immutable ifee;
+    uint128 public immutable ifee;
 
-    /// @notice WAD number representing the percentage of the total
-    /// principal that's set aside for Yield Tokens (e.g. 0.1e18 means that 10% of the principal is reserved).
-    /// @notice If `0`, it means no principal is set aside for Yield Tokens
-    uint256 public immutable tilt;
+    /// @notice adapter params
+    AdapterParams public adapterParams;
 
-    /// @notice The number this function returns will be used to determine its access by checking for binary
-    /// digits using the following scheme: <onRedeem(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
-    /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
-    uint256 public immutable level;
+    /* ========== DATA STRUCTURES ========== */
+
+    struct AdapterParams {
+        /// @notice Oracle address
+        address oracle;
+        /// @notice Token to stake at issuance
+        address stake;
+        /// @notice Amount to stake at issuance
+        uint256 stakeSize;
+        /// @notice Min maturity (seconds after block.timstamp)
+        uint256 minm;
+        /// @notice Max maturity (seconds after block.timstamp)
+        uint256 maxm;
+        /// @notice WAD number representing the percentage of the total
+        /// principal that's set aside for Yield Tokens (e.g. 0.1e18 means that 10% of the principal is reserved).
+        /// @notice If `0`, it means no principal is set aside for Yield Tokens
+        uint64 tilt;
+        /// @notice The number this function returns will be used to determine its access by checking for binary
+        /// digits using the following scheme: <onRedeem(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>
+        /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
+        uint48 level;
+        /// @notice 0 for monthly, 1 for weekly
+        uint16 mode;
+    }
 
     /* ========== METADATA STORAGE ========== */
 
@@ -71,35 +71,20 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         address _divider,
         address _target,
         address _underlying,
-        address _oracle,
-        uint256 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint256 _mode,
-        uint256 _tilt,
-        uint256 _level
+        uint128 _ifee,
+        AdapterParams memory _adapterParams
     ) {
-        // Sanity check
-        if (_minm >= _maxm) revert Errors.InvalidMaturityOffsets();
         divider = _divider;
         target = _target;
         underlying = _underlying;
-        oracle = _oracle;
         ifee = _ifee;
-        stake = _stake;
-        stakeSize = _stakeSize;
-        minm = _minm;
-        maxm = _maxm;
-        mode = _mode;
-        tilt = _tilt;
+        adapterParams = _adapterParams;
+
         name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
         symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
-        level = _level;
 
-        ERC20(_target).approve(_divider, type(uint256).max);
-        ERC20(_stake).approve(_divider, type(uint256).max);
+        ERC20(_target).approve(divider, type(uint256).max);
+        ERC20(_adapterParams.stake).approve(divider, type(uint256).max);
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.
@@ -183,7 +168,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
     function getMaturityBounds() external view returns (uint256, uint256) {
-        return (minm, maxm);
+        return (adapterParams.minm, adapterParams.maxm);
     }
 
     function getStakeAndTarget()
@@ -195,6 +180,18 @@ abstract contract BaseAdapter is IERC3156FlashLender {
             uint256
         )
     {
-        return (target, stake, stakeSize);
+        return (target, adapterParams.stake, adapterParams.stakeSize);
+    }
+
+    function mode() external view returns (uint256) {
+        return adapterParams.mode;
+    }
+
+    function tilt() external view returns (uint256) {
+        return adapterParams.tilt;
+    }
+
+    function level() external view returns (uint256) {
+        return adapterParams.level;
     }
 }

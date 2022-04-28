@@ -12,14 +12,20 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Divider } from "../Divider.sol";
+import { BaseFactory } from "../adapters/BaseFactory.sol";
+import { BaseAdapter } from "../adapters/BaseAdapter.sol";
+import { CAdapter } from "../adapters/compound/CAdapter.sol";
+import { FAdapter } from "../adapters/fuse/FAdapter.sol";
+import { CFactory } from "../adapters/compound/CFactory.sol";
+import { FFactory } from "../adapters/fuse/FFactory.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 // Mocks
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
+import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 
 // Constants/Addresses
 import { Constants } from "./test-helpers/Constants.sol";
@@ -44,10 +50,14 @@ interface SpaceFactoryLike {
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
     Periphery internal periphery;
 
-    MockAdapter internal mockAdapter;
+    CFactory internal cfactory;
+    FFactory internal ffactory;
+
     MockOracle internal mockOracle;
     MockTarget internal mockTarget;
+    MockAdapter internal mockAdapter;
 
+    // Mainnet contracts for forking
     address internal balancerVault;
     address internal spaceFactory;
     address internal poolManager;
@@ -55,7 +65,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    uint256 internal constant IFEE = 0.042e18; // 4.2%
+    // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
+    uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
     function setUp() public {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
@@ -72,24 +83,45 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         poolManager = AddressBook.POOL_MANAGER_1_2_0;
 
         mockOracle = new MockOracle();
+        BaseAdapter.AdapterParams memory mockAdapterParams = BaseAdapter.AdapterParams({
+            oracle: address(mockOracle),
+            stake: address(new MockToken("Stake", "ST", 18)), // stake size is 0, so the we don't actually need any stake token
+            stakeSize: 0,
+            minm: 0, // 0 minm, so there's not lower bound on future maturity
+            maxm: type(uint64).max, // large maxm, so there's not upper bound on future maturity
+            mode: 0, // monthly maturities
+            tilt: 0,
+            level: Constants.DEFAULT_LEVEL
+        });
         mockAdapter = new MockAdapter(
             address(divider),
             address(mockTarget),
-            address(mockOracle),
-            IFEE,
-            address(new MockToken("Stake", "ST", 18)), // stake size is 0, so the we don't actually need any stake token
-            0,
-            0, // 0 minm, so there's not lower bound on future maturity
-            type(uint64).max, // large maxm, so there's not upper bound on future maturity
-            0, // monthly maturities
-            0,
-            Constants.DEFAULT_LEVEL,
+            mockTarget.underlying(),
+            IFEE_FOR_YT_SWAPS,
+            mockAdapterParams,
             address(new MockToken("Reward", "R", 18))
         );
 
-        hevm.label(AddressBook.SPACE_FACTORY_1_2_0, "SpaceFactory");
+        hevm.label(spaceFactory, "SpaceFactory");
+
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: AddressBook.DAI,
+            oracle: address(mockOracle),
+            ifee: Constants.DEFAULT_ISSUANCE_FEE,
+            stakeSize: Constants.DEFAULT_STAKE_SIZE,
+            minm: Constants.DEFAULT_MIN_MATURITY,
+            maxm: Constants.DEFAULT_MAX_MATURITY,
+            mode: Constants.DEFAULT_MODE,
+            tilt: Constants.DEFAULT_TILT
+        });
+
+        cfactory = new CFactory(divider, factoryParams, AddressBook.COMP);
+        ffactory = new FFactory(divider, factoryParams);
 
         periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);
+
+        periphery.setFactory(address(cfactory), true);
+        periphery.setFactory(address(ffactory), true);
 
         // Start multisig (admin) prank calls
         hevm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
@@ -116,7 +148,138 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 contract PeripheryMainnetTests is PeripheryTestHelper {
     using FixedMath for uint256;
 
-    function testMainnetSponsorSeries() public {
+    /* ========== SERIES SPONSORING ========== */
+
+    function testMainnetSponsorSeriesOnCAdapter() public {
+        address f = periphery.deployAdapter(address(cfactory), AddressBook.cDAI, "");
+        CAdapter cadapter = CAdapter(payable(f));
+        // Mint this address MAX_UINT AddressBook.DAI
+        giveTokens(AddressBook.DAI, type(uint256).max, hevm);
+
+        // Check buying YT params calculated using sense-v1/yt-buying-lib, adjusted for the target's decimals
+        uint256 TARGET_IN = uint256(0.0234e18).fmul(10**targetDecimals);
+        uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fmul(10**targetDecimals);
+        _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
+    }
+
+    function testMainnetFuzzSwapTargetForYTsDifferentScales(uint64 initScale, uint64 scale) public {
+        hevm.assume(initScale >= 1e9);
+        hevm.assume(scale >= initScale);
+
+        // 1. Initialize scale
+        mockAdapter.setScale(initScale);
+
+        // 2. Sponsor a Series
+        (uint256 maturity, address pt, ) = _sponsorSeries();
+
+        // 3. Initialize the pool by joining 1 Underlying worth of Target in, then swapping 0.5 PTs in for Target
+        _initializePool(maturity, ERC20(pt), uint256(1e18).fdivUp(initScale), 0.5e18);
+
+        // 4. Update scale
+        mockAdapter.setScale(scale);
+
+        // Check buying YT swap params calculated using sense-v1/yt-buying-lib, adjusted with the current scale
+        uint256 TARGET_IN = uint256(0.0234e18).fdivUp(scale);
+        uint256 TARGET_TO_BORROW = uint256(0.1413769e18).fdivUp(scale);
+        _checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
+    }
+
+    // INTERNAL HELPERS ––––––––––––
+
+    function _sponsorSeries()
+        public
+        returns (
+            uint256 maturity,
+            address pt,
+            address yt
+        )
+    {
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        maturity = DateTimeFull.timestampFromDateTime(year + 1, month, 1, 0, 0, 0);
+        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false);
+    }
+
+    function _initializePool(
+        uint256 maturity,
+        ERC20 pt,
+        uint256 targetToJoin,
+        uint256 ptsToSwapIn
+    ) public {
+        // Issue some PTs (& YTs) we'll use to initialize the pool with
+        uint256 targetToIssueWith = ptsToSwapIn.fdivUp(1e18 - mockAdapter.ifee()).fdivUp(mockAdapter.scale());
+        mockTarget.mint(address(this), targetToIssueWith + targetToJoin);
+        mockTarget.approve(address(divider), targetToIssueWith);
+        Divider(divider).issue(address(mockAdapter), maturity, targetToIssueWith);
+        // Sanity check that we have the PTs we need to swap in, either exactly, or close to (modulo rounding)
+        assertTrue(pt.balanceOf(address(this)) >= ptsToSwapIn && pt.balanceOf(address(this)) <= ptsToSwapIn + 100);
+
+        // Add Target to the Space pool
+        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0);
+
+        // Swap PT balance in for Target to initialize the PT side of the pool
+        pt.approve(address(periphery), ptsToSwapIn);
+        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0);
+    }
+
+    function _checkYTBuyingParameters(
+        uint256 maturity,
+        uint256 targetIn,
+        uint256 targetToBorrow,
+        uint256 minOut
+    ) public {
+        (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
+            address(mockAdapter),
+            maturity,
+            targetIn,
+            targetToBorrow,
+            minOut
+        );
+
+        ERC20(AddressBook.DAI).approve(address(periphery), type(uint256).max);
+        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false);
+
+        // Check that the YTs returned are the result of issuing with Target borrowed + Target in
+        assertEq(ytsOut, (targetIn + targetToBorrow).fmulUp(1e18 - mockAdapter.ifee()).fmul(mockAdapter.scale()));
+    }
+
+        // Check PT and YT onboarded on PoolManager (Fuse)
+        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+    }
+
+    function testMainnetSponsorSeriesOnFAdapter() public {
+        address f = periphery.deployAdapter(
+            address(ffactory),
+            AddressBook.f156FRAX3CRV,
+            abi.encode(AddressBook.TRIBE_CONVEX)
+        );
+        FAdapter fadapter = FAdapter(payable(f));
+        // Mint this address MAX_UINT AddressBook.DAI for stake
+        giveTokens(AddressBook.DAI, type(uint256).max, hevm);
+
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
+        );
+
+        ERC20(AddressBook.DAI).approve(address(periphery), type(uint256).max);
+        (address pt, address yt) = periphery.sponsorSeries(address(fadapter), maturity, false);
+
+        // Check pt and yt deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
+
+        // Check PT and YT onboarded on PoolManager (Fuse)
+        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(fadapter), maturity);
+        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+    }
+
+    function testMainnetSponsorSeriesOnMockAdapter() public {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, address yt) = _sponsorSeries();
 
@@ -128,6 +291,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(mockAdapter), maturity);
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
+
+    /* ========== YT SWAPS ========== */
 
     function testMainnetSwapYTsForTarget() public {
         // 1. Sponsor a Series
@@ -429,9 +594,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // Check that less than 0.01% of our Target got returned
         require(targetReturned <= targetIn.fmul(0.0001e18), "TOO_MANY_TARGET_RETURNED");
-
-        // Check that the YTs returned are the result of issuing with Target borrowed + Target in
-        assertEq(ytsOut, (targetIn + targetToBorrow).fmulUp(1e18 - mockAdapter.ifee()).fmul(mockAdapter.scale()));
     }
 
     function _callStaticBuyYTs(

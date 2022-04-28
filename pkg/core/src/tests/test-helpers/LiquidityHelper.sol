@@ -52,22 +52,40 @@ contract LiquidityHelper {
 
     function giveTokens(
         address token,
+        address to,
+        uint256 amount,
+        Hevm hevm
+    ) internal returns (bool) {
+        return _giveTokens(token, to, amount, hevm);
+    }
+
+    function giveTokens(
+        address token,
+        uint256 amount,
+        Hevm hevm
+    ) internal returns (bool) {
+        return _giveTokens(token, address(this), amount, hevm);
+    }
+
+    function _giveTokens(
+        address token,
+        address to,
         uint256 amount,
         Hevm hevm
     ) internal returns (bool) {
         // Edge case - balance is already set for some reason
-        if (ERC20(token).balanceOf(address(this)) == amount) return true;
+        if (ERC20(token).balanceOf(to) == amount) return true;
 
         for (int256 i = 0; i < 100; i++) {
             // Scan the storage for the balance storage slot
-            bytes32 prevValue = hevm.load(address(token), keccak256(abi.encode(address(this), uint256(i))));
-            hevm.store(address(token), keccak256(abi.encode(address(this), uint256(i))), bytes32(amount));
-            if (ERC20(token).balanceOf(address(this)) == amount) {
+            bytes32 prevValue = hevm.load(address(token), keccak256(abi.encode(to, uint256(i))));
+            hevm.store(address(token), keccak256(abi.encode(to, uint256(i))), bytes32(amount));
+            if (ERC20(token).balanceOf(to) == amount) {
                 // Found it
                 return true;
             } else {
                 // Keep going after restoring the original value
-                hevm.store(address(token), keccak256(abi.encode(address(this), uint256(i))), prevValue);
+                hevm.store(address(token), keccak256(abi.encode(to, uint256(i))), prevValue);
             }
         }
 
