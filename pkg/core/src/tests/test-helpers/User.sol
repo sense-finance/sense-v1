@@ -208,18 +208,20 @@ contract User {
         address adapter,
         uint256 maturity,
         uint256 balance,
+        uint256 targetToBorrow,
         uint256 minAccepted
     ) public {
-        periphery.swapTargetForYTs(adapter, maturity, balance, minAccepted);
+        periphery.swapTargetForYTs(adapter, maturity, balance, targetToBorrow, minAccepted);
     }
 
     function doSwapUnderlyingForYTs(
         address adapter,
         uint256 maturity,
         uint256 balance,
+        uint256 targetToBorrow,
         uint256 minAccepted
     ) public {
-        periphery.swapUnderlyingForYTs(adapter, maturity, balance, minAccepted);
+        periphery.swapUnderlyingForYTs(adapter, maturity, balance, targetToBorrow, minAccepted);
     }
 
     function doSwapPTsForTarget(

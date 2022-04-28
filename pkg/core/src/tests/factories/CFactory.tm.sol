@@ -11,7 +11,7 @@ import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
-import { Assets } from "../test-helpers/Assets.sol";
+import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract CAdapterTestHelper is DSTest {
@@ -31,12 +31,12 @@ contract CAdapterTestHelper is DSTest {
         tokenHandler.init(address(divider));
 
         address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = Assets.COMP;
+        rewardTokens[0] = AddressBook.COMP;
 
         // deploy compound adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: Assets.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            oracle: AddressBook.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -44,7 +44,7 @@ contract CAdapterTestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        factory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        factory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -52,11 +52,11 @@ contract CAdapterTestHelper is DSTest {
 contract CFactories is CAdapterTestHelper {
     function testMainnetDeployFactory() public {
         address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = Assets.COMP;
+        rewardTokens[0] = AddressBook.COMP;
 
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: Assets.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            oracle: AddressBook.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -64,7 +64,7 @@ contract CFactories is CAdapterTestHelper {
             mode: MODE,
             tilt: 0
         });
-        CFactory otherCFactory = new CFactory(address(divider), factoryParams, Assets.COMP);
+        CFactory otherCFactory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
 
         assertTrue(address(otherCFactory) != address(0));
         (
@@ -80,22 +80,22 @@ contract CFactories is CAdapterTestHelper {
 
         assertEq(CFactory(otherCFactory).divider(), address(divider));
         // assertEq(CFactory(otherCFactory).rewardTokens(0), Assets.COMP); //TODO: remove line, factoriess do not have reward tokens
-        assertEq(stake, Assets.DAI);
+        assertEq(stake, AddressBook.DAI);
         assertEq(ifee, ISSUANCE_FEE);
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(oracle, Assets.RARI_ORACLE);
+        assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
     }
 
     function testMainnetDeployAdapter() public {
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(Assets.cDAI, "");
+        address f = factory.deployAdapter(AddressBook.cDAI, "");
         CAdapter adapter = CAdapter(payable(f));
         assertTrue(address(adapter) != address(0));
-        assertEq(CAdapter(adapter).target(), address(Assets.cDAI));
+        assertEq(CAdapter(adapter).target(), address(AddressBook.cDAI));
         assertEq(CAdapter(adapter).divider(), address(divider));
         assertEq(CAdapter(adapter).name(), "Compound Dai Adapter");
         assertEq(CAdapter(adapter).symbol(), "cDAI-adapter");
@@ -106,7 +106,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        try factory.deployAdapter(Assets.f18DAI, "") {
+        try factory.deployAdapter(AddressBook.f18DAI, "") {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));

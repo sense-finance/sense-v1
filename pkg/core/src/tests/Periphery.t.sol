@@ -553,69 +553,6 @@ contract PeripheryTest is TestHelper {
         assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(address(alice)));
     }
 
-    // TODO: missing target check!
-    function testSwapTargetForYTs() public {
-        uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
-
-        // add liquidity to mockBalancerVault
-        target.mint(address(adapter), 100000e18);
-        addLiquidityToBalancerVault(maturity, 1000e18);
-
-        uint256 ytBalBefore = ERC20(yt).balanceOf(address(alice));
-        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
-
-        uint256 ytAmount;
-        uint256 fee;
-        {
-            // calculate issuance fee in corresponding base
-            uint256 tBase = 10**target.decimals();
-            fee = (adapter.ifee() / convertBase(target.decimals())).fmul(tBal, tBase);
-            // calculate amount of yt received (scaled)
-            ytAmount = (tBal - fee).fmul(lscale);
-        }
-
-        bob.doSwapTargetForYTs(address(adapter), maturity, tBal, 0);
-
-        assertEq(ytBalBefore + ytAmount, ERC20(yt).balanceOf(address(bob)));
-        assertEq(ptBalBefore, ERC20(pt).balanceOf(address(alice)));
-    }
-
-    function testSwapUnderlyingForYTs() public {
-        uint256 tBal = 100e18;
-        uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
-
-        // unwrap target into underlying
-        uint256 uBal = underlying.decimals() > target.decimals()
-            ? tBal.fmul(lscale) * SCALING_FACTOR
-            : tBal.fmul(lscale) / SCALING_FACTOR;
-
-        {
-            // add liquidity to mockBalancerVault
-            target.mint(address(adapter), 100000e18);
-            addLiquidityToBalancerVault(maturity, 1000e18);
-        }
-        uint256 ytBalBefore = ERC20(yt).balanceOf(address(alice));
-        uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
-
-        uint256 ytAmount;
-        {
-            // calculate issuance fee in corresponding base
-            uint256 tBase = 10**target.decimals();
-            uint256 fee = (adapter.ifee() / convertBase(target.decimals())).fmul(tBal, tBase);
-            // calculate amount of yt received (scaled)
-            ytAmount = (tBal - fee).fmul(lscale);
-        }
-        bob.doSwapUnderlyingForYTs(address(adapter), maturity, uBal, 0);
-
-        assertEq(ytBalBefore + ytAmount, ERC20(yt).balanceOf(address(bob)));
-        assertEq(ptBalBefore, ERC20(pt).balanceOf(address(alice)));
-    }
-
     function testSwapPTsForTarget() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);

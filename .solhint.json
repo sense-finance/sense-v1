@@ -10,6 +10,7 @@
     "not-rely-on-time": "off",
     "avoid-low-level-calls": "off",
     "no-inline-assembly": "off",
+    "var-name-mixedcase": "off",
     "prettier/prettier": [
       "error",
       {

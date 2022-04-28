@@ -11,7 +11,7 @@ import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { User } from "../test-helpers/User.sol";
-import { Assets } from "../test-helpers/Assets.sol";
+import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 
@@ -33,12 +33,12 @@ contract FAdapterTestHelper is DSTest {
         tokenHandler.init(address(divider));
 
         address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = Assets.COMP;
+        rewardTokens[0] = AddressBook.COMP;
 
         // deploy fuse adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: Assets.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            oracle: AddressBook.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -54,8 +54,8 @@ contract FAdapterTestHelper is DSTest {
 contract FFactories is FAdapterTestHelper {
     function testMainnetDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: Assets.DAI,
-            oracle: Assets.RARI_ORACLE,
+            stake: AddressBook.DAI,
+            oracle: AddressBook.RARI_ORACLE,
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -78,13 +78,13 @@ contract FFactories is FAdapterTestHelper {
         ) = FFactory(otherFFactory).factoryParams();
 
         assertEq(FFactory(otherFFactory).divider(), address(divider));
-        assertEq(stake, Assets.DAI);
+        assertEq(stake, AddressBook.DAI);
         assertEq(ifee, ISSUANCE_FEE);
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(oracle, Assets.RARI_ORACLE);
+        assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
     }
 
@@ -95,15 +95,15 @@ contract FFactories is FAdapterTestHelper {
         // cvxFXSFXS-f --> CVX, CRV and FXS
         // CVX --> no rewards
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
+        address f = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
         FAdapter adapter = FAdapter(payable(f));
         assertTrue(address(adapter) != address(0));
-        assertEq(FAdapter(adapter).target(), address(Assets.f156FRAX3CRV));
+        assertEq(FAdapter(adapter).target(), address(AddressBook.f156FRAX3CRV));
         assertEq(FAdapter(adapter).divider(), address(divider));
         assertEq(FAdapter(adapter).name(), "Tribe Convex Pool Curve.fi Factory USD Metapool: Frax Adapter");
         assertEq(FAdapter(adapter).symbol(), "fFRAX3CRV-f-156-adapter");
-        assertEq(FAdapter(adapter).rewardTokens(0), Assets.CVX);
-        assertEq(FAdapter(adapter).rewardTokens(1), Assets.CRV);
+        assertEq(FAdapter(adapter).rewardTokens(0), AddressBook.CVX);
+        assertEq(FAdapter(adapter).rewardTokens(1), AddressBook.CRV);
         assertEq(FAdapter(adapter).rewardTokens(2), address(0));
         assertEq(FAdapter(adapter).rewardTokens(3), address(0));
 
@@ -114,13 +114,13 @@ contract FFactories is FAdapterTestHelper {
     function testMainnetCantDeployAdapterIfInvalidComptroller() public {
         divider.setPeriphery(address(this));
         hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidParam.selector));
-        factory.deployAdapter(Assets.f18DAI, abi.encode(Assets.f18DAI));
+        factory.deployAdapter(AddressBook.f18DAI, abi.encode(AddressBook.f18DAI));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        factory.deployAdapter(Assets.f18DAI, abi.encode(Assets.TRIBE_CONVEX));
+        factory.deployAdapter(AddressBook.f18DAI, abi.encode(AddressBook.TRIBE_CONVEX));
     }
 
     event RewardTokensChanged(address[] indexed rewardTokens);
@@ -128,16 +128,16 @@ contract FFactories is FAdapterTestHelper {
 
     function testMainnetSetRewardsTokens() public {
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
+        address f = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
         FAdapter adapter = FAdapter(payable(f));
 
         address[] memory rewardTokens = new address[](5);
-        rewardTokens[0] = Assets.LDO;
-        rewardTokens[1] = Assets.FXS;
+        rewardTokens[0] = AddressBook.LDO;
+        rewardTokens[1] = AddressBook.FXS;
 
         address[] memory rewardsDistributors = new address[](5);
-        rewardsDistributors[0] = Assets.REWARDS_DISTRIBUTOR_LDO;
-        rewardsDistributors[1] = Assets.REWARDS_DISTRIBUTOR_FXS;
+        rewardsDistributors[0] = AddressBook.REWARDS_DISTRIBUTOR_LDO;
+        rewardsDistributors[1] = AddressBook.REWARDS_DISTRIBUTOR_FXS;
 
         hevm.expectEmit(true, false, false, false);
         emit RewardTokensChanged(rewardTokens);
@@ -147,16 +147,16 @@ contract FFactories is FAdapterTestHelper {
 
         factory.setRewardTokens(f, rewardTokens, rewardsDistributors);
 
-        assertEq(adapter.rewardTokens(0), Assets.LDO);
-        assertEq(adapter.rewardTokens(1), Assets.FXS);
-        assertEq(adapter.rewardsDistributorsList(Assets.LDO), Assets.REWARDS_DISTRIBUTOR_LDO);
-        assertEq(adapter.rewardsDistributorsList(Assets.FXS), Assets.REWARDS_DISTRIBUTOR_FXS);
+        assertEq(adapter.rewardTokens(0), AddressBook.LDO);
+        assertEq(adapter.rewardTokens(1), AddressBook.FXS);
+        assertEq(adapter.rewardsDistributorsList(AddressBook.LDO), AddressBook.REWARDS_DISTRIBUTOR_LDO);
+        assertEq(adapter.rewardsDistributorsList(AddressBook.FXS), AddressBook.REWARDS_DISTRIBUTOR_FXS);
     }
 
     function testFuzzMainnetCantSetRewardsTokens(address lad) public {
         if (lad == address(this)) return;
         hevm.prank(divider.periphery());
-        address f = factory.deployAdapter(Assets.f156FRAX3CRV, abi.encode(Assets.TRIBE_CONVEX));
+        address f = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
         address[] memory rewardTokens = new address[](2);
         address[] memory rewardsDistributors = new address[](2);
         hevm.expectRevert("UNTRUSTED");

@@ -6,7 +6,7 @@ import { Hevm } from "./Hevm.sol";
 // Internal references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import { Assets } from "./Assets.sol";
+import { AddressBook } from "./AddressBook.sol";
 
 interface SwapRouterLike {
     struct ExactInputSingleParams {
@@ -96,8 +96,8 @@ contract LiquidityHelper {
     function addLiquidity(address[] memory assets) public {
         uint256 amountIn = 10 ether;
         for (uint256 i = 0; i < assets.length; i++) {
-            Assets.WETH.call{ value: amountIn }("");
-            swap(Assets.WETH, assets[i], amountIn, address(this));
+            AddressBook.WETH.call{ value: amountIn }("");
+            swap(AddressBook.WETH, assets[i], amountIn, address(this));
         }
     }
 
@@ -108,30 +108,30 @@ contract LiquidityHelper {
         address recipient
     ) public returns (uint256) {
         uint256 amountOut = 0;
-        if (tokenOut == Assets.WSTETH) {
-            uint256 stETH = StETHInterface(Assets.STETH).submit{ value: amountIn }(address(0));
-            ERC20(Assets.STETH).approve(Assets.WSTETH, stETH);
-            amountOut = WstETHInterface(Assets.WSTETH).wrap(stETH);
+        if (tokenOut == AddressBook.WSTETH) {
+            uint256 stETH = StETHInterface(AddressBook.STETH).submit{ value: amountIn }(address(0));
+            ERC20(AddressBook.STETH).approve(AddressBook.WSTETH, stETH);
+            amountOut = WstETHInterface(AddressBook.WSTETH).wrap(stETH);
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
         }
-        if (tokenOut == Assets.cDAI) {
-            ERC20(Assets.DAI).approve(Assets.cDAI, amountIn);
-            amountOut = CTokenInterface(Assets.cDAI).mint(amountIn);
+        if (tokenOut == AddressBook.cDAI) {
+            ERC20(AddressBook.DAI).approve(AddressBook.cDAI, amountIn);
+            amountOut = CTokenInterface(AddressBook.cDAI).mint(amountIn);
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
         }
-        if (tokenOut == Assets.cETH) {
-            Assets.cETH.call{ value: amountIn }("");
+        if (tokenOut == AddressBook.cETH) {
+            AddressBook.cETH.call{ value: amountIn }("");
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountIn;
         }
-        if (tokenOut == Assets.WETH) {
+        if (tokenOut == AddressBook.WETH) {
             return amountIn;
         }
 
         // approve router to spend tokenIn
-        ERC20(tokenIn).approve(Assets.UNISWAP_ROUTER, amountIn);
+        ERC20(tokenIn).approve(AddressBook.UNISWAP_ROUTER, amountIn);
         SwapRouterLike.ExactInputSingleParams memory params = SwapRouterLike.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
@@ -142,7 +142,7 @@ contract LiquidityHelper {
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0 // set to be 0 to ensure we swap our exact input amount
         });
-        amountOut = SwapRouterLike(Assets.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
+        amountOut = SwapRouterLike(AddressBook.UNISWAP_ROUTER).exactInputSingle(params); // executes the swap
         emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
         return amountOut;
     }

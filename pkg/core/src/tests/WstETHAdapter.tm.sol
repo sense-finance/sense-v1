@@ -13,7 +13,7 @@ import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { DSTest } from "./test-helpers/test.sol";
-import { Assets } from "./test-helpers/Assets.sol";
+import { AddressBook } from "./test-helpers/AddressBook.sol";
 import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { Hevm } from "./test-helpers/Hevm.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
@@ -67,7 +67,7 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
 
     function setUp() public {
         address[] memory assets = new address[](1);
-        assets[0] = Assets.WSTETH;
+        assets[0] = AddressBook.WSTETH;
         addLiquidity(assets);
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
@@ -75,8 +75,8 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
         tokenHandler.init(address(divider));
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: Assets.RARI_ORACLE,
-            stake: Assets.DAI,
+            oracle: AddressBook.RARI_ORACLE,
+            stake: AddressBook.DAI,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
@@ -84,7 +84,13 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             tilt: DEFAULT_TILT,
             level: DEFAULT_LEVEL
         });
-        adapter = new WstETHAdapter(address(divider), Assets.WSTETH, Assets.WETH, ISSUANCE_FEE, adapterParams); // wstETH adapter
+        adapter = new WstETHAdapter(
+            address(divider),
+            AddressBook.WSTETH,
+            AddressBook.WETH,
+            ISSUANCE_FEE,
+            adapterParams
+        ); // wstETH adapter
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {
@@ -97,8 +103,8 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     using FixedMath for uint256;
 
     function testMainnetWstETHAdapterScale() public {
-        uint256 ethStEth = StEthPriceFeed(Assets.STETHPRICEFEED).safe_price_value();
-        uint256 wstETHstETH = WstETHInterface(Assets.WSTETH).stEthPerToken();
+        uint256 ethStEth = StEthPriceFeed(AddressBook.STETHPRICEFEED).safe_price_value();
+        uint256 wstETHstETH = WstETHInterface(AddressBook.WSTETH).stEthPerToken();
 
         uint256 scale = ethStEth.fmul(wstETHstETH);
         assertEq(adapter.scale(), scale);
@@ -110,17 +116,17 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetUnwrapTarget() public {
-        uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
-        uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
-        ERC20(Assets.WSTETH).approve(address(adapter), wstETHBalanceBefore);
-        uint256 minDy = ICurveStableSwap(Assets.CURVESINGLESWAP).get_dy(
+        uint256 wethBalanceBefore = ERC20(AddressBook.WETH).balanceOf(address(this));
+        uint256 wstETHBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(this));
+        ERC20(AddressBook.WSTETH).approve(address(adapter), wstETHBalanceBefore);
+        uint256 minDy = ICurveStableSwap(AddressBook.CURVESINGLESWAP).get_dy(
             int128(1),
             int128(0),
             wstETHBalanceBefore.fmul(adapter.scale())
         );
         adapter.unwrapTarget(wstETHBalanceBefore);
-        uint256 wstETHBalanceAfter = ERC20(Assets.WSTETH).balanceOf(address(this));
-        uint256 wethBalanceAfter = ERC20(Assets.WETH).balanceOf(address(this));
+        uint256 wstETHBalanceAfter = ERC20(AddressBook.WSTETH).balanceOf(address(this));
+        uint256 wethBalanceAfter = ERC20(AddressBook.WETH).balanceOf(address(this));
 
         assertEq(wstETHBalanceAfter, 0);
         // Received at least the min expected from the curve exchange rate
@@ -134,32 +140,32 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetWrapUnderlying() public {
-        uint256 wethBalanceBefore = ERC20(Assets.WETH).balanceOf(address(this));
-        uint256 stEthBalanceBefore = ERC20(Assets.STETH).balanceOf(address(this));
-        uint256 wstETHBalanceBefore = ERC20(Assets.WSTETH).balanceOf(address(this));
+        uint256 wethBalanceBefore = ERC20(AddressBook.WETH).balanceOf(address(this));
+        uint256 stEthBalanceBefore = ERC20(AddressBook.STETH).balanceOf(address(this));
+        uint256 wstETHBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(this));
 
-        ERC20(Assets.WETH).approve(address(adapter), wethBalanceBefore);
-        uint256 wstETH = WstETHInterface(Assets.WSTETH).getWstETHByStETH(wethBalanceBefore);
+        ERC20(AddressBook.WETH).approve(address(adapter), wethBalanceBefore);
+        uint256 wstETH = WstETHInterface(AddressBook.WSTETH).getWstETHByStETH(wethBalanceBefore);
         adapter.wrapUnderlying(wethBalanceBefore);
-        uint256 wstETHBalanceAfter = ERC20(Assets.WSTETH).balanceOf(address(this));
-        uint256 wethBalanceAfter = ERC20(Assets.WETH).balanceOf(address(this));
-        uint256 stEthBalanceAfter = ERC20(Assets.STETH).balanceOf(address(this));
+        uint256 wstETHBalanceAfter = ERC20(AddressBook.WSTETH).balanceOf(address(this));
+        uint256 wethBalanceAfter = ERC20(AddressBook.WETH).balanceOf(address(this));
+        uint256 stEthBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));
         assertEq(stEthBalanceAfter, stEthBalanceBefore);
         assertEq(wethBalanceAfter, 0);
         assertClose(wstETHBalanceBefore + wstETH, wstETHBalanceAfter);
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
-        uint256 prebal = ERC20(Assets.WETH).balanceOf(address(this));
+        uint256 prebal = ERC20(AddressBook.WETH).balanceOf(address(this));
         if (wrapAmt > prebal || wrapAmt < 1e4) return;
 
         // Approvals
-        ERC20(Assets.WETH).approve(address(adapter), type(uint256).max);
-        ERC20(Assets.WSTETH).approve(address(adapter), type(uint256).max);
+        ERC20(AddressBook.WETH).approve(address(adapter), type(uint256).max);
+        ERC20(AddressBook.WSTETH).approve(address(adapter), type(uint256).max);
 
         // Full cycle
         adapter.unwrapTarget(adapter.wrapUnderlying(wrapAmt));
-        uint256 postbal = ERC20(Assets.WETH).balanceOf(address(this));
+        uint256 postbal = ERC20(AddressBook.WETH).balanceOf(address(this));
 
         // within .1%
         assertClose(prebal, postbal, prebal.fmul(0.001e18));
