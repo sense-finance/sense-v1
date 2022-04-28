@@ -44,6 +44,21 @@ task("20220429-periphery", "Deploys and authenticates a new Periphery").setActio
   );
   console.log("Adapters to verify:", adaptersVerified);
 
+  const factoriesAddedArgs = (await oldPeriphery.queryFilter(oldPeriphery.filters.FactoryChanged(null, null))).map(
+    e => e.args,
+  );
+  const addedFactoriesWithStatus = {};
+  for (const { factory, isOn } of factoriesAddedArgs) {
+    addedFactoriesWithStatus[factory] = isOn;
+  }
+  const factoriesAddedFiltered = [];
+  for (const [factory, isOn] of Object.entries(addedFactoriesWithStatus)) {
+    if (isOn) {
+      factoriesAddedFiltered.push(factory);
+    }
+  }
+  console.log("Factories to add:", factoriesAddedFiltered);
+
   const newPeriphery = new ethers.Contract(peripheryAddress, newPeripheryAbi, signer);
 
   for (let adapter of adaptersOnboarded) {
@@ -54,6 +69,11 @@ task("20220429-periphery", "Deploys and authenticates a new Periphery").setActio
   for (let adapter of adaptersVerified) {
     console.log("Verifying adapter (but don't need to add it again to the Fuse pool)", adapter);
     await newPeriphery.verifyAdapter(adapter, false).then(t => t.wait());
+  }
+
+  for (let factory of factoriesAddedFiltered) {
+    console.log("Adding factory", factory);
+    await newPeriphery.setFactory(factory, true).then(t => t.wait());
   }
 
   console.log("\nAdding admin multisig as admin on Periphery");

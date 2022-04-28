@@ -120,7 +120,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "adapter",
+        "name": "factory",
         "type": "address"
       },
       {
