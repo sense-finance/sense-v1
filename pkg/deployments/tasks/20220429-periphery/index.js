@@ -24,6 +24,7 @@ task("20220429-periphery", "Deploys and authenticates a new Periphery").setActio
   const poolManager = new ethers.Contract(mainnet.poolManager, poolManagerAbi, signer);
   const spaceFactory = new ethers.Contract(mainnet.spaceFactory, spaceFactoryAbi, signer);
   const oldPeriphery = new ethers.Contract(mainnet.oldPeriphery, oldPeripheryAbi, signer);
+  console.log([divider.address, poolManager.address, spaceFactory.address, balancerVault]);
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Periphery");
