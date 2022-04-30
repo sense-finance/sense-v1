@@ -11,7 +11,7 @@ import { PoolManager, MasterOracleLike } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
+import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/test.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
@@ -79,18 +79,22 @@ contract PoolManagerTest is DSTest {
         stake = new MockToken("Stake", "SBL", 18);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            oracle: address(mockOracle),
+            stake: address(stake),
+            stakeSize: 1e18,
+            minm: 2 weeks,
+            maxm: 14 weeks,
+            mode: 0,
+            tilt: 0,
+            level: 31
+        });
         mockAdapter = new MockAdapter(
             address(divider),
             address(target),
-            address(mockOracle),
+            target.underlying(),
             0.1e18,
-            address(stake),
-            1e18,
-            2 weeks,
-            14 weeks,
-            0,
-            0,
-            31,
+            adapterParams,
             address(reward)
         );
 
@@ -256,7 +260,6 @@ contract PoolManagerTest is DSTest {
         ComptrollerLike(comptroller).enterMarkets(cTokens);
 
         uint256 TARGET_IN = 1.1e18;
-        uint256 PT_BORROW = 1e18;
 
         // Mint some liquidity for lending/borrowing
         Token(MockSpacePool(pool).target()).mint(address(balancerVault), 1e18);

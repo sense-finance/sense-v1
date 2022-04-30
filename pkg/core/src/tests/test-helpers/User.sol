@@ -47,12 +47,16 @@ contract User {
         gYTManager = new GYTManager(address(divider));
     }
 
-    function doDeployAdapter(address _target) public returns (address clone) {
-        return periphery.deployAdapter(address(factory), _target);
+    function doDeployAdapter(address _target, bytes memory _data) public returns (address clone) {
+        return periphery.deployAdapter(address(factory), _target, _data);
     }
 
-    function doDeployAdapter(address factory, address _target) public returns (address clone) {
-        return periphery.deployAdapter(factory, _target);
+    function doDeployAdapter(
+        address factory,
+        address _target,
+        bytes memory _data
+    ) public returns (address clone) {
+        return periphery.deployAdapter(factory, _target, _data);
     }
 
     function doTransferFrom(
@@ -204,18 +208,20 @@ contract User {
         address adapter,
         uint256 maturity,
         uint256 balance,
+        uint256 targetToBorrow,
         uint256 minAccepted
     ) public {
-        periphery.swapTargetForYTs(adapter, maturity, balance, minAccepted);
+        periphery.swapTargetForYTs(adapter, maturity, balance, targetToBorrow, minAccepted);
     }
 
     function doSwapUnderlyingForYTs(
         address adapter,
         uint256 maturity,
         uint256 balance,
+        uint256 targetToBorrow,
         uint256 minAccepted
     ) public {
-        periphery.swapUnderlyingForYTs(adapter, maturity, balance, minAccepted);
+        periphery.swapUnderlyingForYTs(adapter, maturity, balance, targetToBorrow, minAccepted);
     }
 
     function doSwapPTsForTarget(

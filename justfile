@@ -17,6 +17,7 @@ HEX_6  := "0x0000000000000000000000000000000000000000000000000000000000000006"
 ALCHEMY_KEY := env_var_or_default("ALCHEMY_KEY", "_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC")
 MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
 MNEMONIC    := env_var_or_default("MNEMONIC", "")
+ETHERSCAN_API_KEY := env_var_or_default("ETHERSCAN_API_KEY", "")
 
 DAPP_SOLC_VERSION   := "0.8.11"
 DAPP_BUILD_OPTIMIZE := "1"
@@ -49,6 +50,9 @@ turbo-test-local *cmds="": && _timer
 turbo-test-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --no-match-path "*.tm*" --match-test {{ exp }}
 
+turbo-test-match-contract *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test --match-contract {{ exp }}
+
 turbo-test-local-greater-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
@@ -67,23 +71,14 @@ turbo-test-mainnet: && _timer
 turbo-test-mainnet-match *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --match-path "*.tm*" --fork-url {{ MAINNET_RPC }} --match-test {{ exp }}
 
+turbo-test-mainnet-match-contract *exp="": && _timer
+	@cd {{ invocation_directory() }}; forge test --fork-url {{ MAINNET_RPC }} --match-contract {{ exp }}
 ## ---- Gas Metering ----
 
-# default gas snapshot script
-gas-snapshot: gas-snapshot-local
-
-# get gas snapshot from local tests and save it to file
-gas-snapshot-local:
-    cd {{ invocation_directory() }}; \
-    just turbo-test-local | grep 'gas:' | cut -d " " -f 2-4 | sort > \
-    {{ justfile_directory() }}/gas-snapshots/.$( \
-        cat {{ invocation_directory() }}/package.json | jq .name | tr -d '"' | cut -d"/" -f2- \
-    )
-
-forge-gas-snapshot: && _timer
+gas-snapshot: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot --no-match-path "*.tm*"
 
-forge-gas-snapshot-diff: && _timer
+gas-snapshot-diff: && _timer
 	@cd {{ invocation_directory() }}; forge snapshot --no-match-path "*.tm*" --diff
 
 ## ---- Appendix ----

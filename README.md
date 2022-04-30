@@ -35,21 +35,21 @@ Contract | Address
 [TokenHandler](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x4933494b4070c01bfFBd3c53C1E44A3d9d95DD8e](https://etherscan.io/address/0x4933494b4070c01bfFBd3c53C1E44A3d9d95DD8e)
 [EmergencyStop](https://github.com/sense-finance/sense-v1/blob/dev/pkg/utils/src/EmergencyStop.sol) | [0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f](https://etherscan.io/address/0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f)
 [WstETHAdapter](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/adapters/lido/WstETHAdapter.sol) | [0x36c744Dd2916E9E04173Bee9d93D554f955a999d](https://etherscan.io/address/0x36c744Dd2916E9E04173Bee9d93D554f955a999d)
-[CFactory](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/adapters/compound/CFactory.sol) | [0x6B48a75Db6619C95431599059BA0740BBd2A46d9](https://etherscan.io/address/0x6b48a75db6619c95431599059ba0740bbd2a46d9)
-[cUSDC-CAdapter](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/adapters/compound/CAdapter.sol) | [0x7923C555Df05C284916D20Dd6A73e721cd010053](https://etherscan.io/address/0x7923C555Df05C284916D20Dd6A73e721cd010053)
+[CFactory](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/adapters/compound/CFactory.sol) | [0xeC0E2e78BbEcFA2313150Edb273a429C9D4B25Da](https://etherscan.io/address/0xec0e2e78bbecfa2313150edb273a429c9d4b25da#code)
+[cUSDC-CAdapter](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/adapters/compound/CAdapter.sol) | [0xEc30fEaC79898aC5FFe055bD128BBbA9584080eC](https://etherscan.io/address/0xEc30fEaC79898aC5FFe055bD128BBbA9584080eC)
 sP-wstETH:01-05-2022:5 | [0x923d411E62Cd3727e0B7dec458Ba89B0191A7067](https://etherscan.io/address/0x923d411E62Cd3727e0B7dec458Ba89B0191A7067)
 sY-wstETH:01-05-2022:5 | [0x3A3359af098bb20a4EB1809a298Ca7B1d5B6Be94](https://etherscan.io/address/0x3A3359af098bb20a4EB1809a298Ca7B1d5B6Be94)
 sP-wstETH:01-07-2022:5 | [0xc1Fd90b0C31CF4BF16C04Ed8c6A05105EFc7c989](https://etherscan.io/address/0xc1Fd90b0C31CF4BF16C04Ed8c6A05105EFc7c989)
 sY-wstETH:01-07-2022:5 | [0x7ecE94fD7F997800F7bfE2D53B9D0AABcE05d10b](https://etherscan.io/address/0x7ecE94fD7F997800F7bfE2D53B9D0AABcE05d10b)
-sP-cUSDC:01-05-2022:3 | [0xf6fCcB2C42c3084e0926D034c504309498f1d5aC](https://etherscan.io/address/0xf6fCcB2C42c3084e0926D034c504309498f1d5aC)
-sY-cUSDC:01-05-2022:3 | [0xd74f67771Aaa23EFE05fBb96DC29B5bA164E4355](https://etherscan.io/address/0xd74f67771Aaa23EFE05fBb96DC29B5bA164E4355)
-sP-cUSDC:01-07-2022:3 | [0x003d32a8C728Ed4d452fD06C07491d87a723a9C9](https://etherscan.io/address/0x003d32a8C728Ed4d452fD06C07491d87a723a9C9)
-sY-cUSDC:01-07-2022:3 | [0x48c4891294Be2333A7F9B68FfeE6320317ea2c36](https://etherscan.io/address/0x48c4891294Be2333A7F9B68FfeE6320317ea2c36)
+sP-cUSDC:01-05-2022:6 | [0xa93fBC8114f6AD04B59426A2aFc1dB9eDB841f7a](https://etherscan.io/address/0xa93fBC8114f6AD04B59426A2aFc1dB9eDB841f7a)
+sY-cUSDC:01-05-2022:6 | [0xA5240A4a27817135E2aB30c8f1996a2d460C9Db4](https://etherscan.io/address/0xA5240A4a27817135E2aB30c8f1996a2d460C9Db4)
+sP-cUSDC:01-07-2022:6 | [0xb636ADB2031DCbf6e2A04498e8Af494A819d4CB9](https://etherscan.io/address/0xb636ADB2031DCbf6e2A04498e8Af494A819d4CB9)
+sY-cUSDC:01-07-2022:6 | [0x4ACA82E5686226A679875AACde7ECdf5fC5477ec](https://etherscan.io/address/0x4ACA82E5686226A679875AACde7ECdf5fC5477ec)
 [SpaceFactory](https://github.com/sense-finance/space-v1/blob/main/src/SpaceFactory.sol) | [0x984682770f1EED90C00cd57B06b151EC12e7c51C](https://etherscan.io/address/0x984682770f1EED90C00cd57B06b151EC12e7c51C)
 [Space LP Share-wstETH:01-05-2022:5](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0xbB6C7b5E0804d07aE31A43E6E83Ea66fb128a3BB](https://etherscan.io/address/0xbB6C7b5E0804d07aE31A43E6E83Ea66fb128a3BB)
 [Space LP Share-wstETH:01-07-2022:5](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x34d179259336812A1C7d320A0972e949dA5fa26d](https://etherscan.io/address/0x34d179259336812A1C7d320A0972e949dA5fa26d)
-[Space LP Share-cUSDC:01-05-2022:3](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0xD40954A9Ff856f9A2C6eFa88aD45623157A7dfF0](https://etherscan.io/address/0xD40954A9Ff856f9A2C6eFa88aD45623157A7dfF0)
-[Space LP Share-cUSDC:01-07-2022:3](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x000b87c8A4c6CBCEf7a2577e8aa0Dc134C67c3D8](https://etherscan.io/address/0x000b87c8A4c6CBCEf7a2577e8aa0Dc134C67c3D8)
+[Space LP Share-cUSDC:01-05-2022:6](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x64db005d040EE62E8fa202291C73E8a6151A0399](https://etherscan.io/address/0x64db005d040EE62E8fa202291C73E8a6151A0399)
+[Space LP Share-cUSDC:01-07-2022:6](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x76E5F9860Bd5b8666DE322496f114B8a89183A2E](https://etherscan.io/address/0x76E5F9860Bd5b8666DE322496f114B8a89183A2E)
 
 \* We are aware that the Name and Symbol does not include the Space LP Share. This will be fixed in the next version of Space.
 
@@ -130,11 +130,18 @@ yarn hardhat deploy --network <network> --tags scenario:prod
 
 ## Security
 
-Sense contracts have gone through different independent security audits performed by [Spearbit](https://spearbit.com), [Fixed Point Solutions (Kurt Barry)](https://github.com/fixed-point-solutions), [ABDK](https://www.abdk.consulting/) and [Peckshield](https://peckshield.com). Reports are located in the [`audits`](./audits) directory.
+Sense-v1 has been audited by four, independent smart contract auditors, ranked by recency:
+
+1. 2022-02/03 Space AMM - [Fixed Point Solutions (Kurt Barry)](https://github.com/sense-finance/sense-v1/blob/dev/audits/fps/2022-03-15-twap.pdf)
+2. 2022-03 Sense - [ABDK](https://github.com/sense-finance/sense-v1/tree/dev/audits/abdk)
+3. 2022-01 Sense & Space AMM - [Spearbit](https://github.com/sense-finance/sense-v1/blob/dev/audits/spearbit/2022-01-21.pdf)
+4. 2021-11/12 Sense - [Fixed Point Solutions (Kurt Barry)](https://github.com/sense-finance/sense-v1/blob/dev/audits/fps/2022-03-15.pdf)
+5. 2021-11 Sense - [ABDK](https://github.com/sense-finance/sense-v1/tree/dev/audits/abdk)
+6. 2022-11 Sense - [Peckshield](https://github.com/sense-finance/sense-v1/blob/dev/audits/peckshield/2021-11-07.pdf)
 
 ### Bug Bounties
 
-Sense will have an active bug bounty on ImmuneFi, with up to $50,000 for reporting a bug. All of Sense's deployed contracts & Sense Portal are in scope for the bug bounty. See a bug before our bug bounty is live? Reach out to josh & kenton @ sense.finance.
+Sense has an [active bug bounty on ImmuneFi](https://immunefi.com/bounty/sense/), with up to $50,000 for reporting a bug in deployed contracts & the Sense Portal.
 
 ## Conventions
 

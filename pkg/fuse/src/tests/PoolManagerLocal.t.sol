@@ -11,14 +11,13 @@ import { PoolManager } from "../PoolManager.sol";
 import { TestHelper } from "@sense-finance/v1-core/src/tests/test-helpers/TestHelper.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/DSTest.sol";
+import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/test.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import { MockComptrollerRejectAdmin, MockComptrollerFailAddMarket } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockFuseDirectory.sol";
 import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
-import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";

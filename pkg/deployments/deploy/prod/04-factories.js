@@ -15,19 +15,19 @@ module.exports = async function () {
   log("DEPLOY FACTORIES & ADAPTERS");
   log("-------------------------------------------------------");
   for (let factory of global.mainnet.FACTORIES) {
-    const { contractName, adapterContract, reward, ifee, stake, stakeSize, minm, maxm, mode, oracle, tilt, targets } =
+    const { contractName, adapterContract, oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, reward, targets, crops } =
       factory(chainId);
-    if (!reward) throw Error("No reward token found");
+    if (!crops && !reward) throw Error("No reward token found");
     if (!stake) throw Error("No stake token found");
 
     log(`\nDeploy ${contractName}`);
-    const factoryParams = [oracle, ifee, stake, stakeSize, minm, maxm, mode, tilt];
+    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt];
     const { address: factoryAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, factoryParams, reward],
+      args: [divider.address, factoryParams, ...(!crops ? [reward] : [])],
       log: true,
     });
-
+  
     log(`Trust ${contractName} on the divider`);
     await (await divider.setIsTrusted(factoryAddress, true)).wait();
 
@@ -38,11 +38,13 @@ module.exports = async function () {
     log(`DEPLOY ADAPTERS FOR: ${contractName}`);
     log("-------------------------------------------------------");
     for (let target of targets) {
-      const { name, address, guard } = target;
-
+      let { name, address, guard, comptroller: data } = target;
       log(`\nDeploy ${name} adapter`);
-      const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, address);
-      await (await periphery.deployAdapter(factoryAddress, address)).wait();
+      if (data !== "0x") {
+        data = ethers.utils.defaultAbiCoder.encode(["address"], [data]);
+      }
+      const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, address, data);
+      await (await periphery.deployAdapter(factoryAddress, address, data)).wait();
 
       log(`Set ${name} adapter issuance cap to ${guard}`);
       await divider.setGuard(adapterAddress, guard).then(tx => tx.wait());
@@ -59,13 +61,14 @@ module.exports = async function () {
   log("DEPLOY ADAPTERS WITHOUT FACTORY");
   log("-------------------------------------------------------");
   for (let adapter of global.mainnet.ADAPTERS) {
-    const { contractName, deploymentParams, target } = adapter(chainId);
+    const { contractName, target, underlying, ifee, adapterParams } = adapter(chainId);
+    const { address: tAddress, comptroller, rewardsTokens, rewardsDistributors } = target;
     // if (!stake) throw Error("No stake token found");
 
     log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, ...Object.values(deploymentParams)],
+      args: [divider.address, tAddress, underlying, ifee, ...(comptroller ? [comptroller] : []), adapterParams, ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : [])],
       log: true,
     });
 

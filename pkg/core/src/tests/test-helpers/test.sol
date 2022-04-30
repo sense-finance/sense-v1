@@ -668,4 +668,47 @@ contract DSTest {
         }
         return string(buffer);
     }
+
+    function fuzzWithBounds(
+        uint256 number,
+        uint256 lBound,
+        uint256 uBound
+    ) public pure returns (uint256) {
+        return lBound + (number % (uBound - lBound));
+    }
+
+    function fuzzWithBounds(uint256 number, uint256 lBound) public pure returns (uint256) {
+        return lBound + (number % (type(uint256).max - lBound));
+    }
+
+    function assertClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) public {
+        uint256 diff = a < b ? b - a : a - b;
+        if (diff > _tolerance) {
+            emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
+            emit log_named_uint("  Expected", b);
+            emit log_named_uint("  Tolerance", _tolerance);
+            emit log_named_uint("    Actual", a);
+            fail();
+        }
+    }
+
+    function assertClose(uint256 a, uint256 b) public {
+        uint256 variance = 100;
+        if (b < variance) variance = 10;
+        if (b < variance) variance = 1;
+        assertClose(a, b, variance);
+    }
+
+    function isClose(
+        uint256 a,
+        uint256 b,
+        uint256 _tolerance
+    ) public pure returns (bool) {
+        uint256 diff = a < b ? b - a : a - b;
+        return diff <= _tolerance;
+    }
 }

@@ -12,7 +12,6 @@ import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { User } from "./test-helpers/User.sol";
 import { MockAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { CropAdapter } from "../adapters/CropAdapter.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
 
@@ -118,20 +117,16 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfModeInvalid() public {
+        DEFAULT_ADAPTER_PARAMS.mode = 4;
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
+
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
@@ -144,20 +139,16 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesIfNotTopWeek() public {
+        DEFAULT_ADAPTER_PARAMS.mode = 1;
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            1,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
+
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
@@ -170,20 +161,16 @@ contract Dividers is TestHelper {
     }
 
     function testInitSeriesWeekly() public {
+        DEFAULT_ADAPTER_PARAMS.mode = 1;
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            1,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
+
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
@@ -400,15 +387,9 @@ contract Dividers is TestHelper {
         MockBaseAdapter aAdapter = new MockBaseAdapter(
             address(divider),
             address(target),
-            ORACLE,
-            1e18,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL
+            target.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS
         );
         divider.addAdapter(address(aAdapter));
         uint256 maturity = getValidMaturity(2021, 10);
@@ -528,20 +509,17 @@ contract Dividers is TestHelper {
 
     function testCantIssueIfIssuanceFeeExceedsCap() public {
         divider.setPermissionless(true);
+
+        ISSUANCE_FEE = 1e18;
         MockAdapter aAdapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
-            1e18,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
+            target.underlying(),
+            ISSUANCE_FEE,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
+
         divider.addAdapter(address(aAdapter));
         uint256 maturity = getValidMaturity(2021, 10);
         User(address(alice)).doSponsorSeries(address(aAdapter), maturity);
@@ -567,18 +545,13 @@ contract Dividers is TestHelper {
         // Restrict issuance, enable all other lifecycle methods
         uint16 level = 0x1 + 0x4 + 0x8 + 0x10;
 
+        DEFAULT_ADAPTER_PARAMS.level = level;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -633,7 +606,7 @@ contract Dividers is TestHelper {
     function testFuzzIssueMultipleTimes(uint128 bal) public {
         // if issuing multiple times with bal = 0, the 2nd issue will fail on _reweightLScale because
         // it will attempt to do a division by 0.
-        bal = fuzzWithBounds(bal, 1000);
+        bal = uint128(fuzzWithBounds(bal, 1000));
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -720,18 +693,13 @@ contract Dividers is TestHelper {
         // Restrict combine, enable all other lifecycle methods
         uint16 level = 0x1 + 0x2 + 0x8 + 0x10;
 
+        DEFAULT_ADAPTER_PARAMS.level = level;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -783,9 +751,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCombine(uint128 tBal) public {
-        if (tBal < 100) {
-            return;
-        }
+        hevm.assume(tBal > 10);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -922,7 +888,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzRedeemPrincipal(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000);
+        tBal = uint128(fuzzWithBounds(tBal, 1000));
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -961,18 +927,13 @@ contract Dividers is TestHelper {
         // The Targeted redemption value Alice will send Bob wants, in Underlying
         uint256 intendedRedemptionValue = 50e18;
 
+        DEFAULT_ADAPTER_PARAMS.tilt = tilt;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            tilt,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1061,18 +1022,13 @@ contract Dividers is TestHelper {
         // Enable all Divider lifecycle methods, but not the adapter pt redeem hook
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10;
 
+        DEFAULT_ADAPTER_PARAMS.level = level;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1090,18 +1046,13 @@ contract Dividers is TestHelper {
     function testRedeenPrincipalHookIsCalledIfProperLevelIsntSet() public {
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10 + 0x20;
 
+        DEFAULT_ADAPTER_PARAMS.level = level;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1122,18 +1073,13 @@ contract Dividers is TestHelper {
         // Reserve 10% of pt for Yield
         uint64 tilt = 0.1e18;
 
+        DEFAULT_ADAPTER_PARAMS.tilt = tilt;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            tilt,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1180,19 +1126,13 @@ contract Dividers is TestHelper {
     function testRedeemYieldPositiveTiltNegativeScale() public {
         // Reserve 10% of pt for Yield
         uint64 tilt = 0.1e18;
-
+        DEFAULT_ADAPTER_PARAMS.tilt = tilt;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            tilt,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1275,19 +1215,13 @@ contract Dividers is TestHelper {
     function testCantCollectIfProperLevelIsntSet() public {
         // Disable collection, enable all other lifecycle methods
         uint16 level = 0x1 + 0x2 + 0x4 + 0x10;
-
+        DEFAULT_ADAPTER_PARAMS.level = level;
         adapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            level,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setAdapter(address(adapter), true);
@@ -1378,7 +1312,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         uint256 yieldBaseUnit = 10**Token(yt).decimals();
@@ -1404,7 +1338,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectReward(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
         adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
@@ -1435,7 +1369,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectRewardMultipleUsers(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
         adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
@@ -1473,7 +1407,7 @@ contract Dividers is TestHelper {
     }
 
     function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1000, type(uint32).max);
+        tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
         adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
@@ -1496,7 +1430,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectAtMaturityBurnYieldAndDoesNotCallBurnTwice(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1528,7 +1462,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectAfterMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1545,7 +1479,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectBeforeMaturityAndSettled(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1572,7 +1506,7 @@ contract Dividers is TestHelper {
 
     // test transferring yields to user calls collect()
     function testFuzzCollectTransferAndCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         uint256 yieldBaseUnit = 10**Token(yt).decimals();
@@ -1607,7 +1541,7 @@ contract Dividers is TestHelper {
     // test transferring yields to a user calls collect()
     // it also checks that receiver receives corresp. target collected from the yields he already had
     function testFuzzCollectTransferAndCollectWithReceiverHoldingYT(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e10);
+        tBal = uint128(fuzzWithBounds(tBal, 1e10));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1664,7 +1598,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectTransferLessThanBalanceAndCollectWithReceiverHoldingYT(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1723,7 +1657,7 @@ contract Dividers is TestHelper {
     }
 
     function testFuzzCollectTransferToMyselfAndCollect(uint128 tBal) public {
-        tBal = fuzzWithBounds(tBal, 1e12);
+        tBal = uint128(fuzzWithBounds(tBal, 1e12));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -1990,15 +1924,9 @@ contract Dividers is TestHelper {
         MockAdapter aAdapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         uint256 adapterCounter = divider.adapterCounter();
@@ -2014,15 +1942,9 @@ contract Dividers is TestHelper {
         MockAdapter aAdapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         uint256 adapterCounter = divider.adapterCounter();
@@ -2041,17 +1963,12 @@ contract Dividers is TestHelper {
         MockAdapter bAdapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
+
         divider.setAdapter(address(bAdapter), true);
         (id, enabled, , ) = divider.adapterMeta(address(bAdapter));
         assertTrue(enabled);
@@ -2110,15 +2027,9 @@ contract Dividers is TestHelper {
         MockAdapter aAdapter = new MockAdapter(
             address(divider),
             address(target),
-            ORACLE,
+            target.underlying(),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            4,
-            0,
-            DEFAULT_LEVEL,
+            DEFAULT_ADAPTER_PARAMS,
             address(reward)
         );
         divider.setPermissionless(true);

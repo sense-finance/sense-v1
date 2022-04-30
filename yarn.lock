@@ -624,10 +624,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rari-capital/solmate@npm:^6.2.0":
+"@rari-capital/solmate@rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846":
   version: 6.2.0
-  resolution: "@rari-capital/solmate@npm:6.2.0"
-  checksum: 4fba71d5f9cba1facc84c02e735b6815d6b0c41d926f92e3f27fe5a0bbe7e47851ee382557662f3f739a071433e4cbf0709b41a663f248f528c8f7aa04aab530
+  resolution: "@rari-capital/solmate@https://github.com/rari-capital/solmate.git#commit=e7deddffd5206cdec1d554c5361f529c2a525846"
+  checksum: 3d964ac8710c5838b1b33afe14055af5e4b3fe0b12831d90526c0888d81c19719a609c42f9ae2bc4514d698dcb78e83e06527b16f20d0e27fb36759459a65f58
   languageName: node
   linkType: hard
 
@@ -671,10 +671,10 @@ __metadata:
     "@nomiclabs/hardhat-ethers": ^2.0.5
     "@nomiclabs/hardhat-etherscan": ^2.1.6
     "@openzeppelin/contracts": 4.3.2
-    "@rari-capital/solmate": ^6.2.0
+    "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846"
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
-    "@tenderly/hardhat-tenderly": ^1.0.12
+    "@tenderly/hardhat-tenderly": ^1.0.13
     dayjs: ^1.10.7
     ethers: ^5.5.1
     fs-extra: ^10.0.1
@@ -831,7 +831,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tenderly/hardhat-tenderly@npm:^1.0.12":
+"@tenderly/hardhat-tenderly@npm:^1.0.13":
   version: 1.0.13
   resolution: "@tenderly/hardhat-tenderly@npm:1.0.13"
   dependencies:

@@ -1,0 +1,8 @@
+{
+  "name": "yt-buying-lib",
+  "type": "module",
+  "dependencies": {
+    "decimal.js": "^10.3.1",
+    "optimization-js": "^1.5.0"
+  }
+}
