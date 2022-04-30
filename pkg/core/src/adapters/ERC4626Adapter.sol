@@ -29,15 +29,7 @@ contract ERC4626Adapter is BaseAdapter {
         address _target,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    )
-        BaseAdapter(
-            _divider,
-            _target,
-            address(ERC4626(_target).asset()),
-            _ifee,
-            _adapterParams
-        )
-    {
+    ) BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _ifee, _adapterParams) {
         BASE_UINT = 10**ERC4626(target).decimals();
         ERC20(underlying).approve(target, type(uint256).max);
     }

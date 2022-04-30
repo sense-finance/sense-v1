@@ -44,7 +44,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         target = new MockERC4626(ERC20(address(underlying)), "Mock ERC-4626", "M4626");
 
         underlying.mint(address(this), INITIAL_BALANCE);
-        
+
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: address(mockOracle),
             stake: address(stake),
@@ -56,12 +56,7 @@ contract ERC4626AdapterTest is DSTestPlus {
             level: Constants.DEFAULT_LEVEL
         });
 
-        erc4626Adapter = new ERC4626Adapter(
-            address(divider),
-            address(target),
-            ISSUANCE_FEE,
-            adapterParams
-        );
+        erc4626Adapter = new ERC4626Adapter(address(divider), address(target), ISSUANCE_FEE, adapterParams);
     }
 
     function test4626WrapUnwrap(uint256 wrapAmt) public {
