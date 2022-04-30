@@ -18,7 +18,7 @@ interface PriceOracleLike {
     function price(address underlying) external view returns (uint256);
 }
 
-/// @notice Adapter contract for cTokens
+/// @notice Adapter contract for ERC4626 Vaults
 contract ERC4626Adapter is BaseAdapter {
     using SafeTransferLib for ERC20;
 
@@ -27,33 +27,19 @@ contract ERC4626Adapter is BaseAdapter {
     constructor(
         address _divider,
         address _target,
-        address _oracle,
-        uint64 _ifee,
-        address _stake,
-        uint256 _stakeSize,
-        uint256 _minm,
-        uint256 _maxm,
-        uint16 _mode,
-        uint64 _tilt
+        uint128 _ifee,
+        AdapterParams memory _adapterParams
     )
         BaseAdapter(
             _divider,
             _target,
             address(ERC4626(_target).asset()),
-            _oracle,
             _ifee,
-            _stake,
-            _stakeSize,
-            _minm,
-            _maxm,
-            _mode,
-            _tilt,
-            31
+            _adapterParams
         )
     {
         BASE_UINT = 10**ERC4626(target).decimals();
         ERC20(underlying).approve(target, type(uint256).max);
-        ERC20(target).approve(target, type(uint256).max);
     }
 
     function scale() external override returns (uint256) {
@@ -65,7 +51,7 @@ contract ERC4626Adapter is BaseAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {
-        return PriceOracleLike(oracle).price(underlying);
+        return PriceOracleLike(adapterParams.oracle).price(underlying);
     }
 
     function wrapUnderlying(uint256 assets) external override returns (uint256 _shares) {
@@ -74,7 +60,6 @@ contract ERC4626Adapter is BaseAdapter {
     }
 
     function unwrapTarget(uint256 shares) external override returns (uint256 _assets) {
-        ERC20(target).safeTransferFrom(msg.sender, address(this), shares);
-        _assets = ERC4626(target).redeem(shares, msg.sender, address(this));
+        _assets = ERC4626(target).redeem(shares, msg.sender, msg.sender);
     }
 }

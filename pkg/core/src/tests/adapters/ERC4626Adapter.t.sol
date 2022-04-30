@@ -4,12 +4,15 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
-import { FixedMath } from "../external/FixedMath.sol";
 
-import { MockToken } from "./test-helpers/mocks/MockToken.sol";
-import { DSTest } from "./test-helpers/DSTest.sol";
-import { ERC4626Adapter } from "../adapters/ERC4626Adapter.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
+import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { ERC4626Adapter } from "../../adapters/ERC4626Adapter.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
+
+import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
+import { MockToken } from "../test-helpers/mocks/MockToken.sol";
+import { Constants } from "../test-helpers/Constants.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 // TODO: test rounding
 contract ERC4626AdapterTest is DSTestPlus {
@@ -17,8 +20,9 @@ contract ERC4626AdapterTest is DSTestPlus {
     MockToken public underlying;
     MockERC4626 public target;
 
-    ERC4626Adapter public erc4626Adapter;
     Divider public divider;
+    MockOracle internal mockOracle;
+    ERC4626Adapter public erc4626Adapter;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -33,24 +37,30 @@ contract ERC4626AdapterTest is DSTestPlus {
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
+        mockOracle = new MockOracle();
 
         stake = new MockToken("Mock Stake", "MS", 18);
         underlying = new MockToken("Mock Underlying", "MU", 18);
         target = new MockERC4626(ERC20(address(underlying)), "Mock ERC-4626", "M4626");
 
         underlying.mint(address(this), INITIAL_BALANCE);
+        
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            oracle: address(mockOracle),
+            stake: address(stake),
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0,
+            level: Constants.DEFAULT_LEVEL
+        });
 
         erc4626Adapter = new ERC4626Adapter(
             address(divider),
             address(target),
-            address(0),
             ISSUANCE_FEE,
-            address(stake),
-            STAKE_SIZE,
-            MIN_MATURITY,
-            MAX_MATURITY,
-            MODE,
-            0
+            adapterParams
         );
     }
 
