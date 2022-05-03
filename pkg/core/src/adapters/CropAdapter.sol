@@ -41,6 +41,18 @@ abstract contract CropAdapter is BaseAdapter {
         uint256 amt,
         bool join
     ) public override onlyDivider {
+        if (purged[_usr] > 0) {
+            if (!join) {
+                if (amt < purged[_user]) {
+                    purged[_usr] -= amt;
+                    amt = 0;
+                } else {
+                    amt -= purged[_usr];
+                    purged[_usr] = 0;
+                }
+            }
+        }
+        
         _distribute(_usr);
         if (amt > 0) {
             if (join) {
@@ -54,6 +66,25 @@ abstract contract CropAdapter is BaseAdapter {
         }
 
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
+    }
+    
+    mapping(address => uint256) purgedAmt;
+    
+    function purge(
+        address _usr,
+        uint256[] maturities
+    ) public override onlyDivider {
+        for (maturity of maturities) {
+            (,,,yt,,,,) = divider.series(address(this), maturity);
+            if (yt.maturity < block.timestamp) {
+                if (yt.balanceOf(_ur)) {
+                    uint256 tBal = yt.balanceOf(_ur) / series.mscale;
+                    tBalance[_usr] -= tBal;
+                    totalTarget -= tBal;
+                    purged[_user] += tBal;
+                }
+            }
+        }
     }
 
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
