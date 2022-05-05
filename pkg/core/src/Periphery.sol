@@ -716,6 +716,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         targetBal = ERC20(Adapter(adapter).target()).balanceOf(address(this));
         ytBal = ERC20(divider.yt(adapter, maturity)).balanceOf(address(this));
+        emit YTsPurchased(msg.sender, adapter, maturity, targetIn, targetBal, ytBal);
     }
 
     /// @dev ERC-3156 Flash loan callback
@@ -828,6 +829,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);
     event AdapterVerified(address indexed adapter);
+    event YTsPurchased(
+        address indexed sender,
+        address adapter,
+        uint256 maturity,
+        uint256 targetIn,
+        uint256 targetReturned,
+        uint256 ytOut
+    );
     event Swapped(
         address indexed sender,
         bytes32 indexed poolId,
