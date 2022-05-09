@@ -183,8 +183,8 @@ contract MockCropsAdapter is CropsAdapter {
         }
     }
 
-    function scaleStored() external view virtual override returns (uint256 _value) {
-        return lscale.value;
+    function scaleStored() external view virtual override returns (uint256) {
+        return lscale.value == 0 ? INITIAL_VALUE : lscale.value;
     }
 
     function _claimRewards() internal virtual override {
