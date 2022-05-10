@@ -30,7 +30,7 @@ cUSDC | [0x39aa39c021dfbae8fac545936693ac917d5e7563](https://etherscan.io/token/
 Contract | Address
 --------- | -------------
 [Divider](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0](https://etherscan.io/address/0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0#code)
-[Periphery](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Periphery.sol) | [0x9a8fbc2548da808e6cbc853fee7e18fb06d52f18](https://etherscan.io/address/0x9a8fbc2548da808e6cbc853fee7e18fb06d52f18#code)
+[Periphery](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Periphery.sol) | [0x318e8C7DA8AF285B5B99eA7E77De570A693bAd1e](https://etherscan.io/address/0x318e8C7DA8AF285B5B99eA7E77De570A693bAd1e#code)
 [PoolManager](https://github.com/sense-finance/sense-v1/blob/dev/pkg/fuse/src/PoolManager.sol) | [0xf01eb98de53ed964ac3f786b80ed8ce33f05f417](https://etherscan.io/address/0xf01eb98de53ed964ac3f786b80ed8ce33f05f417#code)
 [TokenHandler](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x4933494b4070c01bfFBd3c53C1E44A3d9d95DD8e](https://etherscan.io/address/0x4933494b4070c01bfFBd3c53C1E44A3d9d95DD8e)
 [EmergencyStop](https://github.com/sense-finance/sense-v1/blob/dev/pkg/utils/src/EmergencyStop.sol) | [0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f](https://etherscan.io/address/0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f)
