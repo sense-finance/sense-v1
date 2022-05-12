@@ -193,15 +193,17 @@ contract PeripheryTest is TestHelper {
 
     /* ========== admin update storage addresses ========== */
 
-    event PoolManagerChanged(address);
+    event PoolManagerChanged(address, address);
 
     function testUpdatePoolManager() public {
+        address oldPoolManager = address(periphery.poolManager());
+
         hevm.record();
         address NEW_POOL_MANAGER = address(0xbabe);
 
         // Expect the new Pool Manager to be set, and for a "change" event to be emitted
         hevm.expectEmit(false, false, false, true);
-        emit PoolManagerChanged(NEW_POOL_MANAGER);
+        emit PoolManagerChanged(oldPoolManager, NEW_POOL_MANAGER);
 
         // 1. Update the Pool Manager address
         periphery.setPoolManager(NEW_POOL_MANAGER);
@@ -213,15 +215,17 @@ contract PeripheryTest is TestHelper {
         assertEq(writes.length, 1);
     }
 
-    event SpaceFactoryChanged(address);
+    event SpaceFactoryChanged(address, address);
 
     function testUpdateSpaceFactory() public {
+        address oldSpaceFactory = address(periphery.spaceFactory());
+
         hevm.record();
         address NEW_SPACE_FACTORY = address(0xbabe);
 
         // Expect the new Space Factory to be set, and for a "change" event to be emitted
         hevm.expectEmit(false, false, false, true);
-        emit SpaceFactoryChanged(NEW_SPACE_FACTORY);
+        emit SpaceFactoryChanged(oldSpaceFactory, NEW_SPACE_FACTORY);
 
         // 1. Update the Space Factory address
         periphery.setSpaceFactory(NEW_SPACE_FACTORY);

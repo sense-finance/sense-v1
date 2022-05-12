@@ -419,15 +419,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Update the address for the Space Factory
     /// @param newSpaceFactory The Space Factory addresss to set
     function setSpaceFactory(address newSpaceFactory) external requiresTrust {
+        emit SpaceFactoryChanged(address(spaceFactory), newSpaceFactory);
         spaceFactory = SpaceFactoryLike(newSpaceFactory);
-        emit SpaceFactoryChanged(newSpaceFactory);
     }
 
     /// @notice Update the address for the Pool Manager
     /// @param newPoolManager The Pool Manager addresss to set
     function setPoolManager(address newPoolManager) external requiresTrust {
+        emit PoolManagerChanged(address(poolManager), newPoolManager);
         poolManager = PoolManager(newPoolManager);
-        emit PoolManagerChanged(newPoolManager);
     }
 
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
@@ -823,8 +823,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /* ========== LOGS ========== */
 
     event FactoryChanged(address indexed factory, bool indexed isOn);
-    event SpaceFactoryChanged(address newSpaceFactory);
-    event PoolManagerChanged(address newPoolManager);
+    event SpaceFactoryChanged(address oldSpaceFactory, address newSpaceFactory);
+    event PoolManagerChanged(address oldPoolManager, address newPoolManager);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);
