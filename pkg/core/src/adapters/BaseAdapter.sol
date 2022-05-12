@@ -167,7 +167,7 @@ abstract contract BaseAdapter is IERC3156FlashLender {
 
     /* ========== PUBLIC STORAGE ACCESSORS ========== */
 
-    function getMaturityBounds() external view returns (uint256, uint256) {
+    function getMaturityBounds() external view virtual returns (uint256, uint256) {
         return (adapterParams.minm, adapterParams.maxm);
     }
 
