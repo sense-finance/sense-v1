@@ -1,4 +1,4 @@
-const { SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, OZ_RELAYER } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function () {
@@ -7,7 +7,7 @@ module.exports = async function () {
   const chainId = await getChainId();
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No sense multisig found");
-  const multisig = SENSE_MULTISIG.get(chainId);
+  const multisig = chainId === "5" ? OZ_RELAYER.get(chainId) : SENSE_MULTISIG.get(chainId);
 
   const tokenHandler = await ethers.getContract("TokenHandler", signer);
   const divider = await ethers.getContract("Divider", signer);
