@@ -83,14 +83,5 @@ task(
     const scale = await adptr.callStatic.scale();
     console.log(`-> scale: ${scale.toString()}`);
     console.log(`${contractName} adapterAddress: ${adapterAddress}`);
-
-    const { address: targetAddress } = target;
-    const { abi: tokenAbi } = await deployments.getArtifact("Token");
-    const targetContract = new ethers.Contract(targetAddress, tokenAbi, signer);
-
-    console.log("\nEnable the Periphery to move the deployer's Target for liquidity provisions");
-    await targetContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-    console.log("\nEnable the Divider to move the deployer's Target for issuance");
-    await targetContract.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
   }
 });
