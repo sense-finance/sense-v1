@@ -77,6 +77,8 @@ abstract contract CropAdapter is BaseAdapter {
             address usr = _usrs[i];
             for (uint256 j = 0; j < _maturities.length; j++) {
                 (, , address yt, , , , , uint256 mscale, ) = Divider(divider).series(address(this), _maturities[j]);
+
+                // We don't want to reconcile users if maturity has not been reached or if they have already been reconciled
                 if (
                     _maturities[j] < block.timestamp && ERC20(yt).balanceOf(usr) > 0 && !reconciled[usr][_maturities[j]]
                 ) {

@@ -685,7 +685,7 @@ contract DSTest {
         uint256 a,
         uint256 b,
         uint256 _tolerance
-    ) public {
+    ) public virtual {
         uint256 diff = a < b ? b - a : a - b;
         if (diff > _tolerance) {
             emit log("Error: abs(a, b) < tolerance not satisfied [uint]");
@@ -696,7 +696,7 @@ contract DSTest {
         }
     }
 
-    function assertClose(uint256 a, uint256 b) public {
+    function assertClose(uint256 a, uint256 b) public virtual {
         uint256 variance = 100;
         if (b < variance) variance = 10;
         if (b < variance) variance = 1;
