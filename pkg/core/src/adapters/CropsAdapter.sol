@@ -19,6 +19,8 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
     /// @notice Program state
     uint256 public totalTarget; // total target accumulated by all users
     mapping(address => uint256) public tBalance; // target balance per user
+    mapping(address => uint256) public reconciledAmt; // reconciled target amount per user
+    mapping(address => mapping(uint256 => bool)) public reconciled; // whether a user has been reconciled for a given maturity
 
     address[] public rewardTokens; // reward tokens addresses
     mapping(address => Crop) public data;
@@ -48,6 +50,18 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         uint256 amt,
         bool join
     ) public override {
+        if (reconciledAmt[_usr] > 0) {
+            if (!join) {
+                if (amt < reconciledAmt[_usr]) {
+                    reconciledAmt[_usr] -= amt;
+                    amt = 0;
+                } else {
+                    amt -= reconciledAmt[_usr];
+                    reconciledAmt[_usr] = 0;
+                }
+            }
+        }
+
         if (divider != msg.sender) revert Errors.OnlyDivider();
         _distribute(_usr);
         if (amt > 0) {
@@ -55,7 +69,6 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
                 totalTarget += amt;
                 tBalance[_usr] += amt;
             } else {
-                // else `exit`
                 totalTarget -= amt;
                 tBalance[_usr] -= amt;
             }
@@ -63,6 +76,30 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
 
         for (uint256 i = 0; i < rewardTokens.length; i++) {
             data[rewardTokens[i]].rewarded[_usr] = tBalance[_usr].fmulUp(data[rewardTokens[i]].shares, FixedMath.RAY);
+        }
+    }
+
+    /// @notice Reconciles users target balances to avoid delution of next Series YT holders.
+    /// This function should be called right after a Series matures.
+    /// @param _usrs Users to reconcile
+    /// @param _maturities Maturities of the series that we want to reconcile users on.
+    function reconcile(address[] calldata _usrs, uint256[] calldata _maturities) public {
+        for (uint256 i = 0; i < _usrs.length; i++) {
+            address usr = _usrs[i];
+            for (uint256 j = 0; j < _maturities.length; j++) {
+                (, , address yt, , , , , uint256 mscale, ) = Divider(divider).series(address(this), _maturities[j]);
+                if (
+                    _maturities[j] < block.timestamp && ERC20(yt).balanceOf(usr) > 0 && !reconciled[usr][_maturities[j]]
+                ) {
+                    _distribute(usr);
+                    uint256 tBal = ERC20(yt).balanceOf(usr).fdiv(mscale);
+                    totalTarget -= tBal;
+                    tBalance[usr] -= tBal;
+                    reconciledAmt[usr] += tBal;
+                    reconciled[usr][_maturities[j]] = true;
+                    emit Reconciled(usr);
+                }
+            }
         }
     }
 
@@ -103,6 +140,8 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
     }
 
     /* ========== LOGS ========== */
+
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokensChanged(address[] indexed rewardTokens);
+    event Reconciled(address indexed usr);
 }

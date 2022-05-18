@@ -253,6 +253,16 @@ contract TestHelper is DSTest {
         MockToken(target).mint(usr, amt);
     }
 
+    // factory with custom factory params
+    function createFactory(
+        address _target,
+        address _reward,
+        BaseFactory.FactoryParams memory _factoryParams
+    ) public returns (MockFactory someFactory) {
+        return _createFactory(_target, _reward, _factoryParams);
+    }
+
+    // factory with default params
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
@@ -264,7 +274,15 @@ contract TestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        someFactory = new MockFactory(address(divider), factoryParams, _reward); // deploy adapter factory
+        return _createFactory(_target, _reward, factoryParams);
+    }
+
+    function _createFactory(
+        address _target,
+        address _reward,
+        BaseFactory.FactoryParams memory _factoryParams
+    ) internal returns (MockFactory someFactory) {
+        someFactory = new MockFactory(address(divider), _factoryParams, _reward); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -277,10 +295,10 @@ contract TestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
+            ifee: 0,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
+            maxm: 48 weeks, // 1 year
             mode: MODE,
             tilt: 0
         });
