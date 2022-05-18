@@ -26,16 +26,19 @@ task(
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);
 
+  let divider = new ethers.Contract(mainnet.divider, dividerAbi);
+  let periphery = new ethers.Contract(mainnet.periphery, peripheryAbi);
+
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
   console.log("\n-------------------------------------------------------");
 
   for (let adapter of mainnet.adapters) {
     const { contractName, deploymentParams, target } = adapter;
     const { underlying, ifee, adapterParams } = deploymentParams;
+    
+    divider = divider.connect(deployerSigner);
+    periphery = periphery.connect(deployerSigner);
 
-    let divider = new ethers.Contract(mainnet.divider, dividerAbi, deployerSigner);
-    let periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, deployerSigner);
-  
     console.log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
@@ -55,9 +58,8 @@ task(
         params: [senseAdminMultisigAddress],
       });
       const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
-
-      divider = new ethers.Contract(mainnet.divider, dividerAbi, multisigSigner);
-      periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, multisigSigner);
+      divider = divider.connect(multisigSigner);
+      periphery = periphery.connect(multisigSigner);
 
       console.log(`Set ${contractName} adapter issuance cap to ${target.guard}`);
       await divider.setGuard(adapterAddress, target.guard).then(tx => tx.wait());
