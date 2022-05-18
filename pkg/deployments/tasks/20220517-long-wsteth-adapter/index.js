@@ -24,19 +24,18 @@ task(
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
-  const signer = await ethers.getSigner(deployer);
+  const deployerSigner = await ethers.getSigner(deployer);
 
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
-
-  let divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
-  let periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, signer);
-
   console.log("\n-------------------------------------------------------");
 
   for (let adapter of mainnet.adapters) {
     const { contractName, deploymentParams, target } = adapter;
     const { underlying, ifee, adapterParams } = deploymentParams;
 
+    let divider = new ethers.Contract(mainnet.divider, dividerAbi, deployerSigner);
+    let periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, deployerSigner);
+  
     console.log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
@@ -55,10 +54,10 @@ task(
         method: "hardhat_impersonateAccount",
         params: [senseAdminMultisigAddress],
       });
-      const signer = await hre.ethers.getSigner(senseAdminMultisigAddress);
+      const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
 
-      divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
-      periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, signer);
+      divider = new ethers.Contract(mainnet.divider, dividerAbi, multisigSigner);
+      periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, multisigSigner);
 
       console.log(`Set ${contractName} adapter issuance cap to ${target.guard}`);
       await divider.setGuard(adapterAddress, target.guard).then(tx => tx.wait());
@@ -74,12 +73,10 @@ task(
         params: [senseAdminMultisigAddress],
       });
     }
-    divider = new ethers.Contract(mainnet.divider, dividerAbi, signer);
-    periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, signer);
 
     console.log(`Can call scale value`);
     const { abi: adapterAbi } = await deployments.getArtifact(contractName);
-    const adptr = new ethers.Contract(adapterAddress, adapterAbi, signer);
+    const adptr = new ethers.Contract(adapterAddress, adapterAbi, deployerSigner);
     const scale = await adptr.callStatic.scale();
     console.log(`-> scale: ${scale.toString()}`);
     console.log(`${contractName} adapterAddress: ${adapterAddress}`);
