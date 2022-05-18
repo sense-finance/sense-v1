@@ -1,16 +1,5 @@
 const { task } = require("hardhat/config");
 const { mainnet } = require("./input");
-const dayjs = require("dayjs");
-const utc = require("dayjs/plugin/utc");
-const en = require("dayjs/locale/en");
-const weekOfYear = require("dayjs/plugin/weekOfYear");
-
-dayjs.extend(weekOfYear);
-dayjs.extend(utc);
-dayjs.locale({
-  ...en,
-  weekStart: 1,
-});
 
 const { SENSE_MULTISIG, BALANCER_VAULT } = require("../../hardhat.addresses");
 
@@ -56,7 +45,6 @@ task("20220518-space-factory", "Deploys long term wstETH adapter").setAction(asy
   });
 
   console.log(`Space Factory deployed to ${spaceFactoryAddress}`);
-
   divider = divider.connect(deployerSigner);
   oldSpaceFactory = oldSpaceFactory.connect(deployerSigner);
 
@@ -71,5 +59,28 @@ task("20220518-space-factory", "Deploys long term wstETH adapter").setAction(asy
     const pool = await oldSpaceFactory.pools(adapter, maturity);
     console.log(`Adding ${adapter} ${maturity} Series with pool ${pool} to new Space Factory pools mapping`);
     await spaceFactory.setPool(adapter, maturity, pool).then(t => t.wait());
+  }
+
+  console.log("Trust the multisig address on the space factory");
+  await spaceFactory.setIsTrusted(multisig, true).then(t => t.wait());
+
+  console.log("Untrust deployer on the space factory");
+  await spaceFactory.setIsTrusted(deployer, false).then(t => t.wait());
+
+  if (chainId === "111") {
+    console.log("\n-------------------------------------------------------");
+    console.log("\nChecking multisig txs by impersonating the address");
+    if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
+    const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [senseAdminMultisigAddress],
+    });
+    const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
+
+    const periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, multisigSigner);
+
+    console.log("\nUnset the multisig as an authority on the old Periphery");
+    await periphery.setSpaceFactory(spaceFactoryAddress).then(t => t.wait());
   }
 });
