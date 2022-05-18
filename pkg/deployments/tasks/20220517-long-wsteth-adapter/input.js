@@ -18,7 +18,7 @@ const MAINNET_ADAPTERS = [
     contractName: "WstETHAdapter",
     target: {
       name: "wstETH",
-      guard: ethers.utils.parseEther("40"),
+      guard: ethers.utils.parseEther("100"),
       series: [],
       address: WSTETH_TOKEN.get("1"),
     },
