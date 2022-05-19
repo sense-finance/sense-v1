@@ -6,6 +6,7 @@ const { SENSE_MULTISIG, BALANCER_VAULT } = require("../../hardhat.addresses");
 const dividerAbi = require("./abi/Divider.json");
 const oldSpaceFactoryAbi = require("./abi/OldSpaceFactory.json");
 const spaceFactoryAbi = require("./abi/SpaceFactory.json");
+const peripheryAbi = require("./abi/Periphery.json");
 
 task("20220518-space-factory", "Deploys long term wstETH adapter").setAction(async ({}, { ethers }) => {
   const { deploy } = deployments;
@@ -61,8 +62,11 @@ task("20220518-space-factory", "Deploys long term wstETH adapter").setAction(asy
     await spaceFactory.setPool(adapter, maturity, pool).then(t => t.wait());
   }
 
+  if (!SENSE_MULTISIG.has(chainId)) throw Error("No Admin Multisig found");
+  const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+
   console.log("Trust the multisig address on the space factory");
-  await spaceFactory.setIsTrusted(multisig, true).then(t => t.wait());
+  await spaceFactory.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
 
   console.log("Untrust deployer on the space factory");
   await spaceFactory.setIsTrusted(deployer, false).then(t => t.wait());
@@ -70,8 +74,6 @@ task("20220518-space-factory", "Deploys long term wstETH adapter").setAction(asy
   if (chainId === "111") {
     console.log("\n-------------------------------------------------------");
     console.log("\nChecking multisig txs by impersonating the address");
-    if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
-    const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [senseAdminMultisigAddress],
