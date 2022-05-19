@@ -45,7 +45,7 @@ sP-cUSDC:01-05-2022:6 | [0xa93fBC8114f6AD04B59426A2aFc1dB9eDB841f7a](https://eth
 sY-cUSDC:01-05-2022:6 | [0xA5240A4a27817135E2aB30c8f1996a2d460C9Db4](https://etherscan.io/address/0xA5240A4a27817135E2aB30c8f1996a2d460C9Db4)
 sP-cUSDC:01-07-2022:6 | [0xb636ADB2031DCbf6e2A04498e8Af494A819d4CB9](https://etherscan.io/address/0xb636ADB2031DCbf6e2A04498e8Af494A819d4CB9)
 sY-cUSDC:01-07-2022:6 | [0x4ACA82E5686226A679875AACde7ECdf5fC5477ec](https://etherscan.io/address/0x4ACA82E5686226A679875AACde7ECdf5fC5477ec)
-[SpaceFactory](https://github.com/sense-finance/space-v1/blob/main/src/SpaceFactory.sol) | [0x984682770f1EED90C00cd57B06b151EC12e7c51C](https://etherscan.io/address/0x984682770f1EED90C00cd57B06b151EC12e7c51C)
+[SpaceFactory](https://github.com/sense-finance/space-v1/blob/main/src/SpaceFactory.sol) | [0x5f6e8e9C888760856e22057CBc81dD9e0494aA34](https://etherscan.io/address/0x5f6e8e9C888760856e22057CBc81dD9e0494aA34)
 [Space LP Share-wstETH:01-05-2022:5](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0xbB6C7b5E0804d07aE31A43E6E83Ea66fb128a3BB](https://etherscan.io/address/0xbB6C7b5E0804d07aE31A43E6E83Ea66fb128a3BB)
 [Space LP Share-wstETH:01-07-2022:5](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x34d179259336812A1C7d320A0972e949dA5fa26d](https://etherscan.io/address/0x34d179259336812A1C7d320A0972e949dA5fa26d)
 [Space LP Share-cUSDC:01-05-2022:6](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x64db005d040EE62E8fa202291C73E8a6151A0399](https://etherscan.io/address/0x64db005d040EE62E8fa202291C73E8a6151A0399)
