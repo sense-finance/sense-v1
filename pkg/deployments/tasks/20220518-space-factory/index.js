@@ -28,7 +28,7 @@ task("20220518-space-factory", "Deploys Space Factory and adds legacy pools").se
   });
 
   // 1 / 12 years in seconds
-  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("379468800"));
+  const TS = "2640612622";
   // 5% of implied yield for selling Target
   const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
   // 5% of implied yield for selling PTs
@@ -60,6 +60,7 @@ task("20220518-space-factory", "Deploys Space Factory and adds legacy pools").se
     const pool = await oldSpaceFactory.pools(adapter, maturity);
     console.log(`Adding ${adapter} ${maturity} Series with pool ${pool} to new Space Factory pools mapping`);
     await spaceFactory.setPool(adapter, maturity, pool).then(t => t.wait());
+    console.log(`Added pool ${await spaceFactory.pools(adapter, maturity)}`);
   }
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No Admin Multisig found");
@@ -82,7 +83,9 @@ task("20220518-space-factory", "Deploys Space Factory and adds legacy pools").se
 
     const periphery = new ethers.Contract(mainnet.periphery, peripheryAbi, multisigSigner);
 
-    console.log("\nUnset the multisig as an authority on the old Periphery");
+    console.log("\nUnset the multisig as an authority on the Periphery");
     await periphery.setSpaceFactory(spaceFactoryAddress).then(t => t.wait());
+
+    console.log(`Set Space Factory ${await periphery.spaceFactory()} on the Periphery`);
   }
 });
