@@ -8,7 +8,7 @@ const oldSpaceFactoryAbi = require("./abi/OldSpaceFactory.json");
 const spaceFactoryAbi = require("./abi/SpaceFactory.json");
 const peripheryAbi = require("./abi/Periphery.json");
 
-task("20220518-space-factory", "Deploys long term wstETH adapter").setAction(async ({}, { ethers }) => {
+task("20220518-space-factory", "Deploys Space Factory and adds legacy pools").setAction(async ({}, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
