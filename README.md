@@ -26,11 +26,11 @@ wstETH | [0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0](https://etherscan.io/addre
 cUSDC | [0x39aa39c021dfbae8fac545936693ac917d5e7563](https://etherscan.io/token/0x39aa39c021dfbae8fac545936693ac917d5e7563)
 
 
-### v1.2.1
+### v1.3.0
 Contract | Address
 --------- | -------------
 [Divider](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0](https://etherscan.io/address/0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0#code)
-[Periphery](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Periphery.sol) | [0x318e8C7DA8AF285B5B99eA7E77De570A693bAd1e](https://etherscan.io/address/0x318e8C7DA8AF285B5B99eA7E77De570A693bAd1e#code)
+[Periphery](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Periphery.sol) | [0xFff11417a58781D3C72083CB45EF54d79Cd02437](https://etherscan.io/address/0xFff11417a58781D3C72083CB45EF54d79Cd02437#code)
 [PoolManager](https://github.com/sense-finance/sense-v1/blob/dev/pkg/fuse/src/PoolManager.sol) | [0xf01eb98de53ed964ac3f786b80ed8ce33f05f417](https://etherscan.io/address/0xf01eb98de53ed964ac3f786b80ed8ce33f05f417#code)
 [TokenHandler](https://github.com/sense-finance/sense-v1/blob/dev/pkg/core/src/Divider.sol) | [0x4933494b4070c01bfFBd3c53C1E44A3d9d95DD8e](https://etherscan.io/address/0x4933494b4070c01bfFBd3c53C1E44A3d9d95DD8e)
 [EmergencyStop](https://github.com/sense-finance/sense-v1/blob/dev/pkg/utils/src/EmergencyStop.sol) | [0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f](https://etherscan.io/address/0xdC2eDFf06AF7944F4eFd22A105ac693d848Ee52f)
@@ -45,7 +45,7 @@ sP-cUSDC:01-05-2022:6 | [0xa93fBC8114f6AD04B59426A2aFc1dB9eDB841f7a](https://eth
 sY-cUSDC:01-05-2022:6 | [0xA5240A4a27817135E2aB30c8f1996a2d460C9Db4](https://etherscan.io/address/0xA5240A4a27817135E2aB30c8f1996a2d460C9Db4)
 sP-cUSDC:01-07-2022:6 | [0xb636ADB2031DCbf6e2A04498e8Af494A819d4CB9](https://etherscan.io/address/0xb636ADB2031DCbf6e2A04498e8Af494A819d4CB9)
 sY-cUSDC:01-07-2022:6 | [0x4ACA82E5686226A679875AACde7ECdf5fC5477ec](https://etherscan.io/address/0x4ACA82E5686226A679875AACde7ECdf5fC5477ec)
-[SpaceFactory](https://github.com/sense-finance/space-v1/blob/main/src/SpaceFactory.sol) | [0x984682770f1EED90C00cd57B06b151EC12e7c51C](https://etherscan.io/address/0x984682770f1EED90C00cd57B06b151EC12e7c51C)
+[SpaceFactory](https://github.com/sense-finance/space-v1/blob/main/src/SpaceFactory.sol) | [0x5f6e8e9C888760856e22057CBc81dD9e0494aA34](https://etherscan.io/address/0x5f6e8e9C888760856e22057CBc81dD9e0494aA34)
 [Space LP Share-wstETH:01-05-2022:5](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0xbB6C7b5E0804d07aE31A43E6E83Ea66fb128a3BB](https://etherscan.io/address/0xbB6C7b5E0804d07aE31A43E6E83Ea66fb128a3BB)
 [Space LP Share-wstETH:01-07-2022:5](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x34d179259336812A1C7d320A0972e949dA5fa26d](https://etherscan.io/address/0x34d179259336812A1C7d320A0972e949dA5fa26d)
 [Space LP Share-cUSDC:01-05-2022:6](https://github.com/sense-finance/space-v1/blob/main/src/Space.sol) * | [0x64db005d040EE62E8fa202291C73E8a6151A0399](https://etherscan.io/address/0x64db005d040EE62E8fa202291C73E8a6151A0399)
