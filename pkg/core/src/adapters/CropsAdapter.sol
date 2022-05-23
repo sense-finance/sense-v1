@@ -50,18 +50,6 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         uint256 amt,
         bool join
     ) public override {
-        if (reconciledAmt[_usr] > 0) {
-            if (!join) {
-                if (amt < reconciledAmt[_usr]) {
-                    reconciledAmt[_usr] -= amt;
-                    amt = 0;
-                } else {
-                    amt -= reconciledAmt[_usr];
-                    reconciledAmt[_usr] = 0;
-                }
-            }
-        }
-
         if (divider != msg.sender) revert Errors.OnlyDivider();
         _distribute(_usr);
         if (amt > 0) {
@@ -69,11 +57,23 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
                 totalTarget += amt;
                 tBalance[_usr] += amt;
             } else {
-                totalTarget -= amt;
-                tBalance[_usr] -= amt;
+                if (reconciledAmt[_usr] > 0) {
+                    if (amt < reconciledAmt[_usr]) {
+                        unchecked {
+                            reconciledAmt[_usr] -= amt;
+                        }
+                        amt = 0;
+                    } else {
+                        amt -= reconciledAmt[_usr];
+                        reconciledAmt[_usr] = 0;
+                    }
+                }
+                if (amt > 0) {
+                    totalTarget -= amt;
+                    tBalance[_usr] -= amt;
+                }
             }
         }
-
         for (uint256 i = 0; i < rewardTokens.length; i++) {
             data[rewardTokens[i]].rewarded[_usr] = tBalance[_usr].fmulUp(data[rewardTokens[i]].shares, FixedMath.RAY);
         }
@@ -87,17 +87,16 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         for (uint256 i = 0; i < _usrs.length; i++) {
             address usr = _usrs[i];
             for (uint256 j = 0; j < _maturities.length; j++) {
-                (, , address yt, , , , , uint256 mscale, ) = Divider(divider).series(address(this), _maturities[j]);
-                if (
-                    _maturities[j] < block.timestamp && ERC20(yt).balanceOf(usr) > 0 && !reconciled[usr][_maturities[j]]
-                ) {
+                address yt = Divider(divider).yt(address(this), _maturities[j]);
+                uint256 ytBal = ERC20(yt).balanceOf(usr);
+                if (_maturities[j] < block.timestamp && ytBal > 0 && !reconciled[usr][_maturities[j]]) {
                     _distribute(usr);
-                    uint256 tBal = ERC20(yt).balanceOf(usr).fdiv(mscale);
+                    uint256 tBal = ytBal.fdiv(Divider(divider).mscale(address(this), _maturities[j]));
                     totalTarget -= tBal;
                     tBalance[usr] -= tBal;
                     reconciledAmt[usr] += tBal;
                     reconciled[usr][_maturities[j]] = true;
-                    emit Reconciled(usr);
+                    emit Reconciled(usr, tBal);
                 }
             }
         }
@@ -143,5 +142,5 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokensChanged(address[] indexed rewardTokens);
-    event Reconciled(address indexed usr);
+    event Reconciled(address indexed usr, uint256 tBal);
 }
