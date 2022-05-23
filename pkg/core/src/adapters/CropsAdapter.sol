@@ -64,7 +64,9 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
                         }
                         amt = 0;
                     } else {
-                        amt -= reconciledAmt[_usr];
+                        unchecked {
+                            amt -= reconciledAmt[_usr];
+                        }
                         reconciledAmt[_usr] = 0;
                     }
                 }
