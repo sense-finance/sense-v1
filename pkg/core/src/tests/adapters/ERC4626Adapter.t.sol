@@ -59,7 +59,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         erc4626Adapter = new ERC4626Adapter(address(divider), address(target), ISSUANCE_FEE, adapterParams);
     }
 
-    function test4626WrapUnwrap(uint256 wrapAmt) public {
+    function testWrapUnwrap(uint256 wrapAmt) public {
         wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE);
 
         // Approvals
@@ -99,7 +99,33 @@ contract ERC4626AdapterTest is DSTestPlus {
         assertEq(prebal, postbal);
     }
 
-    function test4626Scale() public {
+    function testCantWrapMoreThanBalance() public {
+        uint256 wrapAmt = INITIAL_BALANCE + 1;
+
+        // Approvals
+        target.approve(address(erc4626Adapter), type(uint256).max);
+        underlying.approve(address(erc4626Adapter), type(uint256).max);
+
+        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        erc4626Adapter.wrapUnderlying(wrapAmt);
+    }
+
+    function testCantUnwrapMoreThanBalance(uint256 wrapAmt) public {
+        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE);
+
+        // Approvals
+        target.approve(address(erc4626Adapter), type(uint256).max);
+        underlying.approve(address(erc4626Adapter), type(uint256).max);
+
+        uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
+        assertEq(targetFromWrap, target.balanceOf(address(this)));
+
+        bytes memory arithmeticError = abi.encodeWithSignature("Panic(uint256)", 0x11);
+        hevm.expectRevert(arithmeticError);
+        erc4626Adapter.unwrapTarget(targetFromWrap + 1);
+    }
+
+    function testScale() public {
         // 1. Deposit initial underlying tokens into the vault
         underlying.approve(address(target), INITIAL_BALANCE / 2);
         target.deposit(INITIAL_BALANCE / 2, address(this));
@@ -115,7 +141,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         assertEq(erc4626Adapter.scale(), ((INITIAL_BALANCE / 2 + 2e18) * 1e18) / (INITIAL_BALANCE / 2));
     }
 
-    function test4626ScaleIsExRate() public {
+    function testScaleIsExRate() public {
         // 1. Deposit initial underlying tokens into the vault and simulate yield returns
         underlying.approve(address(target), INITIAL_BALANCE / 2);
         target.deposit(INITIAL_BALANCE / 2, address(this));
@@ -139,5 +165,29 @@ contract ERC4626AdapterTest is DSTestPlus {
         assertEq(((underlyingBalPre / 2) * 1e18) / erc4626Adapter.scale(), targetFromWrap);
     }
 
-    // edge case, empties entire vault
+    /// @notice scale() and scaleStored() have the same implementation
+    function testScaleAndScaleStored() public {
+        // 1. Deposit initial underlying tokens into the vault
+        underlying.approve(address(target), INITIAL_BALANCE / 2);
+        target.deposit(INITIAL_BALANCE / 2, address(this));
+
+        // Initializes at 1:1
+        assertEq(erc4626Adapter.scale(), 1e18);
+        assertEq(erc4626Adapter.scaleStored(), 1e18);
+
+        // 2. Vault mutates by +2e18 tokens (simulated yield returned from strategy)
+        underlying.mint(address(target), 2e18);
+
+        // 3. Check that the value per share is now higher
+        assertGt(erc4626Adapter.scale(), 1e18);
+        assertGt(erc4626Adapter.scaleStored(), 1e18);
+
+        uint256 scale = ((INITIAL_BALANCE / 2 + 2e18) * 1e18) / (INITIAL_BALANCE / 2);
+        assertEq(erc4626Adapter.scale(), scale);
+        assertEq(erc4626Adapter.scaleStored(), scale);
+    }
+
+    function testGetUnderlyingPrice() public {
+        assertEq(erc4626Adapter.getUnderlyingPrice(), MockOracle(mockOracle).price(address(underlying)));
+    }
 }

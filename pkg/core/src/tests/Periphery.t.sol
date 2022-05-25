@@ -7,7 +7,7 @@ import { Token } from "../tokens/Token.sol";
 import { PoolManager, ComptrollerLike } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { BaseAdapter } from "../adapters/BaseAdapter.sol";
 import { BaseFactory } from "../adapters/BaseFactory.sol";
-import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { TestHelper, MockTargetLike } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
@@ -55,7 +55,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            target.underlying(),
+            !is4626 ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             DEFAULT_ADAPTER_PARAMS,
             address(reward)
@@ -94,7 +94,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            target.underlying(),
+            !is4626 ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -120,7 +120,8 @@ contract PeripheryTest is TestHelper {
     function testDeployAdapter() public {
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
-        MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
+        MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
+
         factory.addTarget(address(newTarget), true);
 
         // onboard target
@@ -141,13 +142,18 @@ contract PeripheryTest is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        MockFactory cropFactory = new MockFactory(address(divider), factoryParams, address(reward)); // deploy adapter factory
+        MockFactory cropFactory = new MockFactory(
+            address(divider),
+            factoryParams,
+            address(reward),
+            !is4626 ? false : true
+        ); // deploy adapter factory
         divider.setIsTrusted(address(cropFactory), true);
         periphery.setFactory(address(cropFactory), true);
 
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
-        MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
+        MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
         cropFactory.addTarget(address(newTarget), true);
 
         // onboard target
@@ -160,7 +166,7 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
-        MockToken newTarget = new MockTarget(address(underlying), "New Target", "NT", 18);
+        MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
         factory.addTarget(address(newTarget), true);
 
         // onboard target
@@ -171,19 +177,24 @@ contract PeripheryTest is TestHelper {
 
     function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
         MockFactory someFactory = createFactory(address(someTarget), address(reward));
+
+        // try deploying adapter using default factory
         try alice.doDeployAdapter(address(factory), address(someTarget), "") {
             fail();
         } catch (bytes memory error) {
             assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         }
+
+        // try deploying adapter using new factory with supported target
         alice.doDeployAdapter(address(someFactory), address(someTarget), "");
     }
 
     function testCantDeployAdapterIfTargetIsNotSupported() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget newTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
+
         try alice.doDeployAdapter(address(factory), address(newTarget), "") {
             fail();
         } catch (bytes memory error) {
@@ -271,14 +282,11 @@ contract PeripheryTest is TestHelper {
 
     function testAdminOnboardVerifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter), true);
@@ -288,14 +296,11 @@ contract PeripheryTest is TestHelper {
 
     function testAdminOnboardUnverifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
@@ -305,14 +310,11 @@ contract PeripheryTest is TestHelper {
     function testAdminOnboardVerifiedAdapterWhenPermissionlesss() public {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true);
         periphery.onboardAdapter(address(otherAdapter), true);
@@ -323,14 +325,11 @@ contract PeripheryTest is TestHelper {
     function testAdminOnboardUnverifiedAdapterWhenPermissionlesss() public {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
@@ -341,14 +340,11 @@ contract PeripheryTest is TestHelper {
 
     function testOnboardVerifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
@@ -362,14 +358,11 @@ contract PeripheryTest is TestHelper {
 
     function testOnboardUnverifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.setIsTrusted(address(this), false); // admin verification
 
@@ -383,14 +376,11 @@ contract PeripheryTest is TestHelper {
     function testOnboardVerifiedAdapterWhenPermissionlesss() public {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(address(this), false);
@@ -402,14 +392,11 @@ contract PeripheryTest is TestHelper {
     function testOnboardUnverifiedAdapterWhenPermissionlesss() public {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.setIsTrusted(address(this), false);
         periphery.onboardAdapter(address(otherAdapter), true); // no-admin onboarding
@@ -441,14 +428,11 @@ contract PeripheryTest is TestHelper {
 
     function testAdminVerifyAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         assertTrue(periphery.verified(address(otherAdapter)));
@@ -457,14 +441,11 @@ contract PeripheryTest is TestHelper {
     function testAdminVerifyAdapterWhenPermissionless() public {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         assertTrue(periphery.verified(address(otherAdapter)));
@@ -472,14 +453,11 @@ contract PeripheryTest is TestHelper {
 
     function testCantVerifyAdapterNonAdmin() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.setIsTrusted(address(this), false);
         hevm.expectRevert("UNTRUSTED");
@@ -490,14 +468,11 @@ contract PeripheryTest is TestHelper {
     function testCantVerifyAdapterNonAdminWhenPermissionless() public {
         divider.setPermissionless(true);
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTarget otherTarget = new MockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18);
-        MockAdapter otherAdapter = new MockAdapter(
-            address(divider),
-            address(otherTarget),
-            otherTarget.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.setIsTrusted(address(this), false);
         hevm.expectRevert("UNTRUSTED");
@@ -519,8 +494,7 @@ contract PeripheryTest is TestHelper {
         uint256 ptBalBefore = ERC20(pt).balanceOf(address(alice));
 
         // unwrap target into underlying
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 uBal = tBal.fmul(lvalue);
+        uint256 uBal = tBal.fmul(adapter.scale());
 
         // calculate underlying swapped to pt
         uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE());
@@ -535,12 +509,12 @@ contract PeripheryTest is TestHelper {
         uint256 uBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lvalue) = adapter.lscale();
+        uint256 scale = adapter.scale();
 
         // wrap underlying into target
         uint256 tBal = underlying.decimals() > target.decimals()
-            ? uBal.fmul(lvalue) / SCALING_FACTOR
-            : uBal.fmul(lvalue) * SCALING_FACTOR;
+            ? uBal.fmul(scale) / SCALING_FACTOR
+            : uBal.fmul(scale) * SCALING_FACTOR;
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 100000e18);
@@ -578,7 +552,7 @@ contract PeripheryTest is TestHelper {
         alice.doApprove(pt, address(periphery), ptBalBefore);
         alice.doSwapPTsForTarget(address(adapter), maturity, ptBalBefore, 0);
 
-        assertEq(tBalBefore + swapped, ERC20(target).balanceOf(address(alice)));
+        assertEq(tBalBefore + swapped, target.balanceOf(address(alice)));
     }
 
     function testSwapPTsForUnderlying() public {
@@ -600,10 +574,10 @@ contract PeripheryTest is TestHelper {
         uint256 swapped = ptBalBefore.fmul(rate);
 
         // unwrap target into underlying
-        (, uint256 lvalue) = adapter.lscale();
+        uint256 scale = adapter.scale();
         uint256 uBal = underlying.decimals() > target.decimals()
-            ? swapped.fmul(lvalue) * SCALING_FACTOR
-            : swapped.fmul(lvalue) / SCALING_FACTOR;
+            ? swapped.fmul(scale) * SCALING_FACTOR
+            : swapped.fmul(scale) / SCALING_FACTOR;
 
         alice.doApprove(pt, address(periphery), ptBalBefore);
         alice.doSwapPTsForUnderlying(address(adapter), maturity, ptBalBefore, 0);
@@ -616,14 +590,14 @@ contract PeripheryTest is TestHelper {
         uint256 targetToBorrow = 9.025e19;
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
 
         // add liquidity to mockUniSwapRouter
         addLiquidityToBalancerVault(maturity, 1000e18);
 
         bob.doIssue(address(adapter), maturity, tBal);
 
-        uint256 tBalBefore = ERC20(target).balanceOf(address(bob));
+        uint256 tBalBefore = target.balanceOf(address(bob));
         uint256 ytBalBefore = ERC20(yt).balanceOf(address(bob));
 
         // swap underlying for PT on Yieldspace pool
@@ -636,7 +610,7 @@ contract PeripheryTest is TestHelper {
         bob.doApprove(yt, address(periphery), ytBalBefore);
         bob.doSwapYTsForTarget(address(adapter), maturity, ytBalBefore);
 
-        assertEq(tBalBefore + remainingYTInTarget, ERC20(target).balanceOf(address(bob)));
+        assertEq(tBalBefore + remainingYTInTarget, target.balanceOf(address(bob)));
     }
 
     //    function testSwapYTsForTargetWithGap() public {
@@ -675,7 +649,7 @@ contract PeripheryTest is TestHelper {
     //        bob.doApprove(yt, address(periphery), ytBalBefore);
     //        bob.doSwapYTsForTarget(address(adapter), maturity, ytBalBefore, 0);
     //
-    //        assertEq(tBalBefore + tCombined - excess, ERC20(target).balanceOf(address(bob)));
+    //        assertEq(tBalBefore + tCombined - excess, target.balanceOf(address(bob)));
     //    }
 
     /* ========== liquidity tests ========== */
@@ -790,7 +764,7 @@ contract PeripheryTest is TestHelper {
 
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
 
         // add liquidity to mock Space pool
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -818,7 +792,7 @@ contract PeripheryTest is TestHelper {
             targetToBorrow = pool.onSwap(
                 BalancerPool.SwapRequest({
                     kind: BalancerVault.SwapKind.GIVEN_OUT,
-                    tokenIn: target,
+                    tokenIn: ERC20(address(target)),
                     tokenOut: ERC20(pt),
                     amount: toBeIssued,
                     poolId: 0,
@@ -884,14 +858,14 @@ contract PeripheryTest is TestHelper {
         {
             // calculate YTs to be issued
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            (, uint256 lscale) = adapter.lscale();
+            uint256 scale = adapter.scale();
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(lscale.fmul(balances[0]).fmul(FixedMath.WAD - adapter.ifee()) + balances[1], tBase),
+                balances[1].fdiv(scale.fmul(balances[0]).fmul(FixedMath.WAD - adapter.ifee()) + balances[1], tBase),
                 tBase
             ); // ABDK formula
 
             uint256 fee = proportionalTarget.fmul(adapter.ifee());
-            toBeIssued = (proportionalTarget - fee).fmul(lscale);
+            toBeIssued = (proportionalTarget - fee).fmul(scale);
         }
 
         {
@@ -923,7 +897,6 @@ contract PeripheryTest is TestHelper {
 
         // init liquidity
         alice.doAddLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max);
-
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(address(bob));
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(address(bob));
         uint256 ytBalBefore = ERC20(yt).balanceOf(address(bob));
@@ -931,7 +904,7 @@ contract PeripheryTest is TestHelper {
         // calculate amount to be issued
         uint256 toBeIssued;
         {
-            (, uint256 lscale) = adapter.lscale();
+            uint256 lscale = adapter.scale();
             // calculate YTs to be issued
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
 
@@ -975,7 +948,7 @@ contract PeripheryTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add liquidity to mockUniSwapRouter
@@ -1031,7 +1004,7 @@ contract PeripheryTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add liquidity to mockUniSwapRouter
@@ -1053,7 +1026,7 @@ contract PeripheryTest is TestHelper {
         // settle series
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
-        (, lscale) = adapter.lscale();
+        lscale = adapter.scale();
 
         uint256 ptBalBefore = ERC20(pt).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
@@ -1078,33 +1051,40 @@ contract PeripheryTest is TestHelper {
 
         // create adapter with ptRedeem restricted
         MockToken underlying = new MockToken("Usdc Token", "USDC", 18);
-        MockTarget target = new MockTarget(address(underlying), "Compound USDC", "cUSDC", 18);
+        MockTargetLike target = MockTargetLike(deployMockTarget(address(underlying), "Compound USDC", "cUSDC", 18));
 
         divider.setPermissionless(true);
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted
         DEFAULT_ADAPTER_PARAMS.level = level;
-        MockAdapter aAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            target.underlying(),
-            ISSUANCE_FEE,
-            DEFAULT_ADAPTER_PARAMS,
-            address(reward)
-        );
+        MockAdapter aAdapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
 
         periphery.verifyAdapter(address(aAdapter), true);
         periphery.onboardAdapter(address(aAdapter), true);
         divider.setGuard(address(aAdapter), 10 * 2**128);
 
         alice.doApprove(address(target), address(divider));
+        alice.doApprove(address(underlying), address(target));
         bob.doApprove(address(target), address(periphery));
-        alice.doMint(address(target), 10000000e18);
-        bob.doMint(address(target), 10000000e18);
+        bob.doApprove(address(underlying), address(target));
+
+        // get some target for Alice and Bob
+        underlying.mint(address(alice), 10000000e18);
+        underlying.mint(address(bob), 10000000e18);
+
+        if (!is4626) {
+            alice.doMint(address(target), 10000000e18);
+            bob.doMint(address(target), 10000000e18);
+        } else {
+            hevm.prank(address(alice));
+            target.deposit(10000000e18, address(alice));
+            hevm.prank(address(bob));
+            target.deposit(10000000e18, address(bob));
+        }
 
         (address pt, ) = alice.doSponsorSeries(address(aAdapter), maturity);
-        address pool = spaceFactory.create(address(aAdapter), maturity);
+        spaceFactory.create(address(aAdapter), maturity);
 
-        (, uint256 lscale) = aAdapter.lscale();
+        uint256 lscale = aAdapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
         minAmountsOut[0] = 2e18;
         minAmountsOut[1] = 1e18;
@@ -1116,7 +1096,7 @@ contract PeripheryTest is TestHelper {
         // settle series
         hevm.warp(maturity);
         alice.doSettleSeries(address(aAdapter), maturity);
-        (, lscale) = aAdapter.lscale();
+        lscale = aAdapter.scale();
 
         uint256 ptBalBefore = ERC20(pt).balanceOf(address(bob));
         uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(address(bob));
@@ -1137,12 +1117,14 @@ contract PeripheryTest is TestHelper {
         assertEq(ptBal, 1e18);
     }
 
+    event Haha(uint256);
+
     function testRemoveLiquidityWhenOneSideLiquidity() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add one side liquidity
@@ -1179,7 +1161,7 @@ contract PeripheryTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add liquidity to mockUniSwapRouter
@@ -1233,8 +1215,7 @@ contract PeripheryTest is TestHelper {
         uint256 tBase = 10**target.decimals();
         (address pt, ) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 5 days);
-        adapter.scale();
-        (, uint256 lscale) = adapter.lscale();
+        uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add liquidity to mockUniSwapRouter
@@ -1292,9 +1273,9 @@ contract PeripheryTest is TestHelper {
         // add liquidity to mockUniSwapRouter
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        MockTarget otherTarget = new MockTarget(address(underlying), "Compound Usdc", "cUSDC", 8);
+        MockTargetLike otherTarget = MockTargetLike(deployMockTarget(address(underlying), "Compound Usdc", "cUSDC", 8));
         factory.addTarget(address(otherTarget), true);
-        address dstAdapter = alice.doDeployAdapter(address(factory), address(otherTarget), ""); // onboard target through Periphery
+        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget), ""); // onboard target through Periphery
 
         (, , uint256 lpShares) = bob.doAddLiquidityFromTarget(address(adapter), maturity, tBal, 0, type(uint256).max);
         uint256[] memory minAmountsOut = new uint256[](2);

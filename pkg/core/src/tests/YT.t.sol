@@ -11,7 +11,7 @@ contract Yield is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
-        tBal = uint128(fuzzWithBounds(tBal, 1e12));
+        tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -26,8 +26,7 @@ contract Yield is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        uint256 cscale = block.timestamp >= maturity ? mscale : adapter.scale();
         uint256 collect = ytBalanceBefore.fdiv(lscale);
         collect -= ytBalanceBefore.fdivUp(cscale);
         assertEq(ytBalanceBefore, ytBalanceAfter);
@@ -36,7 +35,7 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
-        tBal = uint128(fuzzWithBounds(tBal, 1e12));
+        tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -54,8 +53,7 @@ contract Yield is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        uint256 cscale = block.timestamp >= maturity ? mscale : adapter.scale();
         uint256 collect = bytBalanceBefore.fdiv(lscale);
         collect -= bytBalanceBefore.fdivUp(cscale);
         assertEq(aytBalanceBefore + bytBalanceBefore, aytBalanceAfter);
@@ -66,7 +64,7 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
-        tBal = uint128(fuzzWithBounds(tBal, 1e12));
+        tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         hevm.warp(block.timestamp + 1 days);
@@ -85,8 +83,7 @@ contract Yield is TestHelper {
 
         // Formula: collect = tBal / lscale - tBal / cscale
         (, , , , , uint256 mscale, , , ) = divider.series(address(adapter), maturity);
-        (, uint256 lvalue) = adapter.lscale();
-        uint256 cscale = block.timestamp >= maturity ? mscale : lvalue;
+        uint256 cscale = block.timestamp >= maturity ? mscale : adapter.scale();
         uint256 collect = bytBalanceBefore.fdiv(lscale);
         collect -= bytBalanceBefore.fdivUp(cscale);
         assertEq(aytBalanceBefore + bytBalanceBefore, aytBalanceAfter);

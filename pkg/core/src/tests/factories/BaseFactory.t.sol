@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { TestHelper } from "../test-helpers/TestHelper.sol";
+import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
@@ -23,7 +23,7 @@ contract Factories is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
+        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward), false);
 
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).divider(), address(divider));
@@ -52,7 +52,7 @@ contract Factories is TestHelper {
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         divider.setPeriphery(address(this));
         address adapter = someFactory.deployAdapter(address(someTarget), "");
@@ -79,7 +79,7 @@ contract Factories is TestHelper {
     function testDeployAdapterAndinitializeSeries() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
         MockFactory someFactory = createFactory(address(someTarget), address(someReward));
         address f = periphery.deployAdapter(address(someFactory), address(someTarget), "");
         assertTrue(f != address(0));

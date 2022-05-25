@@ -5,7 +5,7 @@ pragma solidity 0.8.11;
 import { CropsFactory } from "../../../adapters/CropsFactory.sol";
 import { CropFactory } from "../../../adapters/CropFactory.sol";
 import { Divider } from "../../../Divider.sol";
-import { MockCropsAdapter, MockAdapter } from "./MockAdapter.sol";
+import { MockAdapter, Mock4626Adapter, MockCropsAdapter, Mock4626CropsAdapter } from "./MockAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
 
@@ -14,18 +14,24 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 
 interface MockTargetLike {
     function underlying() external view returns (address);
+
+    function asset() external view returns (address);
 }
 
 contract MockFactory is CropFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public targets;
+    bool public is4626;
 
     constructor(
         address _divider,
         FactoryParams memory _factoryParams,
-        address _reward
-    ) CropFactory(_divider, _factoryParams, _reward) {}
+        address _reward,
+        bool _is4626
+    ) CropFactory(_divider, _factoryParams, _reward) {
+        is4626 = _is4626;
+    }
 
     function addTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -49,16 +55,29 @@ contract MockFactory is CropFactory {
             level: DEFAULT_LEVEL
         });
 
-        adapter = address(
-            new MockAdapter{ salt: _target.fillLast12Bytes() }(
-                divider,
-                _target,
-                MockTargetLike(_target).underlying(),
-                factoryParams.ifee,
-                adapterParams,
-                reward
-            )
-        );
+        if (is4626) {
+            adapter = address(
+                new Mock4626Adapter{ salt: _target.fillLast12Bytes() }(
+                    divider,
+                    _target,
+                    MockTargetLike(_target).asset(),
+                    factoryParams.ifee,
+                    adapterParams,
+                    reward
+                )
+            );
+        } else {
+            adapter = address(
+                new MockAdapter{ salt: _target.fillLast12Bytes() }(
+                    divider,
+                    _target,
+                    MockTargetLike(_target).underlying(),
+                    factoryParams.ifee,
+                    adapterParams,
+                    reward
+                )
+            );
+        }
     }
 }
 
@@ -67,13 +86,16 @@ contract MockCropsFactory is CropsFactory {
 
     mapping(address => bool) public targets;
     address[] rewardTokens;
+    bool public is4626;
 
     constructor(
         address _divider,
         FactoryParams memory _factoryParams,
-        address[] memory _rewardTokens
+        address[] memory _rewardTokens,
+        bool _is4626
     ) CropsFactory(_divider, _factoryParams) {
         rewardTokens = _rewardTokens;
+        is4626 = _is4626;
     }
 
     function addTarget(address _target, bool status) external {
@@ -98,15 +120,28 @@ contract MockCropsFactory is CropsFactory {
             level: DEFAULT_LEVEL
         });
 
-        adapter = address(
-            new MockCropsAdapter{ salt: _target.fillLast12Bytes() }(
-                divider,
-                _target,
-                MockTargetLike(_target).underlying(),
-                factoryParams.ifee,
-                adapterParams,
-                rewardTokens
-            )
-        );
+        if (is4626) {
+            adapter = address(
+                new Mock4626CropsAdapter{ salt: _target.fillLast12Bytes() }(
+                    divider,
+                    _target,
+                    MockTargetLike(_target).asset(),
+                    factoryParams.ifee,
+                    adapterParams,
+                    rewardTokens
+                )
+            );
+        } else {
+            adapter = address(
+                new MockCropsAdapter{ salt: _target.fillLast12Bytes() }(
+                    divider,
+                    _target,
+                    MockTargetLike(_target).underlying(),
+                    factoryParams.ifee,
+                    adapterParams,
+                    rewardTokens
+                )
+            );
+        }
     }
 }

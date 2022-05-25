@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import { Hevm } from "./Hevm.sol";
+import { MockTargetLike } from "./TestHelper.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
@@ -14,7 +15,7 @@ contract User {
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
 
     MockToken stake;
-    MockToken target;
+    MockTargetLike target;
     Divider divider;
     Periphery periphery;
     GYTManager public gYTManager;
@@ -34,7 +35,7 @@ contract User {
         stake = _token;
     }
 
-    function setTarget(MockToken _token) public {
+    function setTarget(MockTargetLike _token) public {
         target = _token;
     }
 

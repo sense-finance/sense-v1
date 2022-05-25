@@ -53,6 +53,7 @@ contract GYTsManager is TestHelper {
     }
 
     function testFuzzCantJoinIfNotEnoughYieldAllowance(uint128 balance) public {
+        balance = uint128(fuzzWithBounds(balance, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         if (calculateAmountToIssue(balance) == 0) return;
@@ -67,7 +68,8 @@ contract GYTsManager is TestHelper {
     }
 
     function testCantJoinAfterFirstGYTNotEnoughTargetBalance() public {
-        adapter.setScale(0.1e18); // freeze scale so no excess is generated
+        if (!is4626) adapter.setScale(0.1e18); // freeze scale so no excess is generated
+        emit Lala(adapter.scale());
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
 
@@ -82,7 +84,8 @@ contract GYTsManager is TestHelper {
         assertEq(bobGyieldBalance, bobYieldBalance);
 
         // alice issues and joins
-        adapter.setScale(0); // unfreeze
+        emit Lala(adapter.scale());
+        if (!is4626) adapter.setScale(0); // unfreeze
         uint256 abalance = target.balanceOf(address(alice));
         hevm.warp(block.timestamp + 1 days);
         alice.doIssue(address(adapter), maturity, abalance);
@@ -98,6 +101,8 @@ contract GYTsManager is TestHelper {
             assertEq(error, "TRANSFER_FROM_FAILED");
         }
     }
+
+    event Lala(uint256);
 
     // TODO: re-add this test once we use glcaims again
     // function testFuzzJoinFirstGYT(uint128 balance) public {

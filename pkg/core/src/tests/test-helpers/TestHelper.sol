@@ -11,8 +11,11 @@ import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
-import { MockAdapter } from "./mocks/MockAdapter.sol";
+import { MockAdapter, Mock4626Adapter } from "./mocks/MockAdapter.sol";
+import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
+import { ERC4626Adapter } from "../../adapters/ERC4626Adapter.sol";
 import { MockFactory, MockCropsFactory } from "./mocks/MockFactory.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -32,13 +35,42 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
+interface MockTargetLike {
+    // mintable erc20
+    function decimals() external returns (uint256);
+
+    function totalSupply() external returns (uint256);
+
+    function balanceOf(address usr) external returns (uint256);
+
+    function mint(address account, uint256 amount) external;
+
+    function transfer(address to, uint256 amount) external returns (bool);
+
+    // target
+    function underlying() external returns (address);
+
+    // erc4626
+    function asset() external returns (address);
+
+    function totalAssets() external returns (uint256);
+
+    function previewDeposit(uint256 assets) external returns (uint256);
+
+    function previewMint(uint256 shares) external returns (uint256);
+
+    function mint(uint256 shares, address receiver) external;
+
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+}
+
 contract TestHelper is DSTest {
     using FixedMath for uint256;
 
     MockAdapter internal adapter;
     MockToken internal stake;
     MockToken internal underlying;
-    MockTarget internal target;
+    MockTargetLike internal target;
     MockToken internal reward;
     MockFactory internal factory;
     MockOracle internal masterOracle;
@@ -78,6 +110,10 @@ contract TestHelper is DSTest {
     uint256 public SETTLEMENT_WINDOW;
     uint256 public SCALING_FACTOR;
 
+    // target type
+    bool internal is4626;
+    uint256 public MAX_TARGET = type(uint128).max / 3; // 3 is the amount of users we create
+
     // decimals
     uint8 internal mockUnderlyingDecimals;
     uint8 internal mockTargetDecimals;
@@ -96,25 +132,32 @@ contract TestHelper is DSTest {
         inputs[1] = "_forge_mock_target_decimals";
         mockTargetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
 
+        inputs[1] = "_forge_mock_4626_target";
+        is4626 = uint8(abi.decode(hevm.ffi(inputs), (uint256))) == 0 ? false : true;
+
         // Create target, underlying, stake & reward tokens
         stake = new MockToken("Stake Token", "ST", baseDecimals);
         underlying = new MockToken("Dai Token", "DAI", mockUnderlyingDecimals);
-        target = new MockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals);
         reward = new MockToken("Reward Token", "RT", baseDecimals);
 
+        // Log target setup
+        if (is4626) {
+            target = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals));
+            emit log("Running tests with a 4626 mock target");
+        } else {
+            target = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals));
+            emit log("Running tests with a non-4626 mock target");
+        }
+
         // Log decimals setup
-        if (mockUnderlyingDecimals != 18) {
-            emit log_named_uint(
-                "Running tests with the mock Underlying token configured with the following number of decimals",
-                uint256(mockUnderlyingDecimals)
-            );
-        }
-        if (mockTargetDecimals != 18) {
-            emit log_named_uint(
-                "Running tests with the mock Target token configured with the following number of decimals",
-                uint256(mockTargetDecimals)
-            );
-        }
+        emit log_named_uint(
+            "Running tests with the mock Underlying token configured with the following number of decimals",
+            uint256(mockUnderlyingDecimals)
+        );
+        emit log_named_uint(
+            "Running tests with the mock Target token configured with the following number of decimals",
+            uint256(mockTargetDecimals)
+        );
 
         SCALING_FACTOR =
             10 **
@@ -188,13 +231,14 @@ contract TestHelper is DSTest {
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
-        alice = createUser(2**128, 2**128);
-        bob = createUser(2**128, 2**128);
-        jim = createUser(2**128, 2**128);
+        alice = createUser(MAX_TARGET, type(uint128).max);
+        bob = createUser(MAX_TARGET, type(uint128).max);
+        jim = createUser(MAX_TARGET, type(uint128).max);
     }
 
     function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
         user = new User();
+        // updateUser(user, target, stake);
         user.setFactory(factory);
         user.setStake(stake);
         user.setTarget(target);
@@ -209,12 +253,19 @@ contract TestHelper is DSTest {
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
         user.doApprove(address(target), address(user.gYTManager()));
-        user.doMint(address(target), tBal);
+        if (!is4626) {
+            user.doMint(address(target), tBal);
+        } else {
+            user.doMint(address(underlying), tBal);
+            user.doApprove(address(underlying), address(target));
+            hevm.prank(address(user));
+            target.deposit(tBal, address(user));
+        }
     }
 
     function updateUser(
         User user,
-        MockToken target,
+        MockTargetLike target,
         MockToken stake,
         uint256 amt
     ) public {
@@ -232,25 +283,15 @@ contract TestHelper is DSTest {
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
         user.doApprove(address(target), address(user.gYTManager()));
-        user.doMint(address(target), amt);
-    }
-
-    function setupUser(
-        address usr,
-        address target,
-        address stake,
-        uint256 amt
-    ) public returns (User user) {
-        address underlying = MockTarget(target).underlying();
-        MockToken(underlying).approve(address(periphery), type(uint256).max);
-        MockToken(underlying).approve(address(divider), type(uint256).max);
-        MockToken(underlying).mint(usr, amt);
-        MockToken(stake).approve(address(periphery), type(uint256).max);
-        MockToken(stake).approve(address(divider), type(uint256).max);
-        MockToken(stake).mint(stake, amt);
-        MockToken(target).approve(address(periphery), type(uint256).max);
-        MockToken(target).approve(address(divider), type(uint256).max);
-        MockToken(target).mint(usr, amt);
+        if (!is4626) {
+            user.doMint(address(target), amt);
+        } else {
+            user.doMint(address(underlying), amt);
+            hevm.startPrank(address(user));
+            underlying.approve(address(target), type(uint256).max);
+            target.deposit(amt, address(user));
+            hevm.stopPrank();
+        }
     }
 
     function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
@@ -264,7 +305,7 @@ contract TestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        someFactory = new MockFactory(address(divider), factoryParams, _reward); // deploy adapter factory
+        someFactory = new MockFactory(address(divider), factoryParams, _reward, !is4626 ? false : true); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -284,7 +325,7 @@ contract TestHelper is DSTest {
             mode: MODE,
             tilt: 0
         });
-        someFactory = new MockCropsFactory(address(divider), factoryParams, _rewardTokens); // deploy adapter factory
+        someFactory = new MockCropsFactory(address(divider), factoryParams, _rewardTokens, !is4626 ? false : true); // deploy adapter factory
         someFactory.addTarget(_target, true);
         divider.setIsTrusted(address(someFactory), true);
         periphery.setFactory(address(someFactory), true);
@@ -316,11 +357,21 @@ contract TestHelper is DSTest {
         uint256 maturity,
         uint256 tBal
     ) internal {
+        MockTargetLike target = MockTargetLike(MockAdapter(adapter).target());
+        MockToken underlying = MockToken(!is4626 ? target.underlying() : target.asset());
         uint256 issued = alice.doIssue(adapter, maturity, tBal);
-        alice.doTransfer(divider.yt(address(adapter), maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
-        alice.doTransfer(divider.pt(address(adapter), maturity), address(balancerVault), issued);
+        alice.doTransfer(divider.yt(adapter, maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
+        alice.doTransfer(divider.pt(adapter, maturity), address(balancerVault), issued);
+
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued PT.
-        MockToken(MockAdapter(adapter).target()).mint(address(balancerVault), tBal);
+        if (!is4626) {
+            target.mint(address(balancerVault), tBal);
+        } else {
+            underlying.mint(address(this), tBal);
+            underlying.approve(address(target), type(uint256).max);
+            tBal = target.deposit(tBal, address(this));
+            target.transfer(address(balancerVault), tBal);
+        }
     }
 
     function convertBase(uint256 decimals) internal pure returns (uint256) {
@@ -337,9 +388,7 @@ contract TestHelper is DSTest {
     }
 
     function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
-        (, uint256 cscale) = adapter.lscale();
-        //        uint256 cscale = divider.lscales(address(adapter), maturity, address(bob));
-        toIssue = tBal.fmul(cscale);
+        toIssue = tBal.fmul(adapter.scale());
     }
 
     function calculateExcess(
@@ -358,6 +407,59 @@ contract TestHelper is DSTest {
     function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
         assembly {
             value := mload(add(_bytes, 0x20))
+        }
+    }
+
+    // for MockAdapter, as scale is a function of time, we just move to some blocks in the future
+    // for the ERC4626, we mint some underlying
+    function increaseScale() internal {
+        if (!is4626) {
+            hevm.warp(block.timestamp + 1 days);
+        } else {
+            underlying.mint(address(target), underlying.balanceOf(address(target)));
+        }
+    }
+
+    function deployMockTarget(
+        address _underlying,
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
+    ) internal returns (address _target) {
+        if (!is4626) {
+            _target = address(new MockTarget(_underlying, _name, _symbol, _decimals));
+        } else {
+            _target = address(new MockERC4626(ERC20(_underlying), _name, _symbol));
+        }
+    }
+
+    function deployMockAdapter(
+        address _divider,
+        address _target,
+        address _reward
+    ) internal returns (address _adapter) {
+        if (!is4626) {
+            _adapter = address(
+                new MockAdapter(
+                    address(_divider),
+                    address(_target),
+                    target.underlying(),
+                    ISSUANCE_FEE,
+                    DEFAULT_ADAPTER_PARAMS,
+                    address(_reward)
+                )
+            );
+        } else {
+            _adapter = address(
+                new Mock4626Adapter(
+                    address(_divider),
+                    address(_target),
+                    target.asset(),
+                    ISSUANCE_FEE,
+                    DEFAULT_ADAPTER_PARAMS,
+                    address(_reward)
+                )
+            );
         }
     }
 }
