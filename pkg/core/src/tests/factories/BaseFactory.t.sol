@@ -53,7 +53,7 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        MockFactory someFactory = deployFactory(address(someTarget), address(someReward));
         divider.setPeriphery(address(this));
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
@@ -80,7 +80,7 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = createFactory(address(someTarget), address(someReward));
+        MockFactory someFactory = deployFactory(address(someTarget), address(someReward));
         address f = periphery.deployAdapter(address(someFactory), address(someTarget), "");
         assertTrue(f != address(0));
         uint256 scale = MockAdapter(f).scale();

@@ -50,7 +50,7 @@ jobs:
     - name: Run linter
       run: yarn lint
 
-    - name: Run local core tests
+    - name: Run local core tests where the mock Target decimals is 18
       run: yarn workspace @sense-finance/v1-core run test
 
     - name: Run local fuse tests where the mock Target decimals is 18

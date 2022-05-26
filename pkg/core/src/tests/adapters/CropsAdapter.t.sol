@@ -34,13 +34,17 @@ contract CropsAdapters is TestHelper {
         );
 
         rewardTokens = [address(reward), address(reward2)];
-        cropsFactory = createCropsFactory(address(aTarget), rewardTokens);
+        cropsFactory = deployCropsFactory(address(aTarget), rewardTokens);
         address f = periphery.deployAdapter(address(cropsFactory), address(aTarget), ""); // deploy & onboard target through Periphery
         cropsAdapter = MockCropsAdapter(f);
         divider.setGuard(address(cropsAdapter), 10 * 2**128);
+
         updateUser(alice, aTarget, stake, MAX_TARGET);
         updateUser(bob, aTarget, stake, MAX_TARGET);
         updateUser(jim, aTarget, stake, MAX_TARGET);
+
+        // freeze scale to 1e18 (only for no 4626 targets)
+        if (!is4626) cropsAdapter.setScale(1e18);
     }
 
     function testAdapterHasParams() public {

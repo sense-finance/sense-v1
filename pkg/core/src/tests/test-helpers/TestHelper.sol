@@ -33,8 +33,6 @@ import { DateTimeFull } from "./DateTimeFull.sol";
 import { User } from "./User.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-
 interface MockTargetLike {
     // mintable erc20
     function decimals() external returns (uint256);
@@ -225,42 +223,21 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
-        factory = createFactory(address(target), address(reward));
+        factory = deployFactory(address(target), address(reward));
         address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
         adapter = MockAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
-        alice = createUser(MAX_TARGET, type(uint128).max);
-        bob = createUser(MAX_TARGET, type(uint128).max);
-        jim = createUser(MAX_TARGET, type(uint128).max);
+        alice = createUser(MAX_TARGET);
+        bob = createUser(MAX_TARGET);
+        jim = createUser(MAX_TARGET);
     }
 
-    function createUser(uint256 tBal, uint256 sBal) public returns (User user) {
+    function createUser(uint256 amt) public returns (User user) {
         user = new User();
-        // updateUser(user, target, stake);
         user.setFactory(factory);
-        user.setStake(stake);
-        user.setTarget(target);
-        user.setDivider(divider);
-        user.setPeriphery(periphery);
-        user.doApprove(address(underlying), address(periphery));
-        user.doApprove(address(underlying), address(divider));
-        user.doMint(address(underlying), tBal);
-        user.doApprove(address(stake), address(periphery));
-        user.doApprove(address(stake), address(divider));
-        user.doMint(address(stake), sBal);
-        user.doApprove(address(target), address(periphery));
-        user.doApprove(address(target), address(divider));
-        user.doApprove(address(target), address(user.gYTManager()));
-        if (!is4626) {
-            user.doMint(address(target), tBal);
-        } else {
-            user.doMint(address(underlying), tBal);
-            user.doApprove(address(underlying), address(target));
-            hevm.prank(address(user));
-            target.deposit(tBal, address(user));
-        }
+        updateUser(user, target, stake, amt);
     }
 
     function updateUser(
@@ -269,7 +246,6 @@ contract TestHelper is DSTest {
         MockToken stake,
         uint256 amt
     ) public {
-        // user.setFactory(factory);
         user.setStake(stake);
         user.setTarget(target);
         user.setDivider(divider);
@@ -287,58 +263,13 @@ contract TestHelper is DSTest {
             user.doMint(address(target), amt);
         } else {
             user.doMint(address(underlying), amt);
-            hevm.startPrank(address(user));
-            underlying.approve(address(target), type(uint256).max);
+            user.doApprove(address(underlying), address(target));
+            hevm.prank(address(user));
             target.deposit(amt, address(user));
-            hevm.stopPrank();
         }
     }
 
-    function createFactory(address _target, address _reward) public returns (MockFactory someFactory) {
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0
-        });
-        someFactory = new MockFactory(address(divider), factoryParams, _reward, !is4626 ? false : true); // deploy adapter factory
-        someFactory.addTarget(_target, true);
-        divider.setIsTrusted(address(someFactory), true);
-        periphery.setFactory(address(someFactory), true);
-    }
-
-    function createCropsFactory(address _target, address[] memory _rewardTokens)
-        public
-        returns (MockCropsFactory someFactory)
-    {
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0
-        });
-        someFactory = new MockCropsFactory(address(divider), factoryParams, _rewardTokens, !is4626 ? false : true); // deploy adapter factory
-        someFactory.addTarget(_target, true);
-        divider.setIsTrusted(address(someFactory), true);
-        periphery.setFactory(address(someFactory), true);
-    }
-
-    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
-        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        if (maturity < block.timestamp + 2 weeks) revert("InvalidMaturityOffsets");
-    }
-
-    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address pt, address yt) {
-        (pt, yt) = User(sponsor).doSponsorSeries(address(adapter), maturity);
-    }
+    // ---- liquidity provision ---- //
 
     function addLiquidityToBalancerVault(
         address adapter,
@@ -374,50 +305,43 @@ contract TestHelper is DSTest {
         }
     }
 
-    function convertBase(uint256 decimals) internal pure returns (uint256) {
-        uint256 base = 1;
-        base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
-        return base;
+    // ---- deployers ---- //
+
+    function deployFactory(address _target, address _reward) public returns (MockFactory someFactory) {
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0
+        });
+        someFactory = new MockFactory(address(divider), factoryParams, _reward, !is4626 ? false : true); // deploy adapter factory
+        someFactory.addTarget(_target, true);
+        divider.setIsTrusted(address(someFactory), true);
+        periphery.setFactory(address(someFactory), true);
     }
 
-    function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
-        if (decimals != 18) {
-            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
-        }
-        return amount;
-    }
-
-    function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
-        toIssue = tBal.fmul(adapter.scale());
-    }
-
-    function calculateExcess(
-        uint256 tBal,
-        uint256 maturity,
-        address yt
-    ) public returns (uint256 gap) {
-        uint256 toIssue = calculateAmountToIssue(tBal);
-        gap = gYTManager.excess(address(adapter), maturity, toIssue);
-    }
-
-    function getError(uint256 errCode) internal pure returns (string memory errString) {
-        return string(bytes.concat(bytes("SNS#"), bytes(Strings.toString(errCode))));
-    }
-
-    function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
-        assembly {
-            value := mload(add(_bytes, 0x20))
-        }
-    }
-
-    // for MockAdapter, as scale is a function of time, we just move to some blocks in the future
-    // for the ERC4626, we mint some underlying
-    function increaseScale() internal {
-        if (!is4626) {
-            hevm.warp(block.timestamp + 1 days);
-        } else {
-            underlying.mint(address(target), underlying.balanceOf(address(target)));
-        }
+    function deployCropsFactory(address _target, address[] memory _rewardTokens)
+        public
+        returns (MockCropsFactory someFactory)
+    {
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0
+        });
+        someFactory = new MockCropsFactory(address(divider), factoryParams, _rewardTokens, !is4626 ? false : true); // deploy adapter factory
+        someFactory.addTarget(_target, true);
+        divider.setIsTrusted(address(someFactory), true);
+        periphery.setFactory(address(someFactory), true);
     }
 
     function deployMockTarget(
@@ -460,6 +384,44 @@ contract TestHelper is DSTest {
                     address(_reward)
                 )
             );
+        }
+    }
+
+    // ---- utils ---- //
+
+    function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
+        maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
+        if (maturity < block.timestamp + 2 weeks) revert("InvalidMaturityOffsets");
+    }
+
+    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address pt, address yt) {
+        (pt, yt) = User(sponsor).doSponsorSeries(address(adapter), maturity);
+    }
+
+    function convertBase(uint256 decimals) internal pure returns (uint256) {
+        uint256 base = 1;
+        base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
+        return base;
+    }
+
+    function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals != 18) {
+            amount = decimals > 18 ? amount * 10**(decimals - 18) : amount / 10**(18 - decimals);
+        }
+        return amount;
+    }
+
+    function calculateAmountToIssue(uint256 tBal) public returns (uint256 toIssue) {
+        toIssue = tBal.fmul(adapter.scale());
+    }
+
+    // for MockAdapter, as scale is a function of time, we just move to some blocks in the future
+    // for the ERC4626, we mint some underlying
+    function increaseScale() internal {
+        if (!is4626) {
+            hevm.warp(block.timestamp + 1 days);
+        } else {
+            underlying.mint(address(target), underlying.balanceOf(address(target)));
         }
     }
 }

@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { YT } from "../tokens/YT.sol";
@@ -69,7 +70,6 @@ contract GYTsManager is TestHelper {
 
     function testCantJoinAfterFirstGYTNotEnoughTargetBalance() public {
         if (!is4626) adapter.setScale(0.1e18); // freeze scale so no excess is generated
-        emit Lala(adapter.scale());
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
 
@@ -84,7 +84,6 @@ contract GYTsManager is TestHelper {
         assertEq(bobGyieldBalance, bobYieldBalance);
 
         // alice issues and joins
-        emit Lala(adapter.scale());
         if (!is4626) adapter.setScale(0); // unfreeze
         uint256 abalance = target.balanceOf(address(alice));
         hevm.warp(block.timestamp + 1 days);
@@ -101,8 +100,6 @@ contract GYTsManager is TestHelper {
             assertEq(error, "TRANSFER_FROM_FAILED");
         }
     }
-
-    event Lala(uint256);
 
     // TODO: re-add this test once we use glcaims again
     // function testFuzzJoinFirstGYT(uint128 balance) public {
@@ -304,4 +301,23 @@ contract GYTsManager is TestHelper {
     //     assertEq(yieldBalanceAfter, aliceYieldBalance);
     //     assertTrue(tBalanceAfter > tBalanceBefore);
     // }
+
+    function calculateExcess(
+        uint256 tBal,
+        uint256 maturity,
+        address yt
+    ) public returns (uint256 gap) {
+        uint256 toIssue = calculateAmountToIssue(tBal);
+        gap = gYTManager.excess(address(adapter), maturity, toIssue);
+    }
+
+    function getError(uint256 errCode) internal pure returns (string memory errString) {
+        return string(bytes.concat(bytes("SNS#"), bytes(Strings.toString(errCode))));
+    }
+
+    function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
+        assembly {
+            value := mload(add(_bytes, 0x20))
+        }
+    }
 }

@@ -20,7 +20,6 @@ contract MockAdapter is CropAdapter {
 
     uint256 internal scaleOverride;
     uint256 public INITIAL_VALUE = 1e18;
-    address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onRedeemCalls;
     uint256 public scalingFactor;
@@ -195,8 +194,7 @@ contract MockCropsAdapter is CropsAdapter {
     using FixedMath for uint256;
 
     uint256 internal scaleOverride;
-    uint256 public INITIAL_VALUE;
-    address public under;
+    uint256 public INITIAL_VALUE = 1e18;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onRedeemCalls;
     uint256 public scalingFactor;
@@ -332,10 +330,6 @@ contract Mock4626CropsAdapter is ERC4626CropsAdapter {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
-    }
-
-    function lscale() external returns (uint256, uint256) {
-        return (0, ERC4626(target).convertToAssets(BASE_UINT));
     }
 
     function onRedeem(

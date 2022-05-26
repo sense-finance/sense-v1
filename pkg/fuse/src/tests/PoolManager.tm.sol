@@ -92,7 +92,7 @@ contract PoolManagerTest is DSTest {
         mockAdapter = new MockAdapter(
             address(divider),
             address(target),
-            !is4626 ? target.underlying() : target.asset(),
+            target.underlying(),
             0.1e18,
             adapterParams,
             address(reward)

@@ -1332,7 +1332,6 @@ contract Dividers is TestHelper {
 
     function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
         tBal = uint128(fuzzWithBounds(tBal, 1000, type(uint32).max));
-        // adapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
 
@@ -1344,8 +1343,11 @@ contract Dividers is TestHelper {
         assertTrue(adapter.tBalance(address(alice)) > 0);
 
         reward.mint(address(adapter), airdrop);
+
+        increaseScale();
         hevm.warp(maturity);
         alice.doSettleSeries(address(adapter), maturity);
+
         alice.doCollect(yt);
 
         assertEq(adapter.tBalance(address(alice)), 0);
@@ -1355,15 +1357,12 @@ contract Dividers is TestHelper {
 
     function testFuzzCollectAtMaturityBurnYieldAndDoesNotCallBurnTwice(uint128 tBal) public {
         tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
-        emit Mina(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
         increaseScale();
-        emit Mina(adapter.tBalance(address(bob)));
         bob.doIssue(address(adapter), maturity, tBal);
         increaseScale();
         hevm.warp(maturity);
-        emit Mina(adapter.tBalance(address(bob)));
         uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
         uint256 ytBalanceBefore = ERC20(yt).balanceOf(address(bob));
         uint256 tBalanceBefore = target.balanceOf(address(bob));
@@ -1387,8 +1386,6 @@ contract Dividers is TestHelper {
         assertEq(tBalanceAfter, tBalanceBefore + collected);
         assertClose(adapter.tBalance(address(bob)), 0);
     }
-
-    event Mina(uint256);
 
     function testFuzzCollectAfterMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
         tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));

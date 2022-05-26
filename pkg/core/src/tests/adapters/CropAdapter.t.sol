@@ -17,6 +17,13 @@ import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 contract CropAdapters is TestHelper {
     using FixedMath for uint256;
 
+    function setUp() public virtual override {
+        super.setUp();
+
+        // freeze scale to 1e18 (only for no 4626 targets)
+        if (!is4626) adapter.setScale(1e18);
+    }
+
     function testAdapterHasParams() public {
         MockToken underlying = new MockToken("Dai", "DAI", mockUnderlyingDecimals);
         MockTargetLike target = MockTargetLike(

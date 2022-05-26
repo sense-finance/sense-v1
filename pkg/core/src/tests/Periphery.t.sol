@@ -178,7 +178,7 @@ contract PeripheryTest is TestHelper {
     function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
-        MockFactory someFactory = createFactory(address(someTarget), address(reward));
+        MockFactory someFactory = deployFactory(address(someTarget), address(reward));
 
         // try deploying adapter using default factory
         try alice.doDeployAdapter(address(factory), address(someTarget), "") {
