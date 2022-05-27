@@ -23,7 +23,7 @@ contract Factories is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward), false);
+        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
 
         assertTrue(address(someFactory) != address(0));
         assertEq(MockFactory(someFactory).divider(), address(divider));
@@ -53,7 +53,7 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = deployFactory(address(someTarget), address(someReward));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
         divider.setPeriphery(address(this));
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
@@ -80,7 +80,7 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = deployFactory(address(someTarget), address(someReward));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
         address f = periphery.deployAdapter(address(someFactory), address(someTarget), "");
         assertTrue(f != address(0));
         uint256 scale = MockAdapter(f).scale();

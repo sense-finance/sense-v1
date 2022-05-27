@@ -11,7 +11,7 @@ import { TestHelper, MockTargetLike } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
-import { MockFactory, MockFactory } from "./test-helpers/mocks/MockFactory.sol";
+import { MockFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
@@ -142,22 +142,23 @@ contract PeripheryTest is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        MockFactory cropFactory = new MockFactory(
-            address(divider),
-            factoryParams,
-            address(reward),
-            !is4626 ? false : true
-        ); // deploy adapter factory
-        divider.setIsTrusted(address(cropFactory), true);
-        periphery.setFactory(address(cropFactory), true);
+
+        address cropFactory;
+        if (is4626) {
+            cropFactory = address(new Mock4626CropFactory(address(divider), factoryParams, address(reward))); // deploy 4626 crop adapter factory
+        } else {
+            cropFactory = address(new MockFactory(address(divider), factoryParams, address(reward))); // deploy crop adapter factory
+        }
+        divider.setIsTrusted(cropFactory, true);
+        periphery.setFactory(cropFactory, true);
 
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
-        cropFactory.addTarget(address(newTarget), true);
+        MockFactory(cropFactory).addTarget(address(newTarget), true);
 
         // onboard target
-        periphery.deployAdapter(address(cropFactory), address(newTarget), "");
+        periphery.deployAdapter(cropFactory, address(newTarget), "");
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -178,7 +179,7 @@ contract PeripheryTest is TestHelper {
     function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
-        MockFactory someFactory = deployFactory(address(someTarget), address(reward));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(reward)));
 
         // try deploying adapter using default factory
         try alice.doDeployAdapter(address(factory), address(someTarget), "") {

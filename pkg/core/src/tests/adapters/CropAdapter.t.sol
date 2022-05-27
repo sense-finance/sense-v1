@@ -20,7 +20,7 @@ contract CropAdapters is TestHelper {
     function setUp() public virtual override {
         super.setUp();
 
-        // freeze scale to 1e18 (only for no 4626 targets)
+        // freeze scale to 1e18 (only for non 4626 targets)
         if (!is4626) adapter.setScale(1e18);
     }
 
