@@ -141,8 +141,6 @@ module.exports = async function () {
           .addLiquidityFromTarget(adapter.address, seriesMaturity, oneMillion.mul(2), 1, 0)
           .then(t => t.wait());
       }
-      data = await balancerVault.getPoolTokens(poolId);
-      balances = data.balances;
 
       log("Making swap to init PT");
       data = await balancerVault.getPoolTokens(poolId);
