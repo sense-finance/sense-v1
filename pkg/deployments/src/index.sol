@@ -19,5 +19,6 @@ import { CAdapter } from "@sense-finance/v1-core/src/adapters/compound/CAdapter.
 import { FAdapter } from "@sense-finance/v1-core/src/adapters/fuse/FAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { EmergencyStop } from "@sense-finance/v1-utils/src/EmergencyStop.sol";
+import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 
 import "./Versioning.sol";
