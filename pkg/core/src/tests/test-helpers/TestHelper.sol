@@ -298,7 +298,7 @@ contract TestHelper is DSTest {
             ifee: 0,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: 48 weeks, // 1 year
+            maxm: 52 weeks, // 1 year
             mode: MODE,
             tilt: 0
         });

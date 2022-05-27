@@ -71,25 +71,25 @@ abstract contract CropAdapter is BaseAdapter {
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
 
-    /// @notice Reconciles users target balances to avoid delution of next Series YT holders.
+    /// @notice Reconciles users target balances to zero by distributing rewards on their holdings,
+    /// to avoid dilution of next Series' YT holders.
     /// This function should be called right after a Series matures.
     /// @param _usrs Users to reconcile
     /// @param _maturities Maturities of the series that we want to reconcile users on.
     function reconcile(address[] calldata _usrs, uint256[] calldata _maturities) public {
-        for (uint256 i = 0; i < _usrs.length; i++) {
-            address usr = _usrs[i];
-            for (uint256 j = 0; j < _maturities.length; j++) {
-                address yt = Divider(divider).yt(address(this), _maturities[j]);
-                uint256 ytBal = ERC20(yt).balanceOf(usr);
+        for (uint256 j = 0; j < _maturities.length; j++) {
+            for (uint256 i = 0; i < _usrs.length; i++) {
+                address usr = _usrs[i];
+                uint256 ytBal = ERC20(Divider(divider).yt(address(this), _maturities[j])).balanceOf(usr);
                 // We don't want to reconcile users if maturity has not been reached or if they have already been reconciled
                 if (_maturities[j] < block.timestamp && ytBal > 0 && !reconciled[usr][_maturities[j]]) {
                     _distribute(usr);
-                    uint256 tBal = ytBal.fdiv(Divider(divider).mscale(address(this), _maturities[j]));
+                    uint256 tBal = ytBal.fdiv(Divider(divider).lscales(address(this), _maturities[j], address(usr)));
                     totalTarget -= tBal;
                     tBalance[usr] -= tBal;
                     reconciledAmt[usr] += tBal;
                     reconciled[usr][_maturities[j]] = true;
-                    emit Reconciled(usr, tBal);
+                    emit Reconciled(usr, tBal, _maturities[j]);
                 }
             }
         }
@@ -129,5 +129,5 @@ abstract contract CropAdapter is BaseAdapter {
 
     /* ========== LOGS ========== */
 
-    event Reconciled(address indexed usr, uint256 tBal);
+    event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
 }
