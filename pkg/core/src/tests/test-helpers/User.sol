@@ -7,7 +7,6 @@ import { MockToken } from "./mocks/MockToken.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { Periphery } from "../../Periphery.sol";
-import { GYTManager } from "../../modules/GYTManager.sol";
 import { YT } from "../../tokens/YT.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 
@@ -18,7 +17,6 @@ contract User {
     MockTargetLike target;
     Divider divider;
     Periphery periphery;
-    GYTManager public gYTManager;
     BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -45,7 +43,6 @@ contract User {
 
     function setPeriphery(Periphery _periphery) public {
         periphery = _periphery;
-        gYTManager = new GYTManager(address(divider));
     }
 
     function doDeployAdapter(address _target, bytes memory _data) public returns (address clone) {
@@ -169,22 +166,6 @@ contract User {
 
     function doCollect(address yt) public returns (uint256 collected) {
         collected = YT(yt).collect();
-    }
-
-    function doJoin(
-        address adapter,
-        uint256 maturity,
-        uint256 balance
-    ) public {
-        gYTManager.join(adapter, maturity, balance);
-    }
-
-    function doExit(
-        address adapter,
-        uint256 maturity,
-        uint256 balance
-    ) public {
-        gYTManager.exit(adapter, maturity, balance);
     }
 
     function doSwapTargetForPTs(

@@ -2,7 +2,6 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { GYTManager } from "../../modules/GYTManager.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory } from "../../adapters/BaseFactory.sol";
 import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
@@ -74,7 +73,6 @@ contract TestHelper is DSTest {
     MockOracle internal masterOracle;
 
     PoolManager internal poolManager;
-    GYTManager internal gYTManager;
     Divider internal divider;
     TokenHandler internal tokenHandler;
     Periphery internal periphery;
@@ -209,7 +207,6 @@ contract TestHelper is DSTest {
         );
         divider.setPeriphery(address(periphery));
         poolManager.setIsTrusted(address(periphery), true);
-        gYTManager = new GYTManager(address(divider));
 
         // adapter, target wrapper & factory
         DEFAULT_ADAPTER_PARAMS = BaseAdapter.AdapterParams({
@@ -258,7 +255,6 @@ contract TestHelper is DSTest {
         user.doMint(address(stake), amt);
         user.doApprove(address(target), address(periphery));
         user.doApprove(address(target), address(divider));
-        user.doApprove(address(target), address(user.gYTManager()));
         if (!is4626) {
             user.doMint(address(target), amt);
         } else {

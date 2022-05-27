@@ -613,45 +613,6 @@ contract PeripheryTest is TestHelper {
         assertEq(tBalBefore + remainingYTInTarget, target.balanceOf(address(bob)));
     }
 
-    //    function testSwapYTsForTargetWithGap() public {
-    //        uint256 tBal = 100e18;
-    //        uint256 maturity = getValidMaturity(2021, 10);
-    //
-    //        (address pt, address yt) = sponsorSampleSeries(address(alice), maturity);
-    //
-    //        // add liquidity to mockUniSwapRouter
-    //        addLiquidityToBalancerVault(maturity, 1000e18);
-    //
-    //        alice.doIssue(address(adapter), maturity, tBal);
-    //        hevm.warp(block.timestamp + 5 days);
-    //
-    //        bob.doIssue(address(adapter), maturity, tBal);
-    //
-    //        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(bob));
-    //        uint256 ytBalBefore = ERC20(yt).balanceOf(address(bob));
-    //
-    //        // calculate YTs to be converted to gyields
-    //        address gyield = address(periphery.gYTManager().gyields(yt));
-    //        uint256 rate = periphery.price(pt, gyield);
-    //        uint256 yieldsToConvert =
-    //          ytBalBefore.fdiv(rate + 1 * 10**ERC20(pt).decimals(), 10**ERC20(yt).decimals());
-    //
-    //        // calculate gyields swapped to pt
-    //        uint256 swapped = yieldsToConvert.fmul(uniSwapRouter.EXCHANGE_RATE(), 10**ERC20(pt).decimals());
-    //
-    //        // calculate target to receive after combining
-    //        uint256 lscale = divider.lscales(address(adapter), maturity, address(bob));
-    //        uint256 tCombined = swapped.fdiv(lscale, 10**ERC20(yt).decimals());
-    //
-    //        // calculate excess
-    //        uint256 excess = periphery.gYTManager().excess(address(adapter), maturity, yieldsToConvert);
-    //
-    //        bob.doApprove(yt, address(periphery), ytBalBefore);
-    //        bob.doSwapYTsForTarget(address(adapter), maturity, ytBalBefore, 0);
-    //
-    //        assertEq(tBalBefore + tCombined - excess, target.balanceOf(address(bob)));
-    //    }
-
     /* ========== liquidity tests ========== */
     function testAddLiquidityFirstTimeWithSellYieldModeShouldNotIssue() public {
         uint256 tBal = 100e18;
