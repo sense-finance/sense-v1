@@ -23,6 +23,7 @@ contract ERC4626CropAdapter is CropAdapter {
     using SafeTransferLib for ERC20;
 
     uint256 public immutable BASE_UINT;
+    uint256 public immutable SCALE_FACTOR;
 
     constructor(
         address _divider,
@@ -31,16 +32,18 @@ contract ERC4626CropAdapter is CropAdapter {
         AdapterParams memory _adapterParams,
         address _reward
     ) CropAdapter(_divider, _target, address(ERC4626(_target).asset()), _ifee, _adapterParams, _reward) {
-        BASE_UINT = 10**ERC4626(target).decimals();
+        uint256 tDecimals = ERC4626(target).decimals();
+        BASE_UINT = 10**tDecimals;
+        SCALE_FACTOR = 10**(18 - tDecimals); // we assume targets decimals <= 18
         ERC20(underlying).approve(target, type(uint256).max);
     }
 
     function scale() external override returns (uint256) {
-        return ERC4626(target).convertToAssets(BASE_UINT);
+        return ERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
     }
 
     function scaleStored() external view override returns (uint256) {
-        return ERC4626(target).convertToAssets(BASE_UINT);
+        return ERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
     }
 
     function getUnderlyingPrice() external view override returns (uint256) {

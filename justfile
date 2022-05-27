@@ -84,6 +84,14 @@ turbo-test-local-4626 *cmds="": && _timer
 		export FORGE_MOCK_4626_TARGET={{ IS_4626 }}; \
 		forge test --match-path "**/*.t.sol" --no-match-path "**/Adapter.t.sol" {{ cmds }}
 
+# run ERC4626 tests with 6 decimals target
+turbo-test-local-4626-8-decimal-val *cmds="": && _timer
+	cd {{ invocation_directory() }}; \
+		export FORGE_MOCK_4626_TARGET={{ IS_4626 }}; \
+		export FORGE_MOCK_UNDERLYING_DECIMALS={{ HEX_8 }}; \
+		export FORGE_MOCK_TARGET_DECIMALS={{ HEX_8 }}; \
+		forge test --match-path "**/*.t.sol" --no-match-path "**/Adapter.t.sol" {{ cmds }}
+
 turbo-test-local-4626-match *exp="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_4626_TARGET={{ IS_4626 }}; \
