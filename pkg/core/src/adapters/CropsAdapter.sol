@@ -44,7 +44,7 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
     ) Trust(msg.sender) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         rewardTokens = _rewardTokens;
     }
-    
+
     function notify(
         address _usr,
         uint256 amt,
