@@ -101,7 +101,13 @@ yarn lint
 yarn fix
 ```
 
-### Deploy
+### Environment
+
+1. Create a local `.env` file in the root directory of this project
+2. Set `ALCHEMY_KEY` to a valid Alchemy API key
+3. Set `MNEMONIC` to a valid seed phrase for deployments
+
+### Deployment & upgrades
 
 This repo uses [hardhat deploy](https://github.com/wighawag/hardhat-deploy) for replicable deployments. To create a new deployment:
 
@@ -109,24 +115,77 @@ This repo uses [hardhat deploy](https://github.com/wighawag/hardhat-deploy) for 
 # Navigate to the `deployments` package
 cd pkg/deployments
 
-# Deploy the protcol with mocks on a forked network
+# Deploy the protocol with mocks on a forked network
 yarn deploy:hardhat-fork:sim
 
-# Deploy the protcol with production config on a forked network
+# Deploy the protocol with production config on a forked network
 yarn deploy:hardhat-fork:sim
 
-# Deploy the protcol with mocks on a live network
+# Deploy the protocol with mocks on a live network
 yarn hardhat deploy --network <network> --tags scenario:simulated
 
-# Deploy the protcol with production config on a live network
+# Deploy the protocol with production config on a live network
 yarn hardhat deploy --network <network> --tags scenario:prod
 ```
 
-### Environment
+New contracts or contract modifications/upgrades are deployed and configured using a Hardhat [tasks](https://hardhat.org/guides/create-task.html). Tasks live in the `[tasks](https://github.com/sense-finance/sense-v1/tree/dev/pkg/deployments/tasks)` directory of the `deployment` package of the sense-v1 repository.
 
-1. Create a local `.env` file in the root directory of this project
-2. Set `ALCHEMY_KEY` to a valid Alchemy API key
-3. Set `MNEMONIC` to a valid seed phrase for deployments
+Aside from deployment, tasks are also responsible for ensuring:
+
+* other contracts are aware of the new contract,
+* the newly deployed contract is aware of existing contracts, and
+* permissions are set appropriately.
+    
+    IMPORTANT:
+    After configuring every new contract, these permissions must be set:
+    ```solidity
+    // Set the multisig as trusted
+    newContract.setIsTrusted(multisig, true)
+    
+    // Set the deployer as non-trusted
+    newContract.setIsTrusted(deployer, false)
+    ```
+* contracts are verified on Etherscan
+
+To create a new task:
+
+1. Create the task folder and its related files:
+
+    ```bash
+    # Navigate to the `deployments/tasks` folder
+    cd pkg/deployments/tasks
+
+    # Create a new folder with a name following the YYYYMMYY-TASK_NAME pattern
+    mkdir YYYYMMYY-TASK_NAME
+    ```
+
+    Each task folder must contain 2 files:
+    - `index.js`: where the hardhat task logic lives (what should the task do)
+    - `input.js` which contains all the input addresses that the task needs in order to be executed
+
+    Optionally (though most likely), the task will need to instantiate some contracts, requiring the ABIs of them. Create a `pkg/deployments/tasks/YYYYMMYY-TASK_NAME/abi` folder to store these ABIs.
+
+2. Add the task into `pkg/deployments/tasks/index.js`.
+
+3. Run the new task:
+
+    ```bash
+    # Navigate to the `deployments/tasks` folder
+    cd pkg/deployments/tasks
+
+    # Execute hardhat task
+    yarn hardhat 20220517-long-wsteth-adapter --network mainnet
+    ```
+
+    *It is recommended that you first test that your task does what's intended by running it both on a local network and Goerli. Just use `--network hardhat` or `--network goerli` when executing the command.*
+
+4. Add *output* files into task folder:
+
+    After succesfully executing the task, Hardhat would have saved the resulting deployments (contract addresses along their abi, bytecode, metadata...) on `pkg/deployments/deployments`. **Move that folder inside `pkg/deployments/tasks` and rename it to `output`**.
+
+5. Commit and push code to Github.
+
+*NOTE: check existing tasks as a guide on how to create and execute a new one.*
 
 ## Security
 
