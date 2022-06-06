@@ -639,6 +639,9 @@ contract CropsAdapters is TestHelper {
 
         alice.doCombine(address(cropsAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
         alice.doCombine(address(cropsAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+
+        assertEq(cropsAdapter.reconciledAmt(address(alice)), 0);
+        assertEq(cropsAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
     }
 
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionWithScaleChanges(uint256 tBal) public {
