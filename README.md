@@ -106,6 +106,7 @@ yarn fix
 1. Create a local `.env` file in the root directory of this project
 2. Set `ALCHEMY_KEY` to a valid Alchemy API key
 3. Set `MNEMONIC` to a valid seed phrase for deployments
+4. Set `ETHERSCAN_API_KEY` to a valid Ethersccan API key (used for verification)
 
 ### Deployment & upgrades
 
@@ -177,11 +178,11 @@ To create a new task:
     yarn hardhat 20220517-long-wsteth-adapter --network mainnet
     ```
 
-    *It is recommended that you first test that your task does what's intended by running it both on a local network and Goerli. Just use `--network hardhat` or `--network goerli` when executing the command.*
+    *It is important that you first test that your task does what's intended by running it on a fork from mainnet and, optionally, on Goerli. Just use `--network hardhat` or `--network goerli` when executing the command.*
 
 4. Add *output* files into task folder:
 
-    After succesfully executing the task, Hardhat would have saved the resulting deployments (contract addresses along their abi, bytecode, metadata...) on `pkg/deployments/deployments`. **Move that folder inside `pkg/deployments/tasks` and rename it to `output`**.
+    After succesfully executing the task, Hardhat would have saved the resulting deployments (contract addresses along their abi, bytecode, metadata...) on `pkg/deployments/deployments`. **Move that folder inside `pkg/deployments/tasks/YYYYMMYY-TASK_NAME` and rename it to `output`**.
 
 5. Commit and push code to Github.
 
