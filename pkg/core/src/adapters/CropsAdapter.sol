@@ -57,18 +57,26 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
                 totalTarget += amt;
                 tBalance[_usr] += amt;
             } else {
-                if (reconciledAmt[_usr] > 0) {
-                    if (amt < reconciledAmt[_usr]) {
+                uint256 uReconciledAmt = reconciledAmt[_usr];
+                // If reconciledAmt is positive it means the a portion of the user's `tBalance` belongs
+                // to an already matured Series and we should reconcile that amount by decreasing (or setting to 0)
+                // the `amt` value.
+
+                // Using unchecked because reconciledAmt and amt represent a part of the user's balance
+                // and can never larger than totalSupply
+                if (uReconciledAmt > 0) {
+                    if (amt < uReconciledAmt) {
                         unchecked {
-                            reconciledAmt[_usr] -= amt;
+                            uReconciledAmt -= amt;
                         }
                         amt = 0;
                     } else {
                         unchecked {
-                            amt -= reconciledAmt[_usr];
+                            amt -= uReconciledAmt;
                         }
-                        reconciledAmt[_usr] = 0;
+                        uReconciledAmt = 0;
                     }
+                    reconciledAmt[_usr] = uReconciledAmt;
                 }
                 if (amt > 0) {
                     totalTarget -= amt;
@@ -83,7 +91,10 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
 
     /// @notice Reconciles users target balances to zero by distributing rewards on their holdings,
     /// to avoid dilution of next Series' YT holders.
-    /// This function should be called right after a Series matures.
+    /// This function should be called right after a Series matures and will save the user's YT balance
+    /// (in target terms) on reconciledAmt[usr]. When `notify()` is triggered for on a new Series, we will
+    /// take that amount and subtract it from the user's target balance (`tBalance`) which will fix (or reconcile)
+    /// his position to prevent dilution.
     /// @param _usrs Users to reconcile
     /// @param _maturities Maturities of the series that we want to reconcile users on.
     function reconcile(address[] calldata _usrs, uint256[] calldata _maturities) public {
@@ -92,12 +103,12 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
                 address usr = _usrs[i];
                 uint256 ytBal = ERC20(Divider(divider).yt(address(this), _maturities[j])).balanceOf(usr);
                 // We don't want to reconcile users if maturity has not been reached or if they have already been reconciled
-                if (_maturities[j] < block.timestamp && ytBal > 0 && !reconciled[usr][_maturities[j]]) {
+                if (_maturities[j] <= block.timestamp && ytBal > 0 && !reconciled[usr][_maturities[j]]) {
                     _distribute(usr);
-                    uint256 tBal = ytBal.fdiv(Divider(divider).lscales(address(this), _maturities[j], address(usr)));
+                    uint256 tBal = ytBal.fdiv(Divider(divider).lscales(address(this), _maturities[j], usr));
                     totalTarget -= tBal;
                     tBalance[usr] -= tBal;
-                    reconciledAmt[usr] += tBal;
+                    reconciledAmt[usr] += tBal; // We increase reconciledAmt with the user's YT balance in target terms
                     reconciled[usr][_maturities[j]] = true;
                     emit Reconciled(usr, tBal, _maturities[j]);
                 }

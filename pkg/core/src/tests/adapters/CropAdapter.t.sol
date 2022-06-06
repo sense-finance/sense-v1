@@ -291,42 +291,6 @@ contract CropAdapters is TestHelper {
 
     // reconcile tests
 
-    event Reconciled(address);
-
-    function testFailFuzzReconcileOnMaturityShouldNotReconcile(uint256 tBal) public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
-
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
-
-        assertEq(reward.balanceOf(address(bob)), 0);
-
-        reward.mint(address(cropAdapter), 60 * 1e18);
-
-        hevm.warp(maturity);
-        alice.doSettleSeries(address(cropAdapter), maturity);
-
-        // reconcile Bob's position
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
-        uint256[] memory maturities = new uint256[](1);
-        maturities[0] = maturity;
-        address[] memory users = new address[](1);
-        users[0] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
-
-        bob.doCollect(yt);
-        assertClose(reward.balanceOf(address(bob)), 24 * 1e18);
-
-        // should not emit a Reconciled() event
-        hevm.expectEmit(true, false, false, false);
-        emit Reconciled(address(bob));
-    }
-
     function testFuzzReconcileMoreThanOnce(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);

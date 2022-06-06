@@ -415,46 +415,6 @@ contract CropsAdapters is TestHelper {
 
     // reconcile tests
 
-    event Reconciled(address);
-
-    function testFailFuzzReconcileOnMaturityShouldNotReconcile(uint256 tBal) public {
-        assumeBounds(tBal);
-        uint256 maturity = getValidMaturity(2021, 10);
-
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
-        cropsAdapter.setScale(1e18);
-
-        alice.doIssue(address(cropsAdapter), maturity, (60 * tBal) / 100);
-        bob.doIssue(address(cropsAdapter), maturity, (40 * tBal) / 100);
-
-        assertEq(reward.balanceOf(address(bob)), 0);
-        assertEq(reward2.balanceOf(address(bob)), 0);
-
-        reward.mint(address(cropsAdapter), 60 * 1e18);
-        reward2.mint(address(cropsAdapter), 60 * 1e18);
-
-        hevm.warp(maturity);
-        alice.doSettleSeries(address(cropsAdapter), maturity);
-
-        // reconcile Bob's position
-        assertEq(cropsAdapter.tBalance(address(bob)), (40 * tBal) / 100);
-        uint256[] memory maturities = new uint256[](1);
-        maturities[0] = maturity;
-        address[] memory users = new address[](1);
-        users[0] = address(bob);
-        cropsAdapter.reconcile(users, maturities);
-        assertEq(cropsAdapter.tBalance(address(bob)), (40 * tBal) / 100);
-
-        bob.doCollect(yt);
-        assertClose(reward.balanceOf(address(bob)), 24 * 1e18);
-        assertClose(reward2.balanceOf(address(bob)), 24 * 1e18);
-
-        // should not emit a Reconciled() event
-        hevm.expectEmit(true, false, false, false);
-        emit Reconciled(address(bob));
-    }
-
     function testFuzzReconcileMoreThanOnce(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
