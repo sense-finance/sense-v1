@@ -8,8 +8,8 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 // Internal references
 import { Periphery } from "../../Periphery.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { WstETHAdapter } from "../../adapters/lido/WstETHAdapter.sol";
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { WstETHAdapter } from "../../adapters/implementations/lido/WstETHAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { DSTest } from "../test-helpers/test.sol";

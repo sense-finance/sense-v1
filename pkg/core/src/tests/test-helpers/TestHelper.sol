@@ -3,8 +3,8 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { BaseFactory } from "../../adapters/BaseFactory.sol";
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
@@ -12,7 +12,7 @@ import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockAdapter, Mock4626Adapter } from "./mocks/MockAdapter.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
-import { ERC4626Adapter } from "../../adapters/ERC4626Adapter.sol";
+import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
 import { MockFactory, Mock4626CropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 

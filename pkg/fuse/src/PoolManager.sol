@@ -17,7 +17,7 @@ import { LPOracle } from "./oracles/LP.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
-import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
+import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
 
 interface FuseDirectoryLike {
     function deployPool(

@@ -6,7 +6,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
 
 import { MockCropsAdapter } from "../test-helpers/mocks/MockAdapter.sol";

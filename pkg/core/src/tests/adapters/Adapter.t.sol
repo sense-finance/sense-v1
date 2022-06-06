@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { TestHelper } from "../test-helpers/TestHelper.sol";
 

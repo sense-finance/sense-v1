@@ -2,9 +2,9 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { CAdapter } from "../../adapters/compound/CAdapter.sol";
-import { CFactory } from "../../adapters/compound/CFactory.sol";
-import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { CAdapter } from "../../adapters/implementations/compound/CAdapter.sol";
+import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
+import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
 import { DSTest } from "../test-helpers/test.sol";

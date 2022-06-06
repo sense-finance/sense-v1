@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { CropsAdapter } from "./CropsAdapter.sol";
+import { Crops } from "../extensions/Crops.sol";
 import { BaseFactory } from "./BaseFactory.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
@@ -17,7 +17,7 @@ abstract contract CropsFactory is Trust, BaseFactory {
     /// @param _adapters array of adapters to update the rewards tokens on
     function setRewardTokens(address[] memory _rewardTokens, address[] memory _adapters) public requiresTrust {
         for (uint256 i = 0; i < _adapters.length; i++) {
-            CropsAdapter(_adapters[i]).setRewardTokens(_rewardTokens);
+            Crops(_adapters[i]).setRewardTokens(_rewardTokens);
         }
     }
 }

@@ -8,7 +8,7 @@ import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { Periphery } from "../../Periphery.sol";
 import { YT } from "../../tokens/YT.sol";
-import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 
 contract User {
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));

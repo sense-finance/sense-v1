@@ -6,8 +6,8 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Divider } from "../../Divider.sol";
-import { FixedMath } from "../../external/FixedMath.sol";
+import { Divider } from "../../../Divider.sol";
+import { FixedMath } from "../../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 

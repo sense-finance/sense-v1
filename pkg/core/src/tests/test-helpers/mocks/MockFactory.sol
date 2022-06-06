@@ -2,12 +2,12 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { CropsFactory } from "../../../adapters/CropsFactory.sol";
-import { CropFactory } from "../../../adapters/CropFactory.sol";
+import { CropsFactory } from "../../../adapters/abstract/factories/CropsFactory.sol";
+import { CropFactory } from "../../../adapters/abstract/factories/CropFactory.sol";
 import { Divider } from "../../../Divider.sol";
 import { MockAdapter, Mock4626Adapter, MockCropsAdapter, Mock4626CropsAdapter } from "./MockAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
+import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";

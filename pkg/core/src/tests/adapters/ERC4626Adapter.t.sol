@@ -5,8 +5,8 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
-import { ERC4626Adapter } from "../../adapters/ERC4626Adapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
+import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
