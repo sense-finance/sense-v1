@@ -26,7 +26,6 @@ module.exports = {
   mainnet: {
     divider: "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
     periphery: "0xFff11417a58781D3C72083CB45EF54d79Cd02437", 
-    factories: MAINNET_FACTORIES,
-    adapters: [],
+    factories: MAINNET_FACTORIES
   },
 };
