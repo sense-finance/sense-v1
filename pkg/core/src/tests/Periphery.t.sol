@@ -145,9 +145,9 @@ contract PeripheryTest is TestHelper {
 
         address cropFactory;
         if (is4626) {
-            cropFactory = address(new Mock4626CropFactory(address(divider), factoryParams, address(reward))); // deploy 4626 crop adapter factory
+            cropFactory = address(new Mock4626CropFactory(address(divider), factoryParams, address(reward)));
         } else {
-            cropFactory = address(new MockFactory(address(divider), factoryParams, address(reward))); // deploy crop adapter factory
+            cropFactory = address(new MockFactory(address(divider), factoryParams, address(reward)));
         }
         divider.setIsTrusted(cropFactory, true);
         periphery.setFactory(cropFactory, true);

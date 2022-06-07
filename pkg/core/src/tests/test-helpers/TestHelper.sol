@@ -315,9 +315,9 @@ contract TestHelper is DSTest {
             tilt: 0
         });
         if (is4626) {
-            someFactory = address(new Mock4626CropFactory(address(divider), factoryParams, _reward)); // deploy 4626 crop adapter factory
+            someFactory = address(new Mock4626CropFactory(address(divider), factoryParams, _reward));
         } else {
-            someFactory = address(new MockFactory(address(divider), factoryParams, _reward)); // deploy crop adapter factory
+            someFactory = address(new MockFactory(address(divider), factoryParams, _reward));
         }
         MockFactory(someFactory).addTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
@@ -336,9 +336,9 @@ contract TestHelper is DSTest {
             tilt: 0
         });
         if (is4626) {
-            someFactory = address(new Mock4626CropsFactory(address(divider), factoryParams, _rewardTokens)); // deploy 4626 crops adapter factory
+            someFactory = address(new Mock4626CropsFactory(address(divider), factoryParams, _rewardTokens));
         } else {
-            someFactory = address(new MockCropsFactory(address(divider), factoryParams, _rewardTokens)); // deploy crops adapter factory
+            someFactory = address(new MockCropsFactory(address(divider), factoryParams, _rewardTokens));
         }
         MockFactory(someFactory).addTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
