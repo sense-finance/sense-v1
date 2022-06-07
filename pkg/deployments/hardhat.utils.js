@@ -116,3 +116,6 @@ exports.setStorageAt = async (address, index, value) => {
   await ethers.provider.send("hardhat_setStorageAt", [address, index, value]);
   await ethers.provider.send("evm_mine", []); // Just mines to the next block
 };
+
+exports.delay = (n) => new Promise( r => setTimeout(r, n*1000));
+

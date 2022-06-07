@@ -5,6 +5,7 @@ const { SENSE_MULTISIG } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
+const { delay } = require("../../hardhat.utils");
 
 task(
   "20220531-fuse-factory",
@@ -59,13 +60,14 @@ task(
     // if mainnet, verify on etherscan
     if (chainId === "1") {
       console.log("\n-------------------------------------------------------");
+      console.log("Waiting 20 seconds for Etherscan to sync...");
+      await delay(20);
       console.log("Trying to verify contract on Etherscan...");
       try {
-        const hola = await hre.run("verify:verify", {
+        await hre.run("verify:verify", {
           address: factoryAddress,
           constructorArguments: [divider.address, factoryParams],
         });
-        console.log('HOLA', hola);
       } catch (e) {
         console.log(e);
         console.log("We couldn't verify the contract on Etherscan, you may try manually.");
