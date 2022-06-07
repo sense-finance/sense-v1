@@ -6,8 +6,14 @@ module.exports = async function () {
   const deployerSigner = await ethers.getSigner(deployer);
   const chainId = await getChainId();
 
-  if (!SENSE_MULTISIG.has(chainId)) throw Error("No sense multisig found");
-  const multisig = chainId === "5" ? OZ_RELAYER.get("5") : SENSE_MULTISIG.get(chainId);
+  let signer;
+  if (chainId === "1") {
+    if (!SENSE_MULTISIG.has("1")) throw Error("No sense multisig found for mainnet");
+    signer = SENSE_MULTISIG.get(chainId);
+  } else {
+    if (!OZ_RELAYER.get(chainId)) throw Error(`No OZ relayer found for chain ID ${chainId}`);
+    signer = OZ_RELAYER.get("5");
+  }
 
   let tokenHandler = await ethers.getContract("TokenHandler", deployerSigner);
   let divider = await ethers.getContract("Divider", deployerSigner);
@@ -17,40 +23,40 @@ module.exports = async function () {
   let emergencyStop = await ethers.getContract("EmergencyStop", deployerSigner);
 
   log("\n-------------------------------------------------------")
-  log("\nAdd multisig as trusted address on contracts");
+  log("\nAdd signer as trusted address on contracts");
 
-  log("Trust the multisig address on the token handler");
-  if (!(await tokenHandler.isTrusted(multisig))) {
-    await (await tokenHandler.setIsTrusted(multisig, true)).wait();
+  log("Trust the signer address on the token handler");
+  if (!(await tokenHandler.isTrusted(signer))) {
+    await (await tokenHandler.setIsTrusted(signer, true)).wait();
   }
 
-  log("Trust the multisig address on the divider");
-  if (!(await divider.isTrusted(multisig))) {
-    await (await divider.setIsTrusted(multisig, true)).wait();
+  log("Trust the signer address on the divider");
+  if (!(await divider.isTrusted(signer))) {
+    await (await divider.setIsTrusted(signer, true)).wait();
   }
 
-  log("Trust the multisig address on the pool manager");
-  if (!(await poolManager.isTrusted(multisig))) {
-    await (await poolManager.setIsTrusted(multisig, true)).wait();
+  log("Trust the signer address on the pool manager");
+  if (!(await poolManager.isTrusted(signer))) {
+    await (await poolManager.setIsTrusted(signer, true)).wait();
   }
 
-  log("Trust the multisig address on the space factory");
-  if (!(await spaceFactory.isTrusted(multisig))) {
-    await (await spaceFactory.setIsTrusted(multisig, true)).wait();
+  log("Trust the signer address on the space factory");
+  if (!(await spaceFactory.isTrusted(signer))) {
+    await (await spaceFactory.setIsTrusted(signer, true)).wait();
   }
 
-  log("Trust the multisig address on the periphery");
-  if (!(await periphery.isTrusted(multisig))) {
-    await (await periphery.setIsTrusted(multisig, true)).wait();
+  log("Trust the signer address on the periphery");
+  if (!(await periphery.isTrusted(signer))) {
+    await (await periphery.setIsTrusted(signer, true)).wait();
   }
 
-  log("Trust the multisig address on the emergency stop");
-  if (!(await emergencyStop.isTrusted(multisig))) {
-    await (await emergencyStop.setIsTrusted(multisig, true)).wait();
+  log("Trust the signer address on the emergency stop");
+  if (!(await emergencyStop.isTrusted(signer))) {
+    await (await emergencyStop.setIsTrusted(signer, true)).wait();
   }
 
-  // if multisig is same as deployer, we don't want to untrust it
-  if (multisig !== deployer) {
+  // if signer is same as deployer, we don't want to untrust it
+  if (signer !== deployer) {
     log("\n-------------------------------------------------------")
     log("\nRemove deployer address from trusted on contracts");
     log("Untrust deployer on the token handler");
@@ -103,9 +109,9 @@ module.exports = async function () {
   }
 
   log("\n-------------------------------------------------------");
-  log("Sanity checks: multisig address can execute trusted functions...");
+  log("Sanity checks: signer address can execute trusted functions...");
 
-  const multisigSigner = await hre.ethers.getSigner(multisig);
+  const multisigSigner = await hre.ethers.getSigner(signer);
   tokenHandler = tokenHandler.connect(multisigSigner);
   divider = divider.connect(multisigSigner);
   poolManager = poolManager.connect(multisigSigner);
@@ -115,7 +121,7 @@ module.exports = async function () {
 
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",
-    params: [multisig],
+    params: [signer],
   });
 
   const calls = [
@@ -135,5 +141,5 @@ module.exports = async function () {
 
 };
 
-module.exports.tags = ["simulated:multisig", "scenario:simulated"];
+module.exports.tags = ["simulated:signer", "scenario:simulated"];
 module.exports.dependencies = ["simulated:series"];
