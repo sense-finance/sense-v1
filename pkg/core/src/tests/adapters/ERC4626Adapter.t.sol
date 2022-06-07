@@ -70,6 +70,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         uint256 prebal = underlying.balanceOf(address(this));
         uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
         assertEq(targetFromWrap, target.balanceOf(address(this)));
+        assertGt(targetFromWrap, 0);
         erc4626Adapter.unwrapTarget(targetFromWrap);
         uint256 postbal = underlying.balanceOf(address(this));
 
@@ -93,10 +94,27 @@ contract ERC4626AdapterTest is DSTestPlus {
         prebal = underlying.balanceOf(address(this));
         targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
         assertEq(targetFromWrap + targetBalPostDeposit, target.balanceOf(address(this)));
+        assertGt(targetFromWrap + targetBalPostDeposit, 0);
         erc4626Adapter.unwrapTarget(targetFromWrap);
         postbal = underlying.balanceOf(address(this));
 
         assertEq(prebal, postbal);
+    }
+
+    function testWrapUnwrapZeroAmt() public {
+        uint256 wrapAmt = 0;
+
+        // Approvals
+        target.approve(address(erc4626Adapter), type(uint256).max);
+        underlying.approve(address(erc4626Adapter), type(uint256).max);
+
+        // Trying to wrap 0 underlying should revert
+        hevm.expectRevert("ZERO_SHARES");
+        uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
+
+        // Trying to unwrap 0 target should revert
+        hevm.expectRevert("ZERO_ASSETS");
+        erc4626Adapter.unwrapTarget(targetFromWrap);
     }
 
     function testCantWrapMoreThanBalance() public {

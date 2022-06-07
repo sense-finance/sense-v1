@@ -1079,8 +1079,6 @@ contract PeripheryTest is TestHelper {
         assertEq(ptBal, 1e18);
     }
 
-    event Haha(uint256);
-
     function testRemoveLiquidityWhenOneSideLiquidity() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
