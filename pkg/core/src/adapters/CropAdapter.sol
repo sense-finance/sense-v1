@@ -45,31 +45,32 @@ abstract contract CropAdapter is BaseAdapter {
     ) public override onlyDivider {
         _distribute(_usr);
         if (amt > 0) {
-            if (join) {
-                totalTarget += amt;
-                tBalance[_usr] += amt;
-            } else {
-                uint256 uReconciledAmt = reconciledAmt[_usr];
-                // If reconciledAmt is positive it means the a portion of the user's `tBalance` belongs
-                // to an already matured Series and we should reconcile that amount by decreasing (or setting to 0)
-                // the `amt` value.
-                if (uReconciledAmt > 0) {
-                    // Using unchecked because reconciledAmt and amt represent a part of the user's balance
-                    // and can never larger than totalSupply
-                    if (amt < uReconciledAmt) {
-                        unchecked {
-                            uReconciledAmt -= amt;
-                        }
-                        amt = 0;
-                    } else {
+            uint256 uReconciledAmt = reconciledAmt[_usr];
+            // if reconciled amount > 0, we need to adjust the `amt` received
+            // both when join is true and false
+            if (uReconciledAmt > 0) {
+                if (amt < uReconciledAmt) {
+                    unchecked {
+                        uReconciledAmt -= amt;
+                    }
+                    if (!join) amt = 0;
+                } else {
+                    if (!join) {
                         unchecked {
                             amt -= uReconciledAmt;
                         }
-                        uReconciledAmt = 0;
                     }
-                    reconciledAmt[_usr] = uReconciledAmt;
+                    uReconciledAmt = 0;
                 }
+                reconciledAmt[_usr] = uReconciledAmt;
+            }
+            if (join) {
                 if (amt > 0) {
+                    totalTarget += amt;
+                    tBalance[_usr] += amt;
+                }
+            } else {
+                if (tBalance[_usr] >= amt) {
                     totalTarget -= amt;
                     tBalance[_usr] -= amt;
                 }
