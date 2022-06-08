@@ -722,6 +722,74 @@ contract CropAdapters is TestHelper {
         assertClose(ERC20(reward).balanceOf(address(alice)), 100 * 1e18);
     }
 
+    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionV(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        hevm.startPrank(address(alice));
+        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
+        cropAdapter.setScale(1e18);
+        hevm.stopPrank();
+
+        alice.doIssue(address(cropAdapter), maturity, (50 * tBal) / 100);
+
+        reward.mint(address(cropAdapter), 10 * 1e18);
+
+        alice.doCollect(yt);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+
+        // settle series
+        hevm.warp(maturity + 1 seconds);
+        alice.doSettleSeries(address(cropAdapter), maturity);
+
+        // reconcile Alice's position
+        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        assertEq(cropAdapter.tBalance(address(alice)), (50 * tBal) / 100);
+
+        uint256[] memory maturities = new uint256[](1);
+        maturities[0] = maturity;
+        address[] memory users = new address[](2);
+        users[0] = address(alice);
+        cropAdapter.reconcile(users, maturities);
+
+        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        assertEq(cropAdapter.reconciledAmt(address(alice)), (50 * tBal) / 100);
+
+        // rewards should have been distributed after reconciling
+        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+
+        // sponsor new Series
+        uint256 newMaturity = getValidMaturity(2021, 11);
+        hevm.startPrank(address(alice));
+        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
+        hevm.stopPrank();
+
+        // alice issues on new Series
+        alice.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
+        assertClose(cropAdapter.reconciledAmt(address(alice)), (10 * tBal) / 100);
+        assertClose(cropAdapter.tBalance(address(alice)), (40 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+
+        // alice combines on new Series
+        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        assertEq(cropAdapter.tBalance(address(alice)), 0);
+
+        // bob issues on new Series
+        bob.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
+
+        reward.mint(address(cropAdapter), 10 * 1e18);
+
+        // Bob should receive 100% of rewards
+        bob.doCollect(newYt);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 10 * 1e18);
+        
+        // alice can combine her old YT position
+        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        assertEq(cropAdapter.tBalance(address(alice)), 0);
+
+    }
+
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionWithScaleChanges(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);

@@ -56,9 +56,10 @@ abstract contract CropAdapter is BaseAdapter {
                     if (!join) amt = 0;
                 } else {
                     if (!join) {
-                        unchecked {
-                            amt -= uReconciledAmt;
-                        }
+                        // TODO: Removing this fixes it?
+                        // unchecked {
+                        //     amt -= uReconciledAmt;
+                        // }
                     }
                     uReconciledAmt = 0;
                 }
