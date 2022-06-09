@@ -119,3 +119,14 @@ exports.setStorageAt = async (address, index, value) => {
 
 exports.delay = (n) => new Promise( r => setTimeout(r, n*1000));
 
+exports.verifyOnEtherscan = async (address, constructorArguments) => {
+  try {
+    await hre.run("verify:verify", {
+      address,
+      constructorArguments,
+    });
+  } catch (e) {
+    console.log(e);
+    console.log("We couldn't verify the contract on Etherscan, you may try manually.");
+  }
+}
