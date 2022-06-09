@@ -38,47 +38,121 @@ abstract contract CropAdapter is BaseAdapter {
         reward = _reward;
     }
 
+    // What is reconciled amount? It is a user's YT balance in target terms of a matured Series
+    // that it should have been decremented from the `tBalance` but it was not because the user
+    // did not redeemed their YTs (yet).
+    // Note that, when reconciliing, the user receives the corresponding rewards until maturity.
+    // The `reconciledAmt` allows us to prevent diluting other user's future Series rewards because
+    // we can keep track of those amounts and subtract them from the `tBalance` when needed.
+    // Reconciled amounts can be thought as a debt on the `tBalance` that the user will repay
+    // when issuing (join = true)
     function notify(
         address _usr,
         uint256 amt,
         bool join
     ) public override onlyDivider {
         _distribute(_usr);
+        emit Log(tBalance[_usr]);
+        emit Log(amt);
         if (amt > 0) {
             uint256 uReconciledAmt = reconciledAmt[_usr];
-            // if reconciled amount > 0, we need to adjust the `amt` received
-            // both when join is true and false
-            if (uReconciledAmt > 0) {
-                if (amt < uReconciledAmt) {
-                    unchecked {
+            emit Log(uReconciledAmt);
+            if (join) {
+                // if user has debt (`reconciledAmt` > 0) we use the `amt` to pay it off (partially
+                // or completely, dependening on the case)
+                // but, note that the `amt` var is not modified because the user needs to have his `tBalance`
+                // incremented by the total amount that he has deposited
+                // otherwise, if we would be decrementing `amt`, when doing tBalance[_usr] += amt
+                // tBalance would be incremented with less amount which will result in the user having
+                // a smaller share
+                // why do we need to keep track of the `reconciledAmt`? `reconciledAmt` is does not really affects
+                // the joins but it is the place where we can know when the user pays it off.
+                // The `reconciledAmt` has its use when redeeming/combining (see comments on the `else` condition)
+                if (uReconciledAmt > 0) {
+                    // and is greater than the target the user is issuing (aka `amt`)
+                    // we partially pay the debt (aka `reconciledAmt`) off
+                    if (uReconciledAmt > amt) {
+                        unchecked {
+                            uReconciledAmt -= amt;
+                        }
+                        // we completely settle the debt (that's why we set the `reconciledAmt` to 0)
+                    } else {
+                        uReconciledAmt = 0;
+                    }
+
+                    // QUESTION; does it matter that with this mechanism, by issuing on Series 2, we could be
+                    // paying the debt (decreasing `reconciledAmt`) generated on a previous Series (e.g Series 1)?
+                    // I think it does not matter because... (FILL IN WIHT A BETTERR EXPLANATION)
+
+                    // TODO: check what happens when late reconcile
+                    // TODO: check what happens when scale changes
+                }
+                // no matter if a user had debt or not, we always add the target amount (`amt`) to the `tBalance`
+                // when issuing
+                totalTarget += amt;
+                tBalance[_usr] += amt;
+            } else {
+                // when a user redeems/combines we decrement the user's targetBalance by the `amt` being
+                // redeemed/combined but
+                if (uReconciledAmt > 0) {
+                    if (uReconciledAmt <= amt) {
+                        // if debt is smaller than `amt` being redeemed/combined, we can just settle it
+                        // because... ELABORATE
+                        // TODO: (what happens if scale changes?? because here we
+                        // are always assuming scale is 1 but `amt` is in YT and reconciled is in target)
+                        uReconciledAmt = 0;
+                    } else {
                         uReconciledAmt -= amt;
                     }
-                    if (!join) amt = 0;
-                } else {
-                    if (!join) {
-                        // TODO: Removing this fixes it?
-                        // unchecked {
-                        //     amt -= uReconciledAmt;
-                        // }
-                    }
-                    uReconciledAmt = 0;
                 }
-                reconciledAmt[_usr] = uReconciledAmt;
-            }
-            if (join) {
-                if (amt > 0) {
-                    totalTarget += amt;
-                    tBalance[_usr] += amt;
-                }
-            } else {
                 if (tBalance[_usr] >= amt) {
                     totalTarget -= amt;
                     tBalance[_usr] -= amt;
                 }
             }
+            reconciledAmt[_usr] = uReconciledAmt;
+
+            // old version
+            // if (uReconciledAmt > 0) {
+            //     if (amt < uReconciledAmt) {
+            //         emit Log(123);
+            //         if (join) {
+            //             unchecked {
+            //                 uReconciledAmt -= amt;
+            //             }
+            //         }
+            //         if (!join) amt = 0;
+            //     } else {
+            //         emit Log(888);
+            //         if (!join) {
+            //             // TODO: Removing this fixes it?
+            //             // unchecked {
+            //             //     amt -= uReconciledAmt;
+            //             // }
+            //         }
+            //         uReconciledAmt = 0;
+            //     }
+            //     reconciledAmt[_usr] = uReconciledAmt;
+            // }
+            // if (join) {
+            //     if (amt > 0) {
+            //         totalTarget += amt;
+            //         tBalance[_usr] += amt;
+            //     }
+            // } else {
+            //     emit Log(tBalance[_usr]);
+            //     emit Log(amt);
+            //     if (tBalance[_usr] >= amt) {
+            //         totalTarget -= amt;
+            //         tBalance[_usr] -= amt;
+            //     }
+            //     emit Log(tBalance[_usr]);
+            // }
         }
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
+
+    event Log(uint256);
 
     /// @notice Reconciles users target balances to zero by distributing rewards on their holdings,
     /// to avoid dilution of next Series' YT holders.
