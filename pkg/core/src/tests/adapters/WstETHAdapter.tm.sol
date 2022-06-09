@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.11;
 
-import { FixedMath } from "../external/FixedMath.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Periphery } from "../Periphery.sol";
-import { Divider, TokenHandler } from "../Divider.sol";
-import { WstETHAdapter } from "../adapters/lido/WstETHAdapter.sol";
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
+import { Periphery } from "../../Periphery.sol";
+import { Divider, TokenHandler } from "../../Divider.sol";
+import { WstETHAdapter } from "../../adapters/implementations/lido/WstETHAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "./test-helpers/test.sol";
-import { AddressBook } from "./test-helpers/AddressBook.sol";
-import { MockFactory } from "./test-helpers/mocks/MockFactory.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
-import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { User } from "./test-helpers/User.sol";
-import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
+import { DSTest } from "../test-helpers/test.sol";
+import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
+import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { User } from "../test-helpers/User.sol";
+import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
 interface ICurveStableSwap {
     function get_dy(

@@ -6,12 +6,12 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Divider } from "../Divider.sol";
-import { BaseAdapter } from "./BaseAdapter.sol";
-import { FixedMath } from "../external/FixedMath.sol";
+import { Divider } from "../../../Divider.sol";
+import { FixedMath } from "../../../external/FixedMath.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-abstract contract CropAdapter is BaseAdapter {
+abstract contract Crop is Trust {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
@@ -25,14 +25,7 @@ abstract contract CropAdapter is BaseAdapter {
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
 
-    constructor(
-        address _divider,
-        address _target,
-        address _underlying,
-        uint128 _ifee,
-        BaseAdapter.AdapterParams memory _adapterParams,
-        address _reward
-    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    constructor(address _divider, address _reward) Trust(_divider) {
         reward = _reward;
     }
 
@@ -40,7 +33,7 @@ abstract contract CropAdapter is BaseAdapter {
         address _usr,
         uint256 amt,
         bool join
-    ) public override onlyDivider {
+    ) public virtual requiresTrust {
         _distribute(_usr);
         if (amt > 0) {
             if (join) {
@@ -79,12 +72,5 @@ abstract contract CropAdapter is BaseAdapter {
     /// This method may be overriden by child contracts to claim a protocol's rewards
     function _claimReward() internal virtual {
         return;
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyDivider() {
-        if (divider != msg.sender) revert Errors.OnlyDivider();
-        _;
     }
 }

@@ -16,10 +16,14 @@
         "test": "just turbo-test-local",
         "test:greater-decimal-val": "just turbo-test-local-greater-decimal-val",
         "test:lower-decimal-val": "just turbo-test-local-lower-decimal-val",
+        "test:4626": "just turbo-test-local-4626",
+        "test:4626-8-decimal-val": "just turbo-test-local-4626-8-decimal-val",
         "test:mainnet": "just turbo-test-mainnet",
         "turbo-test": "yarn turbo-test",
         "turbo-test:greater-decimal-val": "yarn test:greater-decimal-val",
         "turbo-test:lower-decimal-val": "yarn test:lower-decimal-val",
+        "turbo-test:4626": "yarn test:4626",
+        "turbo-test:4626-8-decimal-val": "yarn test:4626",
         "turbo-test:mainnet": "yarn test:mainnet",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
@@ -27,7 +31,7 @@
     },
     "dependencies": {
         "@openzeppelin/contracts": "4.3.2",
-        "@rari-capital/solmate": "rari-capital/solmate#e7deddffd5206cdec1d554c5361f529c2a525846",
+        "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
     },

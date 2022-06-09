@@ -4,11 +4,11 @@ pragma solidity 0.8.11;
 // External references
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import { IERC3156FlashLender } from "../external/flashloan/IERC3156FlashLender.sol";
-import { IERC3156FlashBorrower } from "../external/flashloan/IERC3156FlashBorrower.sol";
+import { IERC3156FlashLender } from "../../external/flashloan/IERC3156FlashLender.sol";
+import { IERC3156FlashBorrower } from "../../external/flashloan/IERC3156FlashBorrower.sol";
 
 // Internal references
-import { Divider } from "../Divider.sol";
+import { Divider } from "../../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 /// @title Assign value to Target tokens

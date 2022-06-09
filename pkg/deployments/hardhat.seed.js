@@ -35,10 +35,22 @@ const DEV_TARGETS = [
   { name: "cWBTC", tDecimals: 18, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
-const DEV_CROP_TARGETS = [
+const DEV_CROPS_TARGETS = [
   { name: "cropDAI", tDecimals: 8, uDecimals: 18, comptroller: "0x", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
   { name: "cropETH", tDecimals: 8, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
   { name: "cropWBTC", tDecimals: 18, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+];
+
+const DEV_4626_TARGETS = [
+  { name: "crop4626DAI", tDecimals: 8, uDecimals: 18, comptroller: "0x", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "crop4626ETH", tDecimals: 8, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "crop4626WBTC", tDecimals: 18, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+];
+
+const DEV_4626_CROPS_TARGETS = [
+  { name: "crops4626DAI", tDecimals: 8, uDecimals: 18, comptroller: "0x", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "crops4626ETH", tDecimals: 8, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  { name: "crops4626WBTC", tDecimals: 18, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
 ];
 
 const DEV_ADAPTERS = [
@@ -103,6 +115,7 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_TARGETS,
     crops: false,
+    is4626: false
   }),
   chainId => ({
     contractName: "MockCropsFactory",
@@ -113,8 +126,35 @@ const DEV_FACTORIES = [
     mode: 1, // 0 monthly, 1 weekly;
     oracle: ethers.constants.AddressZero, // oracle address
     tilt: 0,
-    targets: DEV_CROP_TARGETS,
-    crops: true
+    targets: DEV_CROPS_TARGETS,
+    crops: true,
+    is4626: false
+  }),
+  chainId => ({
+    contractName: "Mock4626CropFactory",
+    oracle: ethers.constants.AddressZero, // oracle address
+    stakeSize: ethers.utils.parseEther("1"),
+    minm: "0", // 2 weeks
+    maxm: "4838400", // 4 weeks
+    ifee: ethers.utils.parseEther("0.01"),
+    mode: 1, // 0 monthly, 1 weekly;
+    tilt: 0,
+    targets: DEV_4626_TARGETS,
+    crops: false,
+    is4626: true,
+  }),
+  chainId => ({
+    contractName: "Mock4626CropsFactory",
+    ifee: ethers.utils.parseEther("0.01"),
+    stakeSize: ethers.utils.parseEther("1"),
+    minm: "0", // 2 weeks
+    maxm: "4838400", // 4 weeks
+    mode: 1, // 0 monthly, 1 weekly;
+    oracle: ethers.constants.AddressZero, // oracle address
+    tilt: 0,
+    targets: DEV_4626_CROPS_TARGETS,
+    crops: true,
+    is4626: true
   }),
 ];
 // ------------------------------------

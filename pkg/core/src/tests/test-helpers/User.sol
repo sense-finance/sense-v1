@@ -2,22 +2,21 @@
 pragma solidity 0.8.11;
 
 import { Hevm } from "./Hevm.sol";
+import { MockTargetLike } from "./TestHelper.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockAdapter } from "./mocks/MockAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { Periphery } from "../../Periphery.sol";
-import { GYTManager } from "../../modules/GYTManager.sol";
 import { YT } from "../../tokens/YT.sol";
-import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 
 contract User {
     address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
 
     MockToken stake;
-    MockToken target;
+    MockTargetLike target;
     Divider divider;
     Periphery periphery;
-    GYTManager public gYTManager;
     BaseFactory factory;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -34,7 +33,7 @@ contract User {
         stake = _token;
     }
 
-    function setTarget(MockToken _token) public {
+    function setTarget(MockTargetLike _token) public {
         target = _token;
     }
 
@@ -44,7 +43,6 @@ contract User {
 
     function setPeriphery(Periphery _periphery) public {
         periphery = _periphery;
-        gYTManager = new GYTManager(address(divider));
     }
 
     function doDeployAdapter(address _target, bytes memory _data) public returns (address clone) {
@@ -168,22 +166,6 @@ contract User {
 
     function doCollect(address yt) public returns (uint256 collected) {
         collected = YT(yt).collect();
-    }
-
-    function doJoin(
-        address adapter,
-        uint256 maturity,
-        uint256 balance
-    ) public {
-        gYTManager.join(adapter, maturity, balance);
-    }
-
-    function doExit(
-        address adapter,
-        uint256 maturity,
-        uint256 balance
-    ) public {
-        gYTManager.exit(adapter, maturity, balance);
     }
 
     function doSwapTargetForPTs(

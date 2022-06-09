@@ -2,9 +2,9 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { CropFactory } from "../CropFactory.sol";
+import { CropFactory } from "../../abstract/factories/CropFactory.sol";
 import { CAdapter, ComptrollerLike } from "./CAdapter.sol";
-import { BaseAdapter } from "../BaseAdapter.sol";
+import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references

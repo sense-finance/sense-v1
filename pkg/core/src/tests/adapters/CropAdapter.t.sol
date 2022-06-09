@@ -6,20 +6,29 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
 
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
-import { TestHelper } from "../test-helpers/TestHelper.sol";
+import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 
 contract CropAdapters is TestHelper {
     using FixedMath for uint256;
 
+    function setUp() public virtual override {
+        super.setUp();
+
+        // freeze scale to 1e18 (only for non 4626 targets)
+        if (!is4626) adapter.setScale(1e18);
+    }
+
     function testAdapterHasParams() public {
-        MockToken underlying = new MockToken("Dai", "DAI", 18);
-        MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
+        MockToken underlying = new MockToken("Dai", "DAI", mockUnderlyingDecimals);
+        MockTargetLike target = MockTargetLike(
+            deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals)
+        );
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: ORACLE,
@@ -35,7 +44,7 @@ contract CropAdapters is TestHelper {
         MockAdapter adapter = new MockAdapter(
             address(divider),
             address(target),
-            target.underlying(),
+            !is4626 ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -60,7 +69,6 @@ contract CropAdapters is TestHelper {
     function testDistribution() public {
         uint256 maturity = getValidMaturity(2021, 10);
         sponsorSampleSeries(address(alice), maturity);
-        adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
         bob.doIssue(address(adapter), maturity, 40 * 1e18);
@@ -85,7 +93,6 @@ contract CropAdapters is TestHelper {
     function testDistributionSimple() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
-        adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 100 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
@@ -113,7 +120,6 @@ contract CropAdapters is TestHelper {
     function testDistributionProportionally() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
-        adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
         bob.doIssue(address(adapter), maturity, 40 * 1e18);
@@ -155,7 +161,6 @@ contract CropAdapters is TestHelper {
     function testDistributionSimpleCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
-        adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
         bob.doIssue(address(adapter), maturity, 40 * 1e18);
@@ -171,7 +176,6 @@ contract CropAdapters is TestHelper {
     function testDistributionCollectAndTransferMultiStep() public {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = sponsorSampleSeries(address(alice), maturity);
-        adapter.setScale(1e18);
 
         alice.doIssue(address(adapter), maturity, 60 * 1e18);
         // bob issues 40, now the pool is 40% bob and 60% alice

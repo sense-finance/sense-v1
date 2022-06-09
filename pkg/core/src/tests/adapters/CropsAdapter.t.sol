@@ -6,14 +6,14 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
 
 import { MockCropsAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockCropsFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
-import { TestHelper } from "../test-helpers/TestHelper.sol";
+import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 
 contract CropsAdapters is TestHelper {
     using FixedMath for uint256;
@@ -21,7 +21,7 @@ contract CropsAdapters is TestHelper {
     MockToken internal reward2;
     MockCropsAdapter internal cropsAdapter;
     MockCropsFactory internal cropsFactory;
-    MockTarget internal aTarget;
+    MockTargetLike internal aTarget;
 
     // reward tokens
     address[] public rewardTokens;
@@ -29,20 +29,29 @@ contract CropsAdapters is TestHelper {
     function setUp() public virtual override {
         super.setUp();
         reward2 = new MockToken("Reward Token 2", "RT2", 6);
-        aTarget = new MockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals);
+        MockTargetLike aTarget = MockTargetLike(
+            deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals)
+        );
+
         rewardTokens = [address(reward), address(reward2)];
-        cropsFactory = createCropsFactory(address(aTarget), rewardTokens);
+        cropsFactory = MockCropsFactory(deployCropsFactory(address(aTarget), rewardTokens));
         address f = periphery.deployAdapter(address(cropsFactory), address(aTarget), ""); // deploy & onboard target through Periphery
         cropsAdapter = MockCropsAdapter(f);
         divider.setGuard(address(cropsAdapter), 10 * 2**128);
-        updateUser(alice, aTarget, stake, 2**128);
-        updateUser(bob, aTarget, stake, 2**128);
-        updateUser(jim, aTarget, stake, 2**128);
+
+        updateUser(alice, aTarget, stake, MAX_TARGET);
+        updateUser(bob, aTarget, stake, MAX_TARGET);
+        updateUser(jim, aTarget, stake, MAX_TARGET);
+
+        // freeze scale to 1e18 (only for no 4626 targets)
+        if (!is4626) cropsAdapter.setScale(1e18);
     }
 
     function testAdapterHasParams() public {
         MockToken underlying = new MockToken("Dai", "DAI", 18);
-        MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
+        MockTargetLike target = MockTargetLike(
+            deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals)
+        );
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: ORACLE,
@@ -58,11 +67,12 @@ contract CropsAdapters is TestHelper {
         MockCropsAdapter cropsAdapter = new MockCropsAdapter(
             address(divider),
             address(target),
-            target.underlying(),
+            !is4626 ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             rewardTokens
         );
+
         (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = cropsAdapter
             .adapterParams();
         assertEq(cropsAdapter.rewardTokens(0), address(reward));
@@ -86,7 +96,6 @@ contract CropsAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.startPrank(address(alice));
         periphery.sponsorSeries(address(cropsAdapter), maturity, true);
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 60 * 1e18);
         bob.doIssue(address(cropsAdapter), maturity, 40 * 1e18);
@@ -119,7 +128,6 @@ contract CropsAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 100 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
@@ -155,7 +163,6 @@ contract CropsAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 60 * 1e18);
         bob.doIssue(address(cropsAdapter), maturity, 40 * 1e18);
@@ -211,7 +218,6 @@ contract CropsAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 60 * 1e18);
         bob.doIssue(address(cropsAdapter), maturity, 40 * 1e18);
@@ -231,7 +237,6 @@ contract CropsAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 60 * 1e18);
         // bob issues 40, now the pool is 40% bob and 60% alice
@@ -291,7 +296,6 @@ contract CropsAdapters is TestHelper {
         hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
         hevm.stopPrank();
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 100 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
@@ -340,7 +344,6 @@ contract CropsAdapters is TestHelper {
         hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
         hevm.stopPrank();
-        cropsAdapter.setScale(1e18);
 
         alice.doIssue(address(cropsAdapter), maturity, 100 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);

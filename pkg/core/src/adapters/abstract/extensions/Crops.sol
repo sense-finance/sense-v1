@@ -6,13 +6,12 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Divider } from "../Divider.sol";
-import { BaseAdapter } from "./BaseAdapter.sol";
-import { FixedMath } from "../external/FixedMath.sol";
+import { Divider } from "../../../Divider.sol";
+import { FixedMath } from "../../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
-abstract contract CropsAdapter is Trust, BaseAdapter {
+abstract contract Crops is Trust {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
@@ -32,14 +31,8 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         mapping(address => uint256) rewarded;
     }
 
-    constructor(
-        address _divider,
-        address _target,
-        address _underlying,
-        uint128 _ifee,
-        BaseAdapter.AdapterParams memory _adapterParams,
-        address[] memory _rewardTokens
-    ) Trust(msg.sender) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    constructor(address _divider, address[] memory _rewardTokens) Trust(msg.sender) {
+        setIsTrusted(_divider, true);
         rewardTokens = _rewardTokens;
     }
 
@@ -47,8 +40,7 @@ abstract contract CropsAdapter is Trust, BaseAdapter {
         address _usr,
         uint256 amt,
         bool join
-    ) public override {
-        if (divider != msg.sender) revert Errors.OnlyDivider();
+    ) public virtual requiresTrust {
         _distribute(_usr);
         if (amt > 0) {
             if (join) {
