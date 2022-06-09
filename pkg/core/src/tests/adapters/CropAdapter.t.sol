@@ -776,6 +776,7 @@ contract CropAdapters is TestHelper {
         assertEq(cropAdapter.tBalance(address(alice)), 0);
     }
 
+    // user combines first her new YTs
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionVI(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -839,6 +840,7 @@ contract CropAdapters is TestHelper {
         assertEq(cropAdapter.tBalance(address(alice)), 0);
     }
 
+    // user combines first her old YTs
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionVII(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -889,7 +891,7 @@ contract CropAdapters is TestHelper {
         // alice can combine half of her old YT position
         alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)) / 2);
         assertClose(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertClose(cropAdapter.tBalance(address(alice)), 0);
+        assertClose(cropAdapter.tBalance(address(alice)), (50 * tBal) / 100); // THIS FAILS!!!
 
         // alice combines all of her new Series YTs
         alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));

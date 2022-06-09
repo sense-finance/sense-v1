@@ -46,6 +46,7 @@ abstract contract CropAdapter is BaseAdapter {
     // we can keep track of those amounts and subtract them from the `tBalance` when needed.
     // Reconciled amounts can be thought as a debt on the `tBalance` that the user will repay
     // when issuing (join = true)
+
     function notify(
         address _usr,
         uint256 amt,
@@ -68,6 +69,17 @@ abstract contract CropAdapter is BaseAdapter {
                 // why do we need to keep track of the `reconciledAmt`? `reconciledAmt` is does not really affects
                 // the joins but it is the place where we can know when the user pays it off.
                 // The `reconciledAmt` has its use when redeeming/combining (see comments on the `else` condition)
+                // IMPORTANT: one might want to think that the `reconciledAmt` + `tBalance` = `totalTarget`
+                // (amount of target deposited by users across all Series). But this is not the case because when
+                // user issues and has a `reconciledAmt`, we always increment his `tBalance` but we decrease his `reconciledAmt`:
+                // e.g Alice issues 10 on S1 ->     tBalance = 10, reconciledAmt = 0,  totalTarget = 10
+                //     Alice is reconciled   ->     tBalance = 0,  reconciledAmt = 10, totalTarget = 0
+                //     Alice issues 10 on S2 ->     tBalance = 10, reconciledAmt = 0,  totalTarget = 10 IMBALANCE
+                // note how `totalTarget` is 10 though the user has 20 target (10 from S1 and 10 from S2)
+                // let's call `extraTarget` to the difference between current `totalTarget` and the total
+                // amount of target the user has deposited (in other words, the current YT balance across all Series
+                // in target terms)
+
                 if (uReconciledAmt > 0) {
                     // and is greater than the target the user is issuing (aka `amt`)
                     // we partially pay the debt (aka `reconciledAmt`) off
@@ -98,56 +110,24 @@ abstract contract CropAdapter is BaseAdapter {
                     if (uReconciledAmt <= amt) {
                         // if debt is smaller than `amt` being redeemed/combined, we can just settle it
                         // because... ELABORATE
-                        // TODO: (what happens if scale changes?? because here we
-                        // are always assuming scale is 1 but `amt` is in YT and reconciled is in target)
                         uReconciledAmt = 0;
                     } else {
                         uReconciledAmt -= amt;
                     }
                 }
+                // because of the imbalance generated with the `extraTarget`, when user redeem/combines
+                // it might happen that the `amt` redeemed/combined is greater than the user's `tBalance`
+                // so we skip from decrementing because there's actually no need to do that
+                // FIXME: this is wrong because if a user combines/redeems new YTs before having
+                // combined/redeemed his old YTs his `tBalance` will be decremented which will dilute his
+                // own share. WE HAVE NO WAY OF BEING ABLE TO KNOW WHEN  WE CAN OR CAN NOT DECREMENT `tBalance`
+                // because we are missisng the maturity.
                 if (tBalance[_usr] >= amt) {
                     totalTarget -= amt;
                     tBalance[_usr] -= amt;
                 }
             }
             reconciledAmt[_usr] = uReconciledAmt;
-
-            // old version
-            // if (uReconciledAmt > 0) {
-            //     if (amt < uReconciledAmt) {
-            //         emit Log(123);
-            //         if (join) {
-            //             unchecked {
-            //                 uReconciledAmt -= amt;
-            //             }
-            //         }
-            //         if (!join) amt = 0;
-            //     } else {
-            //         emit Log(888);
-            //         if (!join) {
-            //             // TODO: Removing this fixes it?
-            //             // unchecked {
-            //             //     amt -= uReconciledAmt;
-            //             // }
-            //         }
-            //         uReconciledAmt = 0;
-            //     }
-            //     reconciledAmt[_usr] = uReconciledAmt;
-            // }
-            // if (join) {
-            //     if (amt > 0) {
-            //         totalTarget += amt;
-            //         tBalance[_usr] += amt;
-            //     }
-            // } else {
-            //     emit Log(tBalance[_usr]);
-            //     emit Log(amt);
-            //     if (tBalance[_usr] >= amt) {
-            //         totalTarget -= amt;
-            //         tBalance[_usr] -= amt;
-            //     }
-            //     emit Log(tBalance[_usr]);
-            // }
         }
         rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
     }
