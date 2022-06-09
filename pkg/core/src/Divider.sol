@@ -16,7 +16,7 @@ import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { YT } from "./tokens/YT.sol";
 import { Token } from "./tokens/Token.sol";
-import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
+import { BaseAdapter as Adapter } from "./adapters/abstract/BaseAdapter.sol";
 
 /// @title Sense Divider: Divide Assets in Two
 /// @author fedealconada + jparklev

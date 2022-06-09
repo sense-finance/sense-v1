@@ -2,10 +2,10 @@
 pragma solidity 0.8.11;
 
 // External references
-import { FixedMath } from "../../external/FixedMath.sol";
+import { FixedMath } from "../../../external/FixedMath.sol";
 
 // Internal references
-import { BaseAdapter } from "../BaseAdapter.sol";
+import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";

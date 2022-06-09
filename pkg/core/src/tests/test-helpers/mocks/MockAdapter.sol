@@ -2,11 +2,10 @@
 pragma solidity 0.8.11;
 
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
-import { CropsAdapter } from "../../../adapters/CropsAdapter.sol";
-import { CropAdapter } from "../../../adapters/CropAdapter.sol";
-import { ERC4626CropAdapter } from "../../../adapters/ERC4626CropAdapter.sol";
-import { ERC4626CropsAdapter } from "../../../adapters/ERC4626CropsAdapter.sol";
+import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
+import { Crops } from "../../../adapters/abstract/extensions/Crops.sol";
+import { Crop } from "../../../adapters/abstract/extensions/Crop.sol";
+import { ERC4626Adapter } from "../../../adapters/abstract/ERC4626Adapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
 import { YT } from "../../../tokens/YT.sol";
@@ -15,7 +14,7 @@ import { MockToken } from "./MockToken.sol";
 import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
 
 // Mock crop adapter
-contract MockAdapter is CropAdapter {
+contract MockAdapter is BaseAdapter, Crop {
     using FixedMath for uint256;
 
     uint256 internal scaleOverride;
@@ -41,10 +40,18 @@ contract MockAdapter is CropAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) CropAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _reward) {
+    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crop) {
+        super.notify(_usr, amt, join);
     }
 
     function scale() external virtual override returns (uint256 _scale) {
@@ -136,7 +143,7 @@ contract MockAdapter is CropAdapter {
 }
 
 // Mock ERC4626 crop adapter
-contract Mock4626Adapter is ERC4626CropAdapter {
+contract Mock4626Adapter is ERC4626Adapter, Crop {
     using FixedMath for uint256;
 
     uint256 public onRedeemCalls;
@@ -149,10 +156,18 @@ contract Mock4626Adapter is ERC4626CropAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) ERC4626CropAdapter(_divider, _target, _ifee, _adapterParams, _reward) {
+    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crop(_divider, _reward) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crop) {
+        super.notify(_usr, amt, join);
     }
 
     function lscale() external returns (uint256, uint256) {
@@ -190,7 +205,7 @@ contract Mock4626Adapter is ERC4626CropAdapter {
 }
 
 // Mock crops adapter
-contract MockCropsAdapter is CropsAdapter {
+contract MockCropsAdapter is BaseAdapter, Crops {
     using FixedMath for uint256;
 
     uint256 internal scaleOverride;
@@ -216,10 +231,18 @@ contract MockCropsAdapter is CropsAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) CropsAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _rewardTokens) {
+    ) Crops(_divider, _rewardTokens) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crops) {
+        super.notify(_usr, amt, join);
     }
 
     function scale() external virtual override returns (uint256 _scale) {
@@ -313,7 +336,7 @@ contract MockCropsAdapter is CropsAdapter {
 }
 
 // Mock ERC4626 crops adapter
-contract Mock4626CropsAdapter is ERC4626CropsAdapter {
+contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
     using FixedMath for uint256;
 
     uint256 public onRedeemCalls;
@@ -326,10 +349,18 @@ contract Mock4626CropsAdapter is ERC4626CropsAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) ERC4626CropsAdapter(_divider, _target, _ifee, _adapterParams, _rewardTokens) {
+    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crops(_divider, _rewardTokens) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crops) {
+        super.notify(_usr, amt, join);
     }
 
     function onRedeem(

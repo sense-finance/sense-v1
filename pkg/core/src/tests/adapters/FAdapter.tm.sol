@@ -7,9 +7,9 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { FAdapter, PriceOracleLike } from "../../adapters/fuse/FAdapter.sol";
-import { CTokenLike } from "../../adapters/compound/CAdapter.sol";
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { FAdapter, PriceOracleLike } from "../../adapters/implementations/fuse/FAdapter.sol";
+import { CTokenLike } from "../../adapters/implementations/compound/CAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { DSTest } from "../test-helpers/test.sol";

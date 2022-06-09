@@ -12,7 +12,7 @@ import { BalancerPool } from "@sense-finance/v1-core/src/external/balancer/Pool.
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/BaseAdapter.sol";
+import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
 
 interface SpaceLike {
     function getFairBPTPrice(uint256 ptTwapDuration) external view returns (uint256);

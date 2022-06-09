@@ -7,8 +7,8 @@ import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
-import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
+import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract Factories is TestHelper {
