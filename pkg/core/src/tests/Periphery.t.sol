@@ -182,11 +182,8 @@ contract PeripheryTest is TestHelper {
         MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(reward)));
 
         // try deploying adapter using default factory
-        try periphery.deployAdapter(address(factory), address(someTarget), "") {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        periphery.deployAdapter(address(factory), address(someTarget), "");
 
         // try deploying adapter using new factory with supported target
         periphery.deployAdapter(address(someFactory), address(someTarget), "");
@@ -195,12 +192,8 @@ contract PeripheryTest is TestHelper {
     function testCantDeployAdapterIfTargetIsNotSupported() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
-
-        try periphery.deployAdapter(address(factory), address(newTarget), "") {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        periphery.deployAdapter(address(factory), address(newTarget), "");
     }
 
     /* ========== admin update storage addresses ========== */
@@ -350,11 +343,8 @@ contract PeripheryTest is TestHelper {
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(alice, false);
 
-        try periphery.onboardAdapter(address(otherAdapter), true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        periphery.onboardAdapter(address(otherAdapter), true);
     }
 
     function testOnboardUnverifiedAdapter() public {
@@ -367,11 +357,8 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setIsTrusted(alice, false); // admin verification
 
-        try periphery.onboardAdapter(address(otherAdapter), true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        periphery.onboardAdapter(address(otherAdapter), true);
     }
 
     function testOnboardVerifiedAdapterWhenPermissionlesss() public {
@@ -1256,24 +1243,19 @@ contract PeripheryTest is TestHelper {
             type(uint256).max
         );
         uint256[] memory minAmountsOut = new uint256[](2);
-        try
-            periphery.migrateLiquidity(
-                address(adapter),
-                dstAdapter,
-                maturity,
-                maturity,
-                lpShares,
-                minAmountsOut,
-                0,
-                0,
-                true,
-                type(uint256).max
-            )
-        {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetMismatch.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetMismatch.selector));
+        periphery.migrateLiquidity(
+            address(adapter),
+            dstAdapter,
+            maturity,
+            maturity,
+            lpShares,
+            minAmountsOut,
+            0,
+            0,
+            true,
+            type(uint256).max
+        );
     }
 
     function testMigrateLiquidity() public {
