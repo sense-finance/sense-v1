@@ -137,9 +137,6 @@ contract MockAdapter is BaseAdapter, Crop {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 
-    // function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
-    //     Divider(divider).redeem(address(this), maturity, uBal);
-    // }
 }
 
 // Mock ERC4626 crop adapter

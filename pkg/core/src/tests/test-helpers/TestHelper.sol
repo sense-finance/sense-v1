@@ -228,8 +228,11 @@ contract TestHelper is DSTest {
 
         // users
         alice = address(this); // alice is the default user
+        hevm.label(alice, "Alice");
         initUser(alice, target, MAX_TARGET);
+        hevm.label(bob, "Bob");
         initUser(bob, target, MAX_TARGET);
+        hevm.label(jim, "Jim");
         initUser(jim, target, MAX_TARGET);
     }
 
