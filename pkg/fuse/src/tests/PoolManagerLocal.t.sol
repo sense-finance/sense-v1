@@ -55,7 +55,7 @@ contract PoolManagerLocalTest is TestHelper {
     }
 
     function testCantDeployPoolIfExists() public {
-        hevm.expectRevert"ERC1167: create2 failed");
+        hevm.expectRevert("ERC1167: create2 failed");
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
     }
 

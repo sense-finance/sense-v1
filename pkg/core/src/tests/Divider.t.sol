@@ -587,7 +587,7 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        
+
         hevm.startPrank(bob);
         divider.issue(address(adapter), maturity, 1e18);
 
