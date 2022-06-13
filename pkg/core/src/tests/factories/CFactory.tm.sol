@@ -105,10 +105,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        try factory.deployAdapter(AddressBook.f18DAI, "") {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        factory.deployAdapter(AddressBook.f18DAI, "");
     }
 }
