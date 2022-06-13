@@ -137,9 +137,9 @@ contract MockAdapter is BaseAdapter, Crop {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 
-    function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
-        Divider(divider).redeem(address(this), maturity, uBal);
-    }
+    // function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
+    //     Divider(divider).redeem(address(this), maturity, uBal);
+    // }
 }
 
 // Mock ERC4626 crop adapter
@@ -330,9 +330,9 @@ contract MockCropsAdapter is BaseAdapter, Crops {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 
-    function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
-        Divider(divider).redeem(address(this), maturity, uBal);
-    }
+    // function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
+    //     Divider(divider).redeem(address(this), maturity, uBal);
+    // }
 }
 
 // Mock ERC4626 crops adapter
@@ -423,7 +423,7 @@ contract MockBaseAdapter is BaseAdapter {
         return 1e18;
     }
 
-    function doSetAdapter(Divider d, address _adapter) public {
-        d.setAdapter(_adapter, true);
-    }
+    // function doSetAdapter(Divider d, address _adapter) public {
+    //     d.setAdapter(_adapter, true);
+    // }
 }

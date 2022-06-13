@@ -20,7 +20,6 @@ import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/
 import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
-import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
 
 contract PoolManagerLocalTest is TestHelper {
     using FixedMath for uint256;
@@ -189,10 +188,10 @@ contract PoolManagerLocalTest is TestHelper {
     function testCantQueueSeriesIfAlreadyQueued() public {
         MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         uint256 maturity = getValidMaturity(2021, 10);
-        divider.setPeriphery(address(this));
+        divider.setPeriphery(alice);
         stake.approve(address(divider), type(uint256).max);
-        stake.mint(address(this), 1000e18);
-        divider.initSeries(address(adapter), maturity, address(alice));
+        stake.mint(alice, 1000e18);
+        divider.initSeries(address(adapter), maturity, alice);
 
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
@@ -223,10 +222,10 @@ contract PoolManagerLocalTest is TestHelper {
     function testQueueSeries() public {
         MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         uint256 maturity = getValidMaturity(2021, 10);
-        divider.setPeriphery(address(this));
+        divider.setPeriphery(alice);
         stake.approve(address(divider), type(uint256).max);
-        stake.mint(address(this), 1000e18);
-        divider.initSeries(address(adapter), maturity, address(alice));
+        stake.mint(alice, 1000e18);
+        divider.initSeries(address(adapter), maturity, alice);
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
             address(comptroller),

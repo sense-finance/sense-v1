@@ -54,7 +54,7 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
         MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
-        divider.setPeriphery(address(this));
+        divider.setPeriphery(alice);
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
@@ -87,7 +87,7 @@ contract Factories is TestHelper {
         assertEq(scale, 1e18);
         hevm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        (address principal, address yield) = alice.doSponsorSeries(f, maturity);
+        (address principal, address yield) = periphery.sponsorSeries(f, maturity, true);
         assertTrue(principal != address(0));
         assertTrue(yield != address(0));
     }
@@ -104,7 +104,7 @@ contract Factories is TestHelper {
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        divider.setPeriphery(address(this));
+        divider.setPeriphery(alice);
         factory.deployAdapter(address(target), "");
     }
 }

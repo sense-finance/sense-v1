@@ -19,7 +19,6 @@ import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/M
 import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
-import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 

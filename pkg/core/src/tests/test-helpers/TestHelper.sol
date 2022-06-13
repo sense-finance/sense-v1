@@ -29,7 +29,6 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { DSTest } from "./test.sol";
 import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
-import { User } from "./User.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 
 interface MockTargetLike {
@@ -41,6 +40,8 @@ interface MockTargetLike {
     function balanceOf(address usr) external returns (uint256);
 
     function mint(address account, uint256 amount) external;
+
+    function approve(address account, uint256 amount) external;
 
     function transfer(address to, uint256 amount) external returns (bool);
 
@@ -77,9 +78,9 @@ contract TestHelper is DSTest {
     TokenHandler internal tokenHandler;
     Periphery internal periphery;
 
-    User internal alice;
-    User internal bob;
-    User internal jim;
+    address internal alice = address(1);
+    address internal bob = address(2);
+    address internal jim = address(3);
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     // balancer/space
@@ -226,43 +227,42 @@ contract TestHelper is DSTest {
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
-        alice = createUser(MAX_TARGET);
-        bob = createUser(MAX_TARGET);
-        jim = createUser(MAX_TARGET);
+        alice = address(this); // alice is the default user
+        initUser(alice, target, MAX_TARGET);
+        initUser(bob, target, MAX_TARGET);
+        initUser(jim, target, MAX_TARGET);
     }
 
-    function createUser(uint256 amt) public returns (User user) {
-        user = new User();
-        user.setFactory(factory);
-        updateUser(user, target, stake, amt);
-    }
-
-    function updateUser(
-        User user,
+    function initUser(
+        address usr,
         MockTargetLike target,
-        MockToken stake,
         uint256 amt
     ) public {
-        user.setStake(stake);
-        user.setTarget(target);
-        user.setDivider(divider);
-        user.setPeriphery(periphery);
-        user.doApprove(address(underlying), address(periphery));
-        user.doApprove(address(underlying), address(divider));
-        user.doMint(address(underlying), amt);
-        user.doApprove(address(stake), address(periphery));
-        user.doApprove(address(stake), address(divider));
-        user.doMint(address(stake), amt);
-        user.doApprove(address(target), address(periphery));
-        user.doApprove(address(target), address(divider));
-        if (!is4626) {
-            user.doMint(address(target), amt);
+        // MockToken underlying = MockToken(target.underlying());
+        hevm.startPrank(usr);
+
+        // approvals
+        underlying.approve(address(periphery), type(uint256).max);
+        underlying.approve(address(divider), type(uint256).max);
+        target.approve(address(periphery), type(uint256).max);
+        target.approve(address(divider), type(uint256).max);
+        stake.approve(address(periphery), type(uint256).max);
+        stake.approve(address(divider), type(uint256).max);
+
+        // minting
+        underlying.mint(usr, amt);
+        stake.mint(usr, amt);
+
+        // if 4626 we need to deposit instead of directly minting target
+        if (is4626) {
+            underlying.mint(usr, amt);
+            underlying.approve(address(target), type(uint256).max);
+            target.deposit(amt, usr);
         } else {
-            user.doMint(address(underlying), amt);
-            user.doApprove(address(underlying), address(target));
-            hevm.prank(address(user));
-            target.deposit(amt, address(user));
+            target.mint(usr, amt);
         }
+
+        hevm.stopPrank();
     }
 
     // ---- liquidity provision ---- //
@@ -286,9 +286,10 @@ contract TestHelper is DSTest {
     ) internal {
         MockTargetLike target = MockTargetLike(MockAdapter(adapter).target());
         MockToken underlying = MockToken(!is4626 ? target.underlying() : target.asset());
-        uint256 issued = alice.doIssue(adapter, maturity, tBal);
-        alice.doTransfer(divider.yt(adapter, maturity), address(balancerVault), issued); // we don't really need this but we transfer them anyways
-        alice.doTransfer(divider.pt(adapter, maturity), address(balancerVault), issued);
+
+        uint256 issued = divider.issue(address(adapter), maturity, tBal);
+        MockToken(divider.pt(address(adapter), maturity)).transfer(address(balancerVault), issued);
+        MockToken(divider.yt(address(adapter), maturity)).transfer(address(balancerVault), issued); // we don't really need this but we transfer them anyways
 
         // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued PT.
         if (!is4626) {
@@ -393,10 +394,6 @@ contract TestHelper is DSTest {
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
         maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         if (maturity < block.timestamp + 2 weeks) revert("InvalidMaturityOffsets");
-    }
-
-    function sponsorSampleSeries(address sponsor, uint256 maturity) public returns (address pt, address yt) {
-        (pt, yt) = User(sponsor).doSponsorSeries(address(adapter), maturity);
     }
 
     function convertBase(uint256 decimals) internal pure returns (uint256) {
