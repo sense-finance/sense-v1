@@ -96,11 +96,8 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         factory.addTarget(address(someTarget), true);
-        try factory.deployAdapter(address(someTarget), "") {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
+        factory.deployAdapter(address(someTarget), "");
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {

@@ -29,41 +29,29 @@ contract Dividers is TestHelper {
         uint256 balance = stake.balanceOf(alice);
         stake.transfer(bob, balance - convertToBase(STAKE_SIZE, stake.decimals()) / 2);
         uint256 maturity = getValidMaturity(2021, 10);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "TRANSFER_FROM_FAILED");
-        }
+        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
         stake.approve(address(periphery), 0);
         uint256 maturity = getValidMaturity(2021, 10);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "TRANSFER_FROM_FAILED");
-        }
+        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesAdapterNotEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         divider.setAdapter(address(adapter), false);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesIfAlreadyExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.DuplicateSeries.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesActiveSeriesReached() public {
@@ -78,42 +66,30 @@ contract Dividers is TestHelper {
         }
         uint256 lastDate = DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1);
         lastDate = getValidMaturity(DateTimeFull.getYear(lastDate), DateTimeFull.getMonth(lastDate));
-        try periphery.sponsorSeries(address(adapter), lastDate, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        periphery.sponsorSeries(address(adapter), lastDate, true);
     }
 
     function testCantInitSeriesWithMaturityBeforeTimestamp() public {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesLessThanMinMaturity() public {
         hevm.warp(1631923200);
         // 18-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesMoreThanMaxMaturity() public {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesIfModeInvalid() public {
@@ -124,11 +100,8 @@ contract Dividers is TestHelper {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Tuesday
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testCantInitSeriesIfNotTopWeek() public {
@@ -139,11 +112,8 @@ contract Dividers is TestHelper {
         hevm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0); // Tuesday
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testInitSeriesWeekly() public {
@@ -166,11 +136,8 @@ contract Dividers is TestHelper {
     function testCantInitSeriesIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
-        try periphery.sponsorSeries(address(adapter), maturity, true) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        periphery.sponsorSeries(address(adapter), maturity, true);
     }
 
     function testInitSeries() public {
@@ -226,11 +193,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
         divider.setAdapter(address(adapter), false);
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesAlreadySettled() public {
@@ -238,12 +202,8 @@ contract Dividers is TestHelper {
         periphery.sponsorSeries(address(adapter), maturity, true);
         hevm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.AlreadySettled.selector));
-        }
-        hevm.stopPrank();
+        hevm.expectRevert(abi.encodeWithSelector(Errors.AlreadySettled.selector));
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesIfNotSponsorAndSponsorWindow() public {
@@ -251,11 +211,8 @@ contract Dividers is TestHelper {
         periphery.sponsorSeries(address(adapter), maturity, true);
         hevm.warp(maturity);
         hevm.prank(bob);
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesIfNotSponsorCutoffTime() public {
@@ -263,22 +220,16 @@ contract Dividers is TestHelper {
         periphery.sponsorSeries(address(adapter), maturity, true);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         hevm.prank(bob);
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesIfSponsorAndCutoffTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesIfNotSponsorAndSponsorTime() public {
@@ -286,21 +237,15 @@ contract Dividers is TestHelper {
         periphery.sponsorSeries(address(adapter), maturity, true);
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
         hevm.prank(bob);
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
-        try divider.settleSeries(address(adapter), maturity) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        divider.settleSeries(address(adapter), maturity);
     }
 
     function testSettleSeries() public {
@@ -427,22 +372,16 @@ contract Dividers is TestHelper {
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         divider.setAdapter(address(adapter), false);
-        try divider.issue(address(adapter), maturity, tBal) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        divider.issue(address(adapter), maturity, tBal);
     }
 
     function testCantIssueSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
-        try divider.issue(address(adapter), maturity, tBal) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        divider.issue(address(adapter), maturity, tBal);
     }
 
     function testCantIssueNotEnoughBalance() public {
@@ -450,11 +389,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
         divider.setGuard(address(adapter), aliceBalance * 2);
-        try divider.issue(address(adapter), maturity, aliceBalance + 1) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "TRANSFER_FROM_FAILED");
-        }
+        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        divider.issue(address(adapter), maturity, aliceBalance + 1);
     }
 
     function testCantIssueNotEnoughAllowance() public {
@@ -463,11 +399,8 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), aliceBalance);
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
-        try divider.issue(address(adapter), maturity, aliceBalance) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "TRANSFER_FROM_FAILED");
-        }
+        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        divider.issue(address(adapter), maturity, aliceBalance);
     }
 
     function testCantIssueIfSeriesSettled() public {
@@ -476,11 +409,8 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
         uint256 amount = target.balanceOf(alice);
-        try divider.issue(address(adapter), maturity, amount) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.IssueOnSettle.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.IssueOnSettle.selector));
+        divider.issue(address(adapter), maturity, amount);
     }
 
     function testCantIssueIfMoreThanCap() public {
@@ -490,11 +420,8 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), targetBalance);
         divider.issue(address(adapter), maturity, targetBalance);
         hevm.prank(bob);
-        try divider.issue(address(adapter), maturity, 1e18) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.GuardCapReached.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.GuardCapReached.selector));
+        divider.issue(address(adapter), maturity, 1e18);
     }
 
     function testCantIssueIfIssuanceFeeExceedsCap() public {
@@ -507,21 +434,15 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(aAdapter), maturity, true);
         uint256 amount = target.balanceOf(alice);
-        try divider.issue(address(aAdapter), maturity, amount) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.IssuanceFeeCapExceeded.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.IssuanceFeeCapExceeded.selector));
+        divider.issue(address(aAdapter), maturity, amount);
     }
 
     function testCantIssueSeriesIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
-        try divider.issue(address(adapter), maturity, 100e18) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        divider.issue(address(adapter), maturity, 100e18);
     }
 
     function testIssueLevelRestrictions() public {
@@ -542,11 +463,8 @@ contract Dividers is TestHelper {
         target.approve(address(adapter), type(uint256).max);
 
         // Can't issue directly through the divider
-        try divider.issue(address(adapter), maturity, 1e18) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.IssuanceRestricted.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.IssuanceRestricted.selector));
+        divider.issue(address(adapter), maturity, 1e18);
 
         // Can issue through adapter
         adapter.doIssue(maturity, 1e18);
@@ -640,32 +558,23 @@ contract Dividers is TestHelper {
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
         divider.setAdapter(address(adapter), false);
-        try divider.combine(address(adapter), maturity, tBal) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        divider.combine(address(adapter), maturity, tBal);
     }
 
     function testCantCombineSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
-        try divider.combine(address(adapter), maturity, tBal) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        divider.combine(address(adapter), maturity, tBal);
     }
 
     function testCantCombineSeriesIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
-        try divider.combine(address(adapter), maturity, 100e18) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        divider.combine(address(adapter), maturity, 100e18);
     }
 
     function testCantCombineIfProperLevelIsntSet() public {
@@ -678,14 +587,13 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
         hevm.startPrank(bob);
         divider.issue(address(adapter), maturity, 1e18);
 
-        try divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(bob)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.CombineRestricted.selector));
-        }
+        uint256 bytBal = ERC20(yt).balanceOf(bob);
+        hevm.expectRevert(abi.encodeWithSelector(Errors.CombineRestricted.selector));
+        divider.combine(address(adapter), maturity, bytBal);
 
         // Collect still works
         increaseScale();
@@ -706,11 +614,8 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 issued = divider.issue(address(adapter), maturity, tBal);
-        try divider.combine(address(adapter), maturity, issued + 1) {
-            fail();
-        } catch (bytes memory error) {
-            // Does not return any error message
-        }
+        hevm.expectRevert(arithmeticError);
+        divider.combine(address(adapter), maturity, issued + 1);
     }
 
     function testFuzzCantCombineNotEnoughAllowance(uint128 tBal) public {
@@ -719,12 +624,8 @@ contract Dividers is TestHelper {
         periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 issued = divider.issue(address(adapter), maturity, tBal);
         target.approve(address(periphery), 0);
-
-        try divider.combine(address(adapter), maturity, issued + 1) {
-            fail();
-        } catch (bytes memory error) {
-            // Does not return any error message
-        }
+        hevm.expectRevert(arithmeticError);
+        divider.combine(address(adapter), maturity, issued + 1);
     }
 
     function testFuzzCombine(uint128 tBal) public {
@@ -819,12 +720,8 @@ contract Dividers is TestHelper {
     function testCantRedeemPrincipalSeriesDoesntExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 balance = 1e18;
-        try divider.redeem(address(adapter), maturity, balance) {
-            fail();
-        } catch (bytes memory error) {
-            // The settled check will fail if the Series does not exist
-            assertEq0(error, abi.encodeWithSelector(Errors.NotSettled.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.NotSettled.selector));
+        divider.redeem(address(adapter), maturity, balance);
     }
 
     function testCantRedeemPrincipalSeriesNotSettled() public {
@@ -836,11 +733,8 @@ contract Dividers is TestHelper {
         divider.issue(address(adapter), maturity, tBal);
         increaseScale();
         uint256 balance = ERC20(pt).balanceOf(alice);
-        try divider.redeem(address(adapter), maturity, balance) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.NotSettled.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.NotSettled.selector));
+        divider.redeem(address(adapter), maturity, balance);
     }
 
     function testCantRedeemPrincipalMoreThanBalance() public {
@@ -849,21 +743,15 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
         uint256 balance = ERC20(pt).balanceOf(alice) + 1e18;
-        try divider.redeem(address(adapter), maturity, balance) {
-            fail();
-        } catch (bytes memory error) {
-            // Does not return any error message
-        }
+        hevm.expectRevert(arithmeticError);
+        divider.redeem(address(adapter), maturity, balance);
     }
 
     function testCantRedeemPrincipalIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
-        try divider.redeem(address(adapter), maturity, 100e18) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        divider.redeem(address(adapter), maturity, 100e18);
     }
 
     function testFuzzRedeemPrincipal(uint128 tBal) public {
@@ -1171,11 +1059,9 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false);
 
         // Collect fails if the Series has not been settled
-        try YT(yt).collect() {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        YT(yt).collect();
+
         hevm.warp(maturity + divider.SPONSOR_WINDOW() + divider.SETTLEMENT_WINDOW() + 1);
         divider.backfillScale(address(adapter), maturity, (initScale * 1.2e18) / 1e18, usrs, lscales);
 
@@ -1223,11 +1109,8 @@ contract Dividers is TestHelper {
         increaseScale();
         divider.issue(address(adapter), maturity, tBal);
         hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
-        try YT(yt).collect() {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.CollectNotSettled.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.CollectNotSettled.selector));
+        YT(yt).collect();
     }
 
     function testFuzzCantCollectIfPaused(uint128 tBal) public {
@@ -1238,21 +1121,15 @@ contract Dividers is TestHelper {
         divider.issue(address(adapter), maturity, tBal);
         hevm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
         divider.setPaused(true);
-        try YT(yt).collect() {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        YT(yt).collect();
     }
 
     function testCantCollectIfNotYieldContract() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
-        try divider.collect(alice, address(adapter), maturity, tBal, alice) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyYT.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyYT.selector));
+        divider.collect(alice, address(adapter), maturity, tBal, alice);
     }
 
     function testFuzzCollectSmallTBal(uint128 tBal) public {
@@ -1687,22 +1564,16 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         uint256 tBal = 100 * tBase;
-        try divider.backfillScale(address(adapter), maturity, tBal, usrs, lscales) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        divider.backfillScale(address(adapter), maturity, tBal, usrs, lscales);
     }
 
     function testCantBackfillScaleBeforeCutoffAndAdapterEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
         (, , , , , , uint256 iscale, uint256 mscale, ) = divider.series(address(adapter), maturity);
-        try divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales);
     }
 
     function testCantBackfillScaleSeriesNotGov() public {
@@ -1711,11 +1582,8 @@ contract Dividers is TestHelper {
         hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 tBase = 10**target.decimals();
         hevm.prank(bob);
-        try divider.backfillScale(address(adapter), maturity, 100 * tBase, usrs, lscales) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "UNTRUSTED");
-        }
+        hevm.expectRevert("UNTRUSTED");
+        divider.backfillScale(address(adapter), maturity, 100 * tBase, usrs, lscales);
     }
 
     function testBackfillScale() public {
@@ -1742,11 +1610,8 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 1.5e18;
-        try divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
     }
 
     function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
@@ -1903,19 +1768,13 @@ contract Dividers is TestHelper {
 
     function testCantSetAdapterIfNotTrusted() public {
         hevm.prank(bob);
-        try divider.setAdapter(address(adapter), false) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "UNTRUSTED");
-        }
+        hevm.expectRevert("UNTRUSTED");
+        divider.setAdapter(address(adapter), false);
     }
 
     function testCantSetAdapterWithSameValue() public {
-        try divider.setAdapter(address(adapter), true) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.ExistingValue.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.ExistingValue.selector));
+        divider.setAdapter(address(adapter), true);
     }
 
     function testSetAdapterFirst() public {
@@ -1973,43 +1832,31 @@ contract Dividers is TestHelper {
     function testCantAddAdapterWhenNotPermissionless() public {
         divider.setAdapter(address(adapter), false);
         hevm.prank(bob);
-        try divider.addAdapter(address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        divider.addAdapter(address(adapter));
     }
 
     function testCantAddAdapterWithSameValue() public {
         divider.setPermissionless(true);
         hevm.prank(bob);
-        try divider.addAdapter(address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.ExistingValue.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.ExistingValue.selector));
+        divider.addAdapter(address(adapter));
     }
 
     function testCantAddAdapterIfPaused() public {
         divider.setPermissionless(true);
         divider.setPaused(true);
         hevm.prank(bob);
-        try divider.addAdapter(address(adapter)) {
-            fail();
-        } catch Error(string memory error) {
-            assertEq(error, "Pausable: paused");
-        }
+        hevm.expectRevert("Pausable: paused");
+        divider.addAdapter(address(adapter));
     }
 
     function testCantReAddAdapter() public {
         divider.setPermissionless(true);
         divider.setAdapter(address(adapter), false);
         hevm.prank(bob);
-        try divider.addAdapter(address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
+        divider.addAdapter(address(adapter));
     }
 
     function testAddAdapter() public {

@@ -6,6 +6,7 @@ import { CAdapter } from "../../adapters/implementations/compound/CAdapter.sol";
 import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
 
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -17,6 +18,8 @@ contract CAdapterTestHelper is DSTest {
     CFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
+
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -78,7 +81,6 @@ contract CFactories is CAdapterTestHelper {
         ) = CFactory(otherCFactory).factoryParams();
 
         assertEq(CFactory(otherCFactory).divider(), address(divider));
-        // assertEq(CFactory(otherCFactory).rewardTokens(0), Assets.COMP); //TODO: remove line, factoriess do not have reward tokens
         assertEq(stake, AddressBook.DAI);
         assertEq(ifee, ISSUANCE_FEE);
         assertEq(stakeSize, STAKE_SIZE);
@@ -105,10 +107,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        try factory.deployAdapter(AddressBook.f18DAI, "") {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        factory.deployAdapter(AddressBook.f18DAI, "");
     }
 }
