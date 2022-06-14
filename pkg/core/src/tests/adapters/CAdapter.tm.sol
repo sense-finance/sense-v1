@@ -14,7 +14,6 @@ import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { User } from "../test-helpers/User.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
 interface ComptrollerLike {

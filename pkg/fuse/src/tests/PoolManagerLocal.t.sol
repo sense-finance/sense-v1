@@ -20,7 +20,6 @@ import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/
 import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
-import { User } from "@sense-finance/v1-core/src/tests/test-helpers/User.sol";
 
 contract PoolManagerLocalTest is TestHelper {
     using FixedMath for uint256;
@@ -51,19 +50,13 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.FailedBecomeAdmin.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.FailedBecomeAdmin.selector));
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
     }
 
     function testCantDeployPoolIfExists() public {
-        try poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle)) {
-            fail();
-        } catch Error(string memory err) {
-            assertEq(err, "ERC1167: create2 failed");
-        }
+        hevm.expectRevert("ERC1167: create2 failed");
+        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
     }
 
     function testDeployPool() public {
@@ -90,11 +83,8 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        try poolManager.addTarget(address(target), address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
+        poolManager.addTarget(address(target), address(adapter));
     }
 
     function testCantAddTargetIfTargetParamsNotSet() public {
@@ -107,11 +97,8 @@ contract PoolManagerLocalTest is TestHelper {
         );
         MockOracle fallbackOracle = new MockOracle();
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        try poolManager.addTarget(address(target), address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
+        poolManager.addTarget(address(target), address(adapter));
     }
 
     function testCantAddTargetIfFailedToAddMarket() public {
@@ -132,11 +119,8 @@ contract PoolManagerLocalTest is TestHelper {
             collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        try poolManager.addTarget(address(target), address(adapter)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.FailedAddTargetMarket.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.FailedAddTargetMarket.selector));
+        poolManager.addTarget(address(target), address(adapter));
     }
 
     function testAddTarget() public {
@@ -170,29 +154,23 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        try poolManager.queueSeries(address(adapter), maturity, address(123)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        poolManager.queueSeries(address(adapter), maturity, address(123));
     }
 
     function testCantQueueSeriesIfSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        try poolManager.queueSeries(address(adapter), maturity, address(123)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        poolManager.queueSeries(address(adapter), maturity, address(123));
     }
 
     function testCantQueueSeriesIfAlreadyQueued() public {
         MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         uint256 maturity = getValidMaturity(2021, 10);
-        divider.setPeriphery(address(this));
+        divider.setPeriphery(alice);
         stake.approve(address(divider), type(uint256).max);
-        stake.mint(address(this), 1000e18);
-        divider.initSeries(address(adapter), maturity, address(alice));
+        stake.mint(alice, 1000e18);
+        divider.initSeries(address(adapter), maturity, alice);
 
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
@@ -213,20 +191,17 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.addTarget(address(otherTarget), address(adapter));
 
         poolManager.queueSeries(address(adapter), maturity, address(123));
-        try poolManager.queueSeries(address(adapter), maturity, address(123)) {
-            fail();
-        } catch (bytes memory error) {
-            assertEq0(error, abi.encodeWithSelector(Errors.DuplicateSeries.selector));
-        }
+        hevm.expectRevert(abi.encodeWithSelector(Errors.DuplicateSeries.selector));
+        poolManager.queueSeries(address(adapter), maturity, address(123));
     }
 
     function testQueueSeries() public {
         MockTarget otherTarget = new MockTarget(address(123), "Compound Usdc", "cUSDC", 18);
         uint256 maturity = getValidMaturity(2021, 10);
-        divider.setPeriphery(address(this));
+        divider.setPeriphery(alice);
         stake.approve(address(divider), type(uint256).max);
-        stake.mint(address(this), 1000e18);
-        divider.initSeries(address(adapter), maturity, address(alice));
+        stake.mint(alice, 1000e18);
+        divider.initSeries(address(adapter), maturity, alice);
         PoolManager poolManager = new PoolManager(
             address(fuseDirectory),
             address(comptroller),
