@@ -40,7 +40,6 @@ contract CropsAdapters is TestHelper {
         cropsAdapter = MockCropsAdapter(f);
         divider.setGuard(address(cropsAdapter), 10 * 2**128);
 
-        alice = alice;
         initUser(alice, aTarget, MAX_TARGET);
         initUser(bob, aTarget, MAX_TARGET);
         initUser(jim, aTarget, MAX_TARGET);

@@ -418,8 +418,4 @@ contract MockBaseAdapter is BaseAdapter {
     function getUnderlyingPrice() external view override returns (uint256) {
         return 1e18;
     }
-
-    // function doSetAdapter(Divider d, address _adapter) public {
-    //     d.setAdapter(_adapter, true);
-    // }
 }
