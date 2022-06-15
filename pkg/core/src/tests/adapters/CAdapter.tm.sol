@@ -7,14 +7,13 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { CAdapter, CTokenLike, PriceOracleLike } from "../../adapters/compound/CAdapter.sol";
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
+import { CAdapter, CTokenLike, PriceOracleLike } from "../../adapters/implementations/compound/CAdapter.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { User } from "../test-helpers/User.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 
 interface ComptrollerLike {

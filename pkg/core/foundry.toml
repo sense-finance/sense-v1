@@ -11,5 +11,6 @@ remappings = [
     '@sense-finance/v1-core=./',
     '@sense-finance/v1-fuse=../fuse',
     '@rari-capital/solmate=../../node_modules/@rari-capital/solmate',
-    '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts'
+    '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts',
+    'ds-test/=./src/tests/test-helpers/'
 ]

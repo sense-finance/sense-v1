@@ -12,12 +12,12 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Divider } from "../Divider.sol";
-import { BaseFactory } from "../adapters/BaseFactory.sol";
-import { BaseAdapter } from "../adapters/BaseAdapter.sol";
-import { CAdapter } from "../adapters/compound/CAdapter.sol";
-import { FAdapter } from "../adapters/fuse/FAdapter.sol";
-import { CFactory } from "../adapters/compound/CFactory.sol";
-import { FFactory } from "../adapters/fuse/FFactory.sol";
+import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
+import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
+import { CAdapter } from "../adapters/implementations/compound/CAdapter.sol";
+import { FAdapter } from "../adapters/implementations/fuse/FAdapter.sol";
+import { CFactory } from "../adapters/implementations/compound/CFactory.sol";
+import { FFactory } from "../adapters/implementations/fuse/FFactory.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 

@@ -32,7 +32,7 @@ module.exports = async function () {
   });
 
   for (let factory of global.dev.FACTORIES) {
-    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, crops } = factory(chainId);
+    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, crops, is4626 } = factory(chainId);
     log(`\nDeploy ${factoryContractName} with mocked dependencies`);
     // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
     const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, tilt];
@@ -56,7 +56,7 @@ module.exports = async function () {
     log(`DEPLOY UNDERLYINGS, TARGETS & ADAPTERS FOR: ${factoryContractName}`);
     log("---------------------------------------------------------");
     for (let t of targets) {
-      await deployAdapter(t, factoryContractName);
+      is4626 ? await deploy4626Adapter(t, factoryContractName) : await deployAdapter(t, factoryContractName);
     }
   }
 
@@ -83,10 +83,12 @@ module.exports = async function () {
 
       const underlying = await getUnderlyingForTarget(tName, uDecimals);
       const targetContract = await deployTarget(tName, tDecimals, underlying.address);
-      await new Promise(res => setTimeout(res, 500));
 
-      log("Give the multi minter permission on Target");
+      await new Promise(res => setTimeout(res, 500));
+      
+      // as target is not an ERC-4626, we just directly mint target
       const multiMint = await ethers.getContract("MultiMint", signer);
+      log("Give the multi minter permission on Target");
       if (!(await targetContract.isTrusted(multiMint.address))) {
         await (await targetContract.setIsTrusted(multiMint.address, true)).wait();
       }
@@ -128,9 +130,79 @@ module.exports = async function () {
         await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
       }
 
-      log(`Can call and set scale value`);
-      await setScale(adapterAddress);
+      const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
+      const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);  
+
+      log(`Can call scale`);
+      const scale = await adapter.callStatic.scale();
+      log(`-> scale value: ${scale.toString()}`);
+
+      log(`Can set scale value`);
+      if (!scale.eq(ethers.utils.parseEther("1.1"))) {
+        await adapter.setScale(ethers.utils.parseEther("1.1")).then(tx => tx.wait());
+      }
   }
+
+  async function deploy4626Adapter(t, factory) {  
+    const { name: tName, tDecimals, uDecimals, comptroller: data } = factory ? t : t.target;
+    
+    log(`\nDeploy simulated ${tName} with ${tDecimals} decimals (ERC-4626)`);
+
+    const underlying = await getUnderlyingForTarget(tName, uDecimals);
+    const targetContract = await deploy4626Target(tName, underlying.address);
+
+    await new Promise(res => setTimeout(res, 500));
+    
+    // as target is ERC-4626, we mint underlying and deposit on vault so as to get target
+    const multiMint = await ethers.getContract("MultiMint", signer);
+
+    log("Give the multi minter permission on Underlying");
+    if (!(await underlying.isTrusted(multiMint.address))) {
+      await (await underlying.setIsTrusted(multiMint.address, true)).wait();
+    }
+
+    log(`Mint the deployer a balance of 10,000,000 ${await underlying.name()}`);
+    if (!(await underlying.balanceOf(deployer)).gte(ethers.utils.parseEther("10000000"))) {
+      await multiMint.mint([underlying.address], [ethers.utils.parseEther("10000000")], deployer).then(tx => tx.wait());
+      log(`Deposit 10,000,000 ${await underlying.name()} on ${await targetContract.name()} ERC4626 vault`);
+      await underlying.approve(targetContract.address, ethers.utils.parseEther("10000000"));
+      await targetContract.deposit(await underlying.balanceOf(deployer), deployer).then(tx => tx.wait());
+    }
+
+    let adapterAddress = (await getDeployedAdapters())[tName];
+    if (!adapterAddress) {
+      log(`Deploy adapter for ${tName}`);
+      if (factory) {
+        adapterAddress = await deployAdapterViaFactory(tName, targetContract, data, factory);
+      } else {
+        adapterAddress = await deployAdapterWithoutFactory(t, targetContract);
+      }
+    } else {
+      log(`Adapter for ${tName} already deployed, skipping...`)
+    }
+
+    log("Give the adapter minter permission on Underlying");
+    if (!(await underlying.isTrusted(adapterAddress))) {
+      await (await underlying.setIsTrusted(adapterAddress, true)).wait();
+    }
+
+    log("Grant minting authority on the Reward token to the mock TWrapper");
+    if (!(await airdrop.isTrusted(adapterAddress))) {
+      await (await airdrop.setIsTrusted(adapterAddress, true)).wait();
+    }
+
+    log(`Set ${tName} adapter issuance cap to max uint so we don't have to worry about it`);
+    if (!((await divider.adapterMeta(adapterAddress)).guard.eq(ethers.constants.MaxUint256))) {
+      await divider.setGuard(adapterAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
+    }
+
+    const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
+    const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);  
+
+    log(`Can call scale`);
+    const scale = await adapter.callStatic.scale();
+    log(`-> scale value: ${scale.toString()}`);
+}
 
   async function getUnderlyingForTarget(targetName, uDecimals) {
     const underlyingRegexRes = targetName.match(/[^A-Z]*(.*)/);
@@ -149,6 +221,17 @@ module.exports = async function () {
       underlyingNames.add(underlyingName);
     }
     return await ethers.getContract(underlyingName, signer);
+  }
+
+  async function deploy4626Target(targetName, underlyingAddress) {
+    await deploy(targetName, {
+      contract: "MockERC4626",
+      from: deployer,
+      args: [underlyingAddress, targetName, targetName],
+      log: true,
+    });
+    return await ethers.getContract(targetName, signer);
+    
   }
 
   async function deployTarget(targetName, tDecimals, underlyingAddress) {
@@ -207,16 +290,6 @@ module.exports = async function () {
     await periphery.onboardAdapter(adapterAddress, true).then(tx => tx.wait());
 
     return adapterAddress;
-  }
-
-  async function setScale(adapterAddress) {
-    const { abi: adapterAbi } = await deployments.getArtifact("MockAdapter");
-    const adapter = new ethers.Contract(adapterAddress, adapterAbi, signer);
-    const scale = await adapter.callStatic.scale();
-    log(`-> scale: ${scale.toString()}`);
-    if (!scale.eq(ethers.utils.parseEther("1.1"))) {
-      await adapter.setScale(ethers.utils.parseEther("1.1")).then(tx => tx.wait());
-    }
   }
 
   async function deployStake() {

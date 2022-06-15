@@ -6,51 +6,31 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { BaseAdapter } from "../../adapters/BaseAdapter.sol";
-import { BaseFactory } from "../../adapters/BaseFactory.sol";
+import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
+import { YT } from "../../tokens/YT.sol";
 
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
-import { TestHelper } from "../test-helpers/TestHelper.sol";
+import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 
 contract CropAdapters is TestHelper {
     using FixedMath for uint256;
 
-    MockAdapter internal cropAdapter;
-    MockFactory internal cropFactory;
-    MockTarget internal aTarget;
-
     function setUp() public virtual override {
         super.setUp();
 
-        aTarget = new MockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals);
-
-        // create factory with 0 fee and 12 month maturity to simplify calculations
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: 0,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: 48 weeks,
-            mode: MODE,
-            tilt: 0
-        });
-        cropFactory = createFactory(address(aTarget), address(reward), factoryParams);
-        address f = periphery.deployAdapter(address(cropFactory), address(aTarget), "");
-        cropAdapter = MockAdapter(f);
-        divider.setGuard(address(cropAdapter), 10 * 2**128);
-        updateUser(alice, aTarget, stake, 2**128);
-        updateUser(bob, aTarget, stake, 2**128);
-        updateUser(jim, aTarget, stake, 2**128);
+        // freeze scale to 1e18 (only for non 4626 targets)
+        if (!is4626) adapter.setScale(1e18);
     }
 
     function testAdapterHasParams() public {
-        MockToken underlying = new MockToken("Dai", "DAI", 18);
-        MockTarget target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
+        MockToken underlying = new MockToken("Dai", "DAI", mockUnderlyingDecimals);
+        MockTargetLike target = MockTargetLike(
+            deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals)
+        );
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: ORACLE,
@@ -66,7 +46,7 @@ contract CropAdapters is TestHelper {
         MockAdapter cropAdapter = new MockAdapter(
             address(divider),
             address(target),
-            target.underlying(),
+            !is4626 ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -93,139 +73,138 @@ contract CropAdapters is TestHelper {
     function testFuzzDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
         periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(cropAdapter), maturity, (60 * tBal) / 100 );
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, (40 * tBal) / 100 );
 
         reward.mint(address(cropAdapter), 50 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 0);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 0);
-
-        bob.doIssue(address(cropAdapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 0);
-        bob.doIssue(address(cropAdapter), maturity, 0);
+        divider.issue(address(cropAdapter), maturity, 0);
+        assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 0);
 
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, 0);
+        assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
+
+        divider.issue(address(cropAdapter), maturity, 0);
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, 0);
+
+        assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
     }
 
     function testFuzzSingleDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, 100);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 0);
+        divider.issue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(alice), 0);
 
         reward.mint(address(cropAdapter), 10 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 0);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        divider.issue(address(cropAdapter), maturity, 0);
+        assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 100);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        divider.issue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        divider.combine(address(cropAdapter), maturity, ERC20(yt).balanceOf(alice));
+        assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 50 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        divider.issue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
         reward.mint(address(cropAdapter), 10 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 10);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 20 * 1e18);
+        divider.issue(address(cropAdapter), maturity, 10 * 1e18);
+        assertClose(ERC20(reward).balanceOf(alice), 20 * 1e18);
     }
 
     function testFuzzProportionalDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(cropAdapter), maturity, (60 * tBal) / 100 );
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, (40 * tBal) / 100 );
 
         reward.mint(address(cropAdapter), 50 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 0);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 0);
+        divider.issue(address(cropAdapter), maturity, 0);
+        assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 0);
 
-        bob.doIssue(address(cropAdapter), maturity, 0);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, 0 * 1e18);
+        assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 0);
-        bob.doIssue(address(cropAdapter), maturity, 0);
+        divider.issue(address(cropAdapter), maturity, 0);
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, 0);
 
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
+        assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
 
         reward.mint(address(cropAdapter), 50 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, (20 * tBal) / 100);
-        bob.doIssue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, (20 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, 0);
 
-        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
+        assertClose(ERC20(reward).balanceOf(alice), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 40 * 1e18);
 
         reward.mint(address(cropAdapter), 30 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 0);
-        bob.doIssue(address(cropAdapter), maturity, 0);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 80 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 50 * 1e18);
+        divider.issue(address(cropAdapter), maturity, 0);
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, 0);
+        assertClose(ERC20(reward).balanceOf(alice), 80 * 1e18);
+        assertClose(ERC20(reward).balanceOf(bob), 50 * 1e18);
 
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(alice));
     }
 
     function testFuzzSimpleDistributionAndCollect(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
         (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(cropAdapter), maturity, (60 * tBal) / 100 );
+        hevm.prank(bob);
+        divider.issue(address(cropAdapter), maturity, (40 * tBal) / 100 );
 
-        assertEq(reward.balanceOf(address(bob)), 0);
+        assertEq(reward.balanceOf(bob), 0);
 
-        reward.mint(address(cropAdapter), 60 * 1e18);
+        reward.mint(address(cropAdapter), (60 * tBal) / 100 );
 
-        bob.doCollect(yt);
-        assertClose(reward.balanceOf(address(bob)), 24 * 1e18);
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(reward.balanceOf(bob), 24 * 1e18);
     }
 
     function testFuzzDistributionCollectAndTransferMultiStep(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         // bob issues 40, now the pool is 40% bob and 60% alice
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100);
 
-        assertEq(reward.balanceOf(address(bob)), 0);
+        assertEq(reward.balanceOf(bob), 0);
 
         // 60 reward tokens are airdropped before jim issues
         // 24 should go to bob and 36 to alice
@@ -233,7 +212,8 @@ contract CropAdapters is TestHelper {
         hevm.warp(block.timestamp + 1 days);
 
         // jim issues 40, now the pool is 20% bob, 30% alice, and 50% jim
-        jim.doIssue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        hevm.prank(jim);
+        divider.issue(address(adapter), maturity, (100 * tBal) / 100);
 
         hevm.warp(block.timestamp + 1 days);
         // 100 more reward tokens are airdropped after jim has issued
@@ -242,27 +222,30 @@ contract CropAdapters is TestHelper {
 
         // bob transfers all of his Yield to jim
         // now the pool is 70% jim and 30% alice
-        bob.doTransfer(yt, address(jim), ERC20(yt).balanceOf(address(bob)));
+        uint256 bytBal = ERC20(yt).balanceOf(bob);
+        hevm.prank(bob);
+        MockToken(yt).transfer(jim, bytBal);
         // bob collected on transfer, so he should now
         // have his 24 rewards from the first drop, and 20 from the second
-        assertClose(reward.balanceOf(address(bob)), 44 * 1e18);
+        assertClose(reward.balanceOf(bob), 44 * 1e18);
 
-        // jim should have those 50 * 1e18 from the second airdrop (collected automatically when bob transferred to him)
-        assertClose(reward.balanceOf(address(jim)), 50 * 1e18);
+        // jim should have those 50 from the second airdrop (collected automatically when bob transferred to him)
+        assertClose(reward.balanceOf(jim), 50 * 1e18);
 
         // similarly, once alice collects, she should have her 36 fom the first airdrop and 30 from the second
-        alice.doCollect(yt);
-        assertClose(reward.balanceOf(address(alice)), 66 * 1e18);
+        YT(yt).collect();
+        assertClose(reward.balanceOf(alice), 66 * 1e18);
 
         // now if another airdop happens, jim should get shares proportional to his new yt balance
         hevm.warp(block.timestamp + 1 days);
         // 100 more reward tokens are airdropped after bob has transferred to jim
         // 30 should go to alice and 70 to jim
         reward.mint(address(cropAdapter), 100 * 1e18);
-        jim.doCollect(yt);
-        assertClose(reward.balanceOf(address(jim)), 120 * 1e18);
-        alice.doCollect(yt);
-        assertClose(reward.balanceOf(address(alice)), 96 * 1e18);
+        hevm.prank(jim);
+        YT(yt).collect();
+        assertClose(reward.balanceOf(jim), 120 * 1e18);
+        YT(yt).collect();
+        assertClose(reward.balanceOf(alice), 96 * 1e18);
     }
 
     function testFuzzCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint256 tBal) public {

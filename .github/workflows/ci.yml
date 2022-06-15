@@ -50,10 +50,10 @@ jobs:
     - name: Run linter
       run: yarn lint
 
-    - name: Run local core tests
+    - name: Run local core tests where the mock Target decimals is 18
       run: yarn workspace @sense-finance/v1-core run test
 
-    - name: Run local fuse tests
+    - name: Run local fuse tests where the mock Target decimals is 18
       run: yarn workspace @sense-finance/v1-fuse run test
 
     - name: Run local core tests where the mock Target decimals > Underlying decimals
@@ -61,6 +61,12 @@ jobs:
 
     - name: Run local core tests where the mock Target decimals < Underlying decimals
       run: yarn workspace @sense-finance/v1-core run test:lower-decimal-val
+
+    - name: Run local core tests where the mock Target is an ERC4626 and decimals are 18
+      run: yarn workspace @sense-finance/v1-core run test:4626
+
+    - name: Run local core tests where the mock Target is an ERC4626 and decimals are 8
+      run: yarn workspace @sense-finance/v1-core run test:4626-8-decimal-val
 
     - name: Run core mainnet tests
       run: yarn workspace @sense-finance/v1-core run test:mainnet

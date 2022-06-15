@@ -2,21 +2,23 @@
 pragma solidity 0.8.11;
 
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { BaseAdapter } from "../../../adapters/BaseAdapter.sol";
-import { CropsAdapter } from "../../../adapters/CropsAdapter.sol";
-import { CropAdapter } from "../../../adapters/CropAdapter.sol";
+import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
+import { Crops } from "../../../adapters/abstract/extensions/Crops.sol";
+import { Crop } from "../../../adapters/abstract/extensions/Crop.sol";
+import { ERC4626Adapter } from "../../../adapters/abstract/ERC4626Adapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
 import { YT } from "../../../tokens/YT.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockToken.sol";
+import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
 
-contract MockAdapter is CropAdapter {
+// Mock crop adapter
+contract MockAdapter is BaseAdapter, Crop {
     using FixedMath for uint256;
 
     uint256 internal scaleOverride;
     uint256 public INITIAL_VALUE = 1e18;
-    address public under;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onRedeemCalls;
     uint256 public scalingFactor;
@@ -38,10 +40,18 @@ contract MockAdapter is CropAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) CropAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _reward) {
+    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crop) {
+        super.notify(_usr, amt, join);
     }
 
     function scale() external virtual override returns (uint256 _scale) {
@@ -126,18 +136,76 @@ contract MockAdapter is CropAdapter {
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
+}
+
+// Mock ERC4626 crop adapter
+contract Mock4626Adapter is ERC4626Adapter, Crop {
+    using FixedMath for uint256;
+
+    uint256 public onRedeemCalls;
+    uint256 public scalingFactor;
+
+    constructor(
+        address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
+        AdapterParams memory _adapterParams,
+        address _reward
+    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crop(_divider, _reward) {
+        uint256 tDecimals = MockTarget(_target).decimals();
+        uint256 uDecimals = MockTarget(_underlying).decimals();
+        scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crop) {
+        super.notify(_usr, amt, join);
+    }
+
+    function lscale() external returns (uint256, uint256) {
+        return (0, ERC4626(target).convertToAssets(BASE_UINT));
+    }
+
+    function onRedeem(
+        uint256, /* uBal */
+        uint256, /* mscale */
+        uint256, /* maxscale */
+        uint256 /* tBal */
+    ) public virtual override {
+        onRedeemCalls++;
+    }
+
+    function doInitSeries(uint256 maturity, address sponsor) external {
+        Divider(divider).initSeries(address(this), maturity, sponsor);
+    }
+
+    function doIssue(uint256 maturity, uint256 tBal) external {
+        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
+        Divider(divider).issue(address(this), maturity, tBal);
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
+        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
+    }
+
+    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
+        tBal = Divider(divider).combine(address(this), maturity, uBal);
+    }
 
     function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
         Divider(divider).redeem(address(this), maturity, uBal);
     }
 }
 
-contract MockCropsAdapter is CropsAdapter {
+// Mock crops adapter
+contract MockCropsAdapter is BaseAdapter, Crops {
     using FixedMath for uint256;
 
     uint256 internal scaleOverride;
-    uint256 public INITIAL_VALUE;
-    address public under;
+    uint256 public INITIAL_VALUE = 1e18;
     uint256 internal GROWTH_PER_SECOND = 792744799594; // 25% APY
     uint256 public onRedeemCalls;
     uint256 public scalingFactor;
@@ -159,10 +227,18 @@ contract MockCropsAdapter is CropsAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) CropsAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _rewardTokens) {
+    ) Crops(_divider, _rewardTokens) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crops) {
+        super.notify(_usr, amt, join);
     }
 
     function scale() external virtual override returns (uint256 _scale) {
@@ -183,8 +259,8 @@ contract MockCropsAdapter is CropsAdapter {
         }
     }
 
-    function scaleStored() external view virtual override returns (uint256 _value) {
-        return lscale.value;
+    function scaleStored() external view virtual override returns (uint256) {
+        return lscale.value == 0 ? INITIAL_VALUE : lscale.value;
     }
 
     function _claimRewards() internal virtual override {
@@ -250,11 +326,70 @@ contract MockCropsAdapter is CropsAdapter {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 
+    // function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
+    //     Divider(divider).redeem(address(this), maturity, uBal);
+    // }
+}
+
+// Mock ERC4626 crops adapter
+contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
+    using FixedMath for uint256;
+
+    uint256 public onRedeemCalls;
+    uint256 public scalingFactor;
+
+    constructor(
+        address _divider,
+        address _target,
+        address _underlying,
+        uint128 _ifee,
+        AdapterParams memory _adapterParams,
+        address[] memory _rewardTokens
+    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crops(_divider, _rewardTokens) {
+        uint256 tDecimals = MockTarget(_target).decimals();
+        uint256 uDecimals = MockTarget(_underlying).decimals();
+        scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
+    }
+
+    function notify(
+        address _usr,
+        uint256 amt,
+        bool join
+    ) public override(BaseAdapter, Crops) {
+        super.notify(_usr, amt, join);
+    }
+
+    function onRedeem(
+        uint256, /* uBal */
+        uint256, /* mscale */
+        uint256, /* maxscale */
+        uint256 /* tBal */
+    ) public virtual override {
+        onRedeemCalls++;
+    }
+
+    function doInitSeries(uint256 maturity, address sponsor) external {
+        Divider(divider).initSeries(address(this), maturity, sponsor);
+    }
+
+    function doIssue(uint256 maturity, uint256 tBal) external {
+        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
+        Divider(divider).issue(address(this), maturity, tBal);
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
+        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
+    }
+
+    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
+        tBal = Divider(divider).combine(address(this), maturity, uBal);
+    }
+
     function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
         Divider(divider).redeem(address(this), maturity, uBal);
     }
 }
 
+// Mock base adapter
 contract MockBaseAdapter is BaseAdapter {
     constructor(
         address _divider,
@@ -282,9 +417,5 @@ contract MockBaseAdapter is BaseAdapter {
 
     function getUnderlyingPrice() external view override returns (uint256) {
         return 1e18;
-    }
-
-    function doSetAdapter(Divider d, address _adapter) public {
-        d.setAdapter(_adapter, true);
     }
 }
