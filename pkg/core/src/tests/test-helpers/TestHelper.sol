@@ -332,10 +332,10 @@ contract TestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
+            ifee: 0,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
+            maxm: 52 weeks,
             mode: MODE,
             tilt: 0
         });

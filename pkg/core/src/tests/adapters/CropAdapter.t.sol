@@ -20,6 +20,9 @@ contract CropAdapters is TestHelper {
     using FixedMath for uint256;
 
     function setUp() public virtual override {
+        ISSUANCE_FEE = 0; // super.setUp will create an adapter with 0 fee to simplify tests math
+        MAX_MATURITY = 52 weeks; // super.setUp will create an adapter with 12 month max maturity
+
         super.setUp();
 
         // freeze scale to 1e18 (only for non 4626 targets)
@@ -51,8 +54,7 @@ contract CropAdapters is TestHelper {
             adapterParams,
             address(reward)
         );
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = cropAdapter
-            .adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(cropAdapter.reward(), address(reward));
         assertEq(cropAdapter.name(), "Compound Dai Adapter");
         assertEq(cropAdapter.symbol(), "cDAI-adapter");
@@ -73,29 +75,26 @@ contract CropAdapters is TestHelper {
     function testFuzzDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(cropAdapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true);
 
-        divider.issue(address(cropAdapter), maturity, (60 * tBal) / 100 );
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, (40 * tBal) / 100 );
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
-
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 0);
 
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
 
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
@@ -106,26 +105,26 @@ contract CropAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        divider.issue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        divider.issue(address(adapter), maturity, (100 * tBal) / 100);
         assertClose(ERC20(reward).balanceOf(alice), 0);
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        reward.mint(address(adapter), 10 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        divider.issue(address(adapter), maturity, (100 * tBal) / 100);
         assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        divider.combine(address(cropAdapter), maturity, ERC20(yt).balanceOf(alice));
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(alice));
         assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        divider.issue(address(adapter), maturity, (100 * tBal) / 100);
         assertClose(ERC20(reward).balanceOf(alice), 10 * 1e18);
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        reward.mint(address(adapter), 10 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, 10 * 1e18);
+        divider.issue(address(adapter), maturity, 10 * 1e18);
         assertClose(ERC20(reward).balanceOf(alice), 20 * 1e18);
     }
 
@@ -134,29 +133,29 @@ contract CropAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        divider.issue(address(cropAdapter), maturity, (60 * tBal) / 100 );
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, (40 * tBal) / 100 );
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 0);
 
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, 0 * 1e18);
+        divider.issue(address(adapter), maturity, 0 * 1e18);
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
 
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         divider.issue(address(adapter), maturity, (20 * tBal) / 100);
         hevm.prank(bob);
@@ -165,11 +164,11 @@ contract CropAdapters is TestHelper {
         assertClose(ERC20(reward).balanceOf(alice), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 30 * 1e18);
+        reward.mint(address(adapter), 30 * 1e18);
 
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 80 * 1e18);
         assertClose(ERC20(reward).balanceOf(bob), 50 * 1e18);
 
@@ -179,15 +178,15 @@ contract CropAdapters is TestHelper {
     function testFuzzSimpleDistributionAndCollect(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        divider.issue(address(cropAdapter), maturity, (60 * tBal) / 100 );
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         hevm.prank(bob);
-        divider.issue(address(cropAdapter), maturity, (40 * tBal) / 100 );
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100);
 
         assertEq(reward.balanceOf(bob), 0);
 
-        reward.mint(address(cropAdapter), (60 * tBal) / 100 );
+        reward.mint(address(adapter), 60 * 1e18);
 
         hevm.prank(bob);
         YT(yt).collect();
@@ -208,7 +207,7 @@ contract CropAdapters is TestHelper {
 
         // 60 reward tokens are airdropped before jim issues
         // 24 should go to bob and 36 to alice
-        reward.mint(address(cropAdapter), 60 * 1e18);
+        reward.mint(address(adapter), 60 * 1e18);
         hevm.warp(block.timestamp + 1 days);
 
         // jim issues 40, now the pool is 20% bob, 30% alice, and 50% jim
@@ -218,7 +217,7 @@ contract CropAdapters is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         // 100 more reward tokens are airdropped after jim has issued
         // 20 * 1e18 should go to bob, 30 to alice, and 50 * 1e18 to jim
-        reward.mint(address(cropAdapter), 100 * 1e18);
+        reward.mint(address(adapter), 100 * 1e18);
 
         // bob transfers all of his Yield to jim
         // now the pool is 70% jim and 30% alice
@@ -240,7 +239,7 @@ contract CropAdapters is TestHelper {
         hevm.warp(block.timestamp + 1 days);
         // 100 more reward tokens are airdropped after bob has transferred to jim
         // 30 should go to alice and 70 to jim
-        reward.mint(address(cropAdapter), 100 * 1e18);
+        reward.mint(address(adapter), 100 * 1e18);
         hevm.prank(jim);
         YT(yt).collect();
         assertClose(reward.balanceOf(jim), 120 * 1e18);
@@ -250,25 +249,23 @@ contract CropAdapters is TestHelper {
 
     function testFuzzCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint256 tBal) public {
         assumeBounds(tBal);
-        cropAdapter.setScale(1e18);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, tBal);
+        divider.issue(address(adapter), maturity, tBal);
 
         uint256 airdrop = 1e18;
-        reward.mint(address(cropAdapter), airdrop);
-        alice.doCollect(yt);
-        assertTrue(cropAdapter.tBalance(address(alice)) > 0);
+        reward.mint(address(adapter), airdrop);
+        YT(yt).collect();
+        assertTrue(adapter.tBalance(address(alice)) > 0);
 
-        reward.mint(address(cropAdapter), airdrop);
+        reward.mint(address(adapter), airdrop);
         hevm.warp(maturity);
-        alice.doSettleSeries(address(cropAdapter), maturity);
-        alice.doCollect(yt);
+        divider.settleSeries(address(adapter), maturity);
+        YT(yt).collect();
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        uint256 collected = alice.doCollect(yt); // try collecting after redemption
+        assertClose(adapter.tBalance(address(alice)), 0);
+        uint256 collected = YT(yt).collect(); // try collecting after redemption
         assertEq(collected, 0);
     }
 
@@ -277,32 +274,30 @@ contract CropAdapters is TestHelper {
     function testFuzzReconcileMoreThanOnce(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
         assertEq(reward.balanceOf(address(bob)), 0);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Bob's position
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](1);
         users[0] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        adapter.reconcile(users, maturities);
+        adapter.reconcile(users, maturities);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // Bob received his rewards when reconciliation took place
         assertClose(reward.balanceOf(address(bob)), 20 * 1e18);
@@ -311,31 +306,29 @@ contract CropAdapters is TestHelper {
     function testFuzzGetMaturedSeriesRewardsIfReconcileAfterMaturity(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
         assertEq(reward.balanceOf(address(bob)), 0);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Bob's position
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](1);
         users[0] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        adapter.reconcile(users, maturities);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // Bob received his rewards when reconciliation took place
         assertClose(reward.balanceOf(address(bob)), 20 * 1e18);
@@ -344,109 +337,98 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledInSingleDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, 100);
+        divider.issue(address(adapter), maturity, 100);
         assertClose(ERC20(reward).balanceOf(address(alice)), 0);
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        reward.mint(address(adapter), 10 * 1e18);
 
-        alice.doCollect(yt);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, 100);
+        divider.issue(address(adapter), maturity, 100);
         assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
 
-        reward.mint(address(cropAdapter), 20 * 1e18);
+        reward.mint(address(adapter), 20 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's position
-        assertEq(cropAdapter.tBalance(address(alice)), 200);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 200);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](1);
         users[0] = address(alice);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 200);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        adapter.reconcile(users, maturities);
+        assertClose(adapter.reconciledAmt(address(alice)), 200);
+        assertClose(adapter.tBalance(address(alice)), 0);
 
         // rewards should have been distributed after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        periphery.sponsorSeries(address(adapter), newMaturity, true);
 
-        alice.doIssue(address(cropAdapter), newMaturity, 50 * 1e18);
+        divider.issue(address(adapter), newMaturity, 50 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
 
-        reward.mint(address(cropAdapter), 30 * 1e18);
+        reward.mint(address(adapter), 30 * 1e18);
 
-        alice.doIssue(address(cropAdapter), newMaturity, 10);
+        divider.issue(address(adapter), newMaturity, 10);
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
 
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
     }
 
-    // on the 2nd Series we issue an amount which is equal to the user's `reconciledAmt`
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionI(uint256 tBal) public {
+    // -- Alice combines her S2-YTs first tests --> CANNOT DILUTE -- //
+
+    // On the 2nd Series we issue an amount which is equal to the user's `reconciledAmt`
+    function testFuzzCantDiluteRewardsIfReconciledAndCombineS2_YTsFirstI(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 0);
-
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doIssue(address(cropAdapter), maturity, 0);
-
-        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
-
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
+
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
         users[1] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        adapter.reconcile(users, maturities);
+
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
@@ -454,72 +436,84 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
         // Issue an amount equal to the users' `reconciledAmt`
-        alice.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
-        bob.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
+        divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
 
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(newYt);
-        bob.doIssue(address(cropAdapter), newMaturity, 0);
+        hevm.prank(bob);
+        YT(yt).collect();
+        divider.issue(address(adapter), newMaturity, 0);
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        // Alice combines her S2-YTs first so her tBalance should decrement
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        // Alice combines her S1-YTs and her tBalance would be the same
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 0);
+
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
     }
 
-    // on the 2nd Series we issue an amount which is bigger than the user's `reconciledAmt`
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionII(uint256 tBal) public {
+    // On the 2nd Series we issue an amount which is bigger than the user's `reconciledAmt`
+    function testFuzzCantDiluteRewardsIfReconciledAndCombineS2_YTsFirstII(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
         users[1] = address(bob);
-        cropAdapter.reconcile(users, maturities);
+        adapter.reconcile(users, maturities);
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
@@ -527,73 +521,86 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
         // Issue an amount bigger than the users' `reconciledAmt`
-        alice.doIssue(address(cropAdapter), newMaturity, (120 * tBal) / 100);
-        bob.doIssue(address(cropAdapter), newMaturity, (80 * tBal) / 100);
+        divider.issue(address(adapter), newMaturity, (120 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (120 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (80 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (80 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
 
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(newYt);
-        bob.doIssue(address(cropAdapter), newMaturity, 0);
+        YT(newYt).collect();
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        // Alice combines her S2-YTs first so her tBalance should decrement
+        assertClose(adapter.tBalance(address(alice)), (120 * tBal) / 100);
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        // Alice combines her S1-YTs and her tBalance would be the same
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        assertClose(adapter.tBalance(address(bob)), (80 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
     }
 
-    // on the 2nd Series we issue an amount which is smaller than the user's `reconciledAmt`
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionIII(uint256 tBal) public {
+    // On the 2nd Series we issue an amount which is smaller than the user's `reconciledAmt`
+    function testFuzzCantDiluteRewardsIfReconciledAndCombineS2_YTsFirstIII(uint256 tBal) public {
         assumeBounds(tBal);
         tBal = 297490066489110212;
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
         users[1] = address(bob);
-        cropAdapter.reconcile(users, maturities);
+        adapter.reconcile(users, maturities);
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
@@ -601,346 +608,407 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
         // Issue an amount bigger than the users' `reconciledAmt`
-        alice.doIssue(address(cropAdapter), newMaturity, (30 * tBal) / 100);
-        bob.doIssue(address(cropAdapter), newMaturity, (20 * tBal) / 100);
+        divider.issue(address(adapter), newMaturity, (30 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (30 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (30 * tBal) / 100);
+
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (20 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (20 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
 
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(newYt);
-        bob.doIssue(address(cropAdapter), newMaturity, 0);
+        YT(yt).collect();
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertClose(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertClose(cropAdapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
+        // Alice combines her S2-YTs first so her tBalance should decrement
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        // Alice combines her S1-YTs and her tBalance would be the same
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 0);
+
+        assertClose(adapter.tBalance(address(bob)), (20 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
     }
 
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionIV(uint256 tBal) public {
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //   -- Alice combines her S1-YTs first tests --> CAN DILUTE HERSELF BUT NOT OTHERS --   //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    // On the 2nd Series we issue an amount which is equal to the user's `reconciledAmt`
+    function testFuzzCanDiluteRewardsIfReconciledAndCombineS1_YTsFirstI(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 50 * 1e18);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
-        // reconcile Alice's position
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
+        // reconcile Alice's & Bob's positions
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
-        cropAdapter.reconcile(users, maturities);
+        users[1] = address(bob);
+        adapter.reconcile(users, maturities);
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
-        assertClose(ERC20(reward).balanceOf(address(alice)), 100 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
-        // alice issues on new Series
-        alice.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 100 * 1e18);
+        // Issue an amount equal to the users' `reconciledAmt`
+        divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
 
-        // alice combines on new Series
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
 
-        // bob issues on new Series
-        bob.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 0 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        // Bob should receive 100% of rewards
-        bob.doCollect(newYt);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 50 * 1e18);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
+        divider.issue(address(adapter), newMaturity, 0);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        // Alice should not receive any rewards
-        alice.doCollect(yt);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 100 * 1e18);
+        // Alice combines her S1-YTs first
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+
+        // Alice's tBalance should NOT have been decremented but it has been
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        // Alice still has 60% and Bob 40%, so if we issue another 20% this means
+        // that both Alice and Bob would have 50% each but, as Alice has been
+        // diluted, Bob is getting a 100%
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (20 * tBal) / 100);
+
+        reward.mint(address(adapter), 50 * 1e18);
+
+        hevm.prank(bob);
+        YT(newYt).collect();
+        // As Alice is diluted, Bob receives the 50 newly minted reward tokens
+        assertClose(ERC20(reward).balanceOf(address(bob)), 110 * 1e18);
+
+        // Alice combines her S2-YTs and her tBalance is the same
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 0);
+
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), (60 * tBal) / 100);
     }
 
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionV(uint256 tBal) public {
+    // On the 2nd Series we issue an amount which is bigger than the user's `reconciledAmt`
+    function testFuzzCanDiluteRewardsIfReconciledAndCombineS1_YTsFirstII(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (50 * tBal) / 100);
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
+
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
-        // reconcile Alice's position
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (50 * tBal) / 100);
+        // reconcile Alice's & Bob's positions
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
-        cropAdapter.reconcile(users, maturities);
+        users[1] = address(bob);
+        adapter.reconcile(users, maturities);
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (50 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
-        // alice issues on new Series
-        alice.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
-        assertClose(cropAdapter.reconciledAmt(address(alice)), (10 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(alice)), (40 * tBal) / 100);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        // Issue an amount bigger than the users' `reconciledAmt`
+        divider.issue(address(adapter), newMaturity, (120 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (120 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
 
-        // alice combines on new Series
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (80 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (80 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
 
-        // bob issues on new Series
-        bob.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        // Bob should receive 100% of rewards
-        bob.doCollect(newYt);
-        assertClose(ERC20(reward).balanceOf(address(bob)), 10 * 1e18);
+        divider.issue(address(adapter), newMaturity, 0);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        // alice can combine her old YT position
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        // Alice combines her S1-YTs first
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+
+        // Alice's tBalance should NOT have been decremented but it has been
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+
+        // Total Target: 140
+        // Alice tBalance: 60 --> ~42.85%
+        // Bob tBalance: 80 --> ~57.14%
+
+        // As Alice got diluted, she will rereive less rewards.
+        reward.mint(address(adapter), 50 * 1e18);
+
+        // Collect rewards on Alice and Bob
+        YT(newYt).collect();
+        hevm.prank(bob);
+        YT(newYt).collect();
+        // Alice should receive 30 (totaling 90 + 30 = 110) out of those 50 rewards
+        // but, instead, she receives ~25.71 (totaling 90 + ~25.71 = ~111.425)
+        assertClose(ERC20(reward).balanceOf(address(alice)), 111428571428571428874);
+        // Bob should receive 20 out of those 50 rewards
+        // but, instead, he receives ~28.57 (totaling 60 + ~28.57 = ~88.57)
+        assertClose(ERC20(reward).balanceOf(address(bob)), 88571428571428571124);
+
+        // Alice combines her S2-YTs and her tBalance is the same
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 0);
+
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), (80 * tBal) / 100);
     }
 
-    // user combines first her new YTs
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionVI(uint256 tBal) public {
+    // On the 2nd Series we issue an amount which is smaller than the user's `reconciledAmt`
+    function testFuzzCanDiluteRewardsIfReconciledAndCombineS1_YTsFirstIII(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
+
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
-        // reconcile Alice's position
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (100 * tBal) / 100);
+        // reconcile Alice's & Bob's positions
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
-        cropAdapter.reconcile(users, maturities);
+        users[1] = address(bob);
+        adapter.reconcile(users, maturities);
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (100 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
-        // alice issues on new Series
-        alice.doIssue(address(cropAdapter), newMaturity, (50 * tBal) / 100);
-        assertClose(cropAdapter.reconciledAmt(address(alice)), (50 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(alice)), (50 * tBal) / 100);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        // Issue an amount smaller than the users' `reconciledAmt`
+        divider.issue(address(adapter), newMaturity, (30 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (30 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (30 * tBal) / 100);
 
-        // alice combines half of her new Series YTs
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)) / 2);
-        assertClose(cropAdapter.reconciledAmt(address(alice)), (25 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(alice)), (25 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (20 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (20 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
 
-        // alice can combine her old YT position
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertClose(cropAdapter.tBalance(address(alice)), (25 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        // alice combines the rest of the new Series YTs
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-    }
+        reward.mint(address(adapter), 50 * 1e18);
 
-    // user combines first her old YTs
-    function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionVII(uint256 tBal) public {
-        assumeBounds(tBal);
-        uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
+        divider.issue(address(adapter), newMaturity, 0);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
+        assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        alice.doIssue(address(cropAdapter), maturity, (100 * tBal) / 100);
+        // Alice combines her S1-YTs first
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
 
-        reward.mint(address(cropAdapter), 10 * 1e18);
+        // Alice's tBalance should NOT have been decremented but it has been
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
 
-        alice.doCollect(yt);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+        // Alice still has 60% and Bob 40%, so if we issue another 20% this means
+        // that both Alice and Bob would have 50% each but, as Alice has been
+        // diluted, Bob is getting a 100%
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (20 * tBal) / 100);
 
-        // settle series
-        hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        // reconcile Alice's position
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (100 * tBal) / 100);
+        hevm.prank(bob);
+        YT(newYt).collect();
+        // As Alice is diluted, Bob receives the 50 newly minted reward tokens
+        assertClose(ERC20(reward).balanceOf(address(bob)), 110 * 1e18);
 
-        uint256[] memory maturities = new uint256[](1);
-        maturities[0] = maturity;
-        address[] memory users = new address[](2);
-        users[0] = address(alice);
-        cropAdapter.reconcile(users, maturities);
+        // Alice combines her S2-YTs and her tBalance is the same
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 0);
 
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (100 * tBal) / 100);
-
-        // rewards should have been distributed after reconciling
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
-
-        // sponsor new Series
-        uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
-
-        // alice issues on new Series
-        alice.doIssue(address(cropAdapter), newMaturity, (50 * tBal) / 100);
-        assertClose(cropAdapter.reconciledAmt(address(alice)), (50 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(alice)), (50 * tBal) / 100);
-        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
-
-        // alice can combine half of her old YT position
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)) / 2);
-        assertClose(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertClose(cropAdapter.tBalance(address(alice)), (50 * tBal) / 100); // THIS FAILS!!!
-
-        // alice combines all of her new Series YTs
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-
-        // alice can combine the rest of her old YT position
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
     }
 
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionWithScaleChanges(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
         // scale changes
         hevm.warp(maturity / 2);
-        cropAdapter.setScale(2e18);
+        adapter.setScale(2e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
 
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
 
         // tBalance has changed since scale has changed as well
-        assertClose(cropAdapter.tBalance(address(alice)), (30 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(bob)), (20 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (30 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (20 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
         users[1] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        assertClose(cropAdapter.tBalance(address(alice)), 0);
-        assertClose(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (30 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
+        adapter.reconcile(users, maturities);
+
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (30 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
@@ -948,33 +1016,35 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
-        alice.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
-        bob.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
+        divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(newYt);
-        bob.doIssue(address(cropAdapter), newMaturity, 0);
+        YT(yt).collect();
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
         assertClose(ERC20(reward).balanceOf(address(alice)), 120 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 80 * 1e18);
 
         // reconciled amounts should be 0 after combining
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
 
-        bob.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(bob)));
-        bob.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(bob)));
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        hevm.startPrank(bob);
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(bob)));
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(bob)));
+        hevm.stopPrank();
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
     }
 
     function testFuzzCantDiluteRewardsInProportionalDistributionWithScaleChangesAndCollectAfterReconcile(uint256 tBal)
@@ -982,49 +1052,47 @@ contract CropAdapters is TestHelper {
     {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // scale changes
         hevm.warp(maturity / 2);
-        cropAdapter.setScale(2e18);
+        adapter.setScale(2e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         assertEq(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
         assertEq(ERC20(reward).balanceOf(address(bob)), 0 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
-        assertClose(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertClose(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
 
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
         users[1] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        assertClose(cropAdapter.totalTarget(), 0);
+        adapter.reconcile(users, maturities);
+        assertClose(adapter.totalTarget(), 0);
 
-        assertClose(cropAdapter.tBalance(address(alice)), 0);
-        assertClose(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // rewards should have been distributed after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
@@ -1032,81 +1100,82 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
-        alice.doIssue(address(cropAdapter), newMaturity, (60 * tBal) / 100);
-        bob.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
+        divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
 
         assertClose(ERC20(reward).balanceOf(address(alice)), 90 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 60 * 1e18);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(newYt);
-        bob.doIssue(address(cropAdapter), newMaturity, 0);
+        YT(yt).collect();
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, 0);
         assertClose(ERC20(reward).balanceOf(address(alice)), 120 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 80 * 1e18);
 
         // reconciled amounts should be 0 after combining
-        alice.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(alice)));
-        alice.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
 
-        bob.doCombine(address(cropAdapter), maturity, ERC20(yt).balanceOf(address(bob)));
-        bob.doCombine(address(cropAdapter), newMaturity, ERC20(newYt).balanceOf(address(bob)));
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
+        hevm.startPrank(bob);
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(bob)));
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(bob)));
+        hevm.stopPrank();
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
     }
 
     function testFuzzDiluteRewardsIfNoReconcile(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
         // Alice still holds YT
         assertTrue(ERC20(yt).balanceOf(address(alice)) > 0);
-        assertTrue(cropAdapter.tBalance(address(alice)) > 0);
+        assertTrue(adapter.tBalance(address(alice)) > 0);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // Bob closes his YT position
-        bob.doCollect(yt);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(adapter.tBalance(address(bob)), 0);
         assertEq(ERC20(yt).balanceOf(address(bob)), 0);
 
         // at this point, no rewards are left to distribute and
         // - Alice has 30 reward tokens
         // - Bob has 20 * 1e18 reward tokens
-        assertClose(ERC20(reward).balanceOf(address(cropAdapter)), 0);
+        assertClose(ERC20(reward).balanceOf(address(adapter)), 0);
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
         // Bob issues some target and this should represent 100% of the rewards
         // but, as Alice is still holding some YTs, she will dilute Bob's rewards
-        bob.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
-        reward.mint(address(cropAdapter), 50 * 1e18);
-        bob.doCollect(newYt);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
+        reward.mint(address(adapter), 50 * 1e18);
+        hevm.prank(bob);
+        YT(newYt).collect();
 
         // Bob should recive the 50 * 1e18 newly minted reward tokens
         // but that's not true because his rewards were diluted
@@ -1116,9 +1185,9 @@ contract CropAdapters is TestHelper {
 
         // Alice can claim reward tokens with her old YTs
         // after that, their old YTs will be burnt
-        alice.doCollect(yt);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), 0);
         assertEq(ERC20(yt).balanceOf(address(alice)), 0);
 
         // since Alice has called collect, her YTs should have been redeemed
@@ -1129,50 +1198,50 @@ contract CropAdapters is TestHelper {
     function testFuzzDiluteRewardsIfLateReconcile(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
-        bob.doIssue(address(cropAdapter), maturity, (40 * tBal) / 100); // 40%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100); // 40%
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
-        alice.doCollect(yt);
-        bob.doCollect(yt);
+        YT(yt).collect();
+        hevm.prank(bob);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 30 * 1e18);
         assertClose(ERC20(reward).balanceOf(address(bob)), 20 * 1e18);
 
         // Alice still holds YT
         assertTrue(ERC20(yt).balanceOf(address(alice)) > 0);
-        assertTrue(cropAdapter.tBalance(address(alice)) > 0);
+        assertTrue(adapter.tBalance(address(alice)) > 0);
 
         // settle series
         hevm.warp(maturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), maturity);
+        divider.settleSeries(address(adapter), maturity);
 
         // Bob closes his YT position and rewards
-        bob.doCollect(yt);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(adapter.tBalance(address(bob)), 0);
         assertEq(ERC20(yt).balanceOf(address(bob)), 0);
 
         // at this point, no rewards are left to distribute and
         // - Alice has 30 reward tokens
         // - Bob has 20 reward tokens
-        assertClose(ERC20(reward).balanceOf(address(cropAdapter)), 0);
+        assertClose(ERC20(reward).balanceOf(address(adapter)), 0);
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
         // Bob issues some target and this should represent 100% of the shares
         // but, as Alice is still holding some YTs from previous series, she will dilute Bob's rewards
-        bob.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
-        reward.mint(address(cropAdapter), 50 * 1e18);
-        bob.doCollect(newYt);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
+        reward.mint(address(adapter), 50 * 1e18);
+        hevm.prank(bob);
+        YT(newYt).collect();
 
         // Bob should recieve the 50 newly minted reward tokens
         // but that's not true because his rewards have been diluted
@@ -1181,24 +1250,24 @@ contract CropAdapters is TestHelper {
         assertClose(ERC20(reward).balanceOf(address(bob)), 40 * 1e18);
 
         // late reconcile Alice's position
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = maturity;
         address[] memory users = new address[](1);
         users[0] = address(alice);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.tBalance(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
+        adapter.reconcile(users, maturities);
+        assertClose(adapter.tBalance(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), (60 * tBal) / 100);
 
         // rewards (with bonus) should have been distributed to Alice after reconciling
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
 
         // after user collecting, YTs are burnt and and reconciled amount should go to 0
-        alice.doCollect(yt);
+        YT(yt).collect();
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
         assertClose(ERC20(yt).balanceOf(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
     }
 
     /*              Jan                                                          Dec (maturity)
@@ -1217,54 +1286,50 @@ contract CropAdapters is TestHelper {
 
         // sponsor a 12 month maturity (December 1st 2021)
         uint256 maturity = getValidMaturity(2021, 12);
-        hevm.startPrank(address(alice));
-        (, address yt) = periphery.sponsorSeries(address(cropAdapter), maturity, true);
-        cropAdapter.setScale(1e18);
-        hevm.stopPrank();
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         // Alice issues on December Series
-        alice.doIssue(address(cropAdapter), maturity, (60 * tBal) / 100); // 60%
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         assertEq(reward.balanceOf(address(alice)), 0);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         hevm.warp(block.timestamp + 12 weeks); // Current date is March
 
         // sponsor July Series
         uint256 newMaturity = getValidMaturity(2021, 7);
-        hevm.startPrank(address(alice));
-        (, address newYt) = periphery.sponsorSeries(address(cropAdapter), newMaturity, true);
-        hevm.stopPrank();
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
 
         // Alice issues 0 on July series and she gets rewards from the December Series
-        alice.doIssue(address(cropAdapter), newMaturity, 0);
+        divider.issue(address(adapter), newMaturity, 0);
         assertClose(reward.balanceOf(address(alice)), 50 * 1e18);
 
         // Bob issues on new series (no rewards are yet to be distributed to Bob)
-        bob.doIssue(address(cropAdapter), newMaturity, (40 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(adapter), newMaturity, (40 * tBal) / 100);
         assertClose(reward.balanceOf(address(bob)), 0);
 
-        reward.mint(address(cropAdapter), 50 * 1e18);
+        reward.mint(address(adapter), 50 * 1e18);
 
         // Moving to July Series maturity to be able to settle the series
         hevm.warp(newMaturity + 1 seconds);
-        alice.doSettleSeries(address(cropAdapter), newMaturity);
+        divider.settleSeries(address(adapter), newMaturity);
 
         // reconcile Alice's and Bob's positions
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), 0);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.tBalance(address(bob)), (40 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), 0);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
         uint256[] memory maturities = new uint256[](1);
         maturities[0] = newMaturity;
         address[] memory users = new address[](2);
         users[0] = address(alice);
         users[1] = address(bob);
-        cropAdapter.reconcile(users, maturities);
-        assertEq(cropAdapter.tBalance(address(alice)), (60 * tBal) / 100);
-        assertEq(cropAdapter.tBalance(address(bob)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(alice)), 0);
-        assertEq(cropAdapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
+        adapter.reconcile(users, maturities);
+        assertClose(adapter.tBalance(address(alice)), (60 * tBal) / 100);
+        assertClose(adapter.tBalance(address(bob)), 0);
+        assertClose(adapter.reconciledAmt(address(alice)), 0);
+        assertClose(adapter.reconciledAmt(address(bob)), (40 * tBal) / 100);
 
         // Both Alice and Bob should get their rewards
         assertClose(reward.balanceOf(address(alice)), 50 * 1e18);
@@ -1272,7 +1337,7 @@ contract CropAdapters is TestHelper {
 
         // Alice should still be able to collect her rewards from
         // the December series (30 reward tokens)
-        alice.doIssue(address(cropAdapter), maturity, 0);
+        divider.issue(address(adapter), maturity, 0);
         assertClose(reward.balanceOf(address(alice)), 80 * 1e18);
     }
 

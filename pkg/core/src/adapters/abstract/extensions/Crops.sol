@@ -7,6 +7,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
+import { BaseAdapter } from "../BaseAdapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
@@ -90,14 +91,15 @@ abstract contract Crops is Trust {
     /// @param _usrs Users to reconcile
     /// @param _maturities Maturities of the series that we want to reconcile users on.
     function reconcile(address[] calldata _usrs, uint256[] calldata _maturities) public {
+        Divider divider = Divider(BaseAdapter(address(this)).divider());
         for (uint256 j = 0; j < _maturities.length; j++) {
             for (uint256 i = 0; i < _usrs.length; i++) {
                 address usr = _usrs[i];
-                uint256 ytBal = ERC20(Divider(divider).yt(address(this), _maturities[j])).balanceOf(usr);
+                uint256 ytBal = ERC20(divider.yt(address(this), _maturities[j])).balanceOf(usr);
                 // We don't want to reconcile users if maturity has not been reached or if they have already been reconciled
                 if (_maturities[j] <= block.timestamp && ytBal > 0 && !reconciled[usr][_maturities[j]]) {
                     _distribute(usr);
-                    uint256 tBal = ytBal.fdiv(Divider(divider).lscales(address(this), _maturities[j], usr));
+                    uint256 tBal = ytBal.fdiv(divider.lscales(address(this), _maturities[j], usr));
                     totalTarget -= tBal;
                     tBalance[usr] -= tBal;
                     reconciledAmt[usr] += tBal; // We increase reconciledAmt with the user's YT balance in target terms
