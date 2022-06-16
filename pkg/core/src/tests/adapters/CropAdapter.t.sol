@@ -386,7 +386,9 @@ contract CropAdapters is TestHelper {
         assertClose(ERC20(reward).balanceOf(address(alice)), 60 * 1e18);
     }
 
-    // -- Alice combines her S2-YTs first tests --> CANNOT DILUTE -- //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //   -- Alice combines her S2-YTs first tests --> CANNOT DILUTE --   //
+    ///////////////////////////////////////////////////////////////////////////////////////////
 
     // On the 2nd Series we issue an amount which is equal to the user's `reconciledAmt`
     function testFuzzCantDiluteRewardsIfReconciledAndCombineS2_YTsFirstI(uint256 tBal) public {
@@ -643,6 +645,60 @@ contract CropAdapters is TestHelper {
 
         assertClose(adapter.tBalance(address(bob)), (20 * tBal) / 100);
         assertClose(adapter.reconciledAmt(address(bob)), (20 * tBal) / 100);
+    }
+
+    // Alice issues S1-YTs and S2-YTs before reconciling S1
+    function testFuzzCantDiluteRewardsIfReconciledAndCombineS1_YTsFirstIV(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        uint256 newMaturity = getValidMaturity(2021, 11);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+
+        // alice issues on S1
+        divider.issue(address(adapter), maturity, (100 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (0 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (100 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
+
+        // alice issues on S2
+        divider.issue(address(adapter), newMaturity, (100 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (0 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (200 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
+
+        reward.mint(address(adapter), 10 * 1e18);
+
+        YT(yt).collect();
+        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+
+        // settle S1
+        hevm.warp(maturity + 1 seconds);
+        divider.settleSeries(address(adapter), maturity);
+
+        // reconcile Alice's position
+        assertEq(adapter.reconciledAmt(address(alice)), 0);
+        assertEq(adapter.tBalance(address(alice)), (200 * tBal) / 100);
+
+        uint256[] memory maturities = new uint256[](1);
+        maturities[0] = maturity;
+        address[] memory users = new address[](2);
+        users[0] = address(alice);
+        adapter.reconcile(users, maturities);
+
+        assertEq(adapter.tBalance(address(alice)), (100 * tBal) / 100);
+        assertEq(adapter.reconciledAmt(address(alice)), (100 * tBal) / 100);
+
+        // Alice combines her S2-YTs first so her tBalance should decrement
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertClose(adapter.tBalance(address(alice)), (0 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (0 * tBal) / 100);
+
+        // Alice combines her S1-YTs and her tBalance would be the same
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        assertEq(adapter.reconciledAmt(address(alice)), 0);
+        assertEq(adapter.tBalance(address(alice)), 0);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -952,6 +1008,61 @@ contract CropAdapters is TestHelper {
 
         assertClose(adapter.reconciledAmt(address(bob)), 0);
         assertClose(adapter.tBalance(address(bob)), (40 * tBal) / 100);
+    }
+
+    // Alice issues S1-YTs and S2-YTs before reconciling S1
+    function testFuzzCanDiluteRewardsIfReconciledAndCombineS1_YTsFirstIV(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        uint256 newMaturity = getValidMaturity(2021, 11);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+
+        // alice issues on S1
+        divider.issue(address(adapter), maturity, (100 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (0 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (100 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
+
+        // alice issues on S2
+        divider.issue(address(adapter), newMaturity, (100 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (0 * tBal) / 100);
+        assertClose(adapter.tBalance(address(alice)), (200 * tBal) / 100);
+        assertClose(ERC20(reward).balanceOf(address(alice)), 0 * 1e18);
+
+        reward.mint(address(adapter), 10 * 1e18);
+
+        YT(yt).collect();
+        assertClose(ERC20(reward).balanceOf(address(alice)), 10 * 1e18);
+
+        // settle S1
+        hevm.warp(maturity + 1 seconds);
+        divider.settleSeries(address(adapter), maturity);
+
+        // reconcile Alice's position
+        assertEq(adapter.reconciledAmt(address(alice)), 0);
+        assertEq(adapter.tBalance(address(alice)), (200 * tBal) / 100);
+
+        uint256[] memory maturities = new uint256[](1);
+        maturities[0] = maturity;
+        address[] memory users = new address[](2);
+        users[0] = address(alice);
+        adapter.reconcile(users, maturities);
+
+        assertEq(adapter.tBalance(address(alice)), (100 * tBal) / 100);
+        assertEq(adapter.reconciledAmt(address(alice)), (100 * tBal) / 100);
+
+        // Alice combines her S1-YTs
+        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(address(alice)));
+        // Alice's tBalance should have NOT been decremented but it has been making her to be diluted
+        assertClose(adapter.tBalance(address(alice)), (0 * tBal) / 100);
+        assertClose(adapter.reconciledAmt(address(alice)), (0 * tBal) / 100);
+
+        // Alice can combine her S2-YTs
+        divider.combine(address(adapter), newMaturity, ERC20(newYt).balanceOf(address(alice)));
+        assertEq(adapter.reconciledAmt(address(alice)), 0);
+        assertEq(adapter.tBalance(address(alice)), 0);
     }
 
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionWithScaleChanges(uint256 tBal) public {
