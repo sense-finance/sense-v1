@@ -13,8 +13,8 @@ import { IERC3156FlashBorrower } from "./external/flashloan/IERC3156FlashBorrowe
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { BaseAdapter as Adapter } from "./adapters/BaseAdapter.sol";
-import { BaseFactory as AdapterFactory } from "./adapters/BaseFactory.sol";
+import { BaseAdapter as Adapter } from "./adapters/abstract/BaseAdapter.sol";
+import { BaseFactory as AdapterFactory } from "./adapters/abstract/factories/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 
@@ -419,15 +419,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Update the address for the Space Factory
     /// @param newSpaceFactory The Space Factory addresss to set
     function setSpaceFactory(address newSpaceFactory) external requiresTrust {
+        emit SpaceFactoryChanged(address(spaceFactory), newSpaceFactory);
         spaceFactory = SpaceFactoryLike(newSpaceFactory);
-        emit SpaceFactoryChanged(newSpaceFactory);
     }
 
     /// @notice Update the address for the Pool Manager
     /// @param newPoolManager The Pool Manager addresss to set
     function setPoolManager(address newPoolManager) external requiresTrust {
+        emit PoolManagerChanged(address(poolManager), newPoolManager);
         poolManager = PoolManager(newPoolManager);
-        emit PoolManagerChanged(newPoolManager);
     }
 
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
@@ -716,6 +716,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         targetBal = ERC20(Adapter(adapter).target()).balanceOf(address(this));
         ytBal = ERC20(divider.yt(adapter, maturity)).balanceOf(address(this));
+        emit YTsPurchased(msg.sender, adapter, maturity, targetIn, targetBal, ytBal);
     }
 
     /// @dev ERC-3156 Flash loan callback
@@ -822,12 +823,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /* ========== LOGS ========== */
 
     event FactoryChanged(address indexed factory, bool indexed isOn);
-    event SpaceFactoryChanged(address newSpaceFactory);
-    event PoolManagerChanged(address newPoolManager);
+    event SpaceFactoryChanged(address oldSpaceFactory, address newSpaceFactory);
+    event PoolManagerChanged(address oldPoolManager, address newPoolManager);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);
     event AdapterVerified(address indexed adapter);
+    event YTsPurchased(
+        address indexed sender,
+        address adapter,
+        uint256 maturity,
+        uint256 targetIn,
+        uint256 targetReturned,
+        uint256 ytOut
+    );
     event Swapped(
         address indexed sender,
         bytes32 indexed poolId,

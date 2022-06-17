@@ -12,7 +12,7 @@ import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOrac
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
-import { BaseAdapter as Adapter } from "../../../adapters/BaseAdapter.sol";
+import { BaseAdapter as Adapter } from "../../../adapters/abstract/BaseAdapter.sol";
 import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
 
 import { MockToken } from "./MockToken.sol";

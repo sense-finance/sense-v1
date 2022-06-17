@@ -13,6 +13,7 @@
     "turbo-test": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test",
     "turbo-test-local-greater-decimal-val": "yarn workspaces @sense-finance/v1-core run turbo-test:greater-decimal-val",
     "turbo-test-local-lower-decimal-val": "yarn workspaces @sense-finance/v1-core run turbo-test:lower-decimal-val",
+    "turbo-test-local-4626": "yarn workspaces @sense-finance/v1-core run turbo-test:4626",
     "turbo-test:mainnet": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test:mainnet",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
     "fix": "yarn workspaces foreach --parallel --verbose run fix",
