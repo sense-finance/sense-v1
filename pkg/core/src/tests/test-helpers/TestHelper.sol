@@ -332,10 +332,10 @@ contract TestHelper is DSTest {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
+            ifee: 0,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
+            maxm: 52 weeks,
             mode: MODE,
             tilt: 0
         });
@@ -418,11 +418,13 @@ contract TestHelper is DSTest {
 
     // for MockAdapter, as scale is a function of time, we just move to some blocks in the future
     // for the ERC4626, we mint some underlying
-    function increaseScale() internal {
+    function increaseScale(address t) internal {
         if (!is4626) {
             hevm.warp(block.timestamp + 1 days);
         } else {
-            underlying.mint(address(target), underlying.balanceOf(address(target)));
+            MockERC4626(t).asset();
+            MockToken underlying = MockToken(address(MockERC4626(t).asset()));
+            underlying.mint(t, underlying.balanceOf(t));
         }
     }
 }
