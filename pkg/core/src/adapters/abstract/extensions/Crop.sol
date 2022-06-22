@@ -32,7 +32,7 @@ abstract contract Crop is Trust {
         reward = _reward;
     }
 
-    /// @notice Distribute the rewards tokens to the user according to they share
+    /// @notice Distribute the rewards tokens to the user according to their share
     /// @dev The reconcile amount allows us to prevent diluting other users' rewards
     function notify(
         address _usr,
