@@ -18,15 +18,15 @@ module.exports = async function () {
     log: true,
   });
 
+  const emergency = await ethers.getContract("EmergencyStop", signer);
   log("Trust the emergency address on the divider");
   if (!(await divider.isTrusted(emergencyAddress))) {
     await (await divider.setIsTrusted(emergencyAddress, true)).wait();
-  }
 
-  log("Can call stop");
-  const adapters = await getDeployedAdapters();
-  const emergency = await ethers.getContract("EmergencyStop", signer);
-  await emergency.callStatic.stop(Object.values(adapters));
+    log("Can call stop");
+    const adapters = await getDeployedAdapters();
+    await emergency.callStatic.stop(Object.values(adapters));
+  }
 
   log("Trust the OZ Defender Relay address on the emergency stop contract");
   if (!(await emergency.isTrusted(OZ_RELAYER.get(chainId)))) {

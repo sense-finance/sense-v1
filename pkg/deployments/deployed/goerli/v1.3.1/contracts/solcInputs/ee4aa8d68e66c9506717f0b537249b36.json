@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "src/MultiMint.sol": {
+      "content": "// SPDX-License-Identifier: AGPL-3.0-only\npragma solidity ^0.8.11;\n\ninterface ERC20Like {\n    function mint(address, uint256) external;\n}\n\ncontract MultiMint {\n    address public owner;\n    constructor() {\n        owner = msg.sender;\n    }\n\n    /// @dev Assumes this contract has authority over the passed in tokens\n    function mint(address[] calldata _tokens, uint256[] calldata _amounts, address _user) external {\n        require(msg.sender == owner, \"ONLY_OWNER\");\n        require(_tokens.length == _amounts.length, \"ARRAY_LENGTH_MISMATCH\");\n\n        for (uint256 i = 0; i < _tokens.length; i++) {\n            ERC20Like(_tokens[i]).mint(_user, _amounts[i]);\n        }\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 15000
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

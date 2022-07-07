@@ -1,0 +1,206 @@
+{
+  "address": "0xB3e70779c1d1f2637483A02f1446b211fe4183Fa",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "_price",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "underlyings",
+          "type": "address[]"
+        },
+        {
+          "internalType": "contract PriceOracle[]",
+          "name": "_oracles",
+          "type": "address[]"
+        }
+      ],
+      "name": "add",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract CToken",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "getUnderlyingPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "underlyings",
+          "type": "address[]"
+        },
+        {
+          "internalType": "contract PriceOracle[]",
+          "name": "_oracles",
+          "type": "address[]"
+        },
+        {
+          "internalType": "contract PriceOracle",
+          "name": "_defaultOracle",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_admin",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "_canAdminOverwrite",
+          "type": "bool"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isPriceOracle",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "price",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "price_",
+          "type": "uint256"
+        }
+      ],
+      "name": "setPrice",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "zero",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "pool",
+          "type": "address"
+        }
+      ],
+      "name": "setZero",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x29179b3c1dede8093476266ae85bdcc73c7ac8f024006ae595687eb16e3e77f1",
+  "receipt": {
+    "to": null,
+    "from": "0xF13519734649F7464E5BE4aa91987A35594b2B16",
+    "contractAddress": "0xB3e70779c1d1f2637483A02f1446b211fe4183Fa",
+    "transactionIndex": 0,
+    "gasUsed": "342989",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xd16acb92f67113929ee4a12df94b24786ec31911df471c79e2d7532b8209b832",
+    "transactionHash": "0x29179b3c1dede8093476266ae85bdcc73c7ac8f024006ae595687eb16e3e77f1",
+    "logs": [],
+    "blockNumber": 7184275,
+    "cumulativeGasUsed": "342989",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "e6e4c9ea960c200f06b8bf15d2380dca",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.11+commit.d7f03943\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"_price\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"underlyings\",\"type\":\"address[]\"},{\"internalType\":\"contract PriceOracle[]\",\"name\":\"_oracles\",\"type\":\"address[]\"}],\"name\":\"add\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract CToken\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"getUnderlyingPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"underlyings\",\"type\":\"address[]\"},{\"internalType\":\"contract PriceOracle[]\",\"name\":\"_oracles\",\"type\":\"address[]\"},{\"internalType\":\"contract PriceOracle\",\"name\":\"_defaultOracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_canAdminOverwrite\",\"type\":\"bool\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isPriceOracle\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"price\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"price_\",\"type\":\"uint256\"}],\"name\":\"setPrice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"zero\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"pool\",\"type\":\"address\"}],\"name\":\"setZero\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"isPriceOracle()\":{\"notice\":\"Indicator that this is a PriceOracle contract (for inspection)\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol\":\"MockOracle\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":15000},\"remappings\":[]},\"sources\":{\"@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\nimport { PriceOracle } from \\\"@sense-finance/v1-fuse/src/external/PriceOracle.sol\\\";\\nimport { CToken } from \\\"@sense-finance/v1-fuse/src/external/CToken.sol\\\";\\n\\ncontract MockOracle is PriceOracle {\\n    uint256 public _price = 1e18;\\n\\n    function getUnderlyingPrice(CToken) external view override returns (uint256) {\\n        return _price;\\n    }\\n\\n    function price(address) external view override returns (uint256) {\\n        return _price;\\n    }\\n\\n    function setPrice(uint256 price_) external {\\n        _price = price_;\\n    }\\n\\n    function initialize(\\n        address[] memory underlyings,\\n        PriceOracle[] memory _oracles,\\n        PriceOracle _defaultOracle,\\n        address _admin,\\n        bool _canAdminOverwrite\\n    ) external {\\n        return;\\n    }\\n\\n    function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external {\\n        return;\\n    }\\n\\n    function setZero(address zero, address pool) external {\\n        return;\\n    }\\n}\\n\",\"keccak256\":\"0x6562a348d38ac6485c3e825c6bf5dc57e4c2875e24f03b1efb673b4862a5744a\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-fuse/src/external/CToken.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\n/// @title Price Oracle\\n/// @author Compound\\ninterface CToken {\\n    function underlying() external view returns (address);\\n\\n    function mint(uint256 mintAmount) external returns (uint256);\\n\\n    function redeem(uint256 redeemTokens) external returns (uint256);\\n\\n    function borrow(uint256 borrowAmount) external returns (uint256);\\n\\n    function repayBorrow(uint256 repayAmount) external returns (uint256);\\n\\n    function exchangeRateCurrent() external returns (uint256);\\n\\n    function decimals() external view returns (uint8);\\n}\\n\",\"keccak256\":\"0xa5ddb62846be71266f96c614a09b65433f43b5e6e6524963d8029486cf2be50f\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-fuse/src/external/PriceOracle.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\nimport { CToken } from \\\"./CToken.sol\\\";\\n\\n/// @title Price Oracle\\n/// @author Compound\\n/// @notice The minimum interface a contract must implement in order to work as an oracle for Fuse with Sense\\n/// Original from: https://github.com/Rari-Capital/compound-protocol/blob/fuse-final/contracts/PriceOracle.sol\\nabstract contract PriceOracle {\\n    /// @notice Indicator that this is a PriceOracle contract (for inspection)\\n    bool public constant isPriceOracle = true;\\n\\n    /// @notice Get the underlying price of a cToken asset\\n    /// @param cToken The cToken to get the underlying price of\\n    /// @return The underlying asset price mantissa (scaled by 1e18).\\n    /// 0 means the price is unavailable.\\n    function getUnderlyingPrice(CToken cToken) external view virtual returns (uint256);\\n\\n    /// @notice Get the price of an underlying asset.\\n    /// @param underlying The underlying asset to get the price of.\\n    /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).\\n    /// 0 means the price is unavailable.\\n    function price(address underlying) external view virtual returns (uint256);\\n}\\n\",\"keccak256\":\"0x0e88f61ae7fe4951beae2fa82f6ca9cfc3709979cce21516288002add1efaa47\",\"license\":\"AGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x6080604052670de0b6b3a764000060005534801561001c57600080fd5b506104d98061002c6000396000f3fe608060405234801561001057600080fd5b50600436106100885760003560e01c80639c9192c61161005b5780639c9192c6146100eb578063a162e823146100ff578063aea9107814610111578063fc57d4df1461011157600080fd5b8063235b6ea11461008d578063278aa146146100a957806366331bba146100c057806391b7f5ed146100d8575b600080fd5b61009660005481565b6040519081526020015b60405180910390f35b6100be6100b7366004610281565b5050505050565b005b6100c8600181565b60405190151581526020016100a0565b6100be6100e6366004610375565b600055565b6100be6100f93660046103da565b50505050565b6100be61010d366004610446565b5050565b61009661011f36600461047f565b5060005490565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff8111828210171561019c5761019c610126565b604052919050565b600067ffffffffffffffff8211156101be576101be610126565b5060051b60200190565b73ffffffffffffffffffffffffffffffffffffffff811681146101ea57600080fd5b50565b80356101f8816101c8565b919050565b600082601f83011261020e57600080fd5b8135602061022361021e836101a4565b610155565b82815260059290921b8401810191818101908684111561024257600080fd5b8286015b84811015610266578035610259816101c8565b8352918301918301610246565b509695505050505050565b803580151581146101f857600080fd5b600080600080600060a0868803121561029957600080fd5b853567ffffffffffffffff808211156102b157600080fd5b818801915088601f8301126102c557600080fd5b813560206102d561021e836101a4565b82815260059290921b8401810191818101908c8411156102f457600080fd5b948201945b8386101561031b57853561030c816101c8565b825294820194908201906102f9565b9950508901359250508082111561033157600080fd5b5061033e888289016101fd565b94505061034d604087016101ed565b925061035b606087016101ed565b915061036960808701610271565b90509295509295909350565b60006020828403121561038757600080fd5b5035919050565b60008083601f8401126103a057600080fd5b50813567ffffffffffffffff8111156103b857600080fd5b6020830191508360208260051b85010111156103d357600080fd5b9250929050565b600080600080604085870312156103f057600080fd5b843567ffffffffffffffff8082111561040857600080fd5b6104148883890161038e565b9096509450602087013591508082111561042d57600080fd5b5061043a8782880161038e565b95989497509550505050565b6000806040838503121561045957600080fd5b8235610464816101c8565b91506020830135610474816101c8565b809150509250929050565b60006020828403121561049157600080fd5b813561049c816101c8565b939250505056fea2646970667358221220647793456a7cfd0f21d5747641ec1e82ac3ee17b23fdeb64d57c8beac2e1f04e64736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100885760003560e01c80639c9192c61161005b5780639c9192c6146100eb578063a162e823146100ff578063aea9107814610111578063fc57d4df1461011157600080fd5b8063235b6ea11461008d578063278aa146146100a957806366331bba146100c057806391b7f5ed146100d8575b600080fd5b61009660005481565b6040519081526020015b60405180910390f35b6100be6100b7366004610281565b5050505050565b005b6100c8600181565b60405190151581526020016100a0565b6100be6100e6366004610375565b600055565b6100be6100f93660046103da565b50505050565b6100be61010d366004610446565b5050565b61009661011f36600461047f565b5060005490565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff8111828210171561019c5761019c610126565b604052919050565b600067ffffffffffffffff8211156101be576101be610126565b5060051b60200190565b73ffffffffffffffffffffffffffffffffffffffff811681146101ea57600080fd5b50565b80356101f8816101c8565b919050565b600082601f83011261020e57600080fd5b8135602061022361021e836101a4565b610155565b82815260059290921b8401810191818101908684111561024257600080fd5b8286015b84811015610266578035610259816101c8565b8352918301918301610246565b509695505050505050565b803580151581146101f857600080fd5b600080600080600060a0868803121561029957600080fd5b853567ffffffffffffffff808211156102b157600080fd5b818801915088601f8301126102c557600080fd5b813560206102d561021e836101a4565b82815260059290921b8401810191818101908c8411156102f457600080fd5b948201945b8386101561031b57853561030c816101c8565b825294820194908201906102f9565b9950508901359250508082111561033157600080fd5b5061033e888289016101fd565b94505061034d604087016101ed565b925061035b606087016101ed565b915061036960808701610271565b90509295509295909350565b60006020828403121561038757600080fd5b5035919050565b60008083601f8401126103a057600080fd5b50813567ffffffffffffffff8111156103b857600080fd5b6020830191508360208260051b85010111156103d357600080fd5b9250929050565b600080600080604085870312156103f057600080fd5b843567ffffffffffffffff8082111561040857600080fd5b6104148883890161038e565b9096509450602087013591508082111561042d57600080fd5b5061043a8782880161038e565b95989497509550505050565b6000806040838503121561045957600080fd5b8235610464816101c8565b91506020830135610474816101c8565b809150509250929050565b60006020828403121561049157600080fd5b813561049c816101c8565b939250505056fea2646970667358221220647793456a7cfd0f21d5747641ec1e82ac3ee17b23fdeb64d57c8beac2e1f04e64736f6c634300080b0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "isPriceOracle()": {
+        "notice": "Indicator that this is a PriceOracle contract (for inspection)"
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 14895,
+        "contract": "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol:MockOracle",
+        "label": "_price",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
