@@ -53,7 +53,7 @@ sY-cUSDC:01-07-2022:6 | [0x4ACA82E5686226A679875AACde7ECdf5fC5477ec](https://eth
 
 \* We are aware that the Name and Symbol does not include the Space LP Share. This will be fixed in the next version of Space.
 
-### Goerli v1.3.0
+### Goerli v1.3.1
 
 | Contract   | Address                                                                                                                                        |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
