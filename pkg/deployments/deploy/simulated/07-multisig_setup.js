@@ -109,7 +109,7 @@ module.exports = async function () {
   }
 
   log("\n-------------------------------------------------------");
-  log("Sanity checks: signer address can execute trusted functions...");
+  log("Sanity checks: signer address is a trusted address...");
 
   const multisigSigner = await hre.ethers.getSigner(signer);
   tokenHandler = tokenHandler.connect(multisigSigner);
@@ -119,21 +119,16 @@ module.exports = async function () {
   periphery = periphery.connect(multisigSigner);
   emergencyStop = emergencyStop.connect(multisigSigner);
 
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [signer],
-  });
-
   const calls = [
-    tokenHandler.callStatic.setIsTrusted(dev, false),
-    divider.callStatic.setIsTrusted(dev, false),
-    poolManager.callStatic.setIsTrusted(dev, false),
-    spaceFactory.callStatic.setIsTrusted(dev, false),
-    periphery.callStatic.setIsTrusted(dev, false),
-    emergencyStop.callStatic.setIsTrusted(dev, false),
+    tokenHandler.isTrusted(signer),
+    divider.isTrusted(signer),
+    poolManager.isTrusted(signer),
+    spaceFactory.isTrusted(signer),
+    periphery.isTrusted(signer),
+    emergencyStop.isTrusted(signer),
   ];
   const res = await Promise.allSettled(calls);
-  if (res.every(r => r.status === "fulfilled")) {
+  if (res.every(r => r.value === true)) {
     log("Sanity checks: OK!");
   } else {
     throw Error("Sanity checks: FAILED");
@@ -142,4 +137,4 @@ module.exports = async function () {
 };
 
 module.exports.tags = ["simulated:signer", "scenario:simulated"];
-module.exports.dependencies = ["simulated:series"];
+module.exports.dependencies = ["simulated:emergency-stop"];
