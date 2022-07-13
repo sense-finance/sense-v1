@@ -5,7 +5,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 import { Crops } from "../../../adapters/abstract/extensions/Crops.sol";
 import { Crop } from "../../../adapters/abstract/extensions/Crop.sol";
-import { ERC4626Adapter } from "../../../adapters/abstract/ERC4626Adapter.sol";
+import { ERC4626Adapter } from "../../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
 import { YT } from "../../../tokens/YT.sol";
@@ -121,10 +121,6 @@ contract MockAdapter is BaseAdapter, Crop {
         scaleOverride = _scaleOverride;
     }
 
-    function doInitSeries(uint256 maturity, address sponsor) external {
-        Divider(divider).initSeries(address(this), maturity, sponsor);
-    }
-
     function doIssue(uint256 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
@@ -143,7 +139,6 @@ contract Mock4626Adapter is ERC4626Adapter, Crop {
     using FixedMath for uint256;
 
     uint256 public onRedeemCalls;
-    uint256 public scalingFactor;
 
     constructor(
         address _divider,
@@ -152,11 +147,7 @@ contract Mock4626Adapter is ERC4626Adapter, Crop {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crop(_divider, _reward) {
-        uint256 tDecimals = MockTarget(_target).decimals();
-        uint256 uDecimals = MockTarget(_underlying).decimals();
-        scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
-    }
+    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crop(_divider, _reward) {}
 
     function notify(
         address _usr,
@@ -179,10 +170,6 @@ contract Mock4626Adapter is ERC4626Adapter, Crop {
         onRedeemCalls++;
     }
 
-    function doInitSeries(uint256 maturity, address sponsor) external {
-        Divider(divider).initSeries(address(this), maturity, sponsor);
-    }
-
     function doIssue(uint256 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
@@ -193,10 +180,6 @@ contract Mock4626Adapter is ERC4626Adapter, Crop {
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
-    }
-
-    function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
-        Divider(divider).redeem(address(this), maturity, uBal);
     }
 }
 
@@ -310,10 +293,6 @@ contract MockCropsAdapter is BaseAdapter, Crops {
         scaleOverride = _scaleOverride;
     }
 
-    function doInitSeries(uint256 maturity, address sponsor) external {
-        Divider(divider).initSeries(address(this), maturity, sponsor);
-    }
-
     function doIssue(uint256 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
@@ -325,10 +304,6 @@ contract MockCropsAdapter is BaseAdapter, Crops {
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
-
-    // function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
-    //     Divider(divider).redeem(address(this), maturity, uBal);
-    // }
 }
 
 // Mock ERC4626 crops adapter
@@ -368,10 +343,6 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
         onRedeemCalls++;
     }
 
-    function doInitSeries(uint256 maturity, address sponsor) external {
-        Divider(divider).initSeries(address(this), maturity, sponsor);
-    }
-
     function doIssue(uint256 maturity, uint256 tBal) external {
         MockTarget(target).transferFrom(msg.sender, address(this), tBal);
         Divider(divider).issue(address(this), maturity, tBal);
@@ -382,10 +353,6 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
-    }
-
-    function doRedeemPrincipal(uint256 maturity, uint256 uBal) external {
-        Divider(divider).redeem(address(this), maturity, uBal);
     }
 }
 

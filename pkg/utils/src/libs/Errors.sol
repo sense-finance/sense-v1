@@ -19,6 +19,10 @@ library Errors {
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();
+    error InvalidAdapterType();
+    error InvalidPrice();
+    error PriceNotFound();
+    error ValidOracleExists();
 
     // Divider
     error AlreadySettled();

@@ -48,12 +48,10 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
-        address[] memory assets = new address[](4);
-        assets[0] = AddressBook.DAI;
-        assets[1] = AddressBook.cDAI;
-        assets[2] = AddressBook.WETH;
-        assets[3] = AddressBook.cETH;
-        addLiquidity(assets);
+        giveTokens(AddressBook.DAI, 10e18, hevm);
+        giveTokens(AddressBook.cDAI, 10e18, hevm);
+        giveTokens(AddressBook.WETH, 10e18, hevm);
+        giveTokens(AddressBook.cETH, 10e18, hevm);
 
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));

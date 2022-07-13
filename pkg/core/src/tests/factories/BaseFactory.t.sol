@@ -95,7 +95,7 @@ contract Factories is TestHelper {
     function testCantDeployAdapterIfNotPeriphery() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
-        factory.addTarget(address(someTarget), true);
+        factory.supportTarget(address(someTarget), true);
         hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
         factory.deployAdapter(address(someTarget), "");
     }

@@ -12,7 +12,8 @@ import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
 import { MockAdapter, Mock4626Adapter } from "./mocks/MockAdapter.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
-import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
+import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
+import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
 import { MockFactory, Mock4626CropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
@@ -307,6 +308,23 @@ contract TestHelper is DSTest {
 
     // ---- deployers ---- //
 
+    function deployERC4626Factory(address _target) public returns (address someFactory) {
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0
+        });
+        someFactory = address(new ERC4626Factory(address(divider), factoryParams));
+        MockFactory(someFactory).supportTarget(_target, true);
+        divider.setIsTrusted(someFactory, true);
+        periphery.setFactory(someFactory, true);
+    }
+
     function deployFactory(address _target, address _reward) public returns (address someFactory) {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
@@ -319,11 +337,12 @@ contract TestHelper is DSTest {
             tilt: 0
         });
         if (is4626) {
-            someFactory = address(new Mock4626CropFactory(address(divider), factoryParams, _reward));
+            // someFactory = address(new Mock4626CropFactory(address(divider), factoryParams, _reward));
+            someFactory = address(new ERC4626Factory(address(divider), factoryParams));
         } else {
             someFactory = address(new MockFactory(address(divider), factoryParams, _reward));
         }
-        MockFactory(someFactory).addTarget(_target, true);
+        MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
         periphery.setFactory(someFactory, true);
     }
@@ -344,7 +363,7 @@ contract TestHelper is DSTest {
         } else {
             someFactory = address(new MockCropsFactory(address(divider), factoryParams, _rewardTokens));
         }
-        MockFactory(someFactory).addTarget(_target, true);
+        MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
         periphery.setFactory(someFactory, true);
     }

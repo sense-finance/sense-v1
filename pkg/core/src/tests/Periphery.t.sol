@@ -122,7 +122,7 @@ contract PeripheryTest is TestHelper {
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
 
-        factory.addTarget(address(newTarget), true);
+        factory.supportTarget(address(newTarget), true);
 
         // onboard target
         periphery.deployAdapter(address(factory), address(newTarget), "");
@@ -155,7 +155,7 @@ contract PeripheryTest is TestHelper {
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
-        MockFactory(cropFactory).addTarget(address(newTarget), true);
+        MockFactory(cropFactory).supportTarget(address(newTarget), true);
 
         // onboard target
         periphery.deployAdapter(cropFactory, address(newTarget), "");
@@ -168,7 +168,7 @@ contract PeripheryTest is TestHelper {
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(underlying), "New Target", "NT", 18));
-        factory.addTarget(address(newTarget), true);
+        factory.supportTarget(address(newTarget), true);
 
         // onboard target
         periphery.deployAdapter(address(factory), address(newTarget), "");
@@ -1232,7 +1232,7 @@ contract PeripheryTest is TestHelper {
         addLiquidityToBalancerVault(maturity, 1000e18);
 
         MockTargetLike otherTarget = MockTargetLike(deployMockTarget(address(underlying), "Compound Usdc", "cUSDC", 8));
-        factory.addTarget(address(otherTarget), true);
+        factory.supportTarget(address(otherTarget), true);
         address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget), ""); // onboard target through Periphery
 
         (, , uint256 lpShares) = periphery.addLiquidityFromTarget(

@@ -64,10 +64,12 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint16 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_TILT = 0;
 
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+
     function setUp() public {
         address[] memory assets = new address[](1);
         assets[0] = AddressBook.WSTETH;
-        addLiquidity(assets);
+        giveTokens(AddressBook.WSTETH, 10e18, hevm);
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
@@ -118,7 +120,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 wethBalanceBefore = ERC20(AddressBook.WETH).balanceOf(address(this));
         uint256 wstETHBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(this));
         ERC20(AddressBook.WSTETH).approve(address(adapter), wstETHBalanceBefore);
-        uint256 minDy = ICurveStableSwap(AddressBook.CURVESINGLESWAP).get_dy(
+        uint256 minDy = ICurveStableSwap(AddressBook.STETH_CURVE_POOL).get_dy(
             int128(1),
             int128(0),
             wstETHBalanceBefore.fmul(adapter.scale())
@@ -171,7 +173,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetCantSendEtherIfNotEligible() public {
-        Hevm(HEVM_ADDRESS).expectRevert(abi.encodeWithSelector(Errors.SenderNotEligible.selector));
+        hevm.expectRevert(abi.encodeWithSelector(Errors.SenderNotEligible.selector));
         payable(address(adapter)).call{ value: 1 ether }("");
     }
 }

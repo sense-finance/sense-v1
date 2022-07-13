@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 // Internal references
 import { CropsFactory } from "../../../adapters/abstract/factories/CropsFactory.sol";
 import { CropFactory } from "../../../adapters/abstract/factories/CropFactory.sol";
+import { ERC4626Factory } from "../../../adapters/abstract/factories/ERC4626Factory.sol";
 import { Divider } from "../../../Divider.sol";
 import { MockAdapter, Mock4626Adapter, MockCropsAdapter, Mock4626CropsAdapter } from "./MockAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -18,6 +19,7 @@ interface MockTargetLike {
     function asset() external view returns (address);
 }
 
+// -- Non-4626 factories -- //
 contract MockFactory is CropFactory {
     using Bytes32AddressLib for address;
 
@@ -29,7 +31,7 @@ contract MockFactory is CropFactory {
         address _reward
     ) CropFactory(_divider, _factoryParams, _reward) {}
 
-    function addTarget(address _target, bool status) external {
+    function supportTarget(address _target, bool status) external {
         targets[_target] = status;
     }
 
@@ -64,53 +66,6 @@ contract MockFactory is CropFactory {
     }
 }
 
-contract Mock4626CropFactory is CropFactory {
-    using Bytes32AddressLib for address;
-
-    mapping(address => bool) public targets;
-    bool public is4626;
-
-    constructor(
-        address _divider,
-        FactoryParams memory _factoryParams,
-        address _reward
-    ) CropFactory(_divider, _factoryParams, _reward) {}
-
-    function addTarget(address _target, bool status) external {
-        targets[_target] = status;
-    }
-
-    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
-        if (!targets[_target]) revert Errors.TargetNotSupported();
-        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
-
-        // Use the CREATE2 opcode to deploy a new Adapter contract.
-        // This will revert if a MockAdapter with the provided target has already
-        // been deployed, as the salt would be the same and we can't deploy with it twice.
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: factoryParams.oracle,
-            stake: factoryParams.stake,
-            stakeSize: factoryParams.stakeSize,
-            minm: factoryParams.minm,
-            maxm: factoryParams.maxm,
-            mode: factoryParams.mode,
-            tilt: factoryParams.tilt,
-            level: DEFAULT_LEVEL
-        });
-
-        adapter = address(
-            new Mock4626Adapter{ salt: _target.fillLast12Bytes() }(
-                divider,
-                _target,
-                MockTargetLike(_target).asset(),
-                factoryParams.ifee,
-                adapterParams,
-                reward
-            )
-        );
-    }
-}
-
 contract MockCropsFactory is CropsFactory {
     using Bytes32AddressLib for address;
 
@@ -125,7 +80,7 @@ contract MockCropsFactory is CropsFactory {
         rewardTokens = _rewardTokens;
     }
 
-    function addTarget(address _target, bool status) external {
+    function supportTarget(address _target, bool status) external {
         targets[_target] = status;
     }
 
@@ -160,6 +115,55 @@ contract MockCropsFactory is CropsFactory {
     }
 }
 
+// -- 4626 factories -- //
+
+contract Mock4626CropFactory is CropFactory {
+    using Bytes32AddressLib for address;
+
+    mapping(address => bool) public targets;
+    bool public is4626;
+
+    constructor(
+        address _divider,
+        FactoryParams memory _factoryParams,
+        address _reward
+    ) CropFactory(_divider, _factoryParams, _reward) {}
+
+    function supportTarget(address _target, bool status) external {
+        targets[_target] = status;
+    }
+
+    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
+        if (!targets[_target]) revert Errors.TargetNotSupported();
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
+
+        // Use the CREATE2 opcode to deploy a new Adapter contract.
+        // This will revert if a MockAdapter with the provided target has already
+        // been deployed, as the salt would be the same and we can't deploy with it twice.
+        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+            oracle: factoryParams.oracle,
+            stake: factoryParams.stake,
+            stakeSize: factoryParams.stakeSize,
+            minm: factoryParams.minm,
+            maxm: factoryParams.maxm,
+            mode: factoryParams.mode,
+            tilt: factoryParams.tilt,
+            level: DEFAULT_LEVEL
+        });
+
+        adapter = address(
+            new Mock4626Adapter{ salt: _target.fillLast12Bytes() }(
+                divider,
+                _target,
+                MockTargetLike(_target).asset(),
+                factoryParams.ifee,
+                adapterParams,
+                reward
+            )
+        );
+    }
+}
+
 contract Mock4626CropsFactory is CropsFactory {
     using Bytes32AddressLib for address;
 
@@ -174,7 +178,7 @@ contract Mock4626CropsFactory is CropsFactory {
         rewardTokens = _rewardTokens;
     }
 
-    function addTarget(address _target, bool status) external {
+    function supportTarget(address _target, bool status) external {
         targets[_target] = status;
     }
 

@@ -6,22 +6,56 @@ import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
-import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
+import { IPriceFeed } from "../../adapters/implementations/oracles/IPriceFeed.sol";
+import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
+import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
 
-// TODO: test rounding
+interface ChainlinkRegistryLike {
+    function latestRoundData(address base, address quote)
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+}
+
+interface ChainlinkETHUSDLike {
+    function latestRoundData()
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+}
+
+contract MockOracle is IPriceFeed {
+    function price() external view returns (uint256 price, uint256 updatedAt) {
+        return (555e18, block.timestamp);
+    }
+}
+
 contract ERC4626AdapterTest is DSTestPlus {
+    using FixedMath for uint256;
+
     MockToken public stake;
     MockToken public underlying;
     MockERC4626 public target;
 
     Divider public divider;
-    MockOracle internal mockOracle;
     ERC4626Adapter public erc4626Adapter;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -37,7 +71,6 @@ contract ERC4626AdapterTest is DSTestPlus {
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
-        mockOracle = new MockOracle();
 
         stake = new MockToken("Mock Stake", "MS", 18);
         underlying = new MockToken("Mock Underlying", "MU", 18);
@@ -46,7 +79,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         underlying.mint(address(this), INITIAL_BALANCE);
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: address(mockOracle),
+            oracle: address(0),
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -205,7 +238,99 @@ contract ERC4626AdapterTest is DSTestPlus {
         assertEq(erc4626Adapter.scaleStored(), scale);
     }
 
-    function testGetUnderlyingPrice() public {
-        assertEq(erc4626Adapter.getUnderlyingPrice(), MockOracle(mockOracle).price(address(underlying)));
+    function testGetUnderlyingPriceChainlinkOracleETH() public {
+        // Mock call to Chainlink's registry
+        uint256 price = 123e18;
+        bytes memory data = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return datat
+
+        address ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+        ChainlinkRegistryLike oracle = ChainlinkRegistryLike(AddressBook.CHAINLINK_REGISTRY);
+        hevm.mockCall(
+            address(AddressBook.CHAINLINK_REGISTRY),
+            abi.encodeWithSelector(oracle.latestRoundData.selector, address(underlying), ETH),
+            data
+        );
+
+        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+    }
+
+    function testGetUnderlyingPriceChainlinkOracleUSD() public {
+        // Mock call to Chainlink's registry
+        uint256 underlyingToUSD = 111e18;
+        bytes memory data = abi.encode(1, int256(underlyingToUSD), block.timestamp, block.timestamp, 1); // return data
+
+        address USD = 0x0000000000000000000000000000000000000348;
+        ChainlinkRegistryLike registry = ChainlinkRegistryLike(AddressBook.CHAINLINK_REGISTRY);
+        hevm.mockCall(
+            address(AddressBook.CHAINLINK_REGISTRY),
+            abi.encodeWithSelector(registry.latestRoundData.selector, address(underlying), USD),
+            data
+        );
+
+        // Mock call to Chainlink's ETH-USD oracle
+        uint256 ETHToUSD = 222e18;
+        data = abi.encode(1, int256(ETHToUSD), block.timestamp, block.timestamp, 1); // return data
+
+        ChainlinkETHUSDLike oracle = ChainlinkETHUSDLike(AddressBook.CHAINLINK_ETH_USD);
+        hevm.mockCall(
+            address(AddressBook.CHAINLINK_ETH_USD),
+            abi.encodeWithSelector(oracle.latestRoundData.selector),
+            data
+        );
+
+        assertEq(erc4626Adapter.getUnderlyingPrice(), underlyingToUSD.fdiv(ETHToUSD));
+    }
+
+    function testGetUnderlyingPriceCustomOracle() public {
+        // Deploy custom oracle
+        MockOracle mockOracle = new MockOracle();
+
+        // Add oracle to adapter
+        erc4626Adapter.setOracle(address(mockOracle));
+
+        (uint256 price, ) = MockOracle(mockOracle).price();
+        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+    }
+
+    function testCanAddCustomOracle() public {
+        (address oracle, , , , , , , ) = erc4626Adapter.adapterParams();
+        assertEq(oracle, address(0));
+
+        // Deploy custom oracle
+        MockOracle mockOracle = new MockOracle();
+
+        // Add oracle to adapter
+        erc4626Adapter.setOracle(address(mockOracle));
+
+        (oracle, , , , , , , ) = erc4626Adapter.adapterParams();
+        assertEq(oracle, address(mockOracle));
+    }
+
+    function testCantAddCustomOracleIfNotTrusted() public {
+        hevm.expectRevert("UNTRUSTED");
+        erc4626Adapter.setOracle(address(123));
+    }
+
+    function testShouldAlwaysDefaultToChainlink() public {
+        // Mock call to Chainlink's registry
+        uint256 price = 123e18;
+        bytes memory data = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return datat
+
+        address ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+        ChainlinkRegistryLike oracle = ChainlinkRegistryLike(AddressBook.CHAINLINK_REGISTRY);
+        hevm.mockCall(
+            address(AddressBook.CHAINLINK_REGISTRY),
+            abi.encodeWithSelector(oracle.latestRoundData.selector, address(underlying), ETH),
+            data
+        );
+
+        // Deploy custom oracle
+        MockOracle mockOracle = new MockOracle();
+
+        // Add oracle to adapter
+        erc4626Adapter.setOracle(address(mockOracle));
+
+        // Assert that the price returned iss the one from Chainlink and not the one from the custom oracle
+        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
     }
 }
