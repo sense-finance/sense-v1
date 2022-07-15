@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
+import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -19,6 +20,7 @@ contract ERC4626TestHelper is DSTest {
     ERC4626Factory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
+    MasterPriceOracle internal masterOracle;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -33,10 +35,14 @@ contract ERC4626TestHelper is DSTest {
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
 
+        // Deploy Sense master price oracle
+        address[] memory data;
+        masterOracle = new MasterPriceOracle(data, data);
+
         // deploy ERC4626 adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: AddressBook.WETH,
-            oracle: AddressBook.CHAINLINK_REGISTRY,
+            oracle: address(masterOracle),
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -54,7 +60,7 @@ contract ERC4626Factories is ERC4626TestHelper {
     function testMainnetDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: AddressBook.DAI,
-            oracle: AddressBook.CHAINLINK_REGISTRY,
+            oracle: address(masterOracle),
             ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -83,7 +89,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(oracle, AddressBook.CHAINLINK_REGISTRY);
+        assertEq(oracle, address(masterOracle));
         assertEq(tilt, 0);
     }
 

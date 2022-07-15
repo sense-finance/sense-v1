@@ -72,13 +72,6 @@ contract ERC4626Factory is BaseFactory, Trust {
         }
     }
 
-    /// @notice Set custom oracle for adapter
-    /// @param _adapter The adapter address
-    /// @param _oracle The oracle address
-    function setOracle(address _adapter, address _oracle) external requiresTrust {
-        ERC4626Adapter(_adapter).setOracle(_oracle);
-    }
-
     /// @notice (Un)support target
     /// @param _target The target address
     /// @param supported Whether the target should be supported or not

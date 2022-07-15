@@ -105,7 +105,7 @@ contract CAdapters is CAdapterTestHelper {
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        PriceOracleLike oracle = PriceOracleLike(AddressBook.MASTER_PRICE_ORACLE);
+        PriceOracleLike oracle = PriceOracleLike(AddressBook.RARI_ORACLE);
         uint256 price = oracle.price(AddressBook.DAI);
         assertEq(cDaiAdapter.getUnderlyingPrice(), price);
     }

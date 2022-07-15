@@ -21,7 +21,7 @@ library Errors {
     error TargetNotSupported();
     error InvalidAdapterType();
     error InvalidPrice();
-    error PriceNotFound();
+    error PriceOracleNotFound();
     error ValidOracleExists();
 
     // Divider

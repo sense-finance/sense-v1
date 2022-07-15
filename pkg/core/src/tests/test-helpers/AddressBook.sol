@@ -11,6 +11,7 @@ library AddressBook {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
     address public constant FXS = 0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0;
+    address public constant MUSD = 0xe2f2a5C287993345a840Db3B0845fbC70f5935a5;
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -24,7 +25,7 @@ library AddressBook {
 
     // protocols
     address public constant COMPOUND_PRICE_FEED = 0x6D2299C48a8dD07a872FDd0F8233924872Ad1071;
-    address public constant RARI_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's oracle
+    address public constant RARI_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // rari's master oracle
     address public constant UNISWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant STETHPRICEFEED = 0xAb55Bf4DfBf469ebfe082b7872557D1F87692Fe6;
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
@@ -38,10 +39,6 @@ library AddressBook {
 
     // sense admin
     address public constant SENSE_ADMIN_MULTISIG = 0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57;
-
-    // fuse
-    address public constant JUMP_RATE_MODEL = 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7;
-    address public constant MASTER_PRICE_ORACLE = 0x54Bd48678fdC1Ec2EF832C2d80030E94118CCb4B;
 
     // fuse f18 olympus pool party
     address public constant OLYMPUS_POOL_PARTY = 0x621579DD26774022F33147D3852ef4E00024b763; // olympus pool party
@@ -62,13 +59,6 @@ library AddressBook {
     address public constant f156CVX = 0x3F4a965Bff126af42FC014c20959c7b857EA4e35;
 
     // mstable
-    address public constant MUSD = 0xe2f2a5C287993345a840Db3B0845fbC70f5935a5; // mUSD
     address public constant IMUSD = 0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19; // Interest bearing mStable USD (ERC-4626)
-    address public constant FEEDERPOOL_MUSD_FEI = 0x2F1423D27f9B20058d9D1843E342726fDF985Eb4; // mStable MUSD-FEI Feeder Pool
-    address public constant MUSD_CURVE_POOL = 0x8474DdbE98F5aA3179B3B3F5942D724aFcdec9f6; // curve mUSD pool
-    address public constant TRICRYPTO_CURVE_POOL = 0xD51a44d3FaE010294C616388b506AcdA1bfAAE46; // curve Tricrypto pool
-
-    // chainlink
-    address public constant CHAINLINK_REGISTRY = 0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf;
-    address public constant CHAINLINK_ETH_USD = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address public constant IMBTC = 0x17d8CBB6Bce8cEE970a4027d1198F6700A7a6c24; // Interest bearing mStable BTC (ERC-4626)
 }

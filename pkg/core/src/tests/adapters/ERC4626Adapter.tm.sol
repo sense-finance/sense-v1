@@ -3,33 +3,20 @@ pragma solidity 0.8.11;
 
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
-// import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
 import { FixedMath } from "../../external/FixedMath.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
-import { ERC4626Adapter, ChainlinkOracleLike } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
+import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
+import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
+import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { MUSDPriceFeed, FeederPoolLike } from "../../adapters/implementations/oracles/MUSDPriceFeed.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
-
-interface CurveStableSwapLike {
-    function get_dy(
-        int128 i,
-        int128 j,
-        uint256 dx
-    ) external view returns (uint256);
-
-    function get_dy(
-        uint256 i,
-        uint256 j,
-        uint256 dx
-    ) external view returns (uint256);
-}
 
 // Mainnet tests with imUSD 4626 token
 contract ERC4626Adapters is LiquidityHelper, DSTest {
@@ -41,6 +28,7 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
     Divider public divider;
     TokenHandler internal tokenHandler;
     ERC4626Adapter public erc4626Adapter;
+    MasterPriceOracle public masterOracle;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -64,8 +52,12 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
         target = ERC4626(AddressBook.IMUSD);
         underlying = ERC20(target.asset());
 
+        // Deploy Sense master oracle
+        address[] memory data;
+        masterOracle = new MasterPriceOracle(data, data);
+
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: AddressBook.RARI_ORACLE,
+            oracle: address(masterOracle),
             stake: AddressBook.WETH,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -84,37 +76,25 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
         assertEq(erc4626Adapter.scale(), scale);
     }
 
-    function testGetUnderlyingPriceWithCustomOracle() public {
-        // Deploy mStable price oracle
-        MUSDPriceFeed priceFeed = new MUSDPriceFeed();
-
-        // Add mStable price oracle on 4626 adapter
-        erc4626Adapter.setOracle(address(priceFeed));
-
-        // Get mUSD-FEI price from mStable Feeder Pool
-        (uint256 price, ) = FeederPoolLike(priceFeed.MUSD_ETH_POOL()).getPrice();
-
-        // Get FEI-ETH price from Chainlink
-        (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(priceFeed.FEI_ETH_PRICEFEED())
-            .latestRoundData();
-
-        // Calculate mUSD-ETH price
-        price = uint256(ethPrice).fdiv(price);
-
-        // Check calculated price matches the one we calculated on the adapter
+    function testMainnetGetUnderlyingPrice() public {
+        // Since the MasterPriceOracle uses Rari's master oracle, the prices should match
+        uint256 price = IPriceFeed(AddressBook.RARI_ORACLE).price(AddressBook.MUSD);
         assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+    }
 
-        // Sanity check: compare price with Curve's price
-        uint256 mUSDUSDTPrice = CurveStableSwapLike(AddressBook.MUSD_CURVE_POOL).get_dy(int128(0), int128(1), 1e18);
-        uint256 ETHUSDTPrice = CurveStableSwapLike(AddressBook.TRICRYPTO_CURVE_POOL).get_dy(
-            uint256(2),
-            uint256(0),
-            1e18
-        );
+    function testMainnetGetUnderlyingPriceWhenCustomOracle() public {
+        // Deploy a custom oracle
+        MockOracle oracle = new MockOracle();
+        address[] memory underlyings = new address[](1);
+        underlyings[0] = address(underlying);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle);
 
-        // within .1% // TODO: not working, seems like there's quite a lot of difference
-        uint256 mUSDEthCurvePrice = mUSDUSDTPrice.fdiv(ETHUSDTPrice * 10**(18 - 6));
-        // assertClose(price, mUSDEthCurvePrice, price.fmul(0.001e18));
+        // Add oracle to Sense master price oracle
+        masterOracle.add(underlyings, oracles);
+
+        uint256 price = oracle.price(address(underlying));
+        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
     }
 
     function testMainnetUnwrapTarget() public {

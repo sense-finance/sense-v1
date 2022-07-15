@@ -20,11 +20,11 @@ contract MockOracle is PriceOracle {
     }
 
     function initialize(
-        address[] memory underlyings,
-        PriceOracle[] memory _oracles,
-        PriceOracle _defaultOracle,
-        address _admin,
-        bool _canAdminOverwrite
+        address[] memory,
+        PriceOracle[] memory,
+        PriceOracle,
+        address,
+        bool
     ) external {
         return;
     }
@@ -35,26 +35,5 @@ contract MockOracle is PriceOracle {
 
     function setZero(address zero, address pool) external {
         return;
-    }
-
-    // Chainlink mocks
-    function latestRoundData(address base, address quote)
-        external
-        view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
-    {
-        return (
-            1, // roundId
-            int256(_price), // answer (price)
-            block.timestamp, // startedAt
-            block.timestamp, // updatedAt
-            1 // answeredInRound
-        );
     }
 }

@@ -221,43 +221,4 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(adapter.rewardTokens(0), address(someReward));
         assertEq(adapter.rewardTokens(1), address(someReward2));
     }
-
-    function testSetOracleToAdapter() public {
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
-
-        // Deploy non-crop factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
-
-        // Prepare data for non-crop adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
-
-        // Deploy adapter
-        address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), data);
-
-        // Add oracle to adapter
-        someFactory.setOracle(adapter, address(1234));
-
-        (address oracle, , , , , , , ) = MockAdapter(adapter).adapterParams();
-        assertEq(oracle, address(1234));
-    }
-
-    function testCantSetOracleToAdapterIfNotTrusted() public {
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
-
-        // Deploy non-crop factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
-
-        // Prepare data for non-crop adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
-
-        // Deploy adapter
-        address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), data);
-
-        // Add oracle to adapter
-        hevm.prank(address(1));
-        hevm.expectRevert("UNTRUSTED");
-        someFactory.setOracle(adapter, address(1234));
-    }
 }
