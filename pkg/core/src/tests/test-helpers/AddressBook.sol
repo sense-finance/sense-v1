@@ -61,4 +61,6 @@ library AddressBook {
     // mstable
     address public constant IMUSD = 0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19; // Interest bearing mStable USD (ERC-4626)
     address public constant IMBTC = 0x17d8CBB6Bce8cEE970a4027d1198F6700A7a6c24; // Interest bearing mStable BTC (ERC-4626)
+    address public constant RARI_MSTABLE_ORACLE = 0xeb988f5492C86584f8D8f1B8662188D5A9BfE357; // Rari's mStable price oracle
+    address public constant CHAINLINK_REGISTRY = 0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf; // Chainlink's Feed Registry
 }

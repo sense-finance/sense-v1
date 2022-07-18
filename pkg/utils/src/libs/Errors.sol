@@ -46,6 +46,8 @@ library Errors {
     error TargetParamsNotSet();
     error PoolParamsNotSet();
     error PTParamsNotSet();
+    error AttemptFailed();
+    error StalePrice();
 
     // Periphery
     error FactoryNotSupported();

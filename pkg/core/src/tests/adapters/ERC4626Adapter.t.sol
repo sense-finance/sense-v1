@@ -5,6 +5,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
+import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
@@ -30,6 +31,7 @@ contract ERC4626AdapterTest is DSTestPlus {
     MockToken public underlying;
     MockERC4626 public target;
     MasterPriceOracle public masterOracle;
+    ChainlinkPriceOracle public chainlinkOracle;
 
     Divider public divider;
     ERC4626Adapter public erc4626Adapter;
@@ -48,9 +50,12 @@ contract ERC4626AdapterTest is DSTestPlus {
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
 
+        // Deploy Chainlink price oracle
+        chainlinkOracle = new ChainlinkPriceOracle(0);
+
         // Deploy Sense master oracle
         address[] memory data;
-        masterOracle = new MasterPriceOracle(data, data);
+        masterOracle = new MasterPriceOracle(address(chainlinkOracle), data, data);
 
         stake = new MockToken("Mock Stake", "MS", 18);
         underlying = new MockToken("Mock Underlying", "MU", 18);
@@ -218,15 +223,15 @@ contract ERC4626AdapterTest is DSTestPlus {
         assertEq(erc4626Adapter.scaleStored(), scale);
     }
 
-    function testGetUnderlyingPriceUsingRariOracle() public {
+    function testGetUnderlyingPriceUsingSenseChainlinkOracle() public {
         // Mock call to Rari's master oracle
         uint256 price = 123e18;
-        bytes memory data = abi.encode(price); // return data
+        bytes memory data = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
 
-        IPriceFeed oracle = IPriceFeed(AddressBook.RARI_ORACLE);
+        data = abi.encode(price); // return data
         hevm.mockCall(
-            address(AddressBook.RARI_ORACLE),
-            abi.encodeWithSelector(oracle.price.selector, address(underlying)),
+            address(chainlinkOracle),
+            abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),
             data
         );
 

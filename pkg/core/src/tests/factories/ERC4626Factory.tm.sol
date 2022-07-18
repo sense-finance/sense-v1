@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
+import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
@@ -35,9 +36,12 @@ contract ERC4626TestHelper is DSTest {
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
 
+        // Deploy Chainlink price oracle
+        ChainlinkPriceOracle chainlinkOracle = new ChainlinkPriceOracle(0);
+
         // Deploy Sense master price oracle
         address[] memory data;
-        masterOracle = new MasterPriceOracle(data, data);
+        masterOracle = new MasterPriceOracle(address(chainlinkOracle), data, data);
 
         // deploy ERC4626 adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({

@@ -9,6 +9,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
+import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
@@ -52,9 +53,17 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
         target = ERC4626(AddressBook.IMUSD);
         underlying = ERC20(target.asset());
 
-        // Deploy Sense master oracle
-        address[] memory data;
-        masterOracle = new MasterPriceOracle(data, data);
+        // Deploy Chainlink price oracle
+        ChainlinkPriceOracle chainlinkOracle = new ChainlinkPriceOracle(0);
+
+        // Deploy Sense master price oracle
+        address[] memory underlyings = new address[](1);
+        underlyings[0] = AddressBook.MUSD;
+
+        address[] memory oracles = new address[](1);
+        oracles[0] = AddressBook.RARI_MSTABLE_ORACLE;
+
+        masterOracle = new MasterPriceOracle(address(chainlinkOracle), underlyings, oracles);
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: address(masterOracle),
