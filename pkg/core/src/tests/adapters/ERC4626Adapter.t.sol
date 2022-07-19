@@ -226,9 +226,7 @@ contract ERC4626AdapterTest is DSTestPlus {
     function testGetUnderlyingPriceUsingSenseChainlinkOracle() public {
         // Mock call to Rari's master oracle
         uint256 price = 123e18;
-        bytes memory data = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
-
-        data = abi.encode(price); // return data
+        bytes memory data = abi.encode(price); // return data
         hevm.mockCall(
             address(chainlinkOracle),
             abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),

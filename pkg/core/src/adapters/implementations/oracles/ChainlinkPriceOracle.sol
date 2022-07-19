@@ -36,7 +36,7 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
     // The maxmimum number of seconds elapsed since the round was last updated before the price is considered stale. If set to 0, no limit is enforced.
     uint256 public maxSecondsBeforePriceIsStale;
 
-    FeedRegistryLike feedRegistry = FeedRegistryLike(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf); // Chainlink feed registry contract
+    FeedRegistryLike public feedRegistry = FeedRegistryLike(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf); // Chainlink feed registry contract
 
     constructor(uint256 _maxSecondsBeforePriceIsStale) public Trust(msg.sender) {
         maxSecondsBeforePriceIsStale = _maxSecondsBeforePriceIsStale;
