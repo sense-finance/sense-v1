@@ -9,7 +9,7 @@ import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 /// If there's no oracle set, it will try getting the price from Chainlink's Oracle.
 /// @author Inspired on: https://github.com/Rari-Capital/fuse-contracts/blob/master/contracts/oracles/MasterPriceOracle.sol
 contract MasterPriceOracle is IPriceFeed, Trust {
-    address internal immutable SENSE_CHAINLINK_PRICE_FEED;
+    address public immutable SENSE_CHAINLINK_PRICE_FEED;
 
     /// @dev Maps underlying token addresses to `PriceOracle` contracts (can be `BasePriceOracle` contracts too).
     mapping(address => address) public oracles; // TODO: use IPriceFeed.sol?
@@ -35,11 +35,11 @@ contract MasterPriceOracle is IPriceFeed, Trust {
     /// @dev Sets `_oracles` for `underlyings`.
     /// Caller of this function must make sure that the oracles being added return non-stale, greater than 0
     /// prices for all underlying tokens.
-    function add(address[] calldata underlyings, address[] calldata _oracles) external requiresTrust {
-        if (underlyings.length <= 0 || underlyings.length != _oracles.length) revert Errors.InvalidParam();
+    function add(address[] calldata _underlyings, address[] calldata _oracles) external requiresTrust {
+        if (_underlyings.length <= 0 || _underlyings.length != _oracles.length) revert Errors.InvalidParam();
 
-        for (uint256 i = 0; i < underlyings.length; i++) {
-            oracles[underlyings[i]] = _oracles[i];
+        for (uint256 i = 0; i < _underlyings.length; i++) {
+            oracles[_underlyings[i]] = _oracles[i];
         }
     }
 
@@ -51,7 +51,7 @@ contract MasterPriceOracle is IPriceFeed, Trust {
         if (oracle != address(0)) {
             return IPriceFeed(oracle).price(underlying);
         } else {
-            // Try token/ETH from Rari's Master Oracle
+            // Try token/ETH from Sense's Chainlink Oracle
             try IPriceFeed(SENSE_CHAINLINK_PRICE_FEED).price(underlying) returns (uint256 price) {
                 return price;
             } catch {

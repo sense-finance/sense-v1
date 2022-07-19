@@ -6,7 +6,6 @@ import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implement
 import { DSTest } from "../test-helpers/test.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 
