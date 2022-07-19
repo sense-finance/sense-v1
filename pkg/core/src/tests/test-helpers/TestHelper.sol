@@ -122,16 +122,13 @@ contract TestHelper is DSTest {
         uint8 baseDecimals = 18;
 
         // Get Target/Underlying decimal number from the environment
-        string[] memory inputs = new string[](2);
-        inputs[0] = "just";
-        inputs[1] = "_forge_mock_underlying_decimals";
-        mockUnderlyingDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
+        mockUnderlyingDecimals = uint8(hevm.envUint("FORGE_MOCK_UNDERLYING_DECIMALS"));
+        mockTargetDecimals = uint8(hevm.envUint("FORGE_MOCK_TARGET_DECIMALS"));
+        is4626 = hevm.envBool("FORGE_MOCK_4626_TARGET");
 
-        inputs[1] = "_forge_mock_target_decimals";
-        mockTargetDecimals = uint8(abi.decode(hevm.ffi(inputs), (uint256)));
-
-        inputs[1] = "_forge_mock_4626_target";
-        is4626 = uint8(abi.decode(hevm.ffi(inputs), (uint256))) == 0 ? false : true;
+        mockUnderlyingDecimals = 18;
+        mockTargetDecimals = 18;
+        is4626 = false;
 
         // Create target, underlying, stake & reward tokens
         stake = new MockToken("Stake Token", "ST", baseDecimals);

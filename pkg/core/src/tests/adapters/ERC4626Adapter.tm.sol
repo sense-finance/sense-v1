@@ -23,6 +23,8 @@ import { Hevm } from "../test-helpers/Hevm.sol";
 contract ERC4626Adapters is LiquidityHelper, DSTest {
     using FixedMath for uint256;
 
+    uint256 public mainnetFork;
+
     ERC4626 public target;
     ERC20 public underlying;
 
@@ -42,6 +44,13 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
+        // Get RPC url from the environment
+        string memory rpcUrl = hevm.envString("MAINNET_RPC");
+
+        // Create fork from last block to guarantee that imUSD exists
+        mainnetFork = hevm.createFork(rpcUrl);
+        hevm.selectFork(mainnetFork);
+
         giveTokens(AddressBook.IMUSD, 10e18, hevm);
         giveTokens(AddressBook.MUSD, 10e18, hevm);
 

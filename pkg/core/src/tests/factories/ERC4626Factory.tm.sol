@@ -18,6 +18,8 @@ import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract ERC4626TestHelper is DSTest {
+    uint256 public mainnetFork;
+
     ERC4626Factory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
@@ -32,6 +34,13 @@ contract ERC4626TestHelper is DSTest {
     uint256 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
+        // Get RPC url from the environment
+        string memory rpcUrl = hevm.envString("MAINNET_RPC");
+
+        // Create fork from last block to guarantee that imUSD exists
+        mainnetFork = hevm.createFork(rpcUrl);
+        hevm.selectFork(mainnetFork);
+
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));

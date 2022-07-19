@@ -256,7 +256,7 @@ module.exports = async function () {
     log(`Add ${targetName} support for mocked Factory`);
     if (!data) data = "0x";
     if (!(await factoryContract.targets(targetAddress))) {
-      await (await factoryContract.addTarget(targetAddress, true)).wait();
+      await (await factoryContract.supportTarget(targetAddress, true)).wait();
     }
     if (data !== "0x") {
       data = ethers.utils.defaultAbiCoder.encode(["address"], [data]);
