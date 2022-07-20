@@ -49,7 +49,7 @@ contract MasterPriceOracleTest is MasterPriceOracleTestHelper {
 
         MasterPriceOracle otherOracle = new MasterPriceOracle(address(chainlinkOracle), underlyings, oracles);
         assertTrue(address(otherOracle) != address(0));
-        assertEq(otherOracle.SENSE_CHAINLINK_PRICE_FEED(), address(chainlinkOracle));
+        assertEq(otherOracle.senseChainlinkPriceOracle(), address(chainlinkOracle));
         assertEq(otherOracle.oracles(address(underlying)), address(mockOracle));
     }
 
@@ -99,5 +99,17 @@ contract MasterPriceOracleTest is MasterPriceOracleTestHelper {
 
         oracle.add(underlyings, oracles);
         assertEq(oracle.oracles(address(underlying)), address(oracle));
+    }
+
+    function testCantSetNewChainlinkOracle() public {
+        hevm.prank(address(123));
+        hevm.expectRevert("UNTRUSTED");
+        oracle.setSenseChainlinkPriceOracle(address(111));
+    }
+
+    function testSetNewChainlinkOracle() public {
+        assertEq(oracle.senseChainlinkPriceOracle(address(chainlinkOracle)));
+        oracle.setSenseChainlinkPriceOracle(address(123));
+        assertEq(oracle.senseChainlinkPriceOracle(), address(123));
     }
 }

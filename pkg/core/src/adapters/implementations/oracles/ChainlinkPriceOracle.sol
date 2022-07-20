@@ -55,9 +55,8 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
             uint256 updatedAt,
             uint80
         ) {
-            if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale)
-                revert Errors.StalePrice();
             if (tokenEthPrice <= 0) return 0;
+            _validatePrice(updatedAt);
             return uint256(tokenEthPrice).fmul(1e18).fdiv(10**uint256(feedRegistry.decimals(underlying, ETH)));
         } catch Error(string memory reason) {
             if (keccak256(abi.encodePacked(reason)) != keccak256(abi.encodePacked("Feed not found")))
@@ -72,14 +71,14 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
             uint256 updatedAt,
             uint80
         ) {
-            if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale)
-                revert Errors.StalePrice();
             if (tokenUsdPrice <= 0) return 0;
+            _validatePrice(updatedAt);
+
             int256 ethUsdPrice;
             (, ethUsdPrice, , updatedAt, ) = feedRegistry.latestRoundData(ETH, USD);
-            if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale)
-                revert Errors.StalePrice();
             if (ethUsdPrice <= 0) return 0;
+            _validatePrice(updatedAt);
+
             return
                 uint256(tokenUsdPrice).fmul(1e26).fdiv(10**uint256(feedRegistry.decimals(underlying, USD))).fdiv(
                     uint256(ethUsdPrice)
@@ -97,14 +96,14 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
             uint256 updatedAt,
             uint80
         ) {
-            if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale)
-                revert Errors.StalePrice();
             if (tokenBtcPrice <= 0) return 0;
+            _validatePrice(updatedAt);
+
             int256 btcEthPrice;
             (, btcEthPrice, , updatedAt, ) = feedRegistry.latestRoundData(BTC, ETH);
-            if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale)
-                revert Errors.StalePrice();
             if (btcEthPrice <= 0) return 0;
+            _validatePrice(updatedAt);
+
             return
                 uint256(tokenBtcPrice).fmul(uint256(btcEthPrice)).fdiv(
                     10**uint256(feedRegistry.decimals(underlying, BTC))
@@ -118,6 +117,12 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
         revert("No Chainlink price feed found for this underlying ERC20 token.");
     }
 
+    /// @dev validates the price returned from Chainlink
+    function _validatePrice(uint256 _updatedAt) internal view {
+        if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= _updatedAt + maxSecondsBeforePriceIsStale)
+            revert Errors.StalePrice();
+    }
+
     /// @dev Returns the price in ETH of `underlying` (implements `BasePriceOracle`).
     function price(address underlying) external view override returns (uint256) {
         return _price(underlying);
@@ -126,5 +131,9 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
     /// @dev Sets the `maxSecondsBeforePriceIsStale`.
     function setMaxSecondsBeforePriceIsStale(uint256 _maxSecondsBeforePriceIsStale) public requiresTrust {
         maxSecondsBeforePriceIsStale = _maxSecondsBeforePriceIsStale;
+        emit MaxSecondsBeforePriceIsStaleChanged(maxSecondsBeforePriceIsStale);
     }
+
+    /* ========== LOGS ========== */
+    event MaxSecondsBeforePriceIsStaleChanged(uint256 indexed maxSecondsBeforePriceIsStale);
 }

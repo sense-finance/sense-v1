@@ -20,7 +20,6 @@ library Errors {
     error TargetMismatch();
     error TargetNotSupported();
     error InvalidAdapterType();
-    error InvalidPrice();
     error PriceOracleNotFound();
     error ValidOracleExists();
 

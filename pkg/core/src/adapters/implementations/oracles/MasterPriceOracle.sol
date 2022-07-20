@@ -9,7 +9,7 @@ import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 /// If there's no oracle set, it will try getting the price from Chainlink's Oracle.
 /// @author Inspired on: https://github.com/Rari-Capital/fuse-contracts/blob/master/contracts/oracles/MasterPriceOracle.sol
 contract MasterPriceOracle is IPriceFeed, Trust {
-    address public immutable SENSE_CHAINLINK_PRICE_FEED;
+    address public senseChainlinkPriceOracle;
 
     /// @dev Maps underlying token addresses to `PriceOracle` contracts (can be `BasePriceOracle` contracts too).
     mapping(address => address) public oracles; // TODO: use IPriceFeed.sol?
@@ -23,7 +23,7 @@ contract MasterPriceOracle is IPriceFeed, Trust {
         address[] memory _underlyings,
         address[] memory _oracles
     ) public Trust(msg.sender) {
-        SENSE_CHAINLINK_PRICE_FEED = _chainlinkOracle;
+        senseChainlinkPriceOracle = _chainlinkOracle;
 
         // Input validation
         if (_underlyings.length != _oracles.length) revert Errors.InvalidParam();
@@ -52,11 +52,20 @@ contract MasterPriceOracle is IPriceFeed, Trust {
             return IPriceFeed(oracle).price(underlying);
         } else {
             // Try token/ETH from Sense's Chainlink Oracle
-            try IPriceFeed(SENSE_CHAINLINK_PRICE_FEED).price(underlying) returns (uint256 price) {
+            try IPriceFeed(senseChainlinkPriceOracle).price(underlying) returns (uint256 price) {
                 return price;
             } catch {
                 revert Errors.PriceOracleNotFound();
             }
         }
     }
+
+    /// @dev Sets the `senseChainlinkPriceOracle`.
+    function setSenseChainlinkPriceOracle(address _senseChainlinkPriceOracle) public requiresTrust {
+        senseChainlinkPriceOracle = _senseChainlinkPriceOracle;
+        emit SenseChainlinkPriceOracleChanged(senseChainlinkPriceOracle);
+    }
+
+    /* ========== LOGS ========== */
+    event SenseChainlinkPriceOracleChanged(address indexed senseChainlinkPriceOracle);
 }

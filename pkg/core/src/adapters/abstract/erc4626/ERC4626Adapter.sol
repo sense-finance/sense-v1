@@ -55,15 +55,4 @@ contract ERC4626Adapter is BaseAdapter {
     function unwrapTarget(uint256 shares) external override returns (uint256 _assets) {
         _assets = ERC4626(target).redeem(shares, msg.sender, msg.sender);
     }
-
-    // /// @notice set a cusom oracle for this adapter
-    // /// @param _oracle address of the oracle to use
-    // /// @dev The oracle passed must comply with the IPriceFeed interface
-    // function setOracle(address _oracle) external {
-    //     // TODO: requiresTrust {
-    //     adapterParams.oracle = _oracle;
-    //     emit OracleUpdated(_oracle);
-    // }
-
-    // event OracleUpdated(address indexed oracle);
 }
