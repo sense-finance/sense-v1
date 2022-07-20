@@ -19,7 +19,7 @@ const MAINNET_ADAPTERS = [
       adapterParams: {
         oracle: MASTER_ORACLE.get("1"),
         stake: WETH_TOKEN.get("1"),
-        stakeSize: ethers.utils.parseEther("0"),
+        stakeSize: ethers.utils.parseEther("0.25"),
         minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
         maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
         tilt: 0, 
