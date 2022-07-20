@@ -43,7 +43,20 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
+    uint256 public mainnetFork;
+
     function setUp() public {
+        // Get RPC url from the environment
+        string[] memory inputs = new string[](2);
+        inputs[0] = "just";
+        inputs[1] = "_forge_rpc_url";
+        string memory rpcUrl = hevm.envString("MAINNET_RPC");
+
+        // Create fork from block mined on Apr 18 2022 at 12:00:10 AM UTC
+        // (before Fuse bug)
+        mainnetFork = hevm.createFork(rpcUrl, 14605885);
+        hevm.selectFork(mainnetFork);
+
         giveTokens(AddressBook.DAI, ONE_FTOKEN, hevm);
         giveTokens(AddressBook.f18DAI, ONE_FTOKEN, hevm);
         giveTokens(AddressBook.WETH, ONE_FTOKEN, hevm);
