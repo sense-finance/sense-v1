@@ -10,8 +10,8 @@ import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
 import { TestHelper, MockTargetLike } from "./test-helpers/TestHelper.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
-import { MockFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
+import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+import { MockFactory, MockCropFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
@@ -52,7 +52,7 @@ contract PeripheryTest is TestHelper {
 
     function testSponsorSeriesWhenUnverifiedAdapter() public {
         divider.setPermissionless(true);
-        MockAdapter adapter = new MockAdapter(
+        MockCropAdapter adapter = new MockCropAdapter(
             address(divider),
             address(target),
             !is4626 ? target.underlying() : target.asset(),
@@ -91,7 +91,7 @@ contract PeripheryTest is TestHelper {
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        MockAdapter adapter = new MockAdapter(
+        MockCropAdapter adapter = new MockCropAdapter(
             address(divider),
             address(target),
             !is4626 ? target.underlying() : target.asset(),
@@ -147,7 +147,7 @@ contract PeripheryTest is TestHelper {
         if (is4626) {
             cropFactory = address(new Mock4626CropFactory(address(divider), factoryParams, address(reward)));
         } else {
-            cropFactory = address(new MockFactory(address(divider), factoryParams, address(reward)));
+            cropFactory = address(new MockCropFactory(address(divider), factoryParams, address(reward)));
         }
         divider.setIsTrusted(cropFactory, true);
         periphery.setFactory(cropFactory, true);
@@ -179,7 +179,9 @@ contract PeripheryTest is TestHelper {
     function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
-        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(reward)));
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+        MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
 
         // try deploying adapter using default factory
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));

@@ -10,11 +10,12 @@ import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockToken } from "./mocks/MockToken.sol";
 import { MockTarget } from "./mocks/MockTarget.sol";
-import { MockAdapter, Mock4626Adapter } from "./mocks/MockAdapter.sol";
+import { MockAdapter, MockCropAdapter, Mock4626CropAdapter } from "./mocks/MockAdapter.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
-import { MockFactory, Mock4626CropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
+import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
+import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 // Space & Balanacer V2 mock
@@ -66,12 +67,12 @@ interface MockTargetLike {
 contract TestHelper is DSTest {
     using FixedMath for uint256;
 
-    MockAdapter internal adapter;
+    MockCropAdapter internal adapter;
     MockToken internal stake;
     MockToken internal underlying;
     MockTargetLike internal target;
     MockToken internal reward;
-    MockFactory internal factory;
+    MockCropFactory internal factory;
     MockOracle internal masterOracle;
 
     PoolManager internal poolManager;
@@ -219,9 +220,11 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
-        factory = MockFactory(deployFactory(address(target), address(reward)));
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+        factory = MockCropFactory(deployCropsFactory(address(target), rewardTokens, false)); // default factory is a crop factory
         address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
-        adapter = MockAdapter(f);
+        adapter = MockCropAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
@@ -322,7 +325,25 @@ contract TestHelper is DSTest {
         periphery.setFactory(someFactory, true);
     }
 
-    function deployFactory(address _target, address _reward) public returns (address someFactory) {
+    function deployERC4626CropsFactory(address _target) public returns (address someFactory) {
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0
+        });
+        someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
+        MockFactory(someFactory).supportTarget(_target, true);
+        divider.setIsTrusted(someFactory, true);
+        periphery.setFactory(someFactory, true);
+    }
+
+    /// Deploys either an ERC4626Factory or a MockFactory (no crops involved).
+    function deployFactory(address _target) public returns (address someFactory) {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -334,31 +355,44 @@ contract TestHelper is DSTest {
             tilt: 0
         });
         if (is4626) {
-            // someFactory = address(new Mock4626CropFactory(address(divider), factoryParams, _reward));
             someFactory = address(new ERC4626Factory(address(divider), factoryParams));
         } else {
-            someFactory = address(new MockFactory(address(divider), factoryParams, _reward));
+            someFactory = address(new MockFactory(address(divider), factoryParams));
         }
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
         periphery.setFactory(someFactory, true);
     }
 
-    function deployCropsFactory(address _target, address[] memory _rewardTokens) public returns (address someFactory) {
+    function deployCropsFactory(address _target) public returns (address someFactory) {
+        address[] memory rewardTokens;
+        return deployCropsFactory(_target, rewardTokens, false);
+    }
+
+    /// Deploys either a MockCropFactory, a MockCropsFactory or a ERC4626CropsFactory.
+    function deployCropsFactory(
+        address _target,
+        address[] memory _rewardTokens,
+        bool crops
+    ) public returns (address someFactory) {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
-            ifee: 0,
+            ifee: ISSUANCE_FEE,
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
-            maxm: 52 weeks,
+            maxm: MAX_MATURITY,
             mode: MODE,
             tilt: 0
         });
         if (is4626) {
-            someFactory = address(new Mock4626CropsFactory(address(divider), factoryParams, _rewardTokens));
+            someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
         } else {
-            someFactory = address(new MockCropsFactory(address(divider), factoryParams, _rewardTokens));
+            if (crops) {
+                someFactory = address(new MockCropsFactory(address(divider), factoryParams, _rewardTokens));
+            } else {
+                someFactory = address(new MockCropFactory(address(divider), factoryParams, _rewardTokens[0]));
+            }
         }
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
@@ -378,6 +412,7 @@ contract TestHelper is DSTest {
         }
     }
 
+    // Deploys either a mock crop adapter or a 4626 mock crop adapter
     function deployMockAdapter(
         address _divider,
         address _target,
@@ -385,7 +420,7 @@ contract TestHelper is DSTest {
     ) internal returns (address _adapter) {
         if (!is4626) {
             _adapter = address(
-                new MockAdapter(
+                new MockCropAdapter(
                     address(_divider),
                     address(_target),
                     target.underlying(),
@@ -396,7 +431,7 @@ contract TestHelper is DSTest {
             );
         } else {
             _adapter = address(
-                new Mock4626Adapter(
+                new Mock4626CropAdapter(
                     address(_divider),
                     address(_target),
                     target.asset(),

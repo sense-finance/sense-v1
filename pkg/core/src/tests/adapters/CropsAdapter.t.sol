@@ -14,6 +14,7 @@ import { MockCropsAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockCropsFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
+import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 
 contract CropsAdapters is TestHelper {
@@ -28,12 +29,15 @@ contract CropsAdapters is TestHelper {
     address[] public rewardTokens;
 
     function setUp() public virtual override {
+        ISSUANCE_FEE = 0; // super.setUp will create an adapter with 0 fee to simplify tests math
+        MAX_MATURITY = 52 weeks; // super.setUp will create an adapter with 12 month max maturity
+
         super.setUp();
         reward2 = new MockToken("Reward Token 2", "RT2", 6);
         aTarget = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals));
 
         rewardTokens = [address(reward), address(reward2)];
-        cropsFactory = MockCropsFactory(deployCropsFactory(address(aTarget), rewardTokens));
+        cropsFactory = MockCropsFactory(deployCropsFactory(address(aTarget), rewardTokens, true));
         address f = periphery.deployAdapter(address(cropsFactory), address(aTarget), ""); // deploy & onboard target through Periphery
         cropsAdapter = MockCropsAdapter(f);
         divider.setGuard(address(cropsAdapter), 10 * 2**128);
@@ -1282,6 +1286,38 @@ contract CropsAdapters is TestHelper {
         rewardTokens.push(address(reward2));
         hevm.expectRevert("UNTRUSTED");
         cropsAdapter.setRewardTokens(rewardTokens);
+    }
+
+    // claimer tests
+
+    function testFuzzSimpleDistributionAndCollectWithClaimer(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
+
+        MockClaimer claimer = new MockClaimer(address(cropsAdapter), rewardTokens);
+        hevm.prank(address(cropsFactory));
+        cropsAdapter.setClaimer(address(claimer));
+
+        divider.issue(address(cropsAdapter), maturity, (60 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(cropsAdapter), maturity, (40 * tBal) / 100);
+
+        uint256 tBalBefore = ERC20(cropsAdapter.target()).balanceOf(address(cropsAdapter));
+
+        assertEq(reward.balanceOf(bob), 0);
+        assertEq(reward2.balanceOf(bob), 0);
+
+        // reward.mint(address(cropsAdapter), 60 * 1e18);
+        // reward2.mint(address(cropsAdapter), 60 * 1e6);
+
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(reward.balanceOf(bob), 24 * 1e18);
+        assertClose(reward2.balanceOf(bob), 24 * 1e6);
+        uint256 tBalAfter = ERC20(cropsAdapter.target()).balanceOf(address(cropsAdapter));
+        assertEq(tBalAfter, tBalBefore);
+        // assertClose(reward2.balanceOf(bob), 1234);
     }
 
     // helpers

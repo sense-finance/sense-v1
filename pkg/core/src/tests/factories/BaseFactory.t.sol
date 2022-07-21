@@ -2,8 +2,8 @@
 pragma solidity 0.8.11;
 
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
-import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
-import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
+import { MockAdapter, MockCropAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { MockFactory, MockCropFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
@@ -23,10 +23,10 @@ contract Factories is TestHelper {
             mode: MODE,
             tilt: 0
         });
-        MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
+        MockCropFactory someFactory = new MockCropFactory(address(divider), factoryParams, address(reward));
 
         assertTrue(address(someFactory) != address(0));
-        assertEq(MockFactory(someFactory).divider(), address(divider));
+        assertEq(someFactory.divider(), address(divider));
         (
             address oracle,
             address stake,
@@ -36,7 +36,7 @@ contract Factories is TestHelper {
             uint256 ifee,
             uint16 mode,
             uint64 tilt
-        ) = MockFactory(someFactory).factoryParams();
+        ) = someFactory.factoryParams();
 
         assertEq(oracle, ORACLE);
         assertEq(stake, address(stake));
@@ -46,33 +46,35 @@ contract Factories is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(tilt, 0);
-        assertEq(MockFactory(someFactory).reward(), address(reward));
+        assertEq(someFactory.reward(), address(reward));
     }
 
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
-        divider.setPeriphery(alice);
-        address adapter = someFactory.deployAdapter(address(someTarget), "");
-        assertTrue(adapter != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
-            .adapterParams();
-        assertEq(MockAdapter(adapter).divider(), address(divider));
-        assertEq(MockAdapter(adapter).target(), address(someTarget));
-        assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
-        assertEq(MockAdapter(adapter).symbol(), "ST-adapter");
-        assertEq(MockAdapter(adapter).ifee(), ISSUANCE_FEE);
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(someReward);
+        MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
+
+        divider.setPeriphery(alice);
+        MockCropAdapter adapter = MockCropAdapter(someFactory.deployAdapter(address(someTarget), ""));
+        assertTrue(address(adapter) != address(0));
+
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.target(), address(someTarget));
+        assertEq(adapter.name(), "Some Target Adapter");
+        assertEq(adapter.symbol(), "ST-adapter");
+        assertEq(adapter.ifee(), ISSUANCE_FEE);
         assertEq(oracle, ORACLE);
         assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
-        assertEq(MockAdapter(adapter).mode(), MODE);
-        assertEq(MockAdapter(adapter).reward(), address(someReward));
-        uint256 scale = MockAdapter(adapter).scale();
+        assertEq(adapter.mode(), MODE);
+        assertEq(adapter.reward(), address(someReward));
+        uint256 scale = adapter.scale();
         assertEq(scale, 1e18);
     }
 
@@ -80,7 +82,11 @@ contract Factories is TestHelper {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(someReward);
+        MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
+
         address f = periphery.deployAdapter(address(someFactory), address(someTarget), "");
         assertTrue(f != address(0));
         uint256 scale = MockAdapter(f).scale();

@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
+import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
@@ -21,6 +22,7 @@ contract ERC4626TestHelper is DSTest {
     uint256 public mainnetFork;
 
     ERC4626Factory internal factory;
+    ERC4626CropsFactory internal cropsFactory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
     MasterPriceOracle internal masterOracle;
@@ -66,6 +68,10 @@ contract ERC4626TestHelper is DSTest {
         factory = new ERC4626Factory(address(divider), factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         factory.supportTarget(AddressBook.IMUSD, true);
+
+        cropsFactory = new ERC4626CropsFactory(address(divider), factoryParams);
+        divider.setIsTrusted(address(cropsFactory), true); // add factory as a ward
+        cropsFactory.supportTarget(AddressBook.IMUSD, true);
     }
 }
 
@@ -107,13 +113,8 @@ contract ERC4626Factories is ERC4626TestHelper {
     }
 
     function testMainnetDeployAdapter() public {
-        // Prepare date for non-crop adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
-
         // Deploy non-crop adapter
-        address f = factory.deployAdapter(AddressBook.IMUSD, data);
-        ERC4626Adapter adapter = ERC4626Adapter(payable(f));
+        ERC4626Adapter adapter = ERC4626Adapter(factory.deployAdapter(AddressBook.IMUSD, ""));
 
         assertTrue(address(adapter) != address(0));
         assertEq(adapter.target(), address(AddressBook.IMUSD));
@@ -130,11 +131,10 @@ contract ERC4626Factories is ERC4626TestHelper {
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = AddressBook.DAI;
         rewardTokens[1] = AddressBook.WETH;
-        bytes memory data = abi.encode(1, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
-        address f = factory.deployAdapter(AddressBook.IMUSD, data);
-        ERC4626CropsAdapter adapter = ERC4626CropsAdapter(payable(f));
+        ERC4626CropsAdapter adapter = ERC4626CropsAdapter(cropsFactory.deployAdapter(AddressBook.IMUSD, data));
 
         assertTrue(address(adapter) != address(0));
         assertEq(adapter.target(), address(AddressBook.IMUSD));

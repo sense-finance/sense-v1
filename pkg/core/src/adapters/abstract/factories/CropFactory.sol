@@ -5,7 +5,7 @@ pragma solidity 0.8.11;
 import { BaseFactory } from "./BaseFactory.sol";
 
 abstract contract CropFactory is BaseFactory {
-    address public immutable reward;
+    address public reward;
 
     constructor(
         address _divider,

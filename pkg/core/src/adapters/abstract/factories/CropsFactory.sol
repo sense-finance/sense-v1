@@ -12,10 +12,17 @@ abstract contract CropsFactory is Trust, BaseFactory {
         BaseFactory(_divider, _factoryParams)
     {}
 
-    /// @notice Replace existing reward tokens array with a new one and update adapters passed
+    /// @notice Update reward tokens for given adapter
+    /// @param _adapter adapter to set reward tokens for
+    /// @param _rewardTokens array of rewards tokens addresses
+    function setRewardTokens(address _adapter, address[] memory _rewardTokens) public requiresTrust {
+        Crops(_adapter).setRewardTokens(_rewardTokens);
+    }
+
+    /// @notice Update reward tokens for given adapters
     /// @param _rewardTokens array of rewards tokens addresses
     /// @param _adapters array of adapters to update the rewards tokens on
-    function setRewardTokens(address[] memory _rewardTokens, address[] memory _adapters) public requiresTrust {
+    function setRewardTokens(address[] memory _adapters, address[] memory _rewardTokens) public requiresTrust {
         for (uint256 i = 0; i < _adapters.length; i++) {
             Crops(_adapters[i]).setRewardTokens(_rewardTokens);
         }

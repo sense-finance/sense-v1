@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
+import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
 
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
@@ -16,6 +17,11 @@ import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract ERC4626FactoryTest is TestHelper {
+    function setUp() public override {
+        super.setUp();
+        is4626 = true;
+    }
+
     function testDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
@@ -56,14 +62,10 @@ contract ERC4626FactoryTest is TestHelper {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
 
         // Deploy ERC4626 non-crops factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
-
-        // Prepare data for non-crops adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
+        ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
         // Deploy non-crops adapter
-        address adapter = someFactory.deployAdapter(address(someTarget), data);
+        address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
         (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
@@ -89,13 +91,13 @@ contract ERC4626FactoryTest is TestHelper {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
 
         // Deploy ERC4626 Crops factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
+        ERC4626CropsFactory someFactory = ERC4626CropsFactory(deployCropsFactory(address(someTarget)));
 
         // Prepare data for crops adapter
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(someReward);
         rewardTokens[1] = address(someReward2);
-        bytes memory data = abi.encode(1, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
@@ -123,7 +125,7 @@ contract ERC4626FactoryTest is TestHelper {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
 
         // Deploy non-crop factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
+        ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
         // Prepare data for non-crop adapter
         address[] memory rewardTokens;
@@ -164,13 +166,11 @@ contract ERC4626FactoryTest is TestHelper {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
 
         // Deploy ERC4626 Crops factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
-
-        // Prepare data for crops adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(1, rewardTokens);
+        ERC4626CropsFactory someFactory = ERC4626CropsFactory(deployCropsFactory(address(someTarget)));
 
         // Deploy crops adapter
+        address[] memory rewardTokens;
+        bytes memory data = abi.encode(rewardTokens); // empty data (no reward tokens)
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
@@ -188,19 +188,17 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(adapter.rewardTokens(1), address(someReward2));
     }
 
-    function testCanSetRewardTokensMultipleAdapter() public {
+    function testCanSetRewardTokensMultipleAdapters() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someReward2 = new MockToken("Some Reward 2", "SR2", 18);
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
 
         // Deploy ERC4626 Crops factory
-        ERC4626Factory someFactory = ERC4626Factory(deployERC4626Factory(address(someTarget)));
-
-        // Prepare data for crops adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(1, rewardTokens);
+        ERC4626CropsFactory someFactory = ERC4626CropsFactory(deployCropsFactory(address(someTarget)));
 
         // Deploy crops adapter
+        address[] memory rewardTokens;
+        bytes memory data = abi.encode(rewardTokens); // empty array (no reward tokens)
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 

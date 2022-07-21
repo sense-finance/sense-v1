@@ -8,6 +8,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
+import { IClaimer } from "../IClaimer.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
@@ -17,6 +18,7 @@ abstract contract Crops is Trust {
     using FixedMath for uint256;
 
     /// @notice Program state
+    address public claimer; // claimer address
     uint256 public totalTarget; // total target accumulated by all users
     mapping(address => uint256) public tBalance; // target balance per user
     mapping(address => uint256) public reconciledAmt; // reconciled target amount per user
@@ -128,8 +130,30 @@ abstract contract Crops is Trust {
     /// @notice Some protocols don't airdrop reward tokens, instead users must claim them.
     /// This method may be overriden by child contracts to claim a protocol's rewards
     function _claimRewards() internal virtual {
-        return;
+        if (claimer != address(0)) {
+            ERC20 target = ERC20(BaseAdapter(address(this)).target());
+            uint256 tBal = ERC20(target).balanceOf(address(this));
+
+            if (tBal > 0) {
+                // We send all the target balance to the claimer contract to it can claim rewards
+                ERC20(target).transfer(claimer, tBal);
+
+                // Make claimer to claim rewards
+                IClaimer(claimer).claim();
+
+                // Get the target back
+                ERC20(target).transferFrom(claimer, address(this), tBal);
+
+                // Get the rewards
+                for (uint256 i = 0; i < rewardTokens.length; i++) {
+                    uint256 rBal = ERC20(rewardTokens[i]).balanceOf(claimer);
+                    ERC20(rewardTokens[i]).transferFrom(claimer, address(this), rBal);
+                }
+            }
+        }
     }
+
+    event Hola(uint256);
 
     /// @notice Overrides the rewardTokens array with a new one.
     /// @dev Calls _claimRewards() in case the new array contains less reward tokens than the old one.
@@ -140,9 +164,17 @@ abstract contract Crops is Trust {
         emit RewardTokensChanged(rewardTokens);
     }
 
+    /// @notice Sets `claimer`.
+    /// @param _claimer New claimer contract address
+    function setClaimer(address _claimer) public requiresTrust {
+        claimer = _claimer;
+        emit ClaimerChanged(claimer);
+    }
+
     /* ========== LOGS ========== */
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokensChanged(address[] indexed rewardTokens);
     event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
+    event ClaimerChanged(address indexed claimer);
 }
