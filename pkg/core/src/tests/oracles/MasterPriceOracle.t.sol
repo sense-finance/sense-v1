@@ -108,7 +108,7 @@ contract MasterPriceOracleTest is MasterPriceOracleTestHelper {
     }
 
     function testSetNewChainlinkOracle() public {
-        assertEq(oracle.senseChainlinkPriceOracle(address(chainlinkOracle)));
+        assertEq(oracle.senseChainlinkPriceOracle(), address(chainlinkOracle));
         oracle.setSenseChainlinkPriceOracle(address(123));
         assertEq(oracle.senseChainlinkPriceOracle(), address(123));
     }
