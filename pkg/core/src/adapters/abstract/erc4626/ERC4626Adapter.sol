@@ -18,7 +18,7 @@ contract ERC4626Adapter is BaseAdapter {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
-    address public constant RARI_MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D; // Rari's Master Oracle
+    address public constant RARI_MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     uint256 public immutable BASE_UINT;
     uint256 public immutable SCALE_FACTOR;

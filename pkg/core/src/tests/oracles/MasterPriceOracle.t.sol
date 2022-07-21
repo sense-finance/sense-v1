@@ -99,6 +99,14 @@ contract MasterPriceOracleTest is MasterPriceOracleTestHelper {
 
         oracle.add(underlyings, oracles);
         assertEq(oracle.oracles(address(underlying)), address(oracle));
+
+        // add oracle for other underlying should not affect previous one
+        underlyings[0] = address(123);
+        oracles[0] = address(456);
+
+        oracle.add(underlyings, oracles);
+        assertEq(oracle.oracles(address(underlying)), address(oracle));
+        assertEq(oracle.oracles(address(123)), address(456));
     }
 
     function testCantSetNewChainlinkOracle() public {

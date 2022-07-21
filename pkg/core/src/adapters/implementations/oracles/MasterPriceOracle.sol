@@ -7,7 +7,7 @@ import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 
 /// @notice This contract gets prices from an available oracle address which must implement IPriceFeed.sol
 /// If there's no oracle set, it will try getting the price from Chainlink's Oracle.
-/// @author Inspired on: https://github.com/Rari-Capital/fuse-contracts/blob/master/contracts/oracles/MasterPriceOracle.sol
+/// @author Inspired by: https://github.com/Rari-Capital/fuse-v1/blob/development/src/oracles/MasterPriceOracle.sol
 contract MasterPriceOracle is IPriceFeed, Trust {
     address public senseChainlinkPriceOracle;
 

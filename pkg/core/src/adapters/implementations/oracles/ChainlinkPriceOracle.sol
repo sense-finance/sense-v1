@@ -24,7 +24,7 @@ interface FeedRegistryLike {
 /// @title ChainlinkPriceOracle
 /// @notice Returns prices from Chainlink.
 /// @dev Implements `IPricefeed` and `Trust`.
-/// @author Inspired on: https://github.com/Rari-Capital/fuse-contracts/blob/master/contracts/oracles/MStablePriceOracle.sol
+/// @author Inspired by: https://github.com/Rari-Capital/fuse-v1/blob/development/src/oracles/ChainlinkPriceOracleV3.sol
 contract ChainlinkPriceOracle is IPriceFeed, Trust {
     using FixedMath for uint256;
 
@@ -78,7 +78,6 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
             (, ethUsdPrice, , updatedAt, ) = feedRegistry.latestRoundData(ETH, USD);
             if (ethUsdPrice <= 0) return 0;
             _validatePrice(updatedAt);
-
             return
                 uint256(tokenUsdPrice).fmul(1e26).fdiv(10**uint256(feedRegistry.decimals(underlying, USD))).fdiv(
                     uint256(ethUsdPrice)
