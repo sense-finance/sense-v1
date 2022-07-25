@@ -160,34 +160,6 @@ contract ERC4626FactoryTest is TestHelper {
         factory.deployAdapter(address(target), "");
     }
 
-    function testCanSetRewardTokensSingleAdapter() public {
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someReward2 = new MockToken("Some Reward 2", "SR2", 18);
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
-
-        // Deploy ERC4626 Crops factory
-        ERC4626CropsFactory someFactory = ERC4626CropsFactory(deployCropsFactory(address(someTarget)));
-
-        // Deploy crops adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(rewardTokens); // empty data (no reward tokens)
-        ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
-        assertTrue(address(adapter) != address(0));
-
-        adapter.isTrusted(address(someFactory));
-        adapter.isTrusted(address(divider));
-        adapter.isTrusted(address(this));
-
-        // Set reward tokens
-        rewardTokens = new address[](2);
-        rewardTokens[0] = address(someReward);
-        rewardTokens[1] = address(someReward2);
-
-        someFactory.setRewardTokens(address(adapter), rewardTokens);
-        assertEq(adapter.rewardTokens(0), address(someReward));
-        assertEq(adapter.rewardTokens(1), address(someReward2));
-    }
-
     function testCanSetRewardTokensMultipleAdapters() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someReward2 = new MockToken("Some Reward 2", "SR2", 18);

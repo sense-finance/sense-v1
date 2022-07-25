@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { DSTest } from "../test-helpers/test.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
+import { MockChainlinkPriceOracle, MockFeedRegistry } from "../test-helpers/mocks/MockChainlinkPriceOracle.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -36,8 +37,12 @@ contract ChainlinkPriceOracleTest is ChainPriceOracleTestHelper {
         assertEq(otherOracle.maxSecondsBeforePriceIsStale(), 12345);
     }
 
-    function testPrice() public {
-        FeedRegistryLike feedRegistry = FeedRegistryLike(oracle.feedRegistry());
+    function testPriceWithETH() public {
+        // Deploy mocked Feed Registry
+        MockFeedRegistry feedRegistry = new MockFeedRegistry();
+
+        // Deploy mocked Chainlink price oracle
+        MockChainlinkPriceOracle oracle = new MockChainlinkPriceOracle(feedRegistry);
 
         // WETH price is 1e18
         assertEq(oracle.price(AddressBook.WETH), 1e18);
@@ -56,6 +61,109 @@ contract ChainlinkPriceOracleTest is ChainPriceOracleTestHelper {
             data
         );
         assertEq(oracle.price(address(underlying)), price);
+    }
+
+    function testPriceWithUSD() public {
+        // Deploy mocked Feed Registry
+        MockFeedRegistry feedRegistry = new MockFeedRegistry();
+
+        // Deploy mocked Chainlink price oracle
+        MockChainlinkPriceOracle oracle = new MockChainlinkPriceOracle(feedRegistry);
+
+        // Mock calls to decimals()
+        hevm.mockCall(address(feedRegistry), abi.encodeWithSelector(feedRegistry.decimals.selector), abi.encode(18));
+
+        // Token/ETH pair does not exist but Token/USD exists
+        feedRegistry.setRevert(address(underlying), oracle.ETH(), "Feed not found");
+
+        // Mock call to Token/USD Chainlink's oracle
+        uint256 underUsdPrice = 456e18;
+        bytes memory data = abi.encode(1, int256(underUsdPrice), block.timestamp, block.timestamp, 1); // return data
+        hevm.mockCall(
+            address(feedRegistry),
+            abi.encodeWithSelector(feedRegistry.latestRoundData.selector, address(underlying), oracle.USD()),
+            data
+        );
+
+        // Mock call to ETH/USD Chainlink's oracle
+        uint256 ethUsdPrice = 789e18;
+        data = abi.encode(1, int256(ethUsdPrice), block.timestamp, block.timestamp, 1); // return data
+        hevm.mockCall(
+            address(feedRegistry),
+            abi.encodeWithSelector(feedRegistry.latestRoundData.selector, oracle.ETH(), oracle.USD()),
+            data
+        );
+        assertEq(oracle.price(address(underlying)), underUsdPrice.fmul(1e26).fdiv(1e18).fdiv(ethUsdPrice));
+    }
+
+    function testPriceWithBTC() public {
+        // Deploy mocked Feed Registry
+        MockFeedRegistry feedRegistry = new MockFeedRegistry();
+
+        // Deploy mocked Chainlink price oracle
+        MockChainlinkPriceOracle oracle = new MockChainlinkPriceOracle(feedRegistry);
+
+        // Mock calls to decimals()
+        hevm.mockCall(address(feedRegistry), abi.encodeWithSelector(feedRegistry.decimals.selector), abi.encode(18));
+
+        // Both Token/ETH and Token/USD pairs do not exist but Token/BTC exists
+        feedRegistry.setRevert(address(underlying), oracle.ETH(), "Feed not found");
+        feedRegistry.setRevert(address(underlying), oracle.USD(), "Feed not found");
+
+        // Mock call to Token/BTC Chainlink's oracle
+        uint256 underBtcPrice = 456e18;
+        bytes memory data = abi.encode(1, int256(underBtcPrice), block.timestamp, block.timestamp, 1); // return data
+        hevm.mockCall(
+            address(feedRegistry),
+            abi.encodeWithSelector(feedRegistry.latestRoundData.selector, address(underlying), oracle.BTC()),
+            data
+        );
+
+        // Mock call to BTC/USD Chainlink's oracle
+        uint256 btcEthPrice = 789e18;
+        data = abi.encode(1, int256(btcEthPrice), block.timestamp, block.timestamp, 1); // return data
+        hevm.mockCall(
+            address(feedRegistry),
+            abi.encodeWithSelector(feedRegistry.latestRoundData.selector, oracle.BTC(), oracle.ETH()),
+            data
+        );
+        assertEq(oracle.price(address(underlying)), underBtcPrice.fmul(btcEthPrice).fdiv(1e18));
+    }
+
+    function testPriceRevertsWhenNoPriceExists() public {
+        // Deploy mocked Feed Registry
+        MockFeedRegistry feedRegistry = new MockFeedRegistry();
+
+        // Deploy mocked Chainlink price oracle
+        MockChainlinkPriceOracle oracle = new MockChainlinkPriceOracle(feedRegistry);
+
+        // Mock calls to decimals()
+        hevm.mockCall(address(feedRegistry), abi.encodeWithSelector(feedRegistry.decimals.selector), abi.encode(18));
+
+        // Both Token/ETH and Token/USD pairs do not exist but Token/BTC exists
+        feedRegistry.setRevert(address(underlying), oracle.ETH(), "Feed not found");
+        feedRegistry.setRevert(address(underlying), oracle.USD(), "Feed not found");
+        feedRegistry.setRevert(address(underlying), oracle.BTC(), "Feed not found");
+
+        hevm.expectRevert(abi.encodeWithSelector(Errors.PriceOracleNotFound.selector));
+        oracle.price(address(underlying));
+    }
+
+    function testPriceAttemptFailed() public {
+        // Deploy mocked Feed Registry
+        MockFeedRegistry feedRegistry = new MockFeedRegistry();
+
+        // Deploy mocked Chainlink price oracle
+        MockChainlinkPriceOracle oracle = new MockChainlinkPriceOracle(feedRegistry);
+
+        // Mock calls to decimals()
+        hevm.mockCall(address(feedRegistry), abi.encodeWithSelector(feedRegistry.decimals.selector), abi.encode(18));
+
+        // Token/ETH returns an invalid message
+        feedRegistry.setRevert(address(underlying), oracle.ETH(), "Test");
+
+        hevm.expectRevert(abi.encodeWithSelector(Errors.AttemptFailed.selector));
+        oracle.price(address(underlying));
     }
 
     function testShouldRevertIfPriceIsStale() public {

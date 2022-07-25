@@ -113,7 +113,7 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
         }
 
         // Revert if all else fails
-        revert("No Chainlink price feed found for this underlying ERC20 token.");
+        revert Errors.PriceOracleNotFound();
     }
 
     /// @dev validates the price returned from Chainlink
