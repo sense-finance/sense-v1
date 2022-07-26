@@ -19,6 +19,7 @@ library Errors {
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();
+    error InvalidPrice();
 
     // Divider
     error AlreadySettled();

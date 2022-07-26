@@ -85,4 +85,45 @@ abstract contract Hevm {
 
     // If the condition is false, discard this run's fuzz inputs and generate new ones
     function assume(bool) external virtual;
+
+    // Creates a new fork with the given endpoint and block and returns the identifier of the fork
+    function createFork(string calldata urlOrAlias, uint256 block) external virtual returns (uint256);
+
+    // Creates a new fork with the given endpoint and the _latest_ block and returns the identifier of the fork
+    function createFork(string calldata urlOrAlias) external virtual returns (uint256);
+
+    // Creates _and_ also selects a new fork with the given endpoint and block and returns the identifier of the fork
+    function createSelectFork(string calldata urlOrAlias, uint256 block) external virtual returns (uint256);
+
+    // Creates _and_ also selects a new fork with the given endpoint and the latest block and returns the identifier of the fork
+    function createSelectFork(string calldata urlOrAlias) external virtual returns (uint256);
+
+    // Takes a fork identifier created by `createFork` and sets the corresponding forked state as active.
+    function selectFork(uint256 forkId) external virtual;
+
+    /// Returns the currently active fork
+    /// Reverts if no fork is currently active
+    function activeFork() external virtual returns (uint256);
+
+    // Updates the currently active fork to given block number
+    // This is similar to `roll` but for the currently active fork
+    function rollFork(uint256) external virtual;
+
+    // Updates the given fork to given block number
+    function rollFork(uint256 forkId, uint256 blockNumber) external virtual;
+
+    // Read environment variables, (name) => (value)
+    function envBool(string calldata) external virtual returns (bool);
+
+    function envUint(string calldata) external virtual returns (uint256);
+
+    function envInt(string calldata) external virtual returns (int256);
+
+    function envAddress(string calldata) external virtual returns (address);
+
+    function envBytes32(string calldata) external virtual returns (bytes32);
+
+    function envString(string calldata) external virtual returns (string memory);
+
+    function envBytes(string calldata) external virtual returns (bytes memory);
 }
