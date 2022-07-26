@@ -129,9 +129,6 @@ _forge_mock_target_decimals:
 _forge_mock_underlying_decimals:
     @printf {{ FORGE_MOCK_UNDERLYING_DECIMALS }}
 
-_forge_rpc_url:
-    @printf {{ MAINNET_RPC }}
-
 remappings-from-pkg-deps := ```
     cat pkg/*/package.json  |
     jq 'select(.dependencies != null) | .dependencies | to_entries | map([.key + "/", "../../node_modules/" + .key + "/"] | join("="))' |
