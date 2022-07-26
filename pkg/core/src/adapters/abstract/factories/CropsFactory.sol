@@ -20,4 +20,10 @@ abstract contract CropsFactory is Trust, BaseFactory {
             Crops(_adapters[i]).setRewardTokens(_rewardTokens);
         }
     }
+
+    /// @notice Sets `claimer` for a given adapter
+    /// @param _claimer New claimer contract address
+    function setClaimer(address _adapter, address _claimer) public requiresTrust {
+        Crops(_adapter).setClaimer(_claimer);
+    }
 }

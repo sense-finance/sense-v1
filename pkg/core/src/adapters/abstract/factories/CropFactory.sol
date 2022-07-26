@@ -23,4 +23,10 @@ abstract contract CropFactory is Trust, BaseFactory {
     function setRewardTokens(address _adapter, address _rewardToken) public requiresTrust {
         Crop(_adapter).setRewardToken(_rewardToken);
     }
+
+    /// @notice Sets `claimer` for a given adapter
+    /// @param _claimer New claimer contract address
+    function setClaimer(address _adapter, address _claimer) public requiresTrust {
+        Crop(_adapter).setClaimer(_claimer);
+    }
 }

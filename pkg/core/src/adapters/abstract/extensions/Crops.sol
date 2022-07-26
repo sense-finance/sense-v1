@@ -153,8 +153,6 @@ abstract contract Crops is Trust {
         }
     }
 
-    event Hola(uint256);
-
     /// @notice Overrides the rewardTokens array with a new one.
     /// @dev Calls _claimRewards() in case the new array contains less reward tokens than the old one.
     /// @param _rewardTokens New reward tokens array

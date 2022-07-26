@@ -1308,16 +1308,12 @@ contract CropsAdapters is TestHelper {
         assertEq(reward.balanceOf(bob), 0);
         assertEq(reward2.balanceOf(bob), 0);
 
-        // reward.mint(address(cropsAdapter), 60 * 1e18);
-        // reward2.mint(address(cropsAdapter), 60 * 1e6);
-
         hevm.prank(bob);
         YT(yt).collect();
         assertClose(reward.balanceOf(bob), 24 * 1e18);
         assertClose(reward2.balanceOf(bob), 24 * 1e6);
         uint256 tBalAfter = ERC20(cropsAdapter.target()).balanceOf(address(cropsAdapter));
         assertEq(tBalAfter, tBalBefore);
-        // assertClose(reward2.balanceOf(bob), 1234);
     }
 
     // helpers

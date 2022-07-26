@@ -149,8 +149,16 @@ abstract contract Crop is Trust {
         emit RewardTokenChanged(reward);
     }
 
+    /// @notice Sets `claimer`.
+    /// @param _claimer New claimer contract address
+    function setClaimer(address _claimer) public requiresTrust {
+        claimer = _claimer;
+        emit ClaimerChanged(claimer);
+    }
+
     /* ========== LOGS ========== */
 
     event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
     event RewardTokenChanged(address indexed reward);
+    event ClaimerChanged(address indexed claimer);
 }

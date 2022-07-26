@@ -72,12 +72,6 @@ contract ERC4626CropsFactory is CropsFactory {
         }
     }
 
-    /// @notice Sets `claimer` for given adapter.
-    /// @param _claimer New claimer contract address
-    function setClaimer(address _adapter, address _claimer) public requiresTrust {
-        ERC4626CropsAdapter(_adapter).setClaimer(_claimer);
-    }
-
     /* ========== LOGS ========== */
 
     event TargetSupported(address indexed target, bool indexed supported);
