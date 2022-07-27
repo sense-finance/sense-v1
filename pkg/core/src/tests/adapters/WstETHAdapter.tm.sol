@@ -88,13 +88,7 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             tilt: DEFAULT_TILT,
             level: DEFAULT_LEVEL
         });
-        adapter = new WstETHAdapter(
-            address(divider),
-            AddressBook.WSTETH,
-            AddressBook.STETH,
-            ISSUANCE_FEE,
-            adapterParams
-        ); // wstETH adapter
+        adapter = new WstETHAdapter(address(divider), AddressBook.WSTETH, ISSUANCE_FEE, adapterParams); // wstETH adapter
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {

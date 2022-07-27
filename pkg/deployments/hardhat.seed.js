@@ -227,7 +227,6 @@ const MAINNET_ADAPTERS = [
       guard: ethers.utils.parseEther("1"),
       series: CUSDC_WSTETH_SERIES_MATURITIES
     },
-    underlying: WETH_TOKEN.get(chainId),
     ifee: ethers.utils.parseEther("0.01"),
     adapterParams: {
       oracle: MASTER_ORACLE.get(chainId), // oracle address

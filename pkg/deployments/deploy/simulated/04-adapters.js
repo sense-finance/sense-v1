@@ -276,7 +276,7 @@ module.exports = async function () {
 
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, targetAddress, underlying, ifee, adapterParams, target.crops ? [airdrop.address] : airdrop.address],
+      args: [divider.address, targetAddress, ...(underlying ? [underlying] : []), ifee, adapterParams, target.crops ? [airdrop.address] : airdrop.address],
       log: true,
     });
 

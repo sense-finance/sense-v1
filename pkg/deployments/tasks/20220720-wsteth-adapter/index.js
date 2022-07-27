@@ -5,6 +5,7 @@ const { SENSE_MULTISIG } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
+const { verifyOnEtherscan } = require("../../hardhat.utils");
 
 task(
   "20220720-wsteth-adapter",
@@ -23,7 +24,7 @@ task(
 
   for (let adapter of mainnet.adapters) {
     const { contractName, deploymentParams, target } = adapter;
-    const { underlying, ifee, adapterParams } = deploymentParams;
+    const { ifee, adapterParams } = deploymentParams;
     
     divider = divider.connect(deployerSigner);
     periphery = periphery.connect(deployerSigner);
@@ -31,7 +32,7 @@ task(
     console.log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, target.address, underlying, ifee, [...Object.values(adapterParams)]],
+      args: [divider.address, target.address, ifee, [...Object.values(adapterParams)]],
       log: true,
     });
     console.log(`${contractName} adapter deployed at ${adapterAddress}`);
@@ -80,7 +81,7 @@ task(
     // verify adapter contract on etherscan
     if (chainId !== "111") {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan(adapterAddress, [divider, target.address, await target.underlying(), ifee, adapterParams, reward]);
+      await verifyOnEtherscan(adapterAddress, [divider.address, target.address, ifee, adapterParams]);
     }
   }
 });
