@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
@@ -234,6 +235,20 @@ contract ERC4626AdapterTest is DSTestPlus {
         );
 
         assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+    }
+
+    function testGetUnderlyingPriceRevertsIfZero() public {
+        // Mock call to Rari's master oracle
+        uint256 price = 0;
+        bytes memory data = abi.encode(price); // return data
+        hevm.mockCall(
+            address(chainlinkOracle),
+            abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),
+            data
+        );
+
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidPrice.selector));
+        erc4626Adapter.getUnderlyingPrice();
     }
 
     function testGetUnderlyingPriceCustomOracle() public {

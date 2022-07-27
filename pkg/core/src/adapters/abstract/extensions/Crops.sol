@@ -142,13 +142,7 @@ abstract contract Crops is Trust {
                 IClaimer(claimer).claim();
 
                 // Get the target back
-                ERC20(target).transferFrom(claimer, address(this), tBal);
-
-                // Get the rewards
-                for (uint256 i = 0; i < rewardTokens.length; i++) {
-                    uint256 rBal = ERC20(rewardTokens[i]).balanceOf(claimer);
-                    ERC20(rewardTokens[i]).transferFrom(claimer, address(this), rBal);
-                }
+                if (ERC20(target).balanceOf(address(this)) < tBal) revert Errors.UnexpectedTargetAmount();
             }
         }
     }

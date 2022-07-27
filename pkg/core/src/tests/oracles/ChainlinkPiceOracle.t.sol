@@ -185,7 +185,7 @@ contract ChainlinkPriceOracleTest is ChainPriceOracleTestHelper {
             abi.encodeWithSelector(feedRegistry.latestRoundData.selector, address(underlying), oracle.ETH()),
             data
         );
-        hevm.expectRevert(abi.encodeWithSelector(Errors.StalePrice.selector));
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidPrice.selector));
         oracle.price(address(underlying));
     }
 

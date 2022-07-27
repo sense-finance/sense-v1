@@ -1316,6 +1316,24 @@ contract CropsAdapters is TestHelper {
         assertEq(tBalAfter, tBalBefore);
     }
 
+    function testFuzzSimpleDistributionAndCollectWithClaimerReverts(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
+
+        MockClaimer claimer = new MockClaimer(address(cropsAdapter), rewardTokens);
+        claimer.setTransfer(false); // make claimer not to return the target back to adapter
+
+        hevm.prank(address(cropsFactory));
+        cropsAdapter.setClaimer(address(claimer));
+
+        divider.issue(address(cropsAdapter), maturity, (60 * tBal) / 100);
+
+        hevm.prank(bob);
+        hevm.expectRevert(abi.encodeWithSelector(Errors.UnexpectedTargetAmount.selector));
+        divider.issue(address(cropsAdapter), maturity, (40 * tBal) / 100);
+    }
+
     // helpers
 
     function assumeBounds(uint256 tBal) internal {

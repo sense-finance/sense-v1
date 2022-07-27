@@ -13,18 +13,24 @@ import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 contract MockClaimer is IClaimer {
     address[] public rewardTokens;
+    address public target;
+    bool public transfer = true;
 
     constructor(address _adapter, address[] memory _rewardTokens) {
-        ERC20(ERC4626Adapter(_adapter).target()).approve(_adapter, type(uint256).max);
-        for (uint256 i = 0; i < _rewardTokens.length; i++) {
-            ERC20(_rewardTokens[i]).approve(_adapter, type(uint256).max);
-        }
+        target = ERC4626Adapter(_adapter).target();
         rewardTokens = _rewardTokens;
     }
 
     function claim() external virtual {
         for (uint256 i = 0; i < rewardTokens.length; i++) {
-            MockToken(rewardTokens[i]).mint(address(this), 60 * 10**MockToken(rewardTokens[i]).decimals());
+            MockToken(rewardTokens[i]).mint(address(msg.sender), 60 * 10**MockToken(rewardTokens[i]).decimals());
         }
+        if (transfer) {
+            ERC20(target).transfer(msg.sender, ERC20(target).balanceOf(address(this)));
+        }
+    }
+
+    function setTransfer(bool _transfer) external {
+        transfer = _transfer;
     }
 }

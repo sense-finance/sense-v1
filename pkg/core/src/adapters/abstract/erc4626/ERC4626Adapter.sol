@@ -44,7 +44,10 @@ contract ERC4626Adapter is BaseAdapter {
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
-        return MasterPriceOracle(adapterParams.oracle).price(underlying);
+        price = MasterPriceOracle(adapterParams.oracle).price(underlying);
+        if (price == 0) {
+            revert Errors.InvalidPrice();
+        }
     }
 
     function wrapUnderlying(uint256 assets) external override returns (uint256 _shares) {
