@@ -81,7 +81,7 @@ task(
     // verify adapter contract on etherscan
     if (chainId !== "111") {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan("0x29872d0a2672bA73D540c53330E1A073c3cE2673", [divider.address, target.address, ifee, adapterParams]);
+      await verifyOnEtherscan(adapterAddress, [divider.address, target.address, ifee, adapterParams]);
     }
   }
 });
