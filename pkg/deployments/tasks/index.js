@@ -4,3 +4,5 @@ require("./20220429-periphery");
 require("./20220517-long-wsteth-adapter");
 require("./20220518-space-factory");
 require("./20220531-fuse-factory");
+require("./20220714-goerli-permissionless-adapter");
+require("./20220720-wsteth-adapter");

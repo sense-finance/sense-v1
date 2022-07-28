@@ -117,9 +117,21 @@ exports.setStorageAt = async (address, index, value) => {
   await ethers.provider.send("evm_mine", []); // Just mines to the next block
 };
 
-exports.delay = (n) => new Promise( r => setTimeout(r, n*1000));
+const delay = (n) => new Promise( r => setTimeout(r, n*1000));
+exports.delay = delay;
 
 exports.verifyOnEtherscan = async (address, constructorArguments) => {
+  await new Promise((resolve, reject) => {
+    exec("hardhat clean", (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(stdout ? stdout : stderr);
+    });
+  });
+  console.log("Waiting 20 seconds for Etherscan to sync...");
+  await delay(20);
+  console.log("Trying to verify contract on Etherscan...");
   try {
     await hre.run("verify:verify", {
       address,

@@ -68,7 +68,7 @@ module.exports = async function () {
     log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, tAddress, underlying, ifee, ...(comptroller ? [comptroller] : []), adapterParams, ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : [])],
+      args: [divider.address, tAddress, ...(underlying ? [underlying] : []), ifee, ...(comptroller ? [comptroller] : []), adapterParams, ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : [])],
       log: true,
     });
 
