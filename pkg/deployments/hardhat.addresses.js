@@ -1,7 +1,9 @@
-// 1 -> Mainnet
-// 5 -> Goerli
-// 111 -> Local Mainnet fork
-// 42161 -> Arbitrum
+const CHAINS = {
+    MAINNET: 1,
+    GOERLI: 5,
+    HARDHAT: 111,
+    ARBITRUM: 42161,
+}
 
 // For dev scenarios ------------
 
@@ -172,4 +174,5 @@ exports.CRV_TOKEN = CRV_TOKEN;
 exports.TRIBE_CONVEX = TRIBE_CONVEX;
 exports.REWARDS_DISTRIBUTOR_CVX = REWARDS_DISTRIBUTOR_CVX;
 exports.REWARDS_DISTRIBUTOR_CRV = REWARDS_DISTRIBUTOR_CRV;
+exports.CHAINS = CHAINS;
 // ------------------------------------
