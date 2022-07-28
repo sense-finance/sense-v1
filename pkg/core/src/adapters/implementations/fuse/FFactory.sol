@@ -5,10 +5,10 @@ pragma solidity 0.8.11;
 import { CropsFactory } from "../../abstract/factories/CropsFactory.sol";
 import { FAdapter, FComptrollerLike, RewardsDistributorLike } from "./FAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 interface FTokenLike {
     function underlying() external view returns (address);
@@ -77,6 +77,8 @@ contract FFactory is CropsFactory {
                 targetRewardsDistributors
             )
         );
+
+        _setGuard(adapter);
     }
 
     /// @notice Replace existing rewards tokens and distributorsfor a given adapter

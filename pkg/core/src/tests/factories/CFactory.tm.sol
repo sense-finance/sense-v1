@@ -7,6 +7,7 @@ import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -52,6 +53,8 @@ contract CAdapterTestHelper is DSTest {
 }
 
 contract CFactories is CAdapterTestHelper {
+    using FixedMath for uint256;
+
     function testMainnetDeployFactory() public {
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = AddressBook.COMP;
@@ -103,6 +106,12 @@ contract CFactories is CAdapterTestHelper {
 
         uint256 scale = CAdapter(adapter).scale();
         assertTrue(scale > 0);
+
+        // As we are testing with a stablecoin here (DAI), we ca think the scale
+        // as the cDAI - USD rate, so we want to assert that the guard (which should be $100'000)
+        // in target terms is approx 100'000 / scale (within 5%).
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.005e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {

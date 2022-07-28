@@ -108,6 +108,9 @@ contract FFactories is FAdapterTestHelper {
 
         uint256 scale = FAdapter(adapter).scale();
         assertGt(scale, 0);
+
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        assertGt(guard, 0);
     }
 
     function testMainnetCantDeployAdapterIfInvalidComptroller() public {
