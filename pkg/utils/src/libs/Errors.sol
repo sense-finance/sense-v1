@@ -21,7 +21,6 @@ library Errors {
     error TargetNotSupported();
     error InvalidAdapterType();
     error PriceOracleNotFound();
-    error UnexpectedTargetAmount();
 
     // Divider
     error AlreadySettled();
@@ -47,6 +46,7 @@ library Errors {
     error PTParamsNotSet();
     error AttemptFailed();
     error InvalidPrice();
+    error BadContractInteration();
 
     // Periphery
     error FactoryNotSupported();

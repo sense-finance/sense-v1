@@ -1330,7 +1330,7 @@ contract CropsAdapters is TestHelper {
         divider.issue(address(cropsAdapter), maturity, (60 * tBal) / 100);
 
         hevm.prank(bob);
-        hevm.expectRevert(abi.encodeWithSelector(Errors.UnexpectedTargetAmount.selector));
+        hevm.expectRevert(abi.encodeWithSelector(Errors.BadContractInteration.selector));
         divider.issue(address(cropsAdapter), maturity, (40 * tBal) / 100);
     }
 

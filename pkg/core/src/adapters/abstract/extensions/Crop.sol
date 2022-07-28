@@ -133,7 +133,7 @@ abstract contract Crop is Trust {
                 IClaimer(claimer).claim();
 
                 // Get the target back
-                if (ERC20(target).balanceOf(address(this)) < tBal) revert Errors.UnexpectedTargetAmount();
+                if (ERC20(target).balanceOf(address(this)) < tBal) revert Errors.BadContractInteration();
             }
         }
     }
