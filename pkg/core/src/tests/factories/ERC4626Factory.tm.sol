@@ -11,6 +11,7 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -50,9 +51,13 @@ contract ERC4626TestHelper is DSTest {
         // Deploy Chainlink price oracle
         ChainlinkPriceOracle chainlinkOracle = new ChainlinkPriceOracle(0);
 
-        // Deploy Sense master price oracle
-        address[] memory data;
-        masterOracle = new MasterPriceOracle(address(chainlinkOracle), data, data);
+        // Deploy Sense master price oracle (with mStable oracle)
+        address[] memory underlyings = new address[](1);
+        underlyings[0] = AddressBook.MUSD;
+
+        address[] memory oracles = new address[](1);
+        oracles[0] = AddressBook.RARI_MSTABLE_ORACLE;
+        masterOracle = new MasterPriceOracle(address(chainlinkOracle), underlyings, oracles);
 
         // deploy ERC4626 adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
@@ -76,6 +81,8 @@ contract ERC4626TestHelper is DSTest {
 }
 
 contract ERC4626Factories is ERC4626TestHelper {
+    using FixedMath for uint256;
+
     function testMainnetDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: AddressBook.DAI,
@@ -124,6 +131,12 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         uint256 scale = adapter.scale();
         assertTrue(scale > 0);
+
+        // As we are testing with a stablecoin here (mUSD), we can think the scale
+        // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
+        // in target terms is approx 100'000 / scale (within 5%).
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.005e18));
     }
 
     function testMainnetDeployCropsAdapter() public {
@@ -146,6 +159,12 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         uint256 scale = adapter.scale();
         assertTrue(scale > 0);
+
+        // As we are testing with a stablecoin here (mUSD), we can think the scale
+        // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
+        // in target terms is approx 100'000 / scale (within 5%).
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.005e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
