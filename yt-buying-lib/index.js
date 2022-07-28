@@ -2,25 +2,31 @@ import Decimal from "decimal.js";
 import optimjs from "optimization-js";
 import SETTINGS from "./settings.js";
 
-class SpaceFluxer {
-  constructor(now, ttl, TS, G2, initScale, ifee) {
-    this.now = now;
-    this.ttl = ttl;
-    this.TS = TS;
-    this.G2 = G2;
-    this.initScale = initScale;
-    this.scale = initScale;
-    this.ifee = ifee;
-
-    this.ptReserves = new Decimal(0);
-    this.targetReserves = new Decimal(0);
-    this.supply = new Decimal(0);
+export class SpaceFluxer {
+  constructor({ ttm, ts, g2, scale, initScale, ifee, ptReserves, targetReserves, supply }) {
+    this.ttm = new Decimal(ttm);
+    this.ts = new Decimal(ts);
+    this.g2 = new Decimal(g2);
+    this.scale = new Decimal(scale);
+    this.initScale = new Decimal(initScale);
+    this.ifee = new Decimal(ifee);
+    this.ptReserves = new Decimal(ptReserves);
+    this.targetReserves = new Decimal(targetReserves);
+    this.supply = new Decimal(supply);
   }
 
+  getTargetToBorrow(initialTarget, optimalTargetReturned = new Decimal("0"), initialVector = [0.5]) {
+    const result = optimjs.minimize_Powell(this._getYTBuyer(initialTarget, optimalTargetReturned), initialVector)
+      .argument[0];
+    return result < 0 ? null : result;
+  }
+
+  // Update scale
   setScale(scale) {
     this.scale = scale;
   }
 
+  // Mint new lp shares and add to reserves appropriately
   mint(supplyToMint) {
     if (this.supply.eq(0)) {
       this.supply = supplyToMint;
@@ -40,22 +46,28 @@ class SpaceFluxer {
     return targetOut;
   }
 
-  buyYTs(initialTarget, desiredTargetBack = new Decimal("0")) {
+  // Create a function to a YT buy and return the amount of Target remaining at the end
+  _getYTBuyer(initialTarget, optimalTargetReturned) {
+    const exponent = parseInt(Number.parseFloat(initialTarget).toExponential(0).split("e")[1]);
+    // Set multiplier on the minimization function so that we get precise results, even with small target in values
+    const multiplier = exponent >= 0 ? 1 : exponent * -1;
     // Function to optimize, takes normal JS numbers
     return ([targetToBorrow]) => {
       targetToBorrow = new Decimal(targetToBorrow);
       const totalTargetBal = initialTarget.add(targetToBorrow);
       const ptsFromIssuance = totalTargetBal.times(new Decimal("1").minus(this.ifee)).times(this.scale);
       const targetOut = this._swapPTsForTarget(ptsFromIssuance);
-      return Math.abs(targetOut.sub(desiredTargetBack).sub(targetToBorrow).toNumber());
+      if (targetOut.isNaN()) {
+        return targetToBorrow.toNumber();
+      }
+      return Math.abs(targetOut.sub(optimalTargetReturned).sub(targetToBorrow).toNumber()) * 10 ** multiplier;
     };
   }
 
   // Swap PTs for target, dont update reserves
   _swapPTsForTarget(amountIn) {
-    const ttm = new Decimal(this.ttl - this.now);
-    const t = this.TS.times(ttm);
-    const a = new Decimal(1).minus(this.G2.times(t));
+    const t = this.ts.times(this.ttm);
+    const a = new Decimal(1).minus(this.g2.times(t));
 
     const _ptReserves = new Decimal(this.ptReserves).add(this.supply);
     const _underlyingReserves = new Decimal(this.targetReserves).times(this.initScale);
@@ -86,7 +98,17 @@ if ([targetToJoin, ptsToSwapIn, targetInForYTs].includes(undefined)) {
 const optimalTargetReturned = _optimalTargetReturned || 0;
 
 // Init fluxer
-const spaceFluxer = new SpaceFluxer(NOW, MATURITY, TS, G2, INIT_SCALE, IFEE);
+const spaceFluxer = new SpaceFluxer({
+  ttm: MATURITY - NOW,
+  ts: TS,
+  g2: G2,
+  scale: CURRENT_SCALE,
+  initScale: INIT_SCALE,
+  ifee: IFEE,
+  ptReserves: 0,
+  targetReserves: 0,
+  supply: 0,
+});
 
 // Init space pool reserves
 spaceFluxer.mint(new Decimal(targetToJoin));
@@ -100,6 +122,7 @@ const ptPrice = spaceFluxer._swapPTsForTarget(new Decimal("0.00001")).times(1000
 console.log("\nPT Price:", ptPrice);
 
 // Optimize YT buy
-spaceFluxer.setScale(CURRENT_SCALE);
-const buyYTTargetToBorrow = spaceFluxer.buyYTs(new Decimal(targetInForYTs), new Decimal(optimalTargetReturned));
-console.log("\nOptimal amount to borrow:", optimjs.minimize_Powell(buyYTTargetToBorrow, [0.5]).argument[0]);
+console.log(
+  "\nOptimal amount to borrow:",
+  spaceFluxer.getTargetToBorrow(new Decimal(targetInForYTs), new Decimal(optimalTargetReturned)),
+);
