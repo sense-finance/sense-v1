@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 const data = require("./input");
 
-const { SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
@@ -18,7 +18,7 @@ task(
 
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
-  const { divider: dividerAddress, periphery: peripheryAddress, factories, maxSecondsBeforePriceIsStale } = data[hre.network.name] || data.mainnet;
+  const { divider: dividerAddress, periphery: peripheryAddress, factories, maxSecondsBeforePriceIsStale } = data[chainId] || data[CHAINS.MAINNET];
   let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
   let periphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
 
@@ -52,7 +52,6 @@ task(
       tilt,
     } = factory;
 
-    oracle = masterOracleAddress;
     console.log(
       `\nDeploy ${factoryContractName} with params ${JSON.stringify({
         ifee: ifee.toString(),
@@ -61,11 +60,11 @@ task(
         minm,
         maxm,
         mode,
-        oracle,
+        oracle: masterOracleAddress,
         tilt
       })}}`,
     );
-    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt];
+    const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt];
     const { address: factoryAddress } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams],
@@ -75,7 +74,7 @@ task(
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
     // if mainnet or goerli, verify on etherscan
-    if (["1", "5"].includes(chainId)) {
+    if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
       console.log("\n-------------------------------------------------------");
       console.log("Waiting 20 seconds for Etherscan to sync...");
       await delay(20);
@@ -83,7 +82,7 @@ task(
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
     }
 
-    if (chainId === "111") {
+    if (chainId === CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
 
@@ -106,7 +105,7 @@ task(
       });
     }
 
-    if (["1", "5"].includes(chainId)) {
+    if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");
