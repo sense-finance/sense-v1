@@ -11,6 +11,9 @@ library AddressBook {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
     address public constant FXS = 0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0;
+    address public constant MUSD = 0xe2f2a5C287993345a840Db3B0845fbC70f5935a5;
+    address public constant HT = 0x6f259637dcD74C767781E37Bc6133cd6A68aa161;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -26,6 +29,7 @@ library AddressBook {
     address public constant STETH_POOL = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022;
     address public constant UNISWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public constant STETH_CURVE_POOL = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022; // curve stETH
 
     // price feeds
     address public constant COMPOUND_PRICE_FEED = 0x6D2299C48a8dD07a872FDd0F8233924872Ad1071; // compound
@@ -42,9 +46,6 @@ library AddressBook {
 
     // sense admin
     address public constant SENSE_ADMIN_MULTISIG = 0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57;
-
-    // fuse
-    address public constant JUMP_RATE_MODEL = 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7;
 
     // fuse f18 olympus pool party
     address public constant OLYMPUS_POOL_PARTY = 0x621579DD26774022F33147D3852ef4E00024b763; // olympus pool party
@@ -63,4 +64,10 @@ library AddressBook {
     address public constant f156FRAX3CRV = 0x2ec70d3Ff3FD7ac5c2a72AAA64A398b6CA7428A5;
     address public constant f156cvxFXSFXSf = 0x30916E14C139d65CAfbEEcb3eA525c59df643281;
     address public constant f156CVX = 0x3F4a965Bff126af42FC014c20959c7b857EA4e35;
+
+    // mstable
+    address public constant IMUSD = 0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19; // Interest bearing mStable USD (ERC-4626)
+    address public constant IMBTC = 0x17d8CBB6Bce8cEE970a4027d1198F6700A7a6c24; // Interest bearing mStable BTC (ERC-4626)
+    address public constant RARI_MSTABLE_ORACLE = 0xeb988f5492C86584f8D8f1B8662188D5A9BfE357; // Rari's mStable price oracle
+    address public constant CHAINLINK_REGISTRY = 0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf; // Chainlink's Feed Registry
 }

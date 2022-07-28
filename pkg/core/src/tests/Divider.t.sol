@@ -9,7 +9,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
-import { MockAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+import { MockAdapter, MockCropAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
@@ -94,7 +94,9 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesIfModeInvalid() public {
         DEFAULT_ADAPTER_PARAMS.mode = 4;
-        MockAdapter adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        MockCropAdapter adapter = MockCropAdapter(
+            deployMockAdapter(address(divider), address(target), address(reward))
+        );
 
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
@@ -106,7 +108,9 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesIfNotTopWeek() public {
         DEFAULT_ADAPTER_PARAMS.mode = 1;
-        MockAdapter adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        MockCropAdapter adapter = MockCropAdapter(
+            deployMockAdapter(address(divider), address(target), address(reward))
+        );
 
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000);
@@ -118,7 +122,9 @@ contract Dividers is TestHelper {
 
     function testInitSeriesWeekly() public {
         DEFAULT_ADAPTER_PARAMS.mode = 1;
-        MockAdapter adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        MockCropAdapter adapter = MockCropAdapter(
+            deployMockAdapter(address(divider), address(target), address(reward))
+        );
 
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
@@ -450,7 +456,7 @@ contract Dividers is TestHelper {
         uint16 level = 0x1 + 0x4 + 0x8 + 0x10;
 
         DEFAULT_ADAPTER_PARAMS.level = level;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
 
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
@@ -582,7 +588,7 @@ contract Dividers is TestHelper {
         uint16 level = 0x1 + 0x2 + 0x8 + 0x10;
 
         DEFAULT_ADAPTER_PARAMS.level = level;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -795,7 +801,7 @@ contract Dividers is TestHelper {
         uint256 intendedRedemptionValue = 50e18;
 
         DEFAULT_ADAPTER_PARAMS.tilt = tilt;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
@@ -889,7 +895,7 @@ contract Dividers is TestHelper {
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10;
 
         DEFAULT_ADAPTER_PARAMS.level = level;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -912,7 +918,7 @@ contract Dividers is TestHelper {
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8 + 0x10 + 0x20;
 
         DEFAULT_ADAPTER_PARAMS.level = level;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
@@ -937,7 +943,9 @@ contract Dividers is TestHelper {
         uint64 tilt = 0.1e18;
 
         DEFAULT_ADAPTER_PARAMS.tilt = tilt;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        MockCropAdapter adapter = MockCropAdapter(
+            deployMockAdapter(address(divider), address(target), address(reward))
+        );
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
@@ -987,7 +995,7 @@ contract Dividers is TestHelper {
         // Reserve 10% of pt for Yield
         uint64 tilt = 0.1e18;
         DEFAULT_ADAPTER_PARAMS.tilt = tilt;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
 
@@ -1074,7 +1082,7 @@ contract Dividers is TestHelper {
         // Disable collection, enable all other lifecycle methods
         uint16 level = 0x1 + 0x2 + 0x4 + 0x10;
         DEFAULT_ADAPTER_PARAMS.level = level;
-        adapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);

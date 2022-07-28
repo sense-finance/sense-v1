@@ -76,7 +76,6 @@ contract PoolManagerTest is DSTest {
         divider.setPeriphery(address(this));
 
         MockToken underlying = new MockToken("Underlying Token", "UD", 18);
-        MockToken reward = new MockToken("Reward Token", "RT", 18);
         stake = new MockToken("Stake", "SBL", 18);
         target = new MockTarget(address(underlying), "Compound Dai", "cDAI", 18);
 
@@ -90,14 +89,7 @@ contract PoolManagerTest is DSTest {
             tilt: 0,
             level: 31
         });
-        mockAdapter = new MockAdapter(
-            address(divider),
-            address(target),
-            target.underlying(),
-            0.1e18,
-            adapterParams,
-            address(reward)
-        );
+        mockAdapter = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
 
         // Ping scale to set an lscale
         mockAdapter.scale();

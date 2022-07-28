@@ -20,11 +20,11 @@ contract MockOracle is PriceOracle {
     }
 
     function initialize(
-        address[] memory underlyings,
-        PriceOracle[] memory _oracles,
-        PriceOracle _defaultOracle,
-        address _admin,
-        bool _canAdminOverwrite
+        address[] memory,
+        PriceOracle[] memory,
+        PriceOracle,
+        address,
+        bool
     ) external {
         return;
     }

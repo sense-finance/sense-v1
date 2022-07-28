@@ -69,6 +69,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainlink/contracts@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@chainlink/contracts@npm:0.4.1"
+  checksum: f5b6f26bb998ed42a448ceb7803f6f8a584b96349eecbd11c34c5bc8bf9c439f43726aa66a8846a298153369f074a1c9f8386ed48fe3a6032507696256e0ddf8
+  languageName: node
+  linkType: hard
+
 "@colors/colors@npm:1.5.0":
   version: 1.5.0
   resolution: "@colors/colors@npm:1.5.0"
@@ -648,6 +655,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
+    "@chainlink/contracts": ^0.4.1
     "@openzeppelin/contracts": 4.3.2
     "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"

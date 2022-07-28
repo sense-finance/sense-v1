@@ -70,9 +70,8 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
-        address[] memory assets = new address[](1);
-        assets[0] = AddressBook.WSTETH;
-        addLiquidity(assets);
+        giveTokens(AddressBook.WETH, 10e18, hevm);
+        giveTokens(AddressBook.WSTETH, 10e18, hevm);
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));

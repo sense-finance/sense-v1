@@ -8,6 +8,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
+import { IClaimer } from "../IClaimer.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -17,7 +18,8 @@ abstract contract Crop is Trust {
     using FixedMath for uint256;
 
     /// @notice Program state
-    address public immutable reward;
+    address public claimer; // claimer address
+    address public reward;
     uint256 public share; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget; // total target accumulated by all users
@@ -119,10 +121,41 @@ abstract contract Crop is Trust {
     /// @notice Some protocols don't airdrop reward tokens, instead users must claim them.
     /// This method may be overriden by child contracts to claim a protocol's rewards
     function _claimReward() internal virtual {
-        return;
+        if (claimer != address(0)) {
+            ERC20 target = ERC20(BaseAdapter(address(this)).target());
+            uint256 tBal = ERC20(target).balanceOf(address(this));
+
+            if (tBal > 0) {
+                // We send all the target balance to the claimer contract to it can claim rewards
+                ERC20(target).transfer(claimer, tBal);
+
+                // Make claimer to claim rewards
+                IClaimer(claimer).claim();
+
+                // Get the target back
+                if (ERC20(target).balanceOf(address(this)) < tBal) revert Errors.BadContractInteration();
+            }
+        }
+    }
+
+    /// @notice Overrides the rewardToken address.
+    /// @param _reward New reward token address
+    function setRewardToken(address _reward) public requiresTrust {
+        _claimReward();
+        reward = _reward;
+        emit RewardTokenChanged(reward);
+    }
+
+    /// @notice Sets `claimer`.
+    /// @param _claimer New claimer contract address
+    function setClaimer(address _claimer) public requiresTrust {
+        claimer = _claimer;
+        emit ClaimerChanged(claimer);
     }
 
     /* ========== LOGS ========== */
 
     event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
+    event RewardTokenChanged(address indexed reward);
+    event ClaimerChanged(address indexed claimer);
 }

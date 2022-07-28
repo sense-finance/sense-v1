@@ -19,7 +19,8 @@ library Errors {
     error SenderNotEligible();
     error TargetMismatch();
     error TargetNotSupported();
-    error InvalidPrice();
+    error InvalidAdapterType();
+    error PriceOracleNotFound();
 
     // Divider
     error AlreadySettled();
@@ -43,6 +44,9 @@ library Errors {
     error TargetParamsNotSet();
     error PoolParamsNotSet();
     error PTParamsNotSet();
+    error AttemptFailed();
+    error InvalidPrice();
+    error BadContractInteration();
 
     // Periphery
     error FactoryNotSupported();

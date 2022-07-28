@@ -10,7 +10,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { YT } from "../../tokens/YT.sol";
 
-import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { MockAdapter, MockCropAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
@@ -46,7 +46,7 @@ contract CropAdapters is TestHelper {
             level: DEFAULT_LEVEL
         });
 
-        MockAdapter cropAdapter = new MockAdapter(
+        MockCropAdapter cropAdapter = new MockCropAdapter(
             address(divider),
             address(target),
             !is4626 ? target.underlying() : target.asset(),
