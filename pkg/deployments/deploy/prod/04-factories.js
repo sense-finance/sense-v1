@@ -15,13 +15,13 @@ module.exports = async function () {
   log("DEPLOY FACTORIES & ADAPTERS");
   log("-------------------------------------------------------");
   for (let factory of global.mainnet.FACTORIES) {
-    const { contractName, adapterContract, oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, reward, targets, crops } =
+    const { contractName, adapterContract, oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, reward, targets, crops, guard } =
       factory(chainId);
     if (!crops && !reward) throw Error("No reward token found");
     if (!stake) throw Error("No stake token found");
 
     log(`\nDeploy ${contractName}`);
-    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt];
+    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: factoryAddress } = await deploy(contractName, {
       from: deployer,
       args: [divider.address, factoryParams, ...(!crops ? [reward] : [])],

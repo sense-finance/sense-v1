@@ -115,7 +115,8 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_TARGETS,
     crops: false,
-    is4626: false
+    is4626: false,
+    guard: ethers.utils.parseEther("100000")
   }),
   chainId => ({
     contractName: "MockCropsFactory",
@@ -128,7 +129,8 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_CROPS_TARGETS,
     crops: true,
-    is4626: false
+    is4626: false,
+    guard: ethers.utils.parseEther("100000")
   }),
   chainId => ({
     contractName: "Mock4626CropFactory",
@@ -142,6 +144,7 @@ const DEV_FACTORIES = [
     targets: DEV_4626_TARGETS,
     crops: false,
     is4626: true,
+    guard: ethers.utils.parseEther("100000")
   }),
   chainId => ({
     contractName: "Mock4626CropsFactory",
@@ -154,7 +157,8 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_4626_CROPS_TARGETS,
     crops: true,
-    is4626: true
+    is4626: true,
+    guard: ethers.utils.parseEther("100000")
   }),
 ];
 // ------------------------------------
@@ -190,6 +194,7 @@ const MAINNET_FACTORIES = [
     reward: COMP_TOKEN.get(chainId),
     targets: CTARGETS(chainId),
     crops: false,
+    guard: ethers.utils.parseEther("100000"),
   }),
   // FFactory example
   chainId => ({
@@ -205,6 +210,7 @@ const MAINNET_FACTORIES = [
     tilt: 0,
     targets: FTARGETS(chainId),
     crops: true,
+    guard: ethers.utils.parseEther("100000"),
   }),
 ];
 
