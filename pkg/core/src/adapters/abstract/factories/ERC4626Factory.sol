@@ -47,6 +47,8 @@ contract ERC4626Factory is BaseFactory, Trust {
         adapter = address(
             new ERC4626Adapter{ salt: _target.fillLast12Bytes() }(divider, _target, factoryParams.ifee, adapterParams)
         );
+
+        _setGuard(adapter);
     }
 
     /// @notice (Un)support target

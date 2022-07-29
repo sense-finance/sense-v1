@@ -13,7 +13,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract MockRevertAdapter is MockAdapter {
     constructor(BaseAdapter.AdapterParams memory _adapterParams)
-        MockAdapter(address(0), address(0), address(0), 1, _adapterParams, address(0))
+        MockAdapter(address(0), address(0), address(0), 1, _adapterParams)
     {}
 
     function getUnderlyingPrice() external view virtual override returns (uint256) {
@@ -22,7 +22,7 @@ contract MockRevertAdapter is MockAdapter {
 }
 
 contract MockRevertFactory is MockFactory {
-    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), _factoryParams, address(0)) {}
+    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), _factoryParams) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams;

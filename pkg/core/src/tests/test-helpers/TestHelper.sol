@@ -318,7 +318,8 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         someFactory = address(new ERC4626Factory(address(divider), factoryParams));
         MockFactory(someFactory).supportTarget(_target, true);
@@ -335,7 +336,8 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
         MockFactory(someFactory).supportTarget(_target, true);

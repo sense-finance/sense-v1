@@ -31,7 +31,8 @@ contract ERC4626FactoryTest is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: 123e18
         });
         ERC4626Factory someFactory = new ERC4626Factory(address(divider), factoryParams);
 
@@ -45,7 +46,8 @@ contract ERC4626FactoryTest is TestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 guard
         ) = ERC4626Factory(someFactory).factoryParams();
 
         assertEq(oracle, ORACLE);
@@ -56,6 +58,7 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(tilt, 0);
+        assertEq(guard, 123e18);
     }
 
     function testDeployNonCropAdapter() public {

@@ -52,6 +52,8 @@ contract ERC4626CropsFactory is CropsFactory {
                 rewardTokens
             )
         );
+
+        _setGuard(adapter);
     }
 
     /// @notice (Un)support target
