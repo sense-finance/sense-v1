@@ -140,7 +140,8 @@ contract PeripheryTest is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
 
         address cropFactory;

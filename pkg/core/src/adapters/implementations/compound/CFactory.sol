@@ -5,10 +5,10 @@ pragma solidity 0.8.11;
 import { CropFactory } from "../../abstract/factories/CropFactory.sol";
 import { CAdapter, ComptrollerLike } from "./CAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 interface CTokenLike {
     function underlying() external view returns (address);
@@ -55,5 +55,7 @@ contract CFactory is CropFactory {
                 reward
             )
         );
+
+        _setGuard(adapter);
     }
 }

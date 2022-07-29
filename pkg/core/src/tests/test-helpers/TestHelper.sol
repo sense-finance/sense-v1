@@ -105,6 +105,7 @@ contract TestHelper is DSTest {
     uint256 public MAX_MATURITY = 14 weeks;
     uint16 public DEFAULT_LEVEL = 31;
     uint16 public DEFAULT_TILT = 0;
+    uint256 public DEFAULT_GUARD = 100000 * 1e18; // guard in target terms
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
     uint256 public SCALING_FACTOR;
@@ -352,7 +353,8 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         if (is4626) {
             someFactory = address(new ERC4626Factory(address(divider), factoryParams));
@@ -383,7 +385,8 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         if (is4626) {
             someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));

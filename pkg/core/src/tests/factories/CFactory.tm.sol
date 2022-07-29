@@ -7,6 +7,7 @@ import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -26,6 +27,7 @@ contract CAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -44,7 +46,8 @@ contract CAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         factory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -52,6 +55,8 @@ contract CAdapterTestHelper is DSTest {
 }
 
 contract CFactories is CAdapterTestHelper {
+    using FixedMath for uint256;
+
     function testMainnetDeployFactory() public {
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = AddressBook.COMP;
@@ -64,7 +69,8 @@ contract CFactories is CAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         CFactory otherCFactory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
 
@@ -77,7 +83,8 @@ contract CFactories is CAdapterTestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 guard
         ) = CFactory(otherCFactory).factoryParams();
 
         assertEq(CFactory(otherCFactory).divider(), address(divider));
@@ -89,6 +96,7 @@ contract CFactories is CAdapterTestHelper {
         assertEq(mode, MODE);
         assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
+        assertEq(guard, DEFAULT_GUARD);
     }
 
     function testMainnetDeployAdapter() public {
@@ -103,6 +111,12 @@ contract CFactories is CAdapterTestHelper {
 
         uint256 scale = CAdapter(adapter).scale();
         assertTrue(scale > 0);
+
+        // As we are testing with a stablecoin here (DAI), we ca think the scale
+        // as the cDAI - USD rate, so we want to assert that the guard (which should be $100'000)
+        // in target terms is approx 100'000 / scale (within 10%).
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {

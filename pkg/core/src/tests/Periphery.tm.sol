@@ -48,6 +48,8 @@ interface SpaceFactoryLike {
 }
 
 contract PeripheryTestHelper is DSTest, LiquidityHelper {
+    uint256 public origin;
+
     Periphery internal periphery;
 
     CFactory internal cfactory;
@@ -69,6 +71,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
     function setUp() public {
+        origin = block.timestamp;
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         hevm.warp(firstDayOfMonth); // Set to first day of the month
@@ -112,7 +115,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             minm: Constants.DEFAULT_MIN_MATURITY,
             maxm: Constants.DEFAULT_MAX_MATURITY,
             mode: Constants.DEFAULT_MODE,
-            tilt: Constants.DEFAULT_TILT
+            tilt: Constants.DEFAULT_TILT,
+            guard: Constants.DEFAULT_GUARD
         });
 
         cfactory = new CFactory(divider, factoryParams, AddressBook.COMP);
@@ -125,13 +129,20 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
         // Start multisig (admin) prank calls
         hevm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
+
+        // Give authority to factories soy they can setGuard when deploying adapters
+        Divider(divider).setIsTrusted(address(cfactory), true);
+        Divider(divider).setIsTrusted(address(ffactory), true);
+
         Divider(divider).setPeriphery(address(periphery));
         Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
+
         PoolManager(poolManager).setIsTrusted(address(periphery), true);
         uint256 ts = 1e18 / (uint256(31536000) * uint256(12));
         uint256 g1 = (uint256(950) * 1e18) / uint256(1000);
         uint256 g2 = (uint256(1000) * 1e18) / uint256(950);
         SpaceFactoryLike(spaceFactory).setParams(ts, g1, g2, true);
+
         hevm.stopPrank(); // Stop prank calling
 
         periphery.onboardAdapter(address(mockAdapter), true);
@@ -151,12 +162,17 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     /* ========== SERIES SPONSORING ========== */
 
     function testMainnetSponsorSeriesOnCAdapter() public {
+        // We roll back to original block number (which is the latest block) because the call chainlink's oracle
+        // somehow is not being done taking into consideration the warped block (maybe a bug in foundry?)
+        hevm.warp(origin);
         address f = periphery.deployAdapter(address(cfactory), AddressBook.cDAI, "");
         CAdapter cadapter = CAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI
         giveTokens(AddressBook.DAI, type(uint256).max, hevm);
 
-        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
+            block.timestamp + Constants.DEFAULT_MIN_MATURITY
+        );
         uint256 maturity = DateTimeFull.timestampFromDateTime(
             month == 12 ? year + 1 : year,
             month == 12 ? 1 : (month + 1),
@@ -179,6 +195,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSponsorSeriesOnFAdapter() public {
+        // We roll back to original block number (which is the latest block) because the call chainlink's oracle
+        // somehow is not being done taking into consideration the warped block (maybe a bug in foundry?)
+        hevm.warp(origin);
         address f = periphery.deployAdapter(
             address(ffactory),
             AddressBook.f156FRAX3CRV,
@@ -188,7 +207,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Mint this address MAX_UINT AddressBook.DAI for stake
         giveTokens(AddressBook.DAI, type(uint256).max, hevm);
 
-        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
+            block.timestamp + Constants.DEFAULT_MIN_MATURITY
+        );
         uint256 maturity = DateTimeFull.timestampFromDateTime(
             month == 12 ? year + 1 : year,
             month == 12 ? 1 : (month + 1),
