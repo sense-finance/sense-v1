@@ -160,7 +160,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 uBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));
 
         assertClose(uBalanceAfter, 0);
-        assertEq(tBalanceBefore + wrapped, tBalanceAfter);
+        assertClose(tBalanceBefore + wrapped, tBalanceAfter, 1);
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
