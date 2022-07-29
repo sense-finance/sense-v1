@@ -78,16 +78,13 @@ abstract contract BaseFactory {
 
         // Get Underlying-ETH price
         try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
-            // Get ETH-USD price from Chainlink
+            // Get ETH-USD price from Chainlink (in 8 decimals base)
             (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED).latestRoundData();
 
-            if (block.timestamp - ethUpdatedAt > 1 hours) revert Errors.InvalidPrice();
+            if (block.timestamp - ethUpdatedAt > 1.5 hours) revert Errors.InvalidPrice();
 
             // Calculate Underlying-USD price (normalised to 18 deicmals)
-            ChainlinkOracleLike(ETH_USD_PRICEFEED).decimals();
-            uint256 price = underlyingPriceInEth.fmul(
-                uint256(ethPrice) * 10**(18 - ChainlinkOracleLike(ETH_USD_PRICEFEED).decimals())
-            );
+            uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice) * 1e10);
 
             // Calculate Target-USD price
             price = BaseAdapter(adapter).scale().fdiv(price);
