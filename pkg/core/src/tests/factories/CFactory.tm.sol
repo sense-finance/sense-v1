@@ -27,6 +27,7 @@ contract CAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -45,7 +46,8 @@ contract CAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         factory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -67,7 +69,8 @@ contract CFactories is CAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         CFactory otherCFactory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
 
@@ -80,7 +83,8 @@ contract CFactories is CAdapterTestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 guard
         ) = CFactory(otherCFactory).factoryParams();
 
         assertEq(CFactory(otherCFactory).divider(), address(divider));
@@ -92,6 +96,7 @@ contract CFactories is CAdapterTestHelper {
         assertEq(mode, MODE);
         assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
+        assertEq(guard, DEFAULT_GUARD);
     }
 
     function testMainnetDeployAdapter() public {

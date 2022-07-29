@@ -12,4 +12,5 @@ library Constants {
     uint16 public constant DEFAULT_TILT = 0;
     uint16 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_ISSUANCE_FEE = 0.05e18;
+    uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
 }

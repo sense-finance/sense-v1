@@ -25,6 +25,7 @@ contract FAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
+    uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -43,7 +44,8 @@ contract FAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         factory = new FFactory(address(divider), factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
@@ -60,7 +62,8 @@ contract FFactories is FAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         FFactory otherFFactory = new FFactory(address(divider), factoryParams);
 
@@ -73,7 +76,8 @@ contract FFactories is FAdapterTestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 guard
         ) = FFactory(otherFFactory).factoryParams();
 
         assertEq(FFactory(otherFFactory).divider(), address(divider));
@@ -85,6 +89,7 @@ contract FFactories is FAdapterTestHelper {
         assertEq(mode, MODE);
         assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
+        assertEq(guard, DEFAULT_GUARD);
     }
 
     function testMainnetDeployAdapter() public {

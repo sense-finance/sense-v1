@@ -11,6 +11,25 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
+contract MockRevertAdapter is MockAdapter {
+    constructor(BaseAdapter.AdapterParams memory _adapterParams)
+        MockAdapter(address(0), address(0), address(0), 1, _adapterParams, address(0))
+    {}
+
+    function getUnderlyingPrice() external view virtual override returns (uint256) {
+        revert("ERROR");
+    }
+}
+
+contract MockRevertFactory is MockFactory {
+    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), _factoryParams, address(0)) {}
+
+    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
+        BaseAdapter.AdapterParams memory adapterParams;
+        adapter = address(new MockRevertAdapter(adapterParams));
+    }
+}
+
 contract Factories is TestHelper {
     function testDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
@@ -21,7 +40,8 @@ contract Factories is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: 123e18
         });
         MockFactory someFactory = new MockFactory(address(divider), factoryParams, address(reward));
 
@@ -35,7 +55,8 @@ contract Factories is TestHelper {
             uint256 maxm,
             uint256 ifee,
             uint16 mode,
-            uint64 tilt
+            uint64 tilt,
+            uint256 guard
         ) = MockFactory(someFactory).factoryParams();
 
         assertEq(oracle, ORACLE);
@@ -46,7 +67,16 @@ contract Factories is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
         assertEq(tilt, 0);
+        assertEq(guard, 123e18);
         assertEq(MockFactory(someFactory).reward(), address(reward));
+    }
+
+    function testGuardIsSetIfGetUnderlyingPriceReverts() public {
+        BaseFactory.FactoryParams memory factoryParams;
+        factoryParams.guard = 444e18;
+        MockRevertFactory someFactory = new MockRevertFactory(factoryParams);
+        (, , , , , , , , uint256 guard) = MockFactory(someFactory).factoryParams();
+        assertEq(guard, 444e18);
     }
 
     function testDeployAdapter() public {

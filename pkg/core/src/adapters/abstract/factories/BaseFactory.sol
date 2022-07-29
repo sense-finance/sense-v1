@@ -56,6 +56,7 @@ abstract contract BaseFactory {
         uint128 ifee; // issuance fee
         uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
+        uint256 guard; // adapter guard (in target)
     }
 
     constructor(address _divider, FactoryParams memory _factoryParams) {
@@ -73,24 +74,25 @@ abstract contract BaseFactory {
     /// Set adapter's guard to $100`000 in target
     /// @notice if Underlying-ETH price feed returns 0, we set the guard to 100000 target.
     function _setGuard(address adapter) internal {
-        uint256 guard = uint256(100000 * 1e18);
+        uint256 guard = factoryParams.guard;
 
         // Get Underlying-ETH price
-        uint256 underlyingEthPrice = BaseAdapter(adapter).getUnderlyingPrice();
-
-        if (underlyingEthPrice > 0) {
+        try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
             // Get ETH-USD price from Chainlink
             (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED).latestRoundData();
+
             if (block.timestamp - ethUpdatedAt > 1 hours) revert Errors.InvalidPrice();
 
             // Calculate Underlying-USD price (normalised to 18 deicmals)
-            uint256 price = underlyingEthPrice.fmul(uint256(ethPrice)) *
-                10**(18 - ChainlinkOracleLike(ETH_USD_PRICEFEED).decimals());
+            ChainlinkOracleLike(ETH_USD_PRICEFEED).decimals();
+            uint256 price = underlyingPriceInEth.fmul(
+                uint256(ethPrice) * 10**(18 - ChainlinkOracleLike(ETH_USD_PRICEFEED).decimals())
+            );
 
             // Calculate Target-USD price
-            price = (BaseAdapter(adapter).scale()).fdiv(price);
+            price = BaseAdapter(adapter).scale().fdiv(price);
             guard = guard.fdiv(price);
-        }
+        } catch {}
 
         Divider(divider).setGuard(adapter, guard);
     }
