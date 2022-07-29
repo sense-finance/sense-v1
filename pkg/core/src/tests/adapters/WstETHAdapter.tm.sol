@@ -8,7 +8,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 // Internal references
 import { Periphery } from "../../Periphery.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { WstETHAdapter, StETHLike } from "../../adapters/implementations/lido/WstETHAdapter.sol";
+import { WstETHAdapter, StETHLike, WstETHLike } from "../../adapters/implementations/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -145,6 +145,9 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetWrapUnderlying() public {
+        // get some steth by unwrapping wsteth
+        WstETHLike(AddressBook.WSTETH).unwrap(ERC20(AddressBook.WSTETH).balanceOf(address(this)));
+
         uint256 uBalanceBefore = ERC20(AddressBook.STETH).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(this));
 
@@ -159,7 +162,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 uBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));
 
         assertClose(uBalanceAfter, 0);
-        assertEq(tBalanceBefore + wrapped, tBalanceAfter);
+        assertClose(tBalanceBefore + wrapped, tBalanceAfter);
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
