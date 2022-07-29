@@ -46,7 +46,7 @@ export class SpaceFluxer {
     return targetOut;
   }
 
-  // Create a function to a YT buy and return the amount of Target remaining at the end
+  // Create a function to make a YT buy and return the amount of Target remaining at the end
   _getYTBuyer(initialTarget, optimalTargetReturned) {
     const exponent = parseInt(Number.parseFloat(initialTarget).toExponential(0).split("e")[1]);
     // Set multiplier on the minimization function so that we get precise results, even with small target in values
