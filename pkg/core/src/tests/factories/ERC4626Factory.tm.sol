@@ -139,9 +139,9 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         // As we are testing with a stablecoin here (mUSD), we can think the scale
         // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
-        // in target terms is approx 100'000 / scale (within 5%).
+        // in target terms is approx 100'000 / scale (within 10%).
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.005e18));
+        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
     }
 
     function testMainnetDeployCropsAdapter() public {
@@ -167,9 +167,9 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         // As we are testing with a stablecoin here (mUSD), we can think the scale
         // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
-        // in target terms is approx 100'000 / scale (within 5%).
+        // in target terms is approx 100'000 / scale (within 10%).
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.005e18));
+        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {

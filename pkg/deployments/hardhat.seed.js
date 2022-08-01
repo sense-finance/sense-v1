@@ -147,7 +147,8 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_TARGETS,
     noncrop: true,
-    is4626: false
+    is4626: false,
+    guard: ethers.utils.parseEther("100000")
   }),
   chainId => ({
     contractName: "MockCropFactory",
