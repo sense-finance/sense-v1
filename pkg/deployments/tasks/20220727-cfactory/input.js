@@ -3,7 +3,7 @@ const ethers = require("ethers");
 
 // Only for hardhat, we will deploy adapters using Defender
 const C_FACTORY_TARGETS = [
-  { name: "cUSDT", series: [], address: CUSDT_TOKEN.get("1") },
+  // { name: "cUSDT", series: [], address: CUSDT_TOKEN.get("1") }, // We can't deploy adapters whose target is not ERC20 compliant
   { name: "cDAI", series: [], address: CDAI_TOKEN.get("1") },
 ];
 
