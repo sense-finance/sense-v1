@@ -30,6 +30,12 @@ task(
     log: true,
   });
 
+  // if mainnet or goerli, verify on etherscan
+  if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+    console.log("\n-------------------------------------------------------");
+    await verifyOnEtherscan(chainlinkOracleAddress, [maxSecondsBeforePriceIsStale]);
+  }
+
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Sense Master Price Oracle");
   const { address: masterOracleAddress } = await deploy("MasterPriceOracle", {
@@ -37,6 +43,12 @@ task(
     args: [chainlinkOracleAddress, [], []],
     log: true,
   });
+
+  // if mainnet or goerli, verify on etherscan
+  if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+    console.log("\n-------------------------------------------------------");
+    await verifyOnEtherscan(masterOracleAddress, [chainlinkOracleAddress, [], []]);
+  }
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
@@ -76,9 +88,6 @@ task(
     // if mainnet or goerli, verify on etherscan
     if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
       console.log("\n-------------------------------------------------------");
-      console.log("Waiting 20 seconds for Etherscan to sync...");
-      await delay(20);
-      console.log("Trying to verify contract on Etherscan...");
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
     }
 
