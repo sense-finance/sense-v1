@@ -9,6 +9,7 @@ import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 contract MockRevertAdapter is MockAdapter {
@@ -31,6 +32,8 @@ contract MockRevertFactory is MockFactory {
 }
 
 contract Factories is TestHelper {
+    using FixedMath for uint256;
+
     function testDeployFactory() public {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
@@ -81,7 +84,6 @@ contract Factories is TestHelper {
 
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someUnderlying = new MockToken("Some Underlying", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
         MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
         divider.setPeriphery(alice);
@@ -102,8 +104,90 @@ contract Factories is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
         assertEq(MockAdapter(adapter).reward(), address(someReward));
+
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
+
+        // Calculate Target-USD price
+        uint256 chainlinkMockPrice = 1e8;
+        uint256 price = MockAdapter(adapter).getUnderlyingPrice().fmul(uint256(chainlinkMockPrice) * 1e10);
+        price = MockAdapter(adapter).scale().fdiv(price);
+
+        // Calculate guard based on Target-USD price
+        (, , , , , , , , uint256 factoryGuard) = someFactory.factoryParams();
+        uint256 guard = factoryGuard.fdiv(price);
+
+        (, , uint256 adapteGuard, ) = divider.adapterMeta(adapter);
+        assertEq(guard, adapteGuard);
+    }
+
+    function testDeployAdapterWhenChainlinkCallReverts() public {
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
+        divider.setPeriphery(alice);
+        address adapter = someFactory.deployAdapter(address(someTarget), "");
+        assertTrue(adapter != address(0));
+
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
+            .adapterParams();
+        assertEq(MockAdapter(adapter).divider(), address(divider));
+        assertEq(MockAdapter(adapter).target(), address(someTarget));
+        assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
+        assertEq(MockAdapter(adapter).symbol(), "ST-adapter");
+        assertEq(MockAdapter(adapter).ifee(), ISSUANCE_FEE);
+        assertEq(oracle, ORACLE);
+        assertEq(stake, address(stake));
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(MockAdapter(adapter).mode(), MODE);
+        assertEq(MockAdapter(adapter).reward(), address(someReward));
+
+        uint256 scale = MockAdapter(adapter).scale();
+        assertEq(scale, 1e18);
+
+        // remove mock Chainlink call
+        hevm.clearMockedCalls();
+
+        // Since the call to Chainlink reverted when deploying the adapter via factory
+        // guard should be set to the guard of in the factory params
+        (, , , , , , , , uint256 factoryGuard) = someFactory.factoryParams();
+        (, , uint256 guard, ) = divider.adapterMeta(adapter);
+        assertEq(guard, factoryGuard);
+    }
+
+    function testDeployAdapterDoesNotSetGuardWhenNotGuarded() public {
+        // Set guarded mode in false
+        divider.setGuarded(false);
+
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
+        divider.setPeriphery(alice);
+        address adapter = someFactory.deployAdapter(address(someTarget), "");
+        assertTrue(adapter != address(0));
+
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
+            .adapterParams();
+        assertEq(MockAdapter(adapter).divider(), address(divider));
+        assertEq(MockAdapter(adapter).target(), address(someTarget));
+        assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
+        assertEq(MockAdapter(adapter).symbol(), "ST-adapter");
+        assertEq(MockAdapter(adapter).ifee(), ISSUANCE_FEE);
+        assertEq(oracle, ORACLE);
+        assertEq(stake, address(stake));
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(MockAdapter(adapter).mode(), MODE);
+        assertEq(MockAdapter(adapter).reward(), address(someReward));
+
+        uint256 scale = MockAdapter(adapter).scale();
+        assertEq(scale, 1e18);
+
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        assertEq(guard, 0);
     }
 
     function testDeployAdapterAndinitializeSeries() public {

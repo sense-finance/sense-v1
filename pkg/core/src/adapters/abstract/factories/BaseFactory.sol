@@ -6,7 +6,6 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Divider } from "../../../Divider.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
-import { Divider } from "../../../Divider.sol";
 
 interface ChainlinkOracleLike {
     function latestRoundData()
@@ -74,24 +73,28 @@ abstract contract BaseFactory {
     /// Set adapter's guard to $100`000 in target
     /// @notice if Underlying-ETH price feed returns 0, we set the guard to 100000 target.
     function _setGuard(address adapter) internal {
-        uint256 guard = factoryParams.guard;
+        // We only want to execute this if divider is guarded
+        if (Divider(divider).guarded()) {
+            uint256 guard = factoryParams.guard;
 
-        // Get Underlying-ETH price
-        try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
-            // Get ETH-USD price from Chainlink (in 8 decimals base)
-            (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED).latestRoundData();
+            // Get Underlying-ETH price
+            try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
+                // Get ETH-USD price from Chainlink (in 8 decimals base)
+                (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED)
+                    .latestRoundData();
 
-            if (block.timestamp - ethUpdatedAt > 2 hours) revert Errors.InvalidPrice();
+                if (block.timestamp - ethUpdatedAt > 2 hours) revert Errors.InvalidPrice();
 
-            // Calculate Underlying-USD price (normalised to 18 deicmals)
-            uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice) * 1e10);
+                // Calculate Underlying-USD price (normalised to 18 deicmals)
+                uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice) * 1e10);
 
-            // Calculate Target-USD price
-            price = BaseAdapter(adapter).scale().fdiv(price);
-            guard = guard.fdiv(price);
-        } catch {}
+                // Calculate Target-USD price
+                price = BaseAdapter(adapter).scale().fdiv(price);
+                guard = guard.fdiv(price);
+            } catch {}
 
-        Divider(divider).setGuard(adapter, guard);
+            Divider(divider).setGuard(adapter, guard);
+        }
     }
 
     /* ========== LOGS ========== */

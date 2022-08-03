@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
@@ -15,6 +15,7 @@ import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4
 import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
 import { MockFactory, Mock4626CropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { AddressBook } from "./AddressBook.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -222,6 +223,13 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
+        // mock all calls to Chainlink oracle
+        uint256 price = 1e8;
+        bytes memory returnData = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
+        ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
+        hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
+
+        // factories
         factory = MockFactory(deployFactory(address(target), address(reward)));
         address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
         adapter = MockAdapter(f);
