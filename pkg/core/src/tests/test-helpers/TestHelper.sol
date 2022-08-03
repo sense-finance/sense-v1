@@ -16,6 +16,7 @@ import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
 import { MockFactory, Mock4626CropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
+import { PriceOracleLike } from "../../adapters/abstract/ERC4626Adapter.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -228,6 +229,14 @@ contract TestHelper is DSTest {
         bytes memory returnData = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
         ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
         hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
+
+        // mock all calls to oracle price
+        returnData = abi.encode(1e18); // return data
+        hevm.mockCall(
+            address(ORACLE),
+            abi.encodeWithSelector(PriceOracleLike(ORACLE).price.selector, address(underlying)),
+            returnData
+        );
 
         // factories
         factory = MockFactory(deployFactory(address(target), address(reward)));
