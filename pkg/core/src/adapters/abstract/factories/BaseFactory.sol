@@ -4,7 +4,6 @@ pragma solidity 0.8.11;
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
-import { Divider } from "../../../Divider.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
 
