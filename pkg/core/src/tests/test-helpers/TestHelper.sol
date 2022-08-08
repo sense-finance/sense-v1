@@ -238,7 +238,7 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockFactory(deployFactory(address(target), address(reward)));
+        factory = MockCropFactory(deployCropsFactory(address(target)));
         address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
         adapter = MockCropAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
@@ -384,7 +384,8 @@ contract TestHelper is DSTest {
     }
 
     function deployCropsFactory(address _target) public returns (address someFactory) {
-        address[] memory rewardTokens;
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
         return deployCropsFactory(_target, rewardTokens, false);
     }
 

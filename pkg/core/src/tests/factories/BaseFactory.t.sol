@@ -112,21 +112,21 @@ contract Factories is TestHelper {
 
         // Calculate Target-USD price
         uint256 chainlinkMockPrice = 1e8;
-        uint256 price = MockAdapter(adapter).getUnderlyingPrice().fmul(uint256(chainlinkMockPrice) * 1e10);
-        price = MockAdapter(adapter).scale().fdiv(price);
+        uint256 price = adapter.getUnderlyingPrice().fmul(uint256(chainlinkMockPrice) * 1e10);
+        price = adapter.scale().fdiv(price);
 
         // Calculate guard based on Target-USD price
         (, , , , , , , , uint256 factoryGuard) = someFactory.factoryParams();
         uint256 guard = factoryGuard.fdiv(price);
 
-        (, , uint256 adapteGuard, ) = divider.adapterMeta(adapter);
+        (, , uint256 adapteGuard, ) = divider.adapterMeta(address(adapter));
         assertEq(guard, adapteGuard);
     }
 
     function testDeployAdapterWhenChainlinkCallReverts() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget)));
         divider.setPeriphery(alice);
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
@@ -144,7 +144,6 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
-        assertEq(MockAdapter(adapter).reward(), address(someReward));
 
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
@@ -163,9 +162,8 @@ contract Factories is TestHelper {
         // Set guarded mode in false
         divider.setGuarded(false);
 
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = MockFactory(deployFactory(address(someTarget), address(someReward)));
+        MockFactory someFactory = MockFactory(deployFactory(address(someTarget)));
         divider.setPeriphery(alice);
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
@@ -183,7 +181,6 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
-        assertEq(MockAdapter(adapter).reward(), address(someReward));
 
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);

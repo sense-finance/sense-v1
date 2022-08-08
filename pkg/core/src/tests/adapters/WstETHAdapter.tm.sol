@@ -155,8 +155,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 rate = StETHLike(AddressBook.STETH).getPooledEthByShares(1 ether);
         uint256 uDecimals = ERC20(AddressBook.STETH).decimals();
 
-        uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
-        adapter.wrapUnderlying(uBalanceBefore);
+        uint256 wrapped = adapter.wrapUnderlying(uBalanceBefore);
 
         uint256 tBalanceAfter = ERC20(AddressBook.WSTETH).balanceOf(address(this));
         uint256 uBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));
