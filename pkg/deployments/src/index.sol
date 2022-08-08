@@ -8,6 +8,8 @@ import "@sense-finance/v1-core/src/adapters/implementations/compound/CFactory.so
 import "@sense-finance/v1-core/src/adapters/implementations/fuse/FFactory.sol";
 import "@sense-finance/v1-core/src/adapters/implementations/lido/WstETHAdapter.sol";
 import "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol";
+import "@sense-finance/v1-core/src/adapters/implementations/oracles/ChainlinkPriceOracle.sol";
+import "@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockFuseDirectory.sol";
