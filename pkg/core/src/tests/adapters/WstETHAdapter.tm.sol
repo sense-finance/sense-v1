@@ -8,7 +8,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 // Internal references
 import { Periphery } from "../../Periphery.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { WstETHAdapter, StETHLike } from "../../adapters/implementations/lido/WstETHAdapter.sol";
+import { WstETHAdapter, StETHLike, WstETHLike } from "../../adapters/implementations/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -70,9 +70,8 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
-        address[] memory assets = new address[](1);
-        assets[0] = AddressBook.WSTETH;
-        addLiquidity(assets);
+        giveTokens(AddressBook.WETH, 10e18, hevm);
+        giveTokens(AddressBook.WSTETH, 10e18, hevm);
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
@@ -146,6 +145,9 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
     }
 
     function testMainnetWrapUnderlying() public {
+        // get some steth by unwrapping wsteth
+        WstETHLike(AddressBook.WSTETH).unwrap(ERC20(AddressBook.WSTETH).balanceOf(address(this)));
+
         uint256 uBalanceBefore = ERC20(AddressBook.STETH).balanceOf(address(this));
         uint256 tBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(this));
 
@@ -153,8 +155,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 rate = StETHLike(AddressBook.STETH).getPooledEthByShares(1 ether);
         uint256 uDecimals = ERC20(AddressBook.STETH).decimals();
 
-        uint256 wrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
-        adapter.wrapUnderlying(uBalanceBefore);
+        uint256 wrapped = adapter.wrapUnderlying(uBalanceBefore);
 
         uint256 tBalanceAfter = ERC20(AddressBook.WSTETH).balanceOf(address(this));
         uint256 uBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));

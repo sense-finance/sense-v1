@@ -4,24 +4,37 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
+import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
+import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
+import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
-import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
+import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
+import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
+import { Hevm } from "../test-helpers/Hevm.sol";
 
-// TODO: test rounding
+contract MockOracle is IPriceFeed {
+    function price(address) external view returns (uint256 price) {
+        return 555e18;
+    }
+}
+
 contract ERC4626AdapterTest is DSTestPlus {
+    using FixedMath for uint256;
+
     MockToken public stake;
     MockToken public underlying;
     MockERC4626 public target;
+    MasterPriceOracle public masterOracle;
+    ChainlinkPriceOracle public chainlinkOracle;
 
     Divider public divider;
-    MockOracle internal mockOracle;
     ERC4626Adapter public erc4626Adapter;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -37,7 +50,13 @@ contract ERC4626AdapterTest is DSTestPlus {
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
         tokenHandler.init(address(divider));
-        mockOracle = new MockOracle();
+
+        // Deploy Chainlink price oracle
+        chainlinkOracle = new ChainlinkPriceOracle(0);
+
+        // Deploy Sense master oracle
+        address[] memory data;
+        masterOracle = new MasterPriceOracle(address(chainlinkOracle), data, data);
 
         stake = new MockToken("Mock Stake", "MS", 18);
         underlying = new MockToken("Mock Underlying", "MU", 18);
@@ -46,7 +65,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         underlying.mint(address(this), INITIAL_BALANCE);
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: address(mockOracle),
+            oracle: address(masterOracle),
             stake: address(stake),
             stakeSize: STAKE_SIZE,
             minm: MIN_MATURITY,
@@ -205,7 +224,74 @@ contract ERC4626AdapterTest is DSTestPlus {
         assertEq(erc4626Adapter.scaleStored(), scale);
     }
 
-    function testGetUnderlyingPrice() public {
-        assertEq(erc4626Adapter.getUnderlyingPrice(), MockOracle(mockOracle).price(address(underlying)));
+    function testGetUnderlyingPriceUsingSenseChainlinkOracle() public {
+        // Mock call to Rari's master oracle
+        uint256 price = 123e18;
+        bytes memory data = abi.encode(price); // return data
+        hevm.mockCall(
+            address(chainlinkOracle),
+            abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),
+            data
+        );
+
+        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
     }
+
+    function testGetUnderlyingPriceRevertsIfZero() public {
+        // Mock call to Rari's master oracle
+        uint256 price = 0;
+        bytes memory data = abi.encode(price); // return data
+        hevm.mockCall(
+            address(chainlinkOracle),
+            abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),
+            data
+        );
+
+        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidPrice.selector));
+        erc4626Adapter.getUnderlyingPrice();
+    }
+
+    function testGetUnderlyingPriceCustomOracle() public {
+        // Deploy a custom oracle
+        MockOracle oracle = new MockOracle();
+        address[] memory underlyings = new address[](1);
+        underlyings[0] = address(underlying);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(oracle);
+
+        // Add oracle to Sense master price oracle
+        masterOracle.add(underlyings, oracles);
+
+        uint256 price = MockOracle(oracle).price(address(underlying));
+        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+    }
+
+    function testShouldAlwaysDefaultToCustom() public {
+        // Mock call to Chainlink's registry
+        uint256 price = 123e18;
+        bytes memory data = abi.encode(price); // return datat
+
+        IPriceFeed oracle = IPriceFeed(AddressBook.RARI_ORACLE);
+        hevm.mockCall(
+            address(AddressBook.RARI_ORACLE),
+            abi.encodeWithSelector(oracle.price.selector, address(underlying)),
+            data
+        );
+
+        // Deploy a custom oracle
+        MockOracle customOracle = new MockOracle();
+        address[] memory underlyings = new address[](1);
+        underlyings[0] = address(underlying);
+        address[] memory oracles = new address[](1);
+        oracles[0] = address(customOracle);
+
+        // Add oracle to Sense master price oracle
+        masterOracle.add(underlyings, oracles);
+
+        // Assert that the price returned is the one from the custom oracle and not the one Rari
+        assertEq(erc4626Adapter.getUnderlyingPrice(), customOracle.price(address(underlying)));
+    }
+
+    // function testCantGetUnderlyingPriceIfNoFeed() public {
+    // }
 }

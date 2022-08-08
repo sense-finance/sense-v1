@@ -5,23 +5,20 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
-import { FixedMath } from "../../external/FixedMath.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
-import { BaseAdapter } from "./BaseAdapter.sol";
-
-interface PriceOracleLike {
-    /// @notice Get the price of an underlying asset.
-    /// @param underlying The underlying asset to get the price of.
-    /// @return The underlying asset price in ETH as a mantissa (scaled by 1e18).
-    /// Zero means the price is unavailable.
-    function price(address underlying) external view returns (uint256);
-}
+import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
+import { MasterPriceOracle } from "../../implementations/oracles/MasterPriceOracle.sol";
+import { FixedMath } from "../../../external/FixedMath.sol";
+import { BaseAdapter } from "../BaseAdapter.sol";
 
 /// @notice Adapter contract for ERC4626 Vaults
 contract ERC4626Adapter is BaseAdapter {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
+
+    address public constant RARI_MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     uint256 public immutable BASE_UINT;
     uint256 public immutable SCALE_FACTOR;
@@ -46,8 +43,11 @@ contract ERC4626Adapter is BaseAdapter {
         return ERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
     }
 
-    function getUnderlyingPrice() external view override returns (uint256) {
-        return PriceOracleLike(adapterParams.oracle).price(underlying);
+    function getUnderlyingPrice() external view override returns (uint256 price) {
+        price = MasterPriceOracle(adapterParams.oracle).price(underlying);
+        if (price == 0) {
+            revert Errors.InvalidPrice();
+        }
     }
 
     function wrapUnderlying(uint256 assets) external override returns (uint256 _shares) {

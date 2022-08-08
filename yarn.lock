@@ -675,7 +675,9 @@ __metadata:
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.0.13
+    add: ^2.0.6
     dayjs: ^1.10.7
+    defender-relay-client: ^1.26.1
     ethers: ^5.5.1
     fs-extra: ^10.0.1
     hardhat: ^2.9.1
@@ -690,6 +692,7 @@ __metadata:
     prettier-plugin-solidity: ^1.0.0-beta.17
     solhint: ^3.3.6
     solhint-plugin-prettier: ^0.0.5
+    yarn: ^1.22.19
   languageName: unknown
   linkType: soft
 
@@ -982,6 +985,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"add@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "add@npm:2.0.6"
+  checksum: 8599798e63565ee9acb4c0d79485501a60450491c47830fa7bee6ad4f311a880e8f8417deeb69804dbb54765246fd704d3e34fa4ab1b57ed70ae00344ee9d00f
+  languageName: node
+  linkType: hard
+
 "adm-zip@npm:^0.4.16":
   version: 0.4.16
   resolution: "adm-zip@npm:0.4.16"
@@ -1035,6 +1045,19 @@ __metadata:
     json-schema-traverse: ^0.4.1
     uri-js: ^4.2.2
   checksum: 19a8f3b0a06001eb68e6268f4f9f04424b32baadd5df6ba8292cd473e22e5f4019ed9ab17c3e3510394178ed8bef9b42ad0bdb5c675d65f042421a774780ce1a
+  languageName: node
+  linkType: hard
+
+"amazon-cognito-identity-js@npm:^4.3.3":
+  version: 4.6.3
+  resolution: "amazon-cognito-identity-js@npm:4.6.3"
+  dependencies:
+    buffer: 4.9.2
+    crypto-js: ^4.0.0
+    fast-base64-decode: ^1.0.0
+    isomorphic-unfetch: ^3.0.0
+    js-cookie: ^2.2.1
+  checksum: 018856ea11d2ebbe6875328d8e829be46fc6906178a9458a7b32d7f3b7eccd41326d07c1a836f0d6474ddea6f2024323058a4d8e23348c29878dc719296f9731
   languageName: node
   linkType: hard
 
@@ -1205,7 +1228,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^0.21.1":
+"axios@npm:^0.21.1, axios@npm:^0.21.2":
   version: 0.21.4
   resolution: "axios@npm:0.21.4"
   dependencies:
@@ -1230,7 +1253,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-js@npm:^1.3.1":
+"base64-js@npm:^1.0.2, base64-js@npm:^1.3.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: c1b41a26ddc6620eb7f1ee6c29c812f5942a4e328e74263f995872cfb8ca3aee08542beb25cd10fd7ef16e4f16603e25c35a26e776c01fd55277e5035e829e0e
@@ -1375,6 +1398,17 @@ __metadata:
   dependencies:
     safe-buffer: ^5.1.1
   checksum: 06ab1b0ebdcf27b49268cbc82b91c6db555b041b72f7db110760e0ea77be300fd534b198e7bb8c091c77a477f9c833d3e44cd26ec06f50049efceb7ce2a45849
+  languageName: node
+  linkType: hard
+
+"buffer@npm:4.9.2":
+  version: 4.9.2
+  resolution: "buffer@npm:4.9.2"
+  dependencies:
+    base64-js: ^1.0.2
+    ieee754: ^1.1.4
+    isarray: ^1.0.0
+  checksum: e29ecda22aa854008e26a8df294be1e5339a3bec8cbf537a794fecf63a024da68165743bc9afb1524909c74d8b03392e93a9c8fa5c2b064b1b2a52d4680c204e
   languageName: node
   linkType: hard
 
@@ -1758,6 +1792,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"crypto-js@npm:^4.0.0":
+  version: 4.1.1
+  resolution: "crypto-js@npm:4.1.1"
+  checksum: c12bbf7372534a8889737791eb8d1851a90b5afbbf86e013636fb782c32c05e3e3eab5dfc511ca9020a275a43d0e4138d0e95612b99595f336ccf54180b68a00
+  languageName: node
+  linkType: hard
+
 "dayjs@npm:^1.10.7":
   version: 1.11.1
   resolution: "dayjs@npm:1.11.1"
@@ -1800,6 +1841,39 @@ __metadata:
   version: 0.1.4
   resolution: "deep-is@npm:0.1.4"
   checksum: ea3c723e345f8548be29bf1acab0056867fb8c24b7286cfb2035b4afd2bdbad48c02fdc079c8725b0c60305aa9d6a17f90fec1ebf7444130b4282860482a5a72
+  languageName: node
+  linkType: hard
+
+"defender-base-client@npm:^1.23.0":
+  version: 1.25.0
+  resolution: "defender-base-client@npm:1.25.0"
+  dependencies:
+    amazon-cognito-identity-js: ^4.3.3
+    axios: ^0.21.2
+    lodash: ^4.17.19
+    node-fetch: ^2.6.0
+  checksum: 1df80ad94b85c4c132cb85c691063f1af42312478c05a07f0ad7ebbab05ef819731d82e37746dcb5a303b79ffb5c435a5ead060aed42338c59be8e618cd9494a
+  languageName: node
+  linkType: hard
+
+"defender-relay-client@npm:^1.26.1":
+  version: 1.26.1
+  resolution: "defender-relay-client@npm:1.26.1"
+  dependencies:
+    amazon-cognito-identity-js: ^4.3.3
+    axios: ^0.21.2
+    defender-base-client: ^1.23.0
+    lodash: ^4.17.19
+    node-fetch: ^2.6.0
+  peerDependencies:
+    "@ethersproject/abstract-provider": ^5.6.1
+    "@ethersproject/abstract-signer": ^5.6.2
+    "@ethersproject/hash": ^5.6.1
+    "@ethersproject/providers": ^5.6.8
+    "@ethersproject/transactions": ^5.6.2
+    web3-core: ^1.7.3
+    web3-core-helpers: ^1.7.3
+  checksum: 34dfbd884ba4b0ad6c349a134397bde80cbffe57502d5b98da614142cd8884bbbc53a115885621503b14352af54094b5cc16102e0a5e46240ff3e0c8ea891bd9
   languageName: node
   linkType: hard
 
@@ -2273,6 +2347,13 @@ __metadata:
     iconv-lite: ^0.4.24
     tmp: ^0.0.33
   checksum: 22163643f9938f4d46bab20ee0417cf1131aaf9ea4c546184d3668f689b8f7fc0d750b5a60857cb8ea09e4651b2c49fe30eb5a0903697e3c2d837da1e90d2d7c
+  languageName: node
+  linkType: hard
+
+"fast-base64-decode@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "fast-base64-decode@npm:1.0.0"
+  checksum: 1c775e5214ee7f3cf027018983eb628b0000f3141cfbcfa2b40b714a45a35efa7a98c0cdf114d83df37e7abdeb1606c404139f7678ccc97895a9da8b6e86ec2c
   languageName: node
   linkType: hard
 
@@ -2908,7 +2989,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"ieee754@npm:^1.1.13":
+"ieee754@npm:^1.1.13, ieee754@npm:^1.1.4":
   version: 1.2.1
   resolution: "ieee754@npm:1.2.1"
   checksum: 6c1cfab995ecab3b0dbb6cfb7e192686eb02f0f8e788f2d962e1fc02e2d5ab38a85e06d417221f136bd029663a77cdb920d99605d68d3730a05597dd7910426a
@@ -3133,10 +3214,34 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
+"isarray@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "isarray@npm:1.0.0"
+  checksum: b0ff31a290e783f7b3fb73f2951ee7fc2946dc197b05f73577dc77f87dc3be2e0f66007bedf069123d4e5c4b691e7c89a241f6ca06f0c0f4765cdac5aa4b4047
+  languageName: node
+  linkType: hard
+
 "isexe@npm:^2.0.0":
   version: 2.0.0
   resolution: "isexe@npm:2.0.0"
   checksum: 7b437980bb77881a146fba85cfbdf01edc2b148673e9c2722a1e49661fea73adf524430a80fdbfb8ce9f60d43224e682c657c45030482bd39e0c488fc29b4afe
+  languageName: node
+  linkType: hard
+
+"isomorphic-unfetch@npm:^3.0.0":
+  version: 3.1.0
+  resolution: "isomorphic-unfetch@npm:3.1.0"
+  dependencies:
+    node-fetch: ^2.6.1
+    unfetch: ^4.2.0
+  checksum: 6453f52bfef7adbd59130b9e6727ccf6f80488920fa89b1294cba6ffc5736384fa7dfe49897b0ad48006044fbe52bc5b5d5b131c4ee33123646fd3b3813c4f15
+  languageName: node
+  linkType: hard
+
+"js-cookie@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "js-cookie@npm:2.2.1"
+  checksum: c110f78427cb7715f67c69df0b3430f7cf9dafb5ddb13014df171d4fb61ccda0b1caf9767412cde63cab4bad697a5d4ce83b0c2e7ec650ec9929ed70750d20ae
   languageName: node
   linkType: hard
 
@@ -3377,7 +3482,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.11, lodash@npm:^4.17.12, lodash@npm:^4.17.14":
+"lodash@npm:^4.17.11, lodash@npm:^4.17.12, lodash@npm:^4.17.14, lodash@npm:^4.17.19":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: 4983720b9abca930a4a46f18db163d7dad8dd00dbed6db0cc7b499b33b717cce69f80928b27bbb1ff2cbd3b19d251ee90669a8b5ea466072ca81c2ebe91e7468
@@ -3805,7 +3910,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:^2.6.0":
+"node-fetch@npm:^2.6.0, node-fetch@npm:^2.6.1":
   version: 2.6.7
   resolution: "node-fetch@npm:2.6.7"
   dependencies:
@@ -4926,6 +5031,13 @@ resolve@1.17.0:
   languageName: node
   linkType: hard
 
+"unfetch@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "unfetch@npm:4.2.0"
+  checksum: a1ec2f1d0fd6e0e9d46d659b6639dac490eefde4dcb5d9a060b78e380a543182bbdf395c7772685a023fb76c8e5d2c8b843f199d727c5f3af3cced88b3dcc741
+  languageName: node
+  linkType: hard
+
 "unique-filename@npm:^1.1.1":
   version: 1.1.1
   resolution: "unique-filename@npm:1.1.1"
@@ -5175,6 +5287,16 @@ resolve@1.17.0:
     y18n: ^5.0.5
     yargs-parser: ^20.2.2
   checksum: a79ce1f043021cd645de1ffebb6149541d382ba68f4a6b5eca5d2ad65af51893371bbd78e240dc3b6cf0cbb419511ba5bda715dec992e4266e6863ea49f14feb
+  languageName: node
+  linkType: hard
+
+"yarn@npm:^1.22.19":
+  version: 1.22.19
+  resolution: "yarn@npm:1.22.19"
+  bin:
+    yarn: bin/yarn.js
+    yarnpkg: bin/yarn.js
+  checksum: 58540815069942a668389087447c3abf7467b03cdf6119c285488041246b0ecb29e86f540d834c23244919f7e4069c206c3798fcdc3bb8208d83f0e9567cd2f7
   languageName: node
   linkType: hard
 

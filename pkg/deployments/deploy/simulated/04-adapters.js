@@ -32,13 +32,13 @@ module.exports = async function () {
   });
 
   for (let factory of global.dev.FACTORIES) {
-    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, crops, is4626, guard } = factory(chainId);
+    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, noncrop, crops, is4626, guard } = factory(chainId);
     log(`\nDeploy ${factoryContractName} with mocked dependencies`);
     // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
     const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: mockFactoryAddress } = await deploy(factoryContractName, {
       from: deployer,
-      args: [divider.address, factoryParams, crops ? [airdrop.address] : airdrop.address],
+      args: [divider.address, factoryParams, ...(noncrop ? [] : crops ? [[airdrop.address]] : [airdrop.address])],
       log: true,
     });
 
@@ -256,7 +256,7 @@ module.exports = async function () {
     log(`Add ${targetName} support for mocked Factory`);
     if (!data) data = "0x";
     if (!(await factoryContract.targets(targetAddress))) {
-      await (await factoryContract.addTarget(targetAddress, true)).wait();
+      await (await factoryContract.supportTarget(targetAddress, true)).wait();
     }
     if (data !== "0x") {
       data = ethers.utils.defaultAbiCoder.encode(["address"], [data]);
@@ -276,7 +276,7 @@ module.exports = async function () {
 
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, targetAddress, ...(underlying ? [underlying] : []), ifee, adapterParams, target.crops ? [airdrop.address] : airdrop.address],
+      args: [divider.address, targetAddress, underlying, ifee, adapterParams, ...(target.noncrop ? [] : target.crops ? [[airdrop.address]] : [airdrop.address])],
       log: true,
     });
 

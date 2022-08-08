@@ -23,7 +23,7 @@ import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 
 // Mocks
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
-import { MockAdapter } from "./test-helpers/mocks/MockAdapter.sol";
+import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 
@@ -57,7 +57,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
 
     MockOracle internal mockOracle;
     MockTarget internal mockTarget;
-    MockAdapter internal mockAdapter;
+    MockCropAdapter internal mockAdapter;
 
     // Mainnet contracts for forking
     address internal balancerVault;
@@ -96,7 +96,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             tilt: 0,
             level: Constants.DEFAULT_LEVEL
         });
-        mockAdapter = new MockAdapter(
+        mockAdapter = new MockCropAdapter(
             address(divider),
             address(mockTarget),
             mockTarget.underlying(),
