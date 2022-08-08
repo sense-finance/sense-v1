@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
@@ -15,6 +15,8 @@ import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4
 import { ERC4626Adapter } from "../../adapters/abstract/ERC4626Adapter.sol";
 import { MockFactory, Mock4626CropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { AddressBook } from "./AddressBook.sol";
+import { PriceOracleLike } from "../../adapters/abstract/ERC4626Adapter.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -103,6 +105,7 @@ contract TestHelper is DSTest {
     uint256 public MAX_MATURITY = 14 weeks;
     uint16 public DEFAULT_LEVEL = 31;
     uint16 public DEFAULT_TILT = 0;
+    uint256 public DEFAULT_GUARD = 100000 * 1e18; // guard in target terms
     uint256 public SPONSOR_WINDOW;
     uint256 public SETTLEMENT_WINDOW;
     uint256 public SCALING_FACTOR;
@@ -221,6 +224,21 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
+        // mock all calls to Chainlink oracle
+        uint256 price = 1e8;
+        bytes memory returnData = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
+        ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
+        hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
+
+        // mock all calls to oracle price
+        returnData = abi.encode(1e18); // return data
+        hevm.mockCall(
+            address(ORACLE),
+            abi.encodeWithSelector(PriceOracleLike(ORACLE).price.selector, address(underlying)),
+            returnData
+        );
+
+        // factories
         factory = MockFactory(deployFactory(address(target), address(reward)));
         address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
         adapter = MockAdapter(f);
@@ -316,7 +334,8 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         if (is4626) {
             someFactory = address(new Mock4626CropFactory(address(divider), factoryParams, _reward));
@@ -337,7 +356,8 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: 52 weeks,
             mode: MODE,
-            tilt: 0
+            tilt: 0,
+            guard: DEFAULT_GUARD
         });
         if (is4626) {
             someFactory = address(new Mock4626CropsFactory(address(divider), factoryParams, _rewardTokens));

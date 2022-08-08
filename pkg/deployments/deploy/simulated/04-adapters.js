@@ -32,10 +32,10 @@ module.exports = async function () {
   });
 
   for (let factory of global.dev.FACTORIES) {
-    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, crops, is4626 } = factory(chainId);
+    const { contractName: factoryContractName, oracle, stakeSize, minm, maxm, ifee, mode, tilt, targets, crops, is4626, guard } = factory(chainId);
     log(`\nDeploy ${factoryContractName} with mocked dependencies`);
     // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
-    const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, tilt];
+    const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: mockFactoryAddress } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams, crops ? [airdrop.address] : airdrop.address],

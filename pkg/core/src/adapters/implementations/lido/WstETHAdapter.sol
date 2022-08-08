@@ -75,8 +75,8 @@ contract WstETHAdapter is BaseAdapter {
     function getUnderlyingPrice() external view override returns (uint256 price) {
         (, int256 stethPrice, , uint256 stethUpdatedAt, ) = PriceOracleLike(STETH_USD_PRICEFEED).latestRoundData();
         (, int256 ethPrice, , uint256 ethUpdatedAt, ) = PriceOracleLike(ETH_USD_PRICEFEED).latestRoundData();
-        if (block.timestamp - stethUpdatedAt > 1 hours) revert Errors.InvalidPrice();
-        if (block.timestamp - ethUpdatedAt > 1 hours) revert Errors.InvalidPrice();
+        if (block.timestamp - stethUpdatedAt > 2 hours) revert Errors.InvalidPrice();
+        if (block.timestamp - ethUpdatedAt > 2 hours) revert Errors.InvalidPrice();
         price = uint256(stethPrice).fdiv(uint256(ethPrice));
         if (price < 0) revert Errors.InvalidPrice();
     }
