@@ -45,8 +45,18 @@ interface CETHTokenInterface {
     function mint() external payable;
 }
 
+interface WETHInterface {
+    function withdraw(uint256 wad) external;
+}
+
 contract LiquidityHelper {
     using SafeTransferLib for ERC20;
+
+    mapping(address => int256) public slots;
+
+    constructor() {
+        slots[AddressBook.RSTETH_THETA] = 151;
+    }
 
     uint24 public constant UNI_POOL_FEE = 3000; // denominated in hundredths of a bip
 
@@ -76,16 +86,30 @@ contract LiquidityHelper {
         // Edge case - balance is already set for some reason
         if (ERC20(token).balanceOf(to) == amount) return true;
 
-        for (int256 i = 0; i < 100; i++) {
+        bool isStETH = token == AddressBook.STETH;
+        if (isStETH) {
+            token = AddressBook.WETH;
+        }
+
+        for (int256 slot = 0; slot < 9500; slot++) {
             // Scan the storage for the balance storage slot
-            bytes32 prevValue = hevm.load(address(token), keccak256(abi.encode(to, uint256(i))));
-            hevm.store(address(token), keccak256(abi.encode(to, uint256(i))), bytes32(amount));
+            // If we slot is alrerady in the mapping, we don't scan
+            if (slots[token] != 0) slot = slots[token];
+            bytes32 prevValue = hevm.load(address(token), keccak256(abi.encode(to, uint256(slot))));
+            hevm.store(address(token), keccak256(abi.encode(to, uint256(slot))), bytes32(amount));
             if (ERC20(token).balanceOf(to) == amount) {
                 // Found it
+                if (isStETH) {
+                    // ERC20(AddressBook.WETH).approve(AddressBook.WETH, type(uint256).max);
+                    hevm.startPrank(to);
+                    WETHInterface(token).withdraw(amount); // unwrap WETH into ETH
+                    StETHInterface(AddressBook.STETH).submit{ value: amount }(address(0)); // stake ETH (returns stETH)
+                    hevm.stopPrank();
+                }
                 return true;
             } else {
                 // Keep going after restoring the original value
-                hevm.store(address(token), keccak256(abi.encode(to, uint256(i))), prevValue);
+                hevm.store(address(token), keccak256(abi.encode(to, uint256(slot))), prevValue);
             }
         }
 
@@ -148,4 +172,6 @@ contract LiquidityHelper {
     }
 
     event Swapped(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut);
+
+    fallback() external payable {}
 }

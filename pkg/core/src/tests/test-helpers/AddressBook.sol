@@ -11,6 +11,7 @@ library AddressBook {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
     address public constant FXS = 0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -63,4 +64,9 @@ library AddressBook {
     address public constant f156FRAX3CRV = 0x2ec70d3Ff3FD7ac5c2a72AAA64A398b6CA7428A5;
     address public constant f156cvxFXSFXSf = 0x30916E14C139d65CAfbEEcb3eA525c59df643281;
     address public constant f156CVX = 0x3F4a965Bff126af42FC014c20959c7b857EA4e35;
+
+    // ribbon
+    address public constant OPYN_ORACLE = 0x789cD7AB3742e23Ce0952F6Bc3Eb3A73A0E08833; // Opyn oracle
+    address public constant RSTETH_THETA = 0x53773E034d9784153471813dacAFF53dBBB78E8c; // rstETH-THETA (stETH Theta Vault)
+    address public constant RBTC_THETA = 0x65a833afDc250D9d38f8CD9bC2B1E3132dB13B2F; // rBTC-THETA (BTC Theta Vault)
 }
