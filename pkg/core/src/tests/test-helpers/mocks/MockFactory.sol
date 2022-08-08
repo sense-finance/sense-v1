@@ -60,6 +60,8 @@ contract MockFactory is BaseFactory {
                 adapterParams
             )
         );
+
+        _setGuard(adapter);
     }
 }
 
@@ -106,6 +108,8 @@ contract MockCropFactory is CropFactory {
                 reward
             )
         );
+
+        _setGuard(adapter);
     }
 }
 
@@ -155,6 +159,8 @@ contract MockCropsFactory is CropsFactory {
                 rewardTokens
             )
         );
+
+        _setGuard(adapter);
     }
 }
 
@@ -253,5 +259,7 @@ contract Mock4626CropsFactory is CropsFactory {
                 rewardTokens
             )
         );
+
+        _setGuard(adapter);
     }
 }

@@ -3,8 +3,9 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
+import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
@@ -17,6 +18,7 @@ import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { AddressBook } from "./AddressBook.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -221,9 +223,22 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-        factory = MockCropFactory(deployCropsFactory(address(target), rewardTokens, false)); // default factory is a crop factory
+        // mock all calls to Chainlink oracle
+        uint256 price = 1e8;
+        bytes memory returnData = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
+        ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
+        hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
+
+        // mock all calls to oracle price
+        returnData = abi.encode(1e18); // return data
+        hevm.mockCall(
+            address(ORACLE),
+            abi.encodeWithSelector(IPriceFeed(ORACLE).price.selector, address(underlying)),
+            returnData
+        );
+
+        // factories
+        factory = MockFactory(deployFactory(address(target), address(reward)));
         address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
         adapter = MockCropAdapter(f);
         divider.setGuard(address(adapter), 10 * 2**128);
