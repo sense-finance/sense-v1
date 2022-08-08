@@ -151,7 +151,7 @@ contract Factories is TestHelper {
         hevm.clearMockedCalls();
 
         // Since the call to Chainlink reverted when deploying the adapter via factory
-        // guard should be set to the guard of in the factory params
+        // guard should be set to 0
         (, , , , , , , , uint256 factoryGuard) = someFactory.factoryParams();
         (, , uint256 guard, ) = divider.adapterMeta(adapter);
         assertEq(guard, factoryGuard);

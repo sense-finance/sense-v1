@@ -75,8 +75,6 @@ abstract contract BaseFactory {
     function _setGuard(address adapter) internal {
         // We only want to execute this if divider is guarded
         if (Divider(divider).guarded()) {
-            uint256 guard = factoryParams.guard;
-
             // Get Underlying-ETH price
             try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
                 // Get ETH-USD price from Chainlink (in 8 decimals base)
@@ -90,10 +88,9 @@ abstract contract BaseFactory {
 
                 // Calculate Target-USD price
                 price = BaseAdapter(adapter).scale().fdiv(price);
-                guard = guard.fdiv(price);
-            } catch {}
 
-            Divider(divider).setGuard(adapter, guard);
+                Divider(divider).setGuard(adapter, factoryParams.guard.fdiv(price));
+            } catch {}
         }
     }
 
