@@ -62,9 +62,7 @@ task(
     if (chainId !== "111") {
       console.log("\n-------------------------------------------------------");
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
-    }
-
-    if (chainId === "111") {
+    } else {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
 
