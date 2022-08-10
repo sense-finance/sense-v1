@@ -7,6 +7,10 @@ import { BaseAdapter } from "../BaseAdapter.sol";
 import { Divider } from "../../../Divider.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 
+interface ERC20 {
+    function decimals() external view returns (uint256 decimals);
+}
+
 interface ChainlinkOracleLike {
     function latestRoundData()
         external
@@ -55,7 +59,7 @@ abstract contract BaseFactory {
         uint128 ifee; // issuance fee
         uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
-        uint256 guard; // adapter guard (in target)
+        uint256 guard; // adapter guard (in usd, 18 decimals)
     }
 
     constructor(address _divider, FactoryParams memory _factoryParams) {
@@ -72,11 +76,13 @@ abstract contract BaseFactory {
 
     /// Set adapter's guard to $100`000 in target
     /// @notice if Underlying-ETH price feed returns 0, we set the guard to 100000 target.
-    function _setGuard(address adapter) internal {
+    function _setGuard(address _adapter) internal {
         // We only want to execute this if divider is guarded
         if (Divider(divider).guarded()) {
+            BaseAdapter adapter = BaseAdapter(_adapter);
+
             // Get Underlying-ETH price
-            try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
+            try adapter.getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
                 // Get ETH-USD price from Chainlink (in 8 decimals base)
                 (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED)
                     .latestRoundData();
@@ -86,10 +92,12 @@ abstract contract BaseFactory {
                 // Calculate Underlying-USD price (normalised to 18 deicmals)
                 uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice) * 1e10);
 
-                // Calculate Target-USD price
-                price = BaseAdapter(adapter).scale().fdiv(price);
-
-                Divider(divider).setGuard(adapter, factoryParams.guard.fdiv(price));
+                // Calculate Target-USD price (scale and price are in 18 decimals)
+                price = adapter.scale().fdiv(price);
+                Divider(divider).setGuard(
+                    _adapter,
+                    (factoryParams.guard * 10**ERC20(adapter.target()).decimals()) / price
+                );
             } catch {}
         }
     }

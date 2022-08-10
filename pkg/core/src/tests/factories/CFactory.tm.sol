@@ -14,6 +14,7 @@ import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 contract CAdapterTestHelper is DSTest {
     CFactory internal factory;
@@ -27,7 +28,7 @@ contract CAdapterTestHelper is DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
-    uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
+    uint256 public constant DEFAULT_GUARD = 100000 * 1e18; // 100'000 USD in 18 decimals
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -114,9 +115,10 @@ contract CFactories is CAdapterTestHelper {
 
         // As we are testing with a stablecoin here (DAI), we ca think the scale
         // as the cDAI - USD rate, so we want to assert that the guard (which should be $100'000)
-        // in target terms is approx 100'000 / scale (within 10%).
+        // in target terms is approx 100'000 / scale (within 5%).
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
+        uint256 tDecimals = ERC20(CAdapter(adapter).target()).decimals();
+        assertClose(guard, (DEFAULT_GUARD * 10**tDecimals) / scale, guard.fmul(0.005e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {

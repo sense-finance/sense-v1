@@ -12,6 +12,7 @@ import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -139,9 +140,10 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         // As we are testing with a stablecoin here (mUSD), we can think the scale
         // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
-        // in target terms is approx 100'000 / scale (within 10%).
+        // in target terms is approx 100'000 / scale (within 5%).
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
+        uint256 tDecimals = ERC20(adapter.target()).decimals();
+        assertClose(guard, (DEFAULT_GUARD * 10**tDecimals) / scale, guard.fmul(0.005e18));
     }
 
     function testMainnetDeployCropsAdapter() public {
