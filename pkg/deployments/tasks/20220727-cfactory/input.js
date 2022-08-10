@@ -13,15 +13,14 @@ dayjs.locale({
 });
 
 const SAMPLE_MATURITIES = [
-  1688169600
-  // dayjs().utc().month(dayjs().utc().month() + 2).startOf("month").unix(),
-  // dayjs().utc().month(dayjs().utc().month() + 3).startOf("month").unix(),
+  dayjs().utc().month(dayjs().utc().month() + 2).startOf("month").unix(),
+  dayjs().utc().month(dayjs().utc().month() + 3).startOf("month").unix(),
 ];
 
 // Only for hardhat, we will deploy adapters using Defender
 const SAMPLE_TARGETS = [
   // { name: "cUSDT", series: [], address: CUSDT_TOKEN.get("1") }, // We can't deploy adapters whose target is not ERC20 compliant
-  // { name: "cUSDC", series: SAMPLE_MATURITIES, address: CUSDC_TOKEN.get("1") },
+  { name: "cUSDC", series: SAMPLE_MATURITIES, address: CUSDC_TOKEN.get("1") },
   { name: "cDAI", series: SAMPLE_MATURITIES, address: CDAI_TOKEN.get("1") },
 ];
 
