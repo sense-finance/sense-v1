@@ -4,7 +4,7 @@ const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
-const { verifyOnEtherscan } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
 task(
   "20220727-cfactory",
@@ -33,6 +33,7 @@ task(
       mode,
       oracle,
       tilt,
+      guard,
       targets,
       reward,
     } = factory;
@@ -45,10 +46,11 @@ task(
         maxm,
         mode,
         oracle,
-        tilt
+        tilt,
+        guard
       })}}`,
     );
-    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt];
+    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: factoryAddress } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams, reward],
@@ -93,19 +95,35 @@ task(
       for (let t of targets) {
         periphery = periphery.connect(deployerSigner);
         
-        console.log(`\nOnboard target ${t.name} @ ${t.address} via Factory ${factoryContractName}`);
+        console.log(`\nOnboard target ${t.name} @ ${t.address} via ${factoryContractName}`);
         const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, t.address, 0x0);
+        await periphery.callStatic.deployAdapter(factoryAddress, t.address, 0x0);
         await (await periphery.deployAdapter(factoryAddress, t.address, 0x0)).wait();
         console.log(`${t.name} adapter address: ${adapterAddress}`);
 
         console.log(`Can call scale value`);
-        const ADAPTER_ABI = [ "function scale() public returns (uint256)" ];        
+        const ADAPTER_ABI = ["function scale() public returns (uint256)"];        
         const adptr = new ethers.Contract(adapterAddress, ADAPTER_ABI, deployerSigner);
         const scale = await adptr.callStatic.scale();
         console.log(`-> scale: ${scale.toString()}`);
 
         const params = await divider.callStatic.adapterMeta(adapterAddress);
-        console.log(`Adapter guard: ${params[2]}`);
+        console.log(`-> adapter guard: ${params[2]}`);
+        
+        console.log(`\nApprove Periphery to pull stake...`);
+        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];        
+        const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
+        await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+        
+        console.log(`Mint stake tokens...`);
+        await generateStakeTokens(stake, deployer, deployerSigner);
+
+        // deploy Series
+        for (let m of t.series) {
+          console.log(`\nSponsor Series for ${t.name} @ ${t.address} with maturity ${m}`);
+          await periphery.callStatic.sponsorSeries(adapterAddress, m, false);
+          await (await periphery.sponsorSeries(adapterAddress, m, false)).wait();
+        }
       }
     }
 

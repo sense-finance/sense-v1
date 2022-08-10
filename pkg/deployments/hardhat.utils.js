@@ -3,7 +3,6 @@ const path = require("path");
 const { exec } = require("child_process");
 const log = console.log;
 const { DefenderRelayProvider, DefenderRelaySigner } = require('defender-relay-client/lib/ethers');
-const { ethers } = require('ethers');
 
 // More info here (https://kndrck.co/posts/local_erc20_bal_mani_w_hh/)
 exports.STORAGE_SLOT = {
