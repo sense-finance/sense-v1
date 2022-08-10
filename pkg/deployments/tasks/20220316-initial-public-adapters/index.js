@@ -12,7 +12,7 @@ dayjs.locale({
   weekStart: 1,
 });
 
-const { SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
@@ -83,7 +83,7 @@ task(
 
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
-    if (chainId === "111") {
+    if (chainId === CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
 
@@ -122,7 +122,7 @@ task(
       await (await periphery.deployAdapter(factoryAddress, t.address)).wait();
       console.log(`${t.name} adapterAddress: ${adapterAddress}`);
 
-      if (chainId === "111") {
+      if (chainId === CHAINS.HARDHAT) {
         console.log("\n-------------------------------------------------------");
         console.log("Checking multisig txs by impersonating the address");
 
@@ -273,7 +273,7 @@ task(
     });
     console.log(`${contractName} adapter deployed at ${adapterAddress}`);
 
-    if (chainId === "111") {
+    if (chainId === CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
 

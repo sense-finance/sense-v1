@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 const { mainnet } = require("./input");
 
-const { BALANCER_VAULT, SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { BALANCER_VAULT, SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const spaceFactoryAbi = require("./abi/SpaceFactory.json");
@@ -94,7 +94,7 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
     await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
 
     // If we're in a forked environment, check the txs we need to send from the multisig as well
-    if (chainId === "111") {
+    if (chainId === CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       console.log("\nChecking multisig txs by impersonating the address");
       if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");

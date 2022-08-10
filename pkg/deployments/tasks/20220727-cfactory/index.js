@@ -1,7 +1,6 @@
 const { task } = require("hardhat/config");
 const { mainnet } = require("./input");
-
-const { SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
@@ -55,13 +54,13 @@ task(
       args: [divider.address, factoryParams, reward],
       log: true,
     });
-
+      
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
-
-    // verify on etherscan
-    if (chainId !== "111") {
+    
+    // if not hardhat fork, we try verifying on etherscan    
+    if (chainId === CHAINS.HARDHAT) {      
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
+      await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams, reward]);
     } else {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
@@ -82,11 +81,12 @@ task(
 
       console.log(`\nAdd ${factoryContractName} as trusted address of Divider`);
       await (await divider.setIsTrusted(factoryAddress, true)).wait();
-
+      
       await hre.network.provider.request({
         method: "hardhat_stopImpersonatingAccount",
         params: [senseAdminMultisigAddress],
       });
+    
 
       console.log("\n-------------------------------------------------------");
       console.log(`Deploy adapters for: ${factoryContractName}`);
@@ -109,7 +109,7 @@ task(
       }
     }
 
-    if (chainId === "1") {
+    if (chainId === CHAINS.MAINNET) {
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");

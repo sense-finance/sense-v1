@@ -1,5 +1,6 @@
 const dayjs = require("dayjs");
-const { getDeployedAdapters, setStorageAt, toBytes32, STORAGE_SLOT } = require("../../hardhat.utils");
+const { CHAINS } = require("../../hardhat.addresses");
+const { getDeployedAdapters, generateStakeTokens } = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -51,8 +52,8 @@ module.exports = async function () {
       const balance = await stake.balanceOf(deployer); // deployer's stake balance
       if (balance.lt(stakeSize)) {
         // if fork from mainnet
-        if (chainId == "111" && process.env.FORK_TOP_UP == "true") {
-          await generateStakeTokens(stakeAddress, tokenAbi);
+        if (chainId == CHAINS.HARDHAT && process.env.FORK_TOP_UP == "true") {
+          await generateStakeTokens(stakeAddress, deployer, signer);
         } else {
           throw Error("Not enough stake funds on wallet");
         }
@@ -61,21 +62,6 @@ module.exports = async function () {
       await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
       log("\n-------------------------------------------------------");
     }
-  }
-
-  async function generateStakeTokens(stakeAddress) {
-    const { abi } = await deployments.getArtifact("Token");
-    const stake = new ethers.Contract(stakeAddress, abi, signer);
-    const symbol = await stake.symbol();
-
-    // Get storage slot index
-    const index = ethers.utils.solidityKeccak256(
-      ["uint256", "uint256"],
-      [deployer, STORAGE_SLOT[symbol] || 2], // key, slot
-    );
-
-    await setStorageAt(stakeAddress, index.toString(), toBytes32(ethers.utils.parseEther("10000")).toString());
-    log(`\n10'000 ${symbol} transferred to deployer: ${deployer}`);
   }
 };
 

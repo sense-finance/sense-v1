@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 const { mainnet } = require("./input");
 
-const { SENSE_MULTISIG, BALANCER_VAULT } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, BALANCER_VAULT, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const oldSpaceFactoryAbi = require("./abi/OldSpaceFactory.json");
@@ -72,7 +72,7 @@ task("20220518-space-factory", "Deploys Space Factory and adds legacy pools").se
   console.log("Untrust deployer on the space factory");
   await spaceFactory.setIsTrusted(deployer, false).then(t => t.wait());
 
-  if (chainId === "111") {
+  if (chainId === CHAINS.HARDHAT) {
     console.log("\n-------------------------------------------------------");
     console.log("\nChecking multisig txs by impersonating the address");
     await hre.network.provider.request({

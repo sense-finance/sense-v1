@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 const { mainnet } = require("./input");
 
-const { SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
@@ -58,7 +58,7 @@ task(
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
     // if mainnet, verify on etherscan
-    if (chainId === "1") {
+    if (chainId === CHAINS.MAINNET) {
       console.log("\n-------------------------------------------------------");
       console.log("Waiting 20 seconds for Etherscan to sync...");
       await delay(20);
@@ -66,7 +66,7 @@ task(
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
     }
 
-    if (chainId === "111") {
+    if (chainId === CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
 
@@ -107,7 +107,7 @@ task(
       }
     }
 
-    if (chainId === "1") {
+    if (chainId === CHAINS.MAINNET) {
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");
