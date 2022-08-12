@@ -13,4 +13,5 @@ library Constants {
     uint16 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_ISSUANCE_FEE = 0.05e18;
     uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
+    uint256 public constant DEFAULT_CHAINLINK_ETH_PRICE = 1900 * 1e8; // $1900 per ETH
 }

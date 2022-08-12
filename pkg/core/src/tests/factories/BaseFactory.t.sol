@@ -11,6 +11,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract MockRevertAdapter is MockAdapter {
     constructor(BaseAdapter.AdapterParams memory _adapterParams)
@@ -28,6 +29,7 @@ contract MockRevertFactory is MockFactory {
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams;
         adapter = address(new MockRevertAdapter(adapterParams));
+        _setGuard(adapter);
     }
 }
 
@@ -74,14 +76,6 @@ contract Factories is TestHelper {
         assertEq(someFactory.reward(), address(reward));
     }
 
-    function testGuardIsSetIfGetUnderlyingPriceReverts() public {
-        BaseFactory.FactoryParams memory factoryParams;
-        factoryParams.guard = 444e18;
-        MockRevertFactory someFactory = new MockRevertFactory(factoryParams);
-        (, , , , , , , , uint256 guard) = MockFactory(someFactory).factoryParams();
-        assertEq(guard, 444e18);
-    }
-
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
@@ -110,52 +104,25 @@ contract Factories is TestHelper {
         uint256 scale = adapter.scale();
         assertEq(scale, 1e18);
 
-        // Calculate Target-USD price
-        uint256 chainlinkMockPrice = 1e8;
-        uint256 price = adapter.getUnderlyingPrice().fmul(uint256(chainlinkMockPrice) * 1e10);
-        price = adapter.scale().fdiv(price);
+        // Guard has been calculated with underlying-ETH (18 decimals),
+        // target-underlying (18 decimals) and ETH-USD (8 decimals)
+        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+        uint256 tDecimals = MockToken(adapter.target()).decimals();
 
-        // Calculate guard based on Target-USD price
-        (, , , , , , , , uint256 factoryGuard) = someFactory.factoryParams();
-        uint256 guard = factoryGuard.fdiv(price);
+        // On this test we assert that the guard calculated is close to the one calculated below
+        // underlying-ETH price (18 decimals)
+        uint256 underlyingPriceInEth = adapter.getUnderlyingPrice();
 
-        (, , uint256 adapteGuard, ) = divider.adapterMeta(address(adapter));
-        assertEq(guard, adapteGuard);
-    }
+        // Calculate Underlying-USD price (normalised to 18 deicmals)
+        uint256 price = underlyingPriceInEth.fmul(Constants.DEFAULT_CHAINLINK_ETH_PRICE, 1e8);
 
-    function testDeployAdapterWhenChainlinkCallReverts() public {
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
-        MockFactory someFactory = MockFactory(deployFactory(address(someTarget)));
-        divider.setPeriphery(alice);
-        address adapter = someFactory.deployAdapter(address(someTarget), "");
-        assertTrue(adapter != address(0));
+        // target-USD price (18 decimals)
+        price = scale.fmul(price, 10**tDecimals);
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
-            .adapterParams();
-        assertEq(MockAdapter(adapter).divider(), address(divider));
-        assertEq(MockAdapter(adapter).target(), address(someTarget));
-        assertEq(MockAdapter(adapter).name(), "Some Target Adapter");
-        assertEq(MockAdapter(adapter).symbol(), "ST-adapter");
-        assertEq(MockAdapter(adapter).ifee(), ISSUANCE_FEE);
-        assertEq(oracle, ORACLE);
-        assertEq(stake, address(stake));
-        assertEq(stakeSize, STAKE_SIZE);
-        assertEq(minm, MIN_MATURITY);
-        assertEq(maxm, MAX_MATURITY);
-        assertEq(MockAdapter(adapter).mode(), MODE);
-
-        uint256 scale = MockAdapter(adapter).scale();
-        assertEq(scale, 1e18);
-
-        // remove mock Chainlink call
-        hevm.clearMockedCalls();
-
-        // Since the call to Chainlink reverted when deploying the adapter via factory
-        // guard should be set to 0
-        (, , , , , , , , uint256 factoryGuard) = someFactory.factoryParams();
-        (, , uint256 guard, ) = divider.adapterMeta(adapter);
-        assertEq(guard, factoryGuard);
+        // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
+        // using target's price (18 decimals)
+        uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
+        assertClose(guard, guardInTarget, guard.fmul(0.001e18));
     }
 
     function testDeployAdapterDoesNotSetGuardWhenNotGuarded() public {

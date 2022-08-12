@@ -19,6 +19,7 @@ import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626Cr
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
+import { Constants } from "./Constants.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -223,9 +224,14 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
-        // mock all calls to Chainlink oracle
-        uint256 price = 1e8;
-        bytes memory returnData = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
+        // mock all calls to ETH_USD_PRICEFEED (Chainlink oracle)
+        bytes memory returnData = abi.encode(
+            1,
+            int256(Constants.DEFAULT_CHAINLINK_ETH_PRICE),
+            block.timestamp,
+            block.timestamp,
+            1
+        ); // return data
         ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
         hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
 

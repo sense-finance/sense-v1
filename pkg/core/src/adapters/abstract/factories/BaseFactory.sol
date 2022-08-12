@@ -81,22 +81,25 @@ abstract contract BaseFactory {
         if (Divider(divider).guarded()) {
             BaseAdapter adapter = BaseAdapter(_adapter);
 
-            // Get Underlying-ETH price
+            // Get Underlying-ETH price (18 decimals)
             try adapter.getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
-                // Get ETH-USD price from Chainlink (in 8 decimals base)
+                // Get ETH-USD price from Chainlink (8 decimals)
                 (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED)
                     .latestRoundData();
 
                 if (block.timestamp - ethUpdatedAt > 2 hours) revert Errors.InvalidPrice();
 
                 // Calculate Underlying-USD price (normalised to 18 deicmals)
-                uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice) * 1e10);
+                uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice), 1e8);
 
                 // Calculate Target-USD price (scale and price are in 18 decimals)
-                price = adapter.scale().fdiv(price);
+                price = adapter.scale().fmul(price);
+
+                // Calculate guard with factory guard (18 decimals) and target price (18 decimals)
+                // normalised to target decimals and set it
                 Divider(divider).setGuard(
                     _adapter,
-                    (factoryParams.guard * 10**ERC20(adapter.target()).decimals()) / price
+                    factoryParams.guard.fdiv(price, 10**ERC20(adapter.target()).decimals())
                 );
             } catch {}
         }

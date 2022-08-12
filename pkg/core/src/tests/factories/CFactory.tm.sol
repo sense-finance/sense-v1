@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 // Internal references
 import { CAdapter } from "../../adapters/implementations/compound/CAdapter.sol";
 import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
-import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
@@ -102,23 +102,36 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetDeployAdapter() public {
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(AddressBook.cDAI, "");
+        address f = factory.deployAdapter(AddressBook.cLINK, "");
         CAdapter adapter = CAdapter(payable(f));
         assertTrue(address(adapter) != address(0));
-        assertEq(CAdapter(adapter).target(), address(AddressBook.cDAI));
+        assertEq(CAdapter(adapter).target(), address(AddressBook.cLINK));
         assertEq(CAdapter(adapter).divider(), address(divider));
-        assertEq(CAdapter(adapter).name(), "Compound Dai Adapter");
-        assertEq(CAdapter(adapter).symbol(), "cDAI-adapter");
+        assertEq(CAdapter(adapter).name(), "Compound ChainLink Token Adapter");
+        assertEq(CAdapter(adapter).symbol(), "cLINK-adapter");
 
-        uint256 scale = CAdapter(adapter).scale();
+        uint256 scale = CAdapter(adapter).scale(); // 18 decimals
         assertTrue(scale > 0);
 
-        // As we are testing with a stablecoin here (DAI), we ca think the scale
-        // as the cDAI - USD rate, so we want to assert that the guard (which should be $100'000)
-        // in target terms is approx 100'000 / scale (within 5%).
+        // Guard has been calculated with underlying-ETH (18 decimals),
+        // target-underlying (18 decimals) and ETH-USD (8 decimals)
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
         uint256 tDecimals = ERC20(CAdapter(adapter).target()).decimals();
-        assertClose(guard, (DEFAULT_GUARD * 10**tDecimals) / scale, guard.fmul(0.005e18));
+
+        // On this test we assert that the guard calculated is close to the one calculated below
+        // which uses underlying-USD (8 decimals) and target-underlying (18 decimals)
+
+        // LINK-USD price (8 decimals)
+        address LINK_USD_FEED = 0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c;
+        (, int256 linkPrice, , , ) = ChainlinkOracleLike(LINK_USD_FEED).latestRoundData();
+
+        // cLINK-USD price (18 decimals)
+        uint256 price = scale.fmul(uint256(linkPrice), 10**tDecimals);
+
+        // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
+        // using target's price (18 decimals)
+        uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
+        assertClose(guard, guardInTarget, guard.fmul(0.005e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
