@@ -60,7 +60,7 @@ task(
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
     
     // if not hardhat fork, we try verifying on etherscan    
-    if (chainId === CHAINS.HARDHAT) {      
+    if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams, reward]);
     } else {
@@ -69,6 +69,14 @@ task(
 
       if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
       const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+      
+      // load the multisig address with some ETH
+      await network.provider.send("hardhat_setBalance", [
+        senseAdminMultisigAddress, 
+        ethers.utils.parseEther('10.0').toHexString()
+      ]);
+
+      // impersonate multisig address
       await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
         params: [senseAdminMultisigAddress],

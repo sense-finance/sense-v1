@@ -1,4 +1,4 @@
-const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("../../hardhat.addresses");
+const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, CHAINS } = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -20,16 +20,16 @@ const MAINNET_ADAPTERS = [
       name: "wstETH",
       guard: ethers.utils.parseEther("100"),
       series: [],
-      address: WSTETH_TOKEN.get("1"),
+      address: WSTETH_TOKEN.get(CHAINS.MAINNET),
     },
     deploymentParams: {
       divider: "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
-      target: WSTETH_TOKEN.get("1"), 
-      underlying: WETH_TOKEN.get("1"), 
+      target: WSTETH_TOKEN.get(CHAINS.MAINNET), 
+      underlying: WETH_TOKEN.get(CHAINS.MAINNET), 
       ifee: ethers.utils.parseEther("0"),
       adapterParams: {
-        oracle: MASTER_ORACLE.get("1"),
-        stake: WETH_TOKEN.get("1"),
+        oracle: MASTER_ORACLE.get(CHAINS.MAINNET),
+        stake: WETH_TOKEN.get(CHAINS.MAINNET),
         stakeSize: ethers.utils.parseEther("0"),
         minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
         maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years

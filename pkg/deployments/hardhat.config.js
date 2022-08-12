@@ -64,7 +64,7 @@ module.exports = {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       },
-      chainId: parseInt(process.env.CHAIN_ID !== undefined ? process.env.CHAIN_ID : CHAINS.HARDHAT),
+      chainId: parseInt(process.env.CHAIN_ID || CHAINS.HARDHAT),
       // gas: 12000000,
       // saveDeployments: false,
       // blockGasLimit: 21000000,

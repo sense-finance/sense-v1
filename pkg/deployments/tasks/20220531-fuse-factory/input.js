@@ -1,9 +1,9 @@
-const { WETH_TOKEN, MASTER_ORACLE, F18DAI_TOKEN, OLYMPUS_POOL_PARTY } = require("../../hardhat.addresses");
+const { WETH_TOKEN, MASTER_ORACLE, F18DAI_TOKEN, OLYMPUS_POOL_PARTY, CHAINS } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
 // TODO: decide which adapter targets to deploy
 const F_FACTORY_TARGETS = [
-  { name: "f18DAI", series: [], address: F18DAI_TOKEN.get("1"), comptroller: OLYMPUS_POOL_PARTY.get("1") },
+  { name: "f18DAI", series: [], address: F18DAI_TOKEN.get(CHAINS.MAINNET), comptroller: OLYMPUS_POOL_PARTY.get(CHAINS.MAINNET) },
 ];
 
 const MAINNET_FACTORIES = [
@@ -11,12 +11,12 @@ const MAINNET_FACTORIES = [
     contractName: "FFactory",
     adapterContract: "FAdapter",
     ifee: ethers.utils.parseEther("0.0025"),
-    stake: WETH_TOKEN.get("1"),
+    stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"),
     minm: "1814000", // 3 weeks
     maxm: "33507037", // 12 months
     mode: 0, // 0 monthly
-    oracle: MASTER_ORACLE.get("1"),
+    oracle: MASTER_ORACLE.get(CHAINS.MAINNET),
     tilt: 0,
     targets: F_FACTORY_TARGETS
   },

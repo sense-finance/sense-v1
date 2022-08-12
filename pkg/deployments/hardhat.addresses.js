@@ -1,8 +1,8 @@
 const CHAINS = {
-    MAINNET: '1',
-    GOERLI: '5',
-    HARDHAT: '111',
-    ARBITRUM: '42161',
+    MAINNET: "1",
+    GOERLI: "5",
+    HARDHAT: "111",
+    ARBITRUM: "42161",
 }
 
 // For dev scenarios ------------

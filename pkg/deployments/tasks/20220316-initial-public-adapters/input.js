@@ -1,4 +1,4 @@
-const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE } = require("../../hardhat.addresses");
+const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, CHAINS } = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -19,7 +19,7 @@ const C_USDC_MATURITIES = [
 
 const C_FACTORY_TARGETS = [
   // ~ 100,000 USDC guard
-  { name: "cUSDC", guard: "500000000000000", series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get("1") },
+  { name: "cUSDC", guard: "500000000000000", series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get(CHAINS.MAINNET) },
 ];
 
 const MAINNET_FACTORIES = [
@@ -27,15 +27,15 @@ const MAINNET_FACTORIES = [
     contractName: "CFactory",
     adapterContract: "CAdapter",
     ifee: ethers.utils.parseEther("0.0025"),
-    stake: WETH_TOKEN.get("1"),
+    stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"),
     minm: "1814000", // 3 weeks
     maxm: "33507037", // 12 months
     mode: 0, // 0 monthly
-    oracle: MASTER_ORACLE.get("1"),
+    oracle: MASTER_ORACLE.get(CHAINS.MAINNET),
     tilt: 0,
     targets: C_FACTORY_TARGETS,
-    reward: COMP_TOKEN.get("1"),
+    reward: COMP_TOKEN.get(CHAINS.MAINNET),
   },
 ];
 
@@ -52,12 +52,12 @@ const MAINNET_ADAPTERS = [
       name: "wstETH",
       guard: ethers.utils.parseEther("40"),
       series: WSTETH_MATURITIES,
-      address: WSTETH_TOKEN.get("1"),
+      address: WSTETH_TOKEN.get(CHAINS.MAINNET),
     },
     deploymentParams: {
-      oracle: MASTER_ORACLE.get("1"),
+      oracle: MASTER_ORACLE.get(CHAINS.MAINNET),
       ifee: ethers.utils.parseEther("0.0025"),
-      stake: WETH_TOKEN.get("1"),
+      stake: WETH_TOKEN.get(CHAINS.MAINNET),
       stakeSize: ethers.utils.parseEther("0.25"),
       minm: "1814000", // 3 weeks
       maxm: "33507037", // 12 months

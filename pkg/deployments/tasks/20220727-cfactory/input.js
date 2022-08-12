@@ -1,4 +1,4 @@
-const { WETH_TOKEN, MASTER_ORACLE, CDAI_TOKEN, COMP_TOKEN, CUSDC_TOKEN } = require("../../hardhat.addresses");
+const { WETH_TOKEN, MASTER_ORACLE, CDAI_TOKEN, COMP_TOKEN, CUSDC_TOKEN, CHAINS } = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -19,9 +19,9 @@ const SAMPLE_MATURITIES = [
 
 // Only for hardhat, we will deploy adapters using Defender
 const SAMPLE_TARGETS = [
-  // { name: "cUSDT", series: [], address: CUSDT_TOKEN.get("1") }, // We can't deploy adapters whose target is not ERC20 compliant
-  { name: "cUSDC", series: SAMPLE_MATURITIES, address: CUSDC_TOKEN.get("1") },
-  { name: "cDAI", series: SAMPLE_MATURITIES, address: CDAI_TOKEN.get("1") },
+  // { name: "cUSDT", series: [], address: CUSDT_TOKEN.get(CHAINS.MAINNET) }, // We can't deploy adapters whose target is not ERC20 compliant
+  { name: "cUSDC", series: SAMPLE_MATURITIES, address: CUSDC_TOKEN.get(CHAINS.MAINNET) },
+  { name: "cDAI", series: SAMPLE_MATURITIES, address: CDAI_TOKEN.get(CHAINS.MAINNET) },
 ];
 
 const MAINNET_FACTORIES = [
@@ -29,16 +29,16 @@ const MAINNET_FACTORIES = [
     contractName: "CFactory",
     adapterContract: "CAdapter",
     ifee: ethers.utils.parseEther("0.0010"),
-    stake: WETH_TOKEN.get("1"),
+    stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"),
     minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
     maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
     mode: 0, // 0 monthly
-    oracle: MASTER_ORACLE.get("1"),
+    oracle: MASTER_ORACLE.get(CHAINS.MAINNET),
     tilt: 0,
     guard: ethers.utils.parseEther("100000"), // $100'000
     targets: SAMPLE_TARGETS,
-    reward: COMP_TOKEN.get("1")
+    reward: COMP_TOKEN.get(CHAINS.MAINNET)
   },
 ];
 

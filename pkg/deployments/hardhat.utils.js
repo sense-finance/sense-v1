@@ -113,10 +113,11 @@ exports.toBytes32 = bn => {
   return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
 };
 
-exports.setStorageAt = async (address, index, value) => {
+async function setStorageAt(address, index, value) {
   await ethers.provider.send("hardhat_setStorageAt", [address, index, value]);
   await ethers.provider.send("evm_mine", []); // Just mines to the next block
 };
+exports.setStorageAt = setStorageAt;
 
 const delay = (n) => new Promise( r => setTimeout(r, n*1000));
 exports.delay = delay;
@@ -155,9 +156,10 @@ exports.generateStakeTokens = async (stakeAddress, to, signer) => {
     [to, this.STORAGE_SLOT[symbol] || 2], // key, slot
   );
 
-  await this.setStorageAt(stakeAddress, index.toString(), this.toBytes32(ethers.utils.parseEther("10000")).toString());
+  await setStorageAt(stakeAddress, index.toString(), this.toBytes32(ethers.utils.parseEther("10000")).toString());
   log(`\n10'000 ${symbol} transferred to deployer: ${to}`);
 }
+
 
 // Returns signer using OZ Relayer's API 
 exports.getRelayerSigner = async () => {
