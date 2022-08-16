@@ -128,6 +128,7 @@ contract ERC4626Factories is ERC4626TestHelper {
 
     function testMainnetDeployAdapter() public {
         // Deploy non-crop adapter
+        hevm.prank(divider.periphery());
         ERC4626Adapter adapter = ERC4626Adapter(factory.deployAdapter(AddressBook.IMUSD, ""));
 
         assertTrue(address(adapter) != address(0));
@@ -162,7 +163,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
         // using target's price (in target's decimals)
         uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
-        assertClose(guard, guardInTarget, guard.fmul(0.005e18));
+        assertClose(guard, guardInTarget, guard.fmul(0.010e18));
     }
 
     function testMainnetDeployCropsAdapter() public {
@@ -173,6 +174,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
+        hevm.prank(divider.periphery());
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(cropsFactory.deployAdapter(AddressBook.IMUSD, data));
 
         assertTrue(address(adapter) != address(0));
@@ -198,6 +200,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         address[] memory rewardTokens;
         bytes memory data = abi.encode(rewardTokens);
 
+        divider.setPeriphery(address(this));
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(AddressBook.DAI, data);
     }
@@ -213,6 +216,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         address[] memory rewardTokens;
         bytes memory data = abi.encode(rewardTokens);
 
+        hevm.prank(divider.periphery());
         factory.deployAdapter(AddressBook.IMUSD, data);
     }
 

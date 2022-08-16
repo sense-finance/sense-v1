@@ -42,9 +42,6 @@ abstract contract BaseFactory {
     /// @notice Sense core Divider address
     address public immutable divider;
 
-    /// @notice target -> adapter
-    mapping(address => address) public adapters;
-
     /// @notice params for adapters deployed with this factory
     FactoryParams public factoryParams;
 
