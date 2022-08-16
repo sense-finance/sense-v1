@@ -75,7 +75,7 @@ contract TestHelper is DSTest {
     MockToken internal underlying;
     MockTargetLike internal target;
     MockToken internal reward;
-    MockCropFactory internal factory;
+    MockCropsFactory internal factory;
     MockOracle internal masterOracle;
 
     PoolManager internal poolManager;
@@ -130,10 +130,6 @@ contract TestHelper is DSTest {
         mockUnderlyingDecimals = uint8(hevm.envUint("FORGE_MOCK_UNDERLYING_DECIMALS"));
         mockTargetDecimals = uint8(hevm.envUint("FORGE_MOCK_TARGET_DECIMALS"));
         is4626 = hevm.envBool("FORGE_MOCK_4626_TARGET");
-
-        mockUnderlyingDecimals = 18;
-        mockTargetDecimals = 18;
-        is4626 = false;
 
         // Create target, underlying, stake & reward tokens
         stake = new MockToken("Stake Token", "ST", baseDecimals);
@@ -244,9 +240,17 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockCropFactory(deployCropsFactory(address(target)));
-        address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
-        adapter = MockCropAdapter(f);
+        factory = MockCropsFactory(deployCropsFactory(address(target)));
+
+        // Prepare data
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+        bytes memory data = abi.encode(rewardTokens);
+
+        // Deploy adapter
+        address a = periphery.deployAdapter(address(factory), address(target), data); // deploy & onboard target through Periphery
+        adapter = MockCropAdapter(a);
+
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
@@ -412,6 +416,7 @@ contract TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
+
         if (is4626) {
             someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
         } else {

@@ -7,6 +7,7 @@ import { MockFactory, MockCropFactory } from "../test-helpers/mocks/MockFactory.
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
+import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
@@ -78,14 +79,18 @@ contract Factories is TestHelper {
 
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
+        MockTargetLike someTarget = MockTargetLike(
+            deployMockTarget(address(underlying), "Some Target", "ST", mockTargetDecimals)
+        );
 
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(someReward);
         MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
 
         divider.setPeriphery(alice);
-        MockCropAdapter adapter = MockCropAdapter(someFactory.deployAdapter(address(someTarget), ""));
+        MockCropAdapter adapter = MockCropAdapter(
+            someFactory.deployAdapter(address(someTarget), abi.encode(rewardTokens))
+        );
         assertTrue(address(adapter) != address(0));
 
         (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
@@ -100,7 +105,11 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(adapter.mode(), MODE);
-        assertEq(adapter.reward(), address(someReward));
+        if (is4626) {
+            assertEq(ERC4626CropsAdapter(address(adapter)).rewardTokens(0), address(someReward));
+        } else {
+            assertEq(adapter.reward(), address(someReward));
+        }
         uint256 scale = adapter.scale();
         assertEq(scale, 1e18);
 
@@ -113,16 +122,33 @@ contract Factories is TestHelper {
         // underlying-ETH price (18 decimals)
         uint256 underlyingPriceInEth = adapter.getUnderlyingPrice();
 
-        // Calculate Underlying-USD price (normalised to 18 deicmals)
+        // (1) Calculate Underlying-USD price (normalised to 18 decimals)
         uint256 price = underlyingPriceInEth.fmul(Constants.DEFAULT_CHAINLINK_ETH_PRICE, 1e8);
 
-        // target-USD price (18 decimals)
-        price = scale.fmul(price, 10**tDecimals);
+        // (2) Calculate Target-USD price (18 decimals)
+        price = scale.fmul(price);
 
-        // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
+        // (3) Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
         // using target's price (18 decimals)
         uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
-        assertClose(guard, guardInTarget, guard.fmul(0.001e18));
+        assertEq(guard, guardInTarget);
+
+        // Sanity checks with constants values:
+        // as underlying price is 1e18, ETH price is 1900 (in 8 decimals) and scale is 1e18,
+        // (1) Underlying-USD price should be: 1e18 * (1900 * 1e8) -> normalised to 18 decimals = 1900 * 10**tDecimals
+        // (2) Target-USD price shuold be: 1e18 * (1900 * 1e18) -> normalised to 18 decimals decimals = 1900 * 10**tDecimals
+        // (3) and as the guard factory is $100'000 in 18 decimals
+        // then guard should be: (100000 * 1e18) / (1900 * 1e18) -> normalised to target decimals =
+        // * for 6 decimals target -> 52631578
+        // * for 8 decimals target -> 5263157894
+        // * for 18 decimals target -> 52631578947368421052
+        if (mockTargetDecimals == 6) {
+            assertEq(guard, 52631578);
+        } else if (mockTargetDecimals == 8) {
+            assertEq(guard, 5263157894);
+        } else if (mockTargetDecimals == 18) {
+            assertEq(guard, 52631578947368421052);
+        }
     }
 
     function testDeployAdapterDoesNotSetGuardWhenNotGuarded() public {
@@ -165,7 +191,7 @@ contract Factories is TestHelper {
         rewardTokens[0] = address(someReward);
         MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
 
-        address f = periphery.deployAdapter(address(someFactory), address(someTarget), "");
+        address f = periphery.deployAdapter(address(someFactory), address(someTarget), abi.encode(rewardTokens));
         assertTrue(f != address(0));
         uint256 scale = MockAdapter(f).scale();
         assertEq(scale, 1e18);
@@ -177,15 +203,19 @@ contract Factories is TestHelper {
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {
+        address[] memory rewardTokens;
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         factory.supportTarget(address(someTarget), true);
         hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
-        factory.deployAdapter(address(someTarget), "");
+        factory.deployAdapter(address(someTarget), abi.encode(rewardTokens));
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        divider.setPeriphery(alice);
-        factory.deployAdapter(address(target), "");
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+
+        hevm.prank(address(periphery));
+        factory.deployAdapter(address(target), abi.encode(rewardTokens));
     }
 }

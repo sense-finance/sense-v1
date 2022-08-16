@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { CropFactory } from "../../abstract/factories/CropFactory.sol";
 import { CAdapter, ComptrollerLike } from "./CAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { Divider } from "../../../Divider.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
@@ -28,7 +29,10 @@ contract CFactory is CropFactory {
         address _reward
     ) CropFactory(_divider, _factoryParams, _reward) {}
 
-    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
+    function deployAdapter(address _target, bytes memory) external override returns (address adapter) {
+        // Sanity check
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
+
         (bool isListed, , ) = ComptrollerLike(COMPTROLLER).markets(_target);
         if (!isListed) revert Errors.TargetNotSupported();
 

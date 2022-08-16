@@ -28,6 +28,7 @@ contract ERC4626Factory is BaseFactory, Trust {
     /// @param data ABI encoded reward tokens address array
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         /// Sanity checks
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         if (!Divider(divider).permissionless() && !supportedTargets[_target]) revert Errors.TargetNotSupported();
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -42,7 +43,7 @@ contract ERC4626Factory is BaseFactory, Trust {
         });
 
         // Use the CREATE2 opcode to deploy a new Adapter contract.
-        // This will revert if a FAdapter with the provided target has already
+        // This will revert if an ERC4626 adapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         adapter = address(
             new ERC4626Adapter{ salt: _target.fillLast12Bytes() }(divider, _target, factoryParams.ifee, adapterParams)

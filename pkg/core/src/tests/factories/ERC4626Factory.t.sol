@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
+import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
@@ -68,6 +69,7 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
         // Deploy non-crops adapter
+        hevm.prank(address(periphery));
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
@@ -103,6 +105,7 @@ contract ERC4626FactoryTest is TestHelper {
         bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
+        hevm.prank(address(periphery));
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
@@ -130,9 +133,9 @@ contract ERC4626FactoryTest is TestHelper {
         // Deploy non-crop factory
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
-        // Prepare data for non-crop adapter
+        // Prepare data
         address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
         // Deploy adapter
         address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), data);
@@ -152,15 +155,28 @@ contract ERC4626FactoryTest is TestHelper {
 
     function testCantDeployAdapterIfNotPeriphery() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
+        MockTargetLike someTarget = MockTargetLike(
+            deployMockTarget(address(someUnderlying), "Some Target", "ST", mockTargetDecimals)
+        );
         factory.supportTarget(address(someTarget), true);
+
+        // Mock call to Rari's master oracle
+        MasterPriceOracle oracle = MasterPriceOracle(ORACLE);
+        bytes memory data = abi.encode(1e18); // return data
+        hevm.mockCall(address(ORACLE), abi.encodeWithSelector(oracle.price.selector, address(underlying)), data);
+
+        // Prepare data for non crops adapter
+        address[] memory rewardTokens = new address[](0);
         hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
-        factory.deployAdapter(address(someTarget), "");
+        factory.deployAdapter(address(someTarget), abi.encode(rewardTokens));
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        divider.setPeriphery(alice);
-        factory.deployAdapter(address(target), "");
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+
+        hevm.prank(address(periphery));
+        factory.deployAdapter(address(target), abi.encode(rewardTokens));
     }
 
     function testCanSetRewardTokensMultipleAdapters() public {
@@ -174,6 +190,7 @@ contract ERC4626FactoryTest is TestHelper {
         // Deploy crops adapter
         address[] memory rewardTokens;
         bytes memory data = abi.encode(rewardTokens); // empty array (no reward tokens)
+        hevm.prank(address(periphery));
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 

@@ -196,7 +196,7 @@ contract ERC4626Factories is ERC4626TestHelper {
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         // Prepare data for adapter
         address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(AddressBook.DAI, data);
@@ -211,7 +211,7 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         // Prepare data for adapter
         address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
         factory.deployAdapter(AddressBook.IMUSD, data);
     }

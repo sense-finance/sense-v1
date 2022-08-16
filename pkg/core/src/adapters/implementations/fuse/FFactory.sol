@@ -5,6 +5,7 @@ pragma solidity 0.8.11;
 import { CropsFactory } from "../../abstract/factories/CropsFactory.sol";
 import { FAdapter, FComptrollerLike, RewardsDistributorLike } from "./FAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { Divider } from "../../../Divider.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
@@ -32,6 +33,7 @@ contract FFactory is CropsFactory {
         address comptroller = abi.decode(data, (address));
 
         /// Sanity checks
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         if (!FusePoolLensLike(FUSE_POOL_DIRECTORY).poolExists(comptroller)) revert Errors.InvalidParam();
         (bool isListed, ) = FComptrollerLike(comptroller).markets(_target);
         if (!isListed) revert Errors.TargetNotSupported();

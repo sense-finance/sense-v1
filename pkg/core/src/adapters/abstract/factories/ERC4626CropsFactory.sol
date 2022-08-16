@@ -27,6 +27,7 @@ contract ERC4626CropsFactory is CropsFactory {
         address[] memory rewardTokens = abi.decode(data, (address[]));
 
         /// Sanity checks
+        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
         if (!Divider(divider).permissionless() && !supportedTargets[_target]) revert Errors.TargetNotSupported();
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -41,7 +42,7 @@ contract ERC4626CropsFactory is CropsFactory {
         });
 
         // Use the CREATE2 opcode to deploy a new Adapter contract.
-        // This will revert if a FAdapter with the provided target has already
+        // This will revert if am ERC4626 adapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         adapter = address(
             new ERC4626CropsAdapter{ salt: _target.fillLast12Bytes() }(
