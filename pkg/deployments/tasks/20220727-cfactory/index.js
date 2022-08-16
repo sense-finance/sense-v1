@@ -105,7 +105,7 @@ task(
         
         console.log(`\nOnboard target ${t.name} @ ${t.address} via ${factoryContractName}`);
         const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, t.address, 0x0);
-        await periphery.callStatic.deployAdapter(factoryAddress, t.address, 0x0);
+        await periphery.deployAdapter(factoryAddress, t.address, 0x0);
         await (await periphery.deployAdapter(factoryAddress, t.address, 0x0)).wait();
         console.log(`${t.name} adapter address: ${adapterAddress}`);
 
