@@ -101,9 +101,4 @@ abstract contract BaseFactory {
             } catch {}
         }
     }
-
-    /* ========== LOGS ========== */
-
-    /// @notice Logs the deployment of the adapter
-    event AdapterAdded(address addr, address indexed target);
 }
