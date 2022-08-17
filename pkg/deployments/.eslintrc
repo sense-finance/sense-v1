@@ -1,0 +1,16 @@
+{
+  "root": true,
+  "plugins": ["prettier", "@nomiclabs/eslint-plugin-hardhat-internal-rules"],
+  "extends": ["eslint:recommended"],
+  "rules": {
+    "prettier/prettier": ["error"],
+    "prefer-const": "off"
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest"
+  },
+
+  "env": {
+    "es6": true
+  }
+}

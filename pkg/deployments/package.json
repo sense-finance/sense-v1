@@ -21,7 +21,9 @@
         "deploy:goerli": "hardhat --network goerli deploy --tags scenario:simulated",
         "deploy:kovan": "hardhat --network kovan deploy --tags scenario:simulated",
         "deploy:arbitrum": "hardhat --network arbitrum deploy --tags scenario:prod",
-        "prepare": "cp -n ../../.env ./.env || true && git submodule update --init --recursive"
+        "prepare": "cp -n ../../.env ./.env || true && git submodule update --init --recursive",
+        "lint": "eslint .",
+        "fix": "prettier . --write && yarn lint --fix"
     },
     "dependencies": {
         "@balancer-labs/v2-pool-utils": "2.0.1",
@@ -37,10 +39,16 @@
         "yarn": "^1.22.19"
     },
     "devDependencies": {
+        "@nomiclabs/eslint-plugin-hardhat-internal-rules": "^1.0.0",
         "@nomiclabs/hardhat-ethers": "^2.0.5",
         "@nomiclabs/hardhat-etherscan": "^2.1.6",
         "@tenderly/hardhat-tenderly": "^1.0.13",
+        "@types/eslint": "^8",
+        "@typescript-eslint/experimental-utils": "^5.33.1",
         "dayjs": "^1.10.7",
+        "eslint": "^8.22.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-prettier": "^4.2.1",
         "ethers": "^5.5.1",
         "hardhat": "^2.9.1",
         "hardhat-abi-exporter": "^2.3.1",
@@ -50,7 +58,7 @@
         "hardhat-spdx-license-identifier": "^2.0.3",
         "hardhat-watcher": "^2.1.1",
         "husky": "^7.0.2",
-        "prettier": "^2.3.2",
+        "prettier": "^2.7.1",
         "prettier-plugin-solidity": "^1.0.0-beta.17",
         "solhint": "^3.3.6",
         "solhint-plugin-prettier": "^0.0.5"
