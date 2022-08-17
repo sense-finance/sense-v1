@@ -17,6 +17,7 @@ library AddressBook {
 
     // ctokens
     address public constant cDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant cBAT = 0x6C8c6b02E7b2BE14d4fA6022Dfd6d75921D90E4E;
     address public constant cETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant cUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
 

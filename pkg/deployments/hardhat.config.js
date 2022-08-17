@@ -1,3 +1,5 @@
+const { CHAINS } = require("./hardhat.addresses");
+
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 require("@tenderly/hardhat-tenderly");
@@ -62,7 +64,7 @@ module.exports = {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       },
-      chainId: process.env.CHAIN_ID !== undefined ? parseInt(process.env.CHAIN_ID) : 111,
+      chainId: parseInt(process.env.CHAIN_ID || CHAINS.HARDHAT),
       // gas: 12000000,
       // saveDeployments: false,
       // blockGasLimit: 21000000,

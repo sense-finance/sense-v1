@@ -1,11 +1,11 @@
-const { WETH_TOKEN } = require("../../hardhat.addresses");
+const { WETH_TOKEN, CHAINS } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
 const MAINNET_FACTORIES = [
   {
     contractName: "ERC4626Factory",
     ifee: ethers.utils.parseEther("0.0025"),
-    stake: WETH_TOKEN.get("1"),
+    stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"),
     minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
     maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years

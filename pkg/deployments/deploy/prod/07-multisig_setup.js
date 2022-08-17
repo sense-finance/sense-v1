@@ -1,4 +1,4 @@
-const { SENSE_MULTISIG, OZ_RELAYER } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, OZ_RELAYER, CHAINS } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function () {
@@ -7,7 +7,7 @@ module.exports = async function () {
   const chainId = await getChainId();
 
   let signer;
-  if (chainId === "1") {
+  if (chainId === CHAINS.MAINNET) {
     if (!SENSE_MULTISIG.has("1")) throw Error("No sense multisig found for mainnet");
     signer = SENSE_MULTISIG.get(chainId);
   } else {

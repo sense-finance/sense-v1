@@ -165,7 +165,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // We roll back to original block number (which is the latest block) because the call chainlink's oracle
         // somehow is not being done taking into consideration the warped block (maybe a bug in foundry?)
         hevm.warp(origin);
-        address f = periphery.deployAdapter(address(cfactory), AddressBook.cDAI, "");
+        address f = periphery.deployAdapter(address(cfactory), AddressBook.cBAT, "");
         CAdapter cadapter = CAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI
         giveTokens(AddressBook.DAI, type(uint256).max, hevm);

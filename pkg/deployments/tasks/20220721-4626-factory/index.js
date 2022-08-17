@@ -5,7 +5,7 @@ const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
-const { delay, verifyOnEtherscan } = require("../../hardhat.utils");
+const { verifyOnEtherscan } = require("../../hardhat.utils");
 
 task(
   "20220721-4626-factory",
@@ -85,13 +85,11 @@ task(
 
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
-    // if mainnet or goerli, verify on etherscan
-    if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+    // if not hardhat fork, we try verifying on etherscan
+    if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
-    }
-
-    if (chainId === CHAINS.HARDHAT) {
+    } else {
       console.log("\n-------------------------------------------------------");
       console.log("Checking multisig txs by impersonating the address");
 

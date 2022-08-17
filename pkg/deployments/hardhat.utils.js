@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const { exec } = require("child_process");
 const log = console.log;
+const { DefenderRelayProvider, DefenderRelaySigner } = require('defender-relay-client/lib/ethers');
 
 // More info here (https://kndrck.co/posts/local_erc20_bal_mani_w_hh/)
 exports.STORAGE_SLOT = {
@@ -112,10 +113,11 @@ exports.toBytes32 = bn => {
   return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
 };
 
-exports.setStorageAt = async (address, index, value) => {
+async function setStorageAt(address, index, value) {
   await ethers.provider.send("hardhat_setStorageAt", [address, index, value]);
   await ethers.provider.send("evm_mine", []); // Just mines to the next block
 };
+exports.setStorageAt = setStorageAt;
 
 const delay = (n) => new Promise( r => setTimeout(r, n*1000));
 exports.delay = delay;
@@ -141,4 +143,28 @@ exports.verifyOnEtherscan = async (address, constructorArguments) => {
     console.log(e);
     console.log("We couldn't verify the contract on Etherscan, you may try manually.");
   }
+}
+
+exports.generateStakeTokens = async (stakeAddress, to, signer) => {
+  const ERC20_ABI = ["function symbol() public view returns (string)"];        
+  const stake = new ethers.Contract(stakeAddress, ERC20_ABI, signer);
+  const symbol = await stake.symbol();
+
+  // Get storage slot index
+  const index = ethers.utils.solidityKeccak256(
+    ["uint256", "uint256"],
+    [to, this.STORAGE_SLOT[symbol] || 2], // key, slot
+  );
+
+  await setStorageAt(stakeAddress, index.toString(), this.toBytes32(ethers.utils.parseEther("10000")).toString());
+  log(`\n10'000 ${symbol} transferred to deployer: ${to}`);
+}
+
+
+// Returns signer using OZ Relayer's API 
+exports.getRelayerSigner = async () => {
+  const {RELAYER_API_KEY_MAINNET, RELAYER_API_SECRET_MAINNET } = process.env
+  const credentials = { apiKey: RELAYER_API_KEY_MAINNET, apiSecret: RELAYER_API_SECRET_MAINNET };
+  const provider = new DefenderRelayProvider(credentials);
+  return new DefenderRelaySigner(credentials, provider, { speed: 'fast' });
 }
