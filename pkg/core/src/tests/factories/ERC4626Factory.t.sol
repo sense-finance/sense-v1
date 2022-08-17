@@ -171,6 +171,28 @@ contract ERC4626FactoryTest is TestHelper {
         factory.deployAdapter(address(someTarget), abi.encode(rewardTokens));
     }
 
+    function testCanSupportTarget() public {
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
+        address target = address(0xbabe);
+
+        hevm.expectEmit(true, true, false, true);
+        emit TargetSupported(target, true);
+
+        assertTrue(!someFactory.supportedTargets(target));
+        someFactory.supportTarget(target, true);
+        assertTrue(someFactory.supportedTargets(target));
+    }
+
+    function testCantSupportTargetIfNotAdmin() public {
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
+
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        someFactory.supportTarget(address(0xbabe), true);
+    }
+
     function testFailDeployAdapterIfAlreadyExists() public {
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
@@ -211,4 +233,8 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(adapter.rewardTokens(0), address(someReward));
         assertEq(adapter.rewardTokens(1), address(someReward2));
     }
+
+    /* ========== LOGS ========== */
+
+    event TargetSupported(address indexed target, bool indexed supported);
 }

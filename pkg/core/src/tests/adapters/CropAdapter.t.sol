@@ -14,6 +14,7 @@ import { MockAdapter, MockCropAdapter } from "../test-helpers/mocks/MockAdapter.
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
+import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 
 contract CropAdapters is TestHelper {
@@ -82,6 +83,9 @@ contract CropAdapters is TestHelper {
         divider.issue(address(adapter), maturity, (40 * tBal) / 100);
 
         reward.mint(address(adapter), 50 * 1e18);
+
+        hevm.expectEmit(true, true, true, false);
+        emit Distributed(alice, address(reward), 0);
 
         divider.issue(address(adapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
@@ -294,6 +298,10 @@ contract CropAdapters is TestHelper {
         maturities[0] = maturity;
         address[] memory users = new address[](1);
         users[0] = bob;
+
+        hevm.expectEmit(true, false, false, false);
+        emit Reconciled(bob, 0, maturity);
+
         adapter.reconcile(users, maturities);
         adapter.reconcile(users, maturities);
         assertClose(adapter.tBalance(bob), 0);
@@ -1082,6 +1090,88 @@ contract CropAdapters is TestHelper {
         assertClose(reward.balanceOf(alice), 80 * 1e18);
     }
 
+    // update reward token tests
+
+    function testSetRewardsTokens() public {
+        MockToken reward2 = new MockToken("Reward Token 2", "RT2", 18);
+
+        hevm.prank(address(factory)); // only factory can call `setRewardToken` as it was deployed via cropsFactory
+        hevm.expectEmit(true, false, false, true);
+        emit RewardTokenChanged(address(reward2));
+
+        adapter.setRewardToken(address(reward2));
+        assertEq(adapter.reward(), address(reward2));
+    }
+
+    function testCantSetRewardTokens() public {
+        MockToken reward2 = new MockToken("Reward Token 2", "RT2", 18);
+        hevm.expectRevert("UNTRUSTED");
+        adapter.setRewardToken(address(reward2));
+    }
+
+    // claimer tests
+
+    function testCantSetClaimer() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        adapter.setClaimer(address(0x4b1d));
+    }
+
+    function testCanSetClaimer() public {
+        hevm.expectEmit(true, true, true, true);
+        emit ClaimerChanged(address(1));
+
+        hevm.prank(address(factory));
+        adapter.setClaimer(address(1));
+        assertEq(adapter.claimer(), address(1));
+    }
+
+    function testFuzzSimpleDistributionAndCollectWithClaimer(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        address[] memory rewardTokens;
+        rewardTokens[0] = address(reward);
+        MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
+        hevm.prank(address(factory));
+        adapter.setClaimer(address(claimer));
+
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100);
+        hevm.prank(bob);
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100);
+
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(address(adapter));
+
+        assertEq(reward.balanceOf(bob), 0);
+
+        hevm.prank(bob);
+        YT(yt).collect();
+        assertClose(reward.balanceOf(bob), 24 * 1e18);
+        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(address(adapter));
+        assertEq(tBalAfter, tBalBefore);
+    }
+
+    function testFuzzSimpleDistributionAndCollectWithClaimerReverts(uint256 tBal) public {
+        assumeBounds(tBal);
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        address[] memory rewardTokens;
+        rewardTokens[0] = address(reward);
+        MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
+        claimer.setTransfer(false); // make claimer not to return the target back to adapter
+
+        hevm.prank(address(factory));
+        adapter.setClaimer(address(claimer));
+
+        divider.issue(address(adapter), maturity, (60 * tBal) / 100);
+
+        hevm.prank(bob);
+        hevm.expectRevert(abi.encodeWithSelector(Errors.BadContractInteration.selector));
+        divider.issue(address(adapter), maturity, (40 * tBal) / 100);
+    }
+
     // helpers
 
     function assumeBounds(uint256 tBal) internal {
@@ -1093,4 +1183,12 @@ contract CropAdapters is TestHelper {
     function assertClose(uint256 a, uint256 b) public override {
         assertClose(a, b, 1500);
     }
+
+    /* ========== LOGS ========== */
+
+    event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
+    event ClaimerChanged(address indexed claimer);
+    event Distributed(address indexed usr, address indexed token, uint256 amount);
+    event RewardTokenChanged(address indexed reward);
+    event RewardTokensChanged(address[] indexed rewardTokens);
 }

@@ -129,6 +129,10 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         hevm.warp(1631664000); // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
+
+        hevm.expectEmit(true, true, true, false);
+        emit SeriesInitialized(address(adapter), maturity, address(0), address(0), address(this), adapter.target());
+
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         assertTrue(pt != address(0));
@@ -258,6 +262,10 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
         hevm.warp(maturity);
+
+        hevm.expectEmit(true, true, true, true);
+        emit SeriesSettled(address(adapter), maturity, address(this));
+
         divider.settleSeries(address(adapter), maturity);
     }
 
@@ -488,10 +496,16 @@ contract Dividers is TestHelper {
         uint256 tBase = 10**target.decimals();
         uint256 fee = convertToBase(ISSUANCE_FEE, target.decimals()).fmul(tBal, tBase); // 1 target
         uint256 tBalanceBefore = target.balanceOf(alice);
-        divider.issue(address(adapter), maturity, tBal);
 
         // Formula = newBalance.fmul(scale)
         uint256 mintedAmount = (tBal - fee).fmul(adapter.scale());
+
+        // Expect Issued event
+        hevm.expectEmit(true, false, false, true);
+        emit Issued(address(adapter), maturity, mintedAmount, msg.sender);
+
+        divider.issue(address(adapter), maturity, tBal);
+
         assertEq(ERC20(pt).balanceOf(alice), mintedAmount);
         assertEq(ERC20(yt).balanceOf(alice), mintedAmount);
         assertEq(target.balanceOf(alice), tBalanceBefore - tBal);
@@ -644,7 +658,12 @@ contract Dividers is TestHelper {
         uint256 tBalanceBefore = target.balanceOf(alice);
         uint256 ptBalanceBefore = ERC20(pt).balanceOf(alice);
         uint256 lscale = divider.lscales(address(adapter), maturity, alice);
+
+        hevm.expectEmit(true, true, true, false);
+        emit Combined(address(adapter), maturity, 0, address(this));
+
         uint256 combined = divider.combine(address(adapter), maturity, ptBalanceBefore);
+
         uint256 tBalanceAfter = target.balanceOf(alice);
         uint256 ptBalanceAfter = ERC20(pt).balanceOf(alice);
         uint256 ytBalanceAfter = ERC20(yt).balanceOf(alice);
@@ -693,6 +712,9 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
         increaseScale(address(target));
+
+        hevm.expectEmit(true, true, true, false);
+        emit PTRedeemed(address(adapter), maturity, 0);
 
         uint256 redeemed = divider.redeem(address(adapter), maturity, balance);
 
@@ -1179,7 +1201,12 @@ contract Dividers is TestHelper {
         uint256 lscale = divider.lscales(address(adapter), maturity, alice);
         uint256 ytBalanceBefore = ERC20(yt).balanceOf(alice);
         uint256 tBalanceBefore = target.balanceOf(alice);
+
+        hevm.expectEmit(true, true, true, false);
+        emit Collected(address(adapter), maturity, 0);
+
         uint256 collected = YT(yt).collect();
+
         uint256 ytBalanceAfter = ERC20(yt).balanceOf(alice);
         uint256 tBalanceAfter = target.balanceOf(alice);
 
@@ -1305,6 +1332,9 @@ contract Dividers is TestHelper {
 
         divider.settleSeries(address(adapter), maturity);
 
+        hevm.expectEmit(true, true, true, false);
+        emit YTRedeemed(address(adapter), maturity, 0);
+
         hevm.prank(bob);
         uint256 collected = YT(yt).collect();
 
@@ -1335,6 +1365,10 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), false); // emergency stop
         uint256 newScale = 20e17;
         hevm.warp(maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 days);
+
+        hevm.expectEmit(true, false, false, true);
+        emit Backfilled(address(adapter), maturity, newScale, usrs, lscales);
+
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales); // fix invalid scale value
         divider.setAdapter(address(adapter), true); // re-enable adapter after emergency
 
@@ -1594,24 +1628,6 @@ contract Dividers is TestHelper {
         divider.backfillScale(address(adapter), maturity, 100 * tBase, usrs, lscales);
     }
 
-    function testBackfillScale() public {
-        uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
-        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
-        uint256 newScale = 1.1e18;
-        usrs.push(alice);
-        usrs.push(bob);
-        lscales.push(5e17);
-        lscales.push(4e17);
-        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
-        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
-        assertEq(mscale, newScale);
-        uint256 lscale = divider.lscales(address(adapter), maturity, alice);
-        assertEq(lscale, lscales[0]);
-        lscale = divider.lscales(address(adapter), maturity, bob);
-        assertEq(lscale, lscales[1]);
-    }
-
     function testCantBackfillScaleBeforeCutoffAndAdapterDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
@@ -1620,6 +1636,31 @@ contract Dividers is TestHelper {
         uint256 newScale = 1.5e18;
         hevm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+    }
+
+    function testBackfillScale() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+        periphery.sponsorSeries(address(adapter), maturity, true);
+
+        hevm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
+
+        uint256 newScale = 1.1e18;
+        usrs.push(alice);
+        usrs.push(bob);
+        lscales.push(5e17);
+        lscales.push(4e17);
+
+        hevm.expectEmit(true, false, false, true);
+        emit Backfilled(address(adapter), maturity, newScale, usrs, lscales);
+
+        divider.backfillScale(address(adapter), maturity, newScale, usrs, lscales);
+
+        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        assertEq(mscale, newScale);
+        uint256 lscale = divider.lscales(address(adapter), maturity, alice);
+        assertEq(lscale, lscales[0]);
+        lscale = divider.lscales(address(adapter), maturity, bob);
+        assertEq(lscale, lscales[1]);
     }
 
     function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
@@ -1837,6 +1878,12 @@ contract Dividers is TestHelper {
 
     /* ========== addAdapter() tests ========== */
 
+    function testCantSetAdapterIfNotAdmin() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        divider.setAdapter(address(0xa), true);
+    }
+
     function testCantAddAdapterWhenNotPermissionless() public {
         divider.setAdapter(address(adapter), false);
         hevm.prank(bob);
@@ -1870,11 +1917,101 @@ contract Dividers is TestHelper {
     function testAddAdapter() public {
         MockAdapter aAdapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
         divider.setPermissionless(true);
+
+        hevm.expectEmit(true, true, true, true);
+        emit AdapterChanged(address(aAdapter), 2, true);
+
         hevm.prank(bob);
         divider.addAdapter(address(aAdapter));
+
         (uint248 id, bool enabled, , ) = divider.adapterMeta(address(adapter));
         assertEq(id, 1);
         assertEq(divider.adapterAddresses(1), address(adapter));
         assertTrue(enabled);
     }
+
+    /* ========== admin actions ========== */
+
+    function testCantSetGuardedIfNotAdmin() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        divider.setGuarded(false);
+    }
+
+    function testCanSetGuarded() public {
+        assertTrue(divider.guarded());
+        hevm.expectEmit(true, true, true, true);
+        emit GuardedChanged(false);
+        divider.setGuarded(false);
+        assertTrue(!divider.guarded());
+    }
+
+    function testCantSetGuard() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        divider.setGuard(address(0xa), 100e18);
+    }
+
+    function testCanSetGuard() public {
+        hevm.expectEmit(true, true, true, true);
+        emit GuardChanged(address(0xa), 100e18);
+        divider.setGuard(address(0xa), 100e18);
+        (, , uint256 guard, ) = divider.adapterMeta(address(0xa));
+        assertEq(guard, 100e18);
+    }
+
+    function testCantSetPermissionlessIfNotAdmin() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        divider.setPermissionless(true);
+    }
+
+    function testCanSetPermissionless() public {
+        assertTrue(!divider.permissionless());
+        hevm.expectEmit(true, true, true, true);
+        emit PermissionlessChanged(true);
+        divider.setPermissionless(true);
+        assertTrue(divider.permissionless());
+    }
+
+    function testCantSetPausedIfNotAdmin() public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        divider.setPaused(true);
+    }
+
+    function testCanSetPaused() public {
+        assertTrue(!divider.paused());
+        divider.setPaused(true);
+        assertTrue(divider.paused());
+    }
+
+    /* ========== LOGS ========== */
+
+    event Backfilled(
+        address indexed adapter,
+        uint256 indexed maturity,
+        uint256 mscale,
+        address[] _usrs,
+        uint256[] _lscales
+    );
+    event GuardChanged(address indexed adapter, uint256 cap);
+    event AdapterChanged(address indexed adapter, uint256 indexed id, bool indexed isOn);
+    event PeripheryChanged(address indexed periphery);
+    event SeriesInitialized(
+        address adapter,
+        uint256 indexed maturity,
+        address pt,
+        address yt,
+        address indexed sponsor,
+        address indexed target
+    );
+    event Issued(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Combined(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);
+    event Collected(address indexed adapter, uint256 indexed maturity, uint256 collected);
+    event SeriesSettled(address indexed adapter, uint256 indexed maturity, address indexed settler);
+    event PTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event YTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
+    event GuardedChanged(bool indexed guarded);
+    event PermissionlessChanged(bool indexed permissionless);
 }

@@ -36,6 +36,10 @@ contract PeripheryTest is TestHelper {
 
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
+
+        hevm.expectEmit(true, true, true, true);
+        emit SeriesSponsored(address(adapter), maturity, address(this));
+
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         // check pt and yt deployed
@@ -124,6 +128,15 @@ contract PeripheryTest is TestHelper {
 
         factory.supportTarget(address(newTarget), true);
 
+        hevm.expectEmit(false, false, false, false);
+        emit AdapterDeployed(address(0));
+
+        hevm.expectEmit(false, false, false, false);
+        emit AdapterVerified(address(0));
+
+        hevm.expectEmit(false, false, false, false);
+        emit AdapterOnboarded(address(0));
+
         // onboard target
         address[] memory rewardTokens;
         periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
@@ -205,8 +218,6 @@ contract PeripheryTest is TestHelper {
 
     /* ========== admin update storage addresses ========== */
 
-    event PoolManagerChanged(address, address);
-
     function testUpdatePoolManager() public {
         address oldPoolManager = address(periphery.poolManager());
 
@@ -214,7 +225,7 @@ contract PeripheryTest is TestHelper {
         address NEW_POOL_MANAGER = address(0xbabe);
 
         // Expect the new Pool Manager to be set, and for a "change" event to be emitted
-        hevm.expectEmit(false, false, false, true);
+        hevm.expectEmit(true, false, false, true);
         emit PoolManagerChanged(oldPoolManager, NEW_POOL_MANAGER);
 
         // 1. Update the Pool Manager address
@@ -227,8 +238,6 @@ contract PeripheryTest is TestHelper {
         assertEq(writes.length, 1);
     }
 
-    event SpaceFactoryChanged(address, address);
-
     function testUpdateSpaceFactory() public {
         address oldSpaceFactory = address(periphery.spaceFactory());
 
@@ -236,7 +245,7 @@ contract PeripheryTest is TestHelper {
         address NEW_SPACE_FACTORY = address(0xbabe);
 
         // Expect the new Space Factory to be set, and for a "change" event to be emitted
-        hevm.expectEmit(false, false, false, true);
+        hevm.expectEmit(true, false, false, true);
         emit SpaceFactoryChanged(oldSpaceFactory, NEW_SPACE_FACTORY);
 
         // 1. Update the Space Factory address
@@ -280,6 +289,23 @@ contract PeripheryTest is TestHelper {
     }
 
     /* ========== admin onboarding tests ========== */
+
+    function testAdminOnboardFactory() public {
+        address NEW_FACTORY = address(0xbabe);
+
+        // 1. onboard a new factory
+        hevm.expectEmit(true, false, false, true);
+        emit FactoryChanged(NEW_FACTORY, true);
+        assertTrue(!periphery.factories(NEW_FACTORY));
+        periphery.setFactory(NEW_FACTORY, true);
+        assertTrue(periphery.factories(NEW_FACTORY));
+
+        // 2. remove new factory
+        hevm.expectEmit(true, false, false, true);
+        emit FactoryChanged(NEW_FACTORY, false);
+        periphery.setFactory(NEW_FACTORY, false);
+        assertTrue(!periphery.factories(NEW_FACTORY));
+    }
 
     function testAdminOnboardVerifiedAdapter() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
@@ -494,6 +520,9 @@ contract PeripheryTest is TestHelper {
         // calculate underlying swapped to pt
         uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE());
 
+        hevm.expectEmit(true, false, false, false);
+        emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
+
         periphery.swapTargetForPTs(address(adapter), maturity, tBal, 0);
 
         assertEq(ytBalBefore, ERC20(yt).balanceOf(alice));
@@ -520,6 +549,9 @@ contract PeripheryTest is TestHelper {
         // calculate underlying swapped to pt
         uint256 ptBal = tBal.fdiv(balancerVault.EXCHANGE_RATE());
 
+        hevm.expectEmit(true, false, false, false);
+        emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
+
         periphery.swapUnderlyingForPTs(address(adapter), maturity, uBal, 0);
 
         assertEq(ytBalBefore, ERC20(yt).balanceOf(alice));
@@ -545,6 +577,9 @@ contract PeripheryTest is TestHelper {
         uint256 swapped = ptBalBefore.fmul(rate);
 
         ERC20(pt).approve(address(periphery), ptBalBefore);
+
+        hevm.expectEmit(true, false, false, false);
+        emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
 
         periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0);
 
@@ -576,6 +611,10 @@ contract PeripheryTest is TestHelper {
             : swapped.fmul(scale) / SCALING_FACTOR;
 
         ERC20(pt).approve(address(periphery), ptBalBefore);
+
+        hevm.expectEmit(true, false, false, false);
+        emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
+
         periphery.swapPTsForUnderlying(address(adapter), maturity, ptBalBefore, 0);
 
         assertEq(uBalBefore + uBal, ERC20(underlying).balanceOf(alice));
@@ -1273,4 +1312,23 @@ contract PeripheryTest is TestHelper {
     function testQuotePrice() public {
         // TODO!
     }
+
+    /* ========== LOGS ========== */
+
+    event FactoryChanged(address indexed factory, bool indexed isOn);
+    event SpaceFactoryChanged(address oldSpaceFactory, address newSpaceFactory);
+    event PoolManagerChanged(address oldPoolManager, address newPoolManager);
+    event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
+    event AdapterDeployed(address indexed adapter);
+    event AdapterOnboarded(address indexed adapter);
+    event AdapterVerified(address indexed adapter);
+    event Swapped(
+        address indexed sender,
+        bytes32 indexed poolId,
+        address assetIn,
+        address assetOut,
+        uint256 amountIn,
+        uint256 amountOut,
+        bytes4 indexed sig
+    );
 }

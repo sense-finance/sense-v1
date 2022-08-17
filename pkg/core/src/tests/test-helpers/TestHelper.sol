@@ -240,7 +240,7 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockCropsFactory(deployCropsFactory(address(target)));
+        factory = MockCropFactory(deployCropsFactory(address(target)));
 
         // Prepare data
         address[] memory rewardTokens = new address[](1);
