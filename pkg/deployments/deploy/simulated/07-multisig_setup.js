@@ -22,7 +22,7 @@ module.exports = async function () {
   let periphery = await ethers.getContract("Periphery", deployerSigner);
   let emergencyStop = await ethers.getContract("EmergencyStop", deployerSigner);
 
-  log("\n-------------------------------------------------------")
+  log("\n-------------------------------------------------------");
   log("\nAdd signer as trusted address on contracts");
 
   log("Trust the signer address on the token handler");
@@ -57,40 +57,40 @@ module.exports = async function () {
 
   // if signer is same as deployer, we don't want to untrust it
   if (signer !== deployer) {
-    log("\n-------------------------------------------------------")
+    log("\n-------------------------------------------------------");
     log("\nRemove deployer address from trusted on contracts");
     log("Untrust deployer on the token handler");
     if (await tokenHandler.isTrusted(deployer)) {
-      await (await tokenHandler.setIsTrusted(deployer, false)).wait();  
+      await (await tokenHandler.setIsTrusted(deployer, false)).wait();
     }
 
     log("Untrust deployer on the divider");
     if (await divider.isTrusted(deployer)) {
-      await (await divider.setIsTrusted(deployer, false)).wait();  
+      await (await divider.setIsTrusted(deployer, false)).wait();
     }
 
     log("Untrust deployer on the pool manager");
     if (await poolManager.isTrusted(deployer)) {
-      await (await poolManager.setIsTrusted(deployer, false)).wait();  
+      await (await poolManager.setIsTrusted(deployer, false)).wait();
     }
 
     log("Untrust deployer on the space factory");
     if (await spaceFactory.isTrusted(deployer)) {
-      await (await spaceFactory.setIsTrusted(deployer, false)).wait();  
+      await (await spaceFactory.setIsTrusted(deployer, false)).wait();
     }
 
     log("Untrust deployer on the periphery");
     if (await periphery.isTrusted(deployer)) {
-      await (await periphery.setIsTrusted(deployer, false)).wait();  
+      await (await periphery.setIsTrusted(deployer, false)).wait();
     }
 
     log("Untrust deployer on the emergency stop");
     if (await emergencyStop.isTrusted(deployer)) {
-      await (await emergencyStop.setIsTrusted(deployer, false)).wait();  
+      await (await emergencyStop.setIsTrusted(deployer, false)).wait();
     }
 
-    log("\n-------------------------------------------------------")
-    log("\Sanity checks: checking deployer address cannot execute trusted functions anymore...");
+    log("\n-------------------------------------------------------");
+    log("Sanity checks: checking deployer address cannot execute trusted functions anymore...");
 
     const calls = [
       tokenHandler.callStatic.setIsTrusted(dev, false),
@@ -101,10 +101,10 @@ module.exports = async function () {
       emergencyStop.callStatic.setIsTrusted(dev, false),
     ];
     const res = await Promise.allSettled(calls);
-    if (res.every(r => r.status === 'rejected')) {
-      log("\Sanity checks: OK!");
+    if (res.every(r => r.status === "rejected")) {
+      log("Sanity checks: OK!");
     } else {
-      throw Error('Sanity checks: FAILED');
+      throw Error("Sanity checks: FAILED");
     }
   }
 
@@ -133,7 +133,6 @@ module.exports = async function () {
   } else {
     throw Error("Sanity checks: FAILED");
   }
-
 };
 
 module.exports.tags = ["simulated:signer", "scenario:simulated"];

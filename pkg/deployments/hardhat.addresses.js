@@ -1,9 +1,9 @@
 const CHAINS = {
-    MAINNET: "1",
-    GOERLI: "5",
-    HARDHAT: "111",
-    ARBITRUM: "42161",
-}
+  MAINNET: "1",
+  GOERLI: "5",
+  HARDHAT: "111",
+  ARBITRUM: "42161",
+};
 
 // For dev scenarios ------------
 
@@ -28,7 +28,7 @@ const IMBTC_TOKEN = new Map();
 IMBTC_TOKEN.set("1", "0x17d8CBB6Bce8cEE970a4027d1198F6700A7a6c24");
 IMBTC_TOKEN.set("111", "0x17d8CBB6Bce8cEE970a4027d1198F6700A7a6c24");
 
-COMP_TOKEN = new Map();
+const COMP_TOKEN = new Map();
 COMP_TOKEN.set("1", "0xc00e94cb662c3520282e6f5717214004a7f26888");
 COMP_TOKEN.set("111", "0xc00e94cb662c3520282e6f5717214004a7f26888");
 

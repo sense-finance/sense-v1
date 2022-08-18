@@ -13,7 +13,7 @@ module.exports = async function () {
 
   const ADAPTER_ABI = [
     "function target() public view returns (address)",
-    "function getStakeAndTarget() public view returns (address, address, uint256)"
+    "function getStakeAndTarget() public view returns (address, address, uint256)",
   ];
   const adapters = await getDeployedAdapters();
 
@@ -44,7 +44,7 @@ module.exports = async function () {
 
       log("\nEnable the Periphery to move the Deployer's STAKE for Series sponsorship");
       // TODO: should check allowance to avoid calling this multiple times
-      const [ , stakeAddress, stakeSize ] = await adapter.getStakeAndTarget();
+      const [, stakeAddress, stakeSize] = await adapter.getStakeAndTarget();
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const stake = new ethers.Contract(stakeAddress, tokenAbi, signer);
       await stake.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());

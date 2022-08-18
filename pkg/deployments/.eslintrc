@@ -9,8 +9,16 @@
   "parserOptions": {
     "ecmaVersion": "latest"
   },
-
   "env": {
-    "es6": true
+    "es6": true,
+    "node": true
+  },
+  "globals": {
+    "hre": true,
+    "ethers": true,
+    "deployments": true,
+    "getNamedAccounts": true,
+    "getChainId": true,
+    "network": true
   }
 }

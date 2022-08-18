@@ -15,8 +15,22 @@ module.exports = async function () {
   log("DEPLOY FACTORIES & ADAPTERS");
   log("-------------------------------------------------------");
   for (let factory of global.mainnet.FACTORIES) {
-    const { contractName, adapterContract, oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, reward, targets, crops, guard } =
-      factory(chainId);
+    const {
+      contractName,
+      adapterContract,
+      oracle,
+      stake,
+      stakeSize,
+      minm,
+      maxm,
+      ifee,
+      mode,
+      tilt,
+      reward,
+      targets,
+      crops,
+      guard,
+    } = factory(chainId);
     if (!crops && !reward) throw Error("No reward token found");
     if (!stake) throw Error("No stake token found");
 
@@ -27,7 +41,7 @@ module.exports = async function () {
       args: [divider.address, factoryParams, ...(!crops ? [reward] : [])],
       log: true,
     });
-  
+
     log(`Trust ${contractName} on the divider`);
     await (await divider.setIsTrusted(factoryAddress, true)).wait();
 
@@ -68,7 +82,15 @@ module.exports = async function () {
     log(`\nDeploy ${contractName}`);
     const { address: adapterAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, tAddress, ...(underlying ? [underlying] : []), ifee, ...(comptroller ? [comptroller] : []), adapterParams, ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : [])],
+      args: [
+        divider.address,
+        tAddress,
+        ...(underlying ? [underlying] : []),
+        ifee,
+        ...(comptroller ? [comptroller] : []),
+        adapterParams,
+        ...(rewardsTokens ? [rewardsTokens, rewardsDistributors] : []),
+      ],
       log: true,
     });
 

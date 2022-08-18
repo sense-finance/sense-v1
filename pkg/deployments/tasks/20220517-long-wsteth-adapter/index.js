@@ -17,10 +17,7 @@ const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 
-task(
-  "20220517-long-wsteth-adapter",
-  "Deploys long term wstETH adapter",
-).setAction(async ({}, { ethers }) => {
+task("20220517-long-wsteth-adapter", "Deploys long term wstETH adapter").setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -35,7 +32,7 @@ task(
   for (let adapter of mainnet.adapters) {
     const { contractName, deploymentParams, target } = adapter;
     const { underlying, ifee, adapterParams } = deploymentParams;
-    
+
     divider = divider.connect(deployerSigner);
     periphery = periphery.connect(deployerSigner);
 

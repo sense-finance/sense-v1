@@ -10,7 +10,7 @@ const oldPeripheryAbi = require("./abi/OldPeriphery.json");
 const newPeripheryAbi = require("./abi/NewPeriphery.json");
 
 task("20220313-periphery", "Deploys and authenticates a new Periphery and a new Space Factory").setAction(
-  async ({}, { ethers }) => {
+  async (_, { ethers }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chainId = await getChainId();
@@ -32,11 +32,20 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
     });
 
     // 1 / 10 years in seconds
-    const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("316224000"));
+    const TS = ethers.utils
+      .parseEther("1")
+      .mul(ethers.utils.parseEther("1"))
+      .div(ethers.utils.parseEther("316224000"));
     // 5% of implied yield for selling Target
-    const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
+    const G1 = ethers.utils
+      .parseEther("950")
+      .mul(ethers.utils.parseEther("1"))
+      .div(ethers.utils.parseEther("1000"));
     // 5% of implied yield for selling PTs
-    const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
+    const G2 = ethers.utils
+      .parseEther("1000")
+      .mul(ethers.utils.parseEther("1"))
+      .div(ethers.utils.parseEther("950"));
     const oracleEnabled = true;
 
     const { address: spaceFactoryAddress } = await deploy("SpaceFactory", {
@@ -65,9 +74,9 @@ task("20220313-periphery", "Deploys and authenticates a new Periphery and a new 
     });
 
     console.log("\nVerifying pre-approved adapters on Periphery");
-    const adaptersOnboarded = (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))).map(
-      e => e.args.adapter,
-    );
+    const adaptersOnboarded = (
+      await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))
+    ).map(e => e.args.adapter);
     console.log("Adapter to onborad:", adaptersOnboarded);
 
     const adaptersVerified = (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterVerified(null))).map(

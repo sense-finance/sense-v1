@@ -32,7 +32,7 @@ const ADAPTER_ABI = [
 task(
   "20220316-initial-public-adapters",
   "Deploys, configures, and initialized liquidity for the first public Seires",
-).setAction(async ({}, { ethers }) => {
+).setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -161,7 +161,7 @@ task(
           throw Error("Not enough stake funds on wallet");
         }
         console.log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
-        const { pt: ptAddress, yt: ytAddress } = await periphery.callStatic.sponsorSeries(
+        const { pt: ptAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
           true,
@@ -209,7 +209,9 @@ task(
           .swapPTsForTarget(
             adapter.address,
             seriesMaturity,
-            ptBalance.sub(ethers.BigNumber.from("1").mul(ethers.BigNumber.from("10").pow(parseInt(decimals) - 2))),
+            ptBalance.sub(
+              ethers.BigNumber.from("1").mul(ethers.BigNumber.from("10").pow(parseInt(decimals) - 2)),
+            ),
             0,
           )
           .then(t => t.wait());
@@ -336,7 +338,7 @@ task(
         throw Error("Not enough stake funds on wallet");
       }
       console.log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
-      const { pt: ptAddress, yt: ytAddress } = await periphery.callStatic.sponsorSeries(
+      const { pt: ptAddress } = await periphery.callStatic.sponsorSeries(
         adapter.address,
         seriesMaturity,
         true,
@@ -348,7 +350,9 @@ task(
       console.log("Target balance: ", await targetContract.balanceOf(deployer).then(t => t.toString()));
 
       console.log("Have the deployer issue PTs/YTs for this Series");
-      await divider.issue(adapter.address, seriesMaturity, ethers.utils.parseEther("0.023")).then(tx => tx.wait());
+      await divider
+        .issue(adapter.address, seriesMaturity, ethers.utils.parseEther("0.023"))
+        .then(tx => tx.wait());
 
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const ptBalance = await pt.balanceOf(deployer);
