@@ -125,7 +125,8 @@ contract PeripheryTest is TestHelper {
         factory.supportTarget(address(newTarget), true);
 
         // onboard target
-        periphery.deployAdapter(address(factory), address(newTarget), "");
+        address[] memory rewardTokens;
+        periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -159,7 +160,8 @@ contract PeripheryTest is TestHelper {
         MockFactory(cropFactory).supportTarget(address(newTarget), true);
 
         // onboard target
-        periphery.deployAdapter(cropFactory, address(newTarget), "");
+        address[] memory rewardTokens;
+        periphery.deployAdapter(cropFactory, address(newTarget), abi.encode(rewardTokens));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -172,7 +174,8 @@ contract PeripheryTest is TestHelper {
         factory.supportTarget(address(newTarget), true);
 
         // onboard target
-        periphery.deployAdapter(address(factory), address(newTarget), "");
+        address[] memory rewardTokens;
+        periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
         assertTrue(cTarget != address(0));
     }
@@ -186,17 +189,18 @@ contract PeripheryTest is TestHelper {
 
         // try deploying adapter using default factory
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        periphery.deployAdapter(address(factory), address(someTarget), "");
+        periphery.deployAdapter(address(factory), address(someTarget), abi.encode(rewardTokens));
 
         // try deploying adapter using new factory with supported target
-        periphery.deployAdapter(address(someFactory), address(someTarget), "");
+        periphery.deployAdapter(address(someFactory), address(someTarget), abi.encode(rewardTokens));
     }
 
     function testCantDeployAdapterIfTargetIsNotSupported() public {
+        address[] memory rewardTokens;
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
-        periphery.deployAdapter(address(factory), address(newTarget), "");
+        periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
     }
 
     /* ========== admin update storage addresses ========== */
@@ -1236,7 +1240,8 @@ contract PeripheryTest is TestHelper {
 
         MockTargetLike otherTarget = MockTargetLike(deployMockTarget(address(underlying), "Compound Usdc", "cUSDC", 8));
         factory.supportTarget(address(otherTarget), true);
-        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget), ""); // onboard target through Periphery
+        address[] memory rewardTokens;
+        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget), abi.encode(rewardTokens)); // onboard target through Periphery
 
         (, , uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),

@@ -20,7 +20,7 @@ abstract contract CropFactory is Trust, BaseFactory {
     /// @notice Update reward token for given adapter
     /// @param _adapter address of adapter to update the reward token on
     /// @param _rewardToken address of reward token
-    function setRewardTokens(address _adapter, address _rewardToken) public requiresTrust {
+    function setRewardToken(address _adapter, address _rewardToken) public requiresTrust {
         Crop(_adapter).setRewardToken(_rewardToken);
     }
 

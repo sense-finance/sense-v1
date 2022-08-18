@@ -8,10 +8,11 @@ import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
-import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
+import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
@@ -59,6 +60,7 @@ contract ERC4626TestHelper is DSTest {
         address[] memory oracles = new address[](1);
         oracles[0] = AddressBook.RARI_MSTABLE_ORACLE;
         masterOracle = new MasterPriceOracle(address(chainlinkOracle), underlyings, oracles);
+        assertEq(masterOracle.oracles(AddressBook.MUSD), AddressBook.RARI_MSTABLE_ORACLE);
 
         // deploy ERC4626 adapter factory
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
@@ -126,6 +128,7 @@ contract ERC4626Factories is ERC4626TestHelper {
 
     function testMainnetDeployAdapter() public {
         // Deploy non-crop adapter
+        hevm.prank(divider.periphery());
         ERC4626Adapter adapter = ERC4626Adapter(factory.deployAdapter(AddressBook.IMUSD, ""));
 
         assertTrue(address(adapter) != address(0));
@@ -137,11 +140,30 @@ contract ERC4626Factories is ERC4626TestHelper {
         uint256 scale = adapter.scale();
         assertTrue(scale > 0);
 
-        // As we are testing with a stablecoin here (mUSD), we can think the scale
-        // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
-        // in target terms is approx 100'000 / scale (within 10%).
+        // Guard has been calculated with underlying-ETH (18 decimals),
+        // target-underlying (18 decimals) and ETH-USD (8 decimals)
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
+        uint256 tDecimals = ERC20(adapter.target()).decimals();
+
+        // On this test we assert that the guard calculated is close to the one calculated below
+        // which uses Rari's mStable underlying-USD (8 decimals) and target-undelying (18 decimals)
+
+        // mUSD-ETH price (18 decimals)
+        uint256 underlyingPriceInEth = adapter.getUnderlyingPrice();
+
+        // ETH-USD price (8 decimals)
+        (, int256 ethPrice, , , ) = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED).latestRoundData();
+
+        // mUSD-USD price (18 decimals)
+        uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice), 1e8);
+
+        // imUSD-USD price (normalised to target decimals)
+        price = scale.fmul(price, 10**tDecimals);
+
+        // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
+        // using target's price (in target's decimals)
+        uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
+        assertClose(guard, guardInTarget, guard.fmul(0.010e18));
     }
 
     function testMainnetDeployCropsAdapter() public {
@@ -152,6 +174,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
+        hevm.prank(divider.periphery());
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(cropsFactory.deployAdapter(AddressBook.IMUSD, data));
 
         assertTrue(address(adapter) != address(0));
@@ -175,8 +198,9 @@ contract ERC4626Factories is ERC4626TestHelper {
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         // Prepare data for adapter
         address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
+        divider.setPeriphery(address(this));
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(AddressBook.DAI, data);
     }
@@ -190,8 +214,9 @@ contract ERC4626Factories is ERC4626TestHelper {
 
         // Prepare data for adapter
         address[] memory rewardTokens;
-        bytes memory data = abi.encode(0, rewardTokens);
+        bytes memory data = abi.encode(rewardTokens);
 
+        hevm.prank(divider.periphery());
         factory.deployAdapter(AddressBook.IMUSD, data);
     }
 

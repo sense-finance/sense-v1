@@ -11,8 +11,8 @@ import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 contract MasterPriceOracle is IPriceFeed, Trust {
     address public senseChainlinkPriceOracle;
 
-    /// @dev Maps underlying token addresses to `PriceOracle` contracts (can be `BasePriceOracle` contracts too).
-    mapping(address => address) public oracles; // TODO: use IPriceFeed.sol?
+    /// @dev Maps underlying token addresses to oracle addresses.
+    mapping(address => address) public oracles;
 
     /// @dev Constructor to initialize state variables.
     /// @param _chainlinkOracle The underlying ERC20 token addresses to link to `_oracles`.

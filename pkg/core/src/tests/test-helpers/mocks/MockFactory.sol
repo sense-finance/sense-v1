@@ -80,7 +80,7 @@ contract MockCropFactory is CropFactory {
         targets[_target] = status;
     }
 
-    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
+    function deployAdapter(address _target, bytes memory data) external virtual override returns (address adapter) {
         if (!targets[_target]) revert Errors.TargetNotSupported();
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
 
@@ -182,7 +182,7 @@ contract Mock4626CropFactory is CropFactory {
         targets[_target] = status;
     }
 
-    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
+    function deployAdapter(address _target, bytes memory data) external virtual override returns (address adapter) {
         if (!targets[_target]) revert Errors.TargetNotSupported();
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
 

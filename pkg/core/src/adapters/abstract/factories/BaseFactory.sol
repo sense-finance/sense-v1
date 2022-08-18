@@ -7,6 +7,10 @@ import { BaseAdapter } from "../BaseAdapter.sol";
 import { Divider } from "../../../Divider.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 
+interface ERC20 {
+    function decimals() external view returns (uint256 decimals);
+}
+
 interface ChainlinkOracleLike {
     function latestRoundData()
         external
@@ -38,9 +42,6 @@ abstract contract BaseFactory {
     /// @notice Sense core Divider address
     address public immutable divider;
 
-    /// @notice target -> adapter
-    mapping(address => address) public adapters;
-
     /// @notice params for adapters deployed with this factory
     FactoryParams public factoryParams;
 
@@ -55,7 +56,7 @@ abstract contract BaseFactory {
         uint128 ifee; // issuance fee
         uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
-        uint256 guard; // adapter guard (in target)
+        uint256 guard; // adapter guard (in usd, 18 decimals)
     }
 
     constructor(address _divider, FactoryParams memory _factoryParams) {
@@ -72,30 +73,32 @@ abstract contract BaseFactory {
 
     /// Set adapter's guard to $100`000 in target
     /// @notice if Underlying-ETH price feed returns 0, we set the guard to 100000 target.
-    function _setGuard(address adapter) internal {
+    function _setGuard(address _adapter) internal {
         // We only want to execute this if divider is guarded
         if (Divider(divider).guarded()) {
-            // Get Underlying-ETH price
-            try BaseAdapter(adapter).getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
-                // Get ETH-USD price from Chainlink (in 8 decimals base)
+            BaseAdapter adapter = BaseAdapter(_adapter);
+
+            // Get Underlying-ETH price (18 decimals)
+            try adapter.getUnderlyingPrice() returns (uint256 underlyingPriceInEth) {
+                // Get ETH-USD price from Chainlink (8 decimals)
                 (, int256 ethPrice, , uint256 ethUpdatedAt, ) = ChainlinkOracleLike(ETH_USD_PRICEFEED)
                     .latestRoundData();
 
                 if (block.timestamp - ethUpdatedAt > 2 hours) revert Errors.InvalidPrice();
 
                 // Calculate Underlying-USD price (normalised to 18 deicmals)
-                uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice) * 1e10);
+                uint256 price = underlyingPriceInEth.fmul(uint256(ethPrice), 1e8);
 
-                // Calculate Target-USD price
-                price = BaseAdapter(adapter).scale().fdiv(price);
+                // Calculate Target-USD price (scale and price are in 18 decimals)
+                price = adapter.scale().fmul(price);
 
-                Divider(divider).setGuard(adapter, factoryParams.guard.fdiv(price));
+                // Calculate guard with factory guard (18 decimals) and target price (18 decimals)
+                // normalised to target decimals and set it
+                Divider(divider).setGuard(
+                    _adapter,
+                    factoryParams.guard.fdiv(price, 10**ERC20(adapter.target()).decimals())
+                );
             } catch {}
         }
     }
-
-    /* ========== LOGS ========== */
-
-    /// @notice Logs the deployment of the adapter
-    event AdapterAdded(address addr, address indexed target);
 }

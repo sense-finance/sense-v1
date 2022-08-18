@@ -19,6 +19,7 @@ import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626Cr
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
+import { Constants } from "./Constants.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -74,7 +75,7 @@ contract TestHelper is DSTest {
     MockToken internal underlying;
     MockTargetLike internal target;
     MockToken internal reward;
-    MockCropFactory internal factory;
+    MockCropsFactory internal factory;
     MockOracle internal masterOracle;
 
     PoolManager internal poolManager;
@@ -129,10 +130,6 @@ contract TestHelper is DSTest {
         mockUnderlyingDecimals = uint8(hevm.envUint("FORGE_MOCK_UNDERLYING_DECIMALS"));
         mockTargetDecimals = uint8(hevm.envUint("FORGE_MOCK_TARGET_DECIMALS"));
         is4626 = hevm.envBool("FORGE_MOCK_4626_TARGET");
-
-        mockUnderlyingDecimals = 18;
-        mockTargetDecimals = 18;
-        is4626 = false;
 
         // Create target, underlying, stake & reward tokens
         stake = new MockToken("Stake Token", "ST", baseDecimals);
@@ -223,9 +220,14 @@ contract TestHelper is DSTest {
             level: DEFAULT_LEVEL
         });
 
-        // mock all calls to Chainlink oracle
-        uint256 price = 1e8;
-        bytes memory returnData = abi.encode(1, int256(price), block.timestamp, block.timestamp, 1); // return data
+        // mock all calls to ETH_USD_PRICEFEED (Chainlink oracle)
+        bytes memory returnData = abi.encode(
+            1,
+            int256(Constants.DEFAULT_CHAINLINK_ETH_PRICE),
+            block.timestamp,
+            block.timestamp,
+            1
+        ); // return data
         ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
         hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
 
@@ -238,9 +240,17 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockCropFactory(deployCropsFactory(address(target)));
-        address f = periphery.deployAdapter(address(factory), address(target), ""); // deploy & onboard target through Periphery
-        adapter = MockCropAdapter(f);
+        factory = MockCropsFactory(deployCropsFactory(address(target)));
+
+        // Prepare data
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+        bytes memory data = abi.encode(rewardTokens);
+
+        // Deploy adapter
+        address a = periphery.deployAdapter(address(factory), address(target), data); // deploy & onboard target through Periphery
+        adapter = MockCropAdapter(a);
+
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
@@ -406,6 +416,7 @@ contract TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
+
         if (is4626) {
             someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
         } else {
