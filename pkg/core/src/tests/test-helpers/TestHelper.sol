@@ -75,7 +75,7 @@ contract TestHelper is DSTest {
     MockToken internal underlying;
     MockTargetLike internal target;
     MockToken internal reward;
-    MockCropsFactory internal factory;
+    MockCropFactory internal factory;
     MockOracle internal masterOracle;
 
     PoolManager internal poolManager;

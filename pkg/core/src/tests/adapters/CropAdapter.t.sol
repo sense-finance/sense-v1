@@ -7,6 +7,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
+import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { YT } from "../../tokens/YT.sol";
 
@@ -1096,17 +1097,36 @@ contract CropAdapters is TestHelper {
         MockToken reward2 = new MockToken("Reward Token 2", "RT2", 18);
 
         hevm.prank(address(factory)); // only factory can call `setRewardToken` as it was deployed via cropsFactory
-        hevm.expectEmit(true, false, false, true);
-        emit RewardTokenChanged(address(reward2));
+        // 4626 adapters is crops
+        if (is4626) {
+            address[] memory rewardTokens = new address[](1);
+            rewardTokens[0] = address(reward2);
 
-        adapter.setRewardToken(address(reward2));
-        assertEq(adapter.reward(), address(reward2));
+            hevm.expectEmit(true, false, false, true);
+            emit RewardTokensChanged(rewardTokens);
+
+            ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
+            a.setRewardTokens(rewardTokens);
+            assertEq(a.rewardTokens(0), address(reward2));
+        } else {
+            hevm.expectEmit(true, false, false, true);
+            emit RewardTokenChanged(address(reward2));
+
+            adapter.setRewardToken(address(reward2));
+            assertEq(adapter.reward(), address(reward2));
+        }
     }
 
     function testCantSetRewardTokens() public {
         MockToken reward2 = new MockToken("Reward Token 2", "RT2", 18);
         hevm.expectRevert("UNTRUSTED");
-        adapter.setRewardToken(address(reward2));
+        if (is4626) {
+            address[] memory rewardTokens;
+            ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
+            a.setRewardTokens(rewardTokens);
+        } else {
+            adapter.setRewardToken(address(reward2));
+        }
     }
 
     // claimer tests
@@ -1131,7 +1151,7 @@ contract CropAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        address[] memory rewardTokens;
+        address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
         MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
         hevm.prank(address(factory));
@@ -1157,7 +1177,7 @@ contract CropAdapters is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        address[] memory rewardTokens;
+        address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
         MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
         claimer.setTransfer(false); // make claimer not to return the target back to adapter
