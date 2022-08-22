@@ -100,7 +100,7 @@ module.exports = {
             enabled: true,
             // The Balancer Vault becomes too large to deploy with more optimizer runs,
             // but we only need to deploy it on sim runs (we use the existing mainnet Vault on prod runs)
-            runs: process.env.SIM === "true" ? 100 : 500,
+            runs: 80,
           },
         },
       },
