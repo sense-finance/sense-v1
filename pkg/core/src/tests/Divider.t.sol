@@ -500,7 +500,6 @@ contract Dividers is TestHelper {
         // Formula = newBalance.fmul(scale)
         uint256 mintedAmount = (tBal - fee).fmul(adapter.scale());
 
-        // Expect Issued event
         hevm.expectEmit(true, false, false, true);
         emit Issued(address(adapter), maturity, mintedAmount, msg.sender);
 

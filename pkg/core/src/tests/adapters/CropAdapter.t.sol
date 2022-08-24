@@ -1093,40 +1093,43 @@ contract CropAdapters is TestHelper {
 
     // update reward token tests
 
-    function testSetRewardsTokens() public {
-        MockToken reward2 = new MockToken("Reward Token 2", "RT2", 18);
+    function test4626SetRewardsTokens() public {
+        if (!is4626) return;
+        ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(0xfede);
+
+        hevm.expectEmit(true, false, false, true);
+        emit RewardTokensChanged(rewardTokens);
 
         hevm.prank(address(factory)); // only factory can call `setRewardToken` as it was deployed via cropsFactory
-        // 4626 adapters is crops
-        if (is4626) {
-            address[] memory rewardTokens = new address[](1);
-            rewardTokens[0] = address(reward2);
+        a.setRewardTokens(rewardTokens);
+        assertEq(a.rewardTokens(0), address(0xfede));
+    }
 
-            hevm.expectEmit(true, false, false, true);
-            emit RewardTokensChanged(rewardTokens);
+    function testSetRewardsTokens() public {
+        if (is4626) return;
+        hevm.expectEmit(true, false, false, true);
+        emit RewardTokenChanged(address(0xfede));
 
-            ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
-            a.setRewardTokens(rewardTokens);
-            assertEq(a.rewardTokens(0), address(reward2));
-        } else {
-            hevm.expectEmit(true, false, false, true);
-            emit RewardTokenChanged(address(reward2));
-
-            adapter.setRewardToken(address(reward2));
-            assertEq(adapter.reward(), address(reward2));
-        }
+        hevm.prank(address(factory)); // only factory can call `setRewardToken` as it was deployed via cropsFactory
+        adapter.setRewardToken(address(0xfede));
+        assertEq(adapter.reward(), address(0xfede));
     }
 
     function testCantSetRewardTokens() public {
-        MockToken reward2 = new MockToken("Reward Token 2", "RT2", 18);
+        if (is4626) return;
         hevm.expectRevert("UNTRUSTED");
-        if (is4626) {
-            address[] memory rewardTokens;
-            ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
-            a.setRewardTokens(rewardTokens);
-        } else {
-            adapter.setRewardToken(address(reward2));
-        }
+        adapter.setRewardToken(address(0xfede));
+    }
+
+    function test4626CantSetRewardTokens() public {
+        if (!is4626) return;
+        hevm.expectRevert("UNTRUSTED");
+        address[] memory rewardTokens;
+        ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
+        a.setRewardTokens(rewardTokens);
     }
 
     // claimer tests
