@@ -1,4 +1,11 @@
-const { COMP_TOKEN, WETH_TOKEN, CUSDC_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, CHAINS } = require("../../hardhat.addresses");
+const {
+  COMP_TOKEN,
+  WETH_TOKEN,
+  CUSDC_TOKEN,
+  WSTETH_TOKEN,
+  MASTER_ORACLE,
+  CHAINS,
+} = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -19,7 +26,12 @@ const C_USDC_MATURITIES = [
 
 const C_FACTORY_TARGETS = [
   // ~ 100,000 USDC guard
-  { name: "cUSDC", guard: "500000000000000", series: C_USDC_MATURITIES, address: CUSDC_TOKEN.get(CHAINS.MAINNET) },
+  {
+    name: "cUSDC",
+    guard: "500000000000000",
+    series: C_USDC_MATURITIES,
+    address: CUSDC_TOKEN.get(CHAINS.MAINNET),
+  },
 ];
 
 const MAINNET_FACTORIES = [

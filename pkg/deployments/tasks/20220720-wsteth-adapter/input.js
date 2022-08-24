@@ -1,4 +1,4 @@
-const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, STETH_TOKEN, CHAINS } = require("../../hardhat.addresses");
+const { WETH_TOKEN, WSTETH_TOKEN, CHAINS } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
 // List of adapters to deploy directly (without factory)
@@ -13,7 +13,7 @@ const MAINNET_ADAPTERS = [
     },
     deploymentParams: {
       divider: "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
-      target: WSTETH_TOKEN.get(CHAINS.MAINNET), 
+      target: WSTETH_TOKEN.get(CHAINS.MAINNET),
       ifee: ethers.utils.parseEther("0"),
       adapterParams: {
         oracle: ethers.constants.AddressZero,
@@ -21,10 +21,10 @@ const MAINNET_ADAPTERS = [
         stakeSize: ethers.utils.parseEther("0.25"),
         minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
         maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
-        tilt: 0, 
+        tilt: 0,
         level: 31,
         mode: 0, // 0 monthly
-      }
+      },
     },
   },
 ];

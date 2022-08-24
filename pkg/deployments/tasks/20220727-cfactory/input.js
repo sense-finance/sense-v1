@@ -1,4 +1,11 @@
-const { WETH_TOKEN, MASTER_ORACLE, CDAI_TOKEN, COMP_TOKEN, CUSDC_TOKEN, CHAINS } = require("../../hardhat.addresses");
+const {
+  WETH_TOKEN,
+  MASTER_ORACLE,
+  CDAI_TOKEN,
+  COMP_TOKEN,
+  CUSDC_TOKEN,
+  CHAINS,
+} = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -13,8 +20,16 @@ dayjs.locale({
 });
 
 const SAMPLE_MATURITIES = [
-  dayjs().utc().month(dayjs().utc().month() + 2).startOf("month").unix(),
-  dayjs().utc().month(dayjs().utc().month() + 3).startOf("month").unix(),
+  dayjs()
+    .utc()
+    .month(dayjs().utc().month() + 2)
+    .startOf("month")
+    .unix(),
+  dayjs()
+    .utc()
+    .month(dayjs().utc().month() + 3)
+    .startOf("month")
+    .unix(),
 ];
 
 // Only for hardhat, we will deploy adapters using Defender
@@ -38,14 +53,14 @@ const MAINNET_FACTORIES = [
     tilt: 0,
     guard: ethers.utils.parseEther("100000"), // $100'000
     targets: SAMPLE_TARGETS,
-    reward: COMP_TOKEN.get(CHAINS.MAINNET)
+    reward: COMP_TOKEN.get(CHAINS.MAINNET),
   },
 ];
 
 module.exports = {
   mainnet: {
     divider: "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
-    periphery: "0xFff11417a58781D3C72083CB45EF54d79Cd02437", 
+    periphery: "0xFff11417a58781D3C72083CB45EF54d79Cd02437",
     factories: MAINNET_FACTORIES,
   },
   maturities: SAMPLE_MATURITIES,

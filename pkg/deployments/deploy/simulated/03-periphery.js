@@ -19,7 +19,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 
   log("Set the periphery on the Divider");
-  if (await divider.periphery() !== peripheryAddress) {
+  if ((await divider.periphery()) !== peripheryAddress) {
     await (await divider.setPeriphery(peripheryAddress)).wait();
   }
 

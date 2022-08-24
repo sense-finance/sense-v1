@@ -57,7 +57,9 @@ module.exports = async function () {
   };
   let params = await poolManager.targetParams();
   if (!params.collateralFactor.eq(ethers.utils.parseEther("0.5"))) {
-    await (await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)).wait();
+    await (
+      await poolManager.setParams(ethers.utils.formatBytes32String("TARGET_PARAMS"), targetParams)
+    ).wait();
   }
 
   const ptParams = {

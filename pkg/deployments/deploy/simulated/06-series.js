@@ -6,7 +6,6 @@ const { getDeployedAdapters } = require("../../hardhat.utils");
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
-const ONE_ETH = ethers.utils.parseEther("1");
 
 module.exports = async function () {
   const { deployer } = await getNamedAccounts();
@@ -120,7 +119,9 @@ module.exports = async function () {
 
       log("- adding liquidity via target");
       if (balances[0].lt(one)) {
-        await periphery.addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0).then(t => t.wait());
+        await periphery
+          .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0)
+          .then(t => t.wait());
       }
 
       // one side liquidity removal sanity check
@@ -145,7 +146,9 @@ module.exports = async function () {
       log("Making swap to init PT");
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
-      await periphery.swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0).then(t => t.wait());
+      await periphery
+        .swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0)
+        .then(t => t.wait());
 
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
@@ -170,7 +173,8 @@ module.exports = async function () {
       const _scale = await adapter.callStatic.scale();
       const scale = _scale.div(1e12).toNumber() / 1e6;
       const _principalInTarget =
-        principalPriceInTarget.div(ethers.BigNumber.from(10).pow(decimals - 4)) / 10 ** Math.abs(4 - decimals);
+        principalPriceInTarget.div(ethers.BigNumber.from(10).pow(decimals - 4)) /
+        10 ** Math.abs(4 - decimals);
       const principalPriceInUnderlying = _principalInTarget * scale;
 
       const discountRate =

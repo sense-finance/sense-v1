@@ -9,7 +9,7 @@ const poolManagerAbi = require("./abi/PoolManager.json");
 const oldPeripheryAbi = require("./abi/OldPeriphery.json");
 const newPeripheryAbi = require("./abi/NewPeriphery.json");
 
-task("20220429-periphery", "Deploys and authenticates a new Periphery").setAction(async ({}, { ethers }) => {
+task("20220429-periphery", "Deploys and authenticates a new Periphery").setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -45,9 +45,9 @@ task("20220429-periphery", "Deploys and authenticates a new Periphery").setActio
   );
   console.log("Adapters to verify:", adaptersVerified);
 
-  const factoriesAddedArgs = (await oldPeriphery.queryFilter(oldPeriphery.filters.FactoryChanged(null, null))).map(
-    e => e.args,
-  );
+  const factoriesAddedArgs = (
+    await oldPeriphery.queryFilter(oldPeriphery.filters.FactoryChanged(null, null))
+  ).map(e => e.args);
   const addedFactoriesWithStatus = {};
   for (const { factory, isOn } of factoriesAddedArgs) {
     addedFactoriesWithStatus[factory] = isOn;

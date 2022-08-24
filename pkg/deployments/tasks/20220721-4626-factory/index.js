@@ -10,7 +10,7 @@ const { verifyOnEtherscan } = require("../../hardhat.utils");
 task(
   "20220721-4626-factory",
   "Deploys 4626 Factory and adds it to the Periphery. Also deploys Sense Master & Chainlink Oracles",
-).setAction(async ({}, { ethers }) => {
+).setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -18,7 +18,12 @@ task(
 
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
-  const { divider: dividerAddress, periphery: peripheryAddress, factories, maxSecondsBeforePriceIsStale } = data[chainId] || data[CHAINS.MAINNET];
+  const {
+    divider: dividerAddress,
+    periphery: peripheryAddress,
+    factories,
+    maxSecondsBeforePriceIsStale,
+  } = data[chainId] || data[CHAINS.MAINNET];
   let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
   let periphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
 
@@ -53,16 +58,7 @@ task(
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
   for (let factory of factories) {
-    const {
-      contractName: factoryContractName,
-      ifee,
-      stake,
-      stakeSize,
-      minm,
-      maxm,
-      mode,
-      tilt,
-    } = factory;
+    const { contractName: factoryContractName, ifee, stake, stakeSize, minm, maxm, mode, tilt } = factory;
 
     console.log(
       `\nDeploy ${factoryContractName} with params ${JSON.stringify({
@@ -73,7 +69,7 @@ task(
         maxm,
         mode,
         oracle: masterOracleAddress,
-        tilt
+        tilt,
       })}}`,
     );
     const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt];
@@ -117,7 +113,5 @@ task(
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");
     }
-
   }
-
 });

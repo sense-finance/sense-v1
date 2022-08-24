@@ -1,4 +1,19 @@
-const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, COMP_TOKEN, F156FRAX3CRV_TOKEN, FRAX3CRV_TOKEN, CONVEX_TOKEN, CRV_TOKEN, TRIBE_CONVEX, REWARDS_DISTRIBUTOR_CVX, REWARDS_DISTRIBUTOR_CRV, CDAI_TOKEN, F18DAI_TOKEN, OLYMPUS_POOL_PARTY } = require("./hardhat.addresses");
+const {
+  WETH_TOKEN,
+  WSTETH_TOKEN,
+  MASTER_ORACLE,
+  COMP_TOKEN,
+  F156FRAX3CRV_TOKEN,
+  FRAX3CRV_TOKEN,
+  CONVEX_TOKEN,
+  CRV_TOKEN,
+  TRIBE_CONVEX,
+  REWARDS_DISTRIBUTOR_CVX,
+  REWARDS_DISTRIBUTOR_CRV,
+  CDAI_TOKEN,
+  F18DAI_TOKEN,
+  OLYMPUS_POOL_PARTY,
+} = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -30,37 +45,136 @@ const DEV_SERIES_MATURITIES = [
     .unix(),
 ];
 const DEV_TARGETS = [
-  { name: "cDAI", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cETH", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cWBTC", tDecimals: 18, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  {
+    name: "cDAI",
+    tDecimals: 8,
+    uDecimals: 18,
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "cETH",
+    tDecimals: 8,
+    uDecimals: 18,
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "cWBTC",
+    tDecimals: 18,
+    uDecimals: 18,
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
 ];
 
 const DEV_CROP_TARGETS = [
-  { name: "cropDAI", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cropETH", tDecimals: 8, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cropWBTC", tDecimals: 18, uDecimals: 18, guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  {
+    name: "cropDAI",
+    tDecimals: 8,
+    uDecimals: 18,
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "cropETH",
+    tDecimals: 8,
+    uDecimals: 18,
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "cropWBTC",
+    tDecimals: 18,
+    uDecimals: 18,
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
 ];
 
 const DEV_CROPS_TARGETS = [
-  { name: "cropsDAI", tDecimals: 8, uDecimals: 18, comptroller: "0x", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cropsETH", tDecimals: 8, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "cropsWBTC", tDecimals: 18, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  {
+    name: "cropsDAI",
+    tDecimals: 8,
+    uDecimals: 18,
+    comptroller: "0x",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "cropsETH",
+    tDecimals: 8,
+    uDecimals: 18,
+    comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "cropsWBTC",
+    tDecimals: 18,
+    uDecimals: 18,
+    comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
 ];
 
 const DEV_4626_TARGETS = [
-  { name: "crop4626DAI", tDecimals: 8, uDecimals: 18, comptroller: "0x", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "crop4626ETH", tDecimals: 8, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "crop4626WBTC", tDecimals: 18, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  {
+    name: "crop4626DAI",
+    tDecimals: 8,
+    uDecimals: 18,
+    comptroller: "0x",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "crop4626ETH",
+    tDecimals: 8,
+    uDecimals: 18,
+    comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "crop4626WBTC",
+    tDecimals: 18,
+    uDecimals: 18,
+    comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
 ];
 
 const DEV_4626_CROPS_TARGETS = [
-  { name: "crops4626DAI", tDecimals: 8, uDecimals: 18, comptroller: "0x", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "crops4626ETH", tDecimals: 8, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
-  { name: "crops4626WBTC", tDecimals: 18, uDecimals: 18, comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66", guard: ethers.constants.MaxUint256, series: DEV_SERIES_MATURITIES },
+  {
+    name: "crops4626DAI",
+    tDecimals: 8,
+    uDecimals: 18,
+    comptroller: "0x",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "crops4626ETH",
+    tDecimals: 8,
+    uDecimals: 18,
+    comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
+  {
+    name: "crops4626WBTC",
+    tDecimals: 18,
+    uDecimals: 18,
+    comptroller: "0x07cd53380FE9B2a5E64099591b498c73F0EfaA66",
+    guard: ethers.constants.MaxUint256,
+    series: DEV_SERIES_MATURITIES,
+  },
 ];
 
 const DEV_ADAPTERS = [
-  chainId => ({
+  () => ({
     contractName: "MockAdapter",
     target: {
       name: "cUSDC",
@@ -68,7 +182,7 @@ const DEV_ADAPTERS = [
       uDecimals: 6,
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
-      noncrop: true
+      noncrop: true,
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
@@ -81,10 +195,10 @@ const DEV_ADAPTERS = [
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
-      level: 31
+      level: 31,
     },
   }),
-  chainId => ({
+  () => ({
     contractName: "MockCropAdapter",
     target: {
       name: "cBAT",
@@ -93,7 +207,7 @@ const DEV_ADAPTERS = [
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
       noncrop: false,
-      crops: false
+      crops: false,
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
@@ -106,10 +220,10 @@ const DEV_ADAPTERS = [
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
-      level: 31
+      level: 31,
     },
   }),
-  chainId => ({
+  () => ({
     contractName: "MockCropsAdapter",
     target: {
       name: "cUSDT",
@@ -118,7 +232,7 @@ const DEV_ADAPTERS = [
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
       noncrop: false,
-      crops: true
+      crops: true,
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
@@ -130,13 +244,13 @@ const DEV_ADAPTERS = [
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
       tilt: 0,
-      level: 31
+      level: 31,
     },
   }),
 ];
 
 const DEV_FACTORIES = [
-  chainId => ({
+  () => ({
     contractName: "MockFactory",
     oracle: ethers.constants.AddressZero, // oracle address
     stakeSize: ethers.utils.parseEther("1"),
@@ -148,9 +262,9 @@ const DEV_FACTORIES = [
     targets: DEV_TARGETS,
     noncrop: true,
     is4626: false,
-    guard: ethers.utils.parseEther("100000")
+    guard: ethers.utils.parseEther("100000"),
   }),
-  chainId => ({
+  () => ({
     contractName: "MockCropFactory",
     oracle: ethers.constants.AddressZero, // oracle address
     stakeSize: ethers.utils.parseEther("1"),
@@ -163,9 +277,9 @@ const DEV_FACTORIES = [
     noncrop: false,
     crops: false,
     is4626: false,
-    guard: ethers.utils.parseEther("100000")
+    guard: ethers.utils.parseEther("100000"),
   }),
-  chainId => ({
+  () => ({
     contractName: "MockCropsFactory",
     ifee: ethers.utils.parseEther("0.01"),
     stakeSize: ethers.utils.parseEther("1"),
@@ -178,9 +292,9 @@ const DEV_FACTORIES = [
     noncrop: false,
     crops: true,
     is4626: false,
-    guard: ethers.utils.parseEther("100000")
+    guard: ethers.utils.parseEther("100000"),
   }),
-  chainId => ({
+  () => ({
     contractName: "Mock4626CropFactory",
     oracle: ethers.constants.AddressZero, // oracle address
     stakeSize: ethers.utils.parseEther("1"),
@@ -192,9 +306,9 @@ const DEV_FACTORIES = [
     targets: DEV_4626_TARGETS,
     crops: false,
     is4626: true,
-    guard: ethers.utils.parseEther("100000")
+    guard: ethers.utils.parseEther("100000"),
   }),
-  chainId => ({
+  () => ({
     contractName: "Mock4626CropsFactory",
     ifee: ethers.utils.parseEther("0.01"),
     stakeSize: ethers.utils.parseEther("1"),
@@ -206,7 +320,7 @@ const DEV_FACTORIES = [
     targets: DEV_4626_CROPS_TARGETS,
     crops: true,
     is4626: true,
-    guard: ethers.utils.parseEther("100000")
+    guard: ethers.utils.parseEther("100000"),
   }),
 ];
 // ------------------------------------
@@ -215,13 +329,25 @@ const DEV_FACTORIES = [
 //  FOR MAINET SCENARIOS
 // -------------------------------------------------------
 
-const CTARGETS = chainId => ([
-  { name: "cDAI", address: CDAI_TOKEN.get(chainId), comptroller: "0x", guard: ethers.constants.MaxUint256, series: [] }
-]);
+const CTARGETS = chainId => [
+  {
+    name: "cDAI",
+    address: CDAI_TOKEN.get(chainId),
+    comptroller: "0x",
+    guard: ethers.constants.MaxUint256,
+    series: [],
+  },
+];
 
-const FTARGETS = chainId => ([
-  { name: "f8DAI", address: F18DAI_TOKEN.get(chainId), comptroller: OLYMPUS_POOL_PARTY.get(chainId), guard: ethers.constants.MaxUint256, series: [] },
-]);
+const FTARGETS = chainId => [
+  {
+    name: "f8DAI",
+    address: F18DAI_TOKEN.get(chainId),
+    comptroller: OLYMPUS_POOL_PARTY.get(chainId),
+    guard: ethers.constants.MaxUint256,
+    series: [],
+  },
+];
 
 // List of factories to deploy which includes a targets array to indicate,
 // for factory, which target adapters to deploy
@@ -279,7 +405,7 @@ const MAINNET_ADAPTERS = [
       name: "wstETH",
       address: WSTETH_TOKEN.get(chainId),
       guard: ethers.utils.parseEther("1"),
-      series: CUSDC_WSTETH_SERIES_MATURITIES
+      series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
     ifee: ethers.utils.parseEther("0.01"),
     adapterParams: {
@@ -303,7 +429,7 @@ const MAINNET_ADAPTERS = [
       series: CUSDC_WSTETH_SERIES_MATURITIES,
       comptroller: TRIBE_CONVEX.get(chainId),
       rewardsTokens: [CRV_TOKEN.get(chainId), CONVEX_TOKEN.get(chainId)],
-      rewardsDistributors: [REWARDS_DISTRIBUTOR_CRV.get(chainId), REWARDS_DISTRIBUTOR_CVX.get(chainId)]
+      rewardsDistributors: [REWARDS_DISTRIBUTOR_CRV.get(chainId), REWARDS_DISTRIBUTOR_CVX.get(chainId)],
     },
     underlying: FRAX3CRV_TOKEN.get(chainId),
     ifee: ethers.utils.parseEther("0.01"),

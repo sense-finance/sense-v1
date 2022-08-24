@@ -57,7 +57,6 @@ module.exports = async function () {
 
   // if signer is same as deployer, we don't want to untrust it
   if (signer !== deployer) {
-
     log("\n-------------------------------------------------------");
     log("\nRemove deployer address from trusted on contracts");
 
@@ -140,7 +139,6 @@ module.exports = async function () {
   } else {
     throw Error("Sanity checks: FAILED");
   }
-
 };
 
 module.exports.tags = ["prod:signer", "scenario:prod"];

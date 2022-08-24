@@ -26,9 +26,18 @@ module.exports = async function () {
   });
 
   // For Space.
-  const TS = ethers.utils.parseEther("1").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("31622400"));
-  const G1 = ethers.utils.parseEther("950").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("1000"));
-  const G2 = ethers.utils.parseEther("1000").mul(ethers.utils.parseEther("1")).div(ethers.utils.parseEther("950"));
+  const TS = ethers.utils
+    .parseEther("1")
+    .mul(ethers.utils.parseEther("1"))
+    .div(ethers.utils.parseEther("31622400"));
+  const G1 = ethers.utils
+    .parseEther("950")
+    .mul(ethers.utils.parseEther("1"))
+    .div(ethers.utils.parseEther("1000"));
+  const G2 = ethers.utils
+    .parseEther("1000")
+    .mul(ethers.utils.parseEther("1"))
+    .div(ethers.utils.parseEther("950"));
   const oracleEnabled = true;
 
   await deploy("SpaceFactory", {
