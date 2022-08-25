@@ -17,8 +17,7 @@
     "turbo-test:mainnet": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test:mainnet",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
     "fix": "yarn workspaces foreach --parallel --verbose run fix",
-    "gas-snapshot": "yarn workspaces foreach --parallel --verbose --interlaced run gas-snapshot",
-    "prepare": "husky install"
+    "gas-snapshot": "yarn workspaces foreach --parallel --verbose --interlaced run gas-snapshot"
   },
   "packageManager": "yarn@3.1.0",
   "devDependencies": {
@@ -28,16 +27,16 @@
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "^1.0.0-beta.17",
-    "solhint": "^3.3.6",
+    "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn fix"
+      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {
-    "./**/*.{js,ts,sol}": [
+    "./**/*.{js}": [
       "yarn fix"
     ]
   }

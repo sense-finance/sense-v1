@@ -136,9 +136,10 @@ task("20220727-cfactory", "Deploys a new Compound Factory and adds it to the Per
         console.log("\n-------------------------------------------------------");
         console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
         console.log("\n1. Set factory on Periphery");
-        console.log("\n2. Deploy adapters on Periphery (if needed)");
-        console.log("\n3. For each adapter, sponsor Series on Periphery");
-        console.log("\n4. For each series, run capital seeder");
+        console.log("\n2. Set factory as trusted on Divider");
+        console.log("\n3. Deploy adapters on Periphery (if needed)");
+        console.log("\n4. For each adapter, sponsor Series on Periphery");
+        console.log("\n5. For each series, run capital seeder");
       }
     }
   },

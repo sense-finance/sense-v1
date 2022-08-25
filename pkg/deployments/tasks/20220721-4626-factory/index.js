@@ -58,7 +58,17 @@ task(
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
   for (let factory of factories) {
-    const { contractName: factoryContractName, ifee, stake, stakeSize, minm, maxm, mode, tilt } = factory;
+    const {
+      contractName: factoryContractName,
+      ifee,
+      stake,
+      stakeSize,
+      minm,
+      maxm,
+      mode,
+      tilt,
+      guard,
+    } = factory;
 
     console.log(
       `\nDeploy ${factoryContractName} with params ${JSON.stringify({
@@ -70,9 +80,10 @@ task(
         mode,
         oracle: masterOracleAddress,
         tilt,
+        guard,
       })}}`,
     );
-    const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt];
+    const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: factoryAddress } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams],
@@ -112,6 +123,10 @@ task(
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");
+      console.log("\n2. Set factory as trusted on Divider");
+      console.log("\n3. Deploy adapters on Periphery (if needed)");
+      console.log("\n4. For each adapter, sponsor Series on Periphery");
+      console.log("\n5. For each series, run capital seeder");
     }
   }
 });
