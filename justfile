@@ -22,8 +22,15 @@ DAPP_COVERAGE       := "1"
 # when developing we only want to fuzz briefly
 DAPP_TEST_FUZZ_RUNS := "100"
 # user with DAI
-DAPP_TEST_ADDRESS := "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 DAPP_REMAPPINGS   := remappings-from-pkg-deps
+
+# default mock target type is ERC20
+FORGE_MOCK_NON_ERC20_TARGET := env_var_or_default("FORGE_MOCK_NON_ERC20_TARGET", "false")
+# default mock underlying type is ERC20
+FORGE_MOCK_NON_ERC20_UNDERLYING := env_var_or_default("FORGE_MOCK_NON_ERC20_UNDERLYING", "false")
+# default mock stake type is ERC20
+FORGE_MOCK_NON_ERC20_STAKE := env_var_or_default("FORGE_MOCK_NON_ERC20_STAKE", "false")
+
 # default mock target type is non 4626  
 FORGE_MOCK_4626_TARGET := env_var_or_default("FORGE_MOCK_4626_TARGET", "false")
 # set mock target to 18 decimals by default
@@ -49,6 +56,24 @@ turbo-test-match-contract *exp="": && _timer
 # run tests with 18 decimals
 turbo-test-local *cmds="": && _timer
 	@cd {{ invocation_directory() }}; forge test --no-match-path "*.tm*" {{ cmds }}
+
+# run tests with 18 decimals and non-ERC20 target
+turbo-test-local-non-erc20-target *cmds="": && _timer
+	cd {{ invocation_directory() }}; \
+		export FORGE_MOCK_NON_ERC20_TARGET="true"; \
+		forge test --no-match-path "*.tm*" {{ cmds }}
+
+# run tests with 18 decimals and non-ERC20 underlying
+turbo-test-local-non-erc20-underlying *cmds="": && _timer
+	cd {{ invocation_directory() }}; \
+		export FORGE_MOCK_NON_ERC20_UNDERLYING="true"; \
+		forge test --no-match-path "*.tm*" {{ cmds }}
+
+# run tests with 18 decimals and non-ERC20 stake
+turbo-test-local-non-erc20-stake *cmds="": && _timer
+	cd {{ invocation_directory() }}; \
+		export FORGE_MOCK_NON_ERC20_STAKE="true"; \
+		forge test --no-match-path "*.tm*" {{ cmds }}
 
 # run tests with 6 target & underlying decimals
 turbo-test-local-6-decimal-val *cmds="": && _timer

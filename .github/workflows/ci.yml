@@ -68,6 +68,15 @@ jobs:
     - name: Run local core tests where the mock Target is an ERC4626 and decimals are 8
       run: yarn workspace @sense-finance/v1-core run test:4626-8-decimal-val
 
+    - name: Run local core tests where the mock Target is non ERC20 compliant
+      run: yarn workspace @sense-finance/v1-core run turbo-test:non-erc20-target
+
+    - name: Run local core tests where the mock Underlying is non ERC20 compliant
+      run: yarn workspace @sense-finance/v1-core run turbo-test:non-erc20-underlying
+
+    - name: Run local core tests where the mock Stake is non ERC20 compliant
+      run: yarn workspace @sense-finance/v1-core run turbo-test:non-erc20-stake
+
     - name: Run core mainnet tests
       run: yarn workspace @sense-finance/v1-core run test:mainnet
       env:

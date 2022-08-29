@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -16,6 +17,7 @@ import { Token } from "../tokens/Token.sol";
 import { YT } from "../tokens/YT.sol";
 
 contract Dividers is TestHelper {
+    using SafeTransferLib for ERC20;
     using FixedMath for uint256;
     using FixedMath for uint128;
     using Errors for string;
@@ -34,7 +36,7 @@ contract Dividers is TestHelper {
     }
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
-        stake.approve(address(periphery), 0);
+        ERC20(address(stake)).safeApprove(address(periphery), 0);
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.expectRevert("TRANSFER_FROM_FAILED");
         periphery.sponsorSeries(address(adapter), maturity, true);
