@@ -170,7 +170,7 @@ contract Mock4626CropFactory is CropFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public targets;
-    bool public is4626;
+    bool public is4626Target;
 
     constructor(
         address _divider,

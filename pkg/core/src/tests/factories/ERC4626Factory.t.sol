@@ -20,7 +20,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
         super.setUp();
-        is4626 = true;
+        is4626Target = true;
     }
 
     function testDeployFactory() public {

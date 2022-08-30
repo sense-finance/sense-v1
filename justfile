@@ -33,9 +33,11 @@ FORGE_MOCK_NON_ERC20_STAKE := env_var_or_default("FORGE_MOCK_NON_ERC20_STAKE", "
 
 # default mock target type is non 4626  
 FORGE_MOCK_4626_TARGET := env_var_or_default("FORGE_MOCK_4626_TARGET", "false")
-# set mock target to 18 decimals by default
+
+# set mock target, underlying and stake to 18 decimals by default
 FORGE_MOCK_TARGET_DECIMALS := env_var_or_default("FORGE_MOCK_TARGET_DECIMALS", "18")
 FORGE_MOCK_UNDERLYING_DECIMALS := env_var_or_default("FORGE_MOCK_UNDERLYING_DECIMALS", "18")
+FORGE_MOCK_STAKE_DECIMALS := env_var_or_default("FORGE_MOCK_STAKE_DECIMALS", "18")
 
 # export just vars as env vars
 set export
@@ -102,7 +104,7 @@ turbo-test-local-4626 *cmds="": && _timer
 		export FORGE_MOCK_4626_TARGET="true"; \
 		forge test --match-path "**/*.t.sol" --no-match-path "**/Adapter.t.sol" {{ cmds }}
 
-# run ERC4626 tests with 6 decimals target
+# run ERC4626 tests with 8 decimals target
 turbo-test-local-4626-8-decimal-val *cmds="": && _timer
 	cd {{ invocation_directory() }}; \
 		export FORGE_MOCK_4626_TARGET="true"; \
@@ -123,6 +125,40 @@ turbo-test-mainnet-match *exp="": && _timer
 
 turbo-test-mainnet-match-contract *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --fork-url {{ MAINNET_RPC }} --match-contract {{ exp }}
+
+# run for all possible combinations between ERC20 and non-ERC20 target, underlying and stake and 6, 8 and 18 decimals
+# also run, for ERC4626 target, all possible combinations between 6, 8 and 18 target (and underlying) decimals
+turbo-test-local-all *cmds="": && _timer
+	for c in --target\ {true,false}\ --underlying\ {true,false}\ --stake\ {true,false}\ --tDecimals\ {6,8,18}\ --uDecimals\ {6,8,18}\ --sDecimals\ {6,8,18} ; do \
+		IFS=' ' \
+		read -ra combination <<< "$c"; \
+		echo "Target is ${combination[7]} decimals and is ERC20: ${combination[1]}"; \
+		echo "Underlying is ${combination[9]} decimals and is ERC20: ${combination[3]}"; \
+		echo "Stake is ${combination[11]} decimals and is ERC20: ${combination[5]}"; \
+		echo "\n"; \
+		cd {{ invocation_directory() }}; \
+			export FORGE_MOCK_NON_ERC20_TARGET=${combination[1]}; \
+			export FORGE_MOCK_NON_ERC20_UNDERLYING=${combination[3]}; \
+			export FORGE_MOCK_NON_ERC20_STAKE=${combination[5]}; \
+			export FORGE_MOCK_TARGET_DECIMALS=${combination[7]}; \
+			export FORGE_MOCK_UNDERLYING_DECIMALS=${combination[9]}; \
+			export FORGE_MOCK_STAKE_DECIMALS=${combination[11]}; \
+			forge test --no-match-path "*.tm*" {{ cmds }}; \
+	done
+
+	for c in --tDecimals\ {6,8,18}\ ; do \
+		IFS=' ' \
+		read -ra combination <<< "$c"; \
+		echo "Target is ${combination[1]} decimals and is ERC4626"; \
+		echo "Underlying is ${combination[1]} decimals (same as target) and is ERC20"; \
+		echo "\n"; \
+		cd {{ invocation_directory() }}; \
+			export FORGE_MOCK_4626_TARGET="true"; \
+			export FORGE_MOCK_TARGET_DECIMALS=${combination[1]}; \
+			export FORGE_MOCK_UNDERLYING_DECIMALS=${combination[1]}; \
+			forge test --no-match-path "*.tm*" {{ cmds }}; \
+	done
+
 ## ---- Gas Metering ----
 
 gas-snapshot: && _timer

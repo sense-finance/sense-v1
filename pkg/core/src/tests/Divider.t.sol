@@ -333,7 +333,7 @@ contract Dividers is TestHelper {
         MockBaseAdapter aAdapter = new MockBaseAdapter(
             address(divider),
             address(target),
-            !is4626 ? target.underlying() : target.asset(),
+            !is4626Target ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             DEFAULT_ADAPTER_PARAMS
         );
@@ -845,7 +845,7 @@ contract Dividers is TestHelper {
         uint256 principalBalanceBefore = ERC20(pt).balanceOf(bob);
         hevm.warp(maturity);
         // Set scale to 90% of its initial value
-        !is4626
+        !is4626Target
             ? adapter.setScale(0.9e18)
             : underlying.burn(address(target), (target.totalSupply()).fmul(0.1e18, 1e18));
 
@@ -890,7 +890,7 @@ contract Dividers is TestHelper {
         hevm.warp(maturity);
 
         // Set scale to 90% of its initial value
-        !is4626
+        !is4626Target
             ? adapter.setScale(0.9e18)
             : underlying.burn(address(target), (target.totalSupply()).fmul(0.1e18, 1e18));
 
@@ -1039,7 +1039,7 @@ contract Dividers is TestHelper {
 
         uint256 tBalanceBefore = target.balanceOf(alice);
         hevm.warp(maturity);
-        !is4626
+        !is4626Target
             ? adapter.setScale(0.9e18)
             : underlying.burn(address(target), (target.totalSupply()).fmul(0.1e18, 1e18));
 
