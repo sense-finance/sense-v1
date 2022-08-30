@@ -775,7 +775,7 @@ __metadata:
     husky: ^7.0.2
     prettier: ^2.7.1
     prettier-plugin-solidity: ^1.0.0-beta.17
-    solhint: ^3.3.6
+    solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
     yarn: ^1.22.19
   languageName: unknown
@@ -799,7 +799,7 @@ __metadata:
     husky: ^7.0.2
     prettier: ^2.3.2
     prettier-plugin-solidity: ^1.0.0-beta.17
-    solhint: ^3.3.6
+    solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
   languageName: unknown
   linkType: soft
@@ -5574,7 +5574,7 @@ resolve@1.17.0:
   languageName: node
   linkType: hard
 
-"solhint@npm:^3.3.6, solhint@npm:^3.3.7":
+"solhint@npm:^3.3.7":
   version: 3.3.7
   resolution: "solhint@npm:3.3.7"
   dependencies:
