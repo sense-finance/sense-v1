@@ -30,7 +30,8 @@ abstract contract Crop is Trust {
 
     event Distributed(address indexed usr, address indexed token, uint256 amount);
 
-    constructor(address _divider, address _reward) Trust(_divider) {
+    constructor(address _divider, address _reward) Trust(msg.sender) {
+        setIsTrusted(_divider, true);
         reward = _reward;
     }
 

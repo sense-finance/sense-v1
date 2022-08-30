@@ -38,8 +38,8 @@ contract CropsAdapters is TestHelper {
 
         rewardTokens = [address(reward), address(reward2)];
         cropsFactory = MockCropsFactory(deployCropsFactory(address(aTarget), rewardTokens, true));
-        address f = periphery.deployAdapter(address(cropsFactory), address(aTarget), abi.encode(rewardTokens)); // deploy & onboard target through Periphery
-        cropsAdapter = MockCropsAdapter(f);
+        address a = periphery.deployAdapter(address(cropsFactory), address(aTarget), abi.encode(rewardTokens)); // deploy & onboard target through Periphery
+        cropsAdapter = MockCropsAdapter(a);
         divider.setGuard(address(cropsAdapter), 10 * 2**128);
 
         initUser(alice, aTarget, MAX_TARGET);
@@ -107,6 +107,12 @@ contract CropsAdapters is TestHelper {
 
         reward.mint(address(cropsAdapter), 50 * 1e18);
         reward2.mint(address(cropsAdapter), 50 * 1e6);
+
+        hevm.expectEmit(true, true, true, false);
+        emit Distributed(alice, address(reward), 0);
+
+        hevm.expectEmit(true, true, true, false);
+        emit Distributed(alice, address(reward2), 0);
 
         divider.issue(address(cropsAdapter), maturity, 0);
         assertClose(ERC20(reward).balanceOf(alice), 30 * 1e18);
@@ -447,6 +453,10 @@ contract CropsAdapters is TestHelper {
         maturities[0] = maturity;
         address[] memory users = new address[](1);
         users[0] = bob;
+
+        hevm.expectEmit(true, false, false, false);
+        emit Reconciled(bob, 0, maturity);
+
         cropsAdapter.reconcile(users, maturities);
         cropsAdapter.reconcile(users, maturities);
         assertClose(cropsAdapter.tBalance(bob), 0);
@@ -1252,8 +1262,6 @@ contract CropsAdapters is TestHelper {
 
     // update rewards tokens tests
 
-    event RewardTokensChanged(address[] indexed rewardTokens);
-
     function testAddRewardsTokens() public {
         MockToken reward3 = new MockToken("Reward Token 3", "RT3", 18);
         rewardTokens.push(address(reward3));
@@ -1289,6 +1297,21 @@ contract CropsAdapters is TestHelper {
     }
 
     // claimer tests
+
+    function testCantSetClaimer(uint256 tBal) public {
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x4b1d));
+        cropsAdapter.setClaimer(address(cropsFactory));
+    }
+
+    function testCanSetClaimer(uint256 tBal) public {
+        hevm.expectEmit(true, true, true, true);
+        emit ClaimerChanged(address(1));
+
+        hevm.prank(address(cropsFactory));
+        cropsAdapter.setClaimer(address(1));
+        assertEq(cropsAdapter.claimer(), address(1));
+    }
 
     function testFuzzSimpleDistributionAndCollectWithClaimer(uint256 tBal) public {
         assumeBounds(tBal);
@@ -1345,4 +1368,11 @@ contract CropsAdapters is TestHelper {
     function assertClose(uint256 a, uint256 b) public override {
         assertClose(a, b, 1500);
     }
+
+    /* ========== LOGS ========== */
+
+    event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
+    event ClaimerChanged(address indexed claimer);
+    event Distributed(address indexed usr, address indexed token, uint256 amount);
+    event RewardTokensChanged(address[] indexed rewardTokens);
 }

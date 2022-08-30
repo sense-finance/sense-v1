@@ -75,7 +75,7 @@ contract TestHelper is DSTest {
     MockToken internal underlying;
     MockTargetLike internal target;
     MockToken internal reward;
-    MockCropsFactory internal factory;
+    MockCropFactory internal factory;
     MockOracle internal masterOracle;
 
     PoolManager internal poolManager;
@@ -240,7 +240,7 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockCropsFactory(deployCropsFactory(address(target)));
+        factory = MockCropFactory(deployCropsFactory(address(target)));
 
         // Prepare data
         address[] memory rewardTokens = new address[](1);

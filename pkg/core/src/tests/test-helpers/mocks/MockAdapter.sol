@@ -185,7 +185,7 @@ contract MockCropAdapter is BaseAdapter, Crop {
     }
 
     function _claimReward() internal virtual override {
-        // MockToken(reward).mint(address(this), 1e18);
+        super._claimReward();
     }
 
     function wrapUnderlying(uint256 uBal) public virtual override returns (uint256) {
@@ -307,9 +307,6 @@ contract MockCropsAdapter is BaseAdapter, Crops {
 
     function _claimRewards() internal virtual override {
         super._claimRewards();
-        // for (uint i = 0; i < rewardTokens.length; i++) {
-        //     MockToken(rewardTokens[i]).mint(address(this), 1e18);
-        // }
     }
 
     function wrapUnderlying(uint256 uBal) public virtual override returns (uint256) {
