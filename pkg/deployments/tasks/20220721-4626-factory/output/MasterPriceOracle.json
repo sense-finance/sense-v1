@@ -1,0 +1,316 @@
+{
+  "address": "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_chainlinkOracle",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_underlyings",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_oracles",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidParam",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "PriceOracleNotFound",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "senseChainlinkPriceOracle",
+          "type": "address"
+        }
+      ],
+      "name": "SenseChainlinkPriceOracleChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "trusted",
+          "type": "bool"
+        }
+      ],
+      "name": "UserTrustUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_underlyings",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_oracles",
+          "type": "address[]"
+        }
+      ],
+      "name": "add",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "isTrusted",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "oracles",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "underlying",
+          "type": "address"
+        }
+      ],
+      "name": "price",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "senseChainlinkPriceOracle",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "trusted",
+          "type": "bool"
+        }
+      ],
+      "name": "setIsTrusted",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_senseChainlinkPriceOracle",
+          "type": "address"
+        }
+      ],
+      "name": "setSenseChainlinkPriceOracle",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x709d1a4094790b4d5bcab0f58fd8f9ee8ddf9cbf82233ff53012907b87f3bbcd",
+  "receipt": {
+    "to": null,
+    "from": "0x59A181710F926Eae6FddfbF27a14259E8DD00cA2",
+    "contractAddress": "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
+    "transactionIndex": 136,
+    "gasUsed": "607062",
+    "logsBloom": "0x00000000020000010000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000001000000000000000000100000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000",
+    "blockHash": "0x6f149752434e3d82bb8b4377a6f18373d52d515057bdba776c970e7d5a6898cb",
+    "transactionHash": "0x709d1a4094790b4d5bcab0f58fd8f9ee8ddf9cbf82233ff53012907b87f3bbcd",
+    "logs": [
+      {
+        "transactionIndex": 136,
+        "blockNumber": 15408470,
+        "transactionHash": "0x709d1a4094790b4d5bcab0f58fd8f9ee8ddf9cbf82233ff53012907b87f3bbcd",
+        "address": "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
+        "topics": [
+          "0xe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986",
+          "0x00000000000000000000000059a181710f926eae6fddfbf27a14259e8dd00ca2"
+        ],
+        "data": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "logIndex": 107,
+        "blockHash": "0x6f149752434e3d82bb8b4377a6f18373d52d515057bdba776c970e7d5a6898cb"
+      }
+    ],
+    "blockNumber": 15408470,
+    "cumulativeGasUsed": "7213967",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0xfcbE3C1746310E1cF87140E4d7599967aa5b21de",
+    [],
+    []
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "1272f268ed0016603d4f4b050bcdcf1b",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.11+commit.d7f03943\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_chainlinkOracle\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"_underlyings\",\"type\":\"address[]\"},{\"internalType\":\"address[]\",\"name\":\"_oracles\",\"type\":\"address[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"InvalidParam\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PriceOracleNotFound\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"senseChainlinkPriceOracle\",\"type\":\"address\"}],\"name\":\"SenseChainlinkPriceOracleChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"trusted\",\"type\":\"bool\"}],\"name\":\"UserTrustUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"_underlyings\",\"type\":\"address[]\"},{\"internalType\":\"address[]\",\"name\":\"_oracles\",\"type\":\"address[]\"}],\"name\":\"add\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"isTrusted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"oracles\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"underlying\",\"type\":\"address\"}],\"name\":\"price\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"senseChainlinkPriceOracle\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"trusted\",\"type\":\"bool\"}],\"name\":\"setIsTrusted\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_senseChainlinkPriceOracle\",\"type\":\"address\"}],\"name\":\"setSenseChainlinkPriceOracle\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Inspired by: https://github.com/Rari-Capital/fuse-v1/blob/development/src/oracles/MasterPriceOracle.sol\",\"kind\":\"dev\",\"methods\":{\"add(address[],address[])\":{\"details\":\"Sets `_oracles` for `underlyings`. Caller of this function must make sure that the oracles being added return non-stale, greater than 0 prices for all underlying tokens.\"},\"constructor\":{\"details\":\"Constructor to initialize state variables.\",\"params\":{\"_chainlinkOracle\":\"The underlying ERC20 token addresses to link to `_oracles`.\",\"_oracles\":\"The `PriceOracle` contracts to be assigned to `underlyings`.\",\"_underlyings\":\"The underlying ERC20 token addresses to link to `_oracles`.\"}},\"price(address)\":{\"details\":\"Attempts to return the price in ETH of `underlying` (implements `BasePriceOracle`).\"},\"setSenseChainlinkPriceOracle(address)\":{\"details\":\"Sets the `senseChainlinkPriceOracle`.\"}},\"stateVariables\":{\"oracles\":{\"details\":\"Maps underlying token addresses to oracle addresses.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"This contract gets prices from an available oracle address which must implement IPriceFeed.sol If there's no oracle set, it will try getting the price from Chainlink's Oracle.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol\":\"MasterPriceOracle\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":15000},\"remappings\":[]},\"sources\":{\"@sense-finance/v1-core/src/adapters/abstract/IPriceFeed.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\n/// @title IPriceFeed\\n/// @notice Returns prices of underlying tokens\\n/// @author Taken from: https://github.com/Rari-Capital/fuse-v1/blob/development/src/oracles/BasePriceOracle.sol\\ninterface IPriceFeed {\\n    /// @notice Get the price of an underlying asset.\\n    /// @param underlying The underlying asset to get the price of.\\n    /// @return price The underlying asset price in ETH as a mantissa (scaled by 1e18).\\n    /// Zero means the price is unavailable.\\n    function price(address underlying) external view returns (uint256 price);\\n}\\n\",\"keccak256\":\"0x7adb908811bfd4177670a79817c7dd9b70922d5366be28d21172acd2221a8427\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\nimport { Trust } from \\\"@sense-finance/v1-utils/src/Trust.sol\\\";\\nimport { Errors } from \\\"@sense-finance/v1-utils/src/libs/Errors.sol\\\";\\nimport { IPriceFeed } from \\\"../../abstract/IPriceFeed.sol\\\";\\n\\n/// @notice This contract gets prices from an available oracle address which must implement IPriceFeed.sol\\n/// If there's no oracle set, it will try getting the price from Chainlink's Oracle.\\n/// @author Inspired by: https://github.com/Rari-Capital/fuse-v1/blob/development/src/oracles/MasterPriceOracle.sol\\ncontract MasterPriceOracle is IPriceFeed, Trust {\\n    address public senseChainlinkPriceOracle;\\n\\n    /// @dev Maps underlying token addresses to oracle addresses.\\n    mapping(address => address) public oracles;\\n\\n    /// @dev Constructor to initialize state variables.\\n    /// @param _chainlinkOracle The underlying ERC20 token addresses to link to `_oracles`.\\n    /// @param _underlyings The underlying ERC20 token addresses to link to `_oracles`.\\n    /// @param _oracles The `PriceOracle` contracts to be assigned to `underlyings`.\\n    constructor(\\n        address _chainlinkOracle,\\n        address[] memory _underlyings,\\n        address[] memory _oracles\\n    ) public Trust(msg.sender) {\\n        senseChainlinkPriceOracle = _chainlinkOracle;\\n\\n        // Input validation\\n        if (_underlyings.length != _oracles.length) revert Errors.InvalidParam();\\n\\n        // Initialize state variables\\n        for (uint256 i = 0; i < _underlyings.length; i++) oracles[_underlyings[i]] = _oracles[i];\\n    }\\n\\n    /// @dev Sets `_oracles` for `underlyings`.\\n    /// Caller of this function must make sure that the oracles being added return non-stale, greater than 0\\n    /// prices for all underlying tokens.\\n    function add(address[] calldata _underlyings, address[] calldata _oracles) external requiresTrust {\\n        if (_underlyings.length <= 0 || _underlyings.length != _oracles.length) revert Errors.InvalidParam();\\n\\n        for (uint256 i = 0; i < _underlyings.length; i++) {\\n            oracles[_underlyings[i]] = _oracles[i];\\n        }\\n    }\\n\\n    /// @dev Attempts to return the price in ETH of `underlying` (implements `BasePriceOracle`).\\n    function price(address underlying) external view override returns (uint256) {\\n        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18; // Return 1e18 for WETH\\n\\n        address oracle = oracles[underlying];\\n        if (oracle != address(0)) {\\n            return IPriceFeed(oracle).price(underlying);\\n        } else {\\n            // Try token/ETH from Sense's Chainlink Oracle\\n            try IPriceFeed(senseChainlinkPriceOracle).price(underlying) returns (uint256 price) {\\n                return price;\\n            } catch {\\n                revert Errors.PriceOracleNotFound();\\n            }\\n        }\\n    }\\n\\n    /// @dev Sets the `senseChainlinkPriceOracle`.\\n    function setSenseChainlinkPriceOracle(address _senseChainlinkPriceOracle) public requiresTrust {\\n        senseChainlinkPriceOracle = _senseChainlinkPriceOracle;\\n        emit SenseChainlinkPriceOracleChanged(senseChainlinkPriceOracle);\\n    }\\n\\n    /* ========== LOGS ========== */\\n    event SenseChainlinkPriceOracleChanged(address indexed senseChainlinkPriceOracle);\\n}\\n\",\"keccak256\":\"0x06c8bdc642bb4ef879c674b4f60e5fd8f2bff765aff15f5ca1a4a11892756b20\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-utils/src/Trust.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.7.0;\\n\\n/// @notice Ultra minimal authorization logic for smart contracts.\\n/// @author From https://github.com/Rari-Capital/solmate/blob/fab107565a51674f3a3b5bfdaacc67f6179b1a9b/src/auth/Trust.sol\\nabstract contract Trust {\\n    event UserTrustUpdated(address indexed user, bool trusted);\\n\\n    mapping(address => bool) public isTrusted;\\n\\n    constructor(address initialUser) {\\n        isTrusted[initialUser] = true;\\n\\n        emit UserTrustUpdated(initialUser, true);\\n    }\\n\\n    function setIsTrusted(address user, bool trusted) public virtual requiresTrust {\\n        isTrusted[user] = trusted;\\n\\n        emit UserTrustUpdated(user, trusted);\\n    }\\n\\n    modifier requiresTrust() {\\n        require(isTrusted[msg.sender], \\\"UNTRUSTED\\\");\\n\\n        _;\\n    }\\n}\\n\",\"keccak256\":\"0x2d3887076c81425d3954aea7735aebd9093e3df69c8132b1713fae4a34201d43\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-utils/src/libs/Errors.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.8.4;\\n\\nlibrary Errors {\\n    // Auth\\n    error CombineRestricted();\\n    error IssuanceRestricted();\\n    error NotAuthorized();\\n    error OnlyYT();\\n    error OnlyDivider();\\n    error OnlyPeriphery();\\n    error OnlyPermissionless();\\n    error RedeemRestricted();\\n    error Untrusted();\\n\\n    // Adapters\\n    error TokenNotSupported();\\n    error FlashCallbackFailed();\\n    error SenderNotEligible();\\n    error TargetMismatch();\\n    error TargetNotSupported();\\n    error InvalidAdapterType();\\n    error PriceOracleNotFound();\\n\\n    // Divider\\n    error AlreadySettled();\\n    error CollectNotSettled();\\n    error GuardCapReached();\\n    error IssuanceFeeCapExceeded();\\n    error IssueOnSettle();\\n    error NotSettled();\\n\\n    // Input & validations\\n    error AlreadyInitialized();\\n    error DuplicateSeries();\\n    error ExistingValue();\\n    error InvalidAdapter();\\n    error InvalidMaturity();\\n    error InvalidParam();\\n    error NotImplemented();\\n    error OutOfWindowBoundaries();\\n    error SeriesDoesNotExist();\\n    error SwapTooSmall();\\n    error TargetParamsNotSet();\\n    error PoolParamsNotSet();\\n    error PTParamsNotSet();\\n    error AttemptFailed();\\n    error InvalidPrice();\\n    error BadContractInteration();\\n\\n    // Periphery\\n    error FactoryNotSupported();\\n    error FlashBorrowFailed();\\n    error FlashUntrustedBorrower();\\n    error FlashUntrustedLoanInitiator();\\n    error UnexpectedSwapAmount();\\n    error TooMuchLeftoverTarget();\\n\\n    // Fuse\\n    error AdapterNotSet();\\n    error FailedBecomeAdmin();\\n    error FailedAddTargetMarket();\\n    error FailedToAddPTMarket();\\n    error FailedAddLpMarket();\\n    error OracleNotReady();\\n    error PoolAlreadyDeployed();\\n    error PoolNotDeployed();\\n    error PoolNotSet();\\n    error SeriesNotQueued();\\n    error TargetExists();\\n    error TargetNotInFuse();\\n\\n    // Tokens\\n    error MintFailed();\\n    error RedeemFailed();\\n    error TransferFailed();\\n}\\n\",\"keccak256\":\"0x5eece5ee6069054e8485c7c799ad1ea764446248088ee16bc0ae08c84f0c52b9\",\"license\":\"AGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x60806040523480156200001157600080fd5b5060405162000c2638038062000c26833981016040819052620000349162000253565b3360008181526020818152604091829020805460ff19166001908117909155915191825282917fe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986910160405180910390a250600180546001600160a01b0319166001600160a01b0385161790558051825114620000c457604051633494a40d60e21b815260040160405180910390fd5b60005b82518110156200016957818181518110620000e657620000e6620002d0565b602002602001015160026000858481518110620001075762000107620002d0565b60200260200101516001600160a01b03166001600160a01b0316815260200190815260200160002060006101000a8154816001600160a01b0302191690836001600160a01b0316021790555080806200016090620002e6565b915050620000c7565b5050505062000310565b80516001600160a01b03811681146200018b57600080fd5b919050565b634e487b7160e01b600052604160045260246000fd5b600082601f830112620001b857600080fd5b815160206001600160401b0380831115620001d757620001d762000190565b8260051b604051601f19603f83011681018181108482111715620001ff57620001ff62000190565b6040529384528581018301938381019250878511156200021e57600080fd5b83870191505b848210156200024857620002388262000173565b8352918301919083019062000224565b979650505050505050565b6000806000606084860312156200026957600080fd5b620002748462000173565b60208501519093506001600160401b03808211156200029257600080fd5b620002a087838801620001a6565b93506040860151915080821115620002b757600080fd5b50620002c686828701620001a6565b9150509250925092565b634e487b7160e01b600052603260045260246000fd5b60006000198214156200030957634e487b7160e01b600052601160045260246000fd5b5060010190565b61090680620003206000396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c8063a84c32ea1161005b578063a84c32ea146100e2578063addd509914610127578063aea910781461015d578063f0537e231461017e57600080fd5b80631393916a1461008257806396d64879146100975780639c9192c6146100cf575b600080fd5b610095610090366004610719565b610191565b005b6100ba6100a5366004610755565b60006020819052908152604090205460ff1681565b60405190151581526020015b60405180910390f35b6100956100dd3660046107bc565b610297565b6001546101029073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020016100c6565b610102610135366004610755565b60026020526000908152604090205473ffffffffffffffffffffffffffffffffffffffff1681565b61017061016b366004610755565b610420565b6040519081526020016100c6565b61009561018c366004610755565b610608565b3360009081526020819052604090205460ff1661020f576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600960248201527f554e54525553544544000000000000000000000000000000000000000000000060448201526064015b60405180910390fd5b73ffffffffffffffffffffffffffffffffffffffff82166000818152602081815260409182902080547fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff001685151590811790915591519182527fe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986910160405180910390a25050565b3360009081526020819052604090205460ff16610310576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600960248201527f554e5452555354454400000000000000000000000000000000000000000000006044820152606401610206565b82158061031d5750828114155b15610354576040517fd252903400000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b60005b838110156104195782828281811061037157610371610828565b90506020020160208101906103869190610755565b6002600087878581811061039c5761039c610828565b90506020020160208101906103b19190610755565b73ffffffffffffffffffffffffffffffffffffffff9081168252602082019290925260400160002080547fffffffffffffffffffffffff000000000000000000000000000000000000000016929091169190911790558061041181610857565b915050610357565b5050505050565b600073c02aaa39b223fe8d0a0e5c4f27ead9083c756cc273ffffffffffffffffffffffffffffffffffffffff831614156104635750670de0b6b3a7640000919050565b73ffffffffffffffffffffffffffffffffffffffff808316600090815260026020526040902054168015610528576040517faea9107800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff848116600483015282169063aea9107890602401602060405180830381865afa1580156104fd573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061052191906108b7565b9392505050565b6001546040517faea9107800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff85811660048301529091169063aea9107890602401602060405180830381865afa9250505080156105d2575060408051601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe01682019092526105cf918101906108b7565b60015b610521576040517f7b874a4700000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b3360009081526020819052604090205460ff16610681576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600960248201527f554e5452555354454400000000000000000000000000000000000000000000006044820152606401610206565b600180547fffffffffffffffffffffffff00000000000000000000000000000000000000001673ffffffffffffffffffffffffffffffffffffffff83169081179091556040517f2b571ec17269eb94dd56a2b5b9d5bd47701d3ae1a082694db88d22e969b1326290600090a250565b803573ffffffffffffffffffffffffffffffffffffffff8116811461071457600080fd5b919050565b6000806040838503121561072c57600080fd5b610735836106f0565b91506020830135801515811461074a57600080fd5b809150509250929050565b60006020828403121561076757600080fd5b610521826106f0565b60008083601f84011261078257600080fd5b50813567ffffffffffffffff81111561079a57600080fd5b6020830191508360208260051b85010111156107b557600080fd5b9250929050565b600080600080604085870312156107d257600080fd5b843567ffffffffffffffff808211156107ea57600080fd5b6107f688838901610770565b9096509450602087013591508082111561080f57600080fd5b5061081c87828801610770565b95989497509550505050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8214156108b0577f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b5060010190565b6000602082840312156108c957600080fd5b505191905056fea26469706673582212209d124be2026fdf04e972f642c02b2a03e8b8253649a0496c8832eec1fe1d117b64736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061007d5760003560e01c8063a84c32ea1161005b578063a84c32ea146100e2578063addd509914610127578063aea910781461015d578063f0537e231461017e57600080fd5b80631393916a1461008257806396d64879146100975780639c9192c6146100cf575b600080fd5b610095610090366004610719565b610191565b005b6100ba6100a5366004610755565b60006020819052908152604090205460ff1681565b60405190151581526020015b60405180910390f35b6100956100dd3660046107bc565b610297565b6001546101029073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020016100c6565b610102610135366004610755565b60026020526000908152604090205473ffffffffffffffffffffffffffffffffffffffff1681565b61017061016b366004610755565b610420565b6040519081526020016100c6565b61009561018c366004610755565b610608565b3360009081526020819052604090205460ff1661020f576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600960248201527f554e54525553544544000000000000000000000000000000000000000000000060448201526064015b60405180910390fd5b73ffffffffffffffffffffffffffffffffffffffff82166000818152602081815260409182902080547fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff001685151590811790915591519182527fe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986910160405180910390a25050565b3360009081526020819052604090205460ff16610310576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600960248201527f554e5452555354454400000000000000000000000000000000000000000000006044820152606401610206565b82158061031d5750828114155b15610354576040517fd252903400000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b60005b838110156104195782828281811061037157610371610828565b90506020020160208101906103869190610755565b6002600087878581811061039c5761039c610828565b90506020020160208101906103b19190610755565b73ffffffffffffffffffffffffffffffffffffffff9081168252602082019290925260400160002080547fffffffffffffffffffffffff000000000000000000000000000000000000000016929091169190911790558061041181610857565b915050610357565b5050505050565b600073c02aaa39b223fe8d0a0e5c4f27ead9083c756cc273ffffffffffffffffffffffffffffffffffffffff831614156104635750670de0b6b3a7640000919050565b73ffffffffffffffffffffffffffffffffffffffff808316600090815260026020526040902054168015610528576040517faea9107800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff848116600483015282169063aea9107890602401602060405180830381865afa1580156104fd573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061052191906108b7565b9392505050565b6001546040517faea9107800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff85811660048301529091169063aea9107890602401602060405180830381865afa9250505080156105d2575060408051601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe01682019092526105cf918101906108b7565b60015b610521576040517f7b874a4700000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b3360009081526020819052604090205460ff16610681576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600960248201527f554e5452555354454400000000000000000000000000000000000000000000006044820152606401610206565b600180547fffffffffffffffffffffffff00000000000000000000000000000000000000001673ffffffffffffffffffffffffffffffffffffffff83169081179091556040517f2b571ec17269eb94dd56a2b5b9d5bd47701d3ae1a082694db88d22e969b1326290600090a250565b803573ffffffffffffffffffffffffffffffffffffffff8116811461071457600080fd5b919050565b6000806040838503121561072c57600080fd5b610735836106f0565b91506020830135801515811461074a57600080fd5b809150509250929050565b60006020828403121561076757600080fd5b610521826106f0565b60008083601f84011261078257600080fd5b50813567ffffffffffffffff81111561079a57600080fd5b6020830191508360208260051b85010111156107b557600080fd5b9250929050565b600080600080604085870312156107d257600080fd5b843567ffffffffffffffff808211156107ea57600080fd5b6107f688838901610770565b9096509450602087013591508082111561080f57600080fd5b5061081c87828801610770565b95989497509550505050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8214156108b0577f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b5060010190565b6000602082840312156108c957600080fd5b505191905056fea26469706673582212209d124be2026fdf04e972f642c02b2a03e8b8253649a0496c8832eec1fe1d117b64736f6c634300080b0033",
+  "devdoc": {
+    "author": "Inspired by: https://github.com/Rari-Capital/fuse-v1/blob/development/src/oracles/MasterPriceOracle.sol",
+    "kind": "dev",
+    "methods": {
+      "add(address[],address[])": {
+        "details": "Sets `_oracles` for `underlyings`. Caller of this function must make sure that the oracles being added return non-stale, greater than 0 prices for all underlying tokens."
+      },
+      "constructor": {
+        "details": "Constructor to initialize state variables.",
+        "params": {
+          "_chainlinkOracle": "The underlying ERC20 token addresses to link to `_oracles`.",
+          "_oracles": "The `PriceOracle` contracts to be assigned to `underlyings`.",
+          "_underlyings": "The underlying ERC20 token addresses to link to `_oracles`."
+        }
+      },
+      "price(address)": {
+        "details": "Attempts to return the price in ETH of `underlying` (implements `BasePriceOracle`)."
+      },
+      "setSenseChainlinkPriceOracle(address)": {
+        "details": "Sets the `senseChainlinkPriceOracle`."
+      }
+    },
+    "stateVariables": {
+      "oracles": {
+        "details": "Maps underlying token addresses to oracle addresses."
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "notice": "This contract gets prices from an available oracle address which must implement IPriceFeed.sol If there's no oracle set, it will try getting the price from Chainlink's Oracle.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 19033,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol:MasterPriceOracle",
+        "label": "isTrusted",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_address,t_bool)"
+      },
+      {
+        "astId": 12198,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol:MasterPriceOracle",
+        "label": "senseChainlinkPriceOracle",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_address"
+      },
+      {
+        "astId": 12203,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol:MasterPriceOracle",
+        "label": "oracles",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_address,t_address)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_address)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_mapping(t_address,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      }
+    }
+  }
+}
