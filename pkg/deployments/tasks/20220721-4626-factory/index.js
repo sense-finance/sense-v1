@@ -1,11 +1,18 @@
 const { task } = require("hardhat/config");
 const data = require("./input");
 
-const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
+const {
+  SENSE_MULTISIG,
+  CHAINS,
+  MSTABLE_RARI_ORACLE,
+  MUSD_TOKEN,
+  IMUSD_TOKEN,
+} = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
-const { verifyOnEtherscan } = require("../../hardhat.utils");
+
+const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
 task(
   "20220721-4626-factory",
@@ -34,6 +41,7 @@ task(
     args: [maxSecondsBeforePriceIsStale],
     log: true,
   });
+  console.log(`ChainlinkPriceOracle deployed to ${chainlinkOracleAddress}`);
 
   // if mainnet or goerli, verify on etherscan
   if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
@@ -48,6 +56,7 @@ task(
     args: [chainlinkOracleAddress, [], []],
     log: true,
   });
+  console.log(`MasterPriceOracle deployed to ${masterOracleAddress}`);
 
   // if mainnet or goerli, verify on etherscan
   if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
@@ -68,6 +77,7 @@ task(
       mode,
       tilt,
       guard,
+      targets,
     } = factory;
 
     console.log(
@@ -84,11 +94,13 @@ task(
       })}}`,
     );
     const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-    const { address: factoryAddress } = await deploy(factoryContractName, {
+    const f = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams],
       log: true,
     });
+    const { address: factoryAddress, abi } = f;
+    const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
 
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
@@ -97,11 +109,28 @@ task(
       console.log("\n-------------------------------------------------------");
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
     } else {
-      console.log("\n-------------------------------------------------------");
-      console.log("Checking multisig txs by impersonating the address");
+      console.log("\nAdd Rari's mStable oracle to Master Price Oracle");
+      const masterOracle = await ethers.getContract("MasterPriceOracle", deployerSigner);
+      await (
+        await masterOracle.add(
+          [MUSD_TOKEN.get(chainId), IMUSD_TOKEN.get(chainId)],
+          [MSTABLE_RARI_ORACLE.get(chainId), MSTABLE_RARI_ORACLE.get(chainId)],
+        )
+      ).wait();
 
       if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
       const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+
+      // fund multisig
+      console.log(`\nFund multisig to be able to make calls from that address`);
+      await (
+        await deployerSigner.sendTransaction({
+          to: senseAdminMultisigAddress,
+          value: ethers.utils.parseEther("1"),
+        })
+      ).wait();
+
+      // impersonate multisig account
       await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
         params: [senseAdminMultisigAddress],
@@ -113,10 +142,59 @@ task(
 
       console.log(`\nAdd ${factoryContractName} support to Periphery`);
       await (await periphery.setFactory(factoryAddress, true)).wait();
+
+      console.log(`\nSet factory as trusted address of Divider so it can call setGuard()`);
+      await (await divider.setIsTrusted(factoryAddress, true)).wait();
+
       await hre.network.provider.request({
         method: "hardhat_stopImpersonatingAccount",
         params: [senseAdminMultisigAddress],
       });
+
+      console.log("\n-------------------------------------------------------");
+      console.log(`Deploy adapters for: ${factoryContractName}`);
+      for (let t of targets) {
+        periphery = periphery.connect(deployerSigner);
+
+        console.log(`\nAdd target ${t.name} to the whitelist`);
+        await (await factoryContract.supportTarget(t.address, true)).wait();
+
+        console.log(`\nOnboard target ${t.name} @ ${t.address} via ${factoryContractName}`);
+        const data = ethers.utils.defaultAbiCoder.encode(["address[]"], [[]]);
+        const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, t.address, data);
+        await (await periphery.deployAdapter(factoryAddress, t.address, data)).wait();
+        console.log(`${t.name} adapter address: ${adapterAddress}`);
+
+        console.log(`\nCan call scale value`);
+        const ADAPTER_ABI = ["function scale() public view returns (uint256)"];
+        const adptr = new ethers.Contract(adapterAddress, ADAPTER_ABI, deployerSigner);
+        const scale = await adptr.callStatic.scale();
+        console.log(`-> scale: ${scale.toString()}`);
+
+        const params = await await divider.adapterMeta(adapterAddress);
+        console.log(`-> adapter guard: ${params[2]}`);
+
+        console.log(`\nApprove Periphery to pull stake...`);
+        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
+        const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
+        await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+
+        console.log(`Mint stake tokens...`);
+        await generateStakeTokens(stake, deployer, deployerSigner);
+
+        // deploy Series
+        for (let m of t.series) {
+          console.log(`\nSponsor Series for ${t.name} @ ${t.address} with maturity ${m}`);
+          await periphery.callStatic.sponsorSeries(adapterAddress, m, false);
+          await (await periphery.sponsorSeries(adapterAddress, m, false)).wait();
+        }
+      }
+
+      console.log(`\nSet multisig as trusted address of Factory`);
+      await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+      console.log(`\nUnset deployer as trusted address of Factory`);
+      await (await factoryContract.setIsTrusted(deployer, true)).wait();
     }
 
     if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {

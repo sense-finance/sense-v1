@@ -1,5 +1,33 @@
-const { WETH_TOKEN, CHAINS } = require("../../hardhat.addresses");
+const { WETH_TOKEN, CHAINS, IMUSD_TOKEN } = require("../../hardhat.addresses");
 const ethers = require("ethers");
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const en = require("dayjs/locale/en");
+const weekOfYear = require("dayjs/plugin/weekOfYear");
+
+dayjs.extend(weekOfYear);
+dayjs.extend(utc);
+dayjs.locale({
+  ...en,
+  weekStart: 1,
+});
+
+// Only for hardhat, we will deploy adapters using Defender
+const SAMPLE_MATURITIES = [
+  dayjs()
+    .utc()
+    .month(dayjs().utc().month() + 3)
+    .startOf("month")
+    .unix(),
+  dayjs()
+    .utc()
+    .month(dayjs().utc().month() + 4)
+    .startOf("month")
+    .unix(),
+];
+const SAMPLE_TARGETS = [
+  { name: "mUSD", series: SAMPLE_MATURITIES, address: IMUSD_TOKEN.get(CHAINS.MAINNET) },
+];
 
 const MAINNET_FACTORIES = [
   {
@@ -12,6 +40,7 @@ const MAINNET_FACTORIES = [
     mode: 0, // 0 = monthly
     tilt: 0,
     guard: ethers.utils.parseEther("100000"), // $100'000
+    targets: SAMPLE_TARGETS,
   },
 ];
 
