@@ -118,7 +118,7 @@ contract ChainlinkPriceOracle is IPriceFeed, Trust {
 
     /// @dev validates the price returned from Chainlink
     function _validatePrice(uint256 _updatedAt) internal view {
-        if (maxSecondsBeforePriceIsStale > 0 && block.timestamp <= _updatedAt + maxSecondsBeforePriceIsStale)
+        if (maxSecondsBeforePriceIsStale > 0 && block.timestamp > _updatedAt + maxSecondsBeforePriceIsStale)
             revert Errors.InvalidPrice();
     }
 
