@@ -71,6 +71,7 @@ interface MockTargetLike {
 contract TestHelper is DSTest {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
+    using FixedMath for uint64;
 
     MockCropAdapter internal adapter;
     MockToken internal stake;
@@ -151,16 +152,6 @@ contract TestHelper is DSTest {
         // Log target setup
         target = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals));
 
-        // Log decimals setup
-        emit log_named_uint(
-            "Running tests with the mock Underlying token configured with the following number of decimals",
-            uint256(mockUnderlyingDecimals)
-        );
-        emit log_named_uint(
-            "Running tests with the mock Target token configured with the following number of decimals",
-            uint256(mockTargetDecimals)
-        );
-
         SCALING_FACTOR =
             10 **
                 (
@@ -213,6 +204,9 @@ contract TestHelper is DSTest {
         );
         divider.setPeriphery(address(periphery));
         poolManager.setIsTrusted(address(periphery), true);
+
+        // scale stake size to stake decimals
+        STAKE_SIZE = STAKE_SIZE.fdiv(1e18, mockStakeDecimals);
 
         // adapter, target wrapper & factory
         DEFAULT_ADAPTER_PARAMS = BaseAdapter.AdapterParams({
@@ -445,13 +439,31 @@ contract TestHelper is DSTest {
     ) internal returns (address _target) {
         if (is4626Target) {
             _target = address(new MockERC4626(ERC20(_underlying), _name, _symbol));
-            emit log("Running tests with a 4626 mock target");
+            emit log(
+                string(abi.encodePacked("Running tests with a 4626 mock ", toString(_decimals), " decimals target"))
+            );
         } else if (nonERC20Target) {
             _target = address(new MockNonERC20Target(_underlying, _name, _symbol, _decimals));
-            emit log("Running tests with a non-ERC4626, non-ERC20 mock target");
+            emit log(
+                string(
+                    abi.encodePacked(
+                        "Running tests with a non-ERC4626, non-ERC20 mock ",
+                        toString(_decimals),
+                        " decimals target"
+                    )
+                )
+            );
         } else {
             _target = address(new MockTarget(_underlying, _name, _symbol, _decimals));
-            emit log("Running tests with a non-ERC4626, ERC20 mock target");
+            emit log(
+                string(
+                    abi.encodePacked(
+                        "Running tests with a non-ERC4626, ERC20 mock ",
+                        toString(_decimals),
+                        " decimals target"
+                    )
+                )
+            );
         }
     }
 
@@ -462,10 +474,22 @@ contract TestHelper is DSTest {
     ) internal returns (address _underlying) {
         if (nonERC20Underlying) {
             _underlying = address(new MockNonERC20Token(_name, _symbol, _decimals));
-            emit log("Running tests with non-ERC20 mock underlying");
+            emit log(
+                string(
+                    abi.encodePacked(
+                        "Running tests with a non-ERC20 mock ",
+                        toString(_decimals),
+                        " decimals underlying"
+                    )
+                )
+            );
         } else {
             _underlying = address(new MockToken(_name, _symbol, _decimals));
-            emit log("Running tests with an ERC20 mock underlying");
+            emit log(
+                string(
+                    abi.encodePacked("Running tests with an ERC20 mock ", toString(_decimals), " decimals underlying")
+                )
+            );
         }
     }
 
@@ -476,10 +500,14 @@ contract TestHelper is DSTest {
     ) internal returns (address _stake) {
         if (nonERC20Stake) {
             _stake = address(new MockNonERC20Token(_name, _symbol, _decimals));
-            emit log("Running tests with non-ERC20 mock stake");
+            emit log(
+                string(abi.encodePacked("Running tests with a non-ERC20 mock ", toString(_decimals), " decimals stake"))
+            );
         } else {
             _stake = address(new MockToken(_name, _symbol, _decimals));
-            emit log("Running tests with an ERC20 mock stake");
+            emit log(
+                string(abi.encodePacked("Running tests with an ERC20 mock ", toString(_decimals), " decimals stake"))
+            );
         }
     }
 
@@ -519,12 +547,6 @@ contract TestHelper is DSTest {
     function getValidMaturity(uint256 year, uint256 month) public view returns (uint256 maturity) {
         maturity = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         if (maturity < block.timestamp + 2 weeks) revert("InvalidMaturityOffsets");
-    }
-
-    function convertBase(uint256 decimals) internal pure returns (uint256) {
-        uint256 base = 1;
-        base = decimals > 18 ? 10**(decimals - 18) : 10**(18 - decimals);
-        return base;
     }
 
     function convertToBase(uint256 amount, uint256 decimals) internal pure returns (uint256) {

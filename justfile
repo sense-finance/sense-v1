@@ -156,7 +156,7 @@ turbo-test-local-all *cmds="": && _timer
 			export FORGE_MOCK_4626_TARGET="true"; \
 			export FORGE_MOCK_TARGET_DECIMALS=${combination[1]}; \
 			export FORGE_MOCK_UNDERLYING_DECIMALS=${combination[1]}; \
-			forge test --no-match-path "*.tm*" {{ cmds }}; \
+			forge test --match-path "**/*.t.sol" --no-match-path "**/Adapter.t.sol" {{ cmds }}; \
 	done
 
 ## ---- Gas Metering ----

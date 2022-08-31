@@ -20,6 +20,7 @@ contract Dividers is TestHelper {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
     using FixedMath for uint128;
+    using FixedMath for uint64;
     using Errors for string;
 
     address[] public usrs;
@@ -29,7 +30,7 @@ contract Dividers is TestHelper {
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
         uint256 balance = stake.balanceOf(alice);
-        stake.transfer(bob, balance - convertToBase(STAKE_SIZE, stake.decimals()) / 2);
+        stake.transfer(bob, balance - STAKE_SIZE / 2);
         uint256 maturity = getValidMaturity(2021, 10);
         hevm.expectRevert("TRANSFER_FROM_FAILED");
         periphery.sponsorSeries(address(adapter), maturity, true);
@@ -170,7 +171,7 @@ contract Dividers is TestHelper {
         assertTrue(address(pt) != address(0));
         assertTrue(address(yt) != address(0));
         uint256 afterBalance = stake.balanceOf(alice);
-        assertEq(afterBalance, beforeBalance - convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(afterBalance, beforeBalance - STAKE_SIZE);
     }
 
     function testInitThreeSeries() public {
@@ -325,7 +326,7 @@ contract Dividers is TestHelper {
         hevm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         uint256 afterBalance = stake.balanceOf(bob);
-        assertEq(afterBalance, beforeBalance + convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(afterBalance, beforeBalance + STAKE_SIZE);
     }
 
     function testSettleSeriesWithMockBaseAdapter() public {
@@ -1709,9 +1710,9 @@ contract Dividers is TestHelper {
 
         assertEq(mscale, newScale);
         assertEq(target.balanceOf(bob), sponsorTargetBalanceBefore);
-        assertEq(stake.balanceOf(bob), sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(stake.balanceOf(bob), sponsorStakeBalanceBefore - STAKE_SIZE);
         assertEq(target.balanceOf(alice), cupTargetBalanceBefore + fee);
-        assertEq(stake.balanceOf(alice), cupStakeBalanceBefore + convertToBase(STAKE_SIZE, stake.decimals()));
+        assertEq(stake.balanceOf(alice), cupStakeBalanceBefore + STAKE_SIZE);
     }
 
     // @notice if backfill happens while adapter is disabled stakecoin stake is transferred to Sponsor and fees are to the Sense's cup multisig address
@@ -1804,7 +1805,7 @@ contract Dividers is TestHelper {
         (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
         assertEq(mscale, 0);
         assertClose(target.balanceOf(bob), sponsorTargetBalanceBefore);
-        assertClose(stake.balanceOf(bob), sponsorStakeBalanceBefore - convertToBase(STAKE_SIZE, stake.decimals()));
+        assertClose(stake.balanceOf(bob), sponsorStakeBalanceBefore - STAKE_SIZE);
         assertClose(target.balanceOf(alice), cupTargetBalanceBefore);
         assertClose(stake.balanceOf(alice), cupStakeBalanceBefore);
 
