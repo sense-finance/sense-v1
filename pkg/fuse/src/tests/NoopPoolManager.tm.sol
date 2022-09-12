@@ -158,6 +158,8 @@ contract NoopPoolManagerTest is DSTest {
         periphery.onboardAdapter(address(mockAdapter4), false);
     }
 
+    event TargetAdded(address indexed, address indexed);
+
     function testSponsorSeries() public {
         divider.setPeriphery(address(periphery));
 
@@ -168,6 +170,34 @@ contract NoopPoolManagerTest is DSTest {
         uint256 maturity = _getValidMaturity();
 
         periphery.sponsorSeries(address(mockAdapter2), maturity, true);        
+    }
+
+    function testFailEmitTargetAdded() public {
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+
+        hevm.expectEmit(true, false, false, false);
+        emit TargetAdded(address(target), address(0));
+
+        periphery.verifyAdapter(address(mockAdapter), true);
+    }
+
+    // Sanity check with the normal pool manager
+    function testEmitNormalPoolManagerTargetAdded() public {
+        periphery.setPoolManager(address(poolManager));
+        poolManager.setIsTrusted(address(periphery), true);
+        PoolManager.AssetParams memory paramsTarget = PoolManager.AssetParams({
+            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+            reserveFactor: 0.1 ether,
+            collateralFactor: 0.5 ether
+        });
+        poolManager.setParams("TARGET_PARAMS", paramsTarget);
+
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+
+        hevm.expectEmit(true, false, false, false);
+        emit TargetAdded(address(target), address(0));
+
+        periphery.verifyAdapter(address(mockAdapter), true);
     }
 
     function _getValidMaturity() internal view returns (uint256 maturity) {
