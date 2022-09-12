@@ -25,7 +25,7 @@ contract NoopPoolManager {
         emit SeriesQueued(adapter, maturity, pool);
     }
 
-    function addSeries(address adapter, uint256 maturity) external returns (address, address) { }
+    function addSeries(address adapter, uint256 maturity) external returns (address, address) {}
 
     event PoolDeployed(string name, address comptroller, uint256 poolIndex, uint256 closeFactor, uint256 liqIncentive);
     event TargetAdded(address indexed target, address indexed cTarget);
