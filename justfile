@@ -126,10 +126,9 @@ turbo-test-mainnet-match *exp="": && _timer
 turbo-test-mainnet-match-contract *exp="": && _timer
 	@cd {{ invocation_directory() }}; forge test --fork-url {{ MAINNET_RPC }} --match-contract {{ exp }}
 
-# run for all possible combinations between ERC20 and non-ERC20 target, underlying and stake and 6, 8 and 18 decimals
-# also run, for ERC4626 target, all possible combinations between 6, 8 and 18 target (and underlying) decimals
 turbo-test-local-all *cmds="": && _timer
-	for c in --target\ {true,false}\ --underlying\ {true,false}\ --stake\ {true,false}\ --tDecimals\ {6,8,18}\ --uDecimals\ {6,8,18}\ --sDecimals\ {6,8,18} ; do \
+	# run for all possible combinations between ERC20 and non-ERC20 target, underlying and stake and 6, 8 and 18 decimals
+	for c in {true,false}\ {true,false}\ {true,false}\ {6,8,18}\ {6,8,18}\ {6,8,18} ; do \
 		IFS=' ' \
 		read -ra combination <<< "$c"; \
 		echo "Target is ${combination[7]} decimals and is ERC20: ${combination[1]}"; \
@@ -146,7 +145,8 @@ turbo-test-local-all *cmds="": && _timer
 			forge test --no-match-path "*.tm*" {{ cmds }}; \
 	done
 
-	for c in --tDecimals\ {6,8,18}\ ; do \
+	# run, for ERC4626 target, all possible combinations between 6, 8 and 18 target (and underlying) decimals
+	for c in {6,8,18}\ ; do \
 		IFS=' ' \
 		read -ra combination <<< "$c"; \
 		echo "Target is ${combination[1]} decimals and is ERC4626"; \
