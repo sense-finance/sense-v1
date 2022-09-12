@@ -530,7 +530,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSwapUnderlyingForPTs() public {
-        uint256 uBal = 100e18;
+        uint256 uBal = 100 * (10**mockUnderlyingDecimals);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 scale = adapter.scale();
