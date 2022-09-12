@@ -170,7 +170,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
         await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
         console.log(`Unset deployer as trusted address of 4626CropFactory`);
-        await (await factoryContract.setIsTrusted(deployer, true)).wait();
+        await (await factoryContract.setIsTrusted(deployer, false)).wait();
       }
 
       if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {

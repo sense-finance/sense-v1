@@ -241,12 +241,10 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockCropFactory(deployCropsFactory(address(target)));
+        factory = MockCropFactory(deployCropFactory(address(target)));
 
         // Prepare data
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-        bytes memory data = abi.encode(rewardTokens);
+        bytes memory data = abi.encode(address(reward));
 
         // Deploy adapter
         address a = periphery.deployAdapter(address(factory), address(target), data); // deploy & onboard target through Periphery

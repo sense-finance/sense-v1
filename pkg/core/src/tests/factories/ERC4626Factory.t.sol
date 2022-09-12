@@ -228,11 +228,8 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-
         hevm.prank(address(periphery));
-        factory.deployAdapter(address(target), abi.encode(rewardTokens));
+        factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
     function testCanSetRewardTokensMultipleAdapters() public {

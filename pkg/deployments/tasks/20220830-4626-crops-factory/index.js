@@ -192,7 +192,7 @@ task(
       await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
       console.log(`Unset deployer as trusted address of 4626CropsFactory`);
-      await (await factoryContract.setIsTrusted(deployer, true)).wait();
+      await (await factoryContract.setIsTrusted(deployer, false)).wait();
 
       // Unset deployer and set multisig as trusted address on 4626Factory (we forgot doing this on the prev task)
       console.log(`\nSet multisig as trusted address of 4626Factory`);

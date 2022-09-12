@@ -194,7 +194,7 @@ task(
       await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
       console.log(`\nUnset deployer as trusted address of Factory`);
-      await (await factoryContract.setIsTrusted(deployer, true)).wait();
+      await (await factoryContract.setIsTrusted(deployer, false)).wait();
     }
 
     if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {

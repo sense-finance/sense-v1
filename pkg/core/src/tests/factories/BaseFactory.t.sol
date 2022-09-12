@@ -7,7 +7,7 @@ import { MockFactory, MockCropFactory } from "../test-helpers/mocks/MockFactory.
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
+import { ERC4626CropAdapter } from "../../adapters/abstract/erc4626/ERC4626CropAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
@@ -164,7 +164,7 @@ contract Factories is TestHelper {
         // deploy adapter via factory
         divider.setPeriphery(alice);
         MockCropAdapter adapter = MockCropAdapter(
-            someFactory.deployAdapter(address(someTarget), abi.encode(rewardTokens))
+            someFactory.deployAdapter(address(someTarget), abi.encode(address(someReward)))
         );
         assertTrue(address(adapter) != address(0));
 
@@ -181,7 +181,7 @@ contract Factories is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(adapter.mode(), MODE);
         if (is4626Target) {
-            assertEq(ERC4626CropsAdapter(address(adapter)).rewardTokens(0), address(someReward));
+            assertEq(ERC4626CropAdapter(address(adapter)).reward(), address(someReward));
         } else {
             assertEq(adapter.reward(), address(someReward));
         }
@@ -293,10 +293,7 @@ contract Factories is TestHelper {
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-
         hevm.prank(address(periphery));
-        factory.deployAdapter(address(target), abi.encode(rewardTokens));
+        factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 }
