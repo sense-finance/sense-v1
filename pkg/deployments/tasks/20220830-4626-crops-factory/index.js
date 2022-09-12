@@ -55,6 +55,8 @@ task(
   }
 
   console.log(`\nChange ChainlinkPriceOracle on Sense Master Oracle`);
+  // Since we forgot to unset the deployer address as trusted and trusting the multisig
+  // we can do this from the deployer address now
   await (await masterOracle.setSenseChainlinkPriceOracle(chainlinkOracleAddress)).wait();
   console.log(`New ChainlinkPriceOracle address: ${await masterOracle.senseChainlinkPriceOracle()}`);
 
@@ -199,11 +201,11 @@ task(
       console.log(`Unset deployer as trusted address of 4626Factory`);
       await (await erc4626Factory.setIsTrusted(deployer, true)).wait();
 
-      // Unset deployer and set multisig as trusted address on MasterPriceOracle
-      console.log(`\nSet multisig as trusted address of 4626Factory`);
+      // Unset deployer and set multisig as trusted address on MasterPriceOracle (we forgot doing this on the prev task)
+      console.log(`\nSet multisig as trusted address of MasterPriceOracle`);
       await (await masterOracle.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
-      console.log(`Unset deployer as trusted address of 4626Factory`);
+      console.log(`Unset deployer as trusted address of MasterPriceOracle`);
       await (await masterOracle.setIsTrusted(deployer, true)).wait();
     }
 
