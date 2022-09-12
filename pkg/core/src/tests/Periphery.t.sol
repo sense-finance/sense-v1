@@ -121,6 +121,28 @@ contract PeripheryTest is TestHelper {
         assertTrue(status == PoolManager.SeriesStatus.NONE);
     }
 
+    function testSponsorSeriesWhenPoolManagerZero() public {
+        periphery.setPoolManager(address(0));
+        periphery.verifyAdapter(address(adapter), true);
+
+        // try sponsoring
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        assertTrue(yt != address(0));
+    }
+
+    function testFailSponsorSeriesWhenPoolManagerZero() public {
+        periphery.setPoolManager(address(0));
+        periphery.verifyAdapter(address(adapter), true);
+
+        // try sponsoring
+        uint256 maturity = getValidMaturity(2021, 10);
+        hevm.expectEmit(false, false, false, false);
+        emit SeriesQueued(address(1), 2, address(3));
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        assertTrue(yt != address(0));
+    }
+
     function testDeployAdapter() public {
         // add a new target to the factory supported targets
         MockToken underlying = new MockToken("New Underlying", "NT", 18);
@@ -469,6 +491,38 @@ contract PeripheryTest is TestHelper {
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        assertTrue(periphery.verified(address(otherAdapter)));
+    }
+
+    function testAdminVerifyAdapterWhenPoolManagerZero() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
+        );
+        periphery.setPoolManager(address(0));
+
+        periphery.verifyAdapter(address(otherAdapter), true);
+
+        assertTrue(periphery.verified(address(otherAdapter)));
+    }
+
+    function testFailAdminVerifyAdapterWhenPoolManagerZero() public {
+        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+        MockTargetLike otherTarget = MockTargetLike(
+            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+        );
+        MockAdapter otherAdapter = MockAdapter(
+            deployMockAdapter(address(divider), address(otherTarget), address(reward))
+        );
+        periphery.setPoolManager(address(0));
+
+        hevm.expectEmit(false, false, false, false);
+        emit TargetAdded(address(1), address(2));
+        periphery.verifyAdapter(address(otherAdapter), true);
+
         assertTrue(periphery.verified(address(otherAdapter)));
     }
 
@@ -1331,4 +1385,8 @@ contract PeripheryTest is TestHelper {
         uint256 amountOut,
         bytes4 indexed sig
     );
+
+    // Pool Manager
+    event TargetAdded(address indexed target, address indexed cTarget);
+    event SeriesQueued(address indexed adapter, uint256 indexed maturity, address indexed pool);
 }
