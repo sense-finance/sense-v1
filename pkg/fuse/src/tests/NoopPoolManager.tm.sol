@@ -60,7 +60,12 @@ contract NoopPoolManagerTest is DSTest {
         balancerVault = new MockBalancerVault();
         spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
 
-        periphery = new Periphery(address(divider), address(noopPoolManager), address(spaceFactory), address(balancerVault));
+        periphery = new Periphery(
+            address(divider),
+            address(noopPoolManager),
+            address(spaceFactory),
+            address(balancerVault)
+        );
 
         // Enable the adapter
         divider.setPeriphery(address(this));
@@ -146,14 +151,32 @@ contract NoopPoolManagerTest is DSTest {
     function testOnboardAdapters() public {
         divider.setPeriphery(address(periphery));
 
-        MockAdapter mockAdapter2 = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
+        MockAdapter mockAdapter2 = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            0.1e18,
+            adapterParams
+        );
         periphery.onboardAdapter(address(mockAdapter2), true);
 
-        MockAdapter mockAdapter3 = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
+        MockAdapter mockAdapter3 = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            0.1e18,
+            adapterParams
+        );
         periphery.verifyAdapter(address(mockAdapter3), true);
         periphery.onboardAdapter(address(mockAdapter3), true);
 
-        MockAdapter mockAdapter4 = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
+        MockAdapter mockAdapter4 = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            0.1e18,
+            adapterParams
+        );
         periphery.verifyAdapter(address(mockAdapter4), true);
         periphery.onboardAdapter(address(mockAdapter4), false);
     }
@@ -163,13 +186,19 @@ contract NoopPoolManagerTest is DSTest {
     function testSponsorSeries() public {
         divider.setPeriphery(address(periphery));
 
-        MockAdapter mockAdapter2 = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
+        MockAdapter mockAdapter2 = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            0.1e18,
+            adapterParams
+        );
         periphery.verifyAdapter(address(mockAdapter2), true);
         periphery.onboardAdapter(address(mockAdapter2), true);
 
         uint256 maturity = _getValidMaturity();
 
-        periphery.sponsorSeries(address(mockAdapter2), maturity, true);        
+        periphery.sponsorSeries(address(mockAdapter2), maturity, true);
     }
 
     function testFailEmitTargetAdded() public {
