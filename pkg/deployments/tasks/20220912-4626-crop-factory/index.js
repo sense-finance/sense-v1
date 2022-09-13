@@ -13,6 +13,7 @@ const {
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const oracleAbi = require("./abi/MasterPriceOracle.json");
+const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
@@ -37,7 +38,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
 
     console.log("\n-------------------------------------------------------");
     console.log("\nDeploy Factories");
-    for (let factory of factories) {
+    for (const factory of factories) {
       const {
         contractName: factoryContractName,
         ifee,
@@ -65,12 +66,11 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
         })}}`,
       );
       const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-      const f = await deploy(factoryContractName, {
+      const { address: factoryAddress, abi } = await deploy(factoryContractName, {
         from: deployer,
         args: [divider.address, factoryParams, ethers.constants.AddressZero],
         log: true,
       });
-      const { address: factoryAddress, abi } = f;
       const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
 
       console.log(`${factoryContractName} deployed to ${factoryAddress}`);
@@ -127,7 +127,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
 
         console.log("\n-------------------------------------------------------");
         console.log(`Deploy adapters for: ${factoryContractName}`);
-        for (let t of targets) {
+        for (const t of targets) {
           periphery = periphery.connect(deployerSigner);
 
           console.log(`\nAdd target ${t.name} to the whitelist`);
@@ -140,8 +140,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
           console.log(`${t.name} adapter address: ${adapterAddress}`);
 
           console.log(`\nCan call scale value`);
-          const ADAPTER_ABI = ["function scale() public view returns (uint256)"];
-          const adptr = new ethers.Contract(adapterAddress, ADAPTER_ABI, deployerSigner);
+          const adptr = new ethers.Contract(adapterAddress, adapterAbi, deployerSigner);
           const scale = await adptr.callStatic.scale();
           console.log(`-> scale: ${scale.toString()}`);
 

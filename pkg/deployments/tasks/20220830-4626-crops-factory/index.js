@@ -14,6 +14,7 @@ const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const oracleAbi = require("./abi/MasterPriceOracle.json");
 const erc4626FactoryAbi = require("./abi/ERC4626Factory.json");
+const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
@@ -63,7 +64,7 @@ task(
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
-  for (let factory of factories) {
+  for (const factory of factories) {
     const {
       contractName: factoryContractName,
       ifee,
@@ -161,8 +162,7 @@ task(
         console.log(`${t.name} adapter address: ${adapterAddress}`);
 
         console.log(`\nCan call scale value`);
-        const ADAPTER_ABI = ["function scale() public view returns (uint256)"];
-        const adptr = new ethers.Contract(adapterAddress, ADAPTER_ABI, deployerSigner);
+        const adptr = new ethers.Contract(adapterAddress, adapterAbi, deployerSigner);
         const scale = await adptr.callStatic.scale();
         console.log(`-> scale: ${scale.toString()}`);
 

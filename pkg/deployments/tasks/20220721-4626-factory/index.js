@@ -69,7 +69,7 @@ task(
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
-  for (let factory of factories) {
+  for (const factory of factories) {
     const {
       contractName: factoryContractName,
       ifee,
