@@ -134,6 +134,20 @@ contract CFactories is CAdapterTestHelper {
         assertClose(guard, guardInTarget, guard.fmul(0.010e18));
     }
 
+    function testMainnetDeployAdapterWithNonERC20() public {
+        divider.setPeriphery(address(this));
+        address f = factory.deployAdapter(AddressBook.cUSDT, "");
+        CAdapter adapter = CAdapter(payable(f));
+        assertTrue(address(adapter) != address(0));
+        assertEq(CAdapter(adapter).target(), address(AddressBook.cUSDT));
+        assertEq(CAdapter(adapter).divider(), address(divider));
+        assertEq(CAdapter(adapter).name(), "Compound USDT Adapter");
+        assertEq(CAdapter(adapter).symbol(), "cUSDT-adapter");
+
+        uint256 scale = CAdapter(adapter).scale(); // 18 decimals
+        assertTrue(scale > 0);
+    }
+
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));

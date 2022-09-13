@@ -47,7 +47,7 @@ contract CropsAdapters is TestHelper {
         initUser(jim, aTarget, MAX_TARGET);
 
         // freeze scale to 1e18 (only for no 4626 targets)
-        if (!is4626) cropsAdapter.setScale(1e18);
+        if (!is4626Target) cropsAdapter.setScale(1e18);
     }
 
     function testAdapterHasParams() public {
@@ -70,7 +70,7 @@ contract CropsAdapters is TestHelper {
         MockCropsAdapter cropsAdapter = new MockCropsAdapter(
             address(divider),
             address(target),
-            !is4626 ? target.underlying() : target.asset(),
+            !is4626Target ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             rewardTokens
@@ -928,7 +928,7 @@ contract CropsAdapters is TestHelper {
         assertClose(ERC20(reward2).balanceOf(bob), 20 * 1e18);
 
         // scale changes to 2e18
-        is4626 ? increaseScale(address(aTarget)) : cropsAdapter.setScale(2e18);
+        is4626Target ? increaseScale(address(aTarget)) : cropsAdapter.setScale(2e18);
         assertEq(cropsAdapter.scale(), 2e18);
 
         reward.mint(address(cropsAdapter), 50 * 1e18);

@@ -28,7 +28,7 @@ contract CropAdapters is TestHelper {
         super.setUp();
 
         // freeze scale to 1e18 (only for non 4626 targets)
-        if (!is4626) adapter.setScale(1e18);
+        if (!is4626Target) adapter.setScale(1e18);
     }
 
     function testAdapterHasParams() public {
@@ -51,7 +51,7 @@ contract CropAdapters is TestHelper {
         MockCropAdapter cropAdapter = new MockCropAdapter(
             address(divider),
             address(target),
-            !is4626 ? target.underlying() : target.asset(),
+            !is4626Target ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -722,7 +722,7 @@ contract CropAdapters is TestHelper {
         assertClose(ERC20(reward).balanceOf(bob), 20 * 1e18);
 
         // scale changes to 2e18
-        is4626 ? increaseScale(address(target)) : adapter.setScale(2e18);
+        is4626Target ? increaseScale(address(target)) : adapter.setScale(2e18);
         assertEq(adapter.scale(), 2e18);
 
         reward.mint(address(adapter), 50 * 1e18);
@@ -811,7 +811,7 @@ contract CropAdapters is TestHelper {
         reward.mint(address(adapter), 50 * 1e18);
 
         // scale changes to 2e18
-        is4626 ? increaseScale(address(target)) : adapter.setScale(2e18);
+        is4626Target ? increaseScale(address(target)) : adapter.setScale(2e18);
         assertEq(adapter.scale(), 2e18);
 
         reward.mint(address(adapter), 50 * 1e18);
@@ -1094,7 +1094,7 @@ contract CropAdapters is TestHelper {
     // update reward token tests
 
     function test4626SetRewardsTokens() public {
-        if (!is4626) return;
+        if (!is4626Target) return;
         ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));
 
         address[] memory rewardTokens = new address[](1);
@@ -1109,7 +1109,7 @@ contract CropAdapters is TestHelper {
     }
 
     function testSetRewardsTokens() public {
-        if (is4626) return;
+        if (is4626Target) return;
         hevm.expectEmit(true, false, false, true);
         emit RewardTokenChanged(address(0xfede));
 
@@ -1119,13 +1119,13 @@ contract CropAdapters is TestHelper {
     }
 
     function testCantSetRewardTokens() public {
-        if (is4626) return;
+        if (is4626Target) return;
         hevm.expectRevert("UNTRUSTED");
         adapter.setRewardToken(address(0xfede));
     }
 
     function test4626CantSetRewardTokens() public {
-        if (!is4626) return;
+        if (!is4626Target) return;
         hevm.expectRevert("UNTRUSTED");
         address[] memory rewardTokens;
         ERC4626CropsAdapter a = ERC4626CropsAdapter(address(adapter));

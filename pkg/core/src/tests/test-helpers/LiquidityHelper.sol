@@ -110,13 +110,13 @@ contract LiquidityHelper {
         uint256 amountOut = 0;
         if (tokenOut == AddressBook.WSTETH) {
             uint256 stETH = StETHInterface(AddressBook.STETH).submit{ value: amountIn }(address(0));
-            ERC20(AddressBook.STETH).approve(AddressBook.WSTETH, stETH);
+            ERC20(AddressBook.STETH).safeApprove(AddressBook.WSTETH, stETH);
             amountOut = WstETHInterface(AddressBook.WSTETH).wrap(stETH);
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
         }
         if (tokenOut == AddressBook.cDAI) {
-            ERC20(AddressBook.DAI).approve(AddressBook.cDAI, amountIn);
+            ERC20(AddressBook.DAI).safeApprove(AddressBook.cDAI, amountIn);
             amountOut = CTokenInterface(AddressBook.cDAI).mint(amountIn);
             emit Swapped(tokenIn, tokenOut, amountIn, amountOut);
             return amountOut;
@@ -131,7 +131,7 @@ contract LiquidityHelper {
         }
 
         // approve router to spend tokenIn
-        ERC20(tokenIn).approve(AddressBook.UNISWAP_ROUTER, amountIn);
+        ERC20(tokenIn).safeApprove(AddressBook.UNISWAP_ROUTER, amountIn);
         SwapRouterLike.ExactInputSingleParams memory params = SwapRouterLike.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,

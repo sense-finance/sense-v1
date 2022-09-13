@@ -32,7 +32,7 @@ contract ERC4626Adapter is BaseAdapter {
         uint256 tDecimals = ERC4626(target).decimals();
         BASE_UINT = 10**tDecimals;
         SCALE_FACTOR = 10**(18 - tDecimals); // we assume targets decimals <= 18
-        ERC20(underlying).approve(target, type(uint256).max);
+        ERC20(underlying).safeApprove(target, type(uint256).max);
     }
 
     function scale() external override returns (uint256) {
