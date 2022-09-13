@@ -131,9 +131,9 @@ turbo-test-local-all *cmds="": && _timer
 	for c in {true,false}\ {true,false}\ {true,false}\ {6,8,18}\ {6,8,18}\ {6,8,18} ; do \
 		IFS=' ' \
 		read -ra combination <<< "$c"; \
-		echo "Target is ${combination[7]} decimals and is ERC20: ${combination[1]}"; \
-		echo "Underlying is ${combination[9]} decimals and is ERC20: ${combination[3]}"; \
-		echo "Stake is ${combination[11]} decimals and is ERC20: ${combination[5]}"; \
+		echo "Target is ${combination[3]} decimals and is ERC20: ${combination[0]}"; \
+		echo "Underlying is ${combination[4]} decimals and is ERC20: ${combination[1]}"; \
+		echo "Stake is ${combination[5]} decimals and is ERC20: ${combination[2]}"; \
 		echo "\n"; \
 		cd {{ invocation_directory() }}; \
 			export FORGE_MOCK_NON_ERC20_TARGET=${combination[1]}; \
@@ -146,10 +146,10 @@ turbo-test-local-all *cmds="": && _timer
 	done
 
 	# run, for ERC4626 target, all possible combinations between 6, 8 and 18 target (and underlying) decimals
-	for c in {6,8,18}\ ; do \
+	for c in {6,8,18}\ {6,8,18}\ ; do \
 		IFS=' ' \
 		read -ra combination <<< "$c"; \
-		echo "Target is ${combination[1]} decimals and is ERC4626"; \
+		echo "Target is ${combination[0]} decimals and is ERC4626"; \
 		echo "Underlying is ${combination[1]} decimals (same as target) and is ERC20"; \
 		echo "\n"; \
 		cd {{ invocation_directory() }}; \

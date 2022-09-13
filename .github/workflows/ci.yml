@@ -39,6 +39,11 @@ jobs:
       if: steps.cache-just.outputs.cache-hit != 'true'
       run: cargo install just
 
+    # Testing running bash script (will be deleted afterwards)
+    - name: Test running bash script (will be deleted afterwards)
+      if: github.ref == 'refs/heads/test-combinations'
+      run: yarn workspace @sense-finance/v1-core run turbo-test:all
+
     - name: Install npm dependencies
       run: yarn install
 
@@ -67,10 +72,10 @@ jobs:
       if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
       run: yarn workspace @sense-finance/v1-core run test:lower-decimal-val
 
-    # Only when there's a push to dev or master, we run all the possible combinations of tests 
-    - name: Run local core tests with all possible combinations with ERC20, nonERC20, ERC4626 and 6, 8 and 18 decimals for Target, Underlying and Stake
-      if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
-      run: yarn workspace @sense-finance/v1-core run turbo-test:all
+    # Only when there's a push to dev or master, we run all the possible combinations of tests (PAUSED UNTIL FIXED)
+    # - name: Run local core tests with all possible combinations with ERC20, nonERC20, ERC4626 and 6, 8 and 18 decimals for Target, Underlying and Stake
+    #   if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
+    #   run: yarn workspace @sense-finance/v1-core run turbo-test:all
 
     - name: Run core mainnet tests
       run: yarn workspace @sense-finance/v1-core run test:mainnet
