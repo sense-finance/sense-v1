@@ -179,7 +179,13 @@ contract ChainlinkPriceOracleTest is ChainPriceOracleTestHelper {
 
         // Mock call to Chainlink's oracle
         uint256 price = 123e18;
-        bytes memory data = abi.encode(1, int256(price), block.timestamp - 4 hours, block.timestamp - 4 hours, 1); // return data
+        bytes memory data = abi.encode(
+            1,
+            int256(price),
+            block.timestamp - 4 hours - 1 seconds,
+            block.timestamp - 4 hours - 1 seconds,
+            1
+        ); // return data
         hevm.mockCall(
             address(feedRegistry),
             abi.encodeWithSelector(feedRegistry.latestRoundData.selector, address(underlying), oracle.ETH()),

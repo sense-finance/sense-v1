@@ -167,7 +167,7 @@ exports.generateStakeTokens = async (stakeAddress, to, signer) => {
     index.toString(),
     this.toBytes32(ethers.utils.parseEther("10000")).toString(),
   );
-  log(`\n10'000 ${symbol} transferred to deployer: ${to}`);
+  log(`10'000 ${symbol} transferred to deployer: ${to}`);
 };
 
 // Returns signer using OZ Relayer's API
