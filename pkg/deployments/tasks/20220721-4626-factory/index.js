@@ -7,10 +7,13 @@ const {
   MSTABLE_RARI_ORACLE,
   MUSD_TOKEN,
   IMUSD_TOKEN,
+  VERIFY_CHAINS,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
+const adapterAbi = ["function scale() public view returns (uint256)"];
+const erc20Abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
@@ -44,7 +47,7 @@ task(
   console.log(`ChainlinkPriceOracle deployed to ${chainlinkOracleAddress}`);
 
   // if mainnet or goerli, verify on etherscan
-  if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+  if (VERIFY_CHAINS.includes(chainId)) {
     console.log("\n-------------------------------------------------------");
     await verifyOnEtherscan(chainlinkOracleAddress, [maxSecondsBeforePriceIsStale]);
   }
@@ -59,7 +62,7 @@ task(
   console.log(`MasterPriceOracle deployed to ${masterOracleAddress}`);
 
   // if mainnet or goerli, verify on etherscan
-  if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+  if (VERIFY_CHAINS.includes(chainId)) {
     console.log("\n-------------------------------------------------------");
     await verifyOnEtherscan(masterOracleAddress, [chainlinkOracleAddress, [], []]);
   }
@@ -94,12 +97,11 @@ task(
       })}}`,
     );
     const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-    const f = await deploy(factoryContractName, {
+    const { address: factoryAddress, abi } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams],
       log: true,
     });
-    const { address: factoryAddress, abi } = f;
     const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
 
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
@@ -166,17 +168,15 @@ task(
         console.log(`${t.name} adapter address: ${adapterAddress}`);
 
         console.log(`\nCan call scale value`);
-        const ADAPTER_ABI = ["function scale() public view returns (uint256)"];
-        const adptr = new ethers.Contract(adapterAddress, ADAPTER_ABI, deployerSigner);
+        const adptr = new ethers.Contract(adapterAddress, adapterAbi, deployerSigner);
         const scale = await adptr.callStatic.scale();
         console.log(`-> scale: ${scale.toString()}`);
 
-        const params = await await divider.adapterMeta(adapterAddress);
+        const params = await divider.adapterMeta(adapterAddress);
         console.log(`-> adapter guard: ${params[2]}`);
 
         console.log(`\nApprove Periphery to pull stake...`);
-        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
-        const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
+        const stakeContract = new ethers.Contract(stake, erc20Abi, deployerSigner);
         await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
         console.log(`Mint stake tokens...`);
@@ -197,7 +197,7 @@ task(
       await (await factoryContract.setIsTrusted(deployer, false)).wait();
     }
 
-    if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+    if (VERIFY_CHAINS.includes(chainId)) {
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");

@@ -7,6 +7,7 @@ const {
   MSTABLE_RARI_ORACLE,
   MUSD_TOKEN,
   IMUSD_TOKEN,
+  VERIFY_CHAINS,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
@@ -173,7 +174,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
         await (await factoryContract.setIsTrusted(deployer, false)).wait();
       }
 
-      if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+      if (VERIFY_CHAINS.includes(chainId)) {
         console.log("\n-------------------------------------------------------");
         console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
         console.log("\n1. Set factory on Periphery");

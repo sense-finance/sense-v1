@@ -7,6 +7,7 @@ const {
   MSTABLE_RARI_ORACLE,
   MUSD_TOKEN,
   IMUSD_TOKEN,
+  VERIFY_CHAINS,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
@@ -49,7 +50,7 @@ task(
   });
   console.log(`ChainlinkPriceOracle deployed to ${chainlinkOracleAddress}`);
   // if mainnet or goerli, verify on etherscan
-  if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+  if (VERIFY_CHAINS.includes(chainId)) {
     console.log("\n-------------------------------------------------------");
     await verifyOnEtherscan(chainlinkOracleAddress, [maxSecondsBeforePriceIsStale]);
   }
@@ -90,12 +91,11 @@ task(
       })}}`,
     );
     const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-    const f = await deploy(factoryContractName, {
+    const { address: factoryAddress, abi } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams],
       log: true,
     });
-    const { address: factoryAddress, abi } = f;
     const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
 
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
@@ -209,7 +209,7 @@ task(
       await (await masterOracle.setIsTrusted(deployer, true)).wait();
     }
 
-    if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+    if (VERIFY_CHAINS.includes(chainId)) {
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");
