@@ -7,12 +7,14 @@ const {
   MSTABLE_RARI_ORACLE,
   MUSD_TOKEN,
   IMUSD_TOKEN,
+  VERIFY_CHAINS,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const oracleAbi = require("./abi/MasterPriceOracle.json");
 const erc4626FactoryAbi = require("./abi/ERC4626Factory.json");
+const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
@@ -49,7 +51,7 @@ task(
   });
   console.log(`ChainlinkPriceOracle deployed to ${chainlinkOracleAddress}`);
   // if mainnet or goerli, verify on etherscan
-  if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+  if (VERIFY_CHAINS.includes(chainId)) {
     console.log("\n-------------------------------------------------------");
     await verifyOnEtherscan(chainlinkOracleAddress, [maxSecondsBeforePriceIsStale]);
   }
@@ -62,7 +64,7 @@ task(
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
-  for (let factory of factories) {
+  for (const factory of factories) {
     const {
       contractName: factoryContractName,
       ifee,
@@ -90,12 +92,11 @@ task(
       })}}`,
     );
     const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-    const f = await deploy(factoryContractName, {
+    const { address: factoryAddress, abi } = await deploy(factoryContractName, {
       from: deployer,
       args: [divider.address, factoryParams],
       log: true,
     });
-    const { address: factoryAddress, abi } = f;
     const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
 
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
@@ -161,8 +162,7 @@ task(
         console.log(`${t.name} adapter address: ${adapterAddress}`);
 
         console.log(`\nCan call scale value`);
-        const ADAPTER_ABI = ["function scale() public view returns (uint256)"];
-        const adptr = new ethers.Contract(adapterAddress, ADAPTER_ABI, deployerSigner);
+        const adptr = new ethers.Contract(adapterAddress, adapterAbi, deployerSigner);
         const scale = await adptr.callStatic.scale();
         console.log(`-> scale: ${scale.toString()}`);
 
@@ -192,7 +192,7 @@ task(
       await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
       console.log(`Unset deployer as trusted address of 4626CropsFactory`);
-      await (await factoryContract.setIsTrusted(deployer, true)).wait();
+      await (await factoryContract.setIsTrusted(deployer, false)).wait();
 
       // Unset deployer and set multisig as trusted address on 4626Factory (we forgot doing this on the prev task)
       console.log(`\nSet multisig as trusted address of 4626Factory`);
@@ -209,7 +209,7 @@ task(
       await (await masterOracle.setIsTrusted(deployer, true)).wait();
     }
 
-    if ([CHAINS.MAINNET, CHAINS.GOERLI].includes(chainId)) {
+    if (VERIFY_CHAINS.includes(chainId)) {
       console.log("\n-------------------------------------------------------");
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Set factory on Periphery");

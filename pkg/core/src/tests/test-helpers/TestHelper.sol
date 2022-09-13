@@ -16,6 +16,7 @@ import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
+import { ERC4626CropFactory } from "../../adapters/abstract/factories/ERC4626CropFactory.sol";
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
@@ -240,12 +241,10 @@ contract TestHelper is DSTest {
         );
 
         // factories
-        factory = MockCropFactory(deployCropsFactory(address(target)));
+        factory = MockCropFactory(deployCropFactory(address(target)));
 
         // Prepare data
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-        bytes memory data = abi.encode(rewardTokens);
+        bytes memory data = abi.encode(address(reward));
 
         // Deploy adapter
         address a = periphery.deployAdapter(address(factory), address(target), data); // deploy & onboard target through Periphery
@@ -396,6 +395,12 @@ contract TestHelper is DSTest {
     function deployCropsFactory(address _target) public returns (address someFactory) {
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
+        return deployCropsFactory(_target, rewardTokens, true);
+    }
+
+    function deployCropFactory(address _target) public returns (address someFactory) {
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
         return deployCropsFactory(_target, rewardTokens, false);
     }
 
@@ -418,7 +423,11 @@ contract TestHelper is DSTest {
         });
 
         if (is4626Target) {
-            someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
+            if (crops) {
+                someFactory = address(new ERC4626CropsFactory(address(divider), factoryParams));
+            } else {
+                someFactory = address(new ERC4626CropFactory(address(divider), factoryParams, address(0)));
+            }
         } else {
             if (crops) {
                 someFactory = address(new MockCropsFactory(address(divider), factoryParams, _rewardTokens));

@@ -5,6 +5,8 @@ const CHAINS = {
   ARBITRUM: "42161",
 };
 
+const VERIFY_CHAINS = [CHAINS.MAINNET, CHAINS.GOERLI, CHAINS.ARBITRUM];
+
 // For dev scenarios ------------
 
 // ------------------------------------
@@ -177,4 +179,5 @@ exports.REWARDS_DISTRIBUTOR_CRV = REWARDS_DISTRIBUTOR_CRV;
 exports.CHAINS = CHAINS;
 exports.MSTABLE_RARI_ORACLE = MSTABLE_RARI_ORACLE;
 exports.MUSD_TOKEN = MUSD_TOKEN;
+exports.VERIFY_CHAINS = VERIFY_CHAINS;
 // ------------------------------------
