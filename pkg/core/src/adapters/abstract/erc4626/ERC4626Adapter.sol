@@ -8,7 +8,6 @@ import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
-import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 import { MasterPriceOracle } from "../../implementations/oracles/MasterPriceOracle.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
