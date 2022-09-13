@@ -19,12 +19,13 @@ contract MorphoFactory is BaseFactory, Trust {
 
     mapping(address => bool) public supportedTargets;
 
-    address immutable public rewardRecipient;
+    address public immutable rewardRecipient;
 
-    constructor(address _divider, FactoryParams memory _factoryParams, address _rewardRecipient)
-        BaseFactory(_divider, _factoryParams)
-        Trust(msg.sender)
-    {
+    constructor(
+        address _divider,
+        FactoryParams memory _factoryParams,
+        address _rewardRecipient
+    ) BaseFactory(_divider, _factoryParams) Trust(msg.sender) {
         rewardRecipient = _rewardRecipient;
     }
 
@@ -51,7 +52,13 @@ contract MorphoFactory is BaseFactory, Trust {
         // This will revert if an ERC4626 adapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         adapter = address(
-            new MorphoAdapter{ salt: _target.fillLast12Bytes() }(divider, _target, factoryParams.ifee, adapterParams, rewardRecipient)
+            new MorphoAdapter{ salt: _target.fillLast12Bytes() }(
+                divider,
+                _target,
+                factoryParams.ifee,
+                adapterParams,
+                rewardRecipient
+            )
         );
 
         _setGuard(adapter);
