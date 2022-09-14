@@ -105,7 +105,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         // Space pool is always created for verified adapters whilst is optional for unverified ones.
         // Automatically queueing series is only for verified adapters
         if (verified[adapter]) {
-            poolManager.queueSeries(adapter, maturity, spaceFactory.create(adapter, maturity));
+            if (address(poolManager) == address(0)) {
+                spaceFactory.create(adapter, maturity);
+            } else {
+                poolManager.queueSeries(adapter, maturity, spaceFactory.create(adapter, maturity));
+            }
         } else {
             if (withPool) {
                 spaceFactory.create(adapter, maturity);
@@ -438,7 +442,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     function _verifyAdapter(address adapter, bool addToPool) private {
         verified[adapter] = true;
-        if (addToPool) poolManager.addTarget(Adapter(adapter).target(), adapter);
+        if (addToPool && address(poolManager) != address(0)) poolManager.addTarget(Adapter(adapter).target(), adapter);
         emit AdapterVerified(adapter);
     }
 

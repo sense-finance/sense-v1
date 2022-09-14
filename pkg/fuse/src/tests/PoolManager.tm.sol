@@ -19,6 +19,7 @@ import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/M
 import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
+import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 
@@ -58,19 +59,19 @@ contract PoolManagerTest is DSTest {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
-    address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
-    address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
-    address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
-    address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
-
     function setUp() public {
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
         mockOracle = new MockOracle();
 
-        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);
+        poolManager = new PoolManager(
+            AddressBook.POOL_DIR,
+            AddressBook.COMPTROLLER_IMPL,
+            AddressBook.CERC20_IMPL,
+            address(divider),
+            AddressBook.MASTER_ORACLE_IMPL
+        );
 
         // Enable the adapter
         divider.setPeriphery(address(this));
@@ -104,13 +105,13 @@ contract PoolManagerTest is DSTest {
         _initSeries(maturity);
 
         assertTrue(poolManager.comptroller() == address(0));
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         assertTrue(poolManager.comptroller() != address(0));
 
         // Can't deploy pool twice
         hevm.expectRevert("ERC1167: create2 failed");
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
     }
 
     function testMainnetAddTarget() public {
@@ -119,7 +120,7 @@ contract PoolManagerTest is DSTest {
         poolManager.addTarget(address(target), address(mockAdapter));
 
         // Can add a Target after deploying a pool
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // Cannot add a Target before params have been set
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
@@ -152,7 +153,7 @@ contract PoolManagerTest is DSTest {
         hevm.expectRevert();
         poolManager.queueSeries(address(mockAdapter), maturity, address(0));
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // Cannot queue if Target has not been added to the Fuse pool
         hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
@@ -173,7 +174,7 @@ contract PoolManagerTest is DSTest {
         uint256 maturity = _getValidMaturity();
         _initSeries(maturity);
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
         PoolManager.AssetParams memory paramsTarget = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -257,7 +258,7 @@ contract PoolManagerTest is DSTest {
     }
 
     function testMainnetAdminPassthrough() public {
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
