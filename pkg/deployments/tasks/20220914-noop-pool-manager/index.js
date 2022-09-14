@@ -60,6 +60,10 @@ task("20220914-noop-pool-manager", "Deploys a no-op Pool Manager and sets it on 
         method: "hardhat_stopImpersonatingAccount",
         params: [senseAdminMultisigAddress],
       });
+
+      console.log(`Sanity check deploy cETH using cFactory`);
+      periphery.deployAdapter(mainnet.cFactory, mainnet.cETH, "");
+      console.log(`Success!`);
     }
   },
 );
