@@ -19,6 +19,7 @@ import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/M
 import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
+import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 
 contract NoopPoolManagerTest is DSTest {
@@ -43,18 +44,18 @@ contract NoopPoolManagerTest is DSTest {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    address public constant POOL_DIR = 0x835482FE0532f169024d5E9410199369aAD5C77E;
-    address public constant COMPTROLLER_IMPL = 0xE16DB319d9dA7Ce40b666DD2E365a4b8B3C18217;
-    address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
-    address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
-    address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
-
     function setUp() public {
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
 
-        poolManager = new PoolManager(POOL_DIR, COMPTROLLER_IMPL, CERC20_IMPL, address(divider), MASTER_ORACLE_IMPL);
+        poolManager = new PoolManager(
+            AddressBook.POOL_DIR,
+            AddressBook.COMPTROLLER_IMPL,
+            AddressBook.CERC20_IMPL,
+            address(divider),
+            AddressBook.MASTER_ORACLE_IMPL
+        );
         noopPoolManager = new NoopPoolManager();
 
         balancerVault = new MockBalancerVault();
@@ -111,10 +112,10 @@ contract NoopPoolManagerTest is DSTest {
         uint256 maturity = _getValidMaturity();
         _initSeries(maturity);
 
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // _Can_ deploy pool twice
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
     }
 
     function testMainnetAddTargetSucceeds() public {
@@ -122,7 +123,7 @@ contract NoopPoolManagerTest is DSTest {
         noopPoolManager.addTarget(address(target), address(mockAdapter));
 
         // Can add a Target after deploying a pool
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // Can now still add Target
         noopPoolManager.addTarget(address(target), address(mockAdapter));
@@ -139,7 +140,7 @@ contract NoopPoolManagerTest is DSTest {
 
         _initSeries(maturity);
 
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // _Can_ queue if Target has not been added to the pool
         noopPoolManager.queueSeries(address(mockAdapter), maturity, address(0));
@@ -202,7 +203,7 @@ contract NoopPoolManagerTest is DSTest {
     }
 
     function testFailEmitTargetAdded() public {
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         hevm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
@@ -221,7 +222,7 @@ contract NoopPoolManagerTest is DSTest {
         });
         poolManager.setParams("TARGET_PARAMS", paramsTarget);
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         hevm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
