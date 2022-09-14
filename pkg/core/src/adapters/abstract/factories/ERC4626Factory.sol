@@ -4,7 +4,6 @@ pragma solidity 0.8.11;
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { ERC4626Adapter } from "../erc4626/ERC4626Adapter.sol";
-import { ERC4626CropsAdapter } from "../erc4626/ERC4626CropsAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { BaseFactory } from "./BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";

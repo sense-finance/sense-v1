@@ -39,6 +39,11 @@ jobs:
       if: steps.cache-just.outputs.cache-hit != 'true'
       run: cargo install just
 
+    # Testing running bash script (will be deleted afterwards)
+    - name: Test running bash script (will be deleted afterwards)
+      if: github.ref == 'refs/heads/test-combinations'
+      run: yarn workspace @sense-finance/v1-core run turbo-test:all
+
     - name: Install npm dependencies
       run: yarn install
 
@@ -50,23 +55,27 @@ jobs:
     - name: Run linter
       run: yarn lint
 
-    - name: Run local core tests where the mock Target decimals is 18
-      run: yarn workspace @sense-finance/v1-core run test
-
+    # When NOT in dev or master we run some basic scenarios (e.g 18 decimals and target decimals < and > than underlying decimals) 
     - name: Run local fuse tests where the mock Target decimals is 18
+      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
       run: yarn workspace @sense-finance/v1-fuse run test
 
+    - name: Run local core tests where the mock Target decimals is 18
+      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
+      run: yarn workspace @sense-finance/v1-core run test
+
     - name: Run local core tests where the mock Target decimals > Underlying decimals
+      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
       run: yarn workspace @sense-finance/v1-core run test:greater-decimal-val
 
     - name: Run local core tests where the mock Target decimals < Underlying decimals
+      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
       run: yarn workspace @sense-finance/v1-core run test:lower-decimal-val
 
-    - name: Run local core tests where the mock Target is an ERC4626 and decimals are 18
-      run: yarn workspace @sense-finance/v1-core run test:4626
-
-    - name: Run local core tests where the mock Target is an ERC4626 and decimals are 8
-      run: yarn workspace @sense-finance/v1-core run test:4626-8-decimal-val
+    # Only when there's a push to dev or master, we run all the possible combinations of tests (PAUSED UNTIL FIXED)
+    # - name: Run local core tests with all possible combinations with ERC20, nonERC20, ERC4626 and 6, 8 and 18 decimals for Target, Underlying and Stake
+    #   if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
+    #   run: yarn workspace @sense-finance/v1-core run turbo-test:all
 
     - name: Run core mainnet tests
       run: yarn workspace @sense-finance/v1-core run test:mainnet

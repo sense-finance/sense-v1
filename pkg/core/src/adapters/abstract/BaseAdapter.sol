@@ -83,8 +83,8 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         name = string(abi.encodePacked(ERC20(_target).name(), " Adapter"));
         symbol = string(abi.encodePacked(ERC20(_target).symbol(), "-adapter"));
 
-        ERC20(_target).approve(divider, type(uint256).max);
-        ERC20(_adapterParams.stake).approve(divider, type(uint256).max);
+        ERC20(_target).safeApprove(divider, type(uint256).max);
+        ERC20(_adapterParams.stake).safeApprove(divider, type(uint256).max);
     }
 
     /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.

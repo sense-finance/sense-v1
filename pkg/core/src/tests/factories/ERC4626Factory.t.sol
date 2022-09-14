@@ -3,7 +3,9 @@ pragma solidity 0.8.11;
 
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
+import { ERC4626CropFactory } from "../../adapters/abstract/factories/ERC4626CropFactory.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
+import { ERC4626CropAdapter } from "../../adapters/abstract/erc4626/ERC4626CropAdapter.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
@@ -20,7 +22,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
         super.setUp();
-        is4626 = true;
+        is4626Target = true;
     }
 
     function testDeployFactory() public {
@@ -87,6 +89,38 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
         uint256 scale = MockAdapter(adapter).scale();
+        assertEq(scale, 1e18);
+    }
+
+    function testDeployCropAdapter() public {
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+
+        // Deploy ERC4626 Crop factory
+        ERC4626CropFactory someFactory = ERC4626CropFactory(deployCropFactory(address(someTarget)));
+
+        // Prepare data for crop adapter
+        bytes memory data = abi.encode(address(someReward));
+
+        // Deploy crop adapter
+        hevm.prank(address(periphery));
+        ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
+        assertTrue(address(adapter) != address(0));
+
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.target(), address(someTarget));
+        assertEq(adapter.name(), "Some Target Adapter");
+        assertEq(adapter.symbol(), "ST-adapter");
+        assertEq(adapter.ifee(), ISSUANCE_FEE);
+        assertEq(oracle, ORACLE);
+        assertEq(stake, address(stake));
+        assertEq(stakeSize, STAKE_SIZE);
+        assertEq(minm, MIN_MATURITY);
+        assertEq(maxm, MAX_MATURITY);
+        assertEq(adapter.mode(), MODE);
+        assertEq(adapter.reward(), address(someReward));
+        uint256 scale = adapter.scale();
         assertEq(scale, 1e18);
     }
 
@@ -194,11 +228,8 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(reward);
-
         hevm.prank(address(periphery));
-        factory.deployAdapter(address(target), abi.encode(rewardTokens));
+        factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
     function testCanSetRewardTokensMultipleAdapters() public {
@@ -232,6 +263,28 @@ contract ERC4626FactoryTest is TestHelper {
         someFactory.setRewardTokens(adapters, rewardTokens);
         assertEq(adapter.rewardTokens(0), address(someReward));
         assertEq(adapter.rewardTokens(1), address(someReward2));
+    }
+
+    function testCanSetRewardToken() public {
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+
+        // Deploy ERC4626 Crop factory
+        ERC4626CropFactory someFactory = ERC4626CropFactory(deployCropFactory(address(someTarget)));
+
+        // Deploy crop adapter
+        bytes memory data = abi.encode(address(0)); // no reward tokens
+        hevm.prank(address(periphery));
+        ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
+        assertTrue(address(adapter) != address(0));
+
+        adapter.isTrusted(address(someFactory));
+        adapter.isTrusted(address(divider));
+        adapter.isTrusted(address(this));
+
+        // Set reward token
+        someFactory.setRewardToken(address(adapter), address(someReward));
+        assertEq(adapter.reward(), address(someReward));
     }
 
     /* ========== LOGS ========== */

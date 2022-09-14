@@ -12,14 +12,15 @@ const {
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
+const oracleAbi = require("./abi/MasterPriceOracle.json");
+const erc4626FactoryAbi = require("./abi/ERC4626Factory.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
-const erc20Abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
 task(
-  "20220721-4626-factory",
-  "Deploys 4626 Factory and adds it to the Periphery. Also deploys Sense Master & Chainlink Oracles",
+  "20220830-4626-crops-factory",
+  "Deploys 4626 Factory and adds it to the Periphery. Also fixes bug in Chainlink Oracle.",
 ).setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
@@ -31,11 +32,15 @@ task(
   const {
     divider: dividerAddress,
     periphery: peripheryAddress,
+    oracle: masterOracleAddress,
+    erc4626Factory: erc4626FactoryAddress,
     factories,
     maxSecondsBeforePriceIsStale,
   } = data[chainId] || data[CHAINS.MAINNET];
   let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
   let periphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
+  let masterOracle = new ethers.Contract(masterOracleAddress, oracleAbi, deployerSigner);
+  let erc4626Factory = new ethers.Contract(erc4626FactoryAddress, erc4626FactoryAbi, deployerSigner);
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Sense Chainlink Price Oracle");
@@ -45,27 +50,17 @@ task(
     log: true,
   });
   console.log(`ChainlinkPriceOracle deployed to ${chainlinkOracleAddress}`);
-
   // if mainnet or goerli, verify on etherscan
   if (VERIFY_CHAINS.includes(chainId)) {
     console.log("\n-------------------------------------------------------");
     await verifyOnEtherscan(chainlinkOracleAddress, [maxSecondsBeforePriceIsStale]);
   }
 
-  console.log("\n-------------------------------------------------------");
-  console.log("\nDeploy Sense Master Price Oracle");
-  const { address: masterOracleAddress } = await deploy("MasterPriceOracle", {
-    from: deployer,
-    args: [chainlinkOracleAddress, [], []],
-    log: true,
-  });
-  console.log(`MasterPriceOracle deployed to ${masterOracleAddress}`);
-
-  // if mainnet or goerli, verify on etherscan
-  if (VERIFY_CHAINS.includes(chainId)) {
-    console.log("\n-------------------------------------------------------");
-    await verifyOnEtherscan(masterOracleAddress, [chainlinkOracleAddress, [], []]);
-  }
+  console.log(`\nChange ChainlinkPriceOracle on Sense Master Oracle`);
+  // Since we forgot to unset the deployer address as trusted and trusting the multisig
+  // we can do this from the deployer address now
+  await (await masterOracle.setSenseChainlinkPriceOracle(chainlinkOracleAddress)).wait();
+  console.log(`New ChainlinkPriceOracle address: ${await masterOracle.senseChainlinkPriceOracle()}`);
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
@@ -112,7 +107,6 @@ task(
       await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
     } else {
       console.log("\nAdd Rari's mStable oracle to Master Price Oracle");
-      const masterOracle = await ethers.getContract("MasterPriceOracle", deployerSigner);
       await (
         await masterOracle.add(
           [MUSD_TOKEN.get(chainId), IMUSD_TOKEN.get(chainId)],
@@ -172,11 +166,12 @@ task(
         const scale = await adptr.callStatic.scale();
         console.log(`-> scale: ${scale.toString()}`);
 
-        const params = await divider.adapterMeta(adapterAddress);
+        const params = await await divider.adapterMeta(adapterAddress);
         console.log(`-> adapter guard: ${params[2]}`);
 
         console.log(`\nApprove Periphery to pull stake...`);
-        const stakeContract = new ethers.Contract(stake, erc20Abi, deployerSigner);
+        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
+        const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
         await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
         console.log(`Mint stake tokens...`);
@@ -190,11 +185,28 @@ task(
         }
       }
 
-      console.log(`\nSet multisig as trusted address of Factory`);
+      console.log("\n-------------------------------------------------------");
+
+      // Unset deployer and set multisig as trusted address
+      console.log(`Set multisig as trusted address of 4626CropsFactory`);
       await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
-      console.log(`\nUnset deployer as trusted address of Factory`);
+      console.log(`Unset deployer as trusted address of 4626CropsFactory`);
       await (await factoryContract.setIsTrusted(deployer, false)).wait();
+
+      // Unset deployer and set multisig as trusted address on 4626Factory (we forgot doing this on the prev task)
+      console.log(`\nSet multisig as trusted address of 4626Factory`);
+      await (await erc4626Factory.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+      console.log(`Unset deployer as trusted address of 4626Factory`);
+      await (await erc4626Factory.setIsTrusted(deployer, true)).wait();
+
+      // Unset deployer and set multisig as trusted address on MasterPriceOracle (we forgot doing this on the prev task)
+      console.log(`\nSet multisig as trusted address of MasterPriceOracle`);
+      await (await masterOracle.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+      console.log(`Unset deployer as trusted address of MasterPriceOracle`);
+      await (await masterOracle.setIsTrusted(deployer, true)).wait();
     }
 
     if (VERIFY_CHAINS.includes(chainId)) {

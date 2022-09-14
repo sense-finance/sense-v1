@@ -85,7 +85,7 @@ contract FAdapter is BaseAdapter, Crops {
         comptroller = _comptroller;
         isFETH = FTokenLike(_target).isCEther();
 
-        ERC20(_underlying).approve(_target, type(uint256).max);
+        ERC20(_underlying).safeApprove(_target, type(uint256).max);
         uDecimals = CTokenLike(_underlying).decimals();
 
         // Initialize rewardsDistributorsList mapping

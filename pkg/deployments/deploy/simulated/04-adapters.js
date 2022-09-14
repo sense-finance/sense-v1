@@ -44,7 +44,7 @@ module.exports = async function () {
       targets,
       noncrop,
       crops,
-      is4626,
+      is4626Target,
       guard,
     } = factory(chainId);
     log(`\nDeploy ${factoryContractName} with mocked dependencies`);
@@ -74,7 +74,9 @@ module.exports = async function () {
     log(`DEPLOY UNDERLYINGS, TARGETS & ADAPTERS FOR: ${factoryContractName}`);
     log("---------------------------------------------------------");
     for (let t of targets) {
-      is4626 ? await deploy4626Adapter(t, factoryContractName) : await deployAdapter(t, factoryContractName);
+      is4626Target
+        ? await deploy4626Adapter(t, factoryContractName)
+        : await deployAdapter(t, factoryContractName);
     }
   }
 

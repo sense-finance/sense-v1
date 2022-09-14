@@ -8,7 +8,6 @@ import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
-import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 import { MasterPriceOracle } from "../../implementations/oracles/MasterPriceOracle.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
@@ -32,7 +31,7 @@ contract ERC4626Adapter is BaseAdapter {
         uint256 tDecimals = ERC4626(target).decimals();
         BASE_UINT = 10**tDecimals;
         SCALE_FACTOR = 10**(18 - tDecimals); // we assume targets decimals <= 18
-        ERC20(underlying).approve(target, type(uint256).max);
+        ERC20(underlying).safeApprove(target, type(uint256).max);
     }
 
     function scale() external override returns (uint256) {

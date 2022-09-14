@@ -3,26 +3,30 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
-import { ERC4626CropsAdapter } from "../erc4626/ERC4626CropsAdapter.sol";
+import { ERC4626CropAdapter } from "../erc4626/ERC4626CropAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
-import { CropsFactory } from "./CropsFactory.sol";
+import { CropFactory } from "./CropFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
 
-contract ERC4626CropsFactory is CropsFactory {
+contract ERC4626CropFactory is CropFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public supportedTargets;
 
-    constructor(address _divider, FactoryParams memory _factoryParams) CropsFactory(_divider, _factoryParams) {}
+    constructor(
+        address _divider,
+        FactoryParams memory _factoryParams,
+        address _reward
+    ) CropFactory(_divider, _factoryParams, address(0)) {}
 
     /// @notice Deploys an ERC4626Adapter contract
     /// @param _target The target address
     /// @param data ABI encoded data
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
-        address[] memory rewardTokens = abi.decode(data, (address[]));
+        address reward = abi.decode(data, (address));
 
         /// Sanity checks
         if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();
@@ -43,12 +47,12 @@ contract ERC4626CropsFactory is CropsFactory {
         // This will revert if am ERC4626 adapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         adapter = address(
-            new ERC4626CropsAdapter{ salt: _target.fillLast12Bytes() }(
+            new ERC4626CropAdapter{ salt: _target.fillLast12Bytes() }(
                 divider,
                 _target,
                 factoryParams.ifee,
                 adapterParams,
-                rewardTokens
+                reward
             )
         );
 

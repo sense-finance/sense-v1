@@ -59,7 +59,7 @@ contract PeripheryTest is TestHelper {
         MockCropAdapter adapter = new MockCropAdapter(
             address(divider),
             address(target),
-            !is4626 ? target.underlying() : target.asset(),
+            !is4626Target ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             DEFAULT_ADAPTER_PARAMS,
             address(reward)
@@ -98,7 +98,7 @@ contract PeripheryTest is TestHelper {
         MockCropAdapter adapter = new MockCropAdapter(
             address(divider),
             address(target),
-            !is4626 ? target.underlying() : target.asset(),
+            !is4626Target ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -181,7 +181,7 @@ contract PeripheryTest is TestHelper {
         });
 
         address cropFactory;
-        if (is4626) {
+        if (is4626Target) {
             cropFactory = address(new Mock4626CropFactory(address(divider), factoryParams, address(reward)));
         } else {
             cropFactory = address(new MockCropFactory(address(divider), factoryParams, address(reward)));
@@ -584,7 +584,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSwapUnderlyingForPTs() public {
-        uint256 uBal = 100e18;
+        uint256 uBal = 100 * (10**mockUnderlyingDecimals);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 scale = adapter.scale();
@@ -1132,7 +1132,7 @@ contract PeripheryTest is TestHelper {
         hevm.stopPrank();
 
         // get some target for Alice and Bob
-        if (!is4626) {
+        if (!is4626Target) {
             target.mint(alice, 10000000e18);
             hevm.prank(bob);
             target.mint(bob, 10000000e18);

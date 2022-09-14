@@ -98,7 +98,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize);
 
         // Approve divider to withdraw stake assets
-        ERC20(stake).approve(address(divider), stakeSize);
+        ERC20(stake).safeApprove(address(divider), stakeSize);
 
         (pt, yt) = divider.initSeries(adapter, maturity, msg.sender);
 
@@ -457,9 +457,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     function _onboardAdapter(address adapter, bool addAdapter) private {
         ERC20 target = ERC20(Adapter(adapter).target());
-        target.approve(address(divider), type(uint256).max);
-        target.approve(address(adapter), type(uint256).max);
-        ERC20(Adapter(adapter).underlying()).approve(address(adapter), type(uint256).max);
+        target.safeApprove(address(divider), type(uint256).max);
+        target.safeApprove(address(adapter), type(uint256).max);
+        ERC20(Adapter(adapter).underlying()).safeApprove(address(adapter), type(uint256).max);
         if (addAdapter) divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
     }
@@ -474,7 +474,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted
     ) internal returns (uint256 amountOut) {
         // approve vault to spend tokenIn
-        ERC20(assetIn).approve(address(balancerVault), amountIn);
+        ERC20(assetIn).safeApprove(address(balancerVault), amountIn);
 
         BalancerVault.SingleSwap memory request = BalancerVault.SingleSwap({
             poolId: poolId,
@@ -779,7 +779,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
         for (uint8 i; i < liq.tokens.length; i++) {
             // Tokens and amounts must be in same order
-            liq.tokens[i].approve(address(balancerVault), liq.amounts[i]);
+            liq.tokens[i].safeApprove(address(balancerVault), liq.amounts[i]);
         }
 
         // Behaves like EXACT_TOKENS_IN_FOR_BPT_OUT, user sends precise quantities of tokens,

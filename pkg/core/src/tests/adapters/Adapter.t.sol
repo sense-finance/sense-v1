@@ -7,6 +7,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../../Divider.sol";
 import { TestHelper } from "../test-helpers/TestHelper.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 contract FakeAdapter is BaseAdapter {
     constructor(
@@ -43,6 +44,7 @@ contract FakeAdapter is BaseAdapter {
 }
 
 contract Adapters is TestHelper {
+    using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
     function testScale() public {
@@ -86,7 +88,7 @@ contract Adapters is TestHelper {
         adapter.setScale(1e18);
         adapter.scale();
 
-        underlying.approve(address(adapter), type(uint256).max);
+        ERC20(address(underlying)).safeApprove(address(adapter), type(uint256).max);
         uint256 tBalReceived = adapter.wrapUnderlying(uBal);
         assertEq(tBal, tBalReceived);
     }

@@ -261,7 +261,7 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_TARGETS,
     noncrop: true,
-    is4626: false,
+    is4626Target: false,
     guard: ethers.utils.parseEther("100000"),
   }),
   () => ({
@@ -276,7 +276,7 @@ const DEV_FACTORIES = [
     targets: DEV_CROP_TARGETS,
     noncrop: false,
     crops: false,
-    is4626: false,
+    is4626Target: false,
     guard: ethers.utils.parseEther("100000"),
   }),
   () => ({
@@ -291,7 +291,7 @@ const DEV_FACTORIES = [
     targets: DEV_CROPS_TARGETS,
     noncrop: false,
     crops: true,
-    is4626: false,
+    is4626Target: false,
     guard: ethers.utils.parseEther("100000"),
   }),
   () => ({
@@ -305,7 +305,7 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_4626_TARGETS,
     crops: false,
-    is4626: true,
+    is4626Target: true,
     guard: ethers.utils.parseEther("100000"),
   }),
   () => ({
@@ -319,7 +319,7 @@ const DEV_FACTORIES = [
     tilt: 0,
     targets: DEV_4626_CROPS_TARGETS,
     crops: true,
-    is4626: true,
+    is4626Target: true,
     guard: ethers.utils.parseEther("100000"),
   }),
 ];

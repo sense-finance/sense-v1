@@ -21,6 +21,7 @@ library AddressBook {
     address public constant cETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant cUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
     address public constant cLINK = 0xFAce851a4921ce59e912d19329929CE6da6EB0c7;
+    address public constant cUSDT = 0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9;
 
     // eth
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
