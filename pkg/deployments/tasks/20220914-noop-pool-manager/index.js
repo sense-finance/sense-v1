@@ -53,7 +53,7 @@ task("20220914-noop-pool-manager", "Deploys a no-op Pool Manager and sets it on 
       const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
       periphery = periphery.connect(multisigSigner);
 
-      console.log(`\Set Noop Pool Manager on the Periphery`);
+      console.log(`Set Noop Pool Manager on the Periphery`);
       await (await periphery.setPoolManager(poolManagerAddress)).wait();
 
       await hre.network.provider.request({
