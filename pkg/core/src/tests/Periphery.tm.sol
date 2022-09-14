@@ -244,6 +244,18 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
+    function testMainnetSponsorSeriesOnMockAdapterWhenPoolManagerZero() public {
+        // 1. Set pool manager to zero address
+        periphery.setPoolManager(address(0));
+
+        // 2. Sponsor a Series
+        (uint256 maturity, address pt, address yt) = _sponsorSeries();
+
+        // Check that the PT and YT contracts have been deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
+    }
+
     /* ========== YT SWAPS ========== */
 
     function testMainnetSwapYTsForTarget() public {
