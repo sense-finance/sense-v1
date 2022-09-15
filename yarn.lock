@@ -700,10 +700,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:4.3.2":
-  version: 4.3.2
-  resolution: "@openzeppelin/contracts@npm:4.3.2"
-  checksum: d44efbf42e4fb374b3d3069d1a8f4ab145907d72d0c9e8e7c493ae96d966a6d1091a33bd5faed446d655952aa084e0b10471c5e800bb8c385b9a885ef963a2a6
+"@openzeppelin/contracts@npm:^4.7.3":
+  version: 4.7.3
+  resolution: "@openzeppelin/contracts@npm:4.7.3"
+  checksum: 6110ea72b7e52d5a3b154f3883321b2ab3a7a0ec421a770e49b9a77802cd891b8b49a03d79d72f098f4470f693be2b7bb040f4637d44be3ef359572adb9a402a
   languageName: node
   linkType: hard
 
@@ -733,7 +733,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
-    "@openzeppelin/contracts": 4.3.2
+    "@openzeppelin/contracts": ^4.7.3
     "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
@@ -750,7 +750,7 @@ __metadata:
     "@nomiclabs/eslint-plugin-hardhat-internal-rules": ^1.0.0
     "@nomiclabs/hardhat-ethers": ^2.0.5
     "@nomiclabs/hardhat-etherscan": ^2.1.6
-    "@openzeppelin/contracts": 4.3.2
+    "@openzeppelin/contracts": ^4.7.3
     "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
