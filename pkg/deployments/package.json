@@ -42,7 +42,7 @@
   "devDependencies": {
     "@nomiclabs/eslint-plugin-hardhat-internal-rules": "^1.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
-    "@nomiclabs/hardhat-etherscan": "^2.1.6",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "@tenderly/hardhat-tenderly": "^1.1.6",
     "@types/eslint": "^8",
     "@typescript-eslint/experimental-utils": "^5.37.0",
