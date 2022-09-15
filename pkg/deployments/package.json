@@ -43,7 +43,7 @@
     "@nomiclabs/eslint-plugin-hardhat-internal-rules": "^1.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
-    "@tenderly/hardhat-tenderly": "^1.0.13",
+    "@tenderly/hardhat-tenderly": "^1.1.6",
     "@types/eslint": "^8",
     "@typescript-eslint/experimental-utils": "^5.33.1",
     "dayjs": "^1.10.7",
