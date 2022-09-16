@@ -10,3 +10,4 @@ require("./20220727-cfactory");
 require("./20220721-4626-factory");
 require("./20220830-4626-crops-factory");
 require("./20220912-4626-crop-factory");
+require("./20220914-noop-pool-manager");

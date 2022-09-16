@@ -22,6 +22,7 @@ import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { CAdapter } from "@sense-finance/v1-core/src/adapters/implementations/compound/CAdapter.sol";
 import { FAdapter } from "@sense-finance/v1-core/src/adapters/implementations/fuse/FAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { NoopPoolManager } from "@sense-finance/v1-fuse/src/NoopPoolManager.sol";
 import { EmergencyStop } from "@sense-finance/v1-utils/src/EmergencyStop.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 

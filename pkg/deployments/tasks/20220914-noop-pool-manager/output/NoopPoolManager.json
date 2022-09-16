@@ -1,0 +1,156 @@
+{
+  "address": "0x9BFcA4882c1D8CDE3b4f787d3d74eb0E1bb0ec1B",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "adapter",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maturity",
+          "type": "uint256"
+        }
+      ],
+      "name": "addSeries",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "adapter",
+          "type": "address"
+        }
+      ],
+      "name": "addTarget",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "cTarget",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "closeFactor",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "liqIncentive",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "fallbackOracle",
+          "type": "address"
+        }
+      ],
+      "name": "deployPool",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_poolIndex",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_comptroller",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "adapter",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maturity",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "pool",
+          "type": "address"
+        }
+      ],
+      "name": "queueSeries",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x272717bbae3567ee36c23165c6fb8a6d1c7af694c6fcbf4963e3ed2bb50898bb",
+  "receipt": {
+    "to": null,
+    "from": "0x59A181710F926Eae6FddfbF27a14259E8DD00cA2",
+    "contractAddress": "0x9BFcA4882c1D8CDE3b4f787d3d74eb0E1bb0ec1B",
+    "transactionIndex": 42,
+    "gasUsed": "203923",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x07c5dc385c3f82fcbb872aa760b586c0173887f60d744b05d69f1ce80da9c260",
+    "transactionHash": "0x272717bbae3567ee36c23165c6fb8a6d1c7af694c6fcbf4963e3ed2bb50898bb",
+    "logs": [],
+    "blockNumber": 15534189,
+    "cumulativeGasUsed": "2093770",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "dc88bfcba0fc13fe4f0875a09c400afb",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.11+commit.d7f03943\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"adapter\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maturity\",\"type\":\"uint256\"}],\"name\":\"addSeries\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"adapter\",\"type\":\"address\"}],\"name\":\"addTarget\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"cTarget\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"closeFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liqIncentive\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"fallbackOracle\",\"type\":\"address\"}],\"name\":\"deployPool\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_poolIndex\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_comptroller\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"adapter\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maturity\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"pool\",\"type\":\"address\"}],\"name\":\"queueSeries\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"@sense-finance/v1-fuse/src/NoopPoolManager.sol\":\"NoopPoolManager\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":15000},\"remappings\":[]},\"sources\":{\"@sense-finance/v1-fuse/src/NoopPoolManager.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.11;\\n\\n// Pool manager implementation with no restrictions where every function is a no-op. Refer to \\\"PoolManager.sol\\\"\\n// for an exemplar of a normal Pool Manager.\\ncontract NoopPoolManager {\\n    function deployPool(\\n        string calldata name,\\n        uint256 closeFactor,\\n        uint256 liqIncentive,\\n        address fallbackOracle\\n    ) external returns (uint256 _poolIndex, address _comptroller) {}\\n\\n    function addTarget(address target, address adapter) external returns (address cTarget) {}\\n\\n    function queueSeries(\\n        address adapter,\\n        uint256 maturity,\\n        address pool\\n    ) external {}\\n\\n    function addSeries(address adapter, uint256 maturity) external returns (address, address) {}\\n}\\n\",\"keccak256\":\"0xb4de0110c84f21145d700ca5bc21b71ef423bd222abc1d15d7f1129d4623707a\",\"license\":\"AGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b506102ba806100206000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c80631ec64fef146100515780635e883823146100915780636f2cec03146100a657806371987b15146100eb575b600080fd5b61006761005f366004610158565b600092915050565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b6100a461009f36600461018b565b505050565b005b6100c16100b43660046101c7565b6000809550959350505050565b6040805192835273ffffffffffffffffffffffffffffffffffffffff909116602083015201610088565b6101026100f936600461025a565b50600091829150565b6040805173ffffffffffffffffffffffffffffffffffffffff938416815292909116602083015201610088565b803573ffffffffffffffffffffffffffffffffffffffff8116811461015357600080fd5b919050565b6000806040838503121561016b57600080fd5b6101748361012f565b91506101826020840161012f565b90509250929050565b6000806000606084860312156101a057600080fd5b6101a98461012f565b9250602084013591506101be6040850161012f565b90509250925092565b6000806000806000608086880312156101df57600080fd5b853567ffffffffffffffff808211156101f757600080fd5b818801915088601f83011261020b57600080fd5b81358181111561021a57600080fd5b89602082850101111561022c57600080fd5b6020928301975095505086013592506040860135915061024e6060870161012f565b90509295509295909350565b6000806040838503121561026d57600080fd5b6102768361012f565b94602093909301359350505056fea2646970667358221220b05165df12c6692e34f4ac74f24ade856b8e42403ff908c26d4cd2d6d97e04f764736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061004c5760003560e01c80631ec64fef146100515780635e883823146100915780636f2cec03146100a657806371987b15146100eb575b600080fd5b61006761005f366004610158565b600092915050565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b6100a461009f36600461018b565b505050565b005b6100c16100b43660046101c7565b6000809550959350505050565b6040805192835273ffffffffffffffffffffffffffffffffffffffff909116602083015201610088565b6101026100f936600461025a565b50600091829150565b6040805173ffffffffffffffffffffffffffffffffffffffff938416815292909116602083015201610088565b803573ffffffffffffffffffffffffffffffffffffffff8116811461015357600080fd5b919050565b6000806040838503121561016b57600080fd5b6101748361012f565b91506101826020840161012f565b90509250929050565b6000806000606084860312156101a057600080fd5b6101a98461012f565b9250602084013591506101be6040850161012f565b90509250925092565b6000806000806000608086880312156101df57600080fd5b853567ffffffffffffffff808211156101f757600080fd5b818801915088601f83011261020b57600080fd5b81358181111561021a57600080fd5b89602082850101111561022c57600080fd5b6020928301975095505086013592506040860135915061024e6060870161012f565b90509295509295909350565b6000806040838503121561026d57600080fd5b6102768361012f565b94602093909301359350505056fea2646970667358221220b05165df12c6692e34f4ac74f24ade856b8e42403ff908c26d4cd2d6d97e04f764736f6c634300080b0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
