@@ -46,7 +46,7 @@
     "@tenderly/hardhat-tenderly": "^1.1.6",
     "@types/eslint": "^8",
     "@typescript-eslint/experimental-utils": "^5.37.0",
-    "dayjs": "^1.10.7",
+    "dayjs": "^1.11.5",
     "eslint": "^8.22.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
