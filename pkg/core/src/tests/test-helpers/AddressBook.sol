@@ -47,8 +47,9 @@ library AddressBook {
     address public constant POOL_MANAGER_1_2_0 = 0xf01eb98de53ed964AC3F786b80ED8ce33f05F417;
     address public constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-    // sense admin
+    // sense
     address public constant SENSE_ADMIN_MULTISIG = 0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57;
+    address public constant SENSE_MASTER_PRICE_ORACLE = 0x11D341d35BF95654BC7A9db59DBc557cCB4ea101;
 
     // fuse f18 olympus pool party
     address public constant OLYMPUS_POOL_PARTY = 0x621579DD26774022F33147D3852ef4E00024b763; // olympus pool party
@@ -80,4 +81,9 @@ library AddressBook {
     address public constant CERC20_IMPL = 0x67Db14E73C2Dce786B5bbBfa4D010dEab4BBFCF9;
     address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
+
+    // timeless
+    address public constant TIMELESS_EULER_4626_WRAPPER_FACTORY = 0x1e8020cFB10b6a6a9B5F06e3ABAe140f7DE541E1; // Euler ERC4626 Wrapper Factory
+    address public constant EULER_USDC = 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716;
+    address public constant EULER_WSTETH = 0xbd1bd5C956684f7EB79DA40f582cbE1373A1D593;
 }

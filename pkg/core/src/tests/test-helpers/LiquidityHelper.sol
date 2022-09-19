@@ -90,7 +90,7 @@ contract LiquidityHelper {
         }
 
         // We have failed if we reach here
-        return false;
+        revert("Failed to give tokens");
     }
 
     function addLiquidity(address[] memory assets) public {
