@@ -1,6 +1,5 @@
 const { task } = require("hardhat/config");
-const { mainnet } = require("./input");
-const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
+const { MORPHO_TOKEN, SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
@@ -15,7 +14,8 @@ task(
 
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
-  const { MORPHO } = mainnet;
+  if (!MORPHO_TOKEN.has(chainId)) throw Error("MORPHO token not found");
+  const MORPHO = MORPHO_TOKEN.get(chainId);
 
   const { address: rewardsDistributorAddress } = await deploy("RewardsDistributor", {
     from: deployer,
@@ -43,19 +43,18 @@ task(
     console.log("Hardhat sanity checks");
 
     const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
-
-    console.log("Check deployer auth");
-    try {
-      await rewardsDistributor.updateRoot(ethers.utils.formatBytes32String(""));
-      throw new Error("Deployer shouldn't be able to update the root");
-    } catch (err) {}
-
     await (
       await deployerSigner.sendTransaction({
         to: senseAdminMultisigAddress,
         value: ethers.utils.parseEther("1"),
       })
     ).wait();
+
+    console.log("Check deployer auth");
+    try {
+      await rewardsDistributor.updateRoot(ethers.utils.formatBytes32String(""));
+      throw new Error("Deployer shouldn't be able to update the root");
+    } catch (err) {}
 
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
