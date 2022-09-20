@@ -26,7 +26,9 @@ contract MockRevertAdapter is MockAdapter {
 }
 
 contract MockRevertFactory is MockFactory {
-    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), address(0), _factoryParams) {}
+    constructor(BaseFactory.FactoryParams memory _factoryParams)
+        MockFactory(address(0), address(0), address(0), _factoryParams)
+    {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams;
@@ -54,10 +56,11 @@ contract Mock2e18Factory is MockCropFactory {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) MockCropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
+    ) MockCropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -101,11 +104,13 @@ contract Factories is TestHelper {
         });
         MockCropFactory someFactory = new MockCropFactory(
             address(divider),
+            Constants.ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             address(reward)
         );
 
+        assertEq(someFactory.admin(), Constants.ADMIN);
         assertEq(someFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(someFactory.divider(), address(divider));
         (
@@ -163,6 +168,7 @@ contract Factories is TestHelper {
             });
             someFactory = new Mock2e18Factory(
                 address(divider),
+                Constants.ADMIN,
                 Constants.REWARDS_RECIPIENT,
                 factoryParams,
                 address(someReward)
@@ -308,6 +314,22 @@ contract Factories is TestHelper {
     function testFailDeployAdapterIfAlreadyExists() public {
         hevm.prank(address(periphery));
         factory.deployAdapter(address(target), abi.encode(address(reward)));
+    }
+
+    function testSetAdmin() public {
+        assertEq(factory.admin(), Constants.ADMIN);
+
+        // Can not set admin if not trusted
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x123));
+        factory.setAdmin(address(0x111));
+
+        // Can set admin
+        hevm.expectEmit(true, true, true, true);
+        emit AdminChanged(address(0x111));
+
+        factory.setAdmin(address(0x111));
+        assertEq(factory.admin(), address(0x111));
     }
 
     function testSetRewardsRecipient() public {

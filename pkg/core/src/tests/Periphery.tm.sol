@@ -120,8 +120,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             guard: Constants.DEFAULT_GUARD
         });
 
-        cfactory = new CFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
-        ffactory = new FFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams);
+        cfactory = new CFactory(divider, Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
+        ffactory = new FFactory(divider, Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
 
         periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);
 

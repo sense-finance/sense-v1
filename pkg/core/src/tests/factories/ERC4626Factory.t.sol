@@ -38,7 +38,12 @@ contract ERC4626FactoryTest is TestHelper {
             tilt: 0,
             guard: 123e18
         });
-        ERC4626Factory someFactory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
+        ERC4626Factory someFactory = new ERC4626Factory(
+            address(divider),
+            Constants.ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
 
         assertTrue(address(someFactory) != address(0));
         assertEq(ERC4626Factory(someFactory).divider(), address(divider));
@@ -235,39 +240,6 @@ contract ERC4626FactoryTest is TestHelper {
         factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
-    function testCanSetRewardTokensMultipleAdapters() public {
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someReward2 = new MockToken("Some Reward 2", "SR2", 18);
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
-
-        // Deploy ERC4626 Crops factory
-        ERC4626CropsFactory someFactory = ERC4626CropsFactory(deployCropsFactory(address(someTarget)));
-
-        // Deploy crops adapter
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(rewardTokens); // empty array (no reward tokens)
-        hevm.prank(address(periphery));
-        ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
-        assertTrue(address(adapter) != address(0));
-
-        adapter.isTrusted(address(someFactory));
-        adapter.isTrusted(address(divider));
-        adapter.isTrusted(address(this));
-
-        // Set reward tokens
-        rewardTokens = new address[](2);
-        rewardTokens[0] = address(someReward);
-        rewardTokens[1] = address(someReward2);
-
-        // Adapters
-        address[] memory adapters = new address[](1);
-        adapters[0] = address(adapter);
-
-        someFactory.setRewardTokens(adapters, rewardTokens);
-        assertEq(adapter.rewardTokens(0), address(someReward));
-        assertEq(adapter.rewardTokens(1), address(someReward2));
-    }
-
     function testCanSetRewardToken() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
@@ -281,14 +253,14 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
-        // Can not set reward token via factory if not trusted
+        // Can not set reward token if not admin
         hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x111));
-        someFactory.setRewardToken(address(adapter), address(someReward));
+        adapter.setRewardToken(address(0x111));
 
-        // Set reward token via factory
-        someFactory.setRewardToken(address(adapter), address(someReward));
-        assertEq(adapter.reward(), address(someReward));
+        // Set reward token
+        hevm.prank(Constants.ADMIN);
+        adapter.setRewardToken(address(0x111));
+        assertEq(adapter.reward(), address(0x111));
     }
 
     /* ========== LOGS ========== */

@@ -5,22 +5,24 @@ pragma solidity 0.8.11;
 import { Divider } from "../../../Divider.sol";
 import { ERC4626CropsAdapter } from "../erc4626/ERC4626CropsAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
-import { CropsFactory } from "./CropsFactory.sol";
+import { BaseFactory } from "./BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 // External references
 import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
 
-contract ERC4626CropsFactory is CropsFactory {
+contract ERC4626CropsFactory is BaseFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public supportedTargets;
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
-    ) CropsFactory(_divider, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {}
 
     /// @notice Deploys an ERC4626Adapter contract
     /// @param _target The target address
@@ -58,6 +60,8 @@ contract ERC4626CropsFactory is CropsFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(admin, true);
     }
 
     /// @notice (Un)support target

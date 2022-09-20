@@ -345,7 +345,9 @@ contract TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        someFactory = address(new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams));
+        someFactory = address(
+            new ERC4626Factory(address(divider), Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+        );
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
         periphery.setFactory(someFactory, true);
@@ -363,7 +365,9 @@ contract TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        someFactory = address(new ERC4626CropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams));
+        someFactory = address(
+            new ERC4626CropsFactory(address(divider), Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+        );
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
         periphery.setFactory(someFactory, true);
@@ -383,9 +387,13 @@ contract TestHelper is DSTest {
             guard: DEFAULT_GUARD
         });
         if (is4626Target) {
-            someFactory = address(new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams));
+            someFactory = address(
+                new ERC4626Factory(address(divider), Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+            );
         } else {
-            someFactory = address(new MockFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams));
+            someFactory = address(
+                new MockFactory(address(divider), Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+            );
         }
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
@@ -425,21 +433,44 @@ contract TestHelper is DSTest {
         if (is4626Target) {
             if (crops) {
                 someFactory = address(
-                    new ERC4626CropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams)
+                    new ERC4626CropsFactory(
+                        address(divider),
+                        Constants.ADMIN,
+                        Constants.REWARDS_RECIPIENT,
+                        factoryParams
+                    )
                 );
             } else {
                 someFactory = address(
-                    new ERC4626CropFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, address(0))
+                    new ERC4626CropFactory(
+                        address(divider),
+                        Constants.ADMIN,
+                        Constants.REWARDS_RECIPIENT,
+                        factoryParams,
+                        address(0)
+                    )
                 );
             }
         } else {
             if (crops) {
                 someFactory = address(
-                    new MockCropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, _rewardTokens)
+                    new MockCropsFactory(
+                        address(divider),
+                        Constants.ADMIN,
+                        Constants.REWARDS_RECIPIENT,
+                        factoryParams,
+                        _rewardTokens
+                    )
                 );
             } else {
                 someFactory = address(
-                    new MockCropFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, _rewardTokens[0])
+                    new MockCropFactory(
+                        address(divider),
+                        Constants.ADMIN,
+                        Constants.REWARDS_RECIPIENT,
+                        factoryParams,
+                        _rewardTokens[0]
+                    )
                 );
             }
         }

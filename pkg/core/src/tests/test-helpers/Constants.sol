@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 /// @notice System constants
 library Constants {
     // adapter config
+    address public constant ADMIN = address(0xfede);
     address public constant REWARDS_RECIPIENT = address(0xfed);
     uint16 public constant DEFAULT_LEVEL = 31;
     uint256 public constant DEFAULT_STAKE_SIZE = 1e18;

@@ -43,6 +43,9 @@ abstract contract BaseFactory is Trust {
     /// @notice Sense core Divider address
     address public immutable divider;
 
+    /// @notice Admin address
+    address public admin;
+
     /// @notice Rewards recipient
     address public rewardsRecipient;
 
@@ -65,10 +68,12 @@ abstract contract BaseFactory is Trust {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
     ) Trust(msg.sender) {
         divider = _divider;
+        admin = _admin;
         rewardsRecipient = _rewardsRecipient;
         factoryParams = _factoryParams;
     }
@@ -111,6 +116,11 @@ abstract contract BaseFactory is Trust {
         }
     }
 
+    function setAdmin(address _admin) external requiresTrust {
+        admin = _admin;
+        emit AdminChanged(admin);
+    }
+
     /// Set factory rewards recipient
     /// @notice all future deployed adapters will have the new rewards recipient
     /// @dev existing adapters rewards recipients will not be changed and can be
@@ -118,11 +128,6 @@ abstract contract BaseFactory is Trust {
     function setRewardsRecipient(address _recipient) external requiresTrust {
         emit RewardsRecipientChanged(rewardsRecipient, _recipient);
         rewardsRecipient = _recipient;
-    }
-
-    /// Set an adapter's rewards recipient
-    function setAdapterRewardsRecipient(address adapter, address recipient) external requiresTrust {
-        BaseAdapter(adapter).setRewardsRecipient(recipient);
     }
 
     /* ========== LOGS ========== */

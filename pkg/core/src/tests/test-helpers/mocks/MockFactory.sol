@@ -28,9 +28,10 @@ contract MockFactory is BaseFactory {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams
-    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -66,6 +67,8 @@ contract MockFactory is BaseFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(admin, true);
     }
 }
 
@@ -76,10 +79,11 @@ contract MockCropFactory is CropFactory {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -116,6 +120,8 @@ contract MockCropFactory is CropFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(admin, true);
     }
 }
 
@@ -127,10 +133,11 @@ contract MockCropsFactory is BaseFactory {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address[] memory _rewardTokens
-    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {
+    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {
         rewardTokens = _rewardTokens;
     }
 
@@ -169,6 +176,8 @@ contract MockCropsFactory is BaseFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(admin, true);
     }
 }
 
@@ -182,10 +191,11 @@ contract Mock4626CropFactory is CropFactory {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -220,6 +230,8 @@ contract Mock4626CropFactory is CropFactory {
                 reward
             )
         );
+
+        BaseAdapter(adapter).setIsTrusted(admin, true);
     }
 }
 
@@ -231,10 +243,11 @@ contract Mock4626CropsFactory is BaseFactory {
 
     constructor(
         address _divider,
+        address _admin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address[] memory _rewardTokens
-    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {
+    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {
         rewardTokens = _rewardTokens;
     }
 
@@ -273,5 +286,7 @@ contract Mock4626CropsFactory is BaseFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(admin, true);
     }
 }

@@ -186,11 +186,23 @@ contract PeripheryTest is TestHelper {
         address cropFactory;
         if (is4626Target) {
             cropFactory = address(
-                new Mock4626CropFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, address(reward))
+                new Mock4626CropFactory(
+                    address(divider),
+                    Constants.ADMIN,
+                    Constants.REWARDS_RECIPIENT,
+                    factoryParams,
+                    address(reward)
+                )
             );
         } else {
             cropFactory = address(
-                new MockCropFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, address(reward))
+                new MockCropFactory(
+                    address(divider),
+                    Constants.ADMIN,
+                    Constants.REWARDS_RECIPIENT,
+                    factoryParams,
+                    address(reward)
+                )
             );
         }
         divider.setIsTrusted(cropFactory, true);
