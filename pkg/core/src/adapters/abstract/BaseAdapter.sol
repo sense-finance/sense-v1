@@ -161,7 +161,7 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
 
     /// @notice Transfers reward tokens from the adapter to Sense's reward container
     /// @dev If adapter is either Crop or Crops, we check token is not any of the reward tokens
-    function extractToken(address token) external virtual {
+    function extractToken(address token) external {
         if (adapterParams.rType == 1) {
             if (token == Crop(address(this)).reward()) revert Errors.TokenNotSupported();
         } else if (adapterParams.rType == 2) {
