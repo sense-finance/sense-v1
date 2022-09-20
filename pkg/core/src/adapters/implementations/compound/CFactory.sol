@@ -65,6 +65,6 @@ contract CFactory is CropFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }

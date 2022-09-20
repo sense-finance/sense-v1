@@ -165,7 +165,7 @@ contract Adapters is TestHelper {
         hevm.expectEmit(true, true, true, true);
         emit RewardsRecipientChanged(address(0x111));
 
-        hevm.prank(Constants.ADMIN);
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setRewardsRecipient(address(0x111));
         assertEq(adapter.rewardsRecipient(), address(0x111));
 

@@ -88,6 +88,6 @@ contract FFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }

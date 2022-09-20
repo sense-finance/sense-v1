@@ -1183,7 +1183,7 @@ contract CropAdapters is TestHelper {
         assertEq(adapter.claimer(), address(1));
 
         // Can be changed by admin
-        hevm.prank(Constants.ADMIN);
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setClaimer(address(2));
         assertEq(adapter.claimer(), address(2));
     }
@@ -1196,7 +1196,7 @@ contract CropAdapters is TestHelper {
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
         MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
-        hevm.prank(Constants.ADMIN);
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setClaimer(address(claimer));
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
@@ -1224,7 +1224,7 @@ contract CropAdapters is TestHelper {
         MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
         claimer.setTransfer(false); // make claimer not to return the target back to adapter
 
-        hevm.prank(Constants.ADMIN);
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setClaimer(address(claimer));
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);

@@ -61,7 +61,7 @@ contract ERC4626CropFactory is CropFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 
     /// @notice (Un)support target

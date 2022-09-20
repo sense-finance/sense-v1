@@ -40,7 +40,7 @@ contract ERC4626FactoryTest is TestHelper {
         });
         ERC4626Factory someFactory = new ERC4626Factory(
             address(divider),
-            Constants.ADMIN,
+            Constants.ADAPTER_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
@@ -258,7 +258,7 @@ contract ERC4626FactoryTest is TestHelper {
         adapter.setRewardToken(address(0x111));
 
         // Set reward token
-        hevm.prank(Constants.ADMIN);
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setRewardToken(address(0x111));
         assertEq(adapter.reward(), address(0x111));
     }

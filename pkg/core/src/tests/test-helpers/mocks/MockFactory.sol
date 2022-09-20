@@ -68,7 +68,7 @@ contract MockFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }
 
@@ -121,7 +121,7 @@ contract MockCropFactory is CropFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }
 
@@ -177,7 +177,7 @@ contract MockCropsFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }
 
@@ -231,7 +231,7 @@ contract Mock4626CropFactory is CropFactory {
             )
         );
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }
 
@@ -287,6 +287,6 @@ contract Mock4626CropsFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(admin, true);
+        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
     }
 }

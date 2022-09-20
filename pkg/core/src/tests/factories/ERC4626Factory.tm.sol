@@ -75,13 +75,13 @@ contract ERC4626TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new ERC4626Factory(address(divider), Constants.ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
+        factory = new ERC4626Factory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         factory.supportTarget(AddressBook.IMUSD, true);
 
         cropsFactory = new ERC4626CropsFactory(
             address(divider),
-            Constants.ADMIN,
+            Constants.ADAPTER_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
@@ -107,7 +107,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         });
         ERC4626Factory otherFactory = new ERC4626Factory(
             address(divider),
-            Constants.ADMIN,
+            Constants.ADAPTER_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
