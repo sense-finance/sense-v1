@@ -13,6 +13,7 @@ import { FixedMath } from "../../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
+/// @notice This is meant to be used with BaseAdapter.sol
 abstract contract Crops is Trust {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
@@ -37,7 +38,6 @@ abstract contract Crops is Trust {
     }
 
     constructor(address _divider, address[] memory _rewardTokens) {
-        setIsTrusted(msg.sender, true);
         setIsTrusted(_divider, true);
         rewardTokens = _rewardTokens;
     }
