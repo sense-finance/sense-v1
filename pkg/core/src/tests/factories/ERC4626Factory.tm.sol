@@ -75,7 +75,12 @@ contract ERC4626TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new ERC4626Factory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
+        factory = new ERC4626Factory(
+            address(divider),
+            Constants.ADAPTER_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         factory.supportTarget(AddressBook.IMUSD, true);
 

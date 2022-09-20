@@ -124,7 +124,7 @@ abstract contract BaseFactory is Trust {
     /// Set factory rewards recipient
     /// @notice all future deployed adapters will have the new rewards recipient
     /// @dev existing adapters rewards recipients will not be changed and can be
-    /// done through `setAdapterRewardsRecipient`
+    /// done through `setRewardsRecipient` on each adapter contract
     function setRewardsRecipient(address _recipient) external requiresTrust {
         emit RewardsRecipientChanged(rewardsRecipient, _recipient);
         rewardsRecipient = _recipient;

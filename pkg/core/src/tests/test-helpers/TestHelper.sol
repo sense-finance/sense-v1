@@ -366,7 +366,12 @@ contract TestHelper is DSTest {
             guard: DEFAULT_GUARD
         });
         someFactory = address(
-            new ERC4626CropsFactory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+            new ERC4626CropsFactory(
+                address(divider),
+                Constants.ADAPTER_ADMIN,
+                Constants.REWARDS_RECIPIENT,
+                factoryParams
+            )
         );
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
@@ -388,7 +393,12 @@ contract TestHelper is DSTest {
         });
         if (is4626Target) {
             someFactory = address(
-                new ERC4626Factory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+                new ERC4626Factory(
+                    address(divider),
+                    Constants.ADAPTER_ADMIN,
+                    Constants.REWARDS_RECIPIENT,
+                    factoryParams
+                )
             );
         } else {
             someFactory = address(
