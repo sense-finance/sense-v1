@@ -19,6 +19,7 @@ import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract ERC4626TestHelper is DSTest {
     uint256 public mainnetFork;
@@ -31,7 +32,7 @@ contract ERC4626TestHelper is DSTest {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    uint16 public constant MODE = 0;
+    uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
@@ -71,14 +72,15 @@ contract ERC4626TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.NON_CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new ERC4626Factory(address(divider), factoryParams);
+        factory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         factory.supportTarget(AddressBook.IMUSD, true);
 
-        cropsFactory = new ERC4626CropsFactory(address(divider), factoryParams);
+        cropsFactory = new ERC4626CropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
         divider.setIsTrusted(address(cropsFactory), true); // add factory as a ward
         cropsFactory.supportTarget(AddressBook.IMUSD, true);
     }
@@ -96,10 +98,11 @@ contract ERC4626Factories is ERC4626TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.NON_CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        ERC4626Factory otherFactory = new ERC4626Factory(address(divider), factoryParams);
+        ERC4626Factory otherFactory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
 
         assertTrue(address(otherFactory) != address(0));
         (
@@ -109,7 +112,8 @@ contract ERC4626Factories is ERC4626TestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint16 mode,
+            uint8 mode,
+            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = ERC4626Factory(otherFactory).factoryParams();
@@ -121,6 +125,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
+        assertEq(rType, Constants.NON_CROP);
         assertEq(oracle, address(masterOracle));
         assertEq(tilt, 0);
         assertEq(guard, DEFAULT_GUARD);

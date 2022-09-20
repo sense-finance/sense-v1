@@ -93,6 +93,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             minm: 0, // 0 minm, so there's not lower bound on future maturity
             maxm: type(uint64).max, // large maxm, so there's not upper bound on future maturity
             mode: 0, // monthly maturities
+            rType: Constants.CROP, // reward type
             tilt: 0,
             level: Constants.DEFAULT_LEVEL
         });
@@ -100,6 +101,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             address(divider),
             address(mockTarget),
             mockTarget.underlying(),
+            Constants.REWARDS_RECIPIENT,
             IFEE_FOR_YT_SWAPS,
             mockAdapterParams,
             address(new MockToken("Reward", "R", 18))
@@ -115,12 +117,15 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             minm: Constants.DEFAULT_MIN_MATURITY,
             maxm: Constants.DEFAULT_MAX_MATURITY,
             mode: Constants.DEFAULT_MODE,
+            rType: Constants.CROP,
             tilt: Constants.DEFAULT_TILT,
             guard: Constants.DEFAULT_GUARD
         });
 
-        cfactory = new CFactory(divider, factoryParams, AddressBook.COMP);
-        ffactory = new FFactory(divider, factoryParams);
+        cfactory = new CFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
+
+        factoryParams.rType = Constants.CROPS;
+        ffactory = new FFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams);
 
         periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);
 

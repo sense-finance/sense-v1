@@ -18,6 +18,7 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
@@ -34,10 +35,11 @@ contract ERC4626FactoryTest is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.NON_CROP,
             tilt: 0,
             guard: 123e18
         });
-        ERC4626Factory someFactory = new ERC4626Factory(address(divider), factoryParams);
+        ERC4626Factory someFactory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
 
         assertTrue(address(someFactory) != address(0));
         assertEq(ERC4626Factory(someFactory).divider(), address(divider));
@@ -48,7 +50,8 @@ contract ERC4626FactoryTest is TestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint16 mode,
+            uint8 mode,
+            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = ERC4626Factory(someFactory).factoryParams();
@@ -60,6 +63,7 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
+        assertEq(rType, Constants.NON_CROP);
         assertEq(tilt, 0);
         assertEq(guard, 123e18);
     }
@@ -75,7 +79,7 @@ contract ERC4626FactoryTest is TestHelper {
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = MockAdapter(adapter)
             .adapterParams();
         assertEq(MockAdapter(adapter).divider(), address(divider));
         assertEq(MockAdapter(adapter).target(), address(someTarget));
@@ -88,6 +92,7 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
+        assertEq(MockAdapter(adapter).rType(), MODE);
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
     }
@@ -107,8 +112,10 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
+            .adapterParams();
         assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.target(), address(someTarget));
         assertEq(adapter.name(), "Some Target Adapter");
         assertEq(adapter.symbol(), "ST-adapter");
@@ -119,6 +126,7 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(adapter.mode(), MODE);
+        assertEq(adapter.rType(), Constants.CROP);
         assertEq(adapter.reward(), address(someReward));
         uint256 scale = adapter.scale();
         assertEq(scale, 1e18);
@@ -143,8 +151,10 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
+            .adapterParams();
         assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.target(), address(someTarget));
         assertEq(adapter.name(), "Some Target Adapter");
         assertEq(adapter.symbol(), "ST-adapter");
@@ -155,6 +165,7 @@ contract ERC4626FactoryTest is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(adapter.mode(), MODE);
+        assertEq(adapter.rType(), Constants.CROPS);
         assertEq(adapter.rewardTokens(0), address(someReward));
         assertEq(adapter.rewardTokens(1), address(someReward2));
         uint256 scale = adapter.scale();
@@ -278,11 +289,12 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
-        adapter.isTrusted(address(someFactory));
-        adapter.isTrusted(address(divider));
-        adapter.isTrusted(address(this));
+        // Can not set reward token via factory if not trusted
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x111));
+        someFactory.setRewardToken(address(adapter), address(someReward));
 
-        // Set reward token
+        // Set reward token via factory
         someFactory.setRewardToken(address(adapter), address(someReward));
         assertEq(adapter.reward(), address(someReward));
     }

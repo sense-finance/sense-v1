@@ -95,10 +95,11 @@ contract NoopPoolManagerTest is DSTest {
             minm: 2 weeks,
             maxm: 14 weeks,
             mode: 0,
+            rType: Constants.NON_CROP,
             tilt: 0,
             guard: 1e18
         });
-        mockFactory = new MockFactory(address(divider), factoryParams);
+        mockFactory = new MockFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
 
         // Ping scale to set an lscale
         mockAdapter.scale();

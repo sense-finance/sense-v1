@@ -52,9 +52,10 @@ contract WstETHAdapter is BaseAdapter {
     constructor(
         address _divider,
         address _target,
+        address _rewardsRecipient,
         uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, STETH, _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, STETH, _rewardsRecipient, _ifee, _adapterParams) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).approve(WSTETH, type(uint256).max);
         // set an inital cached scale value

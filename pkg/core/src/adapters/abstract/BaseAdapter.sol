@@ -9,10 +9,13 @@ import { IERC3156FlashBorrower } from "../../external/flashloan/IERC3156FlashBor
 
 // Internal references
 import { Divider } from "../../Divider.sol";
+import { Crop } from "./extensions/Crop.sol";
+import { Crops } from "./extensions/Crops.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 /// @title Assign value to Target tokens
-abstract contract BaseAdapter is IERC3156FlashLender {
+abstract contract BaseAdapter is Trust, IERC3156FlashLender {
     using SafeTransferLib for ERC20;
 
     /* ========== CONSTANTS ========== */
@@ -32,6 +35,9 @@ abstract contract BaseAdapter is IERC3156FlashLender {
 
     /// @notice Issuance fee
     uint128 public immutable ifee;
+
+    /// @notice Rewards recipient
+    address public rewardsRecipient;
 
     /// @notice adapter params
     AdapterParams public adapterParams;
@@ -58,7 +64,9 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
         uint48 level;
         /// @notice 0 for monthly, 1 for weekly
-        uint16 mode;
+        uint8 mode;
+        /// @notice Reward type: 0 for non-crop, 1 for crop and 2 for crops
+        uint8 rType;
     }
 
     /* ========== METADATA STORAGE ========== */
@@ -71,12 +79,14 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) {
+    ) Trust(msg.sender) {
         divider = _divider;
         target = _target;
         underlying = _underlying;
+        rewardsRecipient = _rewardsRecipient;
         ifee = _ifee;
         adapterParams = _adapterParams;
 
@@ -144,6 +154,36 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         return ERC20(token).balanceOf(address(this));
     }
 
+    function setRewardsRecipient(address recipient) external requiresTrust {
+        rewardsRecipient = recipient;
+        emit RewardsRecipientChanged(rewardsRecipient);
+    }
+
+    /// @notice Transfers reward tokens from the adapter to Sense's reward container
+    /// @dev If adapter is either Crop or Crops, we check token is not any of the reward tokens
+    function extractToken(address token) external virtual {
+        if (adapterParams.rType == 1) {
+            if (token == Crop(address(this)).reward()) revert Errors.TokenNotSupported();
+        } else if (adapterParams.rType == 2) {
+            bool keepGoing = true;
+            uint256 i = 0;
+            Crops adapter = Crops(address(this));
+            while (keepGoing) {
+                try adapter.rewardTokens(i) returns (address rewardToken) {
+                    if (token == rewardToken) revert Errors.TokenNotSupported();
+                } catch {
+                    keepGoing = false;
+                }
+            }
+        }
+
+        // Check that token is neither the target nor the stake
+        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
+        emit RewardsClaimed(token, rewardsRecipient);
+    }
+
     /* ========== OPTIONAL HOOKS ========== */
 
     /// @notice Notification whenever the Divider adds or removes Target
@@ -187,6 +227,10 @@ abstract contract BaseAdapter is IERC3156FlashLender {
         return adapterParams.mode;
     }
 
+    function rType() external view returns (uint256) {
+        return adapterParams.rType;
+    }
+
     function tilt() external view returns (uint256) {
         return adapterParams.tilt;
     }
@@ -194,4 +238,9 @@ abstract contract BaseAdapter is IERC3156FlashLender {
     function level() external view returns (uint256) {
         return adapterParams.level;
     }
+
+    /* ========== LOGS ========== */
+
+    event RewardsRecipientChanged(address indexed recipient);
+    event RewardsClaimed(address indexed token, address indexed recipient);
 }

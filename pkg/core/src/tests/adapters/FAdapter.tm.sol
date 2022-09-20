@@ -16,6 +16,7 @@ import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 interface RewardsDistributorLike {
     function accrue(ERC20 market, address user) external returns (uint256);
@@ -35,7 +36,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
     uint16 public constant DEFAULT_LEVEL = 31;
     uint256 public constant INITIAL_BALANCE = 1.25e18;
 
-    uint16 public constant MODE = 0;
+    uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
@@ -76,6 +77,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
+            rType: Constants.CROPS,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -83,6 +85,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             target,
             underlying,
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             AddressBook.OLYMPUS_POOL_PARTY,
             adapterParams,
@@ -96,6 +99,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             target,
             underlying,
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             AddressBook.OLYMPUS_POOL_PARTY,
             adapterParams,
@@ -110,6 +114,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             target,
             underlying,
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             AddressBook.OLYMPUS_POOL_PARTY,
             adapterParams,
@@ -123,6 +128,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             target,
             underlying,
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             AddressBook.TRIBE_CONVEX,
             adapterParams,
@@ -146,6 +152,7 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             target,
             underlying,
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             AddressBook.TRIBE_CONVEX,
             adapterParams,

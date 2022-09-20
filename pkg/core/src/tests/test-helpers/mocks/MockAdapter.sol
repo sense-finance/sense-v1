@@ -37,9 +37,10 @@ contract MockAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
@@ -145,10 +146,11 @@ contract MockCropAdapter is BaseAdapter, Crop {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
@@ -266,10 +268,14 @@ contract MockCropsAdapter is BaseAdapter, Crops {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) Crops(_divider, _rewardTokens) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    )
+        Crops(_divider, _rewardTokens)
+        BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams)
+    {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
@@ -373,9 +379,10 @@ contract Mock4626Adapter is ERC4626Adapter {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) {}
+    ) ERC4626Adapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) {}
 
     function lscale() external returns (uint256, uint256) {
         return (0, ERC4626(target).convertToAssets(BASE_UINT));
@@ -413,10 +420,11 @@ contract Mock4626CropAdapter is ERC4626Adapter, Crop {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crop(_divider, _reward) {}
+    ) ERC4626Adapter(_divider, _target, rewardsRecipient, _ifee, _adapterParams) Crop(_divider, _reward) {}
 
     function notify(
         address _usr,
@@ -463,10 +471,11 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crops(_divider, _rewardTokens) {
+    ) ERC4626Adapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) Crops(_divider, _rewardTokens) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
@@ -508,9 +517,10 @@ contract MockBaseAdapter is BaseAdapter {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {}
+    ) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;

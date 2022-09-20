@@ -36,7 +36,8 @@ abstract contract Crops is Trust {
         mapping(address => uint256) rewarded;
     }
 
-    constructor(address _divider, address[] memory _rewardTokens) Trust(msg.sender) {
+    constructor(address _divider, address[] memory _rewardTokens) {
+        setIsTrusted(msg.sender, true);
         setIsTrusted(_divider, true);
         rewardTokens = _rewardTokens;
     }

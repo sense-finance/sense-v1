@@ -96,10 +96,11 @@ contract CAdapter is BaseAdapter, Crop {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
         isCETH = _target == CETH;
         ERC20(_underlying).safeApprove(_target, type(uint256).max);
         uDecimals = CTokenLike(_underlying).decimals();

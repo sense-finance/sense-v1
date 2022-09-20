@@ -18,6 +18,7 @@ import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 interface PriceOracleLike {
     function latestRoundData()
@@ -64,7 +65,7 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
     uint48 public constant DEFAULT_LEVEL = 31;
-    uint16 public constant DEFAULT_MODE = 0;
+    uint8 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_TILT = 0;
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
@@ -84,10 +85,17 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: DEFAULT_MODE,
+            rType: Constants.NON_CROP,
             tilt: DEFAULT_TILT,
             level: DEFAULT_LEVEL
         });
-        adapter = new WstETHAdapter(address(divider), AddressBook.WSTETH, ISSUANCE_FEE, adapterParams); // wstETH adapter
+        adapter = new WstETHAdapter(
+            address(divider),
+            AddressBook.WSTETH,
+            Constants.REWARDS_RECIPIENT,
+            ISSUANCE_FEE,
+            adapterParams
+        ); // wstETH adapter
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {

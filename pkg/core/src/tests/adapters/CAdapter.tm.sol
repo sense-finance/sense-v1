@@ -15,6 +15,7 @@ import { DSTest } from "../test-helpers/test.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 interface ComptrollerLike {
     function updateContributorRewards(address contributor) external;
@@ -39,7 +40,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant ONE_CTOKEN = 1e8;
     uint16 public constant DEFAULT_LEVEL = 31;
 
-    uint16 public constant MODE = 0;
+    uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
@@ -70,10 +71,19 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
+            rType: Constants.CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        cDaiAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, AddressBook.COMP); // Compound adapter
+        cDaiAdapter = new CAdapter(
+            address(divider),
+            target,
+            underlying,
+            Constants.REWARDS_RECIPIENT,
+            ISSUANCE_FEE,
+            adapterParams,
+            AddressBook.COMP
+        ); // Compound adapter
 
         // Create a CAdapter for an underlying token (USDC) with a non-standard number of decimals
         target = AddressBook.cUSDC;
@@ -82,6 +92,7 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             address(divider),
             target,
             underlying,
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams,
             AddressBook.COMP
@@ -90,7 +101,15 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
         target = AddressBook.cETH;
         underlying = AddressBook.WETH;
         adapterParams.minm = 0;
-        cEthAdapter = new CAdapter(address(divider), target, underlying, ISSUANCE_FEE, adapterParams, AddressBook.COMP); // Compound adapter
+        cEthAdapter = new CAdapter(
+            address(divider),
+            target,
+            underlying,
+            Constants.REWARDS_RECIPIENT,
+            ISSUANCE_FEE,
+            adapterParams,
+            AddressBook.COMP
+        ); // Compound adapter
     }
 }
 

@@ -17,7 +17,7 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 
 contract MockRevertAdapter is MockAdapter {
     constructor(BaseAdapter.AdapterParams memory _adapterParams)
-        MockAdapter(address(0), address(0), address(0), 1, _adapterParams)
+        MockAdapter(address(0), address(0), address(0), address(0), 1, _adapterParams)
     {}
 
     function getUnderlyingPrice() external view virtual override returns (uint256) {
@@ -26,7 +26,7 @@ contract MockRevertAdapter is MockAdapter {
 }
 
 contract MockRevertFactory is MockFactory {
-    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), _factoryParams) {}
+    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), address(0), _factoryParams) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams;
@@ -44,7 +44,7 @@ contract Mock2e18Adapter is MockCropAdapter {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) MockCropAdapter(_divider, _target, _underlying, _ifee, _adapterParams, _reward) {
+    ) MockCropAdapter(_divider, _target, _underlying, Constants.REWARDS_RECIPIENT, _ifee, _adapterParams, _reward) {
         INITIAL_VALUE = 2e18;
     }
 }
@@ -54,9 +54,10 @@ contract Mock2e18Factory is MockCropFactory {
 
     constructor(
         address _divider,
+        address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) MockCropFactory(_divider, _factoryParams, _reward) {}
+    ) MockCropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -66,6 +67,7 @@ contract Mock2e18Factory is MockCropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: Constants.CROP,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -95,12 +97,18 @@ contract Factories is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.CROP,
             tilt: 0,
             guard: 123e18
         });
-        MockCropFactory someFactory = new MockCropFactory(address(divider), factoryParams, address(reward));
+        MockCropFactory someFactory = new MockCropFactory(
+            address(divider),
+            Constants.REWARDS_RECIPIENT,
+            factoryParams,
+            address(reward)
+        );
 
-        assertTrue(address(someFactory) != address(0));
+        assertEq(someFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(someFactory.divider(), address(divider));
         (
             address oracle,
@@ -109,7 +117,8 @@ contract Factories is TestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint16 mode,
+            uint8 mode,
+            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = someFactory.factoryParams();
@@ -121,6 +130,7 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
+        assertEq(rType, Constants.CROP);
         assertEq(tilt, 0);
         assertEq(guard, 123e18);
         assertEq(someFactory.reward(), address(reward));
@@ -152,10 +162,16 @@ contract Factories is TestHelper {
                 minm: MIN_MATURITY,
                 maxm: MAX_MATURITY,
                 mode: MODE,
+                rType: Constants.CROP,
                 tilt: 0,
                 guard: DEFAULT_GUARD
             });
-            someFactory = new Mock2e18Factory(address(divider), factoryParams, address(someReward));
+            someFactory = new Mock2e18Factory(
+                address(divider),
+                Constants.REWARDS_RECIPIENT,
+                factoryParams,
+                address(someReward)
+            );
             someFactory.supportTarget(address(someTarget), true);
             divider.setIsTrusted(address(someFactory), true);
             periphery.setFactory(address(someFactory), true);
@@ -168,8 +184,10 @@ contract Factories is TestHelper {
         );
         assertTrue(address(adapter) != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
+            .adapterParams();
         assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.target(), address(someTarget));
         assertEq(adapter.name(), "Some Target Adapter");
         assertEq(adapter.symbol(), "ST-adapter");
@@ -180,6 +198,8 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(adapter.mode(), MODE);
+        assertEq(adapter.rType(), Constants.CROP);
+
         if (is4626Target) {
             assertEq(ERC4626CropAdapter(address(adapter)).reward(), address(someReward));
         } else {
@@ -242,7 +262,7 @@ contract Factories is TestHelper {
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = MockAdapter(adapter)
             .adapterParams();
         assertEq(MockAdapter(adapter).divider(), address(divider));
         assertEq(MockAdapter(adapter).target(), address(someTarget));
@@ -255,6 +275,7 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
+        assertEq(MockAdapter(adapter).rType(), Constants.NON_CROP);
 
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
@@ -296,4 +317,25 @@ contract Factories is TestHelper {
         hevm.prank(address(periphery));
         factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
+
+    function testSetRewardsRecipient() public {
+        assertEq(factory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
+
+        // Can not set rewards recipient if not trusted
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x123));
+        factory.setRewardsRecipient(address(0x111));
+
+        // Can set rewards recipient
+        hevm.expectEmit(true, true, true, true);
+        emit RewardsRecipientChanged(address(0x111));
+
+        factory.setRewardsRecipient(address(0x111));
+        assertEq(factory.rewardsRecipient(), address(0x111));
+    }
+
+    /* ========== LOGS ========== */
+
+    event AdminChanged(address indexed adapter);
+    event RewardsRecipientChanged(address indexed recipient);
 }

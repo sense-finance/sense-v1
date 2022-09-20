@@ -13,6 +13,7 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract FAdapterTestHelper is DSTest {
     FFactory internal factory;
@@ -20,7 +21,7 @@ contract FAdapterTestHelper is DSTest {
     TokenHandler internal tokenHandler;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    uint16 public constant MODE = 0;
+    uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
@@ -44,10 +45,11 @@ contract FAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.CROPS,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new FFactory(address(divider), factoryParams);
+        factory = new FFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -62,10 +64,11 @@ contract FFactories is FAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.CROPS,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        FFactory otherFFactory = new FFactory(address(divider), factoryParams);
+        FFactory otherFFactory = new FFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
 
         assertTrue(address(otherFFactory) != address(0));
         (
@@ -75,7 +78,8 @@ contract FFactories is FAdapterTestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint16 mode,
+            uint8 mode,
+            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = FFactory(otherFFactory).factoryParams();
@@ -87,6 +91,7 @@ contract FFactories is FAdapterTestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
+        assertEq(rType, Constants.CROPS);
         assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
         assertEq(guard, DEFAULT_GUARD);
@@ -135,8 +140,8 @@ contract FFactories is FAdapterTestHelper {
 
     function testMainnetSetRewardsTokens() public {
         divider.setPeriphery(address(this));
-        address f = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
-        FAdapter adapter = FAdapter(payable(f));
+        address a = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
+        FAdapter adapter = FAdapter(payable(a));
 
         address[] memory rewardTokens = new address[](5);
         rewardTokens[0] = AddressBook.LDO;
@@ -152,7 +157,7 @@ contract FFactories is FAdapterTestHelper {
         hevm.expectEmit(true, false, false, false);
         emit RewardsDistributorsChanged(rewardsDistributors);
 
-        factory.setRewardTokens(f, rewardTokens, rewardsDistributors);
+        factory.setRewardTokens(a, rewardTokens, rewardsDistributors);
 
         assertEq(adapter.rewardTokens(0), AddressBook.LDO);
         assertEq(adapter.rewardTokens(1), AddressBook.FXS);
@@ -163,11 +168,13 @@ contract FFactories is FAdapterTestHelper {
     function testFuzzMainnetCantSetRewardsTokens(address lad) public {
         if (lad == address(this)) return;
         hevm.prank(divider.periphery());
-        address f = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
+        address adapter = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
+
         address[] memory rewardTokens = new address[](2);
         address[] memory rewardsDistributors = new address[](2);
+
         hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x1234567890123456789012345678901234567890));
+        hevm.prank(address(0x111));
         factory.setRewardTokens(rewardTokens, rewardsDistributors);
     }
 }

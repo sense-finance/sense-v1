@@ -10,10 +10,11 @@ contract ERC4626CropsAdapter is ERC4626Adapter, Crops {
     constructor(
         address _divider,
         address _target,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens
-    ) ERC4626Adapter(_divider, _target, _ifee, _adapterParams) Crops(_divider, _rewardTokens) {}
+    ) ERC4626Adapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) Crops(_divider, _rewardTokens) {}
 
     function notify(
         address _usr,

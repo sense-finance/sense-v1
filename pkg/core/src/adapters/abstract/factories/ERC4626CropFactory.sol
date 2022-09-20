@@ -18,9 +18,10 @@ contract ERC4626CropFactory is CropFactory {
 
     constructor(
         address _divider,
+        address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _factoryParams, address(0)) {}
+    ) CropFactory(_divider, _rewardsRecipient, _factoryParams, address(0)) {}
 
     /// @notice Deploys an ERC4626Adapter contract
     /// @param _target The target address
@@ -39,6 +40,7 @@ contract ERC4626CropFactory is CropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: factoryParams.rType,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -50,6 +52,7 @@ contract ERC4626CropFactory is CropFactory {
             new ERC4626CropAdapter{ salt: _target.fillLast12Bytes() }(
                 divider,
                 _target,
+                rewardsRecipient,
                 factoryParams.ifee,
                 adapterParams,
                 reward

@@ -6,6 +6,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Divider } from "../../../Divider.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
+import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 interface ERC20 {
     function decimals() external view returns (uint256 decimals);
@@ -26,7 +27,7 @@ interface ChainlinkOracleLike {
     function decimals() external view returns (uint256 decimals);
 }
 
-abstract contract BaseFactory {
+abstract contract BaseFactory is Trust {
     using FixedMath for uint256;
 
     /* ========== CONSTANTS ========== */
@@ -42,6 +43,9 @@ abstract contract BaseFactory {
     /// @notice Sense core Divider address
     address public immutable divider;
 
+    /// @notice Rewards recipient
+    address public rewardsRecipient;
+
     /// @notice params for adapters deployed with this factory
     FactoryParams public factoryParams;
 
@@ -54,13 +58,19 @@ abstract contract BaseFactory {
         uint256 minm; // min maturity (seconds after block.timstamp)
         uint256 maxm; // max maturity (seconds after block.timstamp)
         uint128 ifee; // issuance fee
-        uint16 mode; // 0 for monthly, 1 for weekly
+        uint8 mode; // 0 for monthly, 1 for weekly
+        uint8 rType; // 0 for non-crop, 1 for crop, 2 for crops
         uint64 tilt; // tilt
         uint256 guard; // adapter guard (in usd, 18 decimals)
     }
 
-    constructor(address _divider, FactoryParams memory _factoryParams) {
+    constructor(
+        address _divider,
+        address _rewardsRecipient,
+        FactoryParams memory _factoryParams
+    ) Trust(msg.sender) {
         divider = _divider;
+        rewardsRecipient = _rewardsRecipient;
         factoryParams = _factoryParams;
     }
 
@@ -101,4 +111,23 @@ abstract contract BaseFactory {
             } catch {}
         }
     }
+
+    /// Set factory rewards recipient
+    /// @notice all future deployed adapters will have the new rewards recipient
+    /// @dev existing adapters rewards recipients will not be changed and can be
+    /// done through `setAdapterRewardsRecipient`
+    function setRewardsRecipient(address _recipient) external requiresTrust {
+        rewardsRecipient = _recipient;
+        emit RewardsRecipientChanged(rewardsRecipient);
+    }
+
+    /// Set an adapter's rewards recipient
+    function setAdapterRewardsRecipient(address adapter, address recipient) external requiresTrust {
+        BaseAdapter(adapter).setRewardsRecipient(recipient);
+    }
+
+    /* ========== LOGS ========== */
+
+    event AdminChanged(address indexed adapter);
+    event RewardsRecipientChanged(address indexed recipient);
 }

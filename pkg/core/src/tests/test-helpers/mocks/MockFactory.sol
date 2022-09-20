@@ -3,7 +3,6 @@ pragma solidity 0.8.11;
 
 // Internal references
 import { BaseFactory } from "../../../adapters/abstract/factories/BaseFactory.sol";
-import { CropsFactory } from "../../../adapters/abstract/factories/CropsFactory.sol";
 import { CropFactory } from "../../../adapters/abstract/factories/CropFactory.sol";
 import { ERC4626Factory } from "../../../adapters/abstract/factories/ERC4626Factory.sol";
 import { Divider } from "../../../Divider.sol";
@@ -27,7 +26,11 @@ contract MockFactory is BaseFactory {
 
     mapping(address => bool) public targets;
 
-    constructor(address _divider, FactoryParams memory _factoryParams) BaseFactory(_divider, _factoryParams) {}
+    constructor(
+        address _divider,
+        address _rewardsRecipient,
+        BaseFactory.FactoryParams memory _factoryParams
+    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -47,6 +50,7 @@ contract MockFactory is BaseFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: factoryParams.rType,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -56,6 +60,7 @@ contract MockFactory is BaseFactory {
                 divider,
                 _target,
                 MockTargetLike(_target).underlying(),
+                rewardsRecipient,
                 factoryParams.ifee,
                 adapterParams
             )
@@ -72,9 +77,10 @@ contract MockCropFactory is CropFactory {
 
     constructor(
         address _divider,
-        FactoryParams memory _factoryParams,
+        address _rewardsRecipient,
+        BaseFactory.FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -94,6 +100,7 @@ contract MockCropFactory is CropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: factoryParams.rType,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -103,6 +110,7 @@ contract MockCropFactory is CropFactory {
                 divider,
                 _target,
                 MockTargetLike(_target).underlying(),
+                rewardsRecipient,
                 factoryParams.ifee,
                 adapterParams,
                 reward
@@ -113,7 +121,7 @@ contract MockCropFactory is CropFactory {
     }
 }
 
-contract MockCropsFactory is CropsFactory {
+contract MockCropsFactory is BaseFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public targets;
@@ -121,9 +129,10 @@ contract MockCropsFactory is CropsFactory {
 
     constructor(
         address _divider,
-        FactoryParams memory _factoryParams,
+        address _rewardsRecipient,
+        BaseFactory.FactoryParams memory _factoryParams,
         address[] memory _rewardTokens
-    ) CropsFactory(_divider, _factoryParams) {
+    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {
         rewardTokens = _rewardTokens;
     }
 
@@ -145,6 +154,7 @@ contract MockCropsFactory is CropsFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: factoryParams.rType,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -154,6 +164,7 @@ contract MockCropsFactory is CropsFactory {
                 divider,
                 _target,
                 MockTargetLike(_target).underlying(),
+                rewardsRecipient,
                 factoryParams.ifee,
                 adapterParams,
                 rewardTokens
@@ -174,9 +185,10 @@ contract Mock4626CropFactory is CropFactory {
 
     constructor(
         address _divider,
-        FactoryParams memory _factoryParams,
+        address _rewardsRecipient,
+        BaseFactory.FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -196,6 +208,7 @@ contract Mock4626CropFactory is CropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: factoryParams.rType,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -205,6 +218,7 @@ contract Mock4626CropFactory is CropFactory {
                 divider,
                 _target,
                 MockTargetLike(_target).asset(),
+                rewardsRecipient,
                 factoryParams.ifee,
                 adapterParams,
                 reward
@@ -213,7 +227,7 @@ contract Mock4626CropFactory is CropFactory {
     }
 }
 
-contract Mock4626CropsFactory is CropsFactory {
+contract Mock4626CropsFactory is BaseFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public targets;
@@ -221,9 +235,10 @@ contract Mock4626CropsFactory is CropsFactory {
 
     constructor(
         address _divider,
-        FactoryParams memory _factoryParams,
+        address _rewardsRecipient,
+        BaseFactory.FactoryParams memory _factoryParams,
         address[] memory _rewardTokens
-    ) CropsFactory(_divider, _factoryParams) {
+    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {
         rewardTokens = _rewardTokens;
     }
 
@@ -245,6 +260,7 @@ contract Mock4626CropsFactory is CropsFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
+            rType: factoryParams.rType,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -254,6 +270,7 @@ contract Mock4626CropsFactory is CropsFactory {
                 divider,
                 _target,
                 MockTargetLike(_target).asset(),
+                rewardsRecipient,
                 factoryParams.ifee,
                 adapterParams,
                 rewardTokens

@@ -4,16 +4,16 @@ pragma solidity 0.8.11;
 // Internal references
 import { Crop } from "../extensions/Crop.sol";
 import { BaseFactory } from "./BaseFactory.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
-abstract contract CropFactory is Trust, BaseFactory {
+abstract contract CropFactory is BaseFactory {
     address public reward;
 
     constructor(
         address _divider,
+        address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) Trust(msg.sender) BaseFactory(_divider, _factoryParams) {
+    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {
         reward = _reward;
     }
 

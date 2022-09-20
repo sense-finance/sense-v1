@@ -11,12 +11,13 @@ import { ERC4626CropAdapter } from "../../adapters/abstract/erc4626/ERC4626CropA
 import { Divider } from "../../Divider.sol";
 import { YT } from "../../tokens/YT.sol";
 
-import { MockAdapter, MockCropAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { MockCropAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract CropAdapters is TestHelper {
     using FixedMath for uint256;
@@ -44,6 +45,7 @@ contract CropAdapters is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -52,17 +54,20 @@ contract CropAdapters is TestHelper {
             address(divider),
             address(target),
             !is4626Target ? target.underlying() : target.asset(),
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
         );
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
+            .adapterParams();
         assertEq(cropAdapter.reward(), address(reward));
         assertEq(cropAdapter.name(), "Compound Dai Adapter");
         assertEq(cropAdapter.symbol(), "cDAI-adapter");
         assertEq(cropAdapter.target(), address(target));
         assertEq(cropAdapter.underlying(), address(underlying));
         assertEq(cropAdapter.divider(), address(divider));
+        assertEq(cropAdapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(cropAdapter.ifee(), ISSUANCE_FEE);
         assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
@@ -70,6 +75,7 @@ contract CropAdapters is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
         assertEq(cropAdapter.mode(), MODE);
+        assertEq(cropAdapter.rType(), Constants.CROP);
     }
 
     // distribution tests

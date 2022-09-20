@@ -16,6 +16,7 @@ import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract CropsAdapters is TestHelper {
     using FixedMath for uint256;
@@ -63,6 +64,7 @@ contract CropsAdapters is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
+            rType: Constants.CROPS,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -71,12 +73,13 @@ contract CropsAdapters is TestHelper {
             address(divider),
             address(target),
             !is4626Target ? target.underlying() : target.asset(),
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams,
             rewardTokens
         );
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = cropsAdapter
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = cropsAdapter
             .adapterParams();
         assertEq(cropsAdapter.rewardTokens(0), address(reward));
         assertEq(cropsAdapter.rewardTokens(1), address(reward2));
@@ -85,6 +88,7 @@ contract CropsAdapters is TestHelper {
         assertEq(cropsAdapter.target(), address(target));
         assertEq(cropsAdapter.underlying(), address(underlying));
         assertEq(cropsAdapter.divider(), address(divider));
+        assertEq(cropsAdapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(cropsAdapter.ifee(), ISSUANCE_FEE);
         assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
@@ -92,6 +96,7 @@ contract CropsAdapters is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
         assertEq(cropsAdapter.mode(), MODE);
+        assertEq(cropsAdapter.rType(), Constants.CROPS);
     }
 
     // distribution tests

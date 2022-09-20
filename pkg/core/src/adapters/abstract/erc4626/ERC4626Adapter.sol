@@ -25,9 +25,10 @@ contract ERC4626Adapter is BaseAdapter {
     constructor(
         address _divider,
         address _target,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _rewardsRecipient, _ifee, _adapterParams) {
         uint256 tDecimals = ERC4626(target).decimals();
         BASE_UINT = 10**tDecimals;
         SCALE_FACTOR = 10**(18 - tDecimals); // we assume targets decimals <= 18

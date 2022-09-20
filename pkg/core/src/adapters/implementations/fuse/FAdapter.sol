@@ -75,12 +75,16 @@ contract FAdapter is BaseAdapter, Crops {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         address _comptroller,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens,
         address[] memory _rewardsDistributorsList
-    ) Crops(_divider, _rewardTokens) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    )
+        Crops(_divider, _rewardTokens)
+        BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams)
+    {
         rewardTokens = _rewardTokens;
         comptroller = _comptroller;
         isFETH = FTokenLike(_target).isCEther();
