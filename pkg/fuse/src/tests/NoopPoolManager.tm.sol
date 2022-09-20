@@ -21,6 +21,7 @@ import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
+import { Constants } from "@sense-finance/v1-core/src/tests/test-helpers/Constants.sol";
 
 contract NoopPoolManagerTest is DSTest {
     using FixedMath for uint256;
@@ -82,10 +83,18 @@ contract NoopPoolManagerTest is DSTest {
             minm: 2 weeks,
             maxm: 14 weeks,
             mode: 0,
+            rType: Constants.NON_CROP,
             tilt: 0,
             level: 31
         });
-        mockAdapter = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
+        mockAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            Constants.REWARDS_RECIPIENT,
+            0.1e18,
+            adapterParams
+        );
 
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
@@ -157,6 +166,7 @@ contract NoopPoolManagerTest is DSTest {
             address(divider),
             address(target),
             target.underlying(),
+            Constants.REWARDS_RECIPIENT,
             0.1e18,
             adapterParams
         );
@@ -166,6 +176,7 @@ contract NoopPoolManagerTest is DSTest {
             address(divider),
             address(target),
             target.underlying(),
+            Constants.REWARDS_RECIPIENT,
             0.1e18,
             adapterParams
         );
@@ -176,6 +187,7 @@ contract NoopPoolManagerTest is DSTest {
             address(divider),
             address(target),
             target.underlying(),
+            Constants.REWARDS_RECIPIENT,
             0.1e18,
             adapterParams
         );
@@ -192,6 +204,7 @@ contract NoopPoolManagerTest is DSTest {
             address(divider),
             address(target),
             target.underlying(),
+            Constants.REWARDS_RECIPIENT,
             0.1e18,
             adapterParams
         );

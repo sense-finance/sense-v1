@@ -20,6 +20,7 @@ import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks
 import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
+import { Constants } from "@sense-finance/v1-core/src/tests/test-helpers/Constants.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 
@@ -87,10 +88,18 @@ contract PoolManagerTest is DSTest {
             minm: 2 weeks,
             maxm: 14 weeks,
             mode: 0,
+            rType: Constants.NON_CROP,
             tilt: 0,
             level: 31
         });
-        mockAdapter = new MockAdapter(address(divider), address(target), target.underlying(), 0.1e18, adapterParams);
+        mockAdapter = new MockAdapter(
+            address(divider),
+            address(target),
+            target.underlying(),
+            Constants.REWARDS_RECIPIENT,
+            0.1e18,
+            adapterParams
+        );
 
         // Ping scale to set an lscale
         mockAdapter.scale();
