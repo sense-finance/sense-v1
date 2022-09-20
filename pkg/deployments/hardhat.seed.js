@@ -11,8 +11,6 @@ const {
   REWARDS_DISTRIBUTOR_CVX,
   REWARDS_DISTRIBUTOR_CRV,
   CDAI_TOKEN,
-  F18DAI_TOKEN,
-  OLYMPUS_POOL_PARTY,
 } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
@@ -26,6 +24,10 @@ dayjs.locale({
   ...en,
   weekStart: 1,
 });
+
+const NON_CROP = 0;
+const CROP = 1;
+const CROPS = 2;
 
 // -------------------------------------------------------
 //  FOR DEV SCENARIOS
@@ -182,7 +184,6 @@ const DEV_ADAPTERS = [
       uDecimals: 6,
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
-      noncrop: true,
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
@@ -194,6 +195,7 @@ const DEV_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
+      rType: NON_CROP,
       tilt: 0,
       level: 31,
     },
@@ -206,8 +208,6 @@ const DEV_ADAPTERS = [
       uDecimals: 6,
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
-      noncrop: false,
-      crops: false,
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
@@ -219,6 +219,7 @@ const DEV_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
+      rType: CROP,
       tilt: 0,
       level: 31,
     },
@@ -231,8 +232,6 @@ const DEV_ADAPTERS = [
       uDecimals: 6,
       guard: ethers.utils.parseEther("1"),
       series: DEV_SERIES_MATURITIES,
-      noncrop: false,
-      crops: true,
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
@@ -243,6 +242,7 @@ const DEV_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
+      rType: CROPS,
       tilt: 0,
       level: 31,
     },
@@ -258,9 +258,9 @@ const DEV_FACTORIES = [
     maxm: "4838400", // 4 weeks
     ifee: ethers.utils.parseEther("0.01"),
     mode: 1, // 0 monthly, 1 weekly;
+    rType: NON_CROP,
     tilt: 0,
     targets: DEV_TARGETS,
-    noncrop: true,
     is4626Target: false,
     guard: ethers.utils.parseEther("100000"),
   }),
@@ -272,10 +272,9 @@ const DEV_FACTORIES = [
     maxm: "4838400", // 4 weeks
     ifee: ethers.utils.parseEther("0.01"),
     mode: 1, // 0 monthly, 1 weekly;
+    rType: CROP,
     tilt: 0,
     targets: DEV_CROP_TARGETS,
-    noncrop: false,
-    crops: false,
     is4626Target: false,
     guard: ethers.utils.parseEther("100000"),
   }),
@@ -286,11 +285,10 @@ const DEV_FACTORIES = [
     minm: "0", // 2 weeks
     maxm: "4838400", // 4 weeks
     mode: 1, // 0 monthly, 1 weekly;
+    rType: CROPS,
     oracle: ethers.constants.AddressZero, // oracle address
     tilt: 0,
     targets: DEV_CROPS_TARGETS,
-    noncrop: false,
-    crops: true,
     is4626Target: false,
     guard: ethers.utils.parseEther("100000"),
   }),
@@ -302,9 +300,9 @@ const DEV_FACTORIES = [
     maxm: "4838400", // 4 weeks
     ifee: ethers.utils.parseEther("0.01"),
     mode: 1, // 0 monthly, 1 weekly;
+    rType: CROP,
     tilt: 0,
     targets: DEV_4626_TARGETS,
-    crops: false,
     is4626Target: true,
     guard: ethers.utils.parseEther("100000"),
   }),
@@ -315,10 +313,10 @@ const DEV_FACTORIES = [
     minm: "0", // 2 weeks
     maxm: "4838400", // 4 weeks
     mode: 1, // 0 monthly, 1 weekly;
+    rType: CROPS,
     oracle: ethers.constants.AddressZero, // oracle address
     tilt: 0,
     targets: DEV_4626_CROPS_TARGETS,
-    crops: true,
     is4626Target: true,
     guard: ethers.utils.parseEther("100000"),
   }),
@@ -339,15 +337,15 @@ const CTARGETS = chainId => [
   },
 ];
 
-const FTARGETS = chainId => [
-  {
-    name: "f8DAI",
-    address: F18DAI_TOKEN.get(chainId),
-    comptroller: OLYMPUS_POOL_PARTY.get(chainId),
-    guard: ethers.constants.MaxUint256,
-    series: [],
-  },
-];
+// const FTARGETS = chainId => [
+//   {
+//     name: "f8DAI",
+//     address: F18DAI_TOKEN.get(chainId),
+//     comptroller: OLYMPUS_POOL_PARTY.get(chainId),
+//     guard: ethers.constants.MaxUint256,
+//     series: [],
+//   },
+// ];
 
 // List of factories to deploy which includes a targets array to indicate,
 // for factory, which target adapters to deploy
@@ -364,28 +362,30 @@ const MAINNET_FACTORIES = [
     maxm: "33507037",
     ifee: ethers.utils.parseEther("0.0025"),
     mode: 0,
+    rType: CROP,
     tilt: 0,
     reward: COMP_TOKEN.get(chainId),
     targets: CTARGETS(chainId),
-    crops: false,
     guard: ethers.utils.parseEther("100000"),
   }),
   // FFactory example
-  chainId => ({
-    contractName: "FFactory",
-    adapterContract: "FAdapter",
-    oracle: MASTER_ORACLE.get(chainId),
-    stake: WETH_TOKEN.get(chainId),
-    stakeSize: ethers.utils.parseEther("0.25"),
-    minm: "1814000",
-    maxm: "33507037",
-    ifee: ethers.utils.parseEther("0.0025"),
-    mode: 0,
-    tilt: 0,
-    targets: FTARGETS(chainId),
-    crops: true,
-    guard: ethers.utils.parseEther("100000"),
-  }),
+  // NOTE: commenting the FFactory since since exceeds the contract size
+  // and we are not currently using it
+  // chainId => ({
+  //   contractName: "FFactory",
+  //   adapterContract: "FAdapter",
+  //   oracle: MASTER_ORACLE.get(chainId),
+  //   stake: WETH_TOKEN.get(chainId),
+  //   stakeSize: ethers.utils.parseEther("0.25"),
+  //   minm: "1814000",
+  //   maxm: "33507037",
+  //   ifee: ethers.utils.parseEther("0.0025"),
+  //   mode: 0,
+  //   rType: CROPS,
+  //   tilt: 0,
+  //   targets: FTARGETS(chainId),
+  //   guard: ethers.utils.parseEther("100000"),
+  // }),
 ];
 
 const CUSDC_WSTETH_SERIES_MATURITIES = [
@@ -415,6 +415,7 @@ const MAINNET_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
+      rType: NON_CROP,
       tilt: 0,
       level: 31,
     },
@@ -440,6 +441,7 @@ const MAINNET_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
+      rType: CROPS,
       tilt: 0,
       level: 31,
     },
@@ -449,3 +451,7 @@ const MAINNET_ADAPTERS = [
 
 global.dev = { FACTORIES: DEV_FACTORIES, ADAPTERS: DEV_ADAPTERS };
 global.mainnet = { FACTORIES: MAINNET_FACTORIES, ADAPTERS: MAINNET_ADAPTERS };
+
+exports.NON_CROP = NON_CROP;
+exports.CROP = CROP;
+exports.CROPS = CROPS;
