@@ -76,6 +76,10 @@ contract CropAdapters is TestHelper {
         assertEq(oracle, ORACLE);
         assertEq(cropAdapter.mode(), MODE);
         assertEq(cropAdapter.rType(), Constants.CROP);
+
+        // sanity check trusted addresses
+        assertTrue(cropAdapter.isTrusted(address(divider)));
+        assertTrue(cropAdapter.isTrusted(address(this)));
     }
 
     function testExtractToken() public {
