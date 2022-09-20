@@ -9,5 +9,5 @@ updates:
     directory: "/" # package-lock.json
     schedule:
       interval: "weekly"
-    target-branch: "GEN-1381-dependabot"
+    target-branch: "dev"
     open-pull-requests-limit: 5
