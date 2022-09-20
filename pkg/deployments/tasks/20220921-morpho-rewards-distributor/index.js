@@ -54,7 +54,9 @@ task(
     try {
       await rewardsDistributor.updateRoot(ethers.utils.formatBytes32String(""));
       throw new Error("Deployer shouldn't be able to update the root");
-    } catch (err) {}
+    } catch (err) {
+      _;
+    }
 
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
