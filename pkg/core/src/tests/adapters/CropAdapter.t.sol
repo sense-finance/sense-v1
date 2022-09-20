@@ -78,6 +78,36 @@ contract CropAdapters is TestHelper {
         assertEq(cropAdapter.rType(), Constants.CROP);
     }
 
+    function testExtractToken() public {
+        // can extract someReward
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        someReward.mint(address(adapter), 1e18);
+        assertEq(someReward.balanceOf(address(adapter)), 1e18);
+
+        hevm.expectEmit(true, true, true, true);
+        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT);
+
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
+        // anyone can call extract token
+        hevm.prank(address(0xfede));
+        adapter.extractToken(address(someReward));
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 1e18);
+
+        (address target, address stake, ) = adapter.getStakeAndTarget();
+
+        // can NOT extract stake
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        adapter.extractToken(address(stake));
+
+        // can NOT extract target
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        adapter.extractToken(address(target));
+
+        // can NOT extract reward
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        adapter.extractToken(address(reward));
+    }
+
     // distribution tests
 
     function testFuzzDistribution(uint256 tBal) public {
@@ -1216,4 +1246,5 @@ contract CropAdapters is TestHelper {
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokenChanged(address indexed reward);
     event RewardTokensChanged(address[] indexed rewardTokens);
+    event RewardsClaimed(address indexed token, address indexed recipient);
 }

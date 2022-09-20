@@ -99,6 +99,40 @@ contract CropsAdapters is TestHelper {
         assertEq(cropsAdapter.rType(), Constants.CROPS);
     }
 
+    function testExtractToken() public {
+        // can extract someReward
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        someReward.mint(address(cropsAdapter), 1e18);
+        assertEq(someReward.balanceOf(address(cropsAdapter)), 1e18);
+
+        hevm.expectEmit(true, true, true, true);
+        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT);
+
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
+        // anyone can call extract token
+        hevm.prank(address(0xfede));
+        cropsAdapter.extractToken(address(someReward));
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 1e18);
+
+        (address target, address stake, ) = cropsAdapter.getStakeAndTarget();
+
+        // can NOT extract stake
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(stake));
+
+        // can NOT extract target
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(target));
+
+        // can NOT extract reward token
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(reward));
+
+        // can NOT extract reward2 token
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(reward2));
+    }
+
     // distribution tests
 
     function testFuzzDistribution(uint256 tBal) public {
@@ -1380,4 +1414,5 @@ contract CropsAdapters is TestHelper {
     event ClaimerChanged(address indexed claimer);
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokensChanged(address[] indexed rewardTokens);
+    event RewardsClaimed(address indexed token, address indexed recipient);
 }

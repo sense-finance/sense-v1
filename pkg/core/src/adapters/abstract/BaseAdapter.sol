@@ -165,14 +165,16 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
         if (adapterParams.rType == 1) {
             if (token == Crop(address(this)).reward()) revert Errors.TokenNotSupported();
         } else if (adapterParams.rType == 2) {
-            bool keepGoing = true;
             uint256 i = 0;
             Crops adapter = Crops(address(this));
-            while (keepGoing) {
+            while (true) {
                 try adapter.rewardTokens(i) returns (address rewardToken) {
                     if (token == rewardToken) revert Errors.TokenNotSupported();
                 } catch {
-                    keepGoing = false;
+                    break;
+                }
+                unchecked {
+                    ++i;
                 }
             }
         }
