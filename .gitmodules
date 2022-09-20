@@ -1,3 +1,6 @@
 [submodule "pkg/deployments/lib/v1-space"]
 	path = pkg/deployments/lib/v1-space
 	url = https://github.com/sense-finance/space-v1
+[submodule "pkg/deployments/lib/morpho-core-v1"]
+	path = pkg/deployments/lib/morpho-core-v1
+	url = https://github.com/morpho-dao/morpho-core-v1
