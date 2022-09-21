@@ -104,7 +104,7 @@ contract CropsAdapters is TestHelper {
         assertEq(someReward.balanceOf(address(cropsAdapter)), 1e18);
 
         hevm.expectEmit(true, true, true, true);
-        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT);
+        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT, 1e18);
 
         assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
         // anyone can call extract token
@@ -1412,5 +1412,5 @@ contract CropsAdapters is TestHelper {
     event ClaimerChanged(address indexed claimer);
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokensChanged(address[] indexed rewardTokens);
-    event RewardsClaimed(address indexed token, address indexed recipient);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
 }

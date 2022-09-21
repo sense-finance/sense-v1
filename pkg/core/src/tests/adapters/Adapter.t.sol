@@ -183,7 +183,7 @@ contract Adapters is TestHelper {
         assertEq(someReward.balanceOf(address(adapter)), 1e18);
 
         hevm.expectEmit(true, true, true, true);
-        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT);
+        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT, 1e18);
 
         assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
         // anyone can call extract token
@@ -205,5 +205,5 @@ contract Adapters is TestHelper {
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed recipient, address indexed newRecipient);
-    event RewardsClaimed(address indexed token, address indexed recipient);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
 }

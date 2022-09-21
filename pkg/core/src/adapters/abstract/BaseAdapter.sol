@@ -215,5 +215,5 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
-    event RewardsClaimed(address indexed token, address indexed recipient);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
 }

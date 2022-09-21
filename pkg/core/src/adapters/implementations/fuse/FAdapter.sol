@@ -183,8 +183,9 @@ contract FAdapter is BaseAdapter, Crops {
         // Check that token is neither the target nor the stake
         if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
         ERC20 t = ERC20(token);
-        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
-        emit RewardsClaimed(token, rewardsRecipient);
+        uint256 tBal = t.balanceOf(address(this));
+        t.safeTransfer(rewardsRecipient, tBal);
+        emit RewardsClaimed(token, rewardsRecipient, tBal);
     }
 
     /* ========== ADMIN ========== */

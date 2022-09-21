@@ -184,8 +184,9 @@ contract CAdapter is BaseAdapter, Crop {
         // Check that token is neither the target, the stake nor the reward
         if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
         ERC20 t = ERC20(token);
-        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
-        emit RewardsClaimed(token, rewardsRecipient);
+        uint256 tBal = t.balanceOf(address(this));
+        t.safeTransfer(rewardsRecipient, tBal);
+        emit RewardsClaimed(token, rewardsRecipient, tBal);
     }
 
     function _to18Decimals(uint256 exRate) internal view returns (uint256) {
