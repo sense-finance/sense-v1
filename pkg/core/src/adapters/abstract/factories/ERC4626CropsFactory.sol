@@ -61,7 +61,7 @@ contract ERC4626CropsFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(adapterAdmin, true);
+        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
     }
 
     /// @notice (Un)support target

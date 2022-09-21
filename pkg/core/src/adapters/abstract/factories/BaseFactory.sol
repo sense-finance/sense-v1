@@ -44,7 +44,7 @@ abstract contract BaseFactory is Trust {
     address public immutable divider;
 
     /// @notice Adapter admin address
-    address public adapterAdmin;
+    address public restrictedAdmin;
 
     /// @notice Rewards recipient
     address public rewardsRecipient;
@@ -68,12 +68,12 @@ abstract contract BaseFactory is Trust {
 
     constructor(
         address _divider,
-        address _adapterAdmin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
     ) Trust(msg.sender) {
         divider = _divider;
-        adapterAdmin = _adapterAdmin;
+        restrictedAdmin = _restrictedAdmin;
         rewardsRecipient = _rewardsRecipient;
         factoryParams = _factoryParams;
     }
@@ -116,9 +116,9 @@ abstract contract BaseFactory is Trust {
         }
     }
 
-    function setAdapterAdmin(address _adapterAdmin) external requiresTrust {
-        emit AdapterAdminChanged(adapterAdmin, _adapterAdmin);
-        adapterAdmin = _adapterAdmin;
+    function setAdapterAdmin(address _restrictedAdmin) external requiresTrust {
+        emit AdapterAdminChanged(restrictedAdmin, _restrictedAdmin);
+        restrictedAdmin = _restrictedAdmin;
     }
 
     /// Set factory rewards recipient

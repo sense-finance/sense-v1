@@ -24,7 +24,7 @@ interface ComptrollerLike {
 
     function _setContributorCompSpeed(address contributor, uint256 compSpeed) external;
 
-    function adapterAdmin() external view returns (address);
+    function admin() external view returns (address);
 
     function compAccrued(address usr) external view returns (uint256);
 }
@@ -253,7 +253,7 @@ contract CAdapters is CAdapterTestHelper {
         ERC20(target).approve(address(divider), type(uint256).max);
         divider.issue(address(cEthAdapter), maturity, 1e18);
 
-        hevm.prank(ComptrollerLike(AddressBook.COMPTROLLER).adapterAdmin());
+        hevm.prank(ComptrollerLike(AddressBook.COMPTROLLER).admin());
         ComptrollerLike(AddressBook.COMPTROLLER)._setContributorCompSpeed(address(cEthAdapter), 1e18);
 
         hevm.roll(block.number + 10);

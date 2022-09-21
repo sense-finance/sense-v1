@@ -110,7 +110,7 @@ contract Factories is TestHelper {
             address(reward)
         );
 
-        assertEq(someFactory.adapterAdmin(), Constants.ADAPTER_ADMIN);
+        assertEq(someFactory.restrictedAdmin(), Constants.ADAPTER_ADMIN);
         assertEq(someFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(someFactory.divider(), address(divider));
         (
@@ -317,7 +317,7 @@ contract Factories is TestHelper {
     }
 
     function testSetAdmin() public {
-        assertEq(factory.adapterAdmin(), Constants.ADAPTER_ADMIN);
+        assertEq(factory.restrictedAdmin(), Constants.ADAPTER_ADMIN);
 
         // Can not set admin if not trusted
         hevm.expectRevert("UNTRUSTED");
@@ -329,7 +329,7 @@ contract Factories is TestHelper {
         emit AdapterAdminChanged(Constants.ADAPTER_ADMIN, address(0x111));
 
         factory.setAdapterAdmin(address(0x111));
-        assertEq(factory.adapterAdmin(), address(0x111));
+        assertEq(factory.restrictedAdmin(), address(0x111));
     }
 
     function testSetRewardsRecipient() public {
