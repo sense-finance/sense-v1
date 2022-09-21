@@ -110,7 +110,7 @@ contract ERC4626Factories is ERC4626TestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint8 mode,
+            uint16 mode,
             uint64 tilt,
             uint256 guard
         ) = ERC4626Factory(otherFactory).factoryParams();

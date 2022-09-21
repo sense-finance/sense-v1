@@ -5,10 +5,6 @@ pragma solidity 0.8.11;
 library Constants {
     // adapter config
     address public constant REWARDS_RECIPIENT = address(0xfed);
-    uint8 public constant NON_CROP = 0;
-    uint8 public constant CROP = 1;
-    uint8 public constant CROPS = 2;
-
     uint16 public constant DEFAULT_LEVEL = 31;
     uint256 public constant DEFAULT_STAKE_SIZE = 1e18;
     uint256 public constant DEFAULT_MIN_MATURITY = 2 weeks;

@@ -34,11 +34,11 @@ module.exports = async function () {
       targets,
       guard,
     } = factory(chainId);
-    if ([CROP, CROPS].includes(rType) && !reward) throw Error("No reward token found");
+    if (rType == CROP && !reward) throw Error("No reward token found");
     if (!stake) throw Error("No stake token found");
 
     log(`\nDeploy ${contractName}`);
-    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, rType, tilt, guard];
+    const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: factoryAddress } = await deploy(contractName, {
       from: deployer,
       args: [divider.address, rewardsRecipient, factoryParams, ...(rType !== CROPS ? [reward] : [])],

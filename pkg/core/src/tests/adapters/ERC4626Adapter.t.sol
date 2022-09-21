@@ -71,7 +71,6 @@ contract ERC4626AdapterTest is DSTestPlus {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.NON_CROP,
             tilt: 0,
             level: Constants.DEFAULT_LEVEL
         });

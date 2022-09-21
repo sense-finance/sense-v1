@@ -180,6 +180,14 @@ contract CAdapter is BaseAdapter, Crop {
         ERC20(underlying).safeTransfer(msg.sender, uBal);
     }
 
+    function extractToken(address token) external override {
+        // Check that token is neither the target, the stake nor the reward
+        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
+        emit RewardsClaimed(token, rewardsRecipient);
+    }
+
     function _to18Decimals(uint256 exRate) internal view returns (uint256) {
         // From the Compound docs:
         // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"

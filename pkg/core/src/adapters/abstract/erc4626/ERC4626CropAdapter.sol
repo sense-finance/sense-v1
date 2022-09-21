@@ -4,9 +4,14 @@ pragma solidity 0.8.11;
 import { ERC4626Adapter } from "./ERC4626Adapter.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Crop } from "../extensions/Crop.sol";
+import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 /// @notice Adapter contract for ERC4626 Vaults
 contract ERC4626CropAdapter is ERC4626Adapter, Crop {
+    using SafeTransferLib for ERC20;
+
     constructor(
         address _divider,
         address _target,
@@ -22,5 +27,13 @@ contract ERC4626CropAdapter is ERC4626Adapter, Crop {
         bool join
     ) public override(BaseAdapter, Crop) {
         super.notify(_usr, amt, join);
+    }
+
+    function extractToken(address token) external override {
+        // Check that token is neither the target, the stake nor the reward
+        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
+        emit RewardsClaimed(token, rewardsRecipient);
     }
 }

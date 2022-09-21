@@ -58,7 +58,7 @@ abstract contract BaseFactory is Trust {
         uint256 minm; // min maturity (seconds after block.timstamp)
         uint256 maxm; // max maturity (seconds after block.timstamp)
         uint128 ifee; // issuance fee
-        uint8 mode; // 0 for monthly, 1 for weekly
+        uint16 mode; // 0 for monthly, 1 for weekly
         uint64 tilt; // tilt
         uint256 guard; // adapter guard (in usd, 18 decimals)
     }

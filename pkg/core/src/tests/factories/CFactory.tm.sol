@@ -89,7 +89,7 @@ contract CFactories is CAdapterTestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint8 mode,
+            uint16 mode,
             uint64 tilt,
             uint256 guard
         ) = CFactory(otherCFactory).factoryParams();

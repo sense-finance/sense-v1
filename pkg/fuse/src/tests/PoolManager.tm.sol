@@ -88,7 +88,6 @@ contract PoolManagerTest is DSTest {
             minm: 2 weeks,
             maxm: 14 weeks,
             mode: 0,
-            rType: Constants.NON_CROP,
             tilt: 0,
             level: 31
         });

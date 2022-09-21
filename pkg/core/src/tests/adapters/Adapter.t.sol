@@ -42,6 +42,8 @@ contract FakeAdapter is BaseAdapter {
         return 1e18;
     }
 
+    function extractToken(address token) external override {}
+
     function doSetAdapter(Divider d, address _adapter) public {
         d.setAdapter(_adapter, true);
     }
@@ -64,7 +66,6 @@ contract Adapters is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -77,8 +78,7 @@ contract Adapters is TestHelper {
             ISSUANCE_FEE,
             adapterParams
         );
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
-            .adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
         assertEq(adapter.target(), address(target));
@@ -92,7 +92,6 @@ contract Adapters is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
         assertEq(adapter.mode(), MODE);
-        assertEq(adapter.rType(), Constants.CROP);
     }
 
     function testScale() public {
@@ -113,7 +112,6 @@ contract Adapters is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.NON_CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -164,7 +162,7 @@ contract Adapters is TestHelper {
 
         // Can be changed by the factory that deployed it
         hevm.expectEmit(true, true, true, true);
-        emit RewardsRecipientChanged(address(0x222));
+        emit RewardsRecipientChanged(Constants.REWARDS_RECIPIENT, address(0x222));
 
         hevm.prank(address(factory));
         adapter.setRewardsRecipient(address(0x222));
@@ -172,7 +170,7 @@ contract Adapters is TestHelper {
 
         // Can be changed via the factory that deployed it
         hevm.expectEmit(true, true, true, true);
-        emit RewardsRecipientChanged(address(0x333));
+        emit RewardsRecipientChanged(address(0x222), address(0x333));
 
         factory.setAdapterRewardsRecipient(address(adapter), address(0x333));
         assertEq(adapter.rewardsRecipient(), address(0x333));
@@ -206,6 +204,6 @@ contract Adapters is TestHelper {
 
     /* ========== LOGS ========== */
 
-    event RewardsRecipientChanged(address indexed recipient);
+    event RewardsRecipientChanged(address indexed recipient, address indexed newRecipient);
     event RewardsClaimed(address indexed token, address indexed recipient);
 }

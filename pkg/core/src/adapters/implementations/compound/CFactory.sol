@@ -47,7 +47,6 @@ contract CFactory is CropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: 1, // Crop
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });

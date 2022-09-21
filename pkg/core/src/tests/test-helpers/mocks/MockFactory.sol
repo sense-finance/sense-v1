@@ -50,7 +50,6 @@ contract MockFactory is BaseFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: 0, // Non-crop
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -100,7 +99,6 @@ contract MockCropFactory is CropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: 1, // Crop
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -154,7 +152,6 @@ contract MockCropsFactory is BaseFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: 2, // Crops
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -208,7 +205,6 @@ contract Mock4626CropFactory is CropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: 1, // Crop
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -260,7 +256,6 @@ contract Mock4626CropsFactory is BaseFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: 2, // Crops
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });

@@ -94,7 +94,6 @@ contract PeripheryTest is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
-            rType: Constants.CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -1125,7 +1124,6 @@ contract PeripheryTest is TestHelper {
         divider.setPermissionless(true);
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted
         DEFAULT_ADAPTER_PARAMS.level = level;
-        DEFAULT_ADAPTER_PARAMS.rType = Constants.NON_CROP;
         MockAdapter aAdapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
 
         periphery.verifyAdapter(address(aAdapter), true);

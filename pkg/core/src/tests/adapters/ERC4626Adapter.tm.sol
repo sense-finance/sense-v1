@@ -81,7 +81,6 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
-            rType: Constants.NON_CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });

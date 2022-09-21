@@ -45,7 +45,6 @@ contract CropAdapters is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             level: DEFAULT_LEVEL
         });
@@ -59,8 +58,7 @@ contract CropAdapters is TestHelper {
             adapterParams,
             address(reward)
         );
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
-            .adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(cropAdapter.reward(), address(reward));
         assertEq(cropAdapter.name(), "Compound Dai Adapter");
         assertEq(cropAdapter.symbol(), "cDAI-adapter");
@@ -75,7 +73,6 @@ contract CropAdapters is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
         assertEq(cropAdapter.mode(), MODE);
-        assertEq(cropAdapter.rType(), Constants.CROP);
 
         // sanity check trusted addresses
         assertTrue(cropAdapter.isTrusted(address(divider)));

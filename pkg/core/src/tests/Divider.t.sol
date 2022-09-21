@@ -332,7 +332,6 @@ contract Dividers is TestHelper {
 
     function testSettleSeriesWithMockBaseAdapter() public {
         divider.setPermissionless(true);
-        DEFAULT_ADAPTER_PARAMS.rType = Constants.NON_CROP;
         MockBaseAdapter aAdapter = new MockBaseAdapter(
             address(divider),
             address(target),

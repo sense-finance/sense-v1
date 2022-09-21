@@ -93,4 +93,12 @@ contract WstETHAdapter is BaseAdapter {
         // wrap stETH into wstETH and transfer it back to sender
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(amount));
     }
+
+    function extractToken(address token) external override {
+        // Check that token is neither the target nor the stake
+        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
+        emit RewardsClaimed(token, rewardsRecipient);
+    }
 }

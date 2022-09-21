@@ -50,7 +50,7 @@ module.exports = async function () {
     } = factory(chainId);
     log(`\nDeploy ${factoryContractName} with mocked dependencies`);
     // Large enough to not be a problem, but won't overflow on ModAdapter.fmul
-    const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, rType, tilt, guard];
+    const factoryParams = [oracle, stake.address, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: mockFactoryAddress } = await deploy(factoryContractName, {
       from: deployer,
       args: [
@@ -293,7 +293,7 @@ module.exports = async function () {
   }
 
   async function deployAdapterWithoutFactory(t, targetContract) {
-    let { contractName, adapterParams, target, underlying, ifee } = t;
+    let { contractName, adapterParams, target, underlying, ifee, rType } = t;
     const targetAddress = targetContract.address;
     underlying = await targetContract.underlying();
     adapterParams.stake = stake.address;
@@ -308,11 +308,7 @@ module.exports = async function () {
         rewardsRecipient,
         ifee,
         adapterParams,
-        ...(adapterParams.rType == NON_CROP
-          ? []
-          : adapterParams.rType == CROPS
-          ? [[airdrop.address]]
-          : [airdrop.address]),
+        ...(rType == NON_CROP ? [] : rType == CROPS ? [[airdrop.address]] : [airdrop.address]),
       ],
       log: true,
     });

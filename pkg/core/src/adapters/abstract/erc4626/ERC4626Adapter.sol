@@ -58,4 +58,12 @@ contract ERC4626Adapter is BaseAdapter {
     function unwrapTarget(uint256 shares) external override returns (uint256 _assets) {
         _assets = ERC4626(target).redeem(shares, msg.sender, msg.sender);
     }
+
+    function extractToken(address token) external virtual override {
+        // Check that token is neither the target nor the stake
+        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
+        emit RewardsClaimed(token, rewardsRecipient);
+    }
 }

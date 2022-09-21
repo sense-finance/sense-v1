@@ -67,7 +67,6 @@ contract Mock2e18Factory is MockCropFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: Constants.CROP,
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });
@@ -116,7 +115,7 @@ contract Factories is TestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint8 mode,
+            uint16 mode,
             uint64 tilt,
             uint256 guard
         ) = someFactory.factoryParams();
@@ -180,8 +179,7 @@ contract Factories is TestHelper {
         );
         assertTrue(address(adapter) != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = adapter
-            .adapterParams();
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.target(), address(someTarget));
@@ -194,7 +192,6 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(adapter.mode(), MODE);
-        assertEq(adapter.rType(), Constants.CROP);
 
         if (is4626Target) {
             assertEq(ERC4626CropAdapter(address(adapter)).reward(), address(someReward));
@@ -258,7 +255,7 @@ contract Factories is TestHelper {
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
-        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , , ) = MockAdapter(adapter)
+        (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockAdapter(adapter)
             .adapterParams();
         assertEq(MockAdapter(adapter).divider(), address(divider));
         assertEq(MockAdapter(adapter).target(), address(someTarget));
@@ -271,7 +268,6 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(MockAdapter(adapter).mode(), MODE);
-        assertEq(MockAdapter(adapter).rType(), Constants.NON_CROP);
 
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
@@ -324,7 +320,7 @@ contract Factories is TestHelper {
 
         // Can set rewards recipient
         hevm.expectEmit(true, true, true, true);
-        emit RewardsRecipientChanged(address(0x111));
+        emit RewardsRecipientChanged(Constants.REWARDS_RECIPIENT, address(0x111));
 
         factory.setRewardsRecipient(address(0x111));
         assertEq(factory.rewardsRecipient(), address(0x111));
@@ -332,5 +328,5 @@ contract Factories is TestHelper {
 
     /* ========== LOGS ========== */
 
-    event RewardsRecipientChanged(address indexed recipient);
+    event RewardsRecipientChanged(address indexed recipient, address indexed newRecipient);
 }

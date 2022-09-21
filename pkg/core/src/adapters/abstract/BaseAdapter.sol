@@ -64,9 +64,7 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
         /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)
         uint48 level;
         /// @notice 0 for monthly, 1 for weekly
-        uint8 mode;
-        /// @notice Reward type: 0 for non-crop, 1 for crop and 2 for crops
-        uint8 rType;
+        uint16 mode;
     }
 
     /* ========== METADATA STORAGE ========== */
@@ -161,30 +159,7 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
 
     /// @notice Transfers reward tokens from the adapter to Sense's reward container
     /// @dev If adapter is either Crop or Crops, we check token is not any of the reward tokens
-    function extractToken(address token) external {
-        if (adapterParams.rType == 1) {
-            if (token == Crop(address(this)).reward()) revert Errors.TokenNotSupported();
-        } else if (adapterParams.rType == 2) {
-            uint256 i = 0;
-            Crops adapter = Crops(address(this));
-            while (true) {
-                try adapter.rewardTokens(i) returns (address rewardToken) {
-                    if (token == rewardToken) revert Errors.TokenNotSupported();
-                } catch {
-                    break;
-                }
-                unchecked {
-                    ++i;
-                }
-            }
-        }
-
-        // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
-        emit RewardsClaimed(token, rewardsRecipient);
-    }
+    function extractToken(address token) external virtual;
 
     /* ========== OPTIONAL HOOKS ========== */
 
@@ -227,10 +202,6 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
 
     function mode() external view returns (uint256) {
         return adapterParams.mode;
-    }
-
-    function rType() external view returns (uint256) {
-        return adapterParams.rType;
     }
 
     function tilt() external view returns (uint256) {

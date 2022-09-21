@@ -77,7 +77,6 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: 0,
-            rType: Constants.CROPS,
             tilt: 0,
             level: DEFAULT_LEVEL
         });

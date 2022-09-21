@@ -93,7 +93,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             minm: 0, // 0 minm, so there's not lower bound on future maturity
             maxm: type(uint64).max, // large maxm, so there's not upper bound on future maturity
             mode: 0, // monthly maturities
-            rType: Constants.CROP, // reward type
             tilt: 0,
             level: Constants.DEFAULT_LEVEL
         });

@@ -187,6 +187,7 @@ const DEV_ADAPTERS = [
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
+    rType: NON_CROP,
     adapterParams: {
       oracle: ethers.constants.AddressZero, // oracle address
       ifee: ethers.utils.parseEther("0.01"),
@@ -195,7 +196,6 @@ const DEV_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
-      rType: NON_CROP,
       tilt: 0,
       level: 31,
     },
@@ -211,6 +211,7 @@ const DEV_ADAPTERS = [
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
+    rType: CROP,
     adapterParams: {
       oracle: ethers.constants.AddressZero, // oracle address
       ifee: ethers.utils.parseEther("0.01"),
@@ -219,7 +220,6 @@ const DEV_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
-      rType: CROP,
       tilt: 0,
       level: 31,
     },
@@ -235,6 +235,7 @@ const DEV_ADAPTERS = [
     },
     underlying: "0x0",
     ifee: ethers.utils.parseEther("0.01"),
+    rType: CROPS,
     adapterParams: {
       oracle: ethers.constants.AddressZero, // oracle address
       stake: "0x0",
@@ -242,7 +243,6 @@ const DEV_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "4838400", // 4 weeks
       mode: 1, // 0 monthly, 1 weekly;
-      rType: CROPS,
       tilt: 0,
       level: 31,
     },
@@ -408,6 +408,7 @@ const MAINNET_ADAPTERS = [
       series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
     ifee: ethers.utils.parseEther("0.01"),
+    rType: NON_CROP,
     adapterParams: {
       oracle: MASTER_ORACLE.get(chainId), // oracle address
       stake: WETH_TOKEN.get(chainId),
@@ -415,7 +416,6 @@ const MAINNET_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
-      rType: NON_CROP,
       tilt: 0,
       level: 31,
     },
@@ -434,6 +434,7 @@ const MAINNET_ADAPTERS = [
     },
     underlying: FRAX3CRV_TOKEN.get(chainId),
     ifee: ethers.utils.parseEther("0.01"),
+    rType: CROPS,
     adapterParams: {
       oracle: MASTER_ORACLE.get(chainId), // oracle address
       stake: WETH_TOKEN.get(chainId),
@@ -441,7 +442,6 @@ const MAINNET_ADAPTERS = [
       minm: "0", // 0 weeks
       maxm: "604800", // 1 week
       mode: 1, // 0 monthly, 1 weekly;
-      rType: CROPS,
       tilt: 0,
       level: 31,
     },

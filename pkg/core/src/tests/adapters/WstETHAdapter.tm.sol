@@ -85,7 +85,6 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: DEFAULT_MODE,
-            rType: Constants.NON_CROP,
             tilt: DEFAULT_TILT,
             level: DEFAULT_LEVEL
         });
