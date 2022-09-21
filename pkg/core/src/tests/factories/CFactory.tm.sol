@@ -15,6 +15,7 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract CAdapterTestHelper is DSTest {
     CFactory internal factory;
@@ -23,7 +24,7 @@ contract CAdapterTestHelper is DSTest {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    uint16 public constant MODE = 0;
+    uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
@@ -50,7 +51,7 @@ contract CAdapterTestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
+        factory = new CFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -73,7 +74,12 @@ contract CFactories is CAdapterTestHelper {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        CFactory otherCFactory = new CFactory(address(divider), factoryParams, AddressBook.COMP);
+        CFactory otherCFactory = new CFactory(
+            address(divider),
+            Constants.REWARDS_RECIPIENT,
+            factoryParams,
+            AddressBook.COMP
+        );
 
         assertTrue(address(otherCFactory) != address(0));
         (

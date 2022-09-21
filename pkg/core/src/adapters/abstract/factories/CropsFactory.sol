@@ -6,11 +6,12 @@ import { Crops } from "../extensions/Crops.sol";
 import { BaseFactory } from "./BaseFactory.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
-abstract contract CropsFactory is Trust, BaseFactory {
-    constructor(address _divider, FactoryParams memory _factoryParams)
-        Trust(msg.sender)
-        BaseFactory(_divider, _factoryParams)
-    {}
+abstract contract CropsFactory is BaseFactory {
+    constructor(
+        address _divider,
+        address _rewardsRecipient,
+        FactoryParams memory _factoryParams
+    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {}
 
     /// @notice Update reward tokens for given adapters
     /// @param _rewardTokens array of rewards tokens addresses

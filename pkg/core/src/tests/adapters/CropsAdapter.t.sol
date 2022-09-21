@@ -16,6 +16,7 @@ import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract CropsAdapters is TestHelper {
     using FixedMath for uint256;
@@ -71,6 +72,7 @@ contract CropsAdapters is TestHelper {
             address(divider),
             address(target),
             !is4626Target ? target.underlying() : target.asset(),
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams,
             rewardTokens
@@ -85,6 +87,7 @@ contract CropsAdapters is TestHelper {
         assertEq(cropsAdapter.target(), address(target));
         assertEq(cropsAdapter.underlying(), address(underlying));
         assertEq(cropsAdapter.divider(), address(divider));
+        assertEq(cropsAdapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(cropsAdapter.ifee(), ISSUANCE_FEE);
         assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
@@ -92,6 +95,40 @@ contract CropsAdapters is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
         assertEq(cropsAdapter.mode(), MODE);
+    }
+
+    function testExtractToken() public {
+        // can extract someReward
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        someReward.mint(address(cropsAdapter), 1e18);
+        assertEq(someReward.balanceOf(address(cropsAdapter)), 1e18);
+
+        hevm.expectEmit(true, true, true, true);
+        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT, 1e18);
+
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
+        // anyone can call extract token
+        hevm.prank(address(0xfede));
+        cropsAdapter.extractToken(address(someReward));
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 1e18);
+
+        (address target, address stake, ) = cropsAdapter.getStakeAndTarget();
+
+        // can NOT extract stake
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(stake));
+
+        // can NOT extract target
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(target));
+
+        // can NOT extract reward token
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(reward));
+
+        // can NOT extract reward2 token
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        cropsAdapter.extractToken(address(reward2));
     }
 
     // distribution tests
@@ -1375,4 +1412,5 @@ contract CropsAdapters is TestHelper {
     event ClaimerChanged(address indexed claimer);
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokensChanged(address[] indexed rewardTokens);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
 }

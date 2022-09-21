@@ -96,10 +96,11 @@ contract CAdapter is BaseAdapter, Crop {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
         isCETH = _target == CETH;
         ERC20(_underlying).safeApprove(_target, type(uint256).max);
         uDecimals = CTokenLike(_underlying).decimals();
@@ -177,6 +178,15 @@ contract CAdapter is BaseAdapter, Crop {
 
         // Transfer underlying to sender
         ERC20(underlying).safeTransfer(msg.sender, uBal);
+    }
+
+    function extractToken(address token) external override {
+        // Check that token is neither the target, the stake nor the reward
+        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        uint256 tBal = t.balanceOf(address(this));
+        t.safeTransfer(rewardsRecipient, tBal);
+        emit RewardsClaimed(token, rewardsRecipient, tBal);
     }
 
     function _to18Decimals(uint256 exRate) internal view returns (uint256) {

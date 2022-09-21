@@ -52,9 +52,10 @@ contract WstETHAdapter is BaseAdapter {
     constructor(
         address _divider,
         address _target,
+        address _rewardsRecipient,
         uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, STETH, _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, STETH, _rewardsRecipient, _ifee, _adapterParams) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).approve(WSTETH, type(uint256).max);
         // set an inital cached scale value
@@ -91,5 +92,14 @@ contract WstETHAdapter is BaseAdapter {
         ERC20(STETH).safeTransferFrom(msg.sender, address(this), amount); // pull STETH
         // wrap stETH into wstETH and transfer it back to sender
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(amount));
+    }
+
+    function extractToken(address token) external override {
+        // Check that token is neither the target nor the stake
+        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        uint256 tBal = t.balanceOf(address(this));
+        t.safeTransfer(rewardsRecipient, tBal);
+        emit RewardsClaimed(token, rewardsRecipient, tBal);
     }
 }

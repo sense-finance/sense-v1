@@ -1,4 +1,5 @@
-const { OZ_RELAYER } = require("../../hardhat.addresses");
+const { OZ_RELAYER, SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { NON_CROP, CROPS } = require("../../hardhat.seed");
 const {
   moveDeployments,
   writeDeploymentsToFile,
@@ -12,6 +13,7 @@ module.exports = async function () {
   const { deployer } = await getNamedAccounts();
   const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
+  const rewardsRecipient = SENSE_MULTISIG.get(chainId);
 
   const divider = await ethers.getContract("Divider", signer);
   const periphery = await ethers.getContract("Periphery", signer);
@@ -40,10 +42,9 @@ module.exports = async function () {
       maxm,
       ifee,
       mode,
+      rType,
       tilt,
       targets,
-      noncrop,
-      crops,
       is4626Target,
       guard,
     } = factory(chainId);
@@ -54,8 +55,9 @@ module.exports = async function () {
       from: deployer,
       args: [
         divider.address,
+        rewardsRecipient,
         factoryParams,
-        ...(noncrop ? [] : crops ? [[airdrop.address]] : [airdrop.address]),
+        ...(rType == NON_CROP ? [] : rType == CROPS ? [[airdrop.address]] : [airdrop.address]),
       ],
       log: true,
     });
@@ -291,7 +293,7 @@ module.exports = async function () {
   }
 
   async function deployAdapterWithoutFactory(t, targetContract) {
-    let { contractName, adapterParams, target, underlying, ifee } = t;
+    let { contractName, adapterParams, target, underlying, ifee, rType } = t;
     const targetAddress = targetContract.address;
     underlying = await targetContract.underlying();
     adapterParams.stake = stake.address;
@@ -303,9 +305,10 @@ module.exports = async function () {
         divider.address,
         targetAddress,
         underlying,
+        rewardsRecipient,
         ifee,
         adapterParams,
-        ...(target.noncrop ? [] : target.crops ? [[airdrop.address]] : [airdrop.address]),
+        ...(rType == NON_CROP ? [] : rType == CROPS ? [[airdrop.address]] : [airdrop.address]),
       ],
       log: true,
     });

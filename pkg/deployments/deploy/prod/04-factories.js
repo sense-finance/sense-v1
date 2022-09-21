@@ -1,4 +1,6 @@
 const { network } = require("hardhat");
+const { SENSE_MULTISIG } = require("../../hardhat.addresses");
+const { CROP, CROPS } = require("../../hardhat.seed");
 const { moveDeployments, writeDeploymentsToFile, writeAdaptersToFile } = require("../../hardhat.utils");
 const log = console.log;
 
@@ -10,6 +12,7 @@ module.exports = async function () {
   const chainId = await getChainId();
   const divider = await ethers.getContract("Divider", signer);
   const periphery = await ethers.getContract("Periphery", signer);
+  const rewardsRecipient = SENSE_MULTISIG.get(chainId);
 
   log("\n-------------------------------------------------------");
   log("DEPLOY FACTORIES & ADAPTERS");
@@ -25,20 +28,20 @@ module.exports = async function () {
       maxm,
       ifee,
       mode,
+      rType,
       tilt,
       reward,
       targets,
-      crops,
       guard,
     } = factory(chainId);
-    if (!crops && !reward) throw Error("No reward token found");
+    if (rType == CROP && !reward) throw Error("No reward token found");
     if (!stake) throw Error("No stake token found");
 
     log(`\nDeploy ${contractName}`);
     const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: factoryAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, factoryParams, ...(!crops ? [reward] : [])],
+      args: [divider.address, rewardsRecipient, factoryParams, ...(rType !== CROPS ? [reward] : [])],
       log: true,
     });
 
@@ -86,6 +89,7 @@ module.exports = async function () {
         divider.address,
         tAddress,
         ...(underlying ? [underlying] : []),
+        rewardsRecipient,
         ifee,
         ...(comptroller ? [comptroller] : []),
         adapterParams,

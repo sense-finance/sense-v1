@@ -100,6 +100,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             address(divider),
             address(mockTarget),
             mockTarget.underlying(),
+            Constants.REWARDS_RECIPIENT,
             IFEE_FOR_YT_SWAPS,
             mockAdapterParams,
             address(new MockToken("Reward", "R", 18))
@@ -119,8 +120,8 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             guard: Constants.DEFAULT_GUARD
         });
 
-        cfactory = new CFactory(divider, factoryParams, AddressBook.COMP);
-        ffactory = new FFactory(divider, factoryParams);
+        cfactory = new CFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
+        ffactory = new FFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams);
 
         periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);
 

@@ -18,6 +18,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
+import { Constants } from "./test-helpers/Constants.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
@@ -60,6 +61,7 @@ contract PeripheryTest is TestHelper {
             address(divider),
             address(target),
             !is4626Target ? target.underlying() : target.asset(),
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             DEFAULT_ADAPTER_PARAMS,
             address(reward)
@@ -99,6 +101,7 @@ contract PeripheryTest is TestHelper {
             address(divider),
             address(target),
             !is4626Target ? target.underlying() : target.asset(),
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -182,9 +185,13 @@ contract PeripheryTest is TestHelper {
 
         address cropFactory;
         if (is4626Target) {
-            cropFactory = address(new Mock4626CropFactory(address(divider), factoryParams, address(reward)));
+            cropFactory = address(
+                new Mock4626CropFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, address(reward))
+            );
         } else {
-            cropFactory = address(new MockCropFactory(address(divider), factoryParams, address(reward)));
+            cropFactory = address(
+                new MockCropFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, address(reward))
+            );
         }
         divider.setIsTrusted(cropFactory, true);
         periphery.setFactory(cropFactory, true);

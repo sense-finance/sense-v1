@@ -10,6 +10,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
+import { Constants } from "./test-helpers/Constants.sol";
 import { MockAdapter, MockCropAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
@@ -334,6 +335,7 @@ contract Dividers is TestHelper {
         MockBaseAdapter aAdapter = new MockBaseAdapter(
             address(divider),
             address(target),
+            Constants.REWARDS_RECIPIENT,
             !is4626Target ? target.underlying() : target.asset(),
             ISSUANCE_FEE,
             DEFAULT_ADAPTER_PARAMS

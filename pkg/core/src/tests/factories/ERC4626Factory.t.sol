@@ -18,6 +18,7 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
@@ -37,7 +38,7 @@ contract ERC4626FactoryTest is TestHelper {
             tilt: 0,
             guard: 123e18
         });
-        ERC4626Factory someFactory = new ERC4626Factory(address(divider), factoryParams);
+        ERC4626Factory someFactory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
 
         assertTrue(address(someFactory) != address(0));
         assertEq(ERC4626Factory(someFactory).divider(), address(divider));
@@ -109,6 +110,7 @@ contract ERC4626FactoryTest is TestHelper {
 
         (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.target(), address(someTarget));
         assertEq(adapter.name(), "Some Target Adapter");
         assertEq(adapter.symbol(), "ST-adapter");
@@ -145,6 +147,7 @@ contract ERC4626FactoryTest is TestHelper {
 
         (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = adapter.adapterParams();
         assertEq(adapter.divider(), address(divider));
+        assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.target(), address(someTarget));
         assertEq(adapter.name(), "Some Target Adapter");
         assertEq(adapter.symbol(), "ST-adapter");
@@ -278,11 +281,12 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
-        adapter.isTrusted(address(someFactory));
-        adapter.isTrusted(address(divider));
-        adapter.isTrusted(address(this));
+        // Can not set reward token via factory if not trusted
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x111));
+        someFactory.setRewardToken(address(adapter), address(someReward));
 
-        // Set reward token
+        // Set reward token via factory
         someFactory.setRewardToken(address(adapter), address(someReward));
         assertEq(adapter.reward(), address(someReward));
     }

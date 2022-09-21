@@ -27,7 +27,11 @@ contract FFactory is CropsFactory {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant FUSE_POOL_DIRECTORY = 0x835482FE0532f169024d5E9410199369aAD5C77E;
 
-    constructor(address _divider, FactoryParams memory _factoryParams) CropsFactory(_divider, _factoryParams) {}
+    constructor(
+        address _divider,
+        address _rewardsRecipient,
+        FactoryParams memory _factoryParams
+    ) CropsFactory(_divider, _rewardsRecipient, _factoryParams) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         address comptroller = abi.decode(data, (address));
@@ -72,6 +76,7 @@ contract FFactory is CropsFactory {
                 divider,
                 _target,
                 FTokenLike(_target).isCEther() ? WETH : underlying,
+                rewardsRecipient,
                 factoryParams.ifee,
                 comptroller,
                 adapterParams,

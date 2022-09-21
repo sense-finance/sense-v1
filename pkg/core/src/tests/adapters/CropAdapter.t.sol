@@ -11,12 +11,13 @@ import { ERC4626CropAdapter } from "../../adapters/abstract/erc4626/ERC4626CropA
 import { Divider } from "../../Divider.sol";
 import { YT } from "../../tokens/YT.sol";
 
-import { MockAdapter, MockCropAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { MockCropAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
+import { Constants } from "../test-helpers/Constants.sol";
 
 contract CropAdapters is TestHelper {
     using FixedMath for uint256;
@@ -52,6 +53,7 @@ contract CropAdapters is TestHelper {
             address(divider),
             address(target),
             !is4626Target ? target.underlying() : target.asset(),
+            Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams,
             address(reward)
@@ -63,6 +65,7 @@ contract CropAdapters is TestHelper {
         assertEq(cropAdapter.target(), address(target));
         assertEq(cropAdapter.underlying(), address(underlying));
         assertEq(cropAdapter.divider(), address(divider));
+        assertEq(cropAdapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(cropAdapter.ifee(), ISSUANCE_FEE);
         assertEq(stake, address(stake));
         assertEq(stakeSize, STAKE_SIZE);
@@ -70,6 +73,40 @@ contract CropAdapters is TestHelper {
         assertEq(maxm, MAX_MATURITY);
         assertEq(oracle, ORACLE);
         assertEq(cropAdapter.mode(), MODE);
+
+        // sanity check trusted addresses
+        assertTrue(cropAdapter.isTrusted(address(divider)));
+        assertTrue(cropAdapter.isTrusted(address(this)));
+    }
+
+    function testExtractToken() public {
+        // can extract someReward
+        MockToken someReward = new MockToken("Some Reward", "SR", 18);
+        someReward.mint(address(adapter), 1e18);
+        assertEq(someReward.balanceOf(address(adapter)), 1e18);
+
+        hevm.expectEmit(true, true, true, true);
+        emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT, 1e18);
+
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
+        // anyone can call extract token
+        hevm.prank(address(0xfede));
+        adapter.extractToken(address(someReward));
+        assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 1e18);
+
+        (address target, address stake, ) = adapter.getStakeAndTarget();
+
+        // can NOT extract stake
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        adapter.extractToken(address(stake));
+
+        // can NOT extract target
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        adapter.extractToken(address(target));
+
+        // can NOT extract reward
+        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        adapter.extractToken(address(reward));
     }
 
     // distribution tests
@@ -1210,4 +1247,5 @@ contract CropAdapters is TestHelper {
     event Distributed(address indexed usr, address indexed token, uint256 amount);
     event RewardTokenChanged(address indexed reward);
     event RewardTokensChanged(address[] indexed rewardTokens);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
 }

@@ -37,7 +37,7 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
     uint256 public constant STAKE_SIZE = 1e18;
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
-    uint16 public constant MODE = 0;
+    uint8 public constant MODE = 0;
     uint16 public constant DEFAULT_LEVEL = 31;
     uint256 public constant INITIAL_BALANCE = 1.25e18;
 
@@ -84,7 +84,13 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
             tilt: 0,
             level: DEFAULT_LEVEL
         });
-        erc4626Adapter = new ERC4626Adapter(address(divider), AddressBook.IMUSD, ISSUANCE_FEE, adapterParams); // imUSD ERC-4626 adapter
+        erc4626Adapter = new ERC4626Adapter(
+            address(divider),
+            AddressBook.IMUSD,
+            Constants.REWARDS_RECIPIENT,
+            ISSUANCE_FEE,
+            adapterParams
+        ); // imUSD ERC-4626 adapter
     }
 
     function testMainnetERC4626AdapterScale() public {

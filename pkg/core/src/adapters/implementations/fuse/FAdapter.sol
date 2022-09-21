@@ -75,12 +75,16 @@ contract FAdapter is BaseAdapter, Crops {
         address _divider,
         address _target,
         address _underlying,
+        address _rewardsRecipient,
         uint128 _ifee,
         address _comptroller,
         AdapterParams memory _adapterParams,
         address[] memory _rewardTokens,
         address[] memory _rewardsDistributorsList
-    ) Crops(_divider, _rewardTokens) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {
+    )
+        Crops(_divider, _rewardTokens)
+        BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams)
+    {
         rewardTokens = _rewardTokens;
         comptroller = _comptroller;
         isFETH = FTokenLike(_target).isCEther();
@@ -168,20 +172,23 @@ contract FAdapter is BaseAdapter, Crops {
         ERC20(underlying).safeTransfer(msg.sender, uBal);
     }
 
-    function _to18Decimals(uint256 exRate) internal view returns (uint256) {
-        // From the Compound docs:
-        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
-        //
-        // The equation to norm an asset to 18 decimals is:
-        // `num * 10**(18 - decimals)`
-        //
-        // So, when we try to norm exRate to 18 decimals, we get the following:
-        // `exRate * 10**(18 - exRateDecimals)`
-        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
-        // -> `exRate * 10**(8 - uDecimals)`
-        // -> `exRate / 10**(uDecimals - 8)`
-        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
+    function extractToken(address token) external override {
+        for (uint256 i = 0; i < rewardTokens.length; ) {
+            if (token == rewardTokens[i]) revert Errors.TokenNotSupported();
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Check that token is neither the target nor the stake
+        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
+        ERC20 t = ERC20(token);
+        uint256 tBal = t.balanceOf(address(this));
+        t.safeTransfer(rewardsRecipient, tBal);
+        emit RewardsClaimed(token, rewardsRecipient, tBal);
     }
+
+    /* ========== ADMIN ========== */
 
     /// @notice Overrides both the rewardTokens and the rewardsDistributorsList arrays.
     /// @param _rewardTokens New reward tokens array
@@ -196,6 +203,23 @@ contract FAdapter is BaseAdapter, Crops {
             rewardsDistributorsList[_rewardTokens[i]] = _rewardsDistributorsList[i];
         }
         emit RewardsDistributorsChanged(_rewardsDistributorsList);
+    }
+
+    /* ========== INTERNAL UTILS ========== */
+
+    function _to18Decimals(uint256 exRate) internal view returns (uint256) {
+        // From the Compound docs:
+        // "exchangeRateCurrent() returns the exchange rate, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)"
+        //
+        // The equation to norm an asset to 18 decimals is:
+        // `num * 10**(18 - decimals)`
+        //
+        // So, when we try to norm exRate to 18 decimals, we get the following:
+        // `exRate * 10**(18 - exRateDecimals)`
+        // -> `exRate * 10**(18 - (18 - 8 + uDecimals))`
+        // -> `exRate * 10**(8 - uDecimals)`
+        // -> `exRate / 10**(uDecimals - 8)`
+        return uDecimals >= 8 ? exRate / 10**(uDecimals - 8) : exRate * 10**(8 - uDecimals);
     }
 
     /* ========== LOGS ========== */
