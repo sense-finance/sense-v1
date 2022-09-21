@@ -343,7 +343,6 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.NON_CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -362,7 +361,6 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROPS,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -382,7 +380,6 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.NON_CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -422,14 +419,12 @@ contract TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
 
         if (is4626Target) {
             if (crops) {
-                factoryParams.rType = Constants.CROPS;
                 someFactory = address(
                     new ERC4626CropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams)
                 );
@@ -440,7 +435,6 @@ contract TestHelper is DSTest {
             }
         } else {
             if (crops) {
-                factoryParams.rType = Constants.CROPS;
                 someFactory = address(
                     new MockCropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, _rewardTokens)
                 );

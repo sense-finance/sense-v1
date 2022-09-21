@@ -59,7 +59,6 @@ abstract contract BaseFactory is Trust {
         uint256 maxm; // max maturity (seconds after block.timstamp)
         uint128 ifee; // issuance fee
         uint8 mode; // 0 for monthly, 1 for weekly
-        uint8 rType; // 0 for non-crop, 1 for crop, 2 for crops
         uint64 tilt; // tilt
         uint256 guard; // adapter guard (in usd, 18 decimals)
     }
@@ -117,8 +116,8 @@ abstract contract BaseFactory is Trust {
     /// @dev existing adapters rewards recipients will not be changed and can be
     /// done through `setAdapterRewardsRecipient`
     function setRewardsRecipient(address _recipient) external requiresTrust {
+        emit RewardsRecipientChanged(rewardsRecipient, _recipient);
         rewardsRecipient = _recipient;
-        emit RewardsRecipientChanged(rewardsRecipient);
     }
 
     /// Set an adapter's rewards recipient
@@ -128,6 +127,5 @@ abstract contract BaseFactory is Trust {
 
     /* ========== LOGS ========== */
 
-    event AdminChanged(address indexed adapter);
-    event RewardsRecipientChanged(address indexed recipient);
+    event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
 }

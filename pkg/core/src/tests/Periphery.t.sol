@@ -180,7 +180,6 @@ contract PeripheryTest is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });

@@ -48,7 +48,6 @@ contract CAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -72,7 +71,6 @@ contract CFactories is CAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -92,7 +90,6 @@ contract CFactories is CAdapterTestHelper {
             uint256 maxm,
             uint256 ifee,
             uint8 mode,
-            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = CFactory(otherCFactory).factoryParams();
@@ -104,7 +101,6 @@ contract CFactories is CAdapterTestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(rType, Constants.CROP);
         assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
         assertEq(guard, DEFAULT_GUARD);

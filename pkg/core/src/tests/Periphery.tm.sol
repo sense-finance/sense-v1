@@ -117,14 +117,11 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             minm: Constants.DEFAULT_MIN_MATURITY,
             maxm: Constants.DEFAULT_MAX_MATURITY,
             mode: Constants.DEFAULT_MODE,
-            rType: Constants.CROP,
             tilt: Constants.DEFAULT_TILT,
             guard: Constants.DEFAULT_GUARD
         });
 
         cfactory = new CFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
-
-        factoryParams.rType = Constants.CROPS;
         ffactory = new FFactory(divider, Constants.REWARDS_RECIPIENT, factoryParams);
 
         periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);

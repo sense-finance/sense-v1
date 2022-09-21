@@ -45,7 +45,6 @@ contract FAdapterTestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROPS,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -64,7 +63,6 @@ contract FFactories is FAdapterTestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROPS,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -78,8 +76,7 @@ contract FFactories is FAdapterTestHelper {
             uint256 minm,
             uint256 maxm,
             uint256 ifee,
-            uint8 mode,
-            uint8 rType,
+            uint16 mode,
             uint64 tilt,
             uint256 guard
         ) = FFactory(otherFFactory).factoryParams();
@@ -91,7 +88,6 @@ contract FFactories is FAdapterTestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(rType, Constants.CROPS);
         assertEq(oracle, AddressBook.RARI_ORACLE);
         assertEq(tilt, 0);
         assertEq(guard, DEFAULT_GUARD);

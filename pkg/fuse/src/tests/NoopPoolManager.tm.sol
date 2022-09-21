@@ -104,7 +104,6 @@ contract NoopPoolManagerTest is DSTest {
             minm: 2 weeks,
             maxm: 14 weeks,
             mode: 0,
-            rType: Constants.NON_CROP,
             tilt: 0,
             guard: 1e18
         });

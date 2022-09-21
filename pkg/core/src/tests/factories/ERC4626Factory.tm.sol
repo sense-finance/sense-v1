@@ -72,7 +72,6 @@ contract ERC4626TestHelper is DSTest {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.NON_CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -98,7 +97,6 @@ contract ERC4626Factories is ERC4626TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.NON_CROP,
             tilt: 0,
             guard: DEFAULT_GUARD
         });
@@ -113,7 +111,6 @@ contract ERC4626Factories is ERC4626TestHelper {
             uint256 maxm,
             uint256 ifee,
             uint8 mode,
-            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = ERC4626Factory(otherFactory).factoryParams();
@@ -125,7 +122,6 @@ contract ERC4626Factories is ERC4626TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(rType, Constants.NON_CROP);
         assertEq(oracle, address(masterOracle));
         assertEq(tilt, 0);
         assertEq(guard, DEFAULT_GUARD);

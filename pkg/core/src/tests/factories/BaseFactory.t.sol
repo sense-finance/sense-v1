@@ -97,7 +97,6 @@ contract Factories is TestHelper {
             minm: MIN_MATURITY,
             maxm: MAX_MATURITY,
             mode: MODE,
-            rType: Constants.CROP,
             tilt: 0,
             guard: 123e18
         });
@@ -118,7 +117,6 @@ contract Factories is TestHelper {
             uint256 maxm,
             uint256 ifee,
             uint8 mode,
-            uint8 rType,
             uint64 tilt,
             uint256 guard
         ) = someFactory.factoryParams();
@@ -130,7 +128,6 @@ contract Factories is TestHelper {
         assertEq(minm, MIN_MATURITY);
         assertEq(maxm, MAX_MATURITY);
         assertEq(mode, MODE);
-        assertEq(rType, Constants.CROP);
         assertEq(tilt, 0);
         assertEq(guard, 123e18);
         assertEq(someFactory.reward(), address(reward));
@@ -162,7 +159,6 @@ contract Factories is TestHelper {
                 minm: MIN_MATURITY,
                 maxm: MAX_MATURITY,
                 mode: MODE,
-                rType: Constants.CROP,
                 tilt: 0,
                 guard: DEFAULT_GUARD
             });
@@ -336,6 +332,5 @@ contract Factories is TestHelper {
 
     /* ========== LOGS ========== */
 
-    event AdminChanged(address indexed adapter);
     event RewardsRecipientChanged(address indexed recipient);
 }

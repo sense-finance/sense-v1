@@ -39,7 +39,7 @@ contract ERC4626CropsFactory is CropsFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: factoryParams.rType,
+            rType: 2, // Crops
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });

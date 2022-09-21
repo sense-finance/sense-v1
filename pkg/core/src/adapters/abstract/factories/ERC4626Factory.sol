@@ -37,7 +37,7 @@ contract ERC4626Factory is BaseFactory {
             minm: factoryParams.minm,
             maxm: factoryParams.maxm,
             mode: factoryParams.mode,
-            rType: factoryParams.rType,
+            rType: 0, // Non-crop
             tilt: factoryParams.tilt,
             level: DEFAULT_LEVEL
         });

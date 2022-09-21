@@ -155,8 +155,8 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
     }
 
     function setRewardsRecipient(address recipient) external requiresTrust {
+        emit RewardsRecipientChanged(rewardsRecipient, recipient);
         rewardsRecipient = recipient;
-        emit RewardsRecipientChanged(rewardsRecipient);
     }
 
     /// @notice Transfers reward tokens from the adapter to Sense's reward container
@@ -243,6 +243,6 @@ abstract contract BaseAdapter is Trust, IERC3156FlashLender {
 
     /* ========== LOGS ========== */
 
-    event RewardsRecipientChanged(address indexed recipient);
+    event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
     event RewardsClaimed(address indexed token, address indexed recipient);
 }
