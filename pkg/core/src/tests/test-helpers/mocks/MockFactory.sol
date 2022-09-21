@@ -28,10 +28,10 @@ contract MockFactory is BaseFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams
-    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -79,11 +79,11 @@ contract MockCropFactory is CropFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -133,11 +133,11 @@ contract MockCropsFactory is BaseFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address[] memory _rewardTokens
-    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {
         rewardTokens = _rewardTokens;
     }
 
@@ -191,11 +191,11 @@ contract Mock4626CropFactory is CropFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function supportTarget(address _target, bool status) external {
         targets[_target] = status;
@@ -243,11 +243,11 @@ contract Mock4626CropsFactory is BaseFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         BaseFactory.FactoryParams memory _factoryParams,
         address[] memory _rewardTokens
-    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {
         rewardTokens = _rewardTokens;
     }
 

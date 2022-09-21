@@ -56,11 +56,11 @@ contract Mock2e18Factory is MockCropFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) MockCropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, _reward) {}
+    ) MockCropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({

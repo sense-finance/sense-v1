@@ -29,10 +29,10 @@ contract FFactory is BaseFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
-    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         address comptroller = abi.decode(data, (address));

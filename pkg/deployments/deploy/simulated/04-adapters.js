@@ -14,6 +14,7 @@ module.exports = async function () {
   const signer = await ethers.getSigner(deployer);
   const chainId = await getChainId();
   const rewardsRecipient = SENSE_MULTISIG.get(chainId);
+  const restrictedAdmin = SENSE_MULTISIG.get(chainId);
 
   const divider = await ethers.getContract("Divider", signer);
   const periphery = await ethers.getContract("Periphery", signer);
@@ -55,6 +56,7 @@ module.exports = async function () {
       from: deployer,
       args: [
         divider.address,
+        restrictedAdmin,
         rewardsRecipient,
         factoryParams,
         ...(rType == NON_CROP ? [] : rType == CROPS ? [[airdrop.address]] : [airdrop.address]),

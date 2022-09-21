@@ -10,11 +10,11 @@ abstract contract CropFactory is BaseFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {
         reward = _reward;
     }
 }

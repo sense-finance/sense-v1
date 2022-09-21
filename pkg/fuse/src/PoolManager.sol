@@ -57,7 +57,7 @@ interface MasterOracleLike {
         address[] memory underlyings,
         PriceOracle[] memory _oracles,
         PriceOracle _defaultOracle,
-        address _admin,
+        address _restrictedAdmin,
         bool _canAdminOverwrite
     ) external;
 

@@ -18,10 +18,10 @@ contract ERC4626Factory is BaseFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
-    ) BaseFactory(_divider, _admin, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {}
 
     /// @notice Deploys an ERC4626Adapter contract
     /// @param _target The target address

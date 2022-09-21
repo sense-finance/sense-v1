@@ -18,11 +18,11 @@ contract ERC4626CropFactory is CropFactory {
 
     constructor(
         address _divider,
-        address _admin,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _admin, _rewardsRecipient, _factoryParams, address(0)) {}
+    ) CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, address(0)) {}
 
     /// @notice Deploys an ERC4626Adapter contract
     /// @param _target The target address
