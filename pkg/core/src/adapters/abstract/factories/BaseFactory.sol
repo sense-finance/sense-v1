@@ -117,8 +117,8 @@ abstract contract BaseFactory is Trust {
     }
 
     function setAdapterAdmin(address _adapterAdmin) external requiresTrust {
+        emit AdapterAdminChanged(adapterAdmin, _adapterAdmin);
         adapterAdmin = _adapterAdmin;
-        emit AdminChanged(adapterAdmin);
     }
 
     /// Set factory rewards recipient
@@ -133,4 +133,5 @@ abstract contract BaseFactory is Trust {
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
+    event AdapterAdminChanged(address indexed oldAdmin, address indexed newAdmin);
 }

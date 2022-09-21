@@ -163,7 +163,7 @@ contract Adapters is TestHelper {
         // Can be changed by admin
 
         hevm.expectEmit(true, true, true, true);
-        emit RewardsRecipientChanged(address(0x111));
+        emit RewardsRecipientChanged(Constants.REWARDS_RECIPIENT, address(0x111));
 
         hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setRewardsRecipient(address(0x111));
@@ -172,7 +172,7 @@ contract Adapters is TestHelper {
         // Can be changed by the factory that deployed it
 
         hevm.expectEmit(true, true, true, true);
-        emit RewardsRecipientChanged(Constants.REWARDS_RECIPIENT, address(0x222));
+        emit RewardsRecipientChanged(address(0x111), address(0x222));
 
         hevm.prank(address(factory));
         adapter.setRewardsRecipient(address(0x222));

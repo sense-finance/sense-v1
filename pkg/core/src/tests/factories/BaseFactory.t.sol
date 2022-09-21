@@ -326,7 +326,7 @@ contract Factories is TestHelper {
 
         // Can set admin
         hevm.expectEmit(true, true, true, true);
-        emit AdminChanged(address(0x111));
+        emit AdapterAdminChanged(Constants.ADAPTER_ADMIN, address(0x111));
 
         factory.setAdapterAdmin(address(0x111));
         assertEq(factory.adapterAdmin(), address(0x111));
@@ -351,4 +351,5 @@ contract Factories is TestHelper {
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed recipient, address indexed newRecipient);
+    event AdapterAdminChanged(address indexed admin, address indexed newAdmin);
 }
