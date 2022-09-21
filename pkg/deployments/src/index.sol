@@ -26,4 +26,6 @@ import { NoopPoolManager } from "@sense-finance/v1-fuse/src/NoopPoolManager.sol"
 import { EmergencyStop } from "@sense-finance/v1-utils/src/EmergencyStop.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
 
+import { RewardsDistributor } from "../lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol";
+
 import "./Versioning.sol";

@@ -1,0 +1,445 @@
+{
+  "address": "0x6bce2D632fc8a327e6Ea353b028999bfCbCb6fcD",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_morpho",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AlreadyClaimed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ProofInvalidOrExpired",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "MorphoWithdrawn",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardsClaimed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "newRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RootUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MORPHO",
+      "outputs": [
+        {
+          "internalType": "contract ERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_claimable",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "_proof",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "claim",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "claimed",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currRoot",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "prevRoot",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_newRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "updateRoot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawMorphoTokens",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xb6b0adbbedc4bdc093c9bc3cbdce1bb8700fa8bc84730cb8d6e179b3bd8c9004",
+  "receipt": {
+    "to": null,
+    "from": "0x59A181710F926Eae6FddfbF27a14259E8DD00cA2",
+    "contractAddress": "0x6bce2D632fc8a327e6Ea353b028999bfCbCb6fcD",
+    "transactionIndex": 286,
+    "gasUsed": "647406",
+    "logsBloom": "0x00000000000000000000000000000000000000001000000040800000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000002001000000000000000000000000000000000000020000000000000000000800000000000000000000000000000000400000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000001000000000000000000000000000",
+    "blockHash": "0xece285575de4102477fbf1e91cb2edfdd3dbe1e6f7b3acf74a3e936f7b9c296e",
+    "transactionHash": "0xb6b0adbbedc4bdc093c9bc3cbdce1bb8700fa8bc84730cb8d6e179b3bd8c9004",
+    "logs": [
+      {
+        "transactionIndex": 286,
+        "blockNumber": 15582108,
+        "transactionHash": "0xb6b0adbbedc4bdc093c9bc3cbdce1bb8700fa8bc84730cb8d6e179b3bd8c9004",
+        "address": "0x6bce2D632fc8a327e6Ea353b028999bfCbCb6fcD",
+        "topics": [
+          "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x00000000000000000000000059a181710f926eae6fddfbf27a14259e8dd00ca2"
+        ],
+        "data": "0x",
+        "logIndex": 507,
+        "blockHash": "0xece285575de4102477fbf1e91cb2edfdd3dbe1e6f7b3acf74a3e936f7b9c296e"
+      }
+    ],
+    "blockNumber": 15582108,
+    "cumulativeGasUsed": "25506401",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x9994E35Db50125E0DF82e4c2dde62496CE330999"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "48a7f20ac052da0df889e8abc2419c93",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.11+commit.d7f03943\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_morpho\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AlreadyClaimed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ProofInvalidOrExpired\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"MorphoWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"RewardsClaimed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"newRoot\",\"type\":\"bytes32\"}],\"name\":\"RootUpdated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"MORPHO\",\"outputs\":[{\"internalType\":\"contract ERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_claimable\",\"type\":\"uint256\"},{\"internalType\":\"bytes32[]\",\"name\":\"_proof\",\"type\":\"bytes32[]\"}],\"name\":\"claim\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"claimed\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"currRoot\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"prevRoot\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_newRoot\",\"type\":\"bytes32\"}],\"name\":\"updateRoot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdrawMorphoTokens\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Morpho Labs.\",\"custom:contact\":\"security@morpho.xyz\",\"events\":{\"MorphoWithdrawn(address,uint256)\":{\"params\":{\"amount\":\"The amount of MORPHO tokens withdrawn.\",\"to\":\"The address of the recipient.\"}},\"RewardsClaimed(address,uint256)\":{\"params\":{\"account\":\"The address of the claimer.\",\"amount\":\"The amount of rewards claimed.\"}},\"RootUpdated(bytes32)\":{\"params\":{\"newRoot\":\"The new merkle's tree root.\"}}},\"kind\":\"dev\",\"methods\":{\"claim(address,uint256,bytes32[])\":{\"params\":{\"_account\":\"The address of the claimer.\",\"_claimable\":\"The overall claimable amount of token rewards.\",\"_proof\":\"The merkle proof that validates this claim.\"}},\"constructor\":{\"params\":{\"_morpho\":\"The address of the MORPHO token to distribute.\"}},\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"},\"updateRoot(bytes32)\":{\"params\":{\"_newRoot\":\"The new merkle tree's root.\"}},\"withdrawMorphoTokens(address,uint256)\":{\"params\":{\"_amount\":\"The amount of MORPHO tokens to transfer.\",\"_to\":\"The address of the recipient.\"}}},\"title\":\"Morpho Rewards Distributor.\",\"version\":1},\"userdoc\":{\"errors\":{\"AlreadyClaimed()\":[{\"notice\":\"Thrown when the claimer has already claimed the rewards.\"}],\"ProofInvalidOrExpired()\":[{\"notice\":\"Thrown when the proof is invalid or expired.\"}]},\"events\":{\"MorphoWithdrawn(address,uint256)\":{\"notice\":\"Emitted when MORPHO tokens are withdrawn.\"},\"RewardsClaimed(address,uint256)\":{\"notice\":\"Emitted when an account claims rewards.\"},\"RootUpdated(bytes32)\":{\"notice\":\"Emitted when the root is updated.\"}},\"kind\":\"user\",\"methods\":{\"MORPHO()\":{\"notice\":\"STORAGE ///\"},\"claim(address,uint256,bytes32[])\":{\"notice\":\"Claims rewards.\"},\"constructor\":{\"notice\":\"Constructs Morpho's RewardsDistributor contract.\"},\"updateRoot(bytes32)\":{\"notice\":\"Updates the current merkle tree's root.\"},\"withdrawMorphoTokens(address,uint256)\":{\"notice\":\"Withdraws MORPHO tokens to a recipient.\"}},\"notice\":\"This contract allows Morpho users to claim their rewards. This contract is largely inspired by Euler Distributor's contract: https://github.com/euler-xyz/euler-contracts/blob/master/contracts/mining/EulDistributor.sol.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol\":\"RewardsDistributor\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":15000},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/access/Ownable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/Context.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * By default, the owner account will be the one that deploys the contract. This\\n * can later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract Ownable is Context {\\n    address private _owner;\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the deployer as the initial owner.\\n     */\\n    constructor() {\\n        _transferOwnership(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        _checkOwner();\\n        _;\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if the sender is not the owner.\\n     */\\n    function _checkOwner() internal view virtual {\\n        require(owner() == _msgSender(), \\\"Ownable: caller is not the owner\\\");\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions anymore. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby removing any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        require(newOwner != address(0), \\\"Ownable: new owner is the zero address\\\");\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n}\\n\",\"keccak256\":\"0xa94b34880e3c1b0b931662cb1c09e5dfa6662f31cba80e07c5ee71cd135c9673\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Context.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract Context {\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n}\\n\",\"keccak256\":\"0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/cryptography/MerkleProof.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.7.0) (utils/cryptography/MerkleProof.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev These functions deal with verification of Merkle Tree proofs.\\n *\\n * The proofs can be generated using the JavaScript library\\n * https://github.com/miguelmota/merkletreejs[merkletreejs].\\n * Note: the hashing algorithm should be keccak256 and pair sorting should be enabled.\\n *\\n * See `test/utils/cryptography/MerkleProof.test.js` for some examples.\\n *\\n * WARNING: You should avoid using leaf values that are 64 bytes long prior to\\n * hashing, or use a hash function other than keccak256 for hashing leaves.\\n * This is because the concatenation of a sorted pair of internal nodes in\\n * the merkle tree could be reinterpreted as a leaf value.\\n */\\nlibrary MerkleProof {\\n    /**\\n     * @dev Returns true if a `leaf` can be proved to be a part of a Merkle tree\\n     * defined by `root`. For this, a `proof` must be provided, containing\\n     * sibling hashes on the branch from the leaf to the root of the tree. Each\\n     * pair of leaves and each pair of pre-images are assumed to be sorted.\\n     */\\n    function verify(\\n        bytes32[] memory proof,\\n        bytes32 root,\\n        bytes32 leaf\\n    ) internal pure returns (bool) {\\n        return processProof(proof, leaf) == root;\\n    }\\n\\n    /**\\n     * @dev Calldata version of {verify}\\n     *\\n     * _Available since v4.7._\\n     */\\n    function verifyCalldata(\\n        bytes32[] calldata proof,\\n        bytes32 root,\\n        bytes32 leaf\\n    ) internal pure returns (bool) {\\n        return processProofCalldata(proof, leaf) == root;\\n    }\\n\\n    /**\\n     * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up\\n     * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt\\n     * hash matches the root of the tree. When processing the proof, the pairs\\n     * of leafs & pre-images are assumed to be sorted.\\n     *\\n     * _Available since v4.4._\\n     */\\n    function processProof(bytes32[] memory proof, bytes32 leaf) internal pure returns (bytes32) {\\n        bytes32 computedHash = leaf;\\n        for (uint256 i = 0; i < proof.length; i++) {\\n            computedHash = _hashPair(computedHash, proof[i]);\\n        }\\n        return computedHash;\\n    }\\n\\n    /**\\n     * @dev Calldata version of {processProof}\\n     *\\n     * _Available since v4.7._\\n     */\\n    function processProofCalldata(bytes32[] calldata proof, bytes32 leaf) internal pure returns (bytes32) {\\n        bytes32 computedHash = leaf;\\n        for (uint256 i = 0; i < proof.length; i++) {\\n            computedHash = _hashPair(computedHash, proof[i]);\\n        }\\n        return computedHash;\\n    }\\n\\n    /**\\n     * @dev Returns true if the `leaves` can be proved to be a part of a Merkle tree defined by\\n     * `root`, according to `proof` and `proofFlags` as described in {processMultiProof}.\\n     *\\n     * _Available since v4.7._\\n     */\\n    function multiProofVerify(\\n        bytes32[] memory proof,\\n        bool[] memory proofFlags,\\n        bytes32 root,\\n        bytes32[] memory leaves\\n    ) internal pure returns (bool) {\\n        return processMultiProof(proof, proofFlags, leaves) == root;\\n    }\\n\\n    /**\\n     * @dev Calldata version of {multiProofVerify}\\n     *\\n     * _Available since v4.7._\\n     */\\n    function multiProofVerifyCalldata(\\n        bytes32[] calldata proof,\\n        bool[] calldata proofFlags,\\n        bytes32 root,\\n        bytes32[] memory leaves\\n    ) internal pure returns (bool) {\\n        return processMultiProofCalldata(proof, proofFlags, leaves) == root;\\n    }\\n\\n    /**\\n     * @dev Returns the root of a tree reconstructed from `leaves` and the sibling nodes in `proof`,\\n     * consuming from one or the other at each step according to the instructions given by\\n     * `proofFlags`.\\n     *\\n     * _Available since v4.7._\\n     */\\n    function processMultiProof(\\n        bytes32[] memory proof,\\n        bool[] memory proofFlags,\\n        bytes32[] memory leaves\\n    ) internal pure returns (bytes32 merkleRoot) {\\n        // This function rebuild the root hash by traversing the tree up from the leaves. The root is rebuilt by\\n        // consuming and producing values on a queue. The queue starts with the `leaves` array, then goes onto the\\n        // `hashes` array. At the end of the process, the last hash in the `hashes` array should contain the root of\\n        // the merkle tree.\\n        uint256 leavesLen = leaves.length;\\n        uint256 totalHashes = proofFlags.length;\\n\\n        // Check proof validity.\\n        require(leavesLen + proof.length - 1 == totalHashes, \\\"MerkleProof: invalid multiproof\\\");\\n\\n        // The xxxPos values are \\\"pointers\\\" to the next value to consume in each array. All accesses are done using\\n        // `xxx[xxxPos++]`, which return the current value and increment the pointer, thus mimicking a queue's \\\"pop\\\".\\n        bytes32[] memory hashes = new bytes32[](totalHashes);\\n        uint256 leafPos = 0;\\n        uint256 hashPos = 0;\\n        uint256 proofPos = 0;\\n        // At each step, we compute the next hash using two values:\\n        // - a value from the \\\"main queue\\\". If not all leaves have been consumed, we get the next leaf, otherwise we\\n        //   get the next hash.\\n        // - depending on the flag, either another value for the \\\"main queue\\\" (merging branches) or an element from the\\n        //   `proof` array.\\n        for (uint256 i = 0; i < totalHashes; i++) {\\n            bytes32 a = leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++];\\n            bytes32 b = proofFlags[i] ? leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++] : proof[proofPos++];\\n            hashes[i] = _hashPair(a, b);\\n        }\\n\\n        if (totalHashes > 0) {\\n            return hashes[totalHashes - 1];\\n        } else if (leavesLen > 0) {\\n            return leaves[0];\\n        } else {\\n            return proof[0];\\n        }\\n    }\\n\\n    /**\\n     * @dev Calldata version of {processMultiProof}\\n     *\\n     * _Available since v4.7._\\n     */\\n    function processMultiProofCalldata(\\n        bytes32[] calldata proof,\\n        bool[] calldata proofFlags,\\n        bytes32[] memory leaves\\n    ) internal pure returns (bytes32 merkleRoot) {\\n        // This function rebuild the root hash by traversing the tree up from the leaves. The root is rebuilt by\\n        // consuming and producing values on a queue. The queue starts with the `leaves` array, then goes onto the\\n        // `hashes` array. At the end of the process, the last hash in the `hashes` array should contain the root of\\n        // the merkle tree.\\n        uint256 leavesLen = leaves.length;\\n        uint256 totalHashes = proofFlags.length;\\n\\n        // Check proof validity.\\n        require(leavesLen + proof.length - 1 == totalHashes, \\\"MerkleProof: invalid multiproof\\\");\\n\\n        // The xxxPos values are \\\"pointers\\\" to the next value to consume in each array. All accesses are done using\\n        // `xxx[xxxPos++]`, which return the current value and increment the pointer, thus mimicking a queue's \\\"pop\\\".\\n        bytes32[] memory hashes = new bytes32[](totalHashes);\\n        uint256 leafPos = 0;\\n        uint256 hashPos = 0;\\n        uint256 proofPos = 0;\\n        // At each step, we compute the next hash using two values:\\n        // - a value from the \\\"main queue\\\". If not all leaves have been consumed, we get the next leaf, otherwise we\\n        //   get the next hash.\\n        // - depending on the flag, either another value for the \\\"main queue\\\" (merging branches) or an element from the\\n        //   `proof` array.\\n        for (uint256 i = 0; i < totalHashes; i++) {\\n            bytes32 a = leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++];\\n            bytes32 b = proofFlags[i] ? leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++] : proof[proofPos++];\\n            hashes[i] = _hashPair(a, b);\\n        }\\n\\n        if (totalHashes > 0) {\\n            return hashes[totalHashes - 1];\\n        } else if (leavesLen > 0) {\\n            return leaves[0];\\n        } else {\\n            return proof[0];\\n        }\\n    }\\n\\n    function _hashPair(bytes32 a, bytes32 b) private pure returns (bytes32) {\\n        return a < b ? _efficientHash(a, b) : _efficientHash(b, a);\\n    }\\n\\n    function _efficientHash(bytes32 a, bytes32 b) private pure returns (bytes32 value) {\\n        /// @solidity memory-safe-assembly\\n        assembly {\\n            mstore(0x00, a)\\n            mstore(0x20, b)\\n            value := keccak256(0x00, 0x40)\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x596ed72a251d391b814a4aa19d7acb02ebdcc92ba27d3fff74a6f0c158b12ab7\",\"license\":\"MIT\"},\"@rari-capital/solmate/src/tokens/ERC20.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.8.0;\\n\\n/// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.\\n/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)\\n/// @author Modified from Uniswap (https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2ERC20.sol)\\n/// @dev Do not manually set balances without updating totalSupply, as the sum of all user balances must not exceed it.\\nabstract contract ERC20 {\\n    /*//////////////////////////////////////////////////////////////\\n                                 EVENTS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    event Transfer(address indexed from, address indexed to, uint256 amount);\\n\\n    event Approval(address indexed owner, address indexed spender, uint256 amount);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            METADATA STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    string public name;\\n\\n    string public symbol;\\n\\n    uint8 public immutable decimals;\\n\\n    /*//////////////////////////////////////////////////////////////\\n                              ERC20 STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    uint256 public totalSupply;\\n\\n    mapping(address => uint256) public balanceOf;\\n\\n    mapping(address => mapping(address => uint256)) public allowance;\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            EIP-2612 STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    uint256 internal immutable INITIAL_CHAIN_ID;\\n\\n    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;\\n\\n    mapping(address => uint256) public nonces;\\n\\n    /*//////////////////////////////////////////////////////////////\\n                               CONSTRUCTOR\\n    //////////////////////////////////////////////////////////////*/\\n\\n    constructor(\\n        string memory _name,\\n        string memory _symbol,\\n        uint8 _decimals\\n    ) {\\n        name = _name;\\n        symbol = _symbol;\\n        decimals = _decimals;\\n\\n        INITIAL_CHAIN_ID = block.chainid;\\n        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                               ERC20 LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function approve(address spender, uint256 amount) public virtual returns (bool) {\\n        allowance[msg.sender][spender] = amount;\\n\\n        emit Approval(msg.sender, spender, amount);\\n\\n        return true;\\n    }\\n\\n    function transfer(address to, uint256 amount) public virtual returns (bool) {\\n        balanceOf[msg.sender] -= amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(msg.sender, to, amount);\\n\\n        return true;\\n    }\\n\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) public virtual returns (bool) {\\n        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.\\n\\n        if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - amount;\\n\\n        balanceOf[from] -= amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(from, to, amount);\\n\\n        return true;\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                             EIP-2612 LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function permit(\\n        address owner,\\n        address spender,\\n        uint256 value,\\n        uint256 deadline,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) public virtual {\\n        require(deadline >= block.timestamp, \\\"PERMIT_DEADLINE_EXPIRED\\\");\\n\\n        // Unchecked because the only math done is incrementing\\n        // the owner's nonce which cannot realistically overflow.\\n        unchecked {\\n            address recoveredAddress = ecrecover(\\n                keccak256(\\n                    abi.encodePacked(\\n                        \\\"\\\\x19\\\\x01\\\",\\n                        DOMAIN_SEPARATOR(),\\n                        keccak256(\\n                            abi.encode(\\n                                keccak256(\\n                                    \\\"Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)\\\"\\n                                ),\\n                                owner,\\n                                spender,\\n                                value,\\n                                nonces[owner]++,\\n                                deadline\\n                            )\\n                        )\\n                    )\\n                ),\\n                v,\\n                r,\\n                s\\n            );\\n\\n            require(recoveredAddress != address(0) && recoveredAddress == owner, \\\"INVALID_SIGNER\\\");\\n\\n            allowance[recoveredAddress][spender] = value;\\n        }\\n\\n        emit Approval(owner, spender, value);\\n    }\\n\\n    function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {\\n        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator();\\n    }\\n\\n    function computeDomainSeparator() internal view virtual returns (bytes32) {\\n        return\\n            keccak256(\\n                abi.encode(\\n                    keccak256(\\\"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)\\\"),\\n                    keccak256(bytes(name)),\\n                    keccak256(\\\"1\\\"),\\n                    block.chainid,\\n                    address(this)\\n                )\\n            );\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                        INTERNAL MINT/BURN LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function _mint(address to, uint256 amount) internal virtual {\\n        totalSupply += amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(address(0), to, amount);\\n    }\\n\\n    function _burn(address from, uint256 amount) internal virtual {\\n        balanceOf[from] -= amount;\\n\\n        // Cannot underflow because a user's balance\\n        // will never be larger than the total supply.\\n        unchecked {\\n            totalSupply -= amount;\\n        }\\n\\n        emit Transfer(from, address(0), amount);\\n    }\\n}\\n\",\"keccak256\":\"0x0240f7703cff32a61ee3e9fbb339e09a944260432a9ef37debf3692b1a6c8049\",\"license\":\"AGPL-3.0-only\"},\"@rari-capital/solmate/src/utils/SafeTransferLib.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.8.0;\\n\\nimport {ERC20} from \\\"../tokens/ERC20.sol\\\";\\n\\n/// @notice Safe ETH and ERC20 transfer library that gracefully handles missing return values.\\n/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/SafeTransferLib.sol)\\n/// @dev Use with caution! Some functions in this library knowingly create dirty bits at the destination of the free memory pointer.\\n/// @dev Note that none of the functions in this library check that a token has code at all! That responsibility is delegated to the caller.\\nlibrary SafeTransferLib {\\n    event Debug(bool one, bool two, uint256 retsize);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                             ETH OPERATIONS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function safeTransferETH(address to, uint256 amount) internal {\\n        bool success;\\n\\n        assembly {\\n            // Transfer the ETH and store if it succeeded or not.\\n            success := call(gas(), to, amount, 0, 0, 0, 0)\\n        }\\n\\n        require(success, \\\"ETH_TRANSFER_FAILED\\\");\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            ERC20 OPERATIONS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function safeTransferFrom(\\n        ERC20 token,\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) internal {\\n        bool success;\\n\\n        assembly {\\n            // Get a pointer to some free memory.\\n            let freeMemoryPointer := mload(0x40)\\n\\n            // Write the abi-encoded calldata into memory, beginning with the function selector.\\n            mstore(freeMemoryPointer, 0x23b872dd00000000000000000000000000000000000000000000000000000000)\\n            mstore(add(freeMemoryPointer, 4), from) // Append the \\\"from\\\" argument.\\n            mstore(add(freeMemoryPointer, 36), to) // Append the \\\"to\\\" argument.\\n            mstore(add(freeMemoryPointer, 68), amount) // Append the \\\"amount\\\" argument.\\n\\n            success := and(\\n                // Set success to whether the call reverted, if not we check it either\\n                // returned exactly 1 (can't just be non-zero data), or had no return data.\\n                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),\\n                // We use 100 because the length of our calldata totals up like so: 4 + 32 * 3.\\n                // We use 0 and 32 to copy up to 32 bytes of return data into the scratch space.\\n                // Counterintuitively, this call must be positioned second to the or() call in the\\n                // surrounding and() call or else returndatasize() will be zero during the computation.\\n                call(gas(), token, 0, freeMemoryPointer, 100, 0, 32)\\n            )\\n        }\\n\\n        require(success, \\\"TRANSFER_FROM_FAILED\\\");\\n    }\\n\\n    function safeTransfer(\\n        ERC20 token,\\n        address to,\\n        uint256 amount\\n    ) internal {\\n        bool success;\\n\\n        assembly {\\n            // Get a pointer to some free memory.\\n            let freeMemoryPointer := mload(0x40)\\n\\n            // Write the abi-encoded calldata into memory, beginning with the function selector.\\n            mstore(freeMemoryPointer, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)\\n            mstore(add(freeMemoryPointer, 4), to) // Append the \\\"to\\\" argument.\\n            mstore(add(freeMemoryPointer, 36), amount) // Append the \\\"amount\\\" argument.\\n\\n            success := and(\\n                // Set success to whether the call reverted, if not we check it either\\n                // returned exactly 1 (can't just be non-zero data), or had no return data.\\n                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),\\n                // We use 68 because the length of our calldata totals up like so: 4 + 32 * 2.\\n                // We use 0 and 32 to copy up to 32 bytes of return data into the scratch space.\\n                // Counterintuitively, this call must be positioned second to the or() call in the\\n                // surrounding and() call or else returndatasize() will be zero during the computation.\\n                call(gas(), token, 0, freeMemoryPointer, 68, 0, 32)\\n            )\\n        }\\n\\n        require(success, \\\"TRANSFER_FAILED\\\");\\n    }\\n\\n    function safeApprove(\\n        ERC20 token,\\n        address to,\\n        uint256 amount\\n    ) internal {\\n        bool success;\\n\\n        assembly {\\n            // Get a pointer to some free memory.\\n            let freeMemoryPointer := mload(0x40)\\n\\n            // Write the abi-encoded calldata into memory, beginning with the function selector.\\n            mstore(freeMemoryPointer, 0x095ea7b300000000000000000000000000000000000000000000000000000000)\\n            mstore(add(freeMemoryPointer, 4), to) // Append the \\\"to\\\" argument.\\n            mstore(add(freeMemoryPointer, 36), amount) // Append the \\\"amount\\\" argument.\\n\\n            success := and(\\n                // Set success to whether the call reverted, if not we check it either\\n                // returned exactly 1 (can't just be non-zero data), or had no return data.\\n                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),\\n                // We use 68 because the length of our calldata totals up like so: 4 + 32 * 2.\\n                // We use 0 and 32 to copy up to 32 bytes of return data into the scratch space.\\n                // Counterintuitively, this call must be positioned second to the or() call in the\\n                // surrounding and() call or else returndatasize() will be zero during the computation.\\n                call(gas(), token, 0, freeMemoryPointer, 68, 0, 32)\\n            )\\n        }\\n\\n        require(success, \\\"APPROVE_FAILED\\\");\\n    }\\n}\\n\",\"keccak256\":\"0xf3c37dad1c92b696ffb8b4532527514f8c8a31a4732c6f61815a4fe5f5ce8725\",\"license\":\"AGPL-3.0-only\"},\"lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol\":{\"content\":\"// SPDX-License-Identifier: GNU AGPLv3\\npragma solidity ^0.8.0;\\n\\nimport \\\"@rari-capital/solmate/src/utils/SafeTransferLib.sol\\\";\\n\\nimport \\\"@openzeppelin/contracts/utils/cryptography/MerkleProof.sol\\\";\\nimport \\\"@openzeppelin/contracts/access/Ownable.sol\\\";\\n\\n/// @title Morpho Rewards Distributor.\\n/// @author Morpho Labs.\\n/// @custom:contact security@morpho.xyz\\n/// @notice This contract allows Morpho users to claim their rewards. This contract is largely inspired by Euler Distributor's contract: https://github.com/euler-xyz/euler-contracts/blob/master/contracts/mining/EulDistributor.sol.\\ncontract RewardsDistributor is Ownable {\\n    using SafeTransferLib for ERC20;\\n\\n    /// STORAGE ///\\n\\n    ERC20 public immutable MORPHO;\\n    bytes32 public currRoot; // The merkle tree's root of the current rewards distribution.\\n    bytes32 public prevRoot; // The merkle tree's root of the previous rewards distribution.\\n    mapping(address => uint256) public claimed; // The rewards already claimed. account -> amount.\\n\\n    /// EVENTS ///\\n\\n    /// @notice Emitted when the root is updated.\\n    /// @param newRoot The new merkle's tree root.\\n    event RootUpdated(bytes32 newRoot);\\n\\n    /// @notice Emitted when MORPHO tokens are withdrawn.\\n    /// @param to The address of the recipient.\\n    /// @param amount The amount of MORPHO tokens withdrawn.\\n    event MorphoWithdrawn(address to, uint256 amount);\\n\\n    /// @notice Emitted when an account claims rewards.\\n    /// @param account The address of the claimer.\\n    /// @param amount The amount of rewards claimed.\\n    event RewardsClaimed(address account, uint256 amount);\\n\\n    /// ERRORS ///\\n\\n    /// @notice Thrown when the proof is invalid or expired.\\n    error ProofInvalidOrExpired();\\n\\n    /// @notice Thrown when the claimer has already claimed the rewards.\\n    error AlreadyClaimed();\\n\\n    /// CONSTRUCTOR ///\\n\\n    /// @notice Constructs Morpho's RewardsDistributor contract.\\n    /// @param _morpho The address of the MORPHO token to distribute.\\n    constructor(address _morpho) {\\n        MORPHO = ERC20(_morpho);\\n    }\\n\\n    /// EXTERNAL ///\\n\\n    /// @notice Updates the current merkle tree's root.\\n    /// @param _newRoot The new merkle tree's root.\\n    function updateRoot(bytes32 _newRoot) external onlyOwner {\\n        prevRoot = currRoot;\\n        currRoot = _newRoot;\\n        emit RootUpdated(_newRoot);\\n    }\\n\\n    /// @notice Withdraws MORPHO tokens to a recipient.\\n    /// @param _to The address of the recipient.\\n    /// @param _amount The amount of MORPHO tokens to transfer.\\n    function withdrawMorphoTokens(address _to, uint256 _amount) external onlyOwner {\\n        uint256 morphoBalance = MORPHO.balanceOf(address(this));\\n        uint256 toWithdraw = morphoBalance < _amount ? morphoBalance : _amount;\\n        MORPHO.safeTransfer(_to, toWithdraw);\\n        emit MorphoWithdrawn(_to, toWithdraw);\\n    }\\n\\n    /// @notice Claims rewards.\\n    /// @param _account The address of the claimer.\\n    /// @param _claimable The overall claimable amount of token rewards.\\n    /// @param _proof The merkle proof that validates this claim.\\n    function claim(\\n        address _account,\\n        uint256 _claimable,\\n        bytes32[] calldata _proof\\n    ) external {\\n        bytes32 candidateRoot = MerkleProof.processProof(\\n            _proof,\\n            keccak256(abi.encodePacked(_account, _claimable))\\n        );\\n        if (candidateRoot != currRoot && candidateRoot != prevRoot) revert ProofInvalidOrExpired();\\n\\n        uint256 alreadyClaimed = claimed[_account];\\n        if (_claimable <= alreadyClaimed) revert AlreadyClaimed();\\n\\n        uint256 amount;\\n        unchecked {\\n            amount = _claimable - alreadyClaimed;\\n        }\\n\\n        claimed[_account] = _claimable;\\n\\n        MORPHO.safeTransfer(_account, amount);\\n        emit RewardsClaimed(_account, amount);\\n    }\\n}\\n\",\"keccak256\":\"0x9915fe971db5b0aa1e4fab115e8450cdc6fde0a42744a1bf9ece2653568df63f\",\"license\":\"GNU AGPLv3\"}},\"version\":1}",
+  "bytecode": "0x60a060405234801561001057600080fd5b50604051610b50380380610b5083398101604081905261002f91610099565b61003833610049565b6001600160a01b03166080526100c9565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6000602082840312156100ab57600080fd5b81516001600160a01b03811681146100c257600080fd5b9392505050565b608051610a586100f86000396000818160f001528181610201015281816102b001526104e60152610a586000f3fe608060405234801561001057600080fd5b50600436106100be5760003560e01c80638da5cb5b11610076578063e3f5b1951161005b578063e3f5b195146101a3578063f2fde38b146101ac578063fdb4beda146101bf57600080fd5b80638da5cb5b14610157578063c884ef831461017557600080fd5b80633acb5624116100a75780633acb5624146100eb5780633d13f8741461013c578063715018a61461014f57600080fd5b80630ebe7884146100c357806321ff9970146100d8575b600080fd5b6100d66100d1366004610892565b6101c8565b005b6100d66100e63660046108bc565b61032c565b6101127f000000000000000000000000000000000000000000000000000000000000000081565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b6100d661014a3660046108d5565b610374565b6100d6610565565b60005473ffffffffffffffffffffffffffffffffffffffff16610112565b61019561018336600461095f565b60036020526000908152604090205481565b604051908152602001610133565b61019560015481565b6100d66101ba36600461095f565b610579565b61019560025481565b6101d0610635565b6040517f70a082310000000000000000000000000000000000000000000000000000000081523060048201526000907f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff16906370a0823190602401602060405180830381865afa15801561025d573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610281919061097a565b905060008282106102925782610294565b815b90506102d773ffffffffffffffffffffffffffffffffffffffff7f00000000000000000000000000000000000000000000000000000000000000001685836106b6565b6040805173ffffffffffffffffffffffffffffffffffffffff86168152602081018390527f0a83c45ce2a0cc02c5b9a1eb1df9f36419b122df5ed78e38aa87300742019134910160405180910390a150505050565b610334610635565b600180546002558190556040518181527f2cbc14f49c068133583f7cb530018af451c87c1cf1327cf2a4ff4698c4730aa49060200160405180910390a150565b6000610407838380806020026020016040519081016040528093929190818152602001838360200280828437600092019190915250506040517fffffffffffffffffffffffffffffffffffffffff00000000000000000000000060608b901b1660208201526034810189905260540191506103ec9050565b60405160208183030381529060405280519060200120610775565b9050600154811415801561041d57506002548114155b15610454576040517ff542095700000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b73ffffffffffffffffffffffffffffffffffffffff85166000908152600360205260409020548085116104b3576040517f646cf55800000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b73ffffffffffffffffffffffffffffffffffffffff80871660009081526003602052604090208690558186039061050d907f00000000000000000000000000000000000000000000000000000000000000001688836106b6565b6040805173ffffffffffffffffffffffffffffffffffffffff89168152602081018390527ffc30cddea38e2bf4d6ea7d3f9ed3b6ad7f176419f4963bd81318067a4aee73fe910160405180910390a150505050505050565b61056d610635565b61057760006107c2565b565b610581610635565b73ffffffffffffffffffffffffffffffffffffffff8116610629576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201527f646472657373000000000000000000000000000000000000000000000000000060648201526084015b60405180910390fd5b610632816107c2565b50565b60005473ffffffffffffffffffffffffffffffffffffffff163314610577576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610620565b60006040517fa9059cbb000000000000000000000000000000000000000000000000000000008152836004820152826024820152602060006044836000895af13d15601f3d116001600051141617169150508061076f576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600f60248201527f5452414e534645525f4641494c454400000000000000000000000000000000006044820152606401610620565b50505050565b600081815b84518110156107ba576107a68286838151811061079957610799610993565b6020026020010151610837565b9150806107b2816109c2565b91505061077a565b509392505050565b6000805473ffffffffffffffffffffffffffffffffffffffff8381167fffffffffffffffffffffffff0000000000000000000000000000000000000000831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6000818310610853576000828152602084905260409020610862565b60008381526020839052604090205b9392505050565b803573ffffffffffffffffffffffffffffffffffffffff8116811461088d57600080fd5b919050565b600080604083850312156108a557600080fd5b6108ae83610869565b946020939093013593505050565b6000602082840312156108ce57600080fd5b5035919050565b600080600080606085870312156108eb57600080fd5b6108f485610869565b935060208501359250604085013567ffffffffffffffff8082111561091857600080fd5b818701915087601f83011261092c57600080fd5b81358181111561093b57600080fd5b8860208260051b850101111561095057600080fd5b95989497505060200194505050565b60006020828403121561097157600080fd5b61086282610869565b60006020828403121561098c57600080fd5b5051919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff821415610a1b577f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b506001019056fea264697066735822122074d6051fbbeca9dcd7ed0d20891492393ad776c7d5550c7e319d29bedb8d0bf564736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100be5760003560e01c80638da5cb5b11610076578063e3f5b1951161005b578063e3f5b195146101a3578063f2fde38b146101ac578063fdb4beda146101bf57600080fd5b80638da5cb5b14610157578063c884ef831461017557600080fd5b80633acb5624116100a75780633acb5624146100eb5780633d13f8741461013c578063715018a61461014f57600080fd5b80630ebe7884146100c357806321ff9970146100d8575b600080fd5b6100d66100d1366004610892565b6101c8565b005b6100d66100e63660046108bc565b61032c565b6101127f000000000000000000000000000000000000000000000000000000000000000081565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b6100d661014a3660046108d5565b610374565b6100d6610565565b60005473ffffffffffffffffffffffffffffffffffffffff16610112565b61019561018336600461095f565b60036020526000908152604090205481565b604051908152602001610133565b61019560015481565b6100d66101ba36600461095f565b610579565b61019560025481565b6101d0610635565b6040517f70a082310000000000000000000000000000000000000000000000000000000081523060048201526000907f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff16906370a0823190602401602060405180830381865afa15801561025d573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610281919061097a565b905060008282106102925782610294565b815b90506102d773ffffffffffffffffffffffffffffffffffffffff7f00000000000000000000000000000000000000000000000000000000000000001685836106b6565b6040805173ffffffffffffffffffffffffffffffffffffffff86168152602081018390527f0a83c45ce2a0cc02c5b9a1eb1df9f36419b122df5ed78e38aa87300742019134910160405180910390a150505050565b610334610635565b600180546002558190556040518181527f2cbc14f49c068133583f7cb530018af451c87c1cf1327cf2a4ff4698c4730aa49060200160405180910390a150565b6000610407838380806020026020016040519081016040528093929190818152602001838360200280828437600092019190915250506040517fffffffffffffffffffffffffffffffffffffffff00000000000000000000000060608b901b1660208201526034810189905260540191506103ec9050565b60405160208183030381529060405280519060200120610775565b9050600154811415801561041d57506002548114155b15610454576040517ff542095700000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b73ffffffffffffffffffffffffffffffffffffffff85166000908152600360205260409020548085116104b3576040517f646cf55800000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b73ffffffffffffffffffffffffffffffffffffffff80871660009081526003602052604090208690558186039061050d907f00000000000000000000000000000000000000000000000000000000000000001688836106b6565b6040805173ffffffffffffffffffffffffffffffffffffffff89168152602081018390527ffc30cddea38e2bf4d6ea7d3f9ed3b6ad7f176419f4963bd81318067a4aee73fe910160405180910390a150505050505050565b61056d610635565b61057760006107c2565b565b610581610635565b73ffffffffffffffffffffffffffffffffffffffff8116610629576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201527f646472657373000000000000000000000000000000000000000000000000000060648201526084015b60405180910390fd5b610632816107c2565b50565b60005473ffffffffffffffffffffffffffffffffffffffff163314610577576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610620565b60006040517fa9059cbb000000000000000000000000000000000000000000000000000000008152836004820152826024820152602060006044836000895af13d15601f3d116001600051141617169150508061076f576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152600f60248201527f5452414e534645525f4641494c454400000000000000000000000000000000006044820152606401610620565b50505050565b600081815b84518110156107ba576107a68286838151811061079957610799610993565b6020026020010151610837565b9150806107b2816109c2565b91505061077a565b509392505050565b6000805473ffffffffffffffffffffffffffffffffffffffff8381167fffffffffffffffffffffffff0000000000000000000000000000000000000000831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6000818310610853576000828152602084905260409020610862565b60008381526020839052604090205b9392505050565b803573ffffffffffffffffffffffffffffffffffffffff8116811461088d57600080fd5b919050565b600080604083850312156108a557600080fd5b6108ae83610869565b946020939093013593505050565b6000602082840312156108ce57600080fd5b5035919050565b600080600080606085870312156108eb57600080fd5b6108f485610869565b935060208501359250604085013567ffffffffffffffff8082111561091857600080fd5b818701915087601f83011261092c57600080fd5b81358181111561093b57600080fd5b8860208260051b850101111561095057600080fd5b95989497505060200194505050565b60006020828403121561097157600080fd5b61086282610869565b60006020828403121561098c57600080fd5b5051919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff821415610a1b577f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b506001019056fea264697066735822122074d6051fbbeca9dcd7ed0d20891492393ad776c7d5550c7e319d29bedb8d0bf564736f6c634300080b0033",
+  "devdoc": {
+    "author": "Morpho Labs.",
+    "custom:contact": "security@morpho.xyz",
+    "events": {
+      "MorphoWithdrawn(address,uint256)": {
+        "params": {
+          "amount": "The amount of MORPHO tokens withdrawn.",
+          "to": "The address of the recipient."
+        }
+      },
+      "RewardsClaimed(address,uint256)": {
+        "params": {
+          "account": "The address of the claimer.",
+          "amount": "The amount of rewards claimed."
+        }
+      },
+      "RootUpdated(bytes32)": {
+        "params": {
+          "newRoot": "The new merkle's tree root."
+        }
+      }
+    },
+    "kind": "dev",
+    "methods": {
+      "claim(address,uint256,bytes32[])": {
+        "params": {
+          "_account": "The address of the claimer.",
+          "_claimable": "The overall claimable amount of token rewards.",
+          "_proof": "The merkle proof that validates this claim."
+        }
+      },
+      "constructor": {
+        "params": {
+          "_morpho": "The address of the MORPHO token to distribute."
+        }
+      },
+      "owner()": {
+        "details": "Returns the address of the current owner."
+      },
+      "renounceOwnership()": {
+        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
+      },
+      "transferOwnership(address)": {
+        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+      },
+      "updateRoot(bytes32)": {
+        "params": {
+          "_newRoot": "The new merkle tree's root."
+        }
+      },
+      "withdrawMorphoTokens(address,uint256)": {
+        "params": {
+          "_amount": "The amount of MORPHO tokens to transfer.",
+          "_to": "The address of the recipient."
+        }
+      }
+    },
+    "title": "Morpho Rewards Distributor.",
+    "version": 1
+  },
+  "userdoc": {
+    "errors": {
+      "AlreadyClaimed()": [
+        {
+          "notice": "Thrown when the claimer has already claimed the rewards."
+        }
+      ],
+      "ProofInvalidOrExpired()": [
+        {
+          "notice": "Thrown when the proof is invalid or expired."
+        }
+      ]
+    },
+    "events": {
+      "MorphoWithdrawn(address,uint256)": {
+        "notice": "Emitted when MORPHO tokens are withdrawn."
+      },
+      "RewardsClaimed(address,uint256)": {
+        "notice": "Emitted when an account claims rewards."
+      },
+      "RootUpdated(bytes32)": {
+        "notice": "Emitted when the root is updated."
+      }
+    },
+    "kind": "user",
+    "methods": {
+      "MORPHO()": {
+        "notice": "STORAGE ///"
+      },
+      "claim(address,uint256,bytes32[])": {
+        "notice": "Claims rewards."
+      },
+      "constructor": {
+        "notice": "Constructs Morpho's RewardsDistributor contract."
+      },
+      "updateRoot(bytes32)": {
+        "notice": "Updates the current merkle tree's root."
+      },
+      "withdrawMorphoTokens(address,uint256)": {
+        "notice": "Withdraws MORPHO tokens to a recipient."
+      }
+    },
+    "notice": "This contract allows Morpho users to claim their rewards. This contract is largely inspired by Euler Distributor's contract: https://github.com/euler-xyz/euler-contracts/blob/master/contracts/mining/EulDistributor.sol.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 7,
+        "contract": "lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol:RewardsDistributor",
+        "label": "_owner",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 20895,
+        "contract": "lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol:RewardsDistributor",
+        "label": "currRoot",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_bytes32"
+      },
+      {
+        "astId": 20897,
+        "contract": "lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol:RewardsDistributor",
+        "label": "prevRoot",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_bytes32"
+      },
+      {
+        "astId": 20901,
+        "contract": "lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol:RewardsDistributor",
+        "label": "claimed",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_mapping(t_address,t_uint256)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_address,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
