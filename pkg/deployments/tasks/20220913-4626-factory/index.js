@@ -79,7 +79,12 @@ task("20220913-4626-factory", "Deploys 4626 Factory").setAction(async (_, { ethe
     // if not hardhat fork, we try verifying on etherscan
     if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan(factoryAddress, [divider.address, factoryParams]);
+      await verifyOnEtherscan(factoryAddress, [
+        divider.address,
+        restrictedAdmin,
+        rewardsRecipient,
+        factoryParams,
+      ]);
     } else {
       console.log("\nAdd Rari's mStable oracle to Master Price Oracle");
       await (
