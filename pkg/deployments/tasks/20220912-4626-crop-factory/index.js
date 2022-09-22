@@ -17,7 +17,7 @@ const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
-task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the Periphery").setAction(
+task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory").setAction(
   async (_, { ethers }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
@@ -30,6 +30,8 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
       divider: dividerAddress,
       periphery: peripheryAddress,
       oracle: masterOracleAddress,
+      restrictedAdmin,
+      rewardsRecipient,  
       factories,
     } = data[chainId] || data[CHAINS.MAINNET];
     let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
@@ -68,7 +70,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
       const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
       const { address: factoryAddress, abi } = await deploy(factoryContractName, {
         from: deployer,
-        args: [divider.address, factoryParams, ethers.constants.AddressZero],
+        args: [divider.address, restrictedAdmin, rewardsRecipient, factoryParams, ethers.constants.AddressZero],
         log: true,
       });
       const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
@@ -177,7 +179,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
         console.log("\n-------------------------------------------------------");
         console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
         console.log("\n1. Set factory on Periphery");
-        console.log("\n2. Set factory as trusted on Divider");
+        console.log("\n2. Set factory as trusted on Divider so it can call setGuard()");
         console.log("\n3. Deploy adapters on Periphery (if needed)");
         console.log("\n4. For each adapter, sponsor Series on Periphery");
         console.log("\n5. For each series, run capital seeder");

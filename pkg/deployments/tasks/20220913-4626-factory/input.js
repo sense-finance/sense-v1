@@ -31,7 +31,7 @@ const SAMPLE_TARGETS = [
 
 const MAINNET_FACTORIES = [
   {
-    contractName: "ERC4626CropFactory",
+    contractName: "ERC4626Factory",
     ifee: ethers.utils.parseEther("0.0010"), // 0.1%
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH

@@ -12,3 +12,4 @@ require("./20220830-4626-crops-factory");
 require("./20220912-4626-crop-factory");
 require("./20220914-noop-pool-manager");
 require("./20220921-morpho-rewards-distributor");
+require("./20220913-4626-factory");

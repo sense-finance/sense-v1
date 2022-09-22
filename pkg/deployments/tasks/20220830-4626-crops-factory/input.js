@@ -1,4 +1,4 @@
-const { WETH_TOKEN, CHAINS, IMUSD_TOKEN } = require("../../hardhat.addresses");
+const { WETH_TOKEN, CHAINS, IMUSD_TOKEN, SENSE_MULTISIG } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
@@ -51,6 +51,8 @@ module.exports = {
     periphery: "0xFff11417a58781D3C72083CB45EF54d79Cd02437",
     erc4626Factory: "0x1b037B8aC231A13a22eD91e96228cF3a2259e25B",
     oracle: "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
+    restrictedAdmin: SENSE_MULTISIG.get(CHAINS.MAINNET),
+    rewardsRecipient: SENSE_MULTISIG.get(CHAINS.MAINNET),
     factories: MAINNET_FACTORIES,
     maxSecondsBeforePriceIsStale: (3 * 24 * 60 * 60).toString(), // 3 days
   },
