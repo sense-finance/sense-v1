@@ -18,9 +18,10 @@ contract ERC4626Factory is BaseFactory {
 
     constructor(
         address _divider,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
-    ) BaseFactory(_divider, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {}
 
     /// @notice Deploys an ERC4626Adapter contract
     /// @param _target The target address
@@ -55,6 +56,8 @@ contract ERC4626Factory is BaseFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
     }
 
     /// @notice (Un)support target

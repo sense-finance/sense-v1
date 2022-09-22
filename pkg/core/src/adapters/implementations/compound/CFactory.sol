@@ -25,10 +25,11 @@ contract CFactory is CropFactory {
 
     constructor(
         address _divider,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) CropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
+    ) CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function deployAdapter(address _target, bytes memory) external override returns (address adapter) {
         // Sanity check
@@ -63,5 +64,7 @@ contract CFactory is CropFactory {
         );
 
         _setGuard(adapter);
+
+        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }

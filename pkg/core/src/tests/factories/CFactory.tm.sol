@@ -51,7 +51,13 @@ contract CAdapterTestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new CFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams, AddressBook.COMP);
+        factory = new CFactory(
+            address(divider),
+            Constants.ADAPTER_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams,
+            AddressBook.COMP
+        );
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -76,6 +82,7 @@ contract CFactories is CAdapterTestHelper {
         });
         CFactory otherCFactory = new CFactory(
             address(divider),
+            Constants.ADAPTER_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             AddressBook.COMP

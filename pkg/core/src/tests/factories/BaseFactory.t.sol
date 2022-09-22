@@ -26,7 +26,9 @@ contract MockRevertAdapter is MockAdapter {
 }
 
 contract MockRevertFactory is MockFactory {
-    constructor(BaseFactory.FactoryParams memory _factoryParams) MockFactory(address(0), address(0), _factoryParams) {}
+    constructor(BaseFactory.FactoryParams memory _factoryParams)
+        MockFactory(address(0), address(0), address(0), _factoryParams)
+    {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams;
@@ -54,10 +56,11 @@ contract Mock2e18Factory is MockCropFactory {
 
     constructor(
         address _divider,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams,
         address _reward
-    ) MockCropFactory(_divider, _rewardsRecipient, _factoryParams, _reward) {}
+    ) MockCropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, _reward) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -101,11 +104,13 @@ contract Factories is TestHelper {
         });
         MockCropFactory someFactory = new MockCropFactory(
             address(divider),
+            Constants.ADAPTER_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             address(reward)
         );
 
+        assertEq(someFactory.restrictedAdmin(), Constants.ADAPTER_ADMIN);
         assertEq(someFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(someFactory.divider(), address(divider));
         (
@@ -163,6 +168,7 @@ contract Factories is TestHelper {
             });
             someFactory = new Mock2e18Factory(
                 address(divider),
+                Constants.ADAPTER_ADMIN,
                 Constants.REWARDS_RECIPIENT,
                 factoryParams,
                 address(someReward)
@@ -310,6 +316,22 @@ contract Factories is TestHelper {
         factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
+    function testSetAdmin() public {
+        assertEq(factory.restrictedAdmin(), Constants.ADAPTER_ADMIN);
+
+        // Can not set admin if not trusted
+        hevm.expectRevert("UNTRUSTED");
+        hevm.prank(address(0x123));
+        factory.setAdapterAdmin(address(0x111));
+
+        // Can set admin
+        hevm.expectEmit(true, true, true, true);
+        emit AdapterAdminChanged(Constants.ADAPTER_ADMIN, address(0x111));
+
+        factory.setAdapterAdmin(address(0x111));
+        assertEq(factory.restrictedAdmin(), address(0x111));
+    }
+
     function testSetRewardsRecipient() public {
         assertEq(factory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
 
@@ -329,4 +351,5 @@ contract Factories is TestHelper {
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed recipient, address indexed newRecipient);
+    event AdapterAdminChanged(address indexed admin, address indexed newAdmin);
 }

@@ -75,11 +75,21 @@ contract ERC4626TestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
+        factory = new ERC4626Factory(
+            address(divider),
+            Constants.ADAPTER_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
         divider.setIsTrusted(address(factory), true); // add factory as a ward
         factory.supportTarget(AddressBook.IMUSD, true);
 
-        cropsFactory = new ERC4626CropsFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
+        cropsFactory = new ERC4626CropsFactory(
+            address(divider),
+            Constants.ADAPTER_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
         divider.setIsTrusted(address(cropsFactory), true); // add factory as a ward
         cropsFactory.supportTarget(AddressBook.IMUSD, true);
     }
@@ -100,7 +110,12 @@ contract ERC4626Factories is ERC4626TestHelper {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        ERC4626Factory otherFactory = new ERC4626Factory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
+        ERC4626Factory otherFactory = new ERC4626Factory(
+            address(divider),
+            Constants.ADAPTER_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
 
         assertTrue(address(otherFactory) != address(0));
         (

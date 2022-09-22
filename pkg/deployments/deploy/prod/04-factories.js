@@ -13,6 +13,7 @@ module.exports = async function () {
   const divider = await ethers.getContract("Divider", signer);
   const periphery = await ethers.getContract("Periphery", signer);
   const rewardsRecipient = SENSE_MULTISIG.get(chainId);
+  const restrictedAdmin = SENSE_MULTISIG.get(chainId);
 
   log("\n-------------------------------------------------------");
   log("DEPLOY FACTORIES & ADAPTERS");
@@ -41,7 +42,13 @@ module.exports = async function () {
     const factoryParams = [oracle, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
     const { address: factoryAddress } = await deploy(contractName, {
       from: deployer,
-      args: [divider.address, rewardsRecipient, factoryParams, ...(rType !== CROPS ? [reward] : [])],
+      args: [
+        divider.address,
+        restrictedAdmin,
+        rewardsRecipient,
+        factoryParams,
+        ...(rType !== CROPS ? [reward] : []),
+      ],
       log: true,
     });
 

@@ -48,7 +48,7 @@ contract FAdapterTestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new FFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
+        factory = new FFactory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -66,7 +66,12 @@ contract FFactories is FAdapterTestHelper {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        FFactory otherFFactory = new FFactory(address(divider), Constants.REWARDS_RECIPIENT, factoryParams);
+        FFactory otherFFactory = new FFactory(
+            address(divider),
+            Constants.ADAPTER_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
 
         assertTrue(address(otherFFactory) != address(0));
         (
@@ -153,7 +158,8 @@ contract FFactories is FAdapterTestHelper {
         hevm.expectEmit(true, false, false, false);
         emit RewardsDistributorsChanged(rewardsDistributors);
 
-        factory.setRewardTokens(a, rewardTokens, rewardsDistributors);
+        hevm.prank(Constants.ADAPTER_ADMIN);
+        adapter.setRewardTokens(rewardTokens, rewardsDistributors);
 
         assertEq(adapter.rewardTokens(0), AddressBook.LDO);
         assertEq(adapter.rewardTokens(1), AddressBook.FXS);
@@ -170,7 +176,7 @@ contract FFactories is FAdapterTestHelper {
         address[] memory rewardsDistributors = new address[](2);
 
         hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x111));
-        factory.setRewardTokens(rewardTokens, rewardsDistributors);
+        hevm.prank(lad);
+        FAdapter(payable(adapter)).setRewardTokens(rewardTokens, rewardsDistributors);
     }
 }

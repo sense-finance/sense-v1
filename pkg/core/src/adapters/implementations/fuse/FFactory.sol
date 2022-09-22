@@ -2,8 +2,8 @@
 pragma solidity 0.8.11;
 
 // Internal references
-import { CropsFactory } from "../../abstract/factories/CropsFactory.sol";
 import { FAdapter, FComptrollerLike, RewardsDistributorLike } from "./FAdapter.sol";
+import { BaseFactory } from "../../abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { Divider } from "../../../Divider.sol";
 
@@ -21,7 +21,7 @@ interface FusePoolLensLike {
     function poolExists(address comptroller) external view returns (bool);
 }
 
-contract FFactory is CropsFactory {
+contract FFactory is BaseFactory {
     using Bytes32AddressLib for address;
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -29,9 +29,10 @@ contract FFactory is CropsFactory {
 
     constructor(
         address _divider,
+        address _restrictedAdmin,
         address _rewardsRecipient,
         FactoryParams memory _factoryParams
-    ) CropsFactory(_divider, _rewardsRecipient, _factoryParams) {}
+    ) BaseFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {}
 
     function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         address comptroller = abi.decode(data, (address));
@@ -86,17 +87,7 @@ contract FFactory is CropsFactory {
         );
 
         _setGuard(adapter);
-    }
 
-    /// @notice Replace existing rewards tokens and distributorsfor a given adapter
-    /// @param _adapter address of adapter to update
-    /// @param _rewardTokens array of rewards tokens addresses
-    /// @param _adapter array of adapters to update the rewards tokens on
-    function setRewardTokens(
-        address _adapter,
-        address[] memory _rewardTokens,
-        address[] memory _rewardsDistributors
-    ) public virtual requiresTrust {
-        FAdapter(payable(_adapter)).setRewardTokens(_rewardTokens, _rewardsDistributors);
+        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }

@@ -1177,9 +1177,15 @@ contract CropAdapters is TestHelper {
         hevm.expectEmit(true, true, true, true);
         emit ClaimerChanged(address(1));
 
+        // Can be changed by factory
         hevm.prank(address(factory));
         adapter.setClaimer(address(1));
         assertEq(adapter.claimer(), address(1));
+
+        // Can be changed by admin
+        hevm.prank(Constants.ADAPTER_ADMIN);
+        adapter.setClaimer(address(2));
+        assertEq(adapter.claimer(), address(2));
     }
 
     function testFuzzSimpleDistributionAndCollectWithClaimer(uint256 tBal) public {
@@ -1190,7 +1196,7 @@ contract CropAdapters is TestHelper {
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
         MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
-        hevm.prank(address(factory));
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setClaimer(address(claimer));
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
@@ -1218,7 +1224,7 @@ contract CropAdapters is TestHelper {
         MockClaimer claimer = new MockClaimer(address(adapter), rewardTokens);
         claimer.setTransfer(false); // make claimer not to return the target back to adapter
 
-        hevm.prank(address(factory));
+        hevm.prank(Constants.ADAPTER_ADMIN);
         adapter.setClaimer(address(claimer));
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
