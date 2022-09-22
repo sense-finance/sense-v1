@@ -23,6 +23,9 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory").setAction(async 
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);
 
+  if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
+  const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
   const {
@@ -95,9 +98,6 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory").setAction(async 
         )
       ).wait();
 
-      if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
-      const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
-
       // fund multisig
       console.log(`\nFund multisig to be able to make calls from that address`);
       await (
@@ -165,16 +165,16 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory").setAction(async 
           await (await periphery.sponsorSeries(adapterAddress, m, false)).wait();
         }
       }
-
-      console.log("\n-------------------------------------------------------");
-
-      // Unset deployer and set multisig as trusted address
-      console.log(`Set multisig as trusted address of 4626CropFactory`);
-      await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
-
-      console.log(`Unset deployer as trusted address of 4626CropFactory`);
-      await (await factoryContract.setIsTrusted(deployer, false)).wait();
     }
+
+    console.log("\n-------------------------------------------------------");
+
+    // Unset deployer and set multisig as trusted address
+    console.log(`Set multisig as trusted address of 4626CropFactory`);
+    await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+    console.log(`Unset deployer as trusted address of 4626CropFactory`);
+    await (await factoryContract.setIsTrusted(deployer, false)).wait();
 
     if (VERIFY_CHAINS.includes(chainId)) {
       console.log("\n-------------------------------------------------------");
