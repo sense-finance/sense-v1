@@ -13,16 +13,20 @@ const {
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const oracleAbi = require("./abi/MasterPriceOracle.json");
+const erc4626FactoryAbi = require("./abi/ERC4626Factory.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
-task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the Periphery").setAction(
+task("20220830-4626-crops-factory", "Deploys 4626 Factory. Also fixes bug in Chainlink Oracle.").setAction(
   async (_, { ethers }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chainId = await getChainId();
     const deployerSigner = await ethers.getSigner(deployer);
+
+    if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
+    const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
 
     console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
@@ -30,11 +34,36 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
       divider: dividerAddress,
       periphery: peripheryAddress,
       oracle: masterOracleAddress,
+      erc4626Factory: erc4626FactoryAddress,
+      restrictedAdmin,
+      rewardsRecipient,
       factories,
+      maxSecondsBeforePriceIsStale,
     } = data[chainId] || data[CHAINS.MAINNET];
     let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
     let periphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
     let masterOracle = new ethers.Contract(masterOracleAddress, oracleAbi, deployerSigner);
+    let erc4626Factory = new ethers.Contract(erc4626FactoryAddress, erc4626FactoryAbi, deployerSigner);
+
+    console.log("\n-------------------------------------------------------");
+    console.log("\nDeploy Sense Chainlink Price Oracle");
+    const { address: chainlinkOracleAddress } = await deploy("ChainlinkPriceOracle", {
+      from: deployer,
+      args: [maxSecondsBeforePriceIsStale],
+      log: true,
+    });
+    console.log(`ChainlinkPriceOracle deployed to ${chainlinkOracleAddress}`);
+    // if mainnet or goerli, verify on etherscan
+    if (VERIFY_CHAINS.includes(chainId)) {
+      console.log("\n-------------------------------------------------------");
+      await verifyOnEtherscan(chainlinkOracleAddress, [maxSecondsBeforePriceIsStale]);
+    }
+
+    console.log(`\nChange ChainlinkPriceOracle on Sense Master Oracle`);
+    // Since we forgot to unset the deployer address as trusted and trusting the multisig
+    // we can do this from the deployer address now
+    await (await masterOracle.setSenseChainlinkPriceOracle(chainlinkOracleAddress)).wait();
+    console.log(`New ChainlinkPriceOracle address: ${await masterOracle.senseChainlinkPriceOracle()}`);
 
     console.log("\n-------------------------------------------------------");
     console.log("\nDeploy Factories");
@@ -68,7 +97,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
       const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
       const { address: factoryAddress, abi } = await deploy(factoryContractName, {
         from: deployer,
-        args: [divider.address, factoryParams, ethers.constants.AddressZero],
+        args: [divider.address, restrictedAdmin, rewardsRecipient, factoryParams],
         log: true,
       });
       const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
@@ -80,8 +109,9 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
         console.log("\n-------------------------------------------------------");
         await verifyOnEtherscan(factoryAddress, [
           divider.address,
+          restrictedAdmin,
+          rewardsRecipient,
           factoryParams,
-          ethers.constants.AddressZero,
         ]);
       } else {
         console.log("\nAdd Rari's mStable oracle to Master Price Oracle");
@@ -91,9 +121,6 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
             [MSTABLE_RARI_ORACLE.get(chainId), MSTABLE_RARI_ORACLE.get(chainId)],
           )
         ).wait();
-
-        if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
-        const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
 
         // fund multisig
         console.log(`\nFund multisig to be able to make calls from that address`);
@@ -127,7 +154,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
 
         console.log("\n-------------------------------------------------------");
         console.log(`Deploy adapters for: ${factoryContractName}`);
-        for (const t of targets) {
+        for (let t of targets) {
           periphery = periphery.connect(deployerSigner);
 
           console.log(`\nAdd target ${t.name} to the whitelist`);
@@ -162,16 +189,30 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory and adds it to the
             await (await periphery.sponsorSeries(adapterAddress, m, false)).wait();
           }
         }
-
-        console.log("\n-------------------------------------------------------");
-
-        // Unset deployer and set multisig as trusted address
-        console.log(`Set multisig as trusted address of 4626CropFactory`);
-        await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
-
-        console.log(`Unset deployer as trusted address of 4626CropFactory`);
-        await (await factoryContract.setIsTrusted(deployer, false)).wait();
       }
+
+      console.log("\n-------------------------------------------------------");
+
+      // Unset deployer and set multisig as trusted address
+      console.log(`Set multisig as trusted address of 4626CropsFactory`);
+      await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+      console.log(`Unset deployer as trusted address of 4626CropsFactory`);
+      await (await factoryContract.setIsTrusted(deployer, false)).wait();
+
+      // Unset deployer and set multisig as trusted address on 4626Factory (we forgot doing this on the prev task)
+      console.log(`\nSet multisig as trusted address of 4626Factory`);
+      await (await erc4626Factory.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+      console.log(`Unset deployer as trusted address of 4626Factory`);
+      await (await erc4626Factory.setIsTrusted(deployer, true)).wait();
+
+      // Unset deployer and set multisig as trusted address on MasterPriceOracle (we forgot doing this on the prev task)
+      console.log(`\nSet multisig as trusted address of MasterPriceOracle`);
+      await (await masterOracle.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+      console.log(`Unset deployer as trusted address of MasterPriceOracle`);
+      await (await masterOracle.setIsTrusted(deployer, true)).wait();
 
       if (VERIFY_CHAINS.includes(chainId)) {
         console.log("\n-------------------------------------------------------");
