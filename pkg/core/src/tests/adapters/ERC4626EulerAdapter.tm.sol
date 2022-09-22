@@ -8,10 +8,16 @@ import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
+
+import { EulerERC4626WrapperFactory } from "../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
+import { EulerERC4626 } from "../../adapters/abstract/erc4626/timeless/euler/EulerERC4626.sol";
+import { IEulerMarkets } from "../../adapters/abstract/erc4626/timeless/euler/external/IEulerMarkets.sol";
+
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
-import { Divider, TokenHandler } from "../../Divider.sol";
+import { Divider } from "../../Divider.sol";
+import { Periphery } from "../../Periphery.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
@@ -19,10 +25,6 @@ import { Constants } from "../test-helpers/Constants.sol";
 import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 import { Hevm } from "../test-helpers/Hevm.sol";
-
-interface EulerERC4626FactoryLike {
-    function createERC4626(ERC20 asset) external returns (ERC4626 vault);
-}
 
 interface EulerERC4626Like {
     function eToken() external returns (address);
@@ -40,17 +42,18 @@ interface IEulerTokenLike {
 contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
     using FixedMath for uint256;
 
-    uint256 public mainnetFork;
-
     ERC4626 public target;
     ERC20 public underlying;
 
     uint256 public decimals;
 
-    Divider public divider;
-    TokenHandler internal tokenHandler;
+    Divider public divider = Divider(AddressBook.DIVIDER_1_2_0);
+    Periphery public periphery = Periphery(AddressBook.PERIPHERY_1_3_0);
+    ERC4626Factory public factory = ERC4626Factory(AddressBook.NON_CROP_4626_FACTORY);
     ERC4626Adapter public adapter;
-    ERC4626Factory public factory;
+
+    // Timeless
+    EulerERC4626WrapperFactory public wFactory;
 
     uint16 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -64,22 +67,15 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
     Hevm internal constant vm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
-        // Get RPC url from the environment
-        string memory rpcUrl = vm.envString("MAINNET_RPC");
-
-        // Create fork from last block to guarantee that Timess Euler 4626 Wrapper Factory exists
-        mainnetFork = vm.createFork(rpcUrl);
-        vm.selectFork(mainnetFork);
-
-        tokenHandler = new TokenHandler();
-        divider = new Divider(address(this), address(tokenHandler));
-        divider.setPeriphery(address(this));
-        tokenHandler.init(address(divider));
-
-        // Deploy a 4626 Wrapper for Euler USDC (see timeless factory https://github.com/timeless-fi/yield-daddy/blob/main/src/euler/EulerERC4626Factory.sol)
-        target = EulerERC4626FactoryLike(AddressBook.TIMELESS_EULER_4626_WRAPPER_FACTORY).createERC4626(
-            ERC20(AddressBook.USDC)
+        // Deploy a Euler 4626 Wrapper Factory
+        wFactory = new EulerERC4626WrapperFactory(
+            AddressBook.EULER,
+            IEulerMarkets(AddressBook.EULER_MARKETS),
+            address(0xfed)
         );
+
+        // Deploy a 4626 Wrapper for Euler USDC market
+        target = wFactory.createERC4626(ERC20(AddressBook.USDC));
         decimals = target.decimals();
 
         // Can call .asset() and is USDC
@@ -89,25 +85,15 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         // Fund wallet with USDC
         giveTokens(address(underlying), 5 * 10**decimals, vm);
 
-        // Deploy ERC4626 adapter factory (TODO: remove this once we have the factory deployed on mainnet and we can just instantiate)
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: AddressBook.WETH,
-            oracle: address(AddressBook.SENSE_MASTER_PRICE_ORACLE),
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0,
-            guard: DEFAULT_GUARD
-        });
-
-        factory = new ERC4626Factory(address(divider), factoryParams);
-        divider.setIsTrusted(address(factory), true); // add factory as a ward
+        // TODO: remove once OZ proposals are executed
+        vm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
+        periphery.setFactory(AddressBook.NON_CROP_4626_FACTORY, true); // add factory
+        divider.setIsTrusted(address(factory), true); // add factory as a ward so it can call setGuard
         factory.supportTarget(address(target), true); // support target deployed
+        vm.stopPrank();
 
-        // Deploy Euler USDC ERC4626 Wrapper adapter
-        adapter = ERC4626Adapter(factory.deployAdapter(address(target), ""));
+        // Deploy Euler USDC ERC4626 Wrapper Adapter
+        adapter = ERC4626Adapter(periphery.deployAdapter(address(factory), address(target), ""));
     }
 
     function testMainnetERC4626AdapterScale() public {

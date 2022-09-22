@@ -46,6 +46,12 @@ library AddressBook {
     address public constant DIVIDER_1_2_0 = 0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0;
     address public constant POOL_MANAGER_1_2_0 = 0xf01eb98de53ed964AC3F786b80ED8ce33f05F417;
     address public constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    address public constant PERIPHERY_1_3_0 = 0xFff11417a58781D3C72083CB45EF54d79Cd02437;
+
+    // 4626 factories
+    address public constant NON_CROP_4626_FACTORY = 0xD28372e7b9904589d05BD257B85FeA40FbD4dF2b;
+    address public constant CROP_4626_FACTORY = 0xeDD3B06B7596848E58e5E656e6B4973CD60Be11A;
+    address public constant CROPS_4626_FACTORY = 0x93292717B1C0150A68A748C121BE8C3B72dFefb8;
 
     // sense
     address public constant SENSE_ADMIN_MULTISIG = 0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57;
@@ -83,6 +89,8 @@ library AddressBook {
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
     // timeless
+    address public constant EULER = 0x27182842E098f60e3D576794A5bFFb0777E025d3; // Euler
+    address public constant EULER_MARKETS = 0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3; // Euler Markets
     address public constant TIMELESS_EULER_4626_WRAPPER_FACTORY = 0x1e8020cFB10b6a6a9B5F06e3ABAe140f7DE541E1; // Euler ERC4626 Wrapper Factory
     address public constant EULER_USDC = 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716;
     address public constant EULER_WSTETH = 0xbd1bd5C956684f7EB79DA40f582cbE1373A1D593;
