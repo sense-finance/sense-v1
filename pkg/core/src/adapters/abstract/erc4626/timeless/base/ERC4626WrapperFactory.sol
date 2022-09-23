@@ -7,7 +7,7 @@ import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32Addres
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
 /// @title ERC4626WrapperFactory
-/// @author Timeless
+/// @author Yield Daddy (Timeless Finance)
 /// @notice Abstract base contract for deploying ERC4626 wrappers
 /// @dev Uses CREATE2 deterministic deployment, so there can only be a single
 /// vault for each asset.
@@ -25,11 +25,15 @@ abstract contract ERC4626WrapperFactory is Trust {
     /// @notice Wrapper admin
     address public restrictedAdmin;
 
+    /// @notice Rewards recipient
+    address public rewardsRecipient;
+
     /// -----------------------------------------------------------------------
     /// Constructor
     /// -----------------------------------------------------------------------
 
-    constructor(address _restrictedAdmin) Trust(msg.sender) {
+    constructor(address _restrictedAdmin, address _rewardsRecipient) Trust(msg.sender) {
+        rewardsRecipient = _rewardsRecipient;
         restrictedAdmin = _restrictedAdmin;
     }
 
@@ -77,6 +81,11 @@ abstract contract ERC4626WrapperFactory is Trust {
         restrictedAdmin = _restrictedAdmin;
     }
 
+    function setRewardsRecipient(address _recipient) external requiresTrust {
+        emit RewardsRecipientChanged(rewardsRecipient, _recipient);
+        rewardsRecipient = _recipient;
+    }
+
     /// -----------------------------------------------------------------------
     /// Events
     /// -----------------------------------------------------------------------
@@ -85,5 +94,7 @@ abstract contract ERC4626WrapperFactory is Trust {
     /// @param asset The base asset used by the vault
     /// @param vault The vault that was created
     event CreateERC4626(ERC20 indexed asset, ERC4626 vault);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
     event RestrictedAdminChanged(address indexed restrictedAdmin, address indexed newRestrictedAdmin);
+    event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
 }

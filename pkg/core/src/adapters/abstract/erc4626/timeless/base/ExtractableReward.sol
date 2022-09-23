@@ -34,23 +34,24 @@ abstract contract ExtractableReward is Trust {
 
     function extractToken(address token) external {
         // Check that token is neither eToken nor
-        if (_isValid(token)) revert Errors.TokenNotSupported();
+        if (!_isValid(token)) revert Errors.TokenNotSupported();
         ERC20 t = ERC20(token);
+        uint256 tBal = t.balanceOf(address(this));
         t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));
-        emit RewardsClaimed(token, rewardsRecipient);
+        emit RewardsClaimed(token, rewardsRecipient, tBal);
     }
 
     /// -----------------------------------------------------------------------
     /// Admin functions
     /// -----------------------------------------------------------------------
     function setRewardsRecipient(address recipient) external requiresTrust {
+        emit RewardsRecipientChanged(rewardsRecipient, recipient);
         rewardsRecipient = recipient;
-        emit RewardsRecipientChanged(rewardsRecipient);
     }
 
     /// -----------------------------------------------------------------------
     /// Logs
     /// -----------------------------------------------------------------------
-    event RewardsRecipientChanged(address indexed recipient);
-    event RewardsClaimed(address indexed token, address indexed recipient);
+    event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
+    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);
 }

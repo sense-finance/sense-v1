@@ -71,7 +71,8 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         wFactory = new EulerERC4626WrapperFactory(
             AddressBook.EULER,
             IEulerMarkets(AddressBook.EULER_MARKETS),
-            address(0xfed)
+            Constants.REWARDS_RECIPIENT,
+            Constants.RESTRICTED_ADMIN
         );
 
         // Deploy a 4626 Wrapper for Euler USDC market

@@ -11,7 +11,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { IEulerEToken } from "./external/IEulerEToken.sol";
 
 /// @title EulerERC4626
-/// @author forked from Timeless Finance
+/// @author forked from Yield Daddy (Timeless Finance)
 /// @notice ERC4626 wrapper for Euler Finance
 contract EulerERC4626 is ERC4626, ExtractableReward {
     /// -----------------------------------------------------------------------

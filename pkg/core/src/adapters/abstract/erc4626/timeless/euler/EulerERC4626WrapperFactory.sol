@@ -10,7 +10,7 @@ import { IEulerMarkets } from "./external/IEulerMarkets.sol";
 import { ERC4626WrapperFactory } from "../base/ERC4626WrapperFactory.sol";
 
 /// @title EulerERC4626WrapperFactory
-/// @author Timeless Finance
+/// @author Yield Daddy (Timeless Finance)
 /// @notice Factory for creating EulerERC4626 contracts
 contract EulerERC4626WrapperFactory is ERC4626WrapperFactory {
     /// -----------------------------------------------------------------------
@@ -38,8 +38,9 @@ contract EulerERC4626WrapperFactory is ERC4626WrapperFactory {
     constructor(
         address _euler,
         IEulerMarkets _markets,
-        address _restrictedAdmin
-    ) ERC4626WrapperFactory(_restrictedAdmin) {
+        address _restrictedAdmin,
+        address _rewardsRecipient
+    ) ERC4626WrapperFactory(_restrictedAdmin, _rewardsRecipient) {
         euler = _euler;
         markets = _markets;
     }
@@ -55,7 +56,7 @@ contract EulerERC4626WrapperFactory is ERC4626WrapperFactory {
             revert EulerERC4626Factory__ETokenNonexistent();
         }
 
-        vault = new EulerERC4626{ salt: bytes32(0) }(asset, euler, IEulerEToken(eTokenAddress), restrictedAdmin);
+        vault = new EulerERC4626{ salt: bytes32(0) }(asset, euler, IEulerEToken(eTokenAddress), rewardsRecipient);
         EulerERC4626(address(vault)).setIsTrusted(restrictedAdmin, true);
 
         emit CreateERC4626(asset, vault);
