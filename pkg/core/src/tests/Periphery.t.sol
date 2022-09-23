@@ -188,7 +188,7 @@ contract PeripheryTest is TestHelper {
             cropFactory = address(
                 new Mock4626CropFactory(
                     address(divider),
-                    Constants.ADAPTER_ADMIN,
+                    Constants.RESTRICTED_ADMIN,
                     Constants.REWARDS_RECIPIENT,
                     factoryParams,
                     address(reward)
@@ -198,7 +198,7 @@ contract PeripheryTest is TestHelper {
             cropFactory = address(
                 new MockCropFactory(
                     address(divider),
-                    Constants.ADAPTER_ADMIN,
+                    Constants.RESTRICTED_ADMIN,
                     Constants.REWARDS_RECIPIENT,
                     factoryParams,
                     address(reward)

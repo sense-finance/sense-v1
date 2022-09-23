@@ -104,13 +104,13 @@ contract Factories is TestHelper {
         });
         MockCropFactory someFactory = new MockCropFactory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             address(reward)
         );
 
-        assertEq(someFactory.restrictedAdmin(), Constants.ADAPTER_ADMIN);
+        assertEq(someFactory.restrictedAdmin(), Constants.RESTRICTED_ADMIN);
         assertEq(someFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(someFactory.divider(), address(divider));
         (
@@ -168,7 +168,7 @@ contract Factories is TestHelper {
             });
             someFactory = new Mock2e18Factory(
                 address(divider),
-                Constants.ADAPTER_ADMIN,
+                Constants.RESTRICTED_ADMIN,
                 Constants.REWARDS_RECIPIENT,
                 factoryParams,
                 address(someReward)
@@ -316,19 +316,19 @@ contract Factories is TestHelper {
         factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
-    function testSetAdmin() public {
-        assertEq(factory.restrictedAdmin(), Constants.ADAPTER_ADMIN);
+    function testSetRestrictedAdmin() public {
+        assertEq(factory.restrictedAdmin(), Constants.RESTRICTED_ADMIN);
 
         // Can not set admin if not trusted
         hevm.expectRevert("UNTRUSTED");
         hevm.prank(address(0x123));
-        factory.setAdapterAdmin(address(0x111));
+        factory.setRestrictedAdmin(address(0x111));
 
         // Can set admin
         hevm.expectEmit(true, true, true, true);
-        emit AdapterAdminChanged(Constants.ADAPTER_ADMIN, address(0x111));
+        emit AdapterAdminChanged(Constants.RESTRICTED_ADMIN, address(0x111));
 
-        factory.setAdapterAdmin(address(0x111));
+        factory.setRestrictedAdmin(address(0x111));
         assertEq(factory.restrictedAdmin(), address(0x111));
     }
 

@@ -116,7 +116,7 @@ abstract contract BaseFactory is Trust {
         }
     }
 
-    function setAdapterAdmin(address _restrictedAdmin) external requiresTrust {
+    function setRestrictedAdmin(address _restrictedAdmin) external requiresTrust {
         emit AdapterAdminChanged(restrictedAdmin, _restrictedAdmin);
         restrictedAdmin = _restrictedAdmin;
     }

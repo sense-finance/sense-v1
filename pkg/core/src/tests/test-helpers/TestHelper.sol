@@ -346,7 +346,7 @@ contract TestHelper is DSTest {
             guard: DEFAULT_GUARD
         });
         someFactory = address(
-            new ERC4626Factory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+            new ERC4626Factory(address(divider), Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
         );
         MockFactory(someFactory).supportTarget(_target, true);
         divider.setIsTrusted(someFactory, true);
@@ -368,7 +368,7 @@ contract TestHelper is DSTest {
         someFactory = address(
             new ERC4626CropsFactory(
                 address(divider),
-                Constants.ADAPTER_ADMIN,
+                Constants.RESTRICTED_ADMIN,
                 Constants.REWARDS_RECIPIENT,
                 factoryParams
             )
@@ -395,14 +395,14 @@ contract TestHelper is DSTest {
             someFactory = address(
                 new ERC4626Factory(
                     address(divider),
-                    Constants.ADAPTER_ADMIN,
+                    Constants.RESTRICTED_ADMIN,
                     Constants.REWARDS_RECIPIENT,
                     factoryParams
                 )
             );
         } else {
             someFactory = address(
-                new MockFactory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+                new MockFactory(address(divider), Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
             );
         }
         MockFactory(someFactory).supportTarget(_target, true);
@@ -445,7 +445,7 @@ contract TestHelper is DSTest {
                 someFactory = address(
                     new ERC4626CropsFactory(
                         address(divider),
-                        Constants.ADAPTER_ADMIN,
+                        Constants.RESTRICTED_ADMIN,
                         Constants.REWARDS_RECIPIENT,
                         factoryParams
                     )
@@ -454,7 +454,7 @@ contract TestHelper is DSTest {
                 someFactory = address(
                     new ERC4626CropFactory(
                         address(divider),
-                        Constants.ADAPTER_ADMIN,
+                        Constants.RESTRICTED_ADMIN,
                         Constants.REWARDS_RECIPIENT,
                         factoryParams,
                         address(0)
@@ -466,7 +466,7 @@ contract TestHelper is DSTest {
                 someFactory = address(
                     new MockCropsFactory(
                         address(divider),
-                        Constants.ADAPTER_ADMIN,
+                        Constants.RESTRICTED_ADMIN,
                         Constants.REWARDS_RECIPIENT,
                         factoryParams,
                         _rewardTokens
@@ -476,7 +476,7 @@ contract TestHelper is DSTest {
                 someFactory = address(
                     new MockCropFactory(
                         address(divider),
-                        Constants.ADAPTER_ADMIN,
+                        Constants.RESTRICTED_ADMIN,
                         Constants.REWARDS_RECIPIENT,
                         factoryParams,
                         _rewardTokens[0]

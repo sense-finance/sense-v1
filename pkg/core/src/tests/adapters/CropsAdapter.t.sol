@@ -1351,7 +1351,7 @@ contract CropsAdapters is TestHelper {
         assertEq(cropsAdapter.claimer(), address(1));
 
         // Can be changed by admin
-        hevm.prank(Constants.ADAPTER_ADMIN);
+        hevm.prank(Constants.RESTRICTED_ADMIN);
         adapter.setClaimer(address(2));
         assertEq(adapter.claimer(), address(2));
     }
@@ -1362,7 +1362,7 @@ contract CropsAdapters is TestHelper {
         (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
 
         MockClaimer claimer = new MockClaimer(address(cropsAdapter), rewardTokens);
-        hevm.prank(Constants.ADAPTER_ADMIN);
+        hevm.prank(Constants.RESTRICTED_ADMIN);
         cropsAdapter.setClaimer(address(claimer));
 
         divider.issue(address(cropsAdapter), maturity, (60 * tBal) / 100);
@@ -1390,7 +1390,7 @@ contract CropsAdapters is TestHelper {
         MockClaimer claimer = new MockClaimer(address(cropsAdapter), rewardTokens);
         claimer.setTransfer(false); // make claimer not to return the target back to adapter
 
-        hevm.prank(Constants.ADAPTER_ADMIN);
+        hevm.prank(Constants.RESTRICTED_ADMIN);
         cropsAdapter.setClaimer(address(claimer));
 
         divider.issue(address(cropsAdapter), maturity, (60 * tBal) / 100);

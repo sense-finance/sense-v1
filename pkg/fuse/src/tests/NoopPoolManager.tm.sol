@@ -108,7 +108,7 @@ contract NoopPoolManagerTest is DSTest {
         });
         mockFactory = new MockFactory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
