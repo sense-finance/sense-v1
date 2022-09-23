@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import { Token } from "../tokens/Token.sol";
 import { YT } from "../tokens/YT.sol";

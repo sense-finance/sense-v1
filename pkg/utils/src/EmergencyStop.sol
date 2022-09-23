@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
