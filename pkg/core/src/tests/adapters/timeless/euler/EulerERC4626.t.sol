@@ -6,10 +6,10 @@ import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol"
 
 import { EulerMock } from "../mocks/EulerMock.sol";
 import { MockToken } from "../../../test-helpers/mocks/MockToken.sol";
-import { EulerERC4626 } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626.sol";
+import { EulerERC4626 } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626.sol";
 import { EulerETokenMock } from "../mocks/EulerETokenMock.sol";
 import { EulerMarketsMock } from "../mocks/EulerMarketsMock.sol";
-import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
+import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
 
 contract EulerERC4626Tests is DSTestPlus {

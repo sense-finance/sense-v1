@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
-import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
+import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
 import { EulerMarketsMock } from "../mocks/EulerMarketsMock.sol";
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../../../../external/FixedMath.sol";
 import { EulerMock } from "./EulerMock.sol";
-import { IEulerEToken } from "../../../../adapters/abstract/erc4626/timeless/euler/external/IEulerEToken.sol";
+import { IEulerEToken } from "@yield-daddy/src/euler/external/IEulerEToken.sol";
 
 contract EulerETokenMock is IEulerEToken, ERC20("EulerETokenMock", "eMOCK", 18) {
     using FixedMath for uint256;
