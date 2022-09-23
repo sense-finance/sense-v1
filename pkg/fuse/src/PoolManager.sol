@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 // External reference
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";

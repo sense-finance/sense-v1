@@ -14,7 +14,7 @@ MAINNET_RPC := "https://eth-mainnet.alchemyapi.io/v2/" + ALCHEMY_KEY
 MNEMONIC    := env_var_or_default("MNEMONIC", "")
 ETHERSCAN_API_KEY := env_var_or_default("ETHERSCAN_API_KEY", "")
 
-DAPP_SOLC_VERSION   := "0.8.11"
+DAPP_SOLC_VERSION   := "0.8.13"
 DAPP_BUILD_OPTIMIZE := "1"
 
 ## forge testing configuration
