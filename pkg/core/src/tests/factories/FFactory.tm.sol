@@ -48,7 +48,12 @@ contract FAdapterTestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new FFactory(address(divider), Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
+        factory = new FFactory(
+            address(divider),
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }

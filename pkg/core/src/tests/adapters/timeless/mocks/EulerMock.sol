@@ -4,7 +4,12 @@ pragma solidity ^0.8.4;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 contract EulerMock {
-    function transferTokenFrom(ERC20 token, address from, address to, uint256 amount) external {
+    function transferTokenFrom(
+        ERC20 token,
+        address from,
+        address to,
+        uint256 amount
+    ) external {
         token.transferFrom(from, to, amount);
     }
 }

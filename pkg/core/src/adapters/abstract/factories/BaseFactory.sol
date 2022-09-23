@@ -117,7 +117,7 @@ abstract contract BaseFactory is Trust {
     }
 
     function setRestrictedAdmin(address _restrictedAdmin) external requiresTrust {
-        emit AdapterAdminChanged(restrictedAdmin, _restrictedAdmin);
+        emit RestrictedAdminChanged(restrictedAdmin, _restrictedAdmin);
         restrictedAdmin = _restrictedAdmin;
     }
 
@@ -133,5 +133,5 @@ abstract contract BaseFactory is Trust {
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
-    event AdapterAdminChanged(address indexed oldAdmin, address indexed newAdmin);
+    event RestrictedAdminChanged(address indexed oldAdmin, address indexed newAdmin);
 }

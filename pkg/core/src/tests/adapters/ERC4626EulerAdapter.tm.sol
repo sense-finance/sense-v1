@@ -71,8 +71,8 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         wFactory = new EulerERC4626WrapperFactory(
             AddressBook.EULER,
             IEulerMarkets(AddressBook.EULER_MARKETS),
-            Constants.REWARDS_RECIPIENT,
-            Constants.RESTRICTED_ADMIN
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT
         );
 
         // Deploy a 4626 Wrapper for Euler USDC market
@@ -86,12 +86,9 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         // Fund wallet with USDC
         giveTokens(address(underlying), 5 * 10**decimals, vm);
 
-        // TODO: remove once OZ proposals are executed
-        vm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
-        periphery.setFactory(AddressBook.NON_CROP_4626_FACTORY, true); // add factory
-        divider.setIsTrusted(address(factory), true); // add factory as a ward so it can call setGuard
-        factory.supportTarget(address(target), true); // support target deployed
-        vm.stopPrank();
+        // Support deployed target
+        vm.prank(AddressBook.SENSE_ADMIN_MULTISIG);
+        factory.supportTarget(address(target), true);
 
         // Deploy Euler USDC ERC4626 Wrapper Adapter
         adapter = ERC4626Adapter(periphery.deployAdapter(address(factory), address(target), ""));

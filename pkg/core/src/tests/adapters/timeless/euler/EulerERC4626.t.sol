@@ -4,12 +4,12 @@ pragma solidity ^0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
-import {EulerMock} from "../mocks/EulerMock.sol";
-import {MockToken} from "../../../test-helpers/mocks/MockToken.sol";
-import {EulerERC4626} from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626.sol";
-import {EulerETokenMock} from "../mocks/EulerETokenMock.sol";
-import {EulerMarketsMock} from "../mocks/EulerMarketsMock.sol";
-import {EulerERC4626WrapperFactory} from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
+import { EulerMock } from "../mocks/EulerMock.sol";
+import { MockToken } from "../../../test-helpers/mocks/MockToken.sol";
+import { EulerERC4626 } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626.sol";
+import { EulerETokenMock } from "../mocks/EulerETokenMock.sol";
+import { EulerMarketsMock } from "../mocks/EulerMarketsMock.sol";
+import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
 
 contract EulerERC4626Tests is DSTestPlus {
@@ -25,7 +25,12 @@ contract EulerERC4626Tests is DSTestPlus {
         underlying = new MockToken("USD Coin", "USDC", 6);
         eToken = new EulerETokenMock(underlying, euler);
         markets = new EulerMarketsMock();
-        factory = new EulerERC4626WrapperFactory(address(euler), markets, Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT);
+        factory = new EulerERC4626WrapperFactory(
+            address(euler),
+            markets,
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT
+        );
 
         markets.setETokenForUnderlying(address(underlying), address(eToken));
 
@@ -235,10 +240,11 @@ contract EulerERC4626Tests is DSTestPlus {
         assertEq(vault.totalAssets(), preMutationBal + mutationUnderlyingAmount);
         assertEq(vault.balanceOf(alice), aliceShareAmount);
         assertEq(
-            vault.convertToAssets(vault.balanceOf(alice)), aliceUnderlyingAmount + mutationUnderlyingAmount / 3 * 1
+            vault.convertToAssets(vault.balanceOf(alice)),
+            aliceUnderlyingAmount + (mutationUnderlyingAmount / 3) * 1
         );
         assertEq(vault.balanceOf(bob), bobShareAmount);
-        assertEq(vault.convertToAssets(vault.balanceOf(bob)), bobUnderlyingAmount + mutationUnderlyingAmount / 3 * 2);
+        assertEq(vault.convertToAssets(vault.balanceOf(bob)), bobUnderlyingAmount + (mutationUnderlyingAmount / 3) * 2);
 
         // 4. Alice deposits 2000 tokens (mints 1333 shares)
         hevm.prank(alice);

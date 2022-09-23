@@ -4,12 +4,12 @@ pragma solidity ^0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
-import {EulerMock} from "../mocks/EulerMock.sol";
-import {MockToken} from "../../../test-helpers/mocks/MockToken.sol";
-import {EulerERC4626} from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626.sol";
-import {EulerETokenMock} from "../mocks/EulerETokenMock.sol";
-import {EulerMarketsMock} from "../mocks/EulerMarketsMock.sol";
-import {EulerERC4626WrapperFactory} from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
+import { EulerMock } from "../mocks/EulerMock.sol";
+import { MockToken } from "../../../test-helpers/mocks/MockToken.sol";
+import { EulerERC4626 } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626.sol";
+import { EulerETokenMock } from "../mocks/EulerETokenMock.sol";
+import { EulerMarketsMock } from "../mocks/EulerMarketsMock.sol";
+import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
 
 contract EulerERC4626WrapperFactoryTest is DSTestPlus {
@@ -24,7 +24,12 @@ contract EulerERC4626WrapperFactoryTest is DSTestPlus {
         underlying = new MockToken("USD Coin", "USDC", 6);
         eToken = new EulerETokenMock(underlying, euler);
         markets = new EulerMarketsMock();
-        factory = new EulerERC4626WrapperFactory(address(euler), markets, Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT);
+        factory = new EulerERC4626WrapperFactory(
+            address(euler),
+            markets,
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT
+        );
 
         markets.setETokenForUnderlying(address(underlying), address(eToken));
     }
@@ -40,7 +45,11 @@ contract EulerERC4626WrapperFactoryTest is DSTestPlus {
     function testComputeERC4626Address() public {
         EulerERC4626 vault = EulerERC4626(address(factory.createERC4626(underlying)));
 
-        assertEq(address(factory.computeERC4626Address(underlying)), address(vault), "computed vault address incorrect");
+        assertEq(
+            address(factory.computeERC4626Address(underlying)),
+            address(vault),
+            "computed vault address incorrect"
+        );
     }
 
     function testCantCreateERC4626ForAssetWithoutEToken() public {

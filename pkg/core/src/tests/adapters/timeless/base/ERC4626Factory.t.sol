@@ -2,16 +2,21 @@
 pragma solidity ^0.8.11;
 
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
-import {EulerERC4626WrapperFactory} from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
+import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/timeless/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
-import {EulerMarketsMock} from "../mocks/EulerMarketsMock.sol";
+import { EulerMarketsMock } from "../mocks/EulerMarketsMock.sol";
 
 contract ERC4626WrapperFactoryTest is DSTestPlus {
     EulerERC4626WrapperFactory public factory;
 
     function setUp() public {
         EulerMarketsMock markets = new EulerMarketsMock();
-        factory = new EulerERC4626WrapperFactory(address(0xeee), markets, Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT);
+        factory = new EulerERC4626WrapperFactory(
+            address(0xeee),
+            markets,
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT
+        );
         assertEq(factory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(factory.restrictedAdmin(), Constants.RESTRICTED_ADMIN);
     }
@@ -26,7 +31,7 @@ contract ERC4626WrapperFactoryTest is DSTestPlus {
 
         // Can set admin
         hevm.expectEmit(true, true, true, true);
-        emit AdapterAdminChanged(Constants.RESTRICTED_ADMIN, address(0x111));
+        emit RestrictedAdminChanged(Constants.RESTRICTED_ADMIN, address(0x111));
 
         factory.setRestrictedAdmin(address(0x111));
         assertEq(factory.restrictedAdmin(), address(0x111));
@@ -49,6 +54,5 @@ contract ERC4626WrapperFactoryTest is DSTestPlus {
     }
 
     event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
-    event AdapterAdminChanged(address indexed oldAdmin, address indexed newAdmin);
-
+    event RestrictedAdminChanged(address indexed oldAdmin, address indexed newAdmin);
 }

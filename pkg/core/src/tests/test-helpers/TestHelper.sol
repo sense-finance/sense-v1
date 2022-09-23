@@ -402,7 +402,12 @@ contract TestHelper is DSTest {
             );
         } else {
             someFactory = address(
-                new MockFactory(address(divider), Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams)
+                new MockFactory(
+                    address(divider),
+                    Constants.RESTRICTED_ADMIN,
+                    Constants.REWARDS_RECIPIENT,
+                    factoryParams
+                )
             );
         }
         MockFactory(someFactory).supportTarget(_target, true);

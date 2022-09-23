@@ -18,7 +18,7 @@ contract EulerERC4626WrapperFactory is ERC4626WrapperFactory {
     /// -----------------------------------------------------------------------
 
     /// @notice Thrown when trying to deploy an EulerERC4626 vault using an asset without an eToken
-    error EulerERC4626Factory__ETokenNonexistent();
+    error EulerERC4626WrapperFactory__ETokenNonexistent();
 
     /// -----------------------------------------------------------------------
     /// Immutable params
@@ -53,7 +53,7 @@ contract EulerERC4626WrapperFactory is ERC4626WrapperFactory {
     function createERC4626(ERC20 asset) external virtual override returns (ERC4626 vault) {
         address eTokenAddress = markets.underlyingToEToken(address(asset));
         if (eTokenAddress == address(0)) {
-            revert EulerERC4626Factory__ETokenNonexistent();
+            revert EulerERC4626WrapperFactory__ETokenNonexistent();
         }
 
         vault = new EulerERC4626{ salt: bytes32(0) }(asset, euler, IEulerEToken(eTokenAddress), rewardsRecipient);
@@ -71,7 +71,12 @@ contract EulerERC4626WrapperFactory is ERC4626WrapperFactory {
                         // Deployment bytecode:
                         type(EulerERC4626).creationCode,
                         // Constructor arguments:
-                        abi.encode(asset, euler, IEulerEToken(markets.underlyingToEToken(address(asset))))
+                        abi.encode(
+                            asset,
+                            euler,
+                            IEulerEToken(markets.underlyingToEToken(address(asset))),
+                            rewardsRecipient
+                        )
                     )
                 )
             )
