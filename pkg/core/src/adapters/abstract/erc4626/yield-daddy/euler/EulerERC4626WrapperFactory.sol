@@ -13,7 +13,8 @@ import { ERC4626WrapperFactory } from "../base/ERC4626WrapperFactory.sol";
 
 /// @title EulerERC4626WrapperFactory
 /// @author Yield Daddy (Timeless Finance)
-/// @notice Factory for creating EulerERC4626 contracts
+/// @notice This is NOT an adapter factory, it is a wrapper factory which allows one to
+/// create ERC4626 wrappers for eTokens (Euler tokens)
 contract EulerERC4626WrapperFactory is EulerERC4626Factory, ERC4626WrapperFactory {
     constructor(
         address _euler,
