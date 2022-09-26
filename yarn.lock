@@ -1122,13 +1122,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rari-capital/solmate@npm:^6.4.0":
-  version: 6.4.0
-  resolution: "@rari-capital/solmate@npm:6.4.0"
-  checksum: 41b8ffac1aa8c659d5a002fd60b9d66a9703897fd8de54612fb26601b2442755a7f779118ec70126a1f221a89b513cfa1e295b039d7ddfa794aee042a5d75b25
-  languageName: node
-  linkType: hard
-
 "@rari-capital/solmate@rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060":
   version: 6.2.0
   resolution: "@rari-capital/solmate@https://github.com/rari-capital/solmate.git#commit=c8278b3cb948cffda3f1de5a401858035f262060"
@@ -1156,7 +1149,7 @@ __metadata:
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
     "@openzeppelin/contracts": ^4.7.3
-    "@rari-capital/solmate": ^6.4.0
+    "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
   languageName: unknown

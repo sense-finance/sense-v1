@@ -4,6 +4,3 @@
 [submodule "pkg/deployments/lib/morpho-core-v1"]
 	path = pkg/deployments/lib/morpho-core-v1
 	url = https://github.com/morpho-dao/morpho-core-v1
-[submodule "pkg/core/lib/yield-daddy"]
-	path = pkg/core/lib/yield-daddy
-	url = https://github.com/timeless-fi/yield-daddy
