@@ -77,7 +77,7 @@ contract ERC4626TestHelper is DSTest {
         });
         factory = new ERC4626Factory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
@@ -86,7 +86,7 @@ contract ERC4626TestHelper is DSTest {
 
         cropsFactory = new ERC4626CropsFactory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
@@ -112,7 +112,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         });
         ERC4626Factory otherFactory = new ERC4626Factory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );

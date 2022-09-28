@@ -48,7 +48,12 @@ contract FAdapterTestHelper is DSTest {
             tilt: 0,
             guard: DEFAULT_GUARD
         });
-        factory = new FFactory(address(divider), Constants.ADAPTER_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
+        factory = new FFactory(
+            address(divider),
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams
+        );
         divider.setIsTrusted(address(factory), true); // add factory as a ward
     }
 }
@@ -68,7 +73,7 @@ contract FFactories is FAdapterTestHelper {
         });
         FFactory otherFFactory = new FFactory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams
         );
@@ -158,7 +163,7 @@ contract FFactories is FAdapterTestHelper {
         hevm.expectEmit(true, false, false, false);
         emit RewardsDistributorsChanged(rewardsDistributors);
 
-        hevm.prank(Constants.ADAPTER_ADMIN);
+        hevm.prank(Constants.RESTRICTED_ADMIN);
         adapter.setRewardTokens(rewardTokens, rewardsDistributors);
 
         assertEq(adapter.rewardTokens(0), AddressBook.LDO);

@@ -53,7 +53,7 @@ contract CAdapterTestHelper is DSTest {
         });
         factory = new CFactory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             AddressBook.COMP
@@ -82,7 +82,7 @@ contract CFactories is CAdapterTestHelper {
         });
         CFactory otherCFactory = new CFactory(
             address(divider),
-            Constants.ADAPTER_ADMIN,
+            Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             AddressBook.COMP
