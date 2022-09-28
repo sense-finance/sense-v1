@@ -38,7 +38,7 @@ contract PeripheryTest is TestHelper {
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit SeriesSponsored(address(adapter), maturity, address(this));
 
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
@@ -140,7 +140,7 @@ contract PeripheryTest is TestHelper {
 
         // try sponsoring
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.expectEmit(false, false, false, false);
+        vm.expectEmit(false, false, false, false);
         emit SeriesQueued(address(1), 2, address(3));
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         assertTrue(yt != address(0));
@@ -153,13 +153,13 @@ contract PeripheryTest is TestHelper {
 
         factory.supportTarget(address(newTarget), true);
 
-        hevm.expectEmit(false, false, false, false);
+        vm.expectEmit(false, false, false, false);
         emit AdapterDeployed(address(0));
 
-        hevm.expectEmit(false, false, false, false);
+        vm.expectEmit(false, false, false, false);
         emit AdapterVerified(address(0));
 
-        hevm.expectEmit(false, false, false, false);
+        vm.expectEmit(false, false, false, false);
         emit AdapterOnboarded(address(0));
 
         // onboard target
@@ -242,7 +242,7 @@ contract PeripheryTest is TestHelper {
         MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
 
         // try deploying adapter using default factory
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         periphery.deployAdapter(address(factory), address(someTarget), abi.encode(rewardTokens));
 
         // try deploying adapter using new factory with supported target
@@ -253,7 +253,7 @@ contract PeripheryTest is TestHelper {
         address[] memory rewardTokens;
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike newTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
     }
 
@@ -262,16 +262,16 @@ contract PeripheryTest is TestHelper {
     function testUpdatePoolManager() public {
         address oldPoolManager = address(periphery.poolManager());
 
-        hevm.record();
+        vm.record();
         address NEW_POOL_MANAGER = address(0xbabe);
 
         // Expect the new Pool Manager to be set, and for a "change" event to be emitted
-        hevm.expectEmit(true, false, false, true);
+        vm.expectEmit(true, false, false, true);
         emit PoolManagerChanged(oldPoolManager, NEW_POOL_MANAGER);
 
         // 1. Update the Pool Manager address
         periphery.setPoolManager(NEW_POOL_MANAGER);
-        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = vm.accesses(address(periphery));
 
         // Check that the storage slot was updated correctly
         assertEq(address(periphery.poolManager()), NEW_POOL_MANAGER);
@@ -282,16 +282,16 @@ contract PeripheryTest is TestHelper {
     function testUpdateSpaceFactory() public {
         address oldSpaceFactory = address(periphery.spaceFactory());
 
-        hevm.record();
+        vm.record();
         address NEW_SPACE_FACTORY = address(0xbabe);
 
         // Expect the new Space Factory to be set, and for a "change" event to be emitted
-        hevm.expectEmit(true, false, false, true);
+        vm.expectEmit(true, false, false, true);
         emit SpaceFactoryChanged(oldSpaceFactory, NEW_SPACE_FACTORY);
 
         // 1. Update the Space Factory address
         periphery.setSpaceFactory(NEW_SPACE_FACTORY);
-        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = vm.accesses(address(periphery));
 
         // Check that the storage slot was updated correctly
         assertEq(address(periphery.spaceFactory()), NEW_SPACE_FACTORY);
@@ -300,31 +300,31 @@ contract PeripheryTest is TestHelper {
     }
 
     function testFuzzUpdatePoolManager(address lad) public {
-        hevm.record();
-        hevm.assume(lad != alice); // For any address other than the testing contract
+        vm.record();
+        vm.assume(lad != alice); // For any address other than the testing contract
         address NEW_POOL_MANAGER = address(0xbabe);
 
         // 1. Impersonate the fuzzed address and try to update the Pool Manager address
-        hevm.prank(lad);
-        hevm.expectRevert("UNTRUSTED");
+        vm.prank(lad);
+        vm.expectRevert("UNTRUSTED");
         periphery.setPoolManager(NEW_POOL_MANAGER);
 
-        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = vm.accesses(address(periphery));
         // Check that only no storage slots were written to
         assertEq(writes.length, 0);
     }
 
     function testFuzzUpdateSpaceFactory(address lad) public {
-        hevm.record();
-        hevm.assume(lad != alice); // For any address other than the testing contract
+        vm.record();
+        vm.assume(lad != alice); // For any address other than the testing contract
         address NEW_SPACE_FACTORY = address(0xbabe);
 
         // 1. Impersonate the fuzzed address and try to update the Space Factory address
-        hevm.prank(lad);
-        hevm.expectRevert("UNTRUSTED");
+        vm.prank(lad);
+        vm.expectRevert("UNTRUSTED");
         periphery.setSpaceFactory(NEW_SPACE_FACTORY);
 
-        (, bytes32[] memory writes) = hevm.accesses(address(periphery));
+        (, bytes32[] memory writes) = vm.accesses(address(periphery));
         // Check that only no storage slots were written to
         assertEq(writes.length, 0);
     }
@@ -335,14 +335,14 @@ contract PeripheryTest is TestHelper {
         address NEW_FACTORY = address(0xbabe);
 
         // 1. onboard a new factory
-        hevm.expectEmit(true, false, false, true);
+        vm.expectEmit(true, false, false, true);
         emit FactoryChanged(NEW_FACTORY, true);
         assertTrue(!periphery.factories(NEW_FACTORY));
         periphery.setFactory(NEW_FACTORY, true);
         assertTrue(periphery.factories(NEW_FACTORY));
 
         // 2. remove new factory
-        hevm.expectEmit(true, false, false, true);
+        vm.expectEmit(true, false, false, true);
         emit FactoryChanged(NEW_FACTORY, false);
         periphery.setFactory(NEW_FACTORY, false);
         assertTrue(!periphery.factories(NEW_FACTORY));
@@ -417,7 +417,7 @@ contract PeripheryTest is TestHelper {
         periphery.verifyAdapter(address(otherAdapter), true); // admin verification
         periphery.setIsTrusted(alice, false);
 
-        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
         periphery.onboardAdapter(address(otherAdapter), true);
     }
 
@@ -431,7 +431,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setIsTrusted(alice, false); // admin verification
 
-        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
         periphery.onboardAdapter(address(otherAdapter), true);
     }
 
@@ -538,7 +538,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setPoolManager(address(0));
 
-        hevm.expectEmit(false, false, false, false);
+        vm.expectEmit(false, false, false, false);
         emit TargetAdded(address(1), address(2));
         periphery.verifyAdapter(address(otherAdapter), true);
 
@@ -554,7 +554,7 @@ contract PeripheryTest is TestHelper {
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.setIsTrusted(alice, false);
-        hevm.expectRevert("UNTRUSTED");
+        vm.expectRevert("UNTRUSTED");
         periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
         assertTrue(!periphery.verified(address(otherAdapter)));
     }
@@ -569,7 +569,7 @@ contract PeripheryTest is TestHelper {
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
         periphery.setIsTrusted(alice, false);
-        hevm.expectRevert("UNTRUSTED");
+        vm.expectRevert("UNTRUSTED");
         periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
         assertTrue(!periphery.verified(address(otherAdapter)));
     }
@@ -593,7 +593,7 @@ contract PeripheryTest is TestHelper {
         // calculate underlying swapped to pt
         uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE());
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
 
         periphery.swapTargetForPTs(address(adapter), maturity, tBal, 0);
@@ -622,7 +622,7 @@ contract PeripheryTest is TestHelper {
         // calculate underlying swapped to pt
         uint256 ptBal = tBal.fdiv(balancerVault.EXCHANGE_RATE());
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
 
         periphery.swapUnderlyingForPTs(address(adapter), maturity, uBal, 0);
@@ -651,7 +651,7 @@ contract PeripheryTest is TestHelper {
 
         ERC20(pt).approve(address(periphery), ptBalBefore);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
 
         periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0);
@@ -685,7 +685,7 @@ contract PeripheryTest is TestHelper {
 
         ERC20(pt).approve(address(periphery), ptBalBefore);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
 
         periphery.swapPTsForUnderlying(address(adapter), maturity, ptBalBefore, 0);
@@ -703,7 +703,7 @@ contract PeripheryTest is TestHelper {
         // add liquidity to mockUniSwapRouter
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        hevm.prank(bob);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         uint256 tBalBefore = target.balanceOf(bob);
@@ -716,9 +716,9 @@ contract PeripheryTest is TestHelper {
         uint256 tCombined = zSwapped.fdiv(lscale);
         uint256 remainingYTInTarget = tCombined - targetToBorrow;
 
-        hevm.prank(bob);
+        vm.prank(bob);
         ERC20(yt).approve(address(periphery), ytBalBefore);
-        hevm.prank(bob);
+        vm.prank(bob);
         periphery.swapYTsForTarget(address(adapter), maturity, ytBalBefore);
 
         assertEq(tBalBefore + remainingYTInTarget, target.balanceOf(bob));
@@ -733,7 +733,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
-        hevm.prank(bob);
+        vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
             maturity,
@@ -759,7 +759,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
-        hevm.prank(bob);
+        vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
             maturity,
@@ -788,7 +788,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
-        hevm.prank(bob);
+        vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
             maturity,
@@ -817,7 +817,7 @@ contract PeripheryTest is TestHelper {
         uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
-        hevm.prank(bob);
+        vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
             maturity,
@@ -895,7 +895,7 @@ contract PeripheryTest is TestHelper {
             remainingYTInTarget = tCombined - targetToBorrow;
         }
 
-        hevm.prank(bob);
+        vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
             maturity,
@@ -910,7 +910,7 @@ contract PeripheryTest is TestHelper {
         assertTrue(targetBal > 0);
         assertTrue(ytBal > 0);
         assertEq(lpShares, lpBalAfter - lpBalBefore);
-        assertClose(tBalBefore - tBal + remainingYTInTarget, tBalAfter, 10);
+        assertApproxEqAbs(tBalBefore - tBal + remainingYTInTarget, tBalAfter, 10);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
     }
 
@@ -946,7 +946,7 @@ contract PeripheryTest is TestHelper {
         }
 
         {
-            hevm.prank(bob);
+            vm.prank(bob);
             (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
                 address(adapter),
                 maturity,
@@ -1003,7 +1003,7 @@ contract PeripheryTest is TestHelper {
         }
 
         {
-            hevm.prank(bob);
+            vm.prank(bob);
             (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromUnderlying(
                 address(adapter),
                 maturity,
@@ -1047,7 +1047,7 @@ contract PeripheryTest is TestHelper {
             minAmountsOut[1] = toBeIssued; // pt to be issued
         }
 
-        hevm.startPrank(bob);
+        vm.startPrank(bob);
         periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
@@ -1068,7 +1068,7 @@ contract PeripheryTest is TestHelper {
             0,
             true
         );
-        hevm.stopPrank();
+        vm.stopPrank();
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
         uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
@@ -1104,7 +1104,7 @@ contract PeripheryTest is TestHelper {
 
         periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max);
         // settle series
-        hevm.warp(maturity);
+        vm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
         lscale = adapter.scale();
 
@@ -1121,7 +1121,7 @@ contract PeripheryTest is TestHelper {
 
         assertEq(ptBalBefore, ptBalAfter);
         assertEq(targetBal, tBalAfter - tBalBefore);
-        assertClose(tBalBefore + tBal, tBalAfter);
+        assertApproxEqAbs(tBalBefore + tBal, tBalAfter);
         assertEq(lpBalAfter, 0);
     }
 
@@ -1145,21 +1145,21 @@ contract PeripheryTest is TestHelper {
         target.approve(address(divider), type(uint256).max);
         underlying.approve(address(target), type(uint256).max);
 
-        hevm.startPrank(bob);
+        vm.startPrank(bob);
         target.approve(address(periphery), type(uint256).max);
         underlying.approve(address(target), type(uint256).max);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // get some target for Alice and Bob
         if (!is4626Target) {
             target.mint(alice, 10000000e18);
-            hevm.prank(bob);
+            vm.prank(bob);
             target.mint(bob, 10000000e18);
         } else {
             underlying.mint(alice, 10000000e18);
             underlying.mint(bob, 10000000e18);
             target.deposit(10000000e18, alice);
-            hevm.prank(bob);
+            vm.prank(bob);
             target.deposit(10000000e18, bob);
         }
 
@@ -1173,18 +1173,18 @@ contract PeripheryTest is TestHelper {
 
         addLiquidityToBalancerVault(address(aAdapter), maturity, 1000e18);
 
-        hevm.prank(bob);
+        vm.prank(bob);
         periphery.addLiquidityFromTarget(address(aAdapter), maturity, tBal, 1, type(uint256).max);
 
         // settle series
-        hevm.warp(maturity);
+        vm.warp(maturity);
         divider.settleSeries(address(aAdapter), maturity);
         lscale = aAdapter.scale();
 
         uint256 ptBalBefore = ERC20(pt).balanceOf(bob);
         uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(bob);
 
-        hevm.startPrank(bob);
+        vm.startPrank(bob);
         balancerVault.yieldSpacePool().approve(address(periphery), 3e18);
         (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
             address(aAdapter),
@@ -1194,7 +1194,7 @@ contract PeripheryTest is TestHelper {
             0,
             true
         );
-        hevm.stopPrank();
+        vm.stopPrank();
 
         assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(bob) - tBalBefore);
         assertEq(ptBalBefore, ERC20(pt).balanceOf(bob) - minAmountsOut[1]);
@@ -1293,7 +1293,7 @@ contract PeripheryTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 tBase = 10**target.decimals();
         periphery.sponsorSeries(address(adapter), maturity, true);
-        hevm.warp(block.timestamp + 5 days);
+        vm.warp(block.timestamp + 5 days);
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
@@ -1363,7 +1363,7 @@ contract PeripheryTest is TestHelper {
             type(uint256).max
         );
         uint256[] memory minAmountsOut = new uint256[](2);
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetMismatch.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetMismatch.selector));
         periphery.migrateLiquidity(
             address(adapter),
             dstAdapter,

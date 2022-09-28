@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -11,10 +13,7 @@ import { CAdapter, CTokenLike, PriceOracleLike } from "../../adapters/implementa
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
-import { DSTest } from "../test-helpers/test.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
 interface ComptrollerLike {
@@ -29,7 +28,9 @@ interface ComptrollerLike {
     function compAccrued(address usr) external view returns (uint256);
 }
 
-contract CAdapterTestHelper is LiquidityHelper, DSTest {
+contract CAdapterTestHelper is Test {
+    using SafeTransferLib for ERC20;
+
     CAdapter internal cDaiAdapter;
     CAdapter internal cEthAdapter;
     CAdapter internal cUsdcAdapter;
@@ -46,15 +47,11 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
 
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
     function setUp() public {
-        address[] memory assets = new address[](4);
-        assets[0] = AddressBook.DAI;
-        assets[1] = AddressBook.cDAI;
-        assets[2] = AddressBook.WETH;
-        assets[3] = AddressBook.cETH;
-        addLiquidity(assets);
+        deal(AddressBook.DAI, address(this), 20e18);
+        deal(AddressBook.WETH, address(this), 20e18);
+        mintCToken(AddressBook.cDAI, 10e18);
+        mintCToken(AddressBook.cETH, 10e18);
 
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
@@ -109,6 +106,16 @@ contract CAdapterTestHelper is LiquidityHelper, DSTest {
             adapterParams,
             AddressBook.COMP
         ); // Compound adapter
+    }
+
+    function mintCToken(address cToken, uint256 mintAmount) internal {
+        if (cToken == AddressBook.cETH) {
+            AddressBook.cETH.call{ value: mintAmount }("");
+        } else {
+            ERC20 underlying = ERC20(CTokenLike(cToken).underlying());
+            underlying.safeApprove(cToken, mintAmount);
+            CTokenLike(AddressBook.cDAI).mint(mintAmount);
+        }
     }
 }
 
@@ -244,60 +251,60 @@ contract CAdapters is CAdapterTestHelper {
             0
         );
 
-        giveTokens(AddressBook.DAI, 1e18, hevm);
+        deal(AddressBook.DAI, address(this), 1e18);
         ERC20(AddressBook.DAI).approve(address(divider), type(uint256).max);
         divider.initSeries(address(cEthAdapter), maturity, address(this));
 
         address target = cEthAdapter.target();
-        giveTokens(target, 1e18, hevm);
+        deal(target, address(this), 1e18);
         ERC20(target).approve(address(divider), type(uint256).max);
         divider.issue(address(cEthAdapter), maturity, 1e18);
 
-        hevm.prank(ComptrollerLike(AddressBook.COMPTROLLER).admin());
+        vm.prank(ComptrollerLike(AddressBook.COMPTROLLER).admin());
         ComptrollerLike(AddressBook.COMPTROLLER)._setContributorCompSpeed(address(cEthAdapter), 1e18);
 
-        hevm.roll(block.number + 10);
+        vm.roll(block.number + 10);
         ComptrollerLike(AddressBook.COMPTROLLER).updateContributorRewards(address(cEthAdapter));
 
         // Expect a cETH distributed event when notifying
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
 
         // Become the divider
-        hevm.prank(address(divider));
+        vm.prank(address(divider));
         cEthAdapter.notify(address(0), 0, true);
 
-        hevm.roll(block.number + 10);
+        vm.roll(block.number + 10);
         // Expect a cETH distributed event when notifying
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
 
         // Become the divider
-        hevm.prank(address(divider));
+        vm.prank(address(divider));
         cEthAdapter.notify(address(0), 0, true);
     }
 
     function testFailMainnetSkipClaimRewardIfAlreadyCalled() public {
         // Become the divider
-        hevm.startPrank(address(divider));
+        vm.startPrank(address(divider));
         address target = cEthAdapter.target();
 
         // Expect a cETH distributed event when notifying
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
 
         cEthAdapter.notify(address(0), 0, true);
 
         // Should fail to expect a cETH distributed event when notifying again in the same block
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedBorrowerComp(address(target), address(cEthAdapter), 0, 0);
-        hevm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DistributedSupplierComp(address(target), address(cEthAdapter), 0, 0);
 
         cEthAdapter.notify(address(0), 0, true);
@@ -307,7 +314,8 @@ contract CAdapters is CAdapterTestHelper {
         // Scale is in 18 decimals when the Underlying has 18 decimals (WETH) ----
 
         // Mint this address some cETH & give the adapter approvals (note all cTokens have 8 decimals)
-        giveTokens(AddressBook.cETH, ONE_CTOKEN, hevm);
+        deal(AddressBook.cETH, address(this), ONE_CTOKEN);
+
         ERC20(AddressBook.cETH).approve(address(cEthAdapter), ONE_CTOKEN);
 
         uint256 wethOut = cEthAdapter.unwrapTarget(ONE_CTOKEN);
@@ -319,7 +327,7 @@ contract CAdapters is CAdapterTestHelper {
 
         // Scale is in 18 decimals when the Underlying has a non-standard number of decimals (6 for USDC) ----
 
-        giveTokens(AddressBook.cUSDC, ONE_CTOKEN, hevm);
+        deal(AddressBook.cUSDC, address(this), ONE_CTOKEN);
         ERC20(AddressBook.cUSDC).approve(address(cUsdcAdapter), ONE_CTOKEN);
 
         uint256 usdcOut = cUsdcAdapter.unwrapTarget(ONE_CTOKEN);

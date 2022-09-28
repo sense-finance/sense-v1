@@ -1,28 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { CAdapter } from "../../adapters/implementations/compound/CAdapter.sol";
 import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
 import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 
-import { DSTest } from "../test-helpers/test.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
-contract CAdapterTestHelper is DSTest {
+contract CAdapterTestHelper is Test {
     CFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
-
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -144,7 +141,7 @@ contract CFactories is CAdapterTestHelper {
         // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
         // using target's price (18 decimals)
         uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
-        assertClose(guard, guardInTarget, guard.fmul(0.010e18));
+        assertApproxEqAbs(guard, guardInTarget, guard.fmul(0.010e18));
     }
 
     function testMainnetDeployAdapterWithNonERC20() public {
@@ -163,7 +160,7 @@ contract CFactories is CAdapterTestHelper {
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(AddressBook.f18DAI, "");
     }
 }

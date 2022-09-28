@@ -7,3 +7,6 @@
 [submodule "pkg/core/lib/yield-daddy"]
 	path = pkg/core/lib/yield-daddy
 	url = https://github.com/timeless-fi/yield-daddy.git
+[submodule "lib/forge-std"]
+	path = lib/forge-std
+	url = https://github.com/foundry-rs/forge-std

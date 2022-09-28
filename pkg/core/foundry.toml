@@ -4,6 +4,7 @@ libs = ['../../node_modules/', '../../']
 tests = "./src/tests"
 ffi = true
 verbosity = 3
+# fork_block_number = using last block
 remappings = [
     '@sense-finance/v1-utils=../utils',
     '@sense-finance/v1-core=./',

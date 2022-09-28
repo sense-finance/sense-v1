@@ -82,13 +82,18 @@ cargo install just
 ```bash
 # Get contract dependencies
 git submodule update --init --recursive
-yarn isntall # or npm install
+yarn install # or npm install
 
 # Run local tests
-just turbo-test-local
+yarn test
 
 # Run mainnet fork tests
-just turbo-test-mainnet
+yarn test:mainnet
+
+# Run full local test suite which includes combinations for:
+# 1. ERC4626, ERC20 and non-ERC20 for target, underlying and stake
+# 2. 6, 8 and 18 decimals for target, underlying and stake
+yarn test:fuzz
 ```
 
 ### Format

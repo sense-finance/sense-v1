@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { FAdapter } from "../../adapters/implementations/fuse/FAdapter.sol";
 import { FFactory } from "../../adapters/implementations/fuse/FFactory.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { DSTest } from "../test-helpers/test.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
-contract FAdapterTestHelper is DSTest {
+contract FAdapterTestHelper is Test {
     FFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -131,13 +129,13 @@ contract FFactories is FAdapterTestHelper {
 
     function testMainnetCantDeployAdapterIfInvalidComptroller() public {
         divider.setPeriphery(address(this));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidParam.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidParam.selector));
         factory.deployAdapter(AddressBook.f18DAI, abi.encode(AddressBook.f18DAI));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
         divider.setPeriphery(address(this));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(AddressBook.f18DAI, abi.encode(AddressBook.TRIBE_CONVEX));
     }
 
@@ -157,13 +155,13 @@ contract FFactories is FAdapterTestHelper {
         rewardsDistributors[0] = AddressBook.REWARDS_DISTRIBUTOR_LDO;
         rewardsDistributors[1] = AddressBook.REWARDS_DISTRIBUTOR_FXS;
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit RewardTokensChanged(rewardTokens);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit RewardsDistributorsChanged(rewardsDistributors);
 
-        hevm.prank(Constants.RESTRICTED_ADMIN);
+        vm.prank(Constants.RESTRICTED_ADMIN);
         adapter.setRewardTokens(rewardTokens, rewardsDistributors);
 
         assertEq(adapter.rewardTokens(0), AddressBook.LDO);
@@ -174,14 +172,14 @@ contract FFactories is FAdapterTestHelper {
 
     function testFuzzMainnetCantSetRewardsTokens(address lad) public {
         if (lad == address(this)) return;
-        hevm.prank(divider.periphery());
+        vm.prank(divider.periphery());
         address adapter = factory.deployAdapter(AddressBook.f156FRAX3CRV, abi.encode(AddressBook.TRIBE_CONVEX));
 
         address[] memory rewardTokens = new address[](2);
         address[] memory rewardsDistributors = new address[](2);
 
-        hevm.expectRevert("UNTRUSTED");
-        hevm.prank(lad);
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(lad);
         FAdapter(payable(adapter)).setRewardTokens(rewardTokens, rewardsDistributors);
     }
 }

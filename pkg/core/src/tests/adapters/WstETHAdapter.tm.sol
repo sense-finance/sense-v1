@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -12,12 +14,9 @@ import { WstETHAdapter, StETHLike, WstETHLike } from "../../adapters/implementat
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "../test-helpers/test.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
 interface PriceOracleLike {
@@ -54,7 +53,7 @@ interface CurveStableSwapLike {
     ) external view returns (uint256);
 }
 
-contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
+contract WstETHAdapterTestHelper is Test {
     WstETHAdapter internal adapter;
     Divider internal divider;
     Periphery internal periphery;
@@ -68,11 +67,9 @@ contract WstETHAdapterTestHelper is LiquidityHelper, DSTest {
     uint8 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_TILT = 0;
 
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
     function setUp() public {
-        giveTokens(AddressBook.WETH, 10e18, hevm);
-        giveTokens(AddressBook.WSTETH, 10e18, hevm);
+        deal(AddressBook.WETH, address(this), 1e18);
+        deal(AddressBook.WSTETH, address(this), 1e18);
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         divider.setPeriphery(address(this));
@@ -129,7 +126,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
 
         // within 5%
         uint256 stEthEthPrice = uint256(stethPrice).fdiv(uint256(ethPrice));
-        assertClose(stEthEthPrice, curvePrice, stEthEthPrice.fmul(0.050e18));
+        assertApproxEqAbs(stEthEthPrice, curvePrice, stEthEthPrice.fmul(0.050e18));
         assertEq(adapter.getUnderlyingPrice(), uint256(stEthEthPrice));
     }
 
@@ -148,7 +145,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 uBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));
 
         assertEq(tBalanceAfter, 0);
-        assertClose(uBalanceBefore + unwrapped, uBalanceAfter);
+        assertApproxEqAbs(uBalanceBefore + unwrapped, uBalanceAfter, 100);
     }
 
     function testMainnetWrapUnderlying() public {
@@ -167,8 +164,8 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 tBalanceAfter = ERC20(AddressBook.WSTETH).balanceOf(address(this));
         uint256 uBalanceAfter = ERC20(AddressBook.STETH).balanceOf(address(this));
 
-        assertClose(uBalanceAfter, 0);
-        assertClose(tBalanceBefore + wrapped, tBalanceAfter, 1);
+        assertApproxEqAbs(uBalanceAfter, 0, 100);
+        assertApproxEqAbs(tBalanceBefore + wrapped, tBalanceAfter, 1);
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
@@ -184,6 +181,6 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         uint256 postbal = ERC20(AddressBook.STETH).balanceOf(address(this));
 
         // When wrapping and then unwrapping on Lido we end up with 1 wei less.
-        assertClose(prebal, postbal, 1);
+        assertApproxEqAbs(prebal, postbal, 1);
     }
 }

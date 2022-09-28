@@ -13,34 +13,27 @@
         "!src/tests/*"
     ],
     "scripts": {
-        "test": "just turbo-test-local",
-        "test:greater-decimal-val": "just turbo-test-local-greater-decimal-val",
-        "test:lower-decimal-val": "just turbo-test-local-lower-decimal-val",
-        "test:4626": "just turbo-test-local-4626",
-        "test:4626-8-decimal-val": "just turbo-test-local-4626-8-decimal-val",
-        "test:non-erc20-target": "just turbo-test-local-non-erc20-target",
-        "test:non-erc20-underlying": "just turbo-test-local-non-erc20-underlying",
-        "test:non-erc20-stake": "just turbo-test-local-non-erc20-stake",
-        "test:all": "just turbo-test-local-all",
-        "test:mainnet": "just turbo-test-mainnet",
-        "turbo-test": "yarn turbo-test",
-        "turbo-test:greater-decimal-val": "yarn test:greater-decimal-val",
-        "turbo-test:lower-decimal-val": "yarn test:lower-decimal-val",
-        "turbo-test:4626": "yarn test:4626",
-        "turbo-test:4626-8-decimal-val": "yarn test:4626",
-        "turbo-test:non-erc20-target": "yarn test:non-erc20-target",
-        "turbo-test:non-erc20-underlying": "yarn test:non-erc20-underlying",
-        "turbo-test:non-erc20-stake": "yarn test:non-erc20-stake",
-        "turbo-test:all": "yarn test:all",
-        "turbo-test:mainnet": "yarn test:mainnet",
+        "test": "forge test --no-match-path \"*.tm*\" | gnomon",
+        "test:mainnet": "forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.alchemyapi.io/v2/_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC | gnomon",
+        "test:4626": "4626_TARGET=true forge test --match-path \"**/*.t.sol\" --no-match-path \"**/Adapter.t.sol\" | gnomon",
+        "test:fuzz": "yarn exec ./src/tests/fuzz.sh | gnomon",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
-        "gas-snapshot": "just gas-snapshot"
+        "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
+        "gas-snapshot:diff": "forge snapshot --no-match-path \"*.tm*\" --diff"
     },
     "dependencies": {
         "@openzeppelin/contracts": "^4.7.3",
         "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
+    },
+    "devDependencies": {
+        "@types/prettier": "^2",
+        "gnomon": "^1.5.0",
+        "prettier": "^2.7.1",
+        "prettier-plugin-solidity": "^1.0.0-beta.17",
+        "solhint": "^3.3.7",
+        "solhint-plugin-prettier": "^0.0.5"
     }
 }

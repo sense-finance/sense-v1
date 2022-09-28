@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
@@ -12,18 +14,16 @@ import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAd
 import { BaseFactory } from "@sense-finance/v1-core/src/adapters/abstract/factories/BaseFactory.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/test.sol";
 import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
-import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
 import { Constants } from "@sense-finance/v1-core/src/tests/test-helpers/Constants.sol";
 
-contract NoopPoolManagerTest is DSTest {
+contract NoopPoolManagerTest is Test {
     using FixedMath for uint256;
 
     MockToken internal stake;
@@ -42,8 +42,6 @@ contract NoopPoolManagerTest is DSTest {
     MockSpaceFactory internal spaceFactory;
 
     BaseAdapter.AdapterParams internal adapterParams;
-
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -222,7 +220,7 @@ contract NoopPoolManagerTest is DSTest {
     function testFailEmitTargetAdded() public {
         noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
 
         periphery.verifyAdapter(address(mockAdapter), true);
@@ -241,7 +239,7 @@ contract NoopPoolManagerTest is DSTest {
 
         poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
 
         periphery.verifyAdapter(address(mockAdapter), true);

@@ -24,27 +24,7 @@ jobs:
       with:
           cache-on-failure: true
 
-    # Try to get just from cache
-    - name: Cache just
-      id: cache-just
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-just
-      with:
-        path: ~/.cargo/bin/just
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
-
-    # If we couldn't get just from the cache, install it
-    - name: Install just
-      if: steps.cache-just.outputs.cache-hit != 'true'
-      run: cargo install just
-
-    # Testing running bash script (will be deleted afterwards)
-    - name: Test running bash script (will be deleted afterwards)
-      if: github.ref == 'refs/heads/test-combinations'
-      run: yarn workspace @sense-finance/v1-core run turbo-test:all
-
-    - name: Install npm dependencies
+    - name: Install dependencies
       run: yarn install
 
     - name: Install Foundry
@@ -56,38 +36,17 @@ jobs:
       run: yarn lint
 
     # When NOT in dev or master we run some basic scenarios (e.g 18 decimals and target decimals < and > than underlying decimals) 
-    - name: Run local fuse tests where the mock Target decimals is 18
+    - name: Run local tests
       if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
-      run: yarn workspace @sense-finance/v1-fuse run test
+      run: yarn test
 
-    - name: Run local core tests where the mock Target decimals is 18
-      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
-      run: yarn workspace @sense-finance/v1-core run test
-
-    - name: Run local core tests where the mock Target decimals > Underlying decimals
-      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
-      run: yarn workspace @sense-finance/v1-core run test:greater-decimal-val
-
-    - name: Run local core tests where the mock Target decimals < Underlying decimals
-      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
-      run: yarn workspace @sense-finance/v1-core run test:lower-decimal-val
+    - name: Run mainnet tests
+      run: yarn test:mainnet
 
     # Only when there's a push to dev or master, we run all the possible combinations of tests (PAUSED UNTIL FIXED)
-    # - name: Run local core tests with all possible combinations with ERC20, nonERC20, ERC4626 and 6, 8 and 18 decimals for Target, Underlying and Stake
-    #   if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
-    #   run: yarn workspace @sense-finance/v1-core run turbo-test:all
-
-    - name: Run core mainnet tests
-      run: yarn workspace @sense-finance/v1-core run test:mainnet
-      env:
-        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        MNEMONIC: ${{ secrets.MNEMONIC }}
-
-    - name: Run fuse mainnet tests
-      run: yarn workspace @sense-finance/v1-fuse run test:mainnet
-      env:
-        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        MNEMONIC: ${{ secrets.MNEMONIC }}
+    - name: Run local tests with all possible combinations of ERC20, nonERC20, ERC4626 and 6, 8 and 18 decimals for Target, Underlying and Stake
+      if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
+      run: yarn workspace @sense-finance/v1-core run test:fuzz
 
     - name: Check deploy scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:prod

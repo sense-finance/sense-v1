@@ -1,6 +1,6 @@
 {
   "root": true,
-  "plugins": ["prettier", "@nomiclabs/eslint-plugin-hardhat-internal-rules"],
+  "plugins": ["prettier"],
   "extends": ["eslint:recommended"],
   "rules": {
     "prettier/prettier": ["error"],

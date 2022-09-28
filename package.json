@@ -10,23 +10,17 @@
     "pkg/*"
   ],
   "scripts": {
-    "turbo-test": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test",
-    "turbo-test-local-greater-decimal-val": "yarn workspaces @sense-finance/v1-core run turbo-test:greater-decimal-val",
-    "turbo-test-local-lower-decimal-val": "yarn workspaces @sense-finance/v1-core run turbo-test:lower-decimal-val",
-    "turbo-test-local-4626": "yarn workspaces @sense-finance/v1-core run turbo-test:4626",
-    "turbo-test-local-non-erc20-target": "yarn workspaces @sense-finance/v1-core run turbo-test:4626",
-    "turbo-test-local-non-erc20-underlying": "yarn workspaces @sense-finance/v1-core run turbo-test:4626",
-    "turbo-test-local-non-erc20-stake": "yarn workspaces @sense-finance/v1-core run turbo-test:4626",
-    "turbo-test-local-all": "yarn workspaces @sense-finance/v1-core run turbo-test:all",
-    "turbo-test:mainnet": "yarn workspaces foreach --parallel --verbose --interlaced run turbo-test:mainnet",
+    "test": "yarn workspaces foreach --parallel --verbose --interlaced run test | gnomon",
+    "test:mainnet": "yarn workspaces foreach --parallel --verbose --interlaced run test:mainnet | gnomon",
+    "test:fuzz": "yarn workspace @sense-finance/v1-core run test:fuzz | gnomon",
+    "test:4626": "yarn workspace @sense-finance/v1-core run test:4626 | gnomon",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
     "fix": "yarn workspaces foreach --parallel --verbose run fix",
     "gas-snapshot": "yarn workspaces foreach --parallel --verbose --interlaced run gas-snapshot"
   },
   "packageManager": "yarn@3.1.0",
   "devDependencies": {
-    "@types/prettier": "^2",
-    "dotenv": "^10.0.0",
+    "gnomon": "^1.5.0",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
@@ -34,14 +28,14 @@
     "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5"
   },
+  "lint-staged": {
+    "**/**/*.{js,sol}": [
+      "yarn fix"
+    ]
+  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
     }
-  },
-  "lint-staged": {
-    "./**/*.{js}": [
-      "yarn fix"
-    ]
   }
 }

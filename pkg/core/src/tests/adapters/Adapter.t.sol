@@ -124,7 +124,7 @@ contract Adapters is TestHelper {
             adapterParams
         );
 
-        hevm.expectRevert("UNTRUSTED");
+        vm.expectRevert("UNTRUSTED");
         fakeAdapter.doSetAdapter(divider, address(fakeAdapter));
     }
 
@@ -156,25 +156,25 @@ contract Adapters is TestHelper {
     function testSetRewardsRecipient() public {
         assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
 
-        hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x123));
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x123));
         adapter.setRewardsRecipient(address(0x111));
 
         // Can be changed by admin
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit RewardsRecipientChanged(Constants.REWARDS_RECIPIENT, address(0x111));
 
-        hevm.prank(Constants.RESTRICTED_ADMIN);
+        vm.prank(Constants.RESTRICTED_ADMIN);
         adapter.setRewardsRecipient(address(0x111));
         assertEq(adapter.rewardsRecipient(), address(0x111));
 
         // Can be changed by the factory that deployed it
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit RewardsRecipientChanged(address(0x111), address(0x222));
 
-        hevm.prank(address(factory));
+        vm.prank(address(factory));
         adapter.setRewardsRecipient(address(0x222));
         assertEq(adapter.rewardsRecipient(), address(0x222));
     }
@@ -185,23 +185,23 @@ contract Adapters is TestHelper {
         someReward.mint(address(adapter), 1e18);
         assertEq(someReward.balanceOf(address(adapter)), 1e18);
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit RewardsClaimed(address(someReward), Constants.REWARDS_RECIPIENT, 1e18);
 
         assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 0);
         // anyone can call extract token
-        hevm.prank(address(0xfede));
+        vm.prank(address(0xfede));
         adapter.extractToken(address(someReward));
         assertEq(someReward.balanceOf(Constants.REWARDS_RECIPIENT), 1e18);
 
         (address target, address stake, ) = adapter.getStakeAndTarget();
 
         // can NOT extract stake
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
         adapter.extractToken(address(stake));
 
         // can NOT extract target
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TokenNotSupported.selector));
         adapter.extractToken(address(target));
     }
 

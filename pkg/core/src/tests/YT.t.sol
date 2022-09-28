@@ -12,17 +12,17 @@ contract Yield is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
-        tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
+        tBal = uint128(bound(tBal, 1e12, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        hevm.warp(block.timestamp + 1 days);
-        hevm.prank(bob);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
-        hevm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + 1 days);
         uint256 lscale = divider.lscales(address(adapter), maturity, bob);
         uint256 ytBalanceBefore = ERC20(yt).balanceOf(bob);
         uint256 tBalanceBefore = target.balanceOf(bob);
-        hevm.prank(bob);
+        vm.prank(bob);
         uint256 collected = YT(yt).collect();
         uint256 ytBalanceAfter = ERC20(yt).balanceOf(bob);
         uint256 tBalanceAfter = target.balanceOf(bob);
@@ -38,19 +38,19 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
-        tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
+        tBal = uint128(bound(tBal, 1e12, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        hevm.warp(block.timestamp + 1 days);
-        hevm.prank(bob);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
-        hevm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + 1 days);
 
         uint256 lscale = divider.lscales(address(adapter), maturity, bob);
         uint256 aytBalanceBefore = ERC20(yt).balanceOf(alice);
         uint256 bytBalanceBefore = ERC20(yt).balanceOf(bob);
         uint256 tBalanceBefore = target.balanceOf(bob);
-        hevm.prank(bob);
+        vm.prank(bob);
         Token(yt).transfer(alice, bytBalanceBefore);
 
         uint256 aytBalanceAfter = ERC20(yt).balanceOf(alice);
@@ -70,19 +70,19 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
-        tBal = uint128(fuzzWithBounds(tBal, 1e12, MAX_TARGET));
+        tBal = uint128(bound(tBal, 1e12, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        hevm.warp(block.timestamp + 1 days);
-        hevm.prank(bob);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
-        hevm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + 1 days);
 
         uint256 lscale = divider.lscales(address(adapter), maturity, bob);
         uint256 aytBalanceBefore = ERC20(yt).balanceOf(alice);
         uint256 bytBalanceBefore = ERC20(yt).balanceOf(bob);
         uint256 tBalanceBefore = target.balanceOf(bob);
-        hevm.prank(bob);
+        vm.prank(bob);
         ERC20(yt).approve(alice, type(uint256).max);
         Token(yt).transferFrom(bob, alice, bytBalanceBefore);
         uint256 aytBalanceAfter = ERC20(yt).balanceOf(alice);
@@ -105,15 +105,15 @@ contract Yield is TestHelper {
         uint256 tBal = 10e18;
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        hevm.warp(block.timestamp + 1 days);
-        hevm.prank(bob);
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
-        hevm.warp(block.timestamp + 10 days);
+        vm.warp(block.timestamp + 10 days);
 
         uint256 aytBalanceBefore = ERC20(yt).balanceOf(alice);
         uint256 bytBalanceBefore = ERC20(yt).balanceOf(bob);
         uint256 tBalanceBefore = target.balanceOf(bob);
-        hevm.prank(bob);
+        vm.prank(bob);
         ERC20(yt).approve(alice, type(uint256).max);
         Token(yt).transferFrom(bob, alice, 0);
         uint256 aytBalanceAfter = ERC20(yt).balanceOf(alice);

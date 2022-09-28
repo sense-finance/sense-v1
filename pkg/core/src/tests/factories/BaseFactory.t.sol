@@ -149,7 +149,7 @@ contract Factories is TestHelper {
         // As we want to test guard calculation with a scale value different than 1e18 (which is the one used
         // on the mock contracts), we use the Mock2e18Factory which uses deploys Mock2e18Adapter adapters.
         // If we are testing with 4626, we can use the deployCropsFactory helper (we are not using
-        // mocks on this case). NOTE: trying to use hevm.mockCall to mock the scale call is not supported
+        // mocks on this case). NOTE: trying to use vm.mockCall to mock the scale call is not supported
         // as we would be mocking the adapter with a pre-computed address and does not work.
         MockCropFactory someFactory;
         if (is4626Target) {
@@ -295,7 +295,7 @@ contract Factories is TestHelper {
         assertTrue(f != address(0));
         uint256 scale = MockAdapter(f).scale();
         assertEq(scale, 1e18);
-        hevm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
         (address principal, address yield) = periphery.sponsorSeries(f, maturity, true);
         assertTrue(principal != address(0));
@@ -307,12 +307,12 @@ contract Factories is TestHelper {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTarget someTarget = new MockTarget(address(someUnderlying), "Some Target", "ST", 18);
         factory.supportTarget(address(someTarget), true);
-        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
         factory.deployAdapter(address(someTarget), abi.encode(rewardTokens));
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        hevm.prank(address(periphery));
+        vm.prank(address(periphery));
         factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
@@ -320,12 +320,12 @@ contract Factories is TestHelper {
         assertEq(factory.restrictedAdmin(), Constants.RESTRICTED_ADMIN);
 
         // Can not set admin if not trusted
-        hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x123));
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x123));
         factory.setRestrictedAdmin(address(0x111));
 
         // Can set admin
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit RestrictedAdminChanged(Constants.RESTRICTED_ADMIN, address(0x111));
 
         factory.setRestrictedAdmin(address(0x111));
@@ -336,12 +336,12 @@ contract Factories is TestHelper {
         assertEq(factory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
 
         // Can not set rewards recipient if not trusted
-        hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x123));
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x123));
         factory.setRewardsRecipient(address(0x111));
 
         // Can set rewards recipient
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit RewardsRecipientChanged(Constants.REWARDS_RECIPIENT, address(0x111));
 
         factory.setRewardsRecipient(address(0x111));

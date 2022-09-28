@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { DSTest } from "./test-helpers/test.sol";
-import { LiquidityHelper } from "./test-helpers/LiquidityHelper.sol";
-import { Hevm } from "./test-helpers/Hevm.sol";
+import "forge-std/Test.sol";
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
@@ -47,7 +45,7 @@ interface SpaceFactoryLike {
     ) external;
 }
 
-contract PeripheryTestHelper is DSTest, LiquidityHelper {
+contract PeripheryTestHelper is Test {
     uint256 public origin;
 
     Periphery internal periphery;
@@ -65,8 +63,6 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
     address internal poolManager;
     address internal divider;
 
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
     // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
@@ -74,7 +70,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         origin = block.timestamp;
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
-        hevm.warp(firstDayOfMonth); // Set to first day of the month
+        vm.warp(firstDayOfMonth); // Set to first day of the month
 
         MockToken underlying = new MockToken("TestUnderlying", "TU", 18);
         mockTarget = new MockTarget(address(underlying), "TestTarget", "TT", 18);
@@ -106,7 +102,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
             address(new MockToken("Reward", "R", 18))
         );
 
-        hevm.label(spaceFactory, "SpaceFactory");
+        vm.label(spaceFactory, "SpaceFactory");
 
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: AddressBook.DAI,
@@ -135,7 +131,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         periphery.setFactory(address(ffactory), true);
 
         // Start multisig (admin) prank calls
-        hevm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
+        vm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
 
         // Give authority to factories soy they can setGuard when deploying adapters
         Divider(divider).setIsTrusted(address(cfactory), true);
@@ -150,7 +146,7 @@ contract PeripheryTestHelper is DSTest, LiquidityHelper {
         uint256 g2 = (uint256(1000) * 1e18) / uint256(950);
         SpaceFactoryLike(spaceFactory).setParams(ts, g1, g2, true);
 
-        hevm.stopPrank(); // Stop prank calling
+        vm.stopPrank(); // Stop prank calling
 
         periphery.onboardAdapter(address(mockAdapter), true);
         periphery.verifyAdapter(address(mockAdapter), true);
@@ -171,12 +167,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetSponsorSeriesOnCAdapter() public {
         // We roll back to original block number (which is the latest block) because the call chainlink's oracle
         // somehow is not being done taking into consideration the warped block (maybe a bug in foundry?)
-        hevm.warp(origin);
+        vm.warp(origin);
         address f = periphery.deployAdapter(address(cfactory), AddressBook.cBAT, "");
         CAdapter cadapter = CAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI
-        giveTokens(AddressBook.DAI, type(uint256).max, hevm);
-
+        deal(AddressBook.DAI, address(this), type(uint256).max);
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
             block.timestamp + Constants.DEFAULT_MIN_MATURITY
         );
@@ -204,7 +199,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetSponsorSeriesOnFAdapter() public {
         // We roll back to original block number (which is the latest block) because the call chainlink's oracle
         // somehow is not being done taking into consideration the warped block (maybe a bug in foundry?)
-        hevm.warp(origin);
+        vm.warp(origin);
         address f = periphery.deployAdapter(
             address(ffactory),
             AddressBook.f156FRAX3CRV,
@@ -212,7 +207,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         );
         FAdapter fadapter = FAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI for stake
-        giveTokens(AddressBook.DAI, type(uint256).max, hevm);
+        deal(AddressBook.DAI, address(this), type(uint256).max);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
             block.timestamp + Constants.DEFAULT_MIN_MATURITY
@@ -383,7 +378,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 TARGET_IN = 0.0234e18;
         // Check that borrowing too much Target will make it so that we can't pay back the flashloan
         uint256 TARGET_TO_BORROW = 0.1413769e18 + 0.02e18;
-        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.expectRevert("TRANSFER_FROM_FAILED");
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
     }
 
@@ -397,7 +392,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 TARGET_IN = 0.0234e18;
         // Check that borrowing too few Target will cause us to get too many Target back
         uint256 TARGET_TO_BORROW = 0.1413769e18 - 0.02e18;
-        hevm.expectRevert("TOO_MANY_TARGET_RETURNED");
+        vm.expectRevert("TOO_MANY_TARGET_RETURNED");
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, 0);
     }
 
@@ -411,11 +406,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 TARGET_IN = 0.0234e18;
         uint256 TARGET_TO_BORROW = 0.1413769e18;
 
-        hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
+        vm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
         // Check that we won't get TARGET_TO_BORROW out from swapping TARGET_TO_BORROW / 2 + TARGET_IN in
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW / 2, TARGET_TO_BORROW); // external call to catch the revert
 
-        hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
+        vm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
         // Check that we won't get TARGET_TO_BORROW * 1.01 out from swapping TARGET_TO_BORROW + TARGET_IN in
         this._checkYTBuyingParameters(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW.fmul(1.01e18));
 
@@ -426,7 +421,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertGt(targetReturnedPreview, 0);
 
         // Check that setting the min out to one more than the target we previewed fails
-        hevm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
+        vm.expectRevert("BAL#507"); // 507 = SWAP_LIMIT
         this._checkYTBuyingParameters(
             maturity,
             TARGET_IN,
@@ -473,8 +468,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         MockTarget newMockTarget = new MockTarget(address(newUnderlying), "TestTarget", "TT", targetDecimals);
 
         // 1. Switch the Target/Underlying tokens out for new ones with different decimals vaules
-        hevm.etch(mockTarget.underlying(), address(newUnderlying).code);
-        hevm.etch(address(mockTarget), address(newMockTarget).code);
+        vm.etch(mockTarget.underlying(), address(newUnderlying).code);
+        vm.etch(address(mockTarget), address(newMockTarget).code);
 
         // 2. Sponsor a Series
         (uint256 maturity, address pt, ) = _sponsorSeries();
@@ -491,8 +486,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetFuzzSwapTargetForYTsDifferentScales(uint64 initScale, uint64 scale) public {
-        hevm.assume(initScale >= 1e9);
-        hevm.assume(scale >= initScale);
+        vm.assume(initScale >= 1e9);
+        vm.assume(scale >= initScale);
 
         // 1. Initialize scale
         mockAdapter.setScale(initScale);

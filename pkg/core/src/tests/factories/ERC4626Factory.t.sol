@@ -77,7 +77,7 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
         // Deploy non-crops adapter
-        hevm.prank(address(periphery));
+        vm.prank(address(periphery));
         address adapter = someFactory.deployAdapter(address(someTarget), "");
         assertTrue(adapter != address(0));
 
@@ -109,7 +109,7 @@ contract ERC4626FactoryTest is TestHelper {
         bytes memory data = abi.encode(address(someReward));
 
         // Deploy crop adapter
-        hevm.prank(address(periphery));
+        vm.prank(address(periphery));
         ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
@@ -146,7 +146,7 @@ contract ERC4626FactoryTest is TestHelper {
         bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
-        hevm.prank(address(periphery));
+        vm.prank(address(periphery));
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
@@ -186,7 +186,7 @@ contract ERC4626FactoryTest is TestHelper {
         uint256 scale = MockAdapter(adapter).scale();
         assertEq(scale, 1e18);
 
-        hevm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
 
         // Sponsor series
@@ -205,11 +205,11 @@ contract ERC4626FactoryTest is TestHelper {
         // Mock call to Rari's master oracle
         MasterPriceOracle oracle = MasterPriceOracle(ORACLE);
         bytes memory data = abi.encode(1e18); // return data
-        hevm.mockCall(address(ORACLE), abi.encodeWithSelector(oracle.price.selector, address(underlying)), data);
+        vm.mockCall(address(ORACLE), abi.encodeWithSelector(oracle.price.selector, address(underlying)), data);
 
         // Prepare data for non crops adapter
         address[] memory rewardTokens = new address[](0);
-        hevm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.OnlyPeriphery.selector));
         factory.deployAdapter(address(someTarget), abi.encode(rewardTokens));
     }
 
@@ -218,7 +218,7 @@ contract ERC4626FactoryTest is TestHelper {
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
         address target = address(0xbabe);
 
-        hevm.expectEmit(true, true, false, true);
+        vm.expectEmit(true, true, false, true);
         emit TargetSupported(target, true);
 
         assertTrue(!someFactory.supportedTargets(target));
@@ -230,13 +230,13 @@ contract ERC4626FactoryTest is TestHelper {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
-        hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x4b1d));
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x4b1d));
         someFactory.supportTarget(address(0xbabe), true);
     }
 
     function testFailDeployAdapterIfAlreadyExists() public {
-        hevm.prank(address(periphery));
+        vm.prank(address(periphery));
         factory.deployAdapter(address(target), abi.encode(address(reward)));
     }
 
@@ -249,16 +249,16 @@ contract ERC4626FactoryTest is TestHelper {
 
         // Deploy crop adapter
         bytes memory data = abi.encode(address(0)); // no reward tokens
-        hevm.prank(address(periphery));
+        vm.prank(address(periphery));
         ERC4626CropAdapter adapter = ERC4626CropAdapter(someFactory.deployAdapter(address(someTarget), data));
         assertTrue(address(adapter) != address(0));
 
         // Can not set reward token if not admin
-        hevm.expectRevert("UNTRUSTED");
+        vm.expectRevert("UNTRUSTED");
         adapter.setRewardToken(address(0x111));
 
         // Set reward token
-        hevm.prank(Constants.RESTRICTED_ADMIN);
+        vm.prank(Constants.RESTRICTED_ADMIN);
         adapter.setRewardToken(address(0x111));
         assertEq(adapter.reward(), address(0x111));
     }
