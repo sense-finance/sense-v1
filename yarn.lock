@@ -1058,19 +1058,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-<<<<<<< HEAD
-"@nomiclabs/hardhat-ethers@npm:^2.0.6":
-  version: 2.1.1
-  resolution: "@nomiclabs/hardhat-ethers@npm:2.1.1"
-  peerDependencies:
-    ethers: ^5.0.0
-    hardhat: ^2.0.0
-  checksum: 6da766f7195acf57d2196f2368a85df69419110ffee93bdc5f8e3023728c1cb4c20138c1bda78a06efc2670c8eab78d457425f375cab667ab774fd1c2483bc4b
-  languageName: node
-  linkType: hard
-
-=======
->>>>>>> 5420aab (chore: general quality work)
 "@nomiclabs/hardhat-etherscan@npm:^3.1.0":
   version: 3.1.0
   resolution: "@nomiclabs/hardhat-etherscan@npm:3.1.0"
@@ -1163,29 +1150,16 @@ __metadata:
     "@balancer-labs/v2-pool-utils": 2.0.1
     "@balancer-labs/v2-solidity-utils": 2.0.0
     "@balancer-labs/v2-vault": 2.0.0
-<<<<<<< HEAD
-    "@nomiclabs/eslint-plugin-hardhat-internal-rules": ^1.0.0
-    "@nomiclabs/hardhat-ethers": ^2.0.5
-=======
->>>>>>> 5420aab (chore: general quality work)
     "@nomiclabs/hardhat-etherscan": ^3.1.0
     "@openzeppelin/contracts": ^4.7.3
     "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.1.6
-<<<<<<< HEAD
-    "@types/eslint": ^8
-    "@typescript-eslint/experimental-utils": ^5.37.0
-    add: ^2.0.6
-    dayjs: ^1.10.7
-    defender-relay-client: ^1.31.1
-=======
     add: ^2.0.6
     dayjs: ^1.10.7
     defender-relay-client: ^1.31.1
     dotenv: ^16.0.2
->>>>>>> 5420aab (chore: general quality work)
     eslint: ^8.22.0
     eslint-plugin-prettier: ^4.2.1
     ethers: ^5.5.1
@@ -1435,81 +1409,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-<<<<<<< HEAD
-"@typescript-eslint/experimental-utils@npm:^5.37.0":
-  version: 5.38.0
-  resolution: "@typescript-eslint/experimental-utils@npm:5.38.0"
-  dependencies:
-    "@typescript-eslint/utils": 5.38.0
-  peerDependencies:
-    eslint: ^6.0.0 || ^7.0.0 || ^8.0.0
-  checksum: 18ce94b1a1e478d972b642874c53f04afd65219f2c43697b2f9c33f1fb4849e23e1415a09a61a2d576fe126f9b2ffd72f9a89ae28af737d08e1d3557c17db625
-  languageName: node
-  linkType: hard
-
-"@typescript-eslint/scope-manager@npm:5.38.0":
-  version: 5.38.0
-  resolution: "@typescript-eslint/scope-manager@npm:5.38.0"
-  dependencies:
-    "@typescript-eslint/types": 5.38.0
-    "@typescript-eslint/visitor-keys": 5.38.0
-  checksum: e1ed38abd0797da4da873119cc907576995fb3efd90c65dd2ec1fd2c8d480c3b2dbd9b8ceb86645321c9282e5f9c9f24ac53cc0b9ef7bbb23fbc9749ae44c3dd
-  languageName: node
-  linkType: hard
-
-"@typescript-eslint/types@npm:5.38.0":
-  version: 5.38.0
-  resolution: "@typescript-eslint/types@npm:5.38.0"
-  checksum: 287e9c4838b9550e1cda32480ee6f6e51e1f9123be37dcd8ce04f3ea0b10e68cfe11a4b3b36c0c867e63fbde4abb7a46b597a2e4dd3f1a91c41ecf5e93b49f2b
-  languageName: node
-  linkType: hard
-
-"@typescript-eslint/typescript-estree@npm:5.38.0":
-  version: 5.38.0
-  resolution: "@typescript-eslint/typescript-estree@npm:5.38.0"
-  dependencies:
-    "@typescript-eslint/types": 5.38.0
-    "@typescript-eslint/visitor-keys": 5.38.0
-    debug: ^4.3.4
-    globby: ^11.1.0
-    is-glob: ^4.0.3
-    semver: ^7.3.7
-    tsutils: ^3.21.0
-  peerDependenciesMeta:
-    typescript:
-      optional: true
-  checksum: bd7a47ef1ceed3f13ec0b804fa7ed79200c10de5db0c1976c86503dd53b5a1f54b375b4620ef133c554f9d967f64bd8dd062d3e7371ec69798aa549348ac35c0
-  languageName: node
-  linkType: hard
-
-"@typescript-eslint/utils@npm:5.38.0":
-  version: 5.38.0
-  resolution: "@typescript-eslint/utils@npm:5.38.0"
-  dependencies:
-    "@types/json-schema": ^7.0.9
-    "@typescript-eslint/scope-manager": 5.38.0
-    "@typescript-eslint/types": 5.38.0
-    "@typescript-eslint/typescript-estree": 5.38.0
-    eslint-scope: ^5.1.1
-    eslint-utils: ^3.0.0
-  peerDependencies:
-    eslint: ^6.0.0 || ^7.0.0 || ^8.0.0
-  checksum: 94bab1c4fee61b5c28472ad88004f21b4458fdef54317cdccb6a630f0652c5cb571e2351e91bec2607aa206aacbf81df0daad2bfb9be49dbb95730d675def037
-  languageName: node
-  linkType: hard
-
-"@typescript-eslint/visitor-keys@npm:5.38.0":
-  version: 5.38.0
-  resolution: "@typescript-eslint/visitor-keys@npm:5.38.0"
-  dependencies:
-    "@typescript-eslint/types": 5.38.0
-    eslint-visitor-keys: ^3.3.0
-  checksum: 3273fa710fde5ba1b9a8dafbdeb557a13ef632189a9794c7e72a9b07b98c5b977caa8dba4314198207a0015b01717ae95721621996f4a021f0887362e9e723db
-  languageName: node
-  linkType: hard
-
-=======
->>>>>>> 5420aab (chore: general quality work)
 "@ungap/promise-all-settled@npm:1.1.2":
   version: 1.1.2
   resolution: "@ungap/promise-all-settled@npm:1.1.2"
