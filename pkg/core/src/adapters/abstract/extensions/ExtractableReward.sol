@@ -30,10 +30,13 @@ abstract contract ExtractableReward is Trust {
     /// Rewards extractor
     /// -----------------------------------------------------------------------
 
+    /// @notice Receives a token address and returns whether it is an
+    /// extractable token or not
+    /// @dev To be overriden by the inheriting contract
     function _isValid(address _token) internal virtual returns (bool);
 
+    /// @notice Transfers reward tokens from the adapter to Sense's reward container
     function extractToken(address token) external {
-        // Check that token is neither eToken nor
         if (!_isValid(token)) revert Errors.TokenNotSupported();
         ERC20 t = ERC20(token);
         uint256 tBal = t.balanceOf(address(this));

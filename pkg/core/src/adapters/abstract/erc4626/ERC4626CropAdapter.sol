@@ -29,12 +29,7 @@ contract ERC4626CropAdapter is ERC4626Adapter, Crop {
         super.notify(_usr, amt, join);
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target, the stake nor the reward
-        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake && _token != reward);
     }
 }

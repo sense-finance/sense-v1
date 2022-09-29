@@ -6,6 +6,7 @@ import { FixedMath } from "../../../external/FixedMath.sol";
 
 // Internal references
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -37,7 +38,7 @@ interface PriceOracleLike {
 }
 
 /// @notice Adapter contract for wstETH
-contract WstETHAdapter is BaseAdapter {
+contract WstETHAdapter is BaseAdapter, ExtractableReward {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
@@ -55,7 +56,7 @@ contract WstETHAdapter is BaseAdapter {
         address _rewardsRecipient,
         uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, STETH, _rewardsRecipient, _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, STETH, _ifee, _adapterParams) ExtractableReward(_rewardsRecipient) {
         // approve wstETH contract to pull stETH (used on wrapUnderlying())
         ERC20(STETH).approve(WSTETH, type(uint256).max);
         // set an inital cached scale value
@@ -94,12 +95,7 @@ contract WstETHAdapter is BaseAdapter {
         ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(amount));
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake);
     }
 }

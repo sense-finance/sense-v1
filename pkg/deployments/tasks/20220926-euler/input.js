@@ -32,6 +32,7 @@ const SAMPLE_MATURITIES = [
     .unix(),
 ];
 
+// TODO: add corresponding markets once we have a decision
 const MAINNET_EULER_MARKETS = [EULER_USDC.get(CHAINS.MAINNET)];
 
 module.exports = {

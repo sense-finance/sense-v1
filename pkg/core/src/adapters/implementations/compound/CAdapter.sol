@@ -9,6 +9,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { Crop } from "../../abstract/extensions/Crop.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 
 interface WETHLike {
     function deposit() external payable;
@@ -80,7 +81,7 @@ interface PriceOracleLike {
 }
 
 /// @notice Adapter contract for cTokens
-contract CAdapter is BaseAdapter, Crop {
+contract CAdapter is BaseAdapter, Crop, ExtractableReward {
     using SafeTransferLib for ERC20;
 
     address public constant COMPTROLLER = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
@@ -100,7 +101,11 @@ contract CAdapter is BaseAdapter, Crop {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
+    )
+        Crop(_divider, _reward)
+        BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams)
+        ExtractableReward(_rewardsRecipient)
+    {
         isCETH = _target == CETH;
         ERC20(_underlying).safeApprove(_target, type(uint256).max);
         uDecimals = CTokenLike(_underlying).decimals();
@@ -180,13 +185,8 @@ contract CAdapter is BaseAdapter, Crop {
         ERC20(underlying).safeTransfer(msg.sender, uBal);
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target, the stake nor the reward
-        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake && _token != reward);
     }
 
     function _to18Decimals(uint256 exRate) internal view returns (uint256) {

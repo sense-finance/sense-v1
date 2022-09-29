@@ -8,6 +8,7 @@ import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Crops } from "../../abstract/extensions/Crops.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { CTokenLike } from "../compound/CAdapter.sol";
 
@@ -57,7 +58,7 @@ interface PriceOracleLike {
 }
 
 /// @notice Adapter contract for fTokens
-contract FAdapter is BaseAdapter, Crops {
+contract FAdapter is BaseAdapter, Crops, ExtractableReward {
     using SafeTransferLib for ERC20;
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -83,7 +84,8 @@ contract FAdapter is BaseAdapter, Crops {
         address[] memory _rewardsDistributorsList
     )
         Crops(_divider, _rewardTokens)
-        BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams)
+        BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams)
+        ExtractableReward(_rewardsRecipient)
     {
         rewardTokens = _rewardTokens;
         comptroller = _comptroller;
@@ -172,20 +174,16 @@ contract FAdapter is BaseAdapter, Crops {
         ERC20(underlying).safeTransfer(msg.sender, uBal);
     }
 
-    function extractToken(address token) external override {
+    function _isValid(address _token) internal override returns (bool) {
         for (uint256 i = 0; i < rewardTokens.length; ) {
-            if (token == rewardTokens[i]) revert Errors.TokenNotSupported();
+            if (_token == rewardTokens[i]) return false;
             unchecked {
                 ++i;
             }
         }
 
         // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+        return (_token != target && _token != adapterParams.stake);
     }
 
     /* ========== ADMIN ========== */

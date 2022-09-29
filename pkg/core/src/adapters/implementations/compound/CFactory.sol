@@ -5,6 +5,7 @@ pragma solidity 0.8.13;
 import { CropFactory } from "../../abstract/factories/CropFactory.sol";
 import { CAdapter, ComptrollerLike } from "./CAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { Divider } from "../../../Divider.sol";
 
 // External references
@@ -65,6 +66,6 @@ contract CFactory is CropFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }

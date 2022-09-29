@@ -20,7 +20,7 @@ contract FakeAdapter is BaseAdapter {
         address _rewardsRecipient,
         uint128 _ifee,
         BaseAdapter.AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {}
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;
@@ -41,8 +41,6 @@ contract FakeAdapter is BaseAdapter {
     function getUnderlyingPrice() external view override returns (uint256) {
         return 1e18;
     }
-
-    function extractToken(address token) external override {}
 
     function doSetAdapter(Divider d, address _adapter) public {
         d.setAdapter(_adapter, true);

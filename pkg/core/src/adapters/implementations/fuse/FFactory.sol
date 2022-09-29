@@ -5,6 +5,7 @@ pragma solidity 0.8.13;
 import { FAdapter, FComptrollerLike, RewardsDistributorLike } from "./FAdapter.sol";
 import { BaseFactory } from "../../abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { Divider } from "../../../Divider.sol";
 
 // External references
@@ -88,6 +89,6 @@ contract FFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }

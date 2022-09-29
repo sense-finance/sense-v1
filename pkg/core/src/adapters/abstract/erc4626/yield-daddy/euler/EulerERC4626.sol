@@ -4,8 +4,7 @@ pragma solidity 0.8.13;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { IEulerEToken } from "@yield-daddy/src/euler/external/IEulerEToken.sol";
 import { EulerERC4626 as Base } from "@yield-daddy/src/euler/EulerERC4626.sol";
-
-import { ExtractableReward } from "../base/ExtractableReward.sol";
+import { ExtractableReward } from "../../../extensions/ExtractableReward.sol";
 
 /// @title EulerERC4626
 /// @author forked from Yield Daddy (Timeless Finance)
@@ -19,9 +18,7 @@ contract EulerERC4626 is Base, ExtractableReward {
         address _euler,
         IEulerEToken _eToken,
         address _rewardsRecipient
-    ) Base(_asset, _euler, _eToken) ExtractableReward(_rewardsRecipient) {
-        rewardsRecipient = _rewardsRecipient;
-    }
+    ) Base(_asset, _euler, _eToken) ExtractableReward(_rewardsRecipient) {}
 
     /// -----------------------------------------------------------------------
     /// Overrides

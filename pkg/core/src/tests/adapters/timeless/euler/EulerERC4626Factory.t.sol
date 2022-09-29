@@ -4,11 +4,12 @@ pragma solidity ^0.8.11;
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 
-import { EulerMock } from "../mocks/EulerMock.sol";
+import { EulerMock } from "@yield-daddy/src/test/euler/mocks/EulerMock.sol";
 import { MockToken } from "../../../test-helpers/mocks/MockToken.sol";
 import { EulerERC4626 } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626.sol";
-import { EulerETokenMock } from "../mocks/EulerETokenMock.sol";
-import { EulerMarketsMock } from "../mocks/EulerMarketsMock.sol";
+import { EulerETokenMock } from "@yield-daddy/src/test/euler/mocks/EulerETokenMock.sol";
+import { EulerMarketsMock } from "@yield-daddy/src/test/euler/mocks/EulerMarketsMock.sol";
+
 import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
 

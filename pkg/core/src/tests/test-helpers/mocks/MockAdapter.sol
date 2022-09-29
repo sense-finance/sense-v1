@@ -5,6 +5,7 @@ import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 import { Crops } from "../../../adapters/abstract/extensions/Crops.sol";
 import { Crop } from "../../../adapters/abstract/extensions/Crop.sol";
+import { ExtractableReward } from "../../../adapters/abstract/extensions/ExtractableReward.sol";
 import { ERC4626Adapter } from "../../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { Divider } from "../../../Divider.sol";
@@ -16,7 +17,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 // Mock adapter
-contract MockAdapter is BaseAdapter {
+contract MockAdapter is BaseAdapter, ExtractableReward {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
@@ -43,7 +44,7 @@ contract MockAdapter is BaseAdapter {
         address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) ExtractableReward(_rewardsRecipient) {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
@@ -99,13 +100,8 @@ contract MockAdapter is BaseAdapter {
         return 1e18;
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake);
     }
 
     function onRedeem(
@@ -135,7 +131,7 @@ contract MockAdapter is BaseAdapter {
 }
 
 // Mock crop adapter
-contract MockCropAdapter is BaseAdapter, Crop {
+contract MockCropAdapter is BaseAdapter, Crop, ExtractableReward {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
@@ -163,7 +159,11 @@ contract MockCropAdapter is BaseAdapter, Crop {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) Crop(_divider, _reward) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {
+    )
+        Crop(_divider, _reward)
+        BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams)
+        ExtractableReward(_rewardsRecipient)
+    {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
         scalingFactor = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
@@ -231,13 +231,8 @@ contract MockCropAdapter is BaseAdapter, Crop {
         return 1e18;
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target, the stake nor the reward
-        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake && _token != reward);
     }
 
     function onRedeem(
@@ -267,7 +262,7 @@ contract MockCropAdapter is BaseAdapter, Crop {
 }
 
 // Mock crops adapter
-contract MockCropsAdapter is BaseAdapter, Crops {
+contract MockCropsAdapter is BaseAdapter, Crops, ExtractableReward {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
@@ -297,7 +292,8 @@ contract MockCropsAdapter is BaseAdapter, Crops {
         address[] memory _rewardTokens
     )
         Crops(_divider, _rewardTokens)
-        BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams)
+        BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams)
+        ExtractableReward(_rewardsRecipient)
     {
         uint256 tDecimals = MockTarget(_target).decimals();
         uint256 uDecimals = MockTarget(_underlying).decimals();
@@ -366,20 +362,16 @@ contract MockCropsAdapter is BaseAdapter, Crops {
         return 1e18;
     }
 
-    function extractToken(address token) external override {
+    function _isValid(address _token) internal override returns (bool) {
         for (uint256 i = 0; i < rewardTokens.length; ) {
-            if (token == rewardTokens[i]) revert Errors.TokenNotSupported();
+            if (_token == rewardTokens[i]) return false;
             unchecked {
                 ++i;
             }
         }
 
         // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+        return (_token != target && _token != adapterParams.stake);
     }
 
     function onRedeem(
@@ -464,7 +456,7 @@ contract Mock4626CropAdapter is ERC4626Adapter, Crop {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) ERC4626Adapter(_divider, _target, rewardsRecipient, _ifee, _adapterParams) Crop(_divider, _reward) {}
+    ) ERC4626Adapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) Crop(_divider, _reward) {}
 
     function notify(
         address _usr,
@@ -478,13 +470,8 @@ contract Mock4626CropAdapter is ERC4626Adapter, Crop {
         return (0, ERC4626(target).convertToAssets(BASE_UINT));
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target, the stake nor the reward
-        if (token == target || token == adapterParams.stake || token == reward) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake && _token != reward);
     }
 
     function onRedeem(
@@ -539,20 +526,16 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
         super.notify(_usr, amt, join);
     }
 
-    function extractToken(address token) external override {
+    function _isValid(address _token) internal override returns (bool) {
         for (uint256 i = 0; i < rewardTokens.length; ) {
-            if (token == rewardTokens[i]) revert Errors.TokenNotSupported();
+            if (_token == rewardTokens[i]) return false;
             unchecked {
                 ++i;
             }
         }
 
         // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+        return (_token != target && _token != adapterParams.stake);
     }
 
     function onRedeem(
@@ -578,7 +561,7 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
 }
 
 // Mock base adapter
-contract MockBaseAdapter is BaseAdapter {
+contract MockBaseAdapter is BaseAdapter, ExtractableReward {
     using SafeTransferLib for ERC20;
 
     constructor(
@@ -588,7 +571,7 @@ contract MockBaseAdapter is BaseAdapter {
         address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, _underlying, _rewardsRecipient, _ifee, _adapterParams) {}
+    ) BaseAdapter(_divider, _target, _underlying, _ifee, _adapterParams) ExtractableReward(_rewardsRecipient) {}
 
     function scale() external virtual override returns (uint256 _value) {
         return 100e18;
@@ -610,12 +593,7 @@ contract MockBaseAdapter is BaseAdapter {
         return 1e18;
     }
 
-    function extractToken(address token) external override {
-        // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal override returns (bool) {
+        return (_token != target && _token != adapterParams.stake);
     }
 }
