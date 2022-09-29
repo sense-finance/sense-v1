@@ -142,7 +142,7 @@ module.exports = {
     },
   },
   preprocess: {
-    eachLine: hre => ({
+    eachLine: () => ({
       transform: line => {
         if (line.match(/^\s*import /i)) {
           for (const [from, to] of getRemappings()) {

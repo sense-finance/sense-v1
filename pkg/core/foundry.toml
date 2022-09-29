@@ -13,5 +13,4 @@ remappings = [
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts',
     '@yield-daddy=lib/yield-daddy',
     'solmate/=../../node_modules/@rari-capital/solmate/src', # for yield-daddy
-    'ds-test/=./src/tests/test-helpers/'
 ]
