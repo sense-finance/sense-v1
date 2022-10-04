@@ -84,13 +84,16 @@ cargo install just
 git submodule update --init --recursive
 yarn install # or npm install
 
-# Run local tests
+# Run basic tests suite against a local chain. This is all tests ending in .t.sol
+# All tests run with underlying, target and stake aas ERC20 compliant tokens wth 18 decimals
 yarn test
 
-# Run mainnet fork tests
+# Run mainnet tests (against a mainnet fork). This is all tests endng in .tm.sol
+# All tests run with underlying, target and stake aas ERC20 compliant tokens wth 18 decimals
+# (unless they use existing tokens)
 yarn test:mainnet
 
-# Run full local test suite which includes combinations for:
+# Run full local test suite (against a local chain) which includes combinations for:
 # 1. ERC4626, ERC20 and non-ERC20 for target, underlying and stake
 # 2. 6, 8 and 18 decimals for target, underlying and stake
 yarn test:fuzz

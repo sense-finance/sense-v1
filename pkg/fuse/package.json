@@ -13,8 +13,8 @@
         "!src/tests/*"
     ],
     "scripts": {
-        "test": "forge test --no-match-path \"*.tm*\" | gnomon",
-        "test:mainnet": "forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.alchemyapi.io/v2/_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC | gnomon",
+        "test": "time forge test --no-match-path \"*.tm*\"",
+        "test:mainnet": "forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.alchemyapi.io/v2/_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
         "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
@@ -27,7 +27,6 @@
     },
     "devDependencies": {
         "@types/prettier": "^2",
-        "gnomon": "^1.5.0",
         "prettier": "^2.7.1",
         "prettier-plugin-solidity": "^1.0.0-beta.17",
         "solhint": "^3.3.7",

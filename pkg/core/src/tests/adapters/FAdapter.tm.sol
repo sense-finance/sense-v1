@@ -44,7 +44,7 @@ contract FAdapterTestHelper is Test {
     uint256 public mainnetFork;
 
     function setUp() public {
-        // Roll to block mined on Apr 18 2022 at 12:00:10 AM UTC z(before Fuse bug)
+        // Roll to block mined on Apr 18 2022 at 12:00:10 AM UTC (before Fuse bug)
         vm.rollFork(14605885);
 
         deal(AddressBook.DAI, address(this), ONE_FTOKEN);

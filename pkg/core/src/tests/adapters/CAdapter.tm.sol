@@ -50,6 +50,8 @@ contract CAdapterTestHelper is Test {
     function setUp() public {
         deal(AddressBook.DAI, address(this), 20e18);
         deal(AddressBook.WETH, address(this), 20e18);
+
+        // we can't use deal() here since it will break Compound's redeem function
         mintCToken(AddressBook.cDAI, 10e18);
         mintCToken(AddressBook.cETH, 10e18);
 

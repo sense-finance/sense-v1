@@ -10,17 +10,16 @@
     "pkg/*"
   ],
   "scripts": {
-    "test": "yarn workspaces foreach --parallel --verbose --interlaced run test | gnomon",
-    "test:mainnet": "yarn workspaces foreach --parallel --verbose --interlaced run test:mainnet | gnomon",
-    "test:fuzz": "yarn workspace @sense-finance/v1-core run test:fuzz | gnomon",
-    "test:4626": "yarn workspace @sense-finance/v1-core run test:4626 | gnomon",
+    "test": "time yarn workspaces foreach --parallel --verbose --interlaced run test",
+    "test:mainnet": "time yarn workspaces foreach --parallel --verbose --interlaced run test:mainnet",
+    "test:fuzz": "time yarn workspace @sense-finance/v1-core run test:fuzz",
+    "test:4626": "time yarn workspace @sense-finance/v1-core run test:4626",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
     "fix": "yarn workspaces foreach --parallel --verbose run fix",
     "gas-snapshot": "yarn workspaces foreach --parallel --verbose --interlaced run gas-snapshot"
   },
   "packageManager": "yarn@3.1.0",
   "devDependencies": {
-    "gnomon": "^1.5.0",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
