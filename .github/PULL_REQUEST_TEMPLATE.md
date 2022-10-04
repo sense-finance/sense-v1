@@ -35,3 +35,9 @@ check off all of the required items.
 - [ ]  [OPTIONAL] Integrate the feature into the deployment scripts
 - [ ]  [OPTIONAL] Add new sanity checks to the deployment scripts
 - [ ]  Get the PR reviewed by at least two people
+
+If your PR uses or interacts with prices of any kind
+- [ ] Make sure forge is running the test on the latest block
+- [ ] Compare the value returned with some other source (like Curve)
+- [ ] Check the `updatedAt` (if available) value of the contract that is in fact sourcing the price is not older than X amount of time
+- [ ] Ensure oracle liveliness from the oracle maintainer, either through a public status interface or through written confirmation from a developer.
