@@ -311,7 +311,7 @@ contract Divider is Trust, ReentrancyGuard, Pausable {
         if (!_settled(adapter, maturity)) revert Errors.NotSettled();
 
         uint256 level = adapterMeta[adapter].level;
-        if (level.redeemRestricted() && msg.sender == adapter) revert Errors.RedeemRestricted();
+        if (level.redeemRestricted() && msg.sender != adapter) revert Errors.RedeemRestricted();
 
         // Burn the caller's PT
         Token(series[adapter][maturity].pt).burn(msg.sender, uBal);

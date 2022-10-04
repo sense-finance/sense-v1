@@ -493,6 +493,38 @@ contract Dividers is TestHelper {
         vm.stopPrank();
     }
 
+    function testRedeemLevelRestrictions() public {
+        // Restrict redeem, enable all other lifecycle methods
+        uint16 level = 0x1 + 0x2 + 0x4 + 0x8;
+
+        DEFAULT_ADAPTER_PARAMS.level = level;
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+
+        divider.setAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), type(uint256).max);
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        // Should be possible to sponsor series
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        // Issue PTs andn YTs
+        divider.issue(address(adapter), maturity, 1e18);
+
+        // Move to maturity and settle
+        hevm.warp(maturity);
+        divider.settleSeries(address(adapter), maturity);
+
+        uint256 uBal = ERC20(pt).balanceOf(address(this));
+
+        // Can't issue directly through the divider
+        hevm.expectRevert(abi.encodeWithSelector(Errors.RedeemRestricted.selector));
+        divider.redeem(address(adapter), maturity, uBal);
+
+        // Can redeem through adapter
+        ERC20(pt).approve(address(adapter), type(uint256).max);
+        adapter.doRedeem(maturity, uBal);
+    }
+
     function testFuzzIssue(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);

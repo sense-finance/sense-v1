@@ -125,6 +125,13 @@ contract MockAdapter is BaseAdapter, ExtractableReward {
         MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
     }
 
+    function doRedeem(uint256 maturity, uint256 ptBal) external {
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        ERC20(pt).transferFrom(msg.sender, address(this), ptBal);
+        Divider(divider).redeem(address(this), maturity, ptBal);
+        MockTarget(target).transfer(msg.sender, MockTarget(target).balanceOf(address(this)));
+    }
+
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
@@ -254,6 +261,13 @@ contract MockCropAdapter is BaseAdapter, Crop, ExtractableReward {
         (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
         MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
+    }
+
+    function doRedeem(uint256 maturity, uint256 ptBal) external {
+        (address pt, , , , , , , , ) = Divider(divider).series(address(this), maturity);
+        ERC20(pt).transferFrom(msg.sender, address(this), ptBal);
+        Divider(divider).redeem(address(this), maturity, ptBal);
+        MockTarget(target).transfer(msg.sender, MockTarget(target).balanceOf(address(this)));
     }
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
@@ -395,6 +409,13 @@ contract MockCropsAdapter is BaseAdapter, Crops, ExtractableReward {
         MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
     }
 
+    function doRedeem(uint256 maturity, uint256 ptBal) external {
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        ERC20(pt).transferFrom(msg.sender, address(this), ptBal);
+        Divider(divider).redeem(address(this), maturity, ptBal);
+        MockTarget(target).transfer(msg.sender, MockTarget(target).balanceOf(address(this)));
+    }
+
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
         tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
@@ -434,6 +455,13 @@ contract Mock4626Adapter is ERC4626Adapter {
         (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
         MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
+    }
+
+    function doRedeem(uint256 maturity, uint256 ptBal) external {
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        ERC20(pt).transferFrom(msg.sender, address(this), ptBal);
+        Divider(divider).redeem(address(this), maturity, ptBal);
+        MockTarget(target).transfer(msg.sender, MockTarget(target).balanceOf(address(this)));
     }
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
@@ -489,6 +517,13 @@ contract Mock4626CropAdapter is ERC4626Adapter, Crop {
         (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
         MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
+    }
+
+    function doRedeem(uint256 maturity, uint256 ptBal) external {
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        ERC20(pt).transferFrom(msg.sender, address(this), ptBal);
+        Divider(divider).redeem(address(this), maturity, ptBal);
+        MockTarget(target).transfer(msg.sender, MockTarget(target).balanceOf(address(this)));
     }
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
@@ -553,6 +588,13 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
         (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
         MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
         MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
+    }
+
+    function doRedeem(uint256 maturity, uint256 ptBal) external {
+        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
+        ERC20(pt).transferFrom(msg.sender, address(this), ptBal);
+        Divider(divider).redeem(address(this), maturity, ptBal);
+        MockTarget(target).transfer(msg.sender, MockTarget(target).balanceOf(address(this)));
     }
 
     function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
