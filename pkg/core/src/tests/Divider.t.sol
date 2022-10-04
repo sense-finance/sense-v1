@@ -476,21 +476,26 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
 
         // Should be possible to init series
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-
-        vm.startPrank(bob);
-        target.approve(address(adapter), type(uint256).max);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         // Can't issue directly through the divider
         vm.expectRevert(abi.encodeWithSelector(Errors.IssuanceRestricted.selector));
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, 1e18);
 
         // Can issue through adapter
-        adapter.doIssue(maturity, 1e18);
+        target.transfer(address(adapter), 1e18);
+
+        hevm.startPrank(address(adapter));
+        divider.issue(address(adapter), maturity, 1e18);
+        ERC20(pt).transfer(bob, ERC20(pt).balanceOf(address(adapter)));
+        ERC20(yt).transfer(bob, ERC20(yt).balanceOf(address(adapter)));
+        hevm.stopPrank();
 
         // It should still be possible to combine
-        divider.combine(address(adapter), maturity, ERC20(yt).balanceOf(bob));
-        vm.stopPrank();
+        uint256 ytBal = ERC20(yt).balanceOf(bob);
+        vm.prank(bob);
+        divider.combine(address(adapter), maturity, ytBal);
     }
 
     function testRedeemLevelRestrictions() public {
@@ -507,7 +512,11 @@ contract Dividers is TestHelper {
         // Should be possible to sponsor series
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
 
-        // Issue PTs andn YTs
+        // Issue PTs andn YTs from user
+        divider.issue(address(adapter), maturity, 1e18);
+
+        // Issue PTs andn YTs from adapter (to test redeeming from adapter)
+        hevm.prank(address(adapter));
         divider.issue(address(adapter), maturity, 1e18);
 
         // Move to maturity and settle
@@ -521,8 +530,17 @@ contract Dividers is TestHelper {
         divider.redeem(address(adapter), maturity, uBal);
 
         // Can redeem through adapter
-        ERC20(pt).approve(address(adapter), type(uint256).max);
-        adapter.doRedeem(maturity, uBal);
+        uint256 tBalBefore = target.balanceOf(address(adapter));
+        hevm.prank(address(adapter));
+        divider.redeem(address(adapter), maturity, uBal);
+
+        // User should still have their PTs (because they were not burnt)
+        assertEq(ERC20(pt).balanceOf(address(this)), uBal);
+
+        // Adapter's PTs should be burnt and it should have gotten more target
+        assertEq(ERC20(pt).balanceOf(address(adapter)), 0);
+        // We assert equal instead of greater than since the user is the adapter
+        assertEq(target.balanceOf(address(adapter)), tBalBefore);
     }
 
     function testFuzzIssue(uint128 tBal) public {
@@ -660,9 +678,11 @@ contract Dividers is TestHelper {
         uint256 balance = ERC20(yt).balanceOf(bob);
         Token(pt).transfer(address(adapter), balance);
         Token(yt).transfer(address(adapter), balance);
-        uint256 combined = adapter.doCombine(maturity, balance);
-        assertGt(combined, 0);
         vm.stopPrank();
+
+        vm.prank(address(adapter));
+        uint256 combined = Divider(divider).combine(address(adapter), maturity, balance);
+        assertGt(combined, 0);
     }
 
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
