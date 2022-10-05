@@ -486,11 +486,11 @@ contract Dividers is TestHelper {
         // Can issue through adapter
         target.transfer(address(adapter), 1e18);
 
-        hevm.startPrank(address(adapter));
+        vm.startPrank(address(adapter));
         divider.issue(address(adapter), maturity, 1e18);
         ERC20(pt).transfer(bob, ERC20(pt).balanceOf(address(adapter)));
         ERC20(yt).transfer(bob, ERC20(yt).balanceOf(address(adapter)));
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // It should still be possible to combine
         uint256 ytBal = ERC20(yt).balanceOf(bob);
@@ -516,22 +516,22 @@ contract Dividers is TestHelper {
         divider.issue(address(adapter), maturity, 1e18);
 
         // Issue PTs and YTs from adapter (to test redeeming from adapter)
-        hevm.prank(address(adapter));
+        vm.prank(address(adapter));
         divider.issue(address(adapter), maturity, 1e18);
 
         // Move to maturity and settle
-        hevm.warp(maturity);
+        vm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
 
         uint256 uBal = ERC20(pt).balanceOf(address(this));
 
         // Can't redeem directly through the divider
-        hevm.expectRevert(abi.encodeWithSelector(Errors.RedeemRestricted.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.RedeemRestricted.selector));
         divider.redeem(address(adapter), maturity, uBal);
 
         // Can redeem through adapter
         uint256 tBalBefore = target.balanceOf(address(adapter));
-        hevm.prank(address(adapter));
+        vm.prank(address(adapter));
         divider.redeem(address(adapter), maturity, uBal);
 
         // User should still have their PTs (because they were not burnt)
