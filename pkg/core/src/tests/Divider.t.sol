@@ -515,7 +515,7 @@ contract Dividers is TestHelper {
         // Issue PTs andn YTs from user
         divider.issue(address(adapter), maturity, 1e18);
 
-        // Issue PTs andn YTs from adapter (to test redeeming from adapter)
+        // Issue PTs and YTs from adapter (to test redeeming from adapter)
         hevm.prank(address(adapter));
         divider.issue(address(adapter), maturity, 1e18);
 
@@ -525,7 +525,7 @@ contract Dividers is TestHelper {
 
         uint256 uBal = ERC20(pt).balanceOf(address(this));
 
-        // Can't issue directly through the divider
+        // Can't redeem directly through the divider
         hevm.expectRevert(abi.encodeWithSelector(Errors.RedeemRestricted.selector));
         divider.redeem(address(adapter), maturity, uBal);
 
