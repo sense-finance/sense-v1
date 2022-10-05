@@ -1,5 +1,5 @@
 const { CHAINS } = require("./hardhat.addresses");
-
+const fs = require("fs");
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 require("@tenderly/hardhat-tenderly");
@@ -9,6 +9,7 @@ require("hardhat-deploy");
 require("hardhat-deploy-ethers");
 require("hardhat-spdx-license-identifier");
 require("hardhat-watcher");
+require("hardhat-preprocessor");
 require("./cli");
 require("./hardhat.seed");
 
@@ -17,6 +18,16 @@ const accounts = {
   // For the hardhat test network
   accountsBalance: "10000000000000000000000000",
 };
+
+const getRemappings = () => {
+  return fs
+    .readFileSync("remappings.txt", "utf8")
+    .split("\n")
+    .filter(Boolean) // remove empty lines
+    .map(line => line.trim().split("="));
+};
+
+exports.getRemappings = getRemappings;
 
 module.exports = {
   defaultNetwork: "hardhat",
@@ -129,5 +140,21 @@ module.exports = {
       files: ["./test/**/*"],
       verbose: true,
     },
+  },
+  preprocess: {
+    eachLine: () => ({
+      transform: line => {
+        if (line.match(/^\s*import /i)) {
+          for (const [from, to] of getRemappings()) {
+            // we are only transforming solmate (the one inside yield-daddy's lib) and yield-daddy
+            if (line.includes(from) && (!line.includes("@rari-capital") || line.includes("yield-daddy"))) {
+              line = line.replace(from, to);
+              break;
+            }
+          }
+        }
+        return line;
+      },
+    }),
   },
 };

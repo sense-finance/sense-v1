@@ -6,6 +6,7 @@ import { Divider } from "../../../Divider.sol";
 import { ERC4626CropsAdapter } from "../erc4626/ERC4626CropsAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { BaseFactory } from "./BaseFactory.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
 
@@ -61,7 +62,7 @@ contract ERC4626CropsFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 
     /// @notice (Un)support target

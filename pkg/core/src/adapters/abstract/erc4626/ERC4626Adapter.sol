@@ -11,9 +11,10 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { MasterPriceOracle } from "../../implementations/oracles/MasterPriceOracle.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
+import { ExtractableReward } from "../extensions/ExtractableReward.sol";
 
 /// @notice Adapter contract for ERC4626 Vaults
-contract ERC4626Adapter is BaseAdapter {
+contract ERC4626Adapter is BaseAdapter, ExtractableReward {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
 
@@ -28,7 +29,10 @@ contract ERC4626Adapter is BaseAdapter {
         address _rewardsRecipient,
         uint128 _ifee,
         AdapterParams memory _adapterParams
-    ) BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _rewardsRecipient, _ifee, _adapterParams) {
+    )
+        BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _ifee, _adapterParams)
+        ExtractableReward(_rewardsRecipient)
+    {
         uint256 tDecimals = ERC4626(target).decimals();
         BASE_UINT = 10**tDecimals;
         SCALE_FACTOR = 10**(18 - tDecimals); // we assume targets decimals <= 18
@@ -59,12 +63,7 @@ contract ERC4626Adapter is BaseAdapter {
         _assets = ERC4626(target).redeem(shares, msg.sender, msg.sender);
     }
 
-    function extractToken(address token) external virtual override {
-        // Check that token is neither the target nor the stake
-        if (token == target || token == adapterParams.stake) revert Errors.TokenNotSupported();
-        ERC20 t = ERC20(token);
-        uint256 tBal = t.balanceOf(address(this));
-        t.safeTransfer(rewardsRecipient, tBal);
-        emit RewardsClaimed(token, rewardsRecipient, tBal);
+    function _isValid(address _token) internal virtual override returns (bool) {
+        return (_token != target && _token != adapterParams.stake);
     }
 }

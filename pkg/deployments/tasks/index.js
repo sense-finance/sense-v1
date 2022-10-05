@@ -13,3 +13,4 @@ require("./20220921-morpho-rewards-distributor");
 require("./20220922-4626-crops-factory");
 require("./20220922-4626-crop-factory");
 require("./20220922-4626-factory");
+require("./20220926-euler");

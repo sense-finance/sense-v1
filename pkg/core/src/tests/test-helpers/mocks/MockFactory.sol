@@ -5,6 +5,7 @@ pragma solidity 0.8.13;
 import { BaseFactory } from "../../../adapters/abstract/factories/BaseFactory.sol";
 import { CropFactory } from "../../../adapters/abstract/factories/CropFactory.sol";
 import { ERC4626Factory } from "../../../adapters/abstract/factories/ERC4626Factory.sol";
+import { ExtractableReward } from "../../../adapters/abstract/extensions/ExtractableReward.sol";
 import { Divider } from "../../../Divider.sol";
 import { MockAdapter, MockCropsAdapter, MockCropAdapter, Mock4626Adapter, Mock4626CropAdapter, Mock4626CropsAdapter } from "./MockAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
@@ -68,7 +69,7 @@ contract MockFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }
 
@@ -121,7 +122,7 @@ contract MockCropFactory is CropFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }
 
@@ -177,7 +178,7 @@ contract MockCropsFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }
 
@@ -231,7 +232,7 @@ contract Mock4626CropFactory is CropFactory {
             )
         );
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }
 
@@ -287,6 +288,6 @@ contract Mock4626CropsFactory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 }

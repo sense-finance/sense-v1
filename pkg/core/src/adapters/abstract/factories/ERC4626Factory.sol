@@ -5,6 +5,7 @@ pragma solidity 0.8.13;
 import { Divider } from "../../../Divider.sol";
 import { ERC4626Adapter } from "../erc4626/ERC4626Adapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { BaseFactory } from "./BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -57,7 +58,7 @@ contract ERC4626Factory is BaseFactory {
 
         _setGuard(adapter);
 
-        BaseAdapter(adapter).setIsTrusted(restrictedAdmin, true);
+        ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 
     /// @notice (Un)support target

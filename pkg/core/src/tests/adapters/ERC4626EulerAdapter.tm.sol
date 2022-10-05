@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
 
@@ -22,9 +24,6 @@ import { Periphery } from "../../Periphery.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
-import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
-import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 
 interface EulerERC4626Like {
     function eToken() external returns (address);
@@ -39,7 +38,7 @@ interface IEulerTokenLike {
 }
 
 // Mainnet tests with imUSD 4626 token
-contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
+contract ERC4626EulerAdapters is Test {
     using FixedMath for uint256;
 
     ERC4626 public target;
@@ -64,8 +63,6 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
 
     uint256 public constant INITIAL_BALANCE = 10**6;
 
-    Hevm internal constant vm = Hevm(HEVM_ADDRESS);
-
     function setUp() public {
         // Deploy a Euler 4626 Wrapper Factory
         wFactory = new EulerERC4626WrapperFactory(
@@ -84,7 +81,7 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         assertEq(address(underlying), AddressBook.USDC);
 
         // Fund wallet with USDC
-        giveTokens(address(underlying), 5 * 10**decimals, vm);
+        deal(address(underlying), address(this), 5 * 10**decimals);
 
         // Support deployed target
         vm.prank(AddressBook.SENSE_ADMIN_MULTISIG);
@@ -123,8 +120,8 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         uint256 uBalanceAfter = underlying.balanceOf(address(this));
 
         assertEq(tBalanceAfter, 0);
-        // NOTE: assertClose because when we deposit on Euler we lose precision by 1
-        assertClose(uBalanceBefore + unwrapped, uBalanceAfter);
+        // NOTE: assertApproxEqAbs because when we deposit on Euler we lose precision by 1
+        assertApproxEqAbs(uBalanceBefore + unwrapped, uBalanceAfter);
     }
 
     function testMainnetWrapUnderlying() public {
@@ -146,8 +143,8 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         uint256 uBalanceAfter = underlying.balanceOf(address(this));
 
         assertEq(uBalanceAfter, 0);
-        // NOTE: assertClose because when we deposit on Euler we lose precision by 1
-        assertClose(tBalanceBefore + wrapped, tBalanceAfter);
+        // NOTE: assertApproxEqAbs because when we deposit on Euler we lose precision by 1
+        assertApproxEqAbs(tBalanceBefore + wrapped, tBalanceAfter);
     }
 
     function testMainnetWrapUnwrap(uint256 wrapAmt) public {
@@ -165,7 +162,7 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         adapter.unwrapTarget(targetFromWrap);
         uint256 postbal = underlying.balanceOf(address(this));
 
-        assertClose(prebal, postbal);
+        assertApproxEqAbs(prebal, postbal);
 
         // 2. Deposit underlying tokens into the vault
         underlying.approve(address(target), INITIAL_BALANCE / 2);
@@ -199,28 +196,28 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
 
         // Initializes at 1:1
         // NOTE: When we do deposits on Euler, we lose precision
-        // so I'm denormalising the scale to 1e18 to then do assertClose
+        // so I'm denormalising the scale to 1e18 to then do assertApproxEqAbs
         uint256 denormalisedScale = adapter.scale() / 10**(18 - decimals);
-        assertClose(denormalisedScale, 10**decimals);
+        assertApproxEqAbs(denormalisedScale, 10**decimals);
 
         // 2. Vault mutates by +2e6 tokens (simulated yield returned from strategy)
         address eToken = EulerERC4626Like(address(target)).eToken();
 
         // Deposit 2 USDC into Euler USDC token
-        hevm.startPrank(address(target));
+        vm.startPrank(address(target));
         uint256 uBal = 2 * 10**decimals;
-        giveTokens(address(underlying), address(target), uBal, vm); // mint 5 USDC to taget (wrapper)
+        deal(address(underlying), address(target), uBal); // mint 5 USDC to taget (wrapper)
 
         address euler = EulerERC4626Like(address(target)).euler();
         underlying.approve(euler, uBal); // approve Euler (not the eUSDC) to be able to pull USDCC
         IEulerTokenLike(eToken).deposit(0, uBal);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // 3. Check that the value per share is now higher
         assertGt(adapter.scale(), 1e18);
 
         denormalisedScale = adapter.scale() / 10**(18 - decimals);
-        assertClose(denormalisedScale, ((INITIAL_BALANCE + 2 * 10**decimals) * 10**decimals) / INITIAL_BALANCE);
+        assertApproxEqAbs(denormalisedScale, ((INITIAL_BALANCE + 2 * 10**decimals) * 10**decimals) / INITIAL_BALANCE);
     }
 
     /// @notice scale() and scaleStored() have the same implementation
@@ -231,24 +228,24 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
 
         // Initializes at 1:1
         // NOTE: When we do deposits on Euler, we lose precision
-        // so I'm denormalising the scale to 1e18 to then do assertClose
+        // so I'm denormalising the scale to 1e18 to then do assertApproxEqAbs
         uint256 denormalisedScale = adapter.scale() / 10**(18 - decimals);
         uint256 denormalisedScaleStored = adapter.scaleStored() / 10**(18 - decimals);
-        assertClose(denormalisedScale, 10**decimals);
-        assertClose(denormalisedScaleStored, 10**decimals);
+        assertApproxEqAbs(denormalisedScale, 10**decimals);
+        assertApproxEqAbs(denormalisedScaleStored, 10**decimals);
 
         // 2. Vault mutates by +2e6 tokens (simulated yield returned from strategy)
         address eToken = EulerERC4626Like(address(target)).eToken();
 
         // Deposit 2 USDC into Euler USDC token
-        hevm.startPrank(address(target));
+        vm.startPrank(address(target));
         uint256 uBal = 2 * 10**decimals;
-        giveTokens(address(underlying), address(target), uBal, vm); // mint 5 USDC to taget (wrapper)
+        deal(address(underlying), address(target), uBal); // mint 5 USDC to taget (wrapper)
 
         address euler = EulerERC4626Like(address(target)).euler();
         underlying.approve(euler, uBal); // approve Euler (not the eUSDC) to be able to pull USDCC
         IEulerTokenLike(eToken).deposit(0, uBal);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // 3. Check that the value per share is now higher
         assertGt(adapter.scale(), 1e18);
@@ -257,8 +254,8 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         denormalisedScale = adapter.scale() / 10**(18 - decimals);
         denormalisedScaleStored = adapter.scaleStored() / 10**(18 - decimals);
         uint256 expectedDenormalisedScale = ((INITIAL_BALANCE + 2 * 10**decimals) * 10**decimals) / INITIAL_BALANCE;
-        assertClose(denormalisedScale, expectedDenormalisedScale);
-        assertClose(denormalisedScaleStored, expectedDenormalisedScale);
+        assertApproxEqAbs(denormalisedScale, expectedDenormalisedScale);
+        assertApproxEqAbs(denormalisedScaleStored, expectedDenormalisedScale);
     }
 
     function testMainnetScaleIsExRate() public {
@@ -271,14 +268,14 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         address eToken = EulerERC4626Like(address(target)).eToken();
 
         // Deposit 2 USDC into Euler USDC token
-        hevm.startPrank(address(target));
+        vm.startPrank(address(target));
         uint256 uBal = 2 * 10**decimals;
-        giveTokens(address(underlying), address(target), uBal, vm); // mint 5 USDC to taget (wrapper)
+        deal(address(underlying), address(target), uBal); // mint 5 USDC to taget (wrapper)
 
         address euler = EulerERC4626Like(address(target)).euler();
         underlying.approve(euler, uBal); // approve Euler (not the eUSDC) to be able to pull USDCC
         IEulerTokenLike(eToken).deposit(0, uBal);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // 3. Check that an unwrapped amount reflects scale as an ex rate
         uint256 targetBalPre = target.balanceOf(address(this));
@@ -289,11 +286,17 @@ contract ERC4626EulerAdapters is LiquidityHelper, DSTestPlus {
         underlying.approve(address(adapter), type(uint256).max);
         // Leave something in the vault
         uint256 underlyingFromUnwrap = adapter.unwrapTarget(targetBalPre / 2);
-        assertClose(((targetBalPre / 2) * adapter.scale()) / 1e18, underlyingFromUnwrap);
+        assertApproxEqAbs(((targetBalPre / 2) * adapter.scale()) / 1e18, underlyingFromUnwrap);
 
         // 4. Check that a wrapped amount reflects scale as an ex rate
         uint256 underlyingBalPre = underlying.balanceOf(address(this));
         uint256 targetFromWrap = adapter.wrapUnderlying(underlyingBalPre / 2);
-        assertClose(((underlyingBalPre / 2) * 1e18) / adapter.scale(), targetFromWrap);
+        assertApproxEqAbs(((underlyingBalPre / 2) * 1e18) / adapter.scale(), targetFromWrap);
+    }
+
+    // helpers
+
+    function assertApproxEqAbs(uint256 a, uint256 b) public {
+        assertApproxEqAbs(a, b, 100);
     }
 }

@@ -88,10 +88,9 @@ library AddressBook {
     address public constant MASTER_ORACLE_IMPL = 0xb3c8eE7309BE658c186F986388c2377da436D8fb;
     address public constant MASTER_ORACLE = 0x1887118E49e0F4A78Bd71B792a49dE03504A764D;
 
-    // timeless
+    // euler
     address public constant EULER = 0x27182842E098f60e3D576794A5bFFb0777E025d3; // Euler
     address public constant EULER_MARKETS = 0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3; // Euler Markets
-    address public constant TIMELESS_EULER_4626_WRAPPER_FACTORY = 0x1e8020cFB10b6a6a9B5F06e3ABAe140f7DE541E1; // Euler ERC4626 Wrapper Factory
     address public constant EULER_USDC = 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716;
     address public constant EULER_WSTETH = 0xbd1bd5C956684f7EB79DA40f582cbE1373A1D593;
 }
