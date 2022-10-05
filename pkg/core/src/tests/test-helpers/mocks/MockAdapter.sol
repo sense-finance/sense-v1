@@ -116,18 +116,6 @@ contract MockAdapter is BaseAdapter, ExtractableReward {
     function setScale(uint256 _scaleOverride) external {
         scaleOverride = _scaleOverride;
     }
-
-    function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
-        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
-    }
-
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
-    }
 }
 
 // Mock crop adapter
@@ -246,18 +234,6 @@ contract MockCropAdapter is BaseAdapter, Crop, ExtractableReward {
 
     function setScale(uint256 _scaleOverride) external {
         scaleOverride = _scaleOverride;
-    }
-
-    function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
-        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
-    }
-
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 }
 
@@ -386,18 +362,6 @@ contract MockCropsAdapter is BaseAdapter, Crops, ExtractableReward {
     function setScale(uint256 _scaleOverride) external {
         scaleOverride = _scaleOverride;
     }
-
-    function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
-        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
-    }
-
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
-    }
 }
 
 // Mock ERC4626 crop adapter
@@ -426,18 +390,6 @@ contract Mock4626Adapter is ERC4626Adapter {
         uint256 /* tBal */
     ) public virtual override {
         onRedeemCalls++;
-    }
-
-    function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
-        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
-    }
-
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 }
 
@@ -481,18 +433,6 @@ contract Mock4626CropAdapter is ERC4626Adapter, Crop {
         uint256 /* tBal */
     ) public virtual override {
         onRedeemCalls++;
-    }
-
-    function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
-        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
-    }
-
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 }
 
@@ -545,18 +485,6 @@ contract Mock4626CropsAdapter is ERC4626Adapter, Crops {
         uint256 /* tBal */
     ) public virtual override {
         onRedeemCalls++;
-    }
-
-    function doIssue(uint256 maturity, uint256 tBal) external {
-        MockTarget(target).transferFrom(msg.sender, address(this), tBal);
-        Divider(divider).issue(address(this), maturity, tBal);
-        (address pt, , address yt, , , , , , ) = Divider(divider).series(address(this), maturity);
-        MockToken(pt).transfer(msg.sender, MockToken(pt).balanceOf(address(this)));
-        MockToken(yt).transfer(msg.sender, MockToken(yt).balanceOf(address(this)));
-    }
-
-    function doCombine(uint256 maturity, uint256 uBal) external returns (uint256 tBal) {
-        tBal = Divider(divider).combine(address(this), maturity, uBal);
     }
 }
 
