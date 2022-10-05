@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "test": "time yarn workspaces foreach --parallel --verbose --interlaced run test",
-    "test:mainnet": "time yarn workspaces foreach --parallel --verbose --interlaced run test:mainnet",
+    "test:mainnet": "time yarn workspaces foreach --parallel --verbose --interlaced --exclude @sense-finance/v1-utils --exclude @sense-finance/v1-deployments run test:mainnet",
     "test:fuzz": "time yarn workspace @sense-finance/v1-core run test:fuzz",
     "test:4626": "time yarn workspace @sense-finance/v1-core run test:4626",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",

@@ -15,7 +15,7 @@
     "scripts": {
         "test": "time forge test --match-path \"*.t.sol\"",
         "test:mainnet": "time forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.alchemyapi.io/v2/_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC",
-        "test:4626": "time 4626_TARGET=true forge test --match-path \"**/*.t.sol\" --no-match-path \"**/Adapter.t.sol\"",
+        "test:4626": "time && ERC4626_TARGET=true forge test --match-path \"**/*.t.sol\" --no-match-path \"**/Adapter.t.sol\"",
         "test:fuzz": "time yarn exec ./src/tests/fuzz.sh",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
