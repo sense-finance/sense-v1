@@ -513,7 +513,7 @@ contract Dividers is TestHelper {
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         // Issue PTs andn YTs from user
-        divider.issue(address(adapter), maturity, 1e18);
+        divider.issue(address(adapter), maturity, 2e18);
 
         // Issue PTs and YTs from adapter (to test redeeming from adapter)
         vm.prank(address(adapter));
@@ -523,19 +523,20 @@ contract Dividers is TestHelper {
         vm.warp(maturity);
         divider.settleSeries(address(adapter), maturity);
 
-        uint256 uBal = ERC20(pt).balanceOf(address(this));
+        uint256 uBalUser = ERC20(pt).balanceOf(address(this));
 
         // Can't redeem directly through the divider
         vm.expectRevert(abi.encodeWithSelector(Errors.RedeemRestricted.selector));
-        divider.redeem(address(adapter), maturity, uBal);
+        divider.redeem(address(adapter), maturity, 123);
 
         // Can redeem through adapter
         uint256 tBalBefore = target.balanceOf(address(adapter));
+        uint256 uBalAdapter = ERC20(pt).balanceOf(address(adapter));
         vm.prank(address(adapter));
-        divider.redeem(address(adapter), maturity, uBal);
+        divider.redeem(address(adapter), maturity, uBalAdapter);
 
         // User should still have their PTs (because they were not burnt)
-        assertEq(ERC20(pt).balanceOf(address(this)), uBal);
+        assertEq(ERC20(pt).balanceOf(address(this)), uBalUser);
 
         // Adapter's PTs should be burnt and it should have gotten more target
         assertEq(ERC20(pt).balanceOf(address(adapter)), 0);

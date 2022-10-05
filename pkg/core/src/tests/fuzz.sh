@@ -32,18 +32,19 @@ for c in {true,false}\ {true,false}\ {true,false}\ {6,8,18}\ {6,8,18}\ {6,8,18} 
 done
 
 # run, for ERC4626 target, all possible combinations between 6, 8 and 18 target (and underlying) decimals
-for c in {6,8,18}\ {6,8,18}\ ; do
+# NOTE that in the case of ERC4626 tokens, target always have the underlyin's decimals
+for c in {6,8,18}\ ; do
     IFS=' '
     read -ra combination <<< "$c";
     echo "${BIYellow}--------------------------------------------------";
     echo "${BIYellow}TEST CASE INFO";
     echo "";
-    echo "${BIYellow}Target is ERC4626 with ${combination[3]} decimals";
-    echo "${BIYellow}Underlying is ERC4626 with ${combination[4]} decimals";
+    echo "${BIYellow}Target is ERC4626 with ${combination[0]} decimals";
+    echo "${BIYellow}Underlying is ERC4626 with ${combination[0]} decimals";
     echo "${BIYellow}--------------------------------------------------";
 
     export ERC4626_TARGET=true;
     export TARGET_DECIMALS=${combination[0]};
-    export UNDERLYING_DECIMALS=${combination[1]};
+    export UNDERLYING_DECIMALS=${combination[0]};
     forge test --match-path "**/*.t.sol" --no-match-path "**/Adapter.t.sol";
 done
