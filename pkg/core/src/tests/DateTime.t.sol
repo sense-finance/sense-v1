@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { DSTest } from "./test-helpers/test.sol";
+import "forge-std/Test.sol";
+
 import { DateTime } from "../external/DateTime.sol";
 
-contract DateTimeTest is DSTest {
+contract DateTimeTest is Test {
     function testFormatFirstAndJan() public {
         uint256 timestamp = 1640995200; // 01/01/2022
         assertEq(DateTime.format(timestamp), "1st Jan 2022");

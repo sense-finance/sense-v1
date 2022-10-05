@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
-import { DSTest } from "../test-helpers/test.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
@@ -23,7 +24,7 @@ interface FeedLike {
     function decimals() external view returns (uint8);
 }
 
-contract ChainPriceOracleTestHelper is DSTest {
+contract ChainPriceOracleTestHelper is Test {
     using FixedMath for uint256;
 
     ChainlinkPriceOracle internal oracle;

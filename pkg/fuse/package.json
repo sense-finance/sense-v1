@@ -13,17 +13,23 @@
         "!src/tests/*"
     ],
     "scripts": {
-        "test": "just turbo-test-local",
-        "test:mainnet": "just turbo-test-mainnet",
-        "turbo-test": "yarn test",
-        "turbo-test:mainnet": "yarn test:mainnet",
+        "test": "time forge test --no-match-path \"*.tm*\"",
+        "test:mainnet": "forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.alchemyapi.io/v2/_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
-        "gas-snapshot": "just gas-snapshot"
+        "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
+        "gas-snapshot:diff": "forge snapshot --no-match-path \"*.tm*\" --diff"
     },
     "dependencies": {
         "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060",
         "@sense-finance/v1-core": "workspace:pkg/core",
         "@sense-finance/v1-utils": "workspace:pkg/utils"
+    },
+    "devDependencies": {
+        "@types/prettier": "^2",
+        "prettier": "^2.7.1",
+        "prettier-plugin-solidity": "^1.0.0-beta.17",
+        "solhint": "^3.3.7",
+        "solhint-plugin-prettier": "^0.0.5"
     }
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
@@ -10,18 +12,15 @@ import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/Cha
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
-import { DSTest } from "../test-helpers/test.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
-contract ERC4626TestHelper is DSTest {
+contract ERC4626TestHelper is Test {
     uint256 public mainnetFork;
 
     ERC4626Factory internal factory;
@@ -29,8 +28,6 @@ contract ERC4626TestHelper is DSTest {
     Divider internal divider;
     TokenHandler internal tokenHandler;
     MasterPriceOracle internal masterOracle;
-
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint8 public constant MODE = 0;
     uint64 public constant ISSUANCE_FEE = 0.01e18;
@@ -40,13 +37,6 @@ contract ERC4626TestHelper is DSTest {
     uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
 
     function setUp() public {
-        // Get RPC url from the environment
-        string memory rpcUrl = hevm.envString("MAINNET_RPC");
-
-        // Create fork from last block to guarantee that imUSD exists
-        mainnetFork = hevm.createFork(rpcUrl);
-        hevm.selectFork(mainnetFork);
-
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));
@@ -144,7 +134,7 @@ contract ERC4626Factories is ERC4626TestHelper {
 
     function testMainnetDeployAdapter() public {
         // Deploy non-crop adapter
-        hevm.prank(divider.periphery());
+        vm.prank(divider.periphery());
         ERC4626Adapter adapter = ERC4626Adapter(factory.deployAdapter(AddressBook.IMUSD, ""));
 
         assertTrue(address(adapter) != address(0));
@@ -179,7 +169,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
         // using target's price (in target's decimals)
         uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
-        assertClose(guard, guardInTarget, guard.fmul(0.010e18));
+        assertApproxEqAbs(guard, guardInTarget, guard.fmul(0.010e18));
     }
 
     function testMainnetDeployCropsAdapter() public {
@@ -190,7 +180,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         bytes memory data = abi.encode(rewardTokens);
 
         // Deploy crops adapter
-        hevm.prank(divider.periphery());
+        vm.prank(divider.periphery());
         ERC4626CropsAdapter adapter = ERC4626CropsAdapter(cropsFactory.deployAdapter(AddressBook.IMUSD, data));
 
         assertTrue(address(adapter) != address(0));
@@ -208,7 +198,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         // as the imUSD - USD rate, so we want to assert that the guard (which should be $100'000)
         // in target terms is approx 100'000 / scale (within 10%).
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-        assertClose(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
+        assertApproxEqAbs(guard, (100000 * 1e36) / scale, guard.fmul(0.010e18));
     }
 
     function testMainnetCantDeployAdapterIfNotSupportedTarget() public {
@@ -217,7 +207,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         bytes memory data = abi.encode(rewardTokens);
 
         divider.setPeriphery(address(this));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotSupported.selector));
         factory.deployAdapter(AddressBook.DAI, data);
     }
 
@@ -232,7 +222,7 @@ contract ERC4626Factories is ERC4626TestHelper {
         address[] memory rewardTokens;
         bytes memory data = abi.encode(rewardTokens);
 
-        hevm.prank(divider.periphery());
+        vm.prank(divider.periphery());
         factory.deployAdapter(AddressBook.IMUSD, data);
     }
 
@@ -244,8 +234,8 @@ contract ERC4626Factories is ERC4626TestHelper {
 
     function testMainnetCantSupportTargetIfNotTrusted() public {
         assertTrue(!factory.supportedTargets(AddressBook.cDAI));
-        hevm.prank(address(1));
-        hevm.expectRevert("UNTRUSTED");
+        vm.prank(address(1));
+        vm.expectRevert("UNTRUSTED");
         factory.supportTarget(AddressBook.cDAI, true);
     }
 }

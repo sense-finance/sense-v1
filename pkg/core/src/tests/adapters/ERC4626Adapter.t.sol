@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
-import { DSTestPlus } from "@rari-capital/solmate/src/test/utils/DSTestPlus.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
@@ -17,7 +18,6 @@ import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 
 contract MockOracle is IPriceFeed {
     function price(address) external view returns (uint256 price) {
@@ -25,7 +25,7 @@ contract MockOracle is IPriceFeed {
     }
 }
 
-contract ERC4626AdapterTest is DSTestPlus {
+contract ERC4626AdapterTest is Test {
     using FixedMath for uint256;
 
     MockToken public stake;
@@ -134,11 +134,11 @@ contract ERC4626AdapterTest is DSTestPlus {
         underlying.approve(address(erc4626Adapter), type(uint256).max);
 
         // Trying to wrap 0 underlying should revert
-        hevm.expectRevert("ZERO_SHARES");
+        vm.expectRevert("ZERO_SHARES");
         uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
 
         // Trying to unwrap 0 target should revert
-        hevm.expectRevert("ZERO_ASSETS");
+        vm.expectRevert("ZERO_ASSETS");
         erc4626Adapter.unwrapTarget(targetFromWrap);
     }
 
@@ -149,7 +149,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         target.approve(address(erc4626Adapter), type(uint256).max);
         underlying.approve(address(erc4626Adapter), type(uint256).max);
 
-        hevm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.expectRevert("TRANSFER_FROM_FAILED");
         erc4626Adapter.wrapUnderlying(wrapAmt);
     }
 
@@ -163,8 +163,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
         assertEq(targetFromWrap, target.balanceOf(address(this)));
 
-        bytes memory arithmeticError = abi.encodeWithSignature("Panic(uint256)", 0x11);
-        hevm.expectRevert(arithmeticError);
+        vm.expectRevert(abi.encodeWithSignature("Panic(uint256)", 0x11));
         erc4626Adapter.unwrapTarget(targetFromWrap + 1);
     }
 
@@ -234,7 +233,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         // Mock call to Rari's master oracle
         uint256 price = 123e18;
         bytes memory data = abi.encode(price); // return data
-        hevm.mockCall(
+        vm.mockCall(
             address(chainlinkOracle),
             abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),
             data
@@ -247,13 +246,13 @@ contract ERC4626AdapterTest is DSTestPlus {
         // Mock call to Rari's master oracle
         uint256 price = 0;
         bytes memory data = abi.encode(price); // return data
-        hevm.mockCall(
+        vm.mockCall(
             address(chainlinkOracle),
             abi.encodeWithSelector(chainlinkOracle.price.selector, address(underlying)),
             data
         );
 
-        hevm.expectRevert(abi.encodeWithSelector(Errors.InvalidPrice.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidPrice.selector));
         erc4626Adapter.getUnderlyingPrice();
     }
 
@@ -278,7 +277,7 @@ contract ERC4626AdapterTest is DSTestPlus {
         bytes memory data = abi.encode(price); // return datat
 
         IPriceFeed oracle = IPriceFeed(AddressBook.RARI_ORACLE);
-        hevm.mockCall(
+        vm.mockCall(
             address(AddressBook.RARI_ORACLE),
             abi.encodeWithSelector(oracle.price.selector, address(underlying)),
             data

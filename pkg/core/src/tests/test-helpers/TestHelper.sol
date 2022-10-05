@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
@@ -33,8 +35,6 @@ import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "./test.sol";
-import { Hevm } from "./Hevm.sol";
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 
@@ -69,7 +69,11 @@ interface MockTargetLike {
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
 }
 
-contract TestHelper is DSTest {
+interface CTokenInterface {
+    function mint(uint256 mintAmount) external returns (uint256);
+}
+
+contract TestHelper is Test {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
     using FixedMath for uint64;
@@ -90,7 +94,6 @@ contract TestHelper is DSTest {
     address internal alice = address(1);
     address internal bob = address(2);
     address internal jim = address(3);
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     // balancer/space
     MockSpaceFactory internal spaceFactory;
@@ -132,18 +135,12 @@ contract TestHelper is DSTest {
     uint8 internal mockStakeDecimals;
 
     function setUp() public virtual {
-        hevm.warp(1630454400);
+        vm.warp(1630454400);
         // 01-09-21 00:00 UTC
         uint8 baseDecimals = 18;
 
-        // Get Target/Underlying decimal number from the environment
-        mockUnderlyingDecimals = uint8(hevm.envUint("FORGE_MOCK_UNDERLYING_DECIMALS"));
-        mockTargetDecimals = uint8(hevm.envUint("FORGE_MOCK_TARGET_DECIMALS"));
-        mockStakeDecimals = uint8(hevm.envUint("FORGE_MOCK_STAKE_DECIMALS"));
-        is4626Target = hevm.envBool("FORGE_MOCK_4626_TARGET");
-        nonERC20Target = hevm.envBool("FORGE_MOCK_NON_ERC20_TARGET");
-        nonERC20Underlying = hevm.envBool("FORGE_MOCK_NON_ERC20_UNDERLYING");
-        nonERC20Stake = hevm.envBool("FORGE_MOCK_NON_ERC20_STAKE");
+        // read env vars (or set defaults if none)
+        setEnv();
 
         // Create target, underlying, stake & reward tokens
         stake = MockToken(deployMockStake("Stake Token", "ST", mockStakeDecimals));
@@ -230,11 +227,11 @@ contract TestHelper is DSTest {
             1
         ); // return data
         ChainlinkOracleLike oracle = ChainlinkOracleLike(AddressBook.ETH_USD_PRICEFEED);
-        hevm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
+        vm.mockCall(address(address(oracle)), abi.encodeWithSelector(oracle.latestRoundData.selector), returnData);
 
         // mock all calls to oracle price
         returnData = abi.encode(1e18); // return data
-        hevm.mockCall(
+        vm.mockCall(
             address(ORACLE),
             abi.encodeWithSelector(IPriceFeed(ORACLE).price.selector, address(underlying)),
             returnData
@@ -254,11 +251,11 @@ contract TestHelper is DSTest {
 
         // users
         alice = address(this); // alice is the default user
-        hevm.label(alice, "Alice");
+        vm.label(alice, "Alice");
         initUser(alice, target, MAX_TARGET);
-        hevm.label(bob, "Bob");
+        vm.label(bob, "Bob");
         initUser(bob, target, MAX_TARGET);
-        hevm.label(jim, "Jim");
+        vm.label(jim, "Jim");
         initUser(jim, target, MAX_TARGET);
     }
 
@@ -268,7 +265,7 @@ contract TestHelper is DSTest {
         uint256 amt
     ) public {
         // MockToken underlying = MockToken(target.underlying());
-        hevm.startPrank(usr);
+        vm.startPrank(usr);
 
         // approvals
         ERC20(address(underlying)).safeApprove(address(periphery), type(uint256).max);
@@ -291,7 +288,7 @@ contract TestHelper is DSTest {
             target.mint(usr, amt);
         }
 
-        hevm.stopPrank();
+        vm.stopPrank();
     }
 
     // ---- liquidity provision ---- //
@@ -502,31 +499,10 @@ contract TestHelper is DSTest {
     ) internal returns (address _target) {
         if (is4626Target) {
             _target = address(new MockERC4626(ERC20(_underlying), _name, _symbol));
-            emit log(
-                string(abi.encodePacked("Running tests with a 4626 mock ", toString(_decimals), " decimals target"))
-            );
         } else if (nonERC20Target) {
             _target = address(new MockNonERC20Target(_underlying, _name, _symbol, _decimals));
-            emit log(
-                string(
-                    abi.encodePacked(
-                        "Running tests with a non-ERC4626, non-ERC20 mock ",
-                        toString(_decimals),
-                        " decimals target"
-                    )
-                )
-            );
         } else {
             _target = address(new MockTarget(_underlying, _name, _symbol, _decimals));
-            emit log(
-                string(
-                    abi.encodePacked(
-                        "Running tests with a non-ERC4626, ERC20 mock ",
-                        toString(_decimals),
-                        " decimals target"
-                    )
-                )
-            );
         }
     }
 
@@ -537,22 +513,8 @@ contract TestHelper is DSTest {
     ) internal returns (address _underlying) {
         if (nonERC20Underlying) {
             _underlying = address(new MockNonERC20Token(_name, _symbol, _decimals));
-            emit log(
-                string(
-                    abi.encodePacked(
-                        "Running tests with a non-ERC20 mock ",
-                        toString(_decimals),
-                        " decimals underlying"
-                    )
-                )
-            );
         } else {
             _underlying = address(new MockToken(_name, _symbol, _decimals));
-            emit log(
-                string(
-                    abi.encodePacked("Running tests with an ERC20 mock ", toString(_decimals), " decimals underlying")
-                )
-            );
         }
     }
 
@@ -563,14 +525,8 @@ contract TestHelper is DSTest {
     ) internal returns (address _stake) {
         if (nonERC20Stake) {
             _stake = address(new MockNonERC20Token(_name, _symbol, _decimals));
-            emit log(
-                string(abi.encodePacked("Running tests with a non-ERC20 mock ", toString(_decimals), " decimals stake"))
-            );
         } else {
             _stake = address(new MockToken(_name, _symbol, _decimals));
-            emit log(
-                string(abi.encodePacked("Running tests with an ERC20 mock ", toString(_decimals), " decimals stake"))
-            );
         }
     }
 
@@ -629,11 +585,56 @@ contract TestHelper is DSTest {
     // for the ERC4626, we mint some underlying
     function increaseScale(address t) internal {
         if (!is4626Target) {
-            hevm.warp(block.timestamp + 1 days);
+            vm.warp(block.timestamp + 1 days);
         } else {
             MockERC4626(t).asset();
             MockToken underlying = MockToken(address(MockERC4626(t).asset()));
             underlying.mint(t, underlying.balanceOf(t));
         }
+    }
+
+    /// @notice Tries to read env vars and/or sets defaut value if not exists
+    function setEnv() internal {
+        try vm.envUint("UNDERLYING_DECIMALS") returns (uint256 val) {
+            mockUnderlyingDecimals = uint8(val);
+        } catch {
+            mockUnderlyingDecimals = uint8(18);
+        }
+
+        try vm.envUint("TARGET_DECIMALS") returns (uint256 val) {
+            mockTargetDecimals = uint8(val);
+        } catch {
+            mockTargetDecimals = uint8(18);
+        }
+
+        try vm.envUint("STAKE_DECIMALS") returns (uint256 val) {
+            mockStakeDecimals = uint8(val);
+        } catch {
+            mockStakeDecimals = uint8(18);
+        }
+
+        try vm.envBool("ERC4626_TARGET") returns (bool val) {
+            is4626Target = val;
+        } catch {}
+
+        try vm.envBool("ERC4626_TARGET") returns (bool val) {
+            is4626Target = val;
+        } catch {}
+
+        try vm.envBool("NON_ERC20_TARGET") returns (bool val) {
+            nonERC20Target = val;
+        } catch {}
+
+        try vm.envBool("NON_ERC20_UNDERLYING") returns (bool val) {
+            nonERC20Underlying = val;
+        } catch {}
+
+        try vm.envBool("NON_ERC20_STAKE") returns (bool val) {
+            nonERC20Stake = val;
+        } catch {}
+    }
+
+    function assertApproxEqAbs(uint256 a, uint256 b) public virtual {
+        assertApproxEqAbs(a, b, 100);
     }
 }

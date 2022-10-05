@@ -11,14 +11,12 @@ import { PoolManager } from "../PoolManager.sol";
 import { TestHelper } from "@sense-finance/v1-core/src/tests/test-helpers/TestHelper.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
-import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/test.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import { MockComptrollerRejectAdmin, MockComptrollerFailAddMarket } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockFuseDirectory.sol";
 import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
-import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 
 contract PoolManagerLocalTest is TestHelper {
@@ -50,12 +48,12 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        hevm.expectRevert(abi.encodeWithSelector(Errors.FailedBecomeAdmin.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.FailedBecomeAdmin.selector));
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
     }
 
     function testCantDeployPoolIfExists() public {
-        hevm.expectRevert("ERC1167: create2 failed");
+        vm.expectRevert("ERC1167: create2 failed");
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(masterOracle));
     }
 
@@ -83,7 +81,7 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        hevm.expectRevert(abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
         poolManager.addTarget(address(target), address(adapter));
     }
 
@@ -97,7 +95,7 @@ contract PoolManagerLocalTest is TestHelper {
         );
         MockOracle fallbackOracle = new MockOracle();
         poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(fallbackOracle));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
         poolManager.addTarget(address(target), address(adapter));
     }
 
@@ -119,7 +117,7 @@ contract PoolManagerLocalTest is TestHelper {
             collateralFactor: 0.5 ether
         });
         poolManager.setParams("TARGET_PARAMS", params);
-        hevm.expectRevert(abi.encodeWithSelector(Errors.FailedAddTargetMarket.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.FailedAddTargetMarket.selector));
         poolManager.addTarget(address(target), address(adapter));
     }
 
@@ -154,13 +152,13 @@ contract PoolManagerLocalTest is TestHelper {
             address(divider),
             address(masterOracle) // oracle impl
         );
-        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         poolManager.queueSeries(address(adapter), maturity, address(123));
     }
 
     function testCantQueueSeriesIfSeriesNotExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         poolManager.queueSeries(address(adapter), maturity, address(123));
     }
 
@@ -191,7 +189,7 @@ contract PoolManagerLocalTest is TestHelper {
         poolManager.addTarget(address(otherTarget), address(adapter));
 
         poolManager.queueSeries(address(adapter), maturity, address(123));
-        hevm.expectRevert(abi.encodeWithSelector(Errors.DuplicateSeries.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.DuplicateSeries.selector));
         poolManager.queueSeries(address(adapter), maturity, address(123));
     }
 

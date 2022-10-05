@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -12,17 +14,14 @@ import { CTokenLike } from "../../adapters/implementations/compound/CAdapter.sol
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
-import { DSTest } from "../test-helpers/test.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
 interface RewardsDistributorLike {
     function accrue(ERC20 market, address user) external returns (uint256);
 }
 
-contract FAdapterTestHelper is LiquidityHelper, DSTest {
+contract FAdapterTestHelper is Test {
     FAdapter internal f18DaiAdapter; // olympus pool party adapter
     FAdapter internal f18EthAdapter; // olympus pool party adapter
     FAdapter internal f18UsdcAdapter; // olympus pool party adapter
@@ -42,26 +41,16 @@ contract FAdapterTestHelper is LiquidityHelper, DSTest {
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
 
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
     uint256 public mainnetFork;
 
     function setUp() public {
-        // Get RPC url from the environment
-        string[] memory inputs = new string[](2);
-        inputs[0] = "just";
-        inputs[1] = "_forge_rpc_url";
-        string memory rpcUrl = hevm.envString("MAINNET_RPC");
+        // Roll to block mined on Apr 18 2022 at 12:00:10 AM UTC (before Fuse bug)
+        vm.rollFork(14605885);
 
-        // Create fork from block mined on Apr 18 2022 at 12:00:10 AM UTC
-        // (before Fuse bug)
-        mainnetFork = hevm.createFork(rpcUrl, 14605885);
-        hevm.selectFork(mainnetFork);
-
-        giveTokens(AddressBook.DAI, ONE_FTOKEN, hevm);
-        giveTokens(AddressBook.f18DAI, ONE_FTOKEN, hevm);
-        giveTokens(AddressBook.WETH, ONE_FTOKEN, hevm);
-        giveTokens(AddressBook.f18ETH, ONE_FTOKEN, hevm);
+        deal(AddressBook.DAI, address(this), ONE_FTOKEN);
+        deal(AddressBook.f18DAI, address(this), ONE_FTOKEN);
+        deal(AddressBook.WETH, address(this), ONE_FTOKEN);
+        deal(AddressBook.f18ETH, address(this), ONE_FTOKEN);
 
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
@@ -288,14 +277,14 @@ contract FAdapters is FAdapterTestHelper {
             0
         );
 
-        giveTokens(AddressBook.DAI, 1e18, hevm);
+        deal(AddressBook.DAI, address(this), 1e18);
         ERC20(AddressBook.DAI).approve(address(divider), type(uint256).max);
         divider.initSeries(address(f156FRAX3CRVAdapter), maturity, address(this));
 
-        giveTokens(AddressBook.f156FRAX3CRV, address(this), 1e18, hevm);
+        deal(AddressBook.f156FRAX3CRV, address(this), 1e18);
         ERC20(AddressBook.f156FRAX3CRV).approve(address(divider), type(uint256).max);
         divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
-        hevm.warp(block.timestamp + 3 days);
+        vm.warp(block.timestamp + 3 days);
 
         // acccrue rewardss
         uint256 accruedCVX = RewardsDistributorLike(AddressBook.REWARDS_DISTRIBUTOR_CVX).accrue(
@@ -308,13 +297,13 @@ contract FAdapters is FAdapterTestHelper {
         );
 
         // Become the divider
-        hevm.startPrank(address(divider));
+        vm.startPrank(address(divider));
 
         uint256 ANY = 1337;
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
         f156FRAX3CRVAdapter.notify(address(0), 0, true);
@@ -334,14 +323,14 @@ contract FAdapters is FAdapterTestHelper {
             0
         );
 
-        giveTokens(AddressBook.DAI, 1e18, hevm);
+        deal(AddressBook.DAI, address(this), 1e18);
         ERC20(AddressBook.DAI).approve(address(divider), type(uint256).max);
         divider.initSeries(address(f156FRAX3CRVAdapter), maturity, address(this));
 
-        giveTokens(AddressBook.f156FRAX3CRV, address(this), 1e18, hevm);
+        deal(AddressBook.f156FRAX3CRV, address(this), 1e18);
         ERC20(AddressBook.f156FRAX3CRV).approve(address(divider), type(uint256).max);
         divider.issue(address(f156FRAX3CRVAdapter), maturity, 1e18);
-        hevm.warp(block.timestamp + 3 days);
+        vm.warp(block.timestamp + 3 days);
 
         // acccrue rewardss
         uint256 accruedCVX = RewardsDistributorLike(AddressBook.REWARDS_DISTRIBUTOR_CVX).accrue(
@@ -354,18 +343,18 @@ contract FAdapters is FAdapterTestHelper {
         );
 
         // Become the divider
-        hevm.startPrank(address(divider));
+        vm.startPrank(address(divider));
 
         uint256 ANY = 1337;
 
         // Expect a f156FRAX3CRVAdapter ClaimRewards event when notifying
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
         f156FRAX3CRVAdapter.notify(address(0), 0, true);
 
         // Should fail to expect a f156FRAX3CRVAdapter ClaimRewards event when notifying again in the same block
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit ClaimRewards(address(f156FRAX3CRVAdapter), ANY);
 
         f156FRAX3CRVAdapter.notify(address(0), 0, true);
@@ -375,7 +364,7 @@ contract FAdapters is FAdapterTestHelper {
         // Scale is in 18 decimals when the Underlying has 18 decimals (WETH) ----
 
         // Mint this address some f18ETH & give the adapter approvals (note all cTokens have 8 decimals)
-        giveTokens(AddressBook.f18ETH, ONE_FTOKEN, hevm);
+        deal(AddressBook.f18ETH, address(this), ONE_FTOKEN);
         ERC20(AddressBook.f18ETH).approve(address(f18EthAdapter), ONE_FTOKEN);
 
         uint256 wethOut = f18EthAdapter.unwrapTarget(ONE_FTOKEN);
@@ -388,7 +377,7 @@ contract FAdapters is FAdapterTestHelper {
         // Scale is in 18 decimals when the Underlying has a non-standard number of decimals (6 for USDC) ----
 
         // Test with f18USDC
-        giveTokens(AddressBook.f18USDC, ONE_FTOKEN, hevm);
+        deal(AddressBook.f18USDC, address(this), ONE_FTOKEN);
         ERC20(AddressBook.f18USDC).approve(address(f18UsdcAdapter), ONE_FTOKEN);
 
         uint256 usdcOut = f18UsdcAdapter.unwrapTarget(ONE_FTOKEN);
@@ -398,14 +387,14 @@ contract FAdapters is FAdapterTestHelper {
         // Sanity check
         assertEq(ERC20(AddressBook.USDC).decimals(), 6);
 
-        giveTokens(AddressBook.f18USDC, ONE_FTOKEN, hevm);
+        deal(AddressBook.f18USDC, address(this), ONE_FTOKEN);
         ERC20(AddressBook.f18USDC).approve(address(f18UsdcAdapter), ONE_FTOKEN);
 
         // Test with f156USDC
-        giveTokens(AddressBook.f18USDC, ONE_FTOKEN, hevm);
+        deal(AddressBook.f18USDC, address(this), ONE_FTOKEN);
         ERC20(AddressBook.f18USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
 
-        giveTokens(AddressBook.f156USDC, ONE_FTOKEN, hevm);
+        deal(AddressBook.f156USDC, address(this), ONE_FTOKEN);
         ERC20(AddressBook.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
 
         usdcOut = f156UsdcAdapter.unwrapTarget(ONE_FTOKEN);
@@ -415,17 +404,14 @@ contract FAdapters is FAdapterTestHelper {
         // Sanity check
         assertEq(ERC20(AddressBook.USDC).decimals(), 6);
 
-        giveTokens(AddressBook.f156USDC, ONE_FTOKEN, hevm);
-        ERC20(AddressBook.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
-
-        giveTokens(AddressBook.f156USDC, ONE_FTOKEN, hevm);
+        deal(AddressBook.f156USDC, address(this), ONE_FTOKEN);
         ERC20(AddressBook.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
     }
 
     function testMainnetWrapUnwrap(uint256 wrapAmt) public {
-        wrapAmt = fuzzWithBounds(wrapAmt, 1e6, INITIAL_BALANCE);
+        wrapAmt = bound(wrapAmt, 1e6, INITIAL_BALANCE);
 
-        giveTokens(AddressBook.USDC, INITIAL_BALANCE, hevm);
+        deal(AddressBook.USDC, address(this), INITIAL_BALANCE);
 
         ERC20 target = ERC20(f18UsdcAdapter.target());
         ERC20 underlying = ERC20(f18UsdcAdapter.underlying());
@@ -442,7 +428,7 @@ contract FAdapters is FAdapterTestHelper {
         f18UsdcAdapter.unwrapTarget(targetFromWrap);
         uint256 postUnderlyingBal = underlying.balanceOf(address(this));
 
-        assertClose(preUnderlyingBal, postUnderlyingBal);
+        assertApproxEqAbs(preUnderlyingBal, postUnderlyingBal, 100);
 
         // 2. Deposit underlying tokens into the vault
         uint256 preTargetSupply = target.totalSupply();
@@ -466,7 +452,7 @@ contract FAdapters is FAdapterTestHelper {
         assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
 
         // Bound wrap amount to remaining tokens (tokens not deposited)
-        wrapAmt = fuzzWithBounds(wrapAmt, 1, INITIAL_BALANCE / 2);
+        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE / 2);
 
         // 4. Run the cycle again now that the vault has some underlying tokens of its own
         uint256 targetBalPostDeposit = target.balanceOf(address(this));
@@ -476,7 +462,7 @@ contract FAdapters is FAdapterTestHelper {
         f18UsdcAdapter.unwrapTarget(targetFromWrap);
         postUnderlyingBal = underlying.balanceOf(address(this));
 
-        assertClose(preUnderlyingBal, postUnderlyingBal);
+        assertApproxEqAbs(preUnderlyingBal, postUnderlyingBal, 100);
     }
 
     event RewardTokensChanged(address[] indexed rewardTokens);
@@ -491,10 +477,10 @@ contract FAdapters is FAdapterTestHelper {
         rewardsDistributors[0] = AddressBook.REWARDS_DISTRIBUTOR_LDO;
         rewardsDistributors[1] = AddressBook.REWARDS_DISTRIBUTOR_FXS;
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit RewardTokensChanged(rewardTokens);
 
-        hevm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit RewardsDistributorsChanged(rewardsDistributors);
 
         f156FRAX3CRVAdapter.setRewardTokens(rewardTokens, rewardsDistributors);
@@ -509,8 +495,8 @@ contract FAdapters is FAdapterTestHelper {
         if (lad == address(this)) return;
         address[] memory rewardTokens = new address[](2);
         address[] memory rewardsDistributors = new address[](2);
-        hevm.expectRevert("UNTRUSTED");
-        hevm.prank(address(0x1234567890123456789012345678901234567890));
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x1234567890123456789012345678901234567890));
         f156FRAX3CRVAdapter.setRewardTokens(rewardTokens, rewardsDistributors);
     }
 }

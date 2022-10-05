@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
 import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
@@ -11,13 +13,11 @@ import { PoolManager, MasterOracleLike } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { DSTest } from "@sense-finance/v1-core/src/tests/test-helpers/test.sol";
 import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
-import { Hevm } from "@sense-finance/v1-core/src/tests/test-helpers/Hevm.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
 import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
 import { Constants } from "@sense-finance/v1-core/src/tests/test-helpers/Constants.sol";
@@ -43,7 +43,7 @@ interface ComptrollerLike {
     function markets(address cToken) external view returns (Market memory);
 }
 
-contract PoolManagerTest is DSTest {
+contract PoolManagerTest is Test {
     using FixedMath for uint256;
 
     MockToken internal stake;
@@ -57,8 +57,6 @@ contract PoolManagerTest is DSTest {
 
     MockBalancerVault internal balancerVault;
     MockSpaceFactory internal spaceFactory;
-
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         tokenHandler = new TokenHandler();
@@ -118,20 +116,20 @@ contract PoolManagerTest is DSTest {
         assertTrue(poolManager.comptroller() != address(0));
 
         // Can't deploy pool twice
-        hevm.expectRevert("ERC1167: create2 failed");
+        vm.expectRevert("ERC1167: create2 failed");
         poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
     }
 
     function testMainnetAddTarget() public {
         // Cannot add a Target before deploying a pool
-        hevm.expectRevert(abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.PoolNotDeployed.selector));
         poolManager.addTarget(address(target), address(mockAdapter));
 
         // Can add a Target after deploying a pool
         poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // Cannot add a Target before params have been set
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
         poolManager.addTarget(address(target), address(mockAdapter));
 
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
@@ -144,7 +142,7 @@ contract PoolManagerTest is DSTest {
         // Can now add Target
         poolManager.addTarget(address(target), address(mockAdapter));
 
-        hevm.expectRevert();
+        vm.expectRevert();
         poolManager.addTarget(address(target), address(mockAdapter));
     }
 
@@ -152,19 +150,19 @@ contract PoolManagerTest is DSTest {
         uint256 maturity = _getValidMaturity();
 
         // Cannot queue non-existant Series
-        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.SeriesDoesNotExist.selector));
         poolManager.queueSeries(address(mockAdapter), maturity, address(0));
 
         _initSeries(maturity);
 
         // Cannot queue if the Fuse pool has not been deployed (no comptroller)
-        hevm.expectRevert();
+        vm.expectRevert();
         poolManager.queueSeries(address(mockAdapter), maturity, address(0));
 
         poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
 
         // Cannot queue if Target has not been added to the Fuse pool
-        hevm.expectRevert(abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
         poolManager.queueSeries(address(mockAdapter), maturity, address(0));
 
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
@@ -194,13 +192,13 @@ contract PoolManagerTest is DSTest {
         address pool = spaceFactory.create(address(mockAdapter), maturity);
 
         // Cannot add Series if it hasn't been queued
-        hevm.expectRevert(abi.encodeWithSelector(Errors.SeriesNotQueued.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.SeriesNotQueued.selector));
         poolManager.addSeries(address(mockAdapter), maturity);
 
         poolManager.queueSeries(address(mockAdapter), maturity, pool);
 
         // Cannot add Series if params aren't set
-        hevm.expectRevert(abi.encodeWithSelector(Errors.PTParamsNotSet.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.PTParamsNotSet.selector));
         poolManager.addSeries(address(mockAdapter), maturity);
 
         poolManager.setParams(
@@ -257,7 +255,7 @@ contract PoolManagerTest is DSTest {
         // Insufficient liquidity
         assertEq(err, 4);
 
-        hevm.expectRevert("borrow is paused");
+        vm.expectRevert("borrow is paused");
         ComptrollerLike(comptroller).borrowAllowed(address(cLPToken), address(this), 1e18);
 
         err = CToken(cTarget).redeem(Token(cTarget).balanceOf(address(this)));
@@ -328,12 +326,12 @@ contract PoolManagerTest is DSTest {
         assertTrue(success);
 
         // shouldn't be able to add target again
-        hevm.expectRevert();
+        vm.expectRevert();
         poolManager.addTarget(address(target), address(mockAdapter));
 
         address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(target));
 
-        hevm.roll(1);
+        vm.roll(1);
 
         success = poolManager.execute(
             poolManager.comptroller(),

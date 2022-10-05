@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
+import "forge-std/Test.sol";
+
 import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
 
@@ -15,12 +17,9 @@ import { Divider, TokenHandler } from "../../Divider.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
-import { LiquidityHelper } from "../test-helpers/LiquidityHelper.sol";
-import { DSTest } from "../test-helpers/test.sol";
-import { Hevm } from "../test-helpers/Hevm.sol";
 
 // Mainnet tests with imUSD 4626 token
-contract ERC4626Adapters is LiquidityHelper, DSTest {
+contract ERC4626Adapters is Test {
     using FixedMath for uint256;
 
     uint256 public mainnetFork;
@@ -41,18 +40,9 @@ contract ERC4626Adapters is LiquidityHelper, DSTest {
     uint16 public constant DEFAULT_LEVEL = 31;
     uint256 public constant INITIAL_BALANCE = 1.25e18;
 
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
     function setUp() public {
-        // Get RPC url from the environment
-        string memory rpcUrl = hevm.envString("MAINNET_RPC");
-
-        // Create fork from last block to guarantee that imUSD exists
-        mainnetFork = hevm.createFork(rpcUrl);
-        hevm.selectFork(mainnetFork);
-
-        giveTokens(AddressBook.IMUSD, 10e18, hevm);
-        giveTokens(AddressBook.MUSD, 10e18, hevm);
+        deal(AddressBook.IMUSD, address(this), 10e18);
+        deal(AddressBook.MUSD, address(this), 10e18);
 
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
