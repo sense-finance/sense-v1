@@ -140,7 +140,7 @@ contract Factories is TestHelper {
     function testDeployAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockTargetLike someTarget = MockTargetLike(
-            deployMockTarget(address(underlying), "Some Target", "ST", mockTargetDecimals)
+            deployMockTarget(address(underlying), "Some Target", "ST", tDecimals)
         );
 
         address[] memory rewardTokens = new address[](1);
@@ -242,11 +242,11 @@ contract Factories is TestHelper {
         // * for 6 decimals target -> 52631578
         // * for 8 decimals target -> 5263157894
         // * for 18 decimals target -> 52631578947368421052
-        if (mockTargetDecimals == 6) {
+        if (tDecimals == 6) {
             assertEq(guard, is4626Target ? 52631578 : 26315789);
-        } else if (mockTargetDecimals == 8) {
+        } else if (tDecimals == 8) {
             assertEq(guard, is4626Target ? 5263157894 : 2631578947);
-        } else if (mockTargetDecimals == 18) {
+        } else if (tDecimals == 18) {
             assertEq(guard, is4626Target ? 52631578947368421052 : 26315789473684210526);
         }
     }
