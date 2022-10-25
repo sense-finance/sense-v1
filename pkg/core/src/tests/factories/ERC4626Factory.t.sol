@@ -11,7 +11,7 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
-import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
+import { MockERC4626 } from "../test-helpers/mocks/MockERC4626.sol";
 
 import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
@@ -71,7 +71,7 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testDeployNonCropAdapter() public {
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
         // Deploy ERC4626 non-crops factory
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
@@ -100,7 +100,7 @@ contract ERC4626FactoryTest is TestHelper {
 
     function testDeployCropAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
         // Deploy ERC4626 Crop factory
         ERC4626CropFactory someFactory = ERC4626CropFactory(deployCropFactory(address(someTarget)));
@@ -134,7 +134,7 @@ contract ERC4626FactoryTest is TestHelper {
     function testDeployCropsAdapter() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
         MockToken someReward2 = new MockToken("Some Reward 2", "SR2", 18);
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
         // Deploy ERC4626 Crops factory
         ERC4626CropsFactory someFactory = ERC4626CropsFactory(deployCropsFactory(address(someTarget)));
@@ -170,7 +170,7 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testDeployAdapterAndInitializeSeries() public {
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
         // Deploy non-crop factory
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
@@ -198,7 +198,7 @@ contract ERC4626FactoryTest is TestHelper {
     function testCantDeployAdapterIfNotPeriphery() public {
         MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
         MockTargetLike someTarget = MockTargetLike(
-            deployMockTarget(address(someUnderlying), "Some Target", "ST", mockTargetDecimals)
+            deployMockTarget(address(someUnderlying), "Some Target", "ST", tDecimals)
         );
         factory.supportTarget(address(someTarget), true);
 
@@ -214,7 +214,7 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testCanSupportTarget() public {
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
         address target = address(0xbabe);
 
@@ -227,7 +227,7 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testCantSupportTargetIfNotAdmin() public {
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
         ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
         vm.expectRevert("UNTRUSTED");
@@ -242,7 +242,7 @@ contract ERC4626FactoryTest is TestHelper {
 
     function testCanSetRewardToken() public {
         MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST");
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
         // Deploy ERC4626 Crop factory
         ERC4626CropFactory someFactory = ERC4626CropFactory(deployCropFactory(address(someTarget)));
