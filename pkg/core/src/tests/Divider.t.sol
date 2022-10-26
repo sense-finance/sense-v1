@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
 
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
@@ -613,7 +613,6 @@ contract Dividers is TestHelper {
 
         assertEq(lscaleFirst, lscaleSecond);
 
-        // TODO: review point
         // when less than 18 decimals, we scale the scale values to target decimals to be able to assert equality
         // otherwise, values would be different because scale is always 18 decimals and we lose precision
         if (tDecimals < 18) {

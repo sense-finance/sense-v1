@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
-import { ERC4626 } from "../test-helpers/mocks/ERC4626.sol";
+import { ERC4626 } from "../../adapters/abstract/erc4626/ERC4626.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Divider } from "../../Divider.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
 contract FakeAdapter is BaseAdapter {
@@ -81,7 +81,7 @@ contract Adapters is TestHelper {
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
         assertEq(adapter.target(), address(target));
-        assertEq(!is4626Target ? target.underlying() : target.asset(), address(underlying));
+        assertEq(is4626Target ? target.asset() : target.underlying(), address(underlying));
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.ifee(), ISSUANCE_FEE);
@@ -100,17 +100,7 @@ contract Adapters is TestHelper {
 
     function test4626Scale() public {
         if (!is4626Target) return;
-        uint256 tBal = target.balanceOf(bob);
-        ERC4626 t = ERC4626(adapter.target());
-        vm.prank(bob);
-        t.redeem(tBal, bob, bob);
-
-        tBal = target.balanceOf(jim);
-        vm.prank(jim);
-        t.redeem(tBal, jim, jim);
-
-        if (!is4626Target) return;
-        assertApproxEqAbs(adapter.scale(), 1e18, 10**(18 - ERC20(adapter.underlying()).decimals()));
+        assertEq(adapter.scale(), 1e18);
     }
 
     function testScaleMultipleTimes() public {
@@ -121,10 +111,9 @@ contract Adapters is TestHelper {
     }
 
     function test4626ScaleMultipleTimes() public {
-        uint256 scaleFactor = 10**(18 - ERC20(adapter.underlying()).decimals());
-        assertApproxEqAbs(adapter.scale(), 1e18, scaleFactor);
-        assertApproxEqAbs(adapter.scale(), 1e18, scaleFactor);
-        assertApproxEqAbs(adapter.scale(), 1e18, scaleFactor);
+        assertEq(adapter.scale(), 1e18);
+        assertEq(adapter.scale(), 1e18);
+        assertEq(adapter.scale(), 1e18);
     }
 
     function testCantAddCustomAdapterToDivider() public {

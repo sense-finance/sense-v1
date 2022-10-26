@@ -24,7 +24,7 @@ import { FAdapter } from "@sense-finance/v1-core/src/adapters/implementations/fu
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { NoopPoolManager } from "@sense-finance/v1-fuse/src/NoopPoolManager.sol";
 import { EmergencyStop } from "@sense-finance/v1-utils/src/EmergencyStop.sol";
-import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
+import { MockERC4626 } from "@solmate/src/test/utils/mocks/MockERC4626.sol";
 
 import { EulerERC4626WrapperFactory } from "@sense-finance/v1-core/src/adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { RewardsDistributor } from "../lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol";

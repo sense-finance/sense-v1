@@ -2,9 +2,9 @@
 pragma solidity 0.8.13;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { IERC4626 } from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC4626 } from "@solmate/src/mixins/ERC4626.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
@@ -30,22 +30,20 @@ contract ERC4626Adapter is BaseAdapter, ExtractableReward {
         uint128 _ifee,
         AdapterParams memory _adapterParams
     )
-        BaseAdapter(_divider, _target, address(IERC4626(_target).asset()), _ifee, _adapterParams)
+        BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _ifee, _adapterParams)
         ExtractableReward(_rewardsRecipient)
     {
-        uint256 tDecimals = IERC4626(target).decimals();
-        uint256 uDecimals = IERC4626(underlying).decimals();
-        BASE_UINT = 10**tDecimals;
-        SCALE_FACTOR = 10**(18 - uDecimals); // we assume targets decimals <= 18
+        BASE_UINT = 10**ERC4626(target).decimals();
+        SCALE_FACTOR = 10**(18 - ERC4626(underlying).decimals()); // we assume targets decimals <= 18
         ERC20(underlying).safeApprove(target, type(uint256).max);
     }
 
     function scale() external override returns (uint256) {
-        return IERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
+        return ERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
     }
 
     function scaleStored() external view override returns (uint256) {
-        return IERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
+        return ERC4626(target).convertToAssets(BASE_UINT) * SCALE_FACTOR;
     }
 
     function getUnderlyingPrice() external view override returns (uint256 price) {
@@ -57,11 +55,11 @@ contract ERC4626Adapter is BaseAdapter, ExtractableReward {
 
     function wrapUnderlying(uint256 assets) external override returns (uint256 _shares) {
         ERC20(underlying).safeTransferFrom(msg.sender, address(this), assets);
-        _shares = IERC4626(target).deposit(assets, msg.sender);
+        _shares = ERC4626(target).deposit(assets, msg.sender);
     }
 
     function unwrapTarget(uint256 shares) external override returns (uint256 _assets) {
-        _assets = IERC4626(target).redeem(shares, msg.sender, msg.sender);
+        _assets = ERC4626(target).redeem(shares, msg.sender, msg.sender);
     }
 
     function _isValid(address _token) internal virtual override returns (bool) {

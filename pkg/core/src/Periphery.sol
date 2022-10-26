@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 import { BalancerVault, IAsset } from "./external/balancer/Vault.sol";
 import { BalancerPool } from "./external/balancer/Pool.sol";

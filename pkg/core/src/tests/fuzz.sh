@@ -32,7 +32,7 @@ for c in {true,false}\ {true,false}\ {true,false}\ {6,8,18}\ {6,8,18}\ {6,8,18} 
 done
 
 # run, for ERC4626 target, all possible combinations between 6, 8 and 18 target (and underlying) decimals
-for c in {6}\ {18}\ ; do
+for c in {6,8,18}\ {6,8,18}\ ; do
     IFS=' '
     read -ra combination <<< "$c";
     echo "${BIYellow}--------------------------------------------------";

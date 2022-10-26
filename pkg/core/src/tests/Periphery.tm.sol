@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "forge-std/Test.sol";
 
 import { FixedMath } from "../external/FixedMath.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
