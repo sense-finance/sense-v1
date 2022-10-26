@@ -10,7 +10,7 @@ import { BaseFactory } from "./BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // External references
-import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+import { Bytes32AddressLib } from "@solmate/src/utils/Bytes32AddressLib.sol";
 
 contract ERC4626Factory is BaseFactory {
     using Bytes32AddressLib for address;

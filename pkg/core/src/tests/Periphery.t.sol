@@ -14,7 +14,7 @@ import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.s
 import { MockFactory, MockCropFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
@@ -1267,11 +1267,6 @@ contract PeripheryTest is TestHelper {
                 balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
                 tBase
             );
-
-            // ptToBeIssued = (proportionalTarget - fee).fmul(lscale);
-            // TODO: review point
-            // isnt it wrong here to substract the fee just like that? And, still, I think the fee is already
-            // taking into account on `propotionalTarget`, isn't it?
             ptToBeIssued = proportionalTarget.fmul(lscale);
 
             // prepare minAmountsOut for removing liquidity
@@ -1325,11 +1320,7 @@ contract PeripheryTest is TestHelper {
                 balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
                 tBase
             );
-            // TODO: review point
-            //isnt it wrong here to substract the fee just like that? And, still, I think the fee is already
-            // taking into account on `propotionalTarget`, isn't it?
             ptToBeIssued = proportionalTarget.fmul(lscale);
-            // ptToBeIssued = (proportionalTarget - fee).fmul(lscale);
             targetToBeAdded = (tBal - proportionalTarget); // target amount
             // prepare minAmountsOut for removing liquidity
             minAmountsOut[0] = targetToBeAdded;

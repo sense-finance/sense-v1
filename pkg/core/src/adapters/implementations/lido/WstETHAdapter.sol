@@ -7,8 +7,8 @@ import { FixedMath } from "../../../external/FixedMath.sol";
 // Internal references
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 interface WstETHLike {

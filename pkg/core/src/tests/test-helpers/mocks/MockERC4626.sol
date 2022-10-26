@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { ERC4626 } from "./ERC4626.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC4626 } from "../../../adapters/abstract/erc4626/ERC4626.sol";
 
 contract MockERC4626 is ERC4626 {
     uint256 public beforeWithdrawHookCalledCounter = 0;

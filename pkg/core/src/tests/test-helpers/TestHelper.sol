@@ -20,10 +20,10 @@ import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ERC4626CropFactory } from "../../adapters/abstract/factories/ERC4626CropFactory.sol";
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
 import { Constants } from "./Constants.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -342,7 +342,6 @@ contract TestHelper is Test {
         // issue PTs using half the tBal and transfer it to the vault
         uint256 issued = divider.issue(address(adapter), maturity, tBal / 2);
         MockToken(divider.pt(address(adapter), maturity)).transfer(address(balancerVault), issued);
-        MockToken(divider.yt(address(adapter), maturity)).transfer(address(balancerVault), issued); // we don't really need this but we transfer them anyways
     }
 
     // ---- deployers ---- //

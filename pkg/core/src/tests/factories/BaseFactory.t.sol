@@ -13,7 +13,7 @@ import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
-import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+import { Bytes32AddressLib } from "@solmate/src/utils/Bytes32AddressLib.sol";
 
 contract MockRevertAdapter is MockAdapter {
     constructor(BaseAdapter.AdapterParams memory _adapterParams)

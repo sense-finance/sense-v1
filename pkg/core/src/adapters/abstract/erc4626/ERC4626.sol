@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
+import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "@solmate/src/utils/FixedPointMathLib.sol";
 
 /// @notice Minimal ERC4626 tokenized Vault implementation.
-/// @author Forked from solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
+/// @author Forked from solmate (https://github.com/transmissions11/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev Modified to allow different decimals between the token and the underlying asset.
 abstract contract ERC4626 is ERC20 {
     using SafeTransferLib for ERC20;
