@@ -29,8 +29,6 @@ abstract contract Crop is Trust {
     mapping(address => uint256) public reconciledAmt; // reconciled target amount per user
     mapping(address => mapping(uint256 => bool)) public reconciled; // whether a user has been reconciled for a given maturity
 
-    event Distributed(address indexed usr, address indexed token, uint256 amount);
-
     constructor(address _divider, address _reward) {
         setIsTrusted(_divider, true);
         reward = _reward;
@@ -157,6 +155,7 @@ abstract contract Crop is Trust {
 
     /* ========== LOGS ========== */
 
+    event Distributed(address indexed usr, address indexed token, uint256 amount);
     event Reconciled(address indexed usr, uint256 tBal, uint256 maturity);
     event RewardTokenChanged(address indexed reward);
     event ClaimerChanged(address indexed claimer);
