@@ -30,7 +30,7 @@ abstract contract Crops is Trust {
 
     struct Crop {
         // Accumulated reward token per collected target
-        uint256 share;
+        uint256 shares;
         // Last recorded balance of reward token
         uint256 rewardBal;
         // Rewarded token per user
@@ -75,7 +75,7 @@ abstract contract Crops is Trust {
             }
         }
         for (uint256 i = 0; i < rewardTokens.length; i++) {
-            data[rewardTokens[i]].rewarded[_usr] = tBalance[_usr].fmulUp(data[rewardTokens[i]].share, FixedMath.RAY);
+            data[rewardTokens[i]].rewarded[_usr] = tBalance[_usr].fmulUp(data[rewardTokens[i]].shares, FixedMath.RAY);
         }
     }
 
@@ -114,10 +114,10 @@ abstract contract Crops is Trust {
 
         for (uint256 i = 0; i < rewardTokens.length; i++) {
             uint256 crop = ERC20(rewardTokens[i]).balanceOf(address(this)) - data[rewardTokens[i]].rewardBal;
-            if (totalTarget > 0) data[rewardTokens[i]].share += (crop.fdiv(totalTarget, FixedMath.RAY));
+            if (totalTarget > 0) data[rewardTokens[i]].shares += (crop.fdiv(totalTarget, FixedMath.RAY));
 
             uint256 last = data[rewardTokens[i]].rewarded[_usr];
-            uint256 curr = tBalance[_usr].fmul(data[rewardTokens[i]].share, FixedMath.RAY);
+            uint256 curr = tBalance[_usr].fmul(data[rewardTokens[i]].shares, FixedMath.RAY);
             if (curr > last) {
                 unchecked {
                     ERC20(rewardTokens[i]).safeTransfer(_usr, curr - last);

@@ -21,7 +21,7 @@ abstract contract Crop is Trust {
     /// @notice Program state
     address public claimer; // claimer address
     address public reward;
-    uint256 public share; // accumulated reward token per collected target
+    uint256 public shares; // accumulated reward token per collected target
     uint256 public rewardBal; // last recorded balance of reward token
     uint256 public totalTarget; // total target accumulated by all users
     mapping(address => uint256) public tBalance; // target balance per user
@@ -34,7 +34,7 @@ abstract contract Crop is Trust {
         reward = _reward;
     }
 
-    /// @notice Distribute the rewards tokens to the user according to their share
+    /// @notice Distribute the rewards tokens to the user according to their shares
     /// @dev The reconcile amount allows us to prevent diluting other users' rewards
     function notify(
         address _usr,
@@ -68,7 +68,7 @@ abstract contract Crop is Trust {
                 }
             }
         }
-        rewarded[_usr] = tBalance[_usr].fmulUp(share, FixedMath.RAY);
+        rewarded[_usr] = tBalance[_usr].fmulUp(shares, FixedMath.RAY);
     }
 
     /// @notice Reconciles users target balances to zero by distributing rewards on their holdings,
@@ -105,10 +105,10 @@ abstract contract Crop is Trust {
         _claimReward();
 
         uint256 crop = ERC20(reward).balanceOf(address(this)) - rewardBal;
-        if (totalTarget > 0) share += (crop.fdiv(totalTarget, FixedMath.RAY));
+        if (totalTarget > 0) shares += (crop.fdiv(totalTarget, FixedMath.RAY));
 
         uint256 last = rewarded[_usr];
-        uint256 curr = tBalance[_usr].fmul(share, FixedMath.RAY);
+        uint256 curr = tBalance[_usr].fmul(shares, FixedMath.RAY);
         if (curr > last) {
             unchecked {
                 ERC20(reward).safeTransfer(_usr, curr - last);
