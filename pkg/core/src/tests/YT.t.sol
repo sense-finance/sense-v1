@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import { Token } from "../tokens/Token.sol";
 import { YT } from "../tokens/YT.sol";
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";

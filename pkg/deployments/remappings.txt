@@ -1,2 +1,3 @@
-solmate/=@rari-capital/solmate/src/
+solmate/=solmate/src/
+@rari-capital/solmate=../../../lib/solmate
 @yield-daddy/=../../../../../../lib/yield-daddy/

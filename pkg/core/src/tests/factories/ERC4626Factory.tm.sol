@@ -13,7 +13,7 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";

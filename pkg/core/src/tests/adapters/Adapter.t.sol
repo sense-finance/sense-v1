@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
@@ -10,7 +10,7 @@ import { ERC4626 } from "../../adapters/abstract/erc4626/ERC4626.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Divider } from "../../Divider.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
-import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
 contract FakeAdapter is BaseAdapter {

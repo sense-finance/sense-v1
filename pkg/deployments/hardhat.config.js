@@ -146,10 +146,17 @@ module.exports = {
       transform: line => {
         if (line.match(/^\s*import /i)) {
           for (const [from, to] of getRemappings()) {
-            // we are only transforming solmate (the one inside yield-daddy's lib) and yield-daddy
-            if (line.includes(from) && (!line.includes("@rari-capital") || line.includes("yield-daddy"))) {
+            // remappings for yield-daddy's contracts
+            if (line.includes(from) && line.includes("yield-daddy")) {
               line = line.replace(from, to);
-              break;
+            }
+            // remappings for morpho's contracts using @rari-capital/solmate
+            if (from === "@rari-capital/solmate" && line.includes("@rari-capital")) {
+              line = line.replace(from, to);
+            }
+            // remappings for sense's contracts using solmate
+            if (from === "solmate/" && !line.includes("solmate/src") && !line.includes("@rari-capital")) {
+              line = line.replace(from, to);
             }
           }
         }

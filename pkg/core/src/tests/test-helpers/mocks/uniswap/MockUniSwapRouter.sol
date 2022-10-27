@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { FixedMath } from "../../../../external/FixedMath.sol";
 
 /// Taken from https://github.com/xtokenmarket/xalpha/blob/main/contracts/mock/MockUniswapV3Router.sol

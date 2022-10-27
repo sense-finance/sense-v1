@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.11;
 
-import { DSTestPlus } from "@solmate/src/test/utils/DSTestPlus.sol";
+import { DSTestPlus } from "solmate/test/utils/DSTestPlus.sol";
 import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
 import { EulerMarketsMock } from "@yield-daddy/src/test/euler/mocks/EulerMarketsMock.sol";

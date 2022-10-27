@@ -1105,13 +1105,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rari-capital/solmate@rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060":
-  version: 6.2.0
-  resolution: "@rari-capital/solmate@https://github.com/rari-capital/solmate.git#commit=c8278b3cb948cffda3f1de5a401858035f262060"
-  checksum: 6b70e9026d4e1d10d49aba3dbe0cacad4bd14b9facc36d94544b0bb306c05cf3ce9dd2942e198e1bae86e08de5957c9eb540ddeb17707281475273beece2db7e
-  languageName: node
-  linkType: hard
-
 "@sense-finance/sense-v1@workspace:.":
   version: 0.0.0-use.local
   resolution: "@sense-finance/sense-v1@workspace:."
@@ -1130,7 +1123,6 @@ __metadata:
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
     "@openzeppelin/contracts": ^4.7.3
-    "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@types/prettier": ^2
@@ -1151,7 +1143,6 @@ __metadata:
     "@balancer-labs/v2-vault": 2.0.0
     "@nomiclabs/hardhat-etherscan": ^3.1.0
     "@openzeppelin/contracts": ^4.7.3
-    "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.1.6
@@ -1172,6 +1163,7 @@ __metadata:
     hardhat-spdx-license-identifier: ^2.0.3
     hardhat-watcher: ^2.1.1
     prettier: ^2.7.1
+    solmate: ^6.6.1
     yarn: ^1.22.19
   languageName: unknown
   linkType: soft
@@ -1180,7 +1172,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sense-finance/v1-fuse@workspace:pkg/fuse"
   dependencies:
-    "@rari-capital/solmate": "rari-capital/solmate#c8278b3cb948cffda3f1de5a401858035f262060"
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@types/prettier": ^2
@@ -1188,6 +1179,7 @@ __metadata:
     prettier-plugin-solidity: ^1.0.0-beta.17
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
+    solmate: ^6.6.1
   languageName: unknown
   linkType: soft
 

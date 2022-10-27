@@ -3,9 +3,9 @@ pragma solidity 0.8.13;
 
 // External references
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
-import { ReentrancyGuard } from "@solmate/src/utils/ReentrancyGuard.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 import { DateTime } from "./external/DateTime.sol";
 import { FixedMath } from "./external/FixedMath.sol";
 

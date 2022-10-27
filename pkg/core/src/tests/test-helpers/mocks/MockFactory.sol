@@ -12,7 +12,7 @@ import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 
 // External references
-import { Bytes32AddressLib } from "@solmate/src/utils/Bytes32AddressLib.sol";
+import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
 
 interface MockTargetLike {
     function underlying() external view returns (address);

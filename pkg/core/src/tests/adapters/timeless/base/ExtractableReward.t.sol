@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.11;
 
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
-import { DSTestPlus } from "@solmate/src/test/utils/DSTestPlus.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { DSTestPlus } from "solmate/test/utils/DSTestPlus.sol";
 
 import { EulerMock } from "@yield-daddy/src/test/euler/mocks/EulerMock.sol";
 import { MockToken } from "../../../test-helpers/mocks/MockToken.sol";

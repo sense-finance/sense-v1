@@ -14,7 +14,7 @@ import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.s
 import { MockFactory, MockCropFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";

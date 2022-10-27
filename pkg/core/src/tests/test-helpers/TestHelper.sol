@@ -20,10 +20,10 @@ import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ERC4626CropFactory } from "../../adapters/abstract/factories/ERC4626CropFactory.sol";
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
 import { Constants } from "./Constants.sol";
-import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -122,7 +122,7 @@ contract TestHelper is Test {
 
     // target type
     bool internal is4626Target;
-    uint256 public AMT = 2000; // Amount of tokens to initialise  the user with
+    uint256 public AMT = 2000; // Amount of tokens to initialise the user with
     uint256 public MIN_TARGET = 1e4; // test with a target with less than 4 decimals will fail
     uint256 public MAX_TARGET;
 
@@ -148,9 +148,9 @@ contract TestHelper is Test {
         underlying = MockToken(deployMockUnderlying("Dai Token", "DAI", uDecimals));
 
         // To avoid precision errors when using `assertApproxEqAbs` (specially on the crop tests)
-        // we set the reward token decicmals to the same as the target decimals
-        reward = new MockToken("Reward Token", "RT", tDecimals);
-        rDecimals = tDecimals;
+        // we set the reward token decimals to the same as the target decimals
+        rDecimals = 18;
+        reward = new MockToken("Reward Token", "RT", rDecimals);
 
         // Log target setup
         target = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals));
