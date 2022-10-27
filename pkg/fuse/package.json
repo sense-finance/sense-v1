@@ -14,7 +14,7 @@
     ],
     "scripts": {
         "test": "time forge test --no-match-path \"*.tm*\"",
-        "test:mainnet": "forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.alchemyapi.io/v2/_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC",
+        "test:mainnet": "forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
         "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
