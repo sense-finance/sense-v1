@@ -8,6 +8,6 @@ remappings = [
     '@sense-finance/v1-utils=./',
     '@sense-finance/v1-core=../core',
     '@sense-finance/v1-fuse=../fuse',
-    '@rari-capital/solmate=../../node_modules/@rari-capital/solmate',
+    'solmate/=../../node_modules/solmate/src',
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts'
 ]

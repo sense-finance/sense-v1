@@ -3,8 +3,8 @@ pragma solidity 0.8.13;
 
 import "forge-std/Test.sol";
 
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
-import { ERC4626 } from "@solmate/src/mixins/ERC4626.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { ERC4626 } from "solmate/mixins/ERC4626.sol";
 
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";

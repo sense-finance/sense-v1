@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 import { Crops } from "../../../adapters/abstract/extensions/Crops.sol";
 import { Crop } from "../../../adapters/abstract/extensions/Crop.sol";
@@ -14,7 +14,7 @@ import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockToken.sol";
 import { IERC4626 } from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Mock adapter
 contract MockAdapter is BaseAdapter, ExtractableReward {

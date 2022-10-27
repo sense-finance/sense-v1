@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 // External references
-import { ERC20 } from "@solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IERC3156FlashLender } from "../../external/flashloan/IERC3156FlashLender.sol";
 import { IERC3156FlashBorrower } from "../../external/flashloan/IERC3156FlashBorrower.sol";
 
