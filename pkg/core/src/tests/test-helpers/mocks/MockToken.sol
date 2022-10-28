@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 // Internal references
 import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";

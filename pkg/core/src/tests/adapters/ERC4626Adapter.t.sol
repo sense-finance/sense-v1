@@ -3,8 +3,8 @@ pragma solidity 0.8.13;
 
 import "forge-std/Test.sol";
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { MockERC4626 } from "../test-helpers/mocks/MockERC4626.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
@@ -60,7 +60,7 @@ contract ERC4626AdapterTest is Test {
 
         stake = new MockToken("Mock Stake", "MS", 18);
         underlying = new MockToken("Mock Underlying", "MU", 18);
-        target = new MockERC4626(ERC20(address(underlying)), "Mock ERC-4626", "M4626");
+        target = new MockERC4626(ERC20(address(underlying)), "Mock ERC-4626", "M4626", ERC20(underlying).decimals());
 
         underlying.mint(address(this), INITIAL_BALANCE);
 

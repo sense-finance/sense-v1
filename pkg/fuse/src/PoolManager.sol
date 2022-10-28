@@ -3,8 +3,8 @@ pragma solidity 0.8.13;
 
 // External reference
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { Bytes32AddressLib } from "@rari-capital/solmate/src/utils/Bytes32AddressLib.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
 import { PriceOracle } from "./external/PriceOracle.sol";
 import { BalancerOracle } from "./external/BalancerOracle.sol";
 

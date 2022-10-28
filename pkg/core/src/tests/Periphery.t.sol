@@ -14,7 +14,7 @@ import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.s
 import { MockFactory, MockCropFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
@@ -577,7 +577,7 @@ contract PeripheryTest is TestHelper {
     /* ========== swap tests ========== */
 
     function testSwapTargetForPTs() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
@@ -603,18 +603,21 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSwapUnderlyingForPTs() public {
-        uint256 uBal = 100 * (10**mockUnderlyingDecimals);
+        uint256 uBal = 100 * (10**uDecimals);
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 scale = adapter.scale();
 
         // wrap underlying into target
-        uint256 tBal = underlying.decimals() > target.decimals()
-            ? uBal.fmul(scale) / SCALING_FACTOR
-            : uBal.fmul(scale) * SCALING_FACTOR;
+        uint256 tBal;
+        if (!is4626Target) {
+            tBal = uDecimals > tDecimals ? uBal.fdivUp(scale) / SCALING_FACTOR : uBal.fdivUp(scale) * SCALING_FACTOR;
+        } else {
+            tBal = target.previewDeposit(uBal);
+        }
 
         // add liquidity to mockBalancerVault
-        addLiquidityToBalancerVault(maturity, 100000e18);
+        addLiquidityToBalancerVault(maturity, 100000 * 10**tDecimals);
 
         uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
         uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
@@ -628,11 +631,11 @@ contract PeripheryTest is TestHelper {
         periphery.swapUnderlyingForPTs(address(adapter), maturity, uBal, 0);
 
         assertEq(ytBalBefore, ERC20(yt).balanceOf(alice));
-        assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(alice));
+        assertApproxEqAbs(ptBalBefore + ptBal, ERC20(pt).balanceOf(alice), 1);
     }
 
     function testSwapPTsForTarget() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
@@ -660,7 +663,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSwapPTsForUnderlying() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
@@ -679,7 +682,7 @@ contract PeripheryTest is TestHelper {
 
         // unwrap target into underlying
         uint256 scale = adapter.scale();
-        uint256 uBal = underlying.decimals() > target.decimals()
+        uint256 uBal = uDecimals > tDecimals
             ? swapped.fmul(scale) * SCALING_FACTOR
             : swapped.fmul(scale) / SCALING_FACTOR;
 
@@ -694,14 +697,14 @@ contract PeripheryTest is TestHelper {
     }
 
     function testSwapYTsForTarget() public {
-        uint256 tBal = 100e18;
-        uint256 targetToBorrow = 9.025e19;
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 targetToBorrow = 9025 * 10**(tDecimals - 2);
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 lscale = adapter.scale();
 
         // add liquidity to mockUniSwapRouter
-        addLiquidityToBalancerVault(maturity, 1000e18);
+        addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -726,7 +729,7 @@ contract PeripheryTest is TestHelper {
 
     /* ========== liquidity tests ========== */
     function testAddLiquidityFirstTimeWithSellYieldModeShouldNotIssue() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
 
@@ -752,7 +755,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testAddLiquidityFirstTimeWithHoldYieldModeShouldNotIssue() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
 
@@ -778,7 +781,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testAddLiquidityAndSellYieldWith0_TargetRatioShouldNotIssue() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
 
@@ -807,7 +810,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testAddLiquidityAndHoldYieldWith0_TargetRatioShouldNotIssue() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
 
@@ -836,7 +839,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testAddLiquidityAndSellYT() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
 
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
@@ -852,7 +855,7 @@ contract PeripheryTest is TestHelper {
         uint256 targetToBorrow;
         {
             // compute target
-            uint256 tBase = 10**target.decimals();
+            uint256 tBase = 10**tDecimals;
             uint256 ptiBal = ERC20(pt).balanceOf(address(balancerVault));
             uint256 targetiBal = target.balanceOf(address(balancerVault));
             uint256 computedTarget = tBal.fmul(
@@ -915,13 +918,12 @@ contract PeripheryTest is TestHelper {
     }
 
     function testAddLiquidityAndHoldYT() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 tBase = 10**target.decimals();
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         // add liquidity to mock Space pool
-        addLiquidityToBalancerVault(maturity, 1000e18);
+        addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
         // init liquidity
         periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max);
@@ -937,8 +939,11 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 scale = adapter.scale();
             uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(scale.fmul(balances[0]).fmul(FixedMath.WAD - adapter.ifee()) + balances[1], tBase),
-                tBase
+                balances[1].fdiv(
+                    scale.fmul(balances[0]).fmul(FixedMath.WAD - adapter.ifee()) + balances[1],
+                    10**tDecimals
+                ),
+                10**tDecimals
             ); // ABDK formula
 
             uint256 fee = proportionalTarget.fmul(adapter.ifee());
@@ -966,12 +971,12 @@ contract PeripheryTest is TestHelper {
     }
 
     function testAddLiquidityFromUnderlyingAndHoldYT() public {
-        uint256 uBal = 100e18; // we assume target = underlying as scale is 1e18
+        uint256 uBal = 100 * 10**uDecimals; // we assume target = underlying as scale is 1e18
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
 
         // add liquidity to mock Space pool
-        addLiquidityToBalancerVault(maturity, 1000e18);
+        addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
         // init liquidity
         periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max);
@@ -988,9 +993,14 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
 
             // wrap underlying into target
-            uint256 tBal = underlying.decimals() > target.decimals()
-                ? uBal.fdivUp(lscale) / SCALING_FACTOR
-                : uBal.fdivUp(lscale) * SCALING_FACTOR;
+            uint256 tBal;
+            if (!is4626Target) {
+                tBal = uDecimals > tDecimals
+                    ? uBal.fdivUp(lscale) / SCALING_FACTOR
+                    : uBal.fdivUp(lscale) * SCALING_FACTOR;
+            } else {
+                tBal = target.previewDeposit(uBal);
+            }
 
             // calculate proportional target to add to pool
             uint256 proportionalTarget = tBal.fmul(
@@ -1024,9 +1034,8 @@ contract PeripheryTest is TestHelper {
     }
 
     function testRemoveLiquidityBeforeMaturity() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 tBase = 10**target.decimals();
         periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
@@ -1039,7 +1048,7 @@ contract PeripheryTest is TestHelper {
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = tBal *
                 (balances[1] / ((1e18 * balances[0] * (FixedMath.WAD - adapter.ifee())) / FixedMath.WAD + balances[1])); // ABDK formula
-            uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(proportionalTarget, tBase);
+            uint256 fee = convertToBase(adapter.ifee(), tDecimals).fmul(proportionalTarget, 10**tDecimals);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale);
 
             // prepare minAmountsOut for removing liquidity
@@ -1080,9 +1089,8 @@ contract PeripheryTest is TestHelper {
     }
 
     function testRemoveLiquidityOnMaturity() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 tBase = 10**target.decimals();
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
@@ -1094,7 +1102,7 @@ contract PeripheryTest is TestHelper {
             // calculate pt to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
-            uint256 fee = convertToBase(adapter.ifee(), target.decimals()).fmul(proportionalTarget, tBase);
+            uint256 fee = convertToBase(adapter.ifee(), tDecimals).fmul(proportionalTarget, 10**tDecimals);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale);
 
             // prepare minAmountsOut for removing liquidity
@@ -1126,12 +1134,14 @@ contract PeripheryTest is TestHelper {
     }
 
     function testRemoveLiquidityOnMaturityAndPTRedeemRestricted() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
         // create adapter with ptRedeem restricted
-        MockToken underlying = new MockToken("Usdc Token", "USDC", 18);
-        MockTargetLike target = MockTargetLike(deployMockTarget(address(underlying), "Compound USDC", "cUSDC", 18));
+        MockToken underlying = new MockToken("Usdc Token", "USDC", uDecimals);
+        MockTargetLike target = MockTargetLike(
+            deployMockTarget(address(underlying), "Compound USDC", "cUSDC", tDecimals)
+        );
 
         divider.setPermissionless(true);
         uint16 level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted
@@ -1152,15 +1162,15 @@ contract PeripheryTest is TestHelper {
 
         // get some target for Alice and Bob
         if (!is4626Target) {
-            target.mint(alice, 10000000e18);
+            target.mint(alice, 10000000 * 10**tDecimals);
             vm.prank(bob);
-            target.mint(bob, 10000000e18);
+            target.mint(bob, 10000000 * 10**tDecimals);
         } else {
-            underlying.mint(alice, 10000000e18);
-            underlying.mint(bob, 10000000e18);
-            target.deposit(10000000e18, alice);
+            underlying.mint(alice, 10000000 * 10**uDecimals);
+            underlying.mint(bob, 10000000 * 10**uDecimals);
+            target.deposit(10000000 * 10**uDecimals, alice);
             vm.prank(bob);
-            target.deposit(10000000e18, bob);
+            target.deposit(10000000 * 10**uDecimals, bob);
         }
 
         (address pt, ) = periphery.sponsorSeries(address(aAdapter), maturity, true);
@@ -1168,10 +1178,10 @@ contract PeripheryTest is TestHelper {
 
         uint256 lscale = aAdapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
-        minAmountsOut[0] = 2e18;
-        minAmountsOut[1] = 1e18;
+        minAmountsOut[0] = 2 * 10**tDecimals;
+        minAmountsOut[1] = 1 * 10**tDecimals;
 
-        addLiquidityToBalancerVault(address(aAdapter), maturity, 1000e18);
+        addLiquidityToBalancerVault(address(aAdapter), maturity, 1000 * 10**tDecimals);
 
         vm.prank(bob);
         periphery.addLiquidityFromTarget(address(aAdapter), maturity, tBal, 1, type(uint256).max);
@@ -1189,7 +1199,7 @@ contract PeripheryTest is TestHelper {
         (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
             address(aAdapter),
             maturity,
-            3e18,
+            3 * 10**tDecimals,
             minAmountsOut,
             0,
             true
@@ -1199,11 +1209,11 @@ contract PeripheryTest is TestHelper {
         assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(bob) - tBalBefore);
         assertEq(ptBalBefore, ERC20(pt).balanceOf(bob) - minAmountsOut[1]);
         assertEq(ptBal, ERC20(pt).balanceOf(bob) - ptBalBefore);
-        assertEq(ptBal, 1e18);
+        assertEq(ptBal, 10**tDecimals);
     }
 
     function testRemoveLiquidityWhenOneSideLiquidity() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256[] memory minAmountsOut = new uint256[](2);
@@ -1238,26 +1248,26 @@ contract PeripheryTest is TestHelper {
     }
 
     function testRemoveLiquidityAndSkipSwap() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 tBase = 10**target.decimals();
         (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add liquidity to mockUniSwapRouter
-        addLiquidityToBalancerVault(maturity, 1000e18);
+        addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
         uint256 ptToBeIssued;
         {
             // calculate pt to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 fee = adapter.ifee();
+            uint256 tBase = 10**tDecimals;
             uint256 proportionalTarget = tBal.fmul(
                 balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
                 tBase
             );
-            ptToBeIssued = (proportionalTarget - fee).fmul(lscale);
+            ptToBeIssued = proportionalTarget.fmul(lscale);
 
             // prepare minAmountsOut for removing liquidity
             minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale); // underlying amount
@@ -1289,9 +1299,8 @@ contract PeripheryTest is TestHelper {
     }
 
     function testRemoveLiquidityAndUnwrapTarget() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 tBase = 10**target.decimals();
         periphery.sponsorSeries(address(adapter), maturity, true);
         vm.warp(block.timestamp + 5 days);
         uint256 lscale = adapter.scale();
@@ -1306,11 +1315,12 @@ contract PeripheryTest is TestHelper {
             // calculate pt to be issued when adding liquidity
             (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
             uint256 fee = adapter.ifee();
+            uint256 tBase = 10**tDecimals;
             uint256 proportionalTarget = tBal.fmul(
                 balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
                 tBase
             );
-            ptToBeIssued = (proportionalTarget - fee).fmul(lscale);
+            ptToBeIssued = proportionalTarget.fmul(lscale);
             targetToBeAdded = (tBal - proportionalTarget); // target amount
             // prepare minAmountsOut for removing liquidity
             minAmountsOut[0] = targetToBeAdded;
@@ -1336,14 +1346,14 @@ contract PeripheryTest is TestHelper {
         assertEq(uBalBefore + underlyingBal, uBalAfter);
         assertEq(
             underlyingBal,
-            underlying.decimals() > target.decimals()
+            uDecimals > tDecimals
                 ? targetToBeAdded.fmul(lscale) * SCALING_FACTOR
                 : targetToBeAdded.fmul(lscale) / SCALING_FACTOR
         );
     }
 
     function testCantMigrateLiquidityIfTargetsAreDifferent() public {
-        uint256 tBal = 100e18;
+        uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         periphery.sponsorSeries(address(adapter), maturity, true);
 

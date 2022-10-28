@@ -5,8 +5,8 @@ import { ERC4626Adapter } from "./ERC4626Adapter.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Crops } from "../extensions/Crops.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 /// @notice Adapter contract for ERC4626 Vaults
 contract ERC4626CropsAdapter is ERC4626Adapter, Crops {

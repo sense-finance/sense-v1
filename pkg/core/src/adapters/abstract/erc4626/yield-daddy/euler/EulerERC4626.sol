@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { IEulerEToken } from "@yield-daddy/src/euler/external/IEulerEToken.sol";
 import { EulerERC4626 as Base } from "@yield-daddy/src/euler/EulerERC4626.sol";
 import { ExtractableReward } from "../../../extensions/ExtractableReward.sol";

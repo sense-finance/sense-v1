@@ -14,16 +14,16 @@ import { Periphery } from "../../Periphery.sol";
 import { MockToken, MockNonERC20Token } from "./mocks/MockToken.sol";
 import { MockTarget, MockNonERC20Target } from "./mocks/MockTarget.sol";
 import { MockAdapter, MockCropAdapter, Mock4626CropAdapter } from "./mocks/MockAdapter.sol";
-import { MockERC4626 } from "@rari-capital/solmate/src/test/utils/mocks/MockERC4626.sol";
+import { MockERC4626 } from "./mocks/MockERC4626.sol";
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626Factory } from "../../adapters/abstract/factories/ERC4626Factory.sol";
 import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626CropsFactory.sol";
 import { ERC4626CropFactory } from "../../adapters/abstract/factories/ERC4626CropFactory.sol";
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { AddressBook } from "./AddressBook.sol";
 import { Constants } from "./Constants.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Space & Balanacer V2 mock
 import { MockSpaceFactory, MockBalancerVault } from "./mocks/MockSpace.sol";
@@ -122,7 +122,9 @@ contract TestHelper is Test {
 
     // target type
     bool internal is4626Target;
-    uint256 public MAX_TARGET = type(uint128).max / 3; // 3 is the amount of users we create
+    uint256 public AMT = 2000; // Amount of tokens to initialise the user with
+    uint256 public MIN_TARGET = 1e4; // test with a target with less than 4 decimals will fail
+    uint256 public MAX_TARGET;
 
     // non ERC20 compliant
     bool internal nonERC20Target;
@@ -130,33 +132,30 @@ contract TestHelper is Test {
     bool internal nonERC20Stake;
 
     // decimals
-    uint8 internal mockTargetDecimals;
-    uint8 internal mockUnderlyingDecimals;
-    uint8 internal mockStakeDecimals;
+    uint8 internal tDecimals;
+    uint8 internal uDecimals;
+    uint8 internal sDecimals;
+    uint8 internal rDecimals;
 
     function setUp() public virtual {
         vm.warp(1630454400);
         // 01-09-21 00:00 UTC
-        uint8 baseDecimals = 18;
 
         // read env vars (or set defaults if none)
         setEnv();
-
         // Create target, underlying, stake & reward tokens
-        stake = MockToken(deployMockStake("Stake Token", "ST", mockStakeDecimals));
-        underlying = MockToken(deployMockUnderlying("Dai Token", "DAI", mockUnderlyingDecimals));
-        reward = new MockToken("Reward Token", "RT", baseDecimals);
+        stake = MockToken(deployMockStake("Stake Token", "ST", sDecimals));
+        underlying = MockToken(deployMockUnderlying("Dai Token", "DAI", uDecimals));
+
+        // To avoid precision errors when using `assertApproxEqAbs` (specially on the crop tests)
+        // we set the reward token decimals to the same as the target decimals
+        rDecimals = 18;
+        reward = new MockToken("Reward Token", "RT", rDecimals);
 
         // Log target setup
-        target = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals));
+        target = MockTargetLike(deployMockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals));
 
-        SCALING_FACTOR =
-            10 **
-                (
-                    mockTargetDecimals > mockUnderlyingDecimals
-                        ? mockTargetDecimals - mockUnderlyingDecimals
-                        : mockUnderlyingDecimals - mockTargetDecimals
-                );
+        SCALING_FACTOR = 10**(tDecimals > uDecimals ? tDecimals - uDecimals : uDecimals - tDecimals);
 
         GROWTH_PER_SECOND = convertToBase(GROWTH_PER_SECOND, target.decimals());
 
@@ -204,7 +203,7 @@ contract TestHelper is Test {
         poolManager.setIsTrusted(address(periphery), true);
 
         // scale stake size to stake decimals
-        STAKE_SIZE = STAKE_SIZE.fdiv(1e18, mockStakeDecimals);
+        STAKE_SIZE = STAKE_SIZE.fdiv(1e18, sDecimals);
 
         // adapter, target wrapper & factory
         DEFAULT_ADAPTER_PARAMS = BaseAdapter.AdapterParams({
@@ -250,13 +249,14 @@ contract TestHelper is Test {
         divider.setGuard(address(adapter), 10 * 2**128);
 
         // users
+        MAX_TARGET = AMT * 10**target.decimals();
         alice = address(this); // alice is the default user
         vm.label(alice, "Alice");
-        initUser(alice, target, MAX_TARGET);
+        initUser(alice, target, AMT);
         vm.label(bob, "Bob");
-        initUser(bob, target, MAX_TARGET);
+        initUser(bob, target, AMT);
         vm.label(jim, "Jim");
-        initUser(jim, target, MAX_TARGET);
+        initUser(jim, target, AMT);
     }
 
     function initUser(
@@ -275,17 +275,23 @@ contract TestHelper is Test {
         ERC20(address(stake)).safeApprove(address(periphery), type(uint256).max);
         ERC20(address(stake)).safeApprove(address(divider), type(uint256).max);
 
+        // amounts to mint
+        uint256 underlyingAmt = amt * 10**uDecimals;
+        uint256 targetAmt = amt * 10**tDecimals;
+        uint256 stakeAmt = amt * 10**sDecimals;
+
         // minting
-        underlying.mint(usr, amt);
-        stake.mint(usr, amt);
+        underlying.mint(usr, underlyingAmt);
+        stake.mint(usr, stakeAmt);
 
         // if 4626 we need to deposit instead of directly minting target
         if (is4626Target) {
-            underlying.mint(usr, amt);
+            uint256 assets = target.previewMint(targetAmt);
+            underlying.mint(usr, assets);
             underlying.approve(address(target), type(uint256).max);
-            target.deposit(amt, usr);
+            target.mint(targetAmt, usr);
         } else {
-            target.mint(usr, amt);
+            target.mint(usr, targetAmt);
         }
 
         vm.stopPrank();
@@ -313,19 +319,29 @@ contract TestHelper is Test {
         MockTargetLike target = MockTargetLike(MockAdapter(adapter).target());
         MockToken underlying = MockToken(!is4626Target ? target.underlying() : target.asset());
 
-        uint256 issued = divider.issue(address(adapter), maturity, tBal);
-        MockToken(divider.pt(address(adapter), maturity)).transfer(address(balancerVault), issued);
-        MockToken(divider.yt(address(adapter), maturity)).transfer(address(balancerVault), issued); // we don't really need this but we transfer them anyways
-
-        // we mint proportional underlying value. If proportion is 10%, we mint 10% more than what we've issued PT.
         if (!is4626Target) {
-            target.mint(address(balancerVault), tBal);
+            // mint target and transfer half to the vault and half to user
+            target.mint(address(balancerVault), tBal / 2);
+            target.mint(address(this), tBal / 2);
         } else {
-            underlying.mint(address(this), tBal);
+            // mint enough underlying to mint desired target `tBal`
+            uint256 uBal = target.previewMint(tBal);
+
+            // we mint target using double the `uBal` so we then use half of the minted target
+            // for issuing PTs and half for adding it to the vault
+            underlying.mint(address(this), uBal * 2);
+
+            // approve erc4626 contract to pull underlying to be able to mint target
             underlying.approve(address(target), type(uint256).max);
-            tBal = target.deposit(tBal, address(this));
-            target.transfer(address(balancerVault), tBal);
+
+            // mint target and transfer half to the vault and half to user
+            target.mint(tBal / 2, address(balancerVault));
+            target.mint(tBal / 2, address(this));
         }
+
+        // issue PTs using half the tBal and transfer it to the vault
+        uint256 issued = divider.issue(address(adapter), maturity, tBal / 2);
+        MockToken(divider.pt(address(adapter), maturity)).transfer(address(balancerVault), issued);
     }
 
     // ---- deployers ---- //
@@ -498,7 +514,7 @@ contract TestHelper is Test {
         uint8 _decimals
     ) internal returns (address _target) {
         if (is4626Target) {
-            _target = address(new MockERC4626(ERC20(_underlying), _name, _symbol));
+            _target = address(new MockERC4626(ERC20(_underlying), _name, _symbol, _decimals));
         } else if (nonERC20Target) {
             _target = address(new MockNonERC20Target(_underlying, _name, _symbol, _decimals));
         } else {
@@ -596,21 +612,21 @@ contract TestHelper is Test {
     /// @notice Tries to read env vars and/or sets defaut value if not exists
     function setEnv() internal {
         try vm.envUint("UNDERLYING_DECIMALS") returns (uint256 val) {
-            mockUnderlyingDecimals = uint8(val);
+            uDecimals = uint8(val);
         } catch {
-            mockUnderlyingDecimals = uint8(18);
+            uDecimals = uint8(18);
         }
 
         try vm.envUint("TARGET_DECIMALS") returns (uint256 val) {
-            mockTargetDecimals = uint8(val);
+            tDecimals = uint8(val);
         } catch {
-            mockTargetDecimals = uint8(18);
+            tDecimals = uint8(18);
         }
 
         try vm.envUint("STAKE_DECIMALS") returns (uint256 val) {
-            mockStakeDecimals = uint8(val);
+            sDecimals = uint8(val);
         } catch {
-            mockStakeDecimals = uint8(18);
+            sDecimals = uint8(18);
         }
 
         try vm.envBool("ERC4626_TARGET") returns (bool val) {

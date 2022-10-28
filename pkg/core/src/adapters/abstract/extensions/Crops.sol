@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Internal references
 import { Divider } from "../../../Divider.sol";

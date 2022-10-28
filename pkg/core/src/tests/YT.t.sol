@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import { Token } from "../tokens/Token.sol";
 import { YT } from "../tokens/YT.sol";
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";
@@ -12,7 +12,7 @@ contract Yield is TestHelper {
     using FixedMath for uint256;
 
     function testFuzzCollect(uint128 tBal) public {
-        tBal = uint128(bound(tBal, 1e12, MAX_TARGET));
+        tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         vm.warp(block.timestamp + 1 days);
@@ -38,7 +38,7 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransfer(uint128 tBal) public {
-        tBal = uint128(bound(tBal, 1e12, MAX_TARGET));
+        tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         vm.warp(block.timestamp + 1 days);
@@ -70,7 +70,7 @@ contract Yield is TestHelper {
     }
 
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
-        tBal = uint128(bound(tBal, 1e12, MAX_TARGET));
+        tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         vm.warp(block.timestamp + 1 days);
@@ -102,7 +102,7 @@ contract Yield is TestHelper {
     }
 
     function testEmptyTransferFromDoesNotCollect() public {
-        uint256 tBal = 10e18;
+        uint256 tBal = 10 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
         vm.warp(block.timestamp + 1 days);

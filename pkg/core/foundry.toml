@@ -9,8 +9,7 @@ remappings = [
     '@sense-finance/v1-utils=../utils',
     '@sense-finance/v1-core=./',
     '@sense-finance/v1-fuse=../fuse',
-    '@rari-capital/solmate=../../node_modules/@rari-capital/solmate',
+    'solmate/=../../node_modules/solmate/src',
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts',
     '@yield-daddy=lib/yield-daddy',
-    'solmate/=../../node_modules/@rari-capital/solmate/src', # for yield-daddy
 ]

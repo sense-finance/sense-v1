@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
+import { ERC4626 } from "../../adapters/abstract/erc4626/ERC4626.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Divider } from "../../Divider.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
 contract FakeAdapter is BaseAdapter {
@@ -52,9 +53,9 @@ contract Adapters is TestHelper {
     using FixedMath for uint256;
 
     function testAdapterHasParams() public {
-        MockToken underlying = new MockToken("Dai", "DAI", mockUnderlyingDecimals);
+        MockToken underlying = new MockToken("Dai", "DAI", uDecimals);
         MockTargetLike target = MockTargetLike(
-            deployMockTarget(address(underlying), "Compound Dai", "cDAI", mockTargetDecimals)
+            deployMockTarget(address(underlying), "Compound Dai", "cDAI", tDecimals)
         );
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
@@ -80,7 +81,7 @@ contract Adapters is TestHelper {
         assertEq(adapter.name(), "Compound Dai Adapter");
         assertEq(adapter.symbol(), "cDAI-adapter");
         assertEq(adapter.target(), address(target));
-        assertEq(adapter.underlying(), address(underlying));
+        assertEq(is4626Target ? target.asset() : target.underlying(), address(underlying));
         assertEq(adapter.divider(), address(divider));
         assertEq(adapter.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
         assertEq(adapter.ifee(), ISSUANCE_FEE);
@@ -93,13 +94,26 @@ contract Adapters is TestHelper {
     }
 
     function testScale() public {
+        if (is4626Target) return;
         assertEq(adapter.scale(), adapter.INITIAL_VALUE());
     }
 
+    function test4626Scale() public {
+        if (!is4626Target) return;
+        assertEq(adapter.scale(), 1e18);
+    }
+
     function testScaleMultipleTimes() public {
+        if (is4626Target) return;
         assertEq(adapter.scale(), adapter.INITIAL_VALUE());
         assertEq(adapter.scale(), adapter.INITIAL_VALUE());
         assertEq(adapter.scale(), adapter.INITIAL_VALUE());
+    }
+
+    function test4626ScaleMultipleTimes() public {
+        assertEq(adapter.scale(), 1e18);
+        assertEq(adapter.scale(), 1e18);
+        assertEq(adapter.scale(), 1e18);
     }
 
     function testCantAddCustomAdapterToDivider() public {
@@ -116,7 +130,7 @@ contract Adapters is TestHelper {
         FakeAdapter fakeAdapter = new FakeAdapter(
             address(divider),
             address(target),
-            target.underlying(),
+            !is4626Target ? target.underlying() : target.asset(),
             Constants.REWARDS_RECIPIENT,
             ISSUANCE_FEE,
             adapterParams
@@ -128,23 +142,23 @@ contract Adapters is TestHelper {
 
     // wrap/unwrap tests
     function testWrapUnderlying() public {
-        uint256 uBal = 100 * (10**underlying.decimals());
-        uint256 tBal = 100 * (10**target.decimals());
+        uint256 uBal = 100 * 10**uDecimals;
+        uint256 tBal = 100 * 10**tDecimals;
         underlying.mint(alice, uBal);
-        adapter.setScale(1e18);
-        adapter.scale();
 
         ERC20(address(underlying)).safeApprove(address(adapter), type(uint256).max);
         uint256 tBalReceived = adapter.wrapUnderlying(uBal);
-        assertEq(tBal, tBalReceived);
+        assertApproxEqAbs(tBal, tBalReceived, 1);
     }
 
     function testUnwrapTarget() public {
-        uint256 tBal = 100 * (10**target.decimals());
-        uint256 uBal = 100 * (10**underlying.decimals());
-        target.mint(alice, tBal);
-        adapter.setScale(1e18);
-        adapter.scale();
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 uBal = 100 * 10**uDecimals;
+        if (is4626Target) {
+            target.deposit(uBal, alice);
+        } else {
+            target.mint(alice, tBal);
+        }
 
         target.approve(address(adapter), type(uint256).max);
         uint256 uBalReceived = adapter.unwrapTarget(tBal);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 import { Crops } from "../../../adapters/abstract/extensions/Crops.sol";
 import { Crop } from "../../../adapters/abstract/extensions/Crop.sol";
@@ -12,9 +12,9 @@ import { Divider } from "../../../Divider.sol";
 import { YT } from "../../../tokens/YT.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockToken.sol";
-import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
+import { IERC4626 } from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Mock adapter
 contract MockAdapter is BaseAdapter, ExtractableReward {
@@ -380,7 +380,7 @@ contract Mock4626Adapter is ERC4626Adapter {
     ) ERC4626Adapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) {}
 
     function lscale() external returns (uint256, uint256) {
-        return (0, ERC4626(target).convertToAssets(BASE_UINT));
+        return (0, IERC4626(target).convertToAssets(BASE_UINT));
     }
 
     function onRedeem(
@@ -419,7 +419,7 @@ contract Mock4626CropAdapter is ERC4626Adapter, Crop {
     }
 
     function lscale() external returns (uint256, uint256) {
-        return (0, ERC4626(target).convertToAssets(BASE_UINT));
+        return (0, IERC4626(target).convertToAssets(BASE_UINT));
     }
 
     function _isValid(address _token) internal override returns (bool) {

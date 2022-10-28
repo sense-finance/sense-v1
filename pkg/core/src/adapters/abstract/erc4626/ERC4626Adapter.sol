@@ -2,9 +2,9 @@
 pragma solidity 0.8.13;
 
 // External references
-import { ERC20 } from "@rari-capital/solmate/src/tokens/ERC20.sol";
-import { SafeTransferLib } from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import { ERC4626 } from "@rari-capital/solmate/src/mixins/ERC4626.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { ERC4626 } from "solmate/mixins/ERC4626.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
 
 // Internal references
@@ -33,9 +33,8 @@ contract ERC4626Adapter is BaseAdapter, ExtractableReward {
         BaseAdapter(_divider, _target, address(ERC4626(_target).asset()), _ifee, _adapterParams)
         ExtractableReward(_rewardsRecipient)
     {
-        uint256 tDecimals = ERC4626(target).decimals();
-        BASE_UINT = 10**tDecimals;
-        SCALE_FACTOR = 10**(18 - tDecimals); // we assume targets decimals <= 18
+        BASE_UINT = 10**ERC4626(target).decimals();
+        SCALE_FACTOR = 10**(18 - ERC4626(underlying).decimals()); // we assume targets decimals <= 18
         ERC20(underlying).safeApprove(target, type(uint256).max);
     }
 
