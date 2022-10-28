@@ -1155,7 +1155,7 @@ __metadata:
     ethers: ^5.5.1
     fs-extra: ^10.0.1
     hardhat: ^2.9.1
-    hardhat-abi-exporter: ^2.3.1
+    hardhat-abi-exporter: ^2.10.1
     hardhat-contract-sizer: ^2.3.0
     hardhat-deploy: ^0.11.15
     hardhat-deploy-ethers: ^0.3.0-beta.11
@@ -3573,15 +3573,15 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"hardhat-abi-exporter@npm:^2.3.1":
-  version: 2.9.0
-  resolution: "hardhat-abi-exporter@npm:2.9.0"
+"hardhat-abi-exporter@npm:^2.10.1":
+  version: 2.10.1
+  resolution: "hardhat-abi-exporter@npm:2.10.1"
   dependencies:
     "@ethersproject/abi": ^5.5.0
     delete-empty: ^3.0.0
   peerDependencies:
     hardhat: ^2.0.0
-  checksum: 8f7c61363da195358a43d34dd9107026e4de330b99de88f3a1e60c30ac371751c0739d3cf2a6a98c5eae158f261e72f22d2935058d7b5b7c233c336235e3d7b2
+  checksum: 28fb675324995c598272591b5151f35493a47834fbc94d03319a501ea3d504295504281eb49a10319013d815c1065c2a380007645b2fffb432072e7235346fda
   languageName: node
   linkType: hard
 
