@@ -1161,7 +1161,7 @@ __metadata:
     hardhat-deploy-ethers: ^0.3.0-beta.11
     hardhat-preprocessor: ^0.1.5
     hardhat-spdx-license-identifier: ^2.0.3
-    hardhat-watcher: ^2.1.1
+    hardhat-watcher: ^2.5.0
     prettier: ^2.7.1
     solmate: ^6.6.1
     yarn: ^1.22.19
@@ -2089,7 +2089,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:3.5.3, chokidar@npm:^3.4.0, chokidar@npm:^3.4.3, chokidar@npm:^3.5.2":
+"chokidar@npm:3.5.3, chokidar@npm:^3.4.0, chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
@@ -3648,14 +3648,14 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"hardhat-watcher@npm:^2.1.1":
-  version: 2.1.1
-  resolution: "hardhat-watcher@npm:2.1.1"
+"hardhat-watcher@npm:^2.5.0":
+  version: 2.5.0
+  resolution: "hardhat-watcher@npm:2.5.0"
   dependencies:
-    chokidar: ^3.4.3
+    chokidar: ^3.5.3
   peerDependencies:
     hardhat: ^2.0.0
-  checksum: bba8984f74fb759335c85fca3f76a744d38d8cba087b71cb1e7f8410e72136915ba47b18aaf7e1dac42687c90c5f8f386bac3efd1a96f332175d5a9930e02184
+  checksum: f283308f0b56a03971b98585bd95ec83738ab27d6f045ed7e7dd0f681cd9c38b05aa192b7a222e1696283be073e46155d1c85d7865b9a6f086d6fbf817fe62ec
   languageName: node
   linkType: hard
 
