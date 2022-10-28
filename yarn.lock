@@ -1147,7 +1147,7 @@ __metadata:
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.1.6
     add: ^2.0.6
-    dayjs: ^1.10.7
+    dayjs: ^1.11.6
     defender-relay-client: ^1.31.1
     dotenv: ^16.0.2
     eslint: ^8.22.0
@@ -2400,10 +2400,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dayjs@npm:^1.10.7":
-  version: 1.11.1
-  resolution: "dayjs@npm:1.11.1"
-  checksum: 45df0f7ed59ca142ae6eb377ea54aaca20b831ef4c91067133bf9703ccede6fb8af597478dfc2941f55baee72043c79c2e137ec02064fd4bc8433e22df9213e0
+"dayjs@npm:^1.11.6":
+  version: 1.11.6
+  resolution: "dayjs@npm:1.11.6"
+  checksum: a1c0a3a3e3d3bbb55bf1a0f03904ead6a11026dd7f19af0e60d08879c789250f0ef564555c4db70b8a3cd364b43304e1a68b0af1b98e6a64dd63baa3c905e3c8
   languageName: node
   linkType: hard
 
