@@ -4,7 +4,6 @@ const data = require("./input");
 const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
-const poolManagerAbi = require("./abi/PoolManager.json");
 const peripheryAbi = require("./abi/Periphery.json");
 
 const { verifyOnEtherscan } = require("../../hardhat.utils");
@@ -31,7 +30,6 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
 
     let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
     let oldPeriphery = new ethers.Contract(oldPeripheryAddress, peripheryAbi, deployerSigner);
-    let poolManager = new ethers.Contract(poolManagerAddress, poolManagerAbi, deployerSigner);
 
     console.log("\n-------------------------------------------------------");
     console.log("\nDeploy Periphery");
@@ -50,7 +48,7 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
         ),
       ),
     ];
-    console.log("Adapters to onborad:", adaptersOnboarded);
+    console.log("Adapters to onboard:", adaptersOnboarded);
 
     const adaptersVerified = [
       ...new Set(
@@ -71,6 +69,28 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
       await newPeriphery.verifyAdapter(adapter, false).then(t => t.wait());
     }
 
+    console.log("\nVerifying pre-approved factories on Periphery");
+    const factoriesOnboarded = [
+      ...new Set(
+        (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))).map(
+          e => e.args.adapter,
+        ),
+      ),
+    ];
+    console.log("Factories to onboard:", factoriesOnboarded);
+
+    const factoriesVerified = [
+      ...new Set(
+        (await oldPeriphery.queryFilter(oldPeriphery.filters.FactoryChanged(null))).map(e => e.args.factory),
+      ),
+    ];
+    console.log("Factories to verify:", factoriesVerified);
+
+    for (let factory of factoriesOnboarded) {
+      console.log("Onboarding factory", factory);
+      await newPeriphery.setFactory(factory, true).then(t => t.wait());
+    }
+
     console.log("\nAdding admin multisig as admin on Periphery");
     await newPeriphery.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
 
@@ -82,7 +102,7 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
       console.log("\n-------------------------------------------------------");
       await verifyOnEtherscan(peripheryAddress, [
         divider.address,
-        poolManager.address,
+        poolManagerAddress,
         spaceFactoryAddress,
         balancerVaultAddress,
       ]);
@@ -105,54 +125,12 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
       const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
       oldPeriphery = oldPeriphery.connect(multisigSigner);
       divider = divider.connect(multisigSigner);
-      poolManager = poolManager.connect(multisigSigner);
 
       console.log("\nUnset the multisig as an authority on the old Periphery");
       await (await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false)).wait();
 
       console.log("\nSet the periphery on the Divider");
       await (await divider.setPeriphery(peripheryAddress)).wait();
-
-      console.log("\nRemove the old Periphery auth over the pool manager");
-      await (await poolManager.setIsTrusted(oldPeriphery.address, false)).wait();
-
-      console.log("\nGive the new Periphery auth over the pool manager");
-      await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
-
-      // TOOD: we don't need this right? It was on the '20220313-periphery' but don't remember why?
-      const ptOracleAddress = await poolManager.ptOracle();
-      const lpOracleAddress = await poolManager.lpOracle();
-
-      const ptOracle = new ethers.Contract(
-        ptOracleAddress,
-        [
-          "function setTwapPeriod(uint256 _twapPeriod) external",
-          "function twapPeriod() external view returns (uint256)",
-        ],
-        multisigSigner,
-      );
-
-      const lpOracle = new ethers.Contract(
-        lpOracleAddress,
-        [
-          "function setTwapPeriod(uint256 _twapPeriod) external",
-          "function twapPeriod() external view returns (uint256)",
-        ],
-        multisigSigner,
-      );
-
-      const iface = new ethers.utils.Interface(["function setTwapPeriod(uint256 _twapPeriod) external"]);
-      const setTwapData = iface.encodeFunctionData("setTwapPeriod", [
-        19800, // 5.5 hours in seconds
-      ]);
-
-      console.log("\nPrevious PT oracle twap period:", (await ptOracle.twapPeriod()).toString());
-      await poolManager.execute(ptOracle.address, 0, setTwapData, 5000000).then(t => t.wait());
-      console.log("New PT oracle twap period:", (await ptOracle.twapPeriod()).toString());
-
-      console.log("\nPrevious LP oracle twap period:", (await lpOracle.twapPeriod()).toString());
-      await poolManager.execute(lpOracle.address, 0, setTwapData, 5000000).then(t => t.wait());
-      console.log("New LP oracle twap period:", (await lpOracle.twapPeriod()).toString());
     }
 
     if (VERIFY_CHAINS.includes(chainId)) {
@@ -160,10 +138,6 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Unset the multisig as an authority on the old Periphery");
       console.log("\n2. Set the periphery on the Divider");
-      console.log("\n3. Remove the old Periphery auth over the pool manager");
-      console.log("\n4. Give the new Periphery auth over the pool manager");
-      console.log("\n5. Set twap period for PT oracle"); // TODO: do we need this?
-      console.log("\n6. Set twap period for LP oracle"); // TODO: do we need this?
     }
     console.log("\n-------------------------------------------------------");
   },
