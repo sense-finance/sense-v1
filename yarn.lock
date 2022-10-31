@@ -1378,9 +1378,9 @@ __metadata:
   linkType: hard
 
 "@types/prettier@npm:^2":
-  version: 2.7.0
-  resolution: "@types/prettier@npm:2.7.0"
-  checksum: 25fa5f2832194b9c67dc40cdf08310edda0fb38a2d3acd2df47681d9dc8405c35d4ab2e9b4b93322cb1e99e404625884378a93ae4a24bcc37a2826d219df4c2f
+  version: 2.7.1
+  resolution: "@types/prettier@npm:2.7.1"
+  checksum: e298e298d85d1cf3f9a0cb1c134fb76b2a4d5608412a86090757238f54a0a9862a608d33f73b339f1591e3ae1e7beaca31913f2731a295e3f1b9857089d0108e
   languageName: node
   linkType: hard
 
