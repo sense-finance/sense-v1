@@ -28,7 +28,7 @@
     "devDependencies": {
         "@types/prettier": "^2",
         "prettier": "^2.7.1",
-        "prettier-plugin-solidity": "^1.0.0-beta.17",
+        "prettier-plugin-solidity": "^1.0.0-dev.24",
         "solhint": "^3.3.7",
         "solhint-plugin-prettier": "^0.0.5"
     }

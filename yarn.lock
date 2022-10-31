@@ -1112,7 +1112,7 @@ __metadata:
     husky: ^8.0.1
     lint-staged: ^13.0.3
     prettier: ^2.7.1
-    prettier-plugin-solidity: ^1.0.0-beta.17
+    prettier-plugin-solidity: ^1.0.0-dev.24
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
   languageName: unknown
@@ -1127,7 +1127,7 @@ __metadata:
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@types/prettier": ^2
     prettier: ^2.7.1
-    prettier-plugin-solidity: ^1.0.0-beta.17
+    prettier-plugin-solidity: ^1.0.0-dev.24
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
     solmate: ^6.6.1
@@ -1176,7 +1176,7 @@ __metadata:
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@types/prettier": ^2
     prettier: ^2.7.1
-    prettier-plugin-solidity: ^1.0.0-beta.17
+    prettier-plugin-solidity: ^1.0.0-dev.24
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
     solmate: ^6.6.1
@@ -1190,7 +1190,7 @@ __metadata:
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@types/prettier": ^2
     prettier: ^2.7.1
-    prettier-plugin-solidity: ^1.0.0-beta.17
+    prettier-plugin-solidity: ^1.0.0-dev.24
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
   languageName: unknown
@@ -1284,6 +1284,15 @@ __metadata:
   dependencies:
     antlr4ts: ^0.5.0-alpha.4
   checksum: 738fec570b036e05427d2b76e2d285966b4fe7d3fd994b9aacf7eb4e038241c796aa28c0bd35ec35d937fb151f8614be541314ebd8c9b9e1ada08cddef513957
+  languageName: node
+  linkType: hard
+
+"@solidity-parser/parser@npm:^0.14.3":
+  version: 0.14.5
+  resolution: "@solidity-parser/parser@npm:0.14.5"
+  dependencies:
+    antlr4ts: ^0.5.0-alpha.4
+  checksum: 98d49316311734d203c44f76d43e2f978c8cf36f3647c1119451189a5596c98e979b89cd5de4cf3a9ef792eb929b9e22940b3a536514442281704a29c1b9d6a2
   languageName: node
   linkType: hard
 
@@ -2585,10 +2594,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"emoji-regex@npm:^10.0.0":
-  version: 10.1.0
-  resolution: "emoji-regex@npm:10.1.0"
-  checksum: a64f18cd2ed714ab1530ad078090dcd4d6987f4313573a87ce914a521c0e27e2a17adda104e04c0740afabe6df85658f3b08c30a835e1cd35069d13ad8ef3101
+"emoji-regex@npm:^10.1.0":
+  version: 10.2.1
+  resolution: "emoji-regex@npm:10.2.1"
+  checksum: 6a15ddd92b5782a99dec6a0700c4caab9ebc92bdcc90d1fc59e298a1628a694c465739f18a9103446687192bec89406b2910b6f22f4de48cf74f82f86194a3d8
   languageName: node
   linkType: hard
 
@@ -5329,19 +5338,19 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"prettier-plugin-solidity@npm:^1.0.0-beta.17":
-  version: 1.0.0-dev.21
-  resolution: "prettier-plugin-solidity@npm:1.0.0-dev.21"
+"prettier-plugin-solidity@npm:^1.0.0-dev.24":
+  version: 1.0.0-dev.24
+  resolution: "prettier-plugin-solidity@npm:1.0.0-dev.24"
   dependencies:
-    "@solidity-parser/parser": ^0.14.1
-    emoji-regex: ^10.0.0
+    "@solidity-parser/parser": ^0.14.3
+    emoji-regex: ^10.1.0
     escape-string-regexp: ^4.0.0
-    semver: ^7.3.5
+    semver: ^7.3.7
     solidity-comments-extractor: ^0.0.7
     string-width: ^4.2.3
   peerDependencies:
     prettier: ^2.3.0
-  checksum: 8d162f3c0eb5369184c5484d859c8c8a42702743d289c36455683ed647eef06df6579ebcb1fadef1babf2e5444a2c0e36084b8d44f79321372daa8b17f8166e5
+  checksum: 389dff12f789d4731d4278741a010a3e251a0f19c541baf8420c15fbf51a8ef05cee04e11916ce8afd1a91d7ca8e8e1dede0d318613b641da9540811e579dc71
   languageName: node
   linkType: hard
 
@@ -5727,6 +5736,17 @@ resolve@1.17.0:
   bin:
     semver: bin/semver.js
   checksum: a9e88cefbcf047c03988182d11bba5a3cacd5216da0803302988b4e8cf08a7cadab1f96d578712c20d906cf4f5f6e76cfa27ae21ac65f63d396015ffe1da1eed
+  languageName: node
+  linkType: hard
+
+"semver@npm:^7.3.7":
+  version: 7.3.8
+  resolution: "semver@npm:7.3.8"
+  dependencies:
+    lru-cache: ^6.0.0
+  bin:
+    semver: bin/semver.js
+  checksum: cfb9c2101dae4ee93c415471f48797c750174d65def4e06ff691bf910194cc6ca92793e597be8302175ceb640100a3da36451e7656320da53b51167eeaf11eb5
   languageName: node
   linkType: hard
 
