@@ -50,7 +50,7 @@
     "hardhat": "^2.9.1",
     "hardhat-abi-exporter": "^2.3.1",
     "hardhat-contract-sizer": "^2.3.0",
-    "hardhat-deploy": "^0.11.15",
+    "hardhat-deploy": "^0.11.19",
     "hardhat-deploy-ethers": "^0.3.0-beta.11",
     "hardhat-preprocessor": "^0.1.5",
     "hardhat-spdx-license-identifier": "^2.0.3",

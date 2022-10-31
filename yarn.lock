@@ -1157,7 +1157,7 @@ __metadata:
     hardhat: ^2.9.1
     hardhat-abi-exporter: ^2.3.1
     hardhat-contract-sizer: ^2.3.0
-    hardhat-deploy: ^0.11.15
+    hardhat-deploy: ^0.11.19
     hardhat-deploy-ethers: ^0.3.0-beta.11
     hardhat-preprocessor: ^0.1.5
     hardhat-spdx-license-identifier: ^2.0.3
@@ -3607,7 +3607,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"hardhat-deploy@npm:^0.11.10, hardhat-deploy@npm:^0.11.15":
+"hardhat-deploy@npm:^0.11.10":
   version: 0.11.15
   resolution: "hardhat-deploy@npm:0.11.15"
   dependencies:
@@ -3625,6 +3625,27 @@ fsevents@~2.3.2:
     qs: ^6.9.4
     zksync-web3: ^0.8.1
   checksum: ca33e843926d28316db2c771809875e2cbc8ae70aba5df819db31c9cb6e5799e169c5ee27a9dca626f63b5f3eb289f35332db19583f2890af32ee269ffce3020
+  languageName: node
+  linkType: hard
+
+"hardhat-deploy@npm:^0.11.19":
+  version: 0.11.19
+  resolution: "hardhat-deploy@npm:0.11.19"
+  dependencies:
+    "@types/qs": ^6.9.7
+    axios: ^0.21.1
+    chalk: ^4.1.2
+    chokidar: ^3.5.2
+    debug: ^4.3.2
+    enquirer: ^2.3.6
+    ethers: ^5.5.3
+    form-data: ^4.0.0
+    fs-extra: ^10.0.0
+    match-all: ^1.2.6
+    murmur-128: ^0.2.1
+    qs: ^6.9.4
+    zksync-web3: ^0.8.1
+  checksum: 1ad8f9f2369d057175743f9b88ec82ec12bc856b4dadc9740cc47dfed69a8c4f3b4ce7210778f707251c8bd4245f80b1cb9e9b807346f1e63a4addb9d857b82b
   languageName: node
   linkType: hard
 
