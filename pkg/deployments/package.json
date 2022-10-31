@@ -46,7 +46,7 @@
     "dotenv": "^16.0.2",
     "eslint": "^8.22.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "ethers": "^5.5.1",
+    "ethers": "^5.7.2",
     "hardhat": "^2.9.1",
     "hardhat-abi-exporter": "^2.3.1",
     "hardhat-contract-sizer": "^2.3.0",
