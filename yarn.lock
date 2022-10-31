@@ -1058,9 +1058,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomiclabs/hardhat-etherscan@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "@nomiclabs/hardhat-etherscan@npm:3.1.0"
+"@nomiclabs/hardhat-etherscan@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "@nomiclabs/hardhat-etherscan@npm:3.1.2"
   dependencies:
     "@ethersproject/abi": ^5.1.2
     "@ethersproject/address": ^5.0.2
@@ -1074,7 +1074,7 @@ __metadata:
     undici: ^5.4.0
   peerDependencies:
     hardhat: ^2.0.4
-  checksum: 4d7713fd4ed8f9b2ef762df6e57401e2f46ca5bc4520fade242bcb22889f26d5a529b53fd51c7fe7ac86fec2eb08c3d19e3342193f162571d9581d62199f8e86
+  checksum: 5de5ea6f3ea53a9b4996cfd6d368a80e1e14d1c0f89d074ab44b56cab41eddb17b8f737b1bf012f6847d3c5bac94304432e3bf9996d578f1461625b1362ff933
   languageName: node
   linkType: hard
 
@@ -1141,7 +1141,7 @@ __metadata:
     "@balancer-labs/v2-pool-utils": 2.0.1
     "@balancer-labs/v2-solidity-utils": 2.0.0
     "@balancer-labs/v2-vault": 2.0.0
-    "@nomiclabs/hardhat-etherscan": ^3.1.0
+    "@nomiclabs/hardhat-etherscan": ^3.1.2
     "@openzeppelin/contracts": ^4.7.3
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"

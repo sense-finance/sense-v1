@@ -40,7 +40,7 @@
     "yarn": "^1.22.19"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@nomiclabs/hardhat-etherscan": "^3.1.2",
     "@tenderly/hardhat-tenderly": "^1.1.6",
     "dayjs": "^1.10.7",
     "dotenv": "^16.0.2",
