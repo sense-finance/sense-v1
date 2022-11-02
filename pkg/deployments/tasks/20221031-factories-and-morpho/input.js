@@ -32,32 +32,32 @@ const SAMPLE_TARGETS = [
 ];
 
 const MAINNET_FACTORIES = [
+  // {
+  //   contractName: "ERC4626CropsFactory",
+  //   ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+  //   stake: WETH_TOKEN.get(CHAINS.MAINNET),
+  //   stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
+  //   minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
+  //   maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
+  //   mode: 0, // 0 = monthly
+  //   tilt: 0,
+  //   guard: ethers.utils.parseEther("100000"), // $100'000
+  //   targets: SAMPLE_TARGETS,
+  // },
+  // {
+  //   contractName: "ERC4626CropFactory",
+  //   ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+  //   stake: WETH_TOKEN.get(CHAINS.MAINNET),
+  //   stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
+  //   minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
+  //   maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
+  //   mode: 0, // 0 = monthly
+  //   tilt: 0,
+  //   guard: ethers.utils.parseEther("100000"), // $100'000
+  //   targets: SAMPLE_TARGETS,
+  // },
   {
-    contractName: "ERC4626CropsFactory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
-    stake: WETH_TOKEN.get(CHAINS.MAINNET),
-    stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
-    minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
-    maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
-    mode: 0, // 0 = monthly
-    tilt: 0,
-    guard: ethers.utils.parseEther("100000"), // $100'000
-    targets: SAMPLE_TARGETS,
-  },
-  {
-    contractName: "ERC4626CropFactory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
-    stake: WETH_TOKEN.get(CHAINS.MAINNET),
-    stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
-    minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
-    maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
-    mode: 0, // 0 = monthly
-    tilt: 0,
-    guard: ethers.utils.parseEther("100000"), // $100'000
-    targets: SAMPLE_TARGETS,
-  },
-  {
-    contractName: "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol:ERC4626Factory",
+    contractName: "ERC4626Factory",
     ifee: ethers.utils.parseEther("0.0010"), // 0.1%
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
@@ -79,6 +79,5 @@ module.exports = {
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.MAINNET),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.MAINNET),
     factories: MAINNET_FACTORIES,
-    maxSecondsBeforePriceIsStale: (3 * 24 * 60 * 60).toString(), // 3 days
   },
 };

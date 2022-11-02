@@ -9,7 +9,7 @@ const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
 
-task("20221028-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT").setAction(
+task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT").setAction(
   async (_, { ethers }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
@@ -67,7 +67,8 @@ task("20221028-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
       );
 
       const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-      const { address: factoryAddress, abi } = await deploy(factoryContractName, {
+      const { address: factoryAddress, abi } = await deploy("ERC4626Factory_Sense", {
+        contract: '@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol:ERC4626Factory',
         from: deployer,
         args: [
           divider.address,
@@ -76,7 +77,7 @@ task("20221028-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
           factoryParams,
           ...(factoryContractName === "ERC4626CropFactory" ? [ethers.constants.AddressZero] : []),
         ],
-        log: true,
+        log: true
       });
       const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
 
