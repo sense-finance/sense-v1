@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// TODO: this tests fail becacuse they were using the 4626 factory that was depreccated
+// TODO: this tests fail because they were using the 4626 factory that was deprecated
 // once we set the new one, uncomment!
 pragma solidity 0.8.13;
 
