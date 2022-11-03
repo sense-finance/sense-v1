@@ -10,7 +10,7 @@ import { Divider } from "../../../Divider.sol";
 
 // External references
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 interface CTokenLike {
     function underlying() external view returns (address);

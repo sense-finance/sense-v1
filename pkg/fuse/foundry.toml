@@ -7,9 +7,9 @@ verbosity = 3
 # Fork block mined on Apr 18 2022 at 12:00:10 AM UTC
 fork_block_number = 14605885
 remappings = [
-    '@sense-finance/v1-utils=../utils',
-    '@sense-finance/v1-core=../core',
-    '@sense-finance/v1-fuse=./',
+    '@sense-finance/v1-utils=../utils/src',
+    '@sense-finance/v1-core=../core/src',
+    '@sense-finance/v1-fuse=./src',
     'solmate/=../../node_modules/solmate/src',
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts'
 ]

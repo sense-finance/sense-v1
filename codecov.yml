@@ -1,0 +1,7 @@
+# interfaces are automatically ignored by forge coverage
+ignore:
+  - "**/tests/**/*"                         # ignore all files inside tests/ folders
+  - "**/**.t*.sol"                          # ignore all files ending in t*.sol
+  - "pkg/utils/src/libs"                    # ignore all utils libs
+  - "pkg/utils/src/Trust.sol"               # ignore Trust since it's forked
+  - "pkg/core/src/external/FixedMath.sol"   # ignore FixedMath since it's forked

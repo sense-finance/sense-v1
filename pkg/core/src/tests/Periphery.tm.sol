@@ -8,7 +8,7 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
-import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { Divider } from "../Divider.sol";
 import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";

@@ -10,13 +10,13 @@ import { BalancerPool } from "./external/balancer/Pool.sol";
 import { IERC3156FlashBorrower } from "./external/flashloan/IERC3156FlashBorrower.sol";
 
 // Internal references
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { Levels } from "@sense-finance/v1-utils/libs/Levels.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 import { BaseAdapter as Adapter } from "./adapters/abstract/BaseAdapter.sol";
 import { BaseFactory as AdapterFactory } from "./adapters/abstract/factories/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
-import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);

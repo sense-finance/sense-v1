@@ -8,7 +8,7 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 contract MasterPriceOracleTestHelper is Test {
     MasterPriceOracle internal oracle;

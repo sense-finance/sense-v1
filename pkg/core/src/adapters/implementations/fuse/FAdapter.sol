@@ -6,7 +6,7 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Internal references
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Crops } from "../../abstract/extensions/Crops.sol";
 import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";

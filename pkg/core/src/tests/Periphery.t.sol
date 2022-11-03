@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
-import { PoolManager, ComptrollerLike } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { PoolManager, ComptrollerLike } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
 import { TestHelper, MockTargetLike } from "./test-helpers/TestHelper.sol";
@@ -15,7 +15,7 @@ import { MockFactory, MockCropFactory, Mock4626CropFactory } from "./test-helper
 import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
 import { Constants } from "./test-helpers/Constants.sol";

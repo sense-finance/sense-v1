@@ -5,7 +5,7 @@ pragma solidity 0.8.13;
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/mixins/ERC4626.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 // Internal references
 import { MasterPriceOracle } from "../../implementations/oracles/MasterPriceOracle.sol";

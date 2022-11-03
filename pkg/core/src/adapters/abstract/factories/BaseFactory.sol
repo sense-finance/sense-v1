@@ -2,11 +2,11 @@
 pragma solidity 0.8.13;
 
 // Internal references
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Divider } from "../../../Divider.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 
 interface ERC20 {
     function decimals() external view returns (uint256 decimals);

@@ -4,24 +4,24 @@ pragma solidity 0.8.13;
 import "forge-std/Test.sol";
 
 // Internal references
-import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
-import { Periphery } from "@sense-finance/v1-core/src/Periphery.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
+import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
+import { Divider, TokenHandler } from "@sense-finance/v1-core/Divider.sol";
+import { Periphery } from "@sense-finance/v1-core/Periphery.sol";
+import { Token } from "@sense-finance/v1-core/tokens/Token.sol";
 import { NoopPoolManager } from "../NoopPoolManager.sol";
 import { PoolManager } from "../PoolManager.sol";
-import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
-import { BaseFactory } from "@sense-finance/v1-core/src/adapters/abstract/factories/BaseFactory.sol";
+import { BaseAdapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapter.sol";
+import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/BaseFactory.sol";
 
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
-import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
-import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
-import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
-import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
-import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
-import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
-import { Constants } from "@sense-finance/v1-core/src/tests/test-helpers/Constants.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { MockAdapter } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockAdapter.sol";
+import { MockFactory } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockFactory.sol";
+import { MockToken } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockToken.sol";
+import { MockTarget } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockTarget.sol";
+import { DateTimeFull } from "@sense-finance/v1-core/tests/test-helpers/DateTimeFull.sol";
+import { AddressBook } from "@sense-finance/v1-core/tests/test-helpers/AddressBook.sol";
+import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
+import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
 
 contract NoopPoolManagerTest is Test {
     using FixedMath for uint256;

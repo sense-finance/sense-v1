@@ -1,3 +1,6 @@
 solmate/=solmate/src/
 @rari-capital/solmate=../../../lib/solmate
 @yield-daddy/=../../../../../../lib/yield-daddy/
+@sense-finance/v1-utils/=@sense-finance/v1-utils/src/
+@sense-finance/v1-fuse/=@sense-finance/v1-fuse/src/
+@sense-finance/v1-core/=@sense-finance/v1-core/src/

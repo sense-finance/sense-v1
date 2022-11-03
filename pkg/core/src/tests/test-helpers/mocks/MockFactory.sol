@@ -8,7 +8,7 @@ import { ERC4626Factory } from "../../../adapters/abstract/factories/ERC4626Fact
 import { ExtractableReward } from "../../../adapters/abstract/extensions/ExtractableReward.sol";
 import { Divider } from "../../../Divider.sol";
 import { MockAdapter, MockCropsAdapter, MockCropAdapter, Mock4626Adapter, Mock4626CropAdapter, Mock4626CropsAdapter } from "./MockAdapter.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { BaseAdapter } from "../../../adapters/abstract/BaseAdapter.sol";
 
 // External references

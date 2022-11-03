@@ -6,9 +6,9 @@ import { FixedMath } from "../external/FixedMath.sol";
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
-import { Levels } from "@sense-finance/v1-utils/src/libs/Levels.sol";
+import { Levels } from "@sense-finance/v1-utils/libs/Levels.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { Constants } from "./test-helpers/Constants.sol";
 import { MockAdapter, MockCropAdapter, MockBaseAdapter } from "./test-helpers/mocks/MockAdapter.sol";

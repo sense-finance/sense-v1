@@ -11,7 +11,7 @@ import { IERC3156FlashBorrower } from "../../external/flashloan/IERC3156FlashBor
 import { Divider } from "../../Divider.sol";
 import { Crop } from "./extensions/Crop.sol";
 import { Crops } from "./extensions/Crops.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 /// @title Assign value to Target tokens
 abstract contract BaseAdapter is IERC3156FlashLender {

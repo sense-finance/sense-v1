@@ -149,15 +149,22 @@ module.exports = {
             // remappings for yield-daddy's contracts
             if (line.includes(from) && line.includes("yield-daddy")) {
               line = line.replace(from, to);
+              // workaround: some remappings end up with /sr/src so we fix it this way
+              line = line.replace("src/src", "src");
+              continue;
             }
             // remappings for morpho's contracts using @rari-capital/solmate
             if (from === "@rari-capital/solmate" && line.includes("@rari-capital")) {
               line = line.replace(from, to);
+              continue;
             }
             // remappings for sense's contracts using solmate
             if (from === "solmate/" && !line.includes("solmate/src") && !line.includes("@rari-capital")) {
               line = line.replace(from, to);
+              continue;
             }
+            line = line.replace(from, to);
+            line = line.replace("src/src", "src"); // workaround
           }
         }
         return line;

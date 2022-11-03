@@ -14,10 +14,10 @@ import { TargetOracle } from "./oracles/Target.sol";
 import { PTOracle } from "./oracles/PT.sol";
 import { LPOracle } from "./oracles/LP.sol";
 
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
-import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { Divider } from "@sense-finance/v1-core/Divider.sol";
+import { BaseAdapter as Adapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapter.sol";
 
 interface FuseDirectoryLike {
     function deployPool(

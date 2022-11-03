@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import { ERC4626Adapter } from "./ERC4626Adapter.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { Crops } from "../extensions/Crops.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 

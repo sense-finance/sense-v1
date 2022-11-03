@@ -11,7 +11,7 @@ import { ERC4626CropAdapter } from "../../adapters/abstract/erc4626/ERC4626CropA
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
 

@@ -8,7 +8,7 @@ import { Divider, TokenHandler } from "../../Divider.sol";
 import { BaseFactory, ChainlinkOracleLike } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
-import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
+import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
 import { Periphery } from "../../Periphery.sol";
 import { MockToken, MockNonERC20Token } from "./mocks/MockToken.sol";
@@ -33,7 +33,7 @@ import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
 import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 import { DateTimeFull } from "./DateTimeFull.sol";
 import { FixedMath } from "../../external/FixedMath.sol";

@@ -9,7 +9,7 @@ import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { MockChainlinkPriceOracle, MockFeedRegistry } from "../test-helpers/mocks/MockChainlinkPriceOracle.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 contract ChainPriceOracleTestHelper is Test {
     using FixedMath for uint256;
