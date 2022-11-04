@@ -9,7 +9,7 @@ import { ERC4626Adapter } from "../../../adapters/abstract/erc4626/ERC4626Adapte
 import { MockToken } from "./MockToken.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { IClaimer } from "../../../adapters/abstract/IClaimer.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 
 contract MockClaimer is IClaimer {
     address[] public rewardTokens;

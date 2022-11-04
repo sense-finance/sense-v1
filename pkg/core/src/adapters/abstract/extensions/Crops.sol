@@ -10,8 +10,8 @@ import { Divider } from "../../../Divider.sol";
 import { BaseAdapter } from "../BaseAdapter.sol";
 import { IClaimer } from "../IClaimer.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 
 /// @notice This is meant to be used with BaseAdapter.sol
 abstract contract Crops is Trust {

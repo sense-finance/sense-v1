@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.13;
 
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 import { ERC4626Factory } from "@yield-daddy/src/base/ERC4626Factory.sol";
 
 /// @title ERC4626WrapperFactory

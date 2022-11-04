@@ -12,7 +12,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "../test-helpers/AddressBook.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 

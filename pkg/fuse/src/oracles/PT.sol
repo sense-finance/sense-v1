@@ -6,14 +6,14 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 import { CToken } from "../external/CToken.sol";
 import { BalancerOracle } from "../external/BalancerOracle.sol";
-import { BalancerVault } from "@sense-finance/v1-core/src/external/balancer/Vault.sol";
+import { BalancerVault } from "@sense-finance/v1-core/external/balancer/Vault.sol";
 
 // Internal references
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
-import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { Token } from "@sense-finance/v1-core/tokens/Token.sol";
+import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
+import { BaseAdapter as Adapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapter.sol";
 
 interface SpaceLike {
     function getImpliedRateFromPrice(uint256 pTPriceInTarget) external view returns (uint256);

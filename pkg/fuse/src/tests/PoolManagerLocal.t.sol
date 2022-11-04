@@ -2,22 +2,22 @@
 pragma solidity 0.8.13;
 
 // Internal references
-import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
-import { CAdapter } from "@sense-finance/v1-core/src/adapters/implementations/compound/CAdapter.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
+import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
+import { Divider, TokenHandler } from "@sense-finance/v1-core/Divider.sol";
+import { CAdapter } from "@sense-finance/v1-core/adapters/implementations/compound/CAdapter.sol";
+import { Token } from "@sense-finance/v1-core/tokens/Token.sol";
+import { Token } from "@sense-finance/v1-core/tokens/Token.sol";
 import { PoolManager } from "../PoolManager.sol";
-import { TestHelper } from "@sense-finance/v1-core/src/tests/test-helpers/TestHelper.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
-import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
-import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
-import { MockComptrollerRejectAdmin, MockComptrollerFailAddMarket } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockComptroller.sol";
-import { MockFuseDirectory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockFuseDirectory.sol";
-import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
-import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
-import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
+import { MockFactory } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockFactory.sol";
+import { MockOracle } from "@sense-finance/v1-core/tests/test-helpers/mocks/fuse/MockOracle.sol";
+import { MockComptrollerRejectAdmin, MockComptrollerFailAddMarket } from "@sense-finance/v1-core/tests/test-helpers/mocks/fuse/MockComptroller.sol";
+import { MockFuseDirectory } from "@sense-finance/v1-core/tests/test-helpers/mocks/fuse/MockFuseDirectory.sol";
+import { MockTarget } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockTarget.sol";
+import { MockToken } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockToken.sol";
+import { DateTimeFull } from "@sense-finance/v1-core/tests/test-helpers/DateTimeFull.sol";
 
 contract PoolManagerLocalTest is TestHelper {
     using FixedMath for uint256;

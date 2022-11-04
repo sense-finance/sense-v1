@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 // Internal references
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Divider } from "@sense-finance/v1-core/src/Divider.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
+import { Divider } from "@sense-finance/v1-core/Divider.sol";
 
 /// @notice Unsets multiple adapters on the divider
 contract EmergencyStop is Trust {

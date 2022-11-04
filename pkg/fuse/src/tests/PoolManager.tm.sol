@@ -4,24 +4,24 @@ pragma solidity 0.8.13;
 import "forge-std/Test.sol";
 
 // Internal references
-import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { Divider, TokenHandler } from "@sense-finance/v1-core/src/Divider.sol";
-import { CAdapter } from "@sense-finance/v1-core/src/adapters/implementations/compound/CAdapter.sol";
-import { CToken } from "@sense-finance/v1-fuse/src/external/CToken.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
+import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
+import { Divider, TokenHandler } from "@sense-finance/v1-core/Divider.sol";
+import { CAdapter } from "@sense-finance/v1-core/adapters/implementations/compound/CAdapter.sol";
+import { CToken } from "@sense-finance/v1-fuse/external/CToken.sol";
+import { Token } from "@sense-finance/v1-core/tokens/Token.sol";
 import { PoolManager, MasterOracleLike } from "../PoolManager.sol";
-import { BaseAdapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
+import { BaseAdapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapter.sol";
 
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
-import { MockFactory } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
-import { MockOracle } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
-import { MockTarget } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
-import { MockToken } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
-import { MockAdapter } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
-import { DateTimeFull } from "@sense-finance/v1-core/src/tests/test-helpers/DateTimeFull.sol";
-import { AddressBook } from "@sense-finance/v1-core/src/tests/test-helpers/AddressBook.sol";
-import { Constants } from "@sense-finance/v1-core/src/tests/test-helpers/Constants.sol";
-import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockSpace.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { MockFactory } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockFactory.sol";
+import { MockOracle } from "@sense-finance/v1-core/tests/test-helpers/mocks/fuse/MockOracle.sol";
+import { MockTarget } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockTarget.sol";
+import { MockToken } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockToken.sol";
+import { MockAdapter } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockAdapter.sol";
+import { DateTimeFull } from "@sense-finance/v1-core/tests/test-helpers/DateTimeFull.sol";
+import { AddressBook } from "@sense-finance/v1-core/tests/test-helpers/AddressBook.sol";
+import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
+import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
 
 interface ComptrollerLike {

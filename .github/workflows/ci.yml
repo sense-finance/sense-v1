@@ -55,18 +55,20 @@ jobs:
         MNEMONIC: ${{ secrets.MNEMONIC }}
         FORK_TOP_UP: ${{ secrets.FORK_TOP_UP }}
 
+    - name: Check code coverage
+      run: yarn coverage
+      id: coverage
+
+    - uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+
     - name: Check simulated testchain env scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:sim
       env:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
         FORK_TOP_UP: ${{ secrets.FORK_TOP_UP }}
-
-    - name: Generate gas snapshot
-      run: yarn gas-snapshot
-      env:
-        ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        MNEMONIC: ${{ secrets.MNEMONIC }}
 
     - name: Commit changes
       if: ${{ github.ref == 'refs/heads/dev' }}

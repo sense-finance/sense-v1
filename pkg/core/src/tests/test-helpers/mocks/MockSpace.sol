@@ -8,12 +8,12 @@ import { Token } from "../../../tokens/Token.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 import { BalancerVault, IAsset } from "../../../external/balancer/Vault.sol";
 import { BalancerPool } from "../../../external/balancer/Pool.sol";
-import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
+import { BalancerOracle } from "@sense-finance/v1-fuse/external/BalancerOracle.sol";
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
 import { BaseAdapter as Adapter } from "../../../adapters/abstract/BaseAdapter.sol";
-import { BalancerOracle } from "@sense-finance/v1-fuse/src/external/BalancerOracle.sol";
+import { BalancerOracle } from "@sense-finance/v1-fuse/external/BalancerOracle.sol";
 
 import { MockToken } from "./MockToken.sol";
 

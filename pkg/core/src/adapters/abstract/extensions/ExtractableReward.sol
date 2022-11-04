@@ -3,8 +3,8 @@ pragma solidity 0.8.13;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 /// @title ExtractableReward
 /// @notice Allows to extract rewards from the contract to the `rewardsRecepient`

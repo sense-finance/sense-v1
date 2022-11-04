@@ -9,7 +9,7 @@ import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 interface WstETHLike {
     /// @notice Exchanges wstETH to stETH

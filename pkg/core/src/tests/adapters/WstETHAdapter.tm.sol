@@ -12,7 +12,7 @@ import { Periphery } from "../../Periphery.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { WstETHAdapter, StETHLike, WstETHLike } from "../../adapters/implementations/lido/WstETHAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";

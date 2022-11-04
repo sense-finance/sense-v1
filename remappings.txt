@@ -1,1 +1,2 @@
 @yield-daddy/=pkg/core/lib/yield-daddy
+@sense-finance/v1-utils/=./pkg/utils/src/

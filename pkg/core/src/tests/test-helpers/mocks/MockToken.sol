@@ -5,7 +5,7 @@ pragma solidity 0.8.13;
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 // Internal references
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 
 contract MockToken is ERC20 {
     constructor(

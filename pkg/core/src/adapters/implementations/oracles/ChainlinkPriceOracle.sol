@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.13;
 
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { IPriceFeed } from "../../abstract/IPriceFeed.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
 

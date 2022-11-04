@@ -4,13 +4,13 @@ pragma solidity 0.8.13;
 // External references
 import { PriceOracle } from "../external/PriceOracle.sol";
 import { CToken } from "../external/CToken.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 // Internal references
-import { Trust } from "@sense-finance/v1-utils/src/Trust.sol";
-import { Token } from "@sense-finance/v1-core/src/tokens/Token.sol";
-import { FixedMath } from "@sense-finance/v1-core/src/external/FixedMath.sol";
-import { BaseAdapter as Adapter } from "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
+import { Trust } from "@sense-finance/v1-utils/Trust.sol";
+import { Token } from "@sense-finance/v1-core/tokens/Token.sol";
+import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
+import { BaseAdapter as Adapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapter.sol";
 
 contract TargetOracle is PriceOracle, Trust {
     using FixedMath for uint256;

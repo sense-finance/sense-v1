@@ -16,6 +16,7 @@
     "test:4626": "time yarn workspace @sense-finance/v1-core run test:4626",
     "lint": "yarn workspaces foreach --parallel --verbose run lint",
     "fix": "yarn workspaces foreach --parallel --verbose run fix",
+    "coverage": "time yarn workspaces foreach --parallel --verbose --interlaced --exclude @sense-finance/v1-utils --exclude @sense-finance/v1-deployments run coverage",
     "gas-snapshot": "yarn workspaces foreach --parallel --verbose --interlaced run gas-snapshot"
   },
   "packageManager": "yarn@3.1.0",

@@ -19,6 +19,7 @@
         "test:fuzz": "time yarn exec ./src/tests/fuzz.sh",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
+        "coverage": "time forge coverage --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7 --report lcov",
         "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
         "gas-snapshot:diff": "forge snapshot --no-match-path \"*.tm*\" --diff"
     },

@@ -7,7 +7,7 @@ import { ERC4626CropAdapter } from "../erc4626/ERC4626CropAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
 import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { CropFactory } from "./CropFactory.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";

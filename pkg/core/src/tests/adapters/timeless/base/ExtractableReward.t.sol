@@ -11,7 +11,7 @@ import { EulerETokenMock } from "@yield-daddy/src/test/euler/mocks/EulerETokenMo
 import { EulerMarketsMock } from "@yield-daddy/src/test/euler/mocks/EulerMarketsMock.sol";
 import { EulerERC4626WrapperFactory } from "../../../../adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { Constants } from "../../../test-helpers/Constants.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 contract ExtractableRewards is DSTestPlus {
     EulerMock public euler;

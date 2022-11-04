@@ -13,7 +13,7 @@ import { YT } from "../../../tokens/YT.sol";
 import { MockTarget } from "./MockTarget.sol";
 import { MockToken } from "./MockToken.sol";
 import { IERC4626 } from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import { Errors } from "@sense-finance/v1-utils/src/libs/Errors.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Mock adapter
