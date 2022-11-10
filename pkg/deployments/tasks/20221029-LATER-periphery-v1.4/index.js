@@ -8,7 +8,7 @@ const peripheryAbi = require("./abi/Periphery.json");
 
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
-task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").setAction(
+task("20221029-LATER-periphery-v1.4", "Deploys and authenticates a new Periphery").setAction(
   async (_, { ethers }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
@@ -38,9 +38,12 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
       args: [divider.address, poolManagerAddress, spaceFactoryAddress, balancerVaultAddress],
       log: true,
     });
+    const newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
     console.log(`Periphery deployed to ${peripheryAddress}`);
 
-    console.log("\nVerifying pre-approved adapters on Periphery");
+    // We are only onboarding and verifying adapters whose guard is > 0
+    // We can also assume all our onboarded adapters are verified (we have NO un-verified adapters so far)
+    console.log("\nOnboarding and verifying pre-approved adapters on Periphery");
     const adaptersOnboarded = [
       ...new Set(
         (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))).map(
@@ -48,47 +51,38 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
         ),
       ),
     ];
-    console.log("Adapters to onboard:", adaptersOnboarded);
-
-    const adaptersVerified = [
-      ...new Set(
-        (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterVerified(null))).map(e => e.args.adapter),
-      ),
-    ];
-    console.log("Adapters to verify:", adaptersVerified);
-
-    const newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
+    console.log("Adapters to verify & onboard:", adaptersOnboarded);
 
     for (let adapter of adaptersOnboarded) {
-      console.log("Onboarding adapter", adapter);
-      await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
-    }
-
-    for (let adapter of adaptersOnboarded) {
-      console.log("Verifying adapter", adapter);
-      await newPeriphery.verifyAdapter(adapter, false).then(t => t.wait());
+      console.log("\nOnboarding adapter", adapter);
+      const params = await divider.adapterMeta(adapter);
+      if (parseInt(params[2]) > 0) {
+        await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
+        console.log(`- Adapter ${adapter} onboarded`);
+        await newPeriphery.verifyAdapter(adapter, false).then(t => t.wait());
+        console.log(`- Adapter ${adapter} verified`);
+      } else {
+        console.log(`- Skipped adapter ${adapter} verification as it's guard is ${params[2]}`);
+      }
     }
 
     console.log("\nVerifying pre-approved factories on Periphery");
     const factoriesOnboarded = [
       ...new Set(
-        (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))).map(
-          e => e.args.adapter,
-        ),
-      ),
-    ];
-    console.log("Factories to onboard:", factoriesOnboarded);
-
-    const factoriesVerified = [
-      ...new Set(
         (await oldPeriphery.queryFilter(oldPeriphery.filters.FactoryChanged(null))).map(e => e.args.factory),
       ),
     ];
-    console.log("Factories to verify:", factoriesVerified);
+
+    console.log("Factories to onboard:", factoriesOnboarded);
 
     for (let factory of factoriesOnboarded) {
-      console.log("Onboarding factory", factory);
-      await newPeriphery.setFactory(factory, true).then(t => t.wait());
+      console.log(`\nOnboarding factory ${factory}...`);
+      if (await oldPeriphery.factories(factory)) {
+        await newPeriphery.setFactory(factory, true).then(t => t.wait());
+        console.log(`- Factory ${factory} onboarded`);
+      } else {
+        console.log(`- Skipped ${factory} as it has been unverified`);
+      }
     }
 
     console.log("\nAdding admin multisig as admin on Periphery");
@@ -97,26 +91,19 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
     console.log("\nRemoving deployer as admin on Periphery");
     await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
 
-    // If we're in a forked environment, check the txs we need to send from the multisig as well
     if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan(peripheryAddress, [
-        divider.address,
-        poolManagerAddress,
-        spaceFactoryAddress,
-        balancerVaultAddress,
-      ]);
+      await verifyOnEtherscan("Periphery");
     } else {
-      // fund multisig
+      // If we're in a forked environment, check the txs we need to send from the multisig as wel
       console.log(`\nFund multisig to be able to make calls from that address`);
-      await (
-        await deployerSigner.sendTransaction({
+      await deployerSigner
+        .sendTransaction({
           to: senseAdminMultisigAddress,
           value: ethers.utils.parseEther("1"),
         })
-      ).wait();
+        .then(t => t.wait());
 
-      // impersonate multisig
       await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
         params: [senseAdminMultisigAddress],
@@ -127,10 +114,10 @@ task("20221029-LATER-periphery", "Deploys and authenticates a new Periphery").se
       divider = divider.connect(multisigSigner);
 
       console.log("\nUnset the multisig as an authority on the old Periphery");
-      await (await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false)).wait();
+      await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
 
       console.log("\nSet the periphery on the Divider");
-      await (await divider.setPeriphery(peripheryAddress)).wait();
+      await divider.setPeriphery(peripheryAddress).then(t => t.wait());
     }
 
     if (VERIFY_CHAINS.includes(chainId)) {

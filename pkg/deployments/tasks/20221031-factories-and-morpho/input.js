@@ -57,6 +57,8 @@ const MAINNET_FACTORIES = [
   //   targets: SAMPLE_TARGETS,
   // },
   {
+    // Since there's a contract from yield daddy library called ERC4626Factory, we need to use this format to specify specifically which contract we are referring to
+    contract: "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol:ERC4626Factory",
     contractName: "ERC4626Factory",
     ifee: ethers.utils.parseEther("0.0010"), // 0.1%
     stake: WETH_TOKEN.get(CHAINS.MAINNET),

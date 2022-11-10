@@ -38,6 +38,7 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
     for (const factory of factories) {
       const {
         contractName: factoryContractName,
+        contract,
         ifee,
         stake,
         stakeSize,
@@ -67,8 +68,9 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
       );
 
       const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
-      const { address: factoryAddress, abi } = await deploy("ERC4626Factory_Sense", {
-        contract: "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol:ERC4626Factory",
+
+      const { address: factoryAddress, abi } = await deploy(factoryContractName, {
+        contract: !contract ? factoryContractName : contract,
         from: deployer,
         args: [
           divider.address,
@@ -86,13 +88,7 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
       // if not hardhat fork, we try verifying on etherscan
       if (chainId !== CHAINS.HARDHAT) {
         console.log("\n-------------------------------------------------------");
-        await verifyOnEtherscan(factoryAddress, [
-          divider.address,
-          restrictedAdmin,
-          rewardsRecipient,
-          factoryParams,
-          ...(factoryContractName === "ERC4626CropFactory" ? [ethers.constants.AddressZero] : []),
-        ]);
+        await verifyOnEtherscan(factoryContractName);
       } else {
         // fund multisig
         console.log(`\n - Fund multisig to be able to make calls from that address`);

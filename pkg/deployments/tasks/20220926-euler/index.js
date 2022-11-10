@@ -60,12 +60,7 @@ task("20220926-euler", "Deploys Euler 4626 Wrapper Factory and 4626 Euler Vaults
     // if mainnet or goerli, verify on etherscan
     if (VERIFY_CHAINS.includes(chainId)) {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan(wrapperFactoryAddress, [
-        EULER.get(chainId),
-        EULER_MARKETS.get(chainId),
-        restrictedAdmin,
-        rewardsRecipient,
-      ]);
+      await verifyOnEtherscan("EulerERC4626WrapperFactory");
     }
 
     console.log("\n-------------------------------------------------------");
@@ -86,12 +81,7 @@ task("20220926-euler", "Deploys Euler 4626 Wrapper Factory and 4626 Euler Vaults
       // if mainnet or goerli, verify on etherscan
       if (VERIFY_CHAINS.includes(chainId)) {
         console.log("\n-------------------------------------------------------");
-        await verifyOnEtherscan(vaultAddress, [
-          underlying,
-          EULER.get(chainId),
-          market,
-          SENSE_MULTISIG.get(chainId),
-        ]);
+        await verifyOnEtherscan("EulerERC4626");
       }
     }
 
