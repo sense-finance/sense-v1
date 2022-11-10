@@ -139,7 +139,7 @@ exports.verifyOnEtherscan = async contractName => {
   // from the solcInput file (https://github.com/wighawag/hardhat-deploy/issues/78#issuecomment-786914537)
 
   // Remove __CACHE_BREAKER library from solcInput
-  const path = `${__dirname}/deployments/goerli/solcInputs`;
+  const path = `${__dirname}/deployments/${hre.network.name}/solcInputs`;
   fs.readdirSync(path).forEach(file => {
     console.log(file);
     var m = JSON.parse(fs.readFileSync(`${path}/${file}`).toString());
