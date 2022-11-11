@@ -8,7 +8,7 @@ const peripheryAbi = require("./abi/Periphery.json");
 
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
-task("20221029-LATER-periphery-v1.4", "Deploys and authenticates a new Periphery").setAction(
+task("20221112-periphery-v1.4", "Deploys and authenticates a new Periphery").setAction(
   async (_, { ethers }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
@@ -56,7 +56,7 @@ task("20221029-LATER-periphery-v1.4", "Deploys and authenticates a new Periphery
     for (let adapter of adaptersOnboarded) {
       console.log("\nOnboarding adapter", adapter);
       const params = await divider.adapterMeta(adapter);
-      if (parseInt(params[2]) > 0) {
+      if (params[2].gt(0)) {
         await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
         console.log(`- Adapter ${adapter} onboarded`);
         await newPeriphery.verifyAdapter(adapter, false).then(t => t.wait());

@@ -141,13 +141,11 @@ exports.verifyOnEtherscan = async contractName => {
   // Remove __CACHE_BREAKER library from solcInput
   const path = `${__dirname}/deployments/${hre.network.name}/solcInputs`;
   fs.readdirSync(path).forEach(file => {
-    console.log(file);
     var m = JSON.parse(fs.readFileSync(`${path}/${file}`).toString());
     delete m?.settings?.libraries[""]?.__CACHE_BREAKER__;
     fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
   });
 
-  // Try verification
   console.log("Waiting 20 seconds for Etherscan to sync...");
   await delay(20);
   console.log("Trying to verify contract on Etherscan...");

@@ -21,8 +21,7 @@ contract ERC4626CropFactory is CropFactory {
         address _divider,
         address _restrictedAdmin,
         address _rewardsRecipient,
-        FactoryParams memory _factoryParams,
-        address _reward
+        FactoryParams memory _factoryParams
     ) CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, address(0)) {}
 
     /// @notice Deploys an ERC4626Adapter contract

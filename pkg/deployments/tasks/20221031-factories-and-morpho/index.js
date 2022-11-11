@@ -70,14 +70,13 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
       const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
 
       const { address: factoryAddress, abi } = await deploy(factoryContractName, {
-        contract: !contract ? factoryContractName : contract,
+        contract: contract || factoryContractName,
         from: deployer,
         args: [
           divider.address,
           restrictedAdmin,
           rewardsRecipient,
-          factoryParams,
-          ...(factoryContractName === "ERC4626CropFactory" ? [ethers.constants.AddressZero] : []),
+          factoryParams
         ],
         log: true,
       });
@@ -85,12 +84,10 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
 
       console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
-      // if not hardhat fork, we try verifying on etherscan
       if (chainId !== CHAINS.HARDHAT) {
         console.log("\n-------------------------------------------------------");
         await verifyOnEtherscan(factoryContractName);
       } else {
-        // fund multisig
         console.log(`\n - Fund multisig to be able to make calls from that address`);
         await (
           await deployerSigner.sendTransaction({
@@ -99,7 +96,6 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
           })
         ).wait();
 
-        // impersonate multisig account
         await hre.network.provider.request({
           method: "hardhat_impersonateAccount",
           params: [senseAdminMultisigAddress],

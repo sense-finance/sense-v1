@@ -474,8 +474,7 @@ contract TestHelper is Test {
                         address(divider),
                         Constants.RESTRICTED_ADMIN,
                         Constants.REWARDS_RECIPIENT,
-                        factoryParams,
-                        address(0)
+                        factoryParams
                     )
                 );
             }
