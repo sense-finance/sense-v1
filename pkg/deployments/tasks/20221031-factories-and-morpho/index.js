@@ -72,12 +72,7 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
       const { address: factoryAddress, abi } = await deploy(factoryContractName, {
         contract: contract || factoryContractName,
         from: deployer,
-        args: [
-          divider.address,
-          restrictedAdmin,
-          rewardsRecipient,
-          factoryParams
-        ],
+        args: [divider.address, restrictedAdmin, rewardsRecipient, factoryParams],
         log: true,
       });
       const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
