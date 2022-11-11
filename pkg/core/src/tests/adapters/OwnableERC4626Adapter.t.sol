@@ -11,7 +11,7 @@ import { ChainlinkPriceOracle, FeedRegistryLike } from "../../adapters/implement
 import { MasterPriceOracle } from "../../adapters/implementations/oracles/MasterPriceOracle.sol";
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
-import { RLVERC4626Adapter } from "../../adapters/abstract/erc4626/RLVERC4626Adapter.sol";
+import { OwnableERC4626Adapter } from "../../adapters/abstract/erc4626/OwnableERC4626Adapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
 import { AddressBook } from "../test-helpers/AddressBook.sol";
@@ -47,7 +47,7 @@ contract Opener is Test {
     }
 }
 
-contract RLVERC4626AdapterTest is Test {
+contract OwnableERC4626AdapterTest is Test {
     using FixedMath for uint256;
 
     MockToken public stake;
@@ -58,7 +58,7 @@ contract RLVERC4626AdapterTest is Test {
     Opener public opener;
 
     Divider public divider;
-    RLVERC4626Adapter public adapter;
+    OwnableERC4626Adapter public adapter;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -98,7 +98,7 @@ contract RLVERC4626AdapterTest is Test {
             level: Constants.DEFAULT_LEVEL
         });
 
-        adapter = new RLVERC4626Adapter(
+        adapter = new OwnableERC4626Adapter(
             address(divider),
             address(target),
             Constants.REWARDS_RECIPIENT,
@@ -113,7 +113,7 @@ contract RLVERC4626AdapterTest is Test {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
         opener = new Opener(divider, maturity, address(adapter));
 
-        // Add Opener as trusted address on RLV adapter
+        // Add Opener as trusted address on ownable adapter
         adapter.setIsTrusted(address(opener), true);
     }
 

@@ -7,8 +7,8 @@ interface Opener {
     function onSponsorWindowOpened(address, uint256) external;
 }
 
-/// @notice RLV Ownable Adapter contract for Rolling Liquidity Vaults
-contract RLVERC4626Adapter is ERC4626Adapter {
+/// @notice Ownable Adapter contract for Rolling Liquidity Vaults
+contract OwnableERC4626Adapter is ERC4626Adapter {
     uint256 internal open = 1;
 
     constructor(
