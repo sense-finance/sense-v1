@@ -7,7 +7,7 @@ const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
-const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
 
 task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT").setAction(
   async (_, { ethers }) => {
@@ -141,7 +141,7 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
           await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
           console.log(`- Mint stake tokens...`);
-          await generateStakeTokens(stake, deployer, deployerSigner);
+          await generateTokens(stake, deployer, deployerSigner);
 
           // deploy Series
           for (let m of t.series) {

@@ -16,7 +16,7 @@ const oracleAbi = require("./abi/MasterPriceOracle.json");
 const erc4626FactoryAbi = require("./abi/ERC4626Factory.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
-const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
 
 task("20220830-4626-crops-factory", "Deploys 4626 Factory. Also fixes bug in Chainlink Oracle.").setAction(
   async (_, { ethers }) => {
@@ -180,7 +180,7 @@ task("20220830-4626-crops-factory", "Deploys 4626 Factory. Also fixes bug in Cha
           await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
           console.log(`Mint stake tokens...`);
-          await generateStakeTokens(stake, deployer, deployerSigner);
+          await generateTokens(stake, deployer, deployerSigner);
 
           // deploy Series
           for (let m of t.series) {

@@ -179,20 +179,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
         target.approve(address(autoRoller), 2e18);
         stake.approve(address(autoRoller), 1e18);
 
-        // 1. Deposit during the initial cooldown phase.
+        // Check we can make deposit.
         autoRoller.deposit(0.05e18, address(this));
-
-        uint256 targetBalPre = target.balanceOf(address(this));
-        uint256 stakeBalPre = stake.balanceOf(address(this));
-
-        // TODO: would need to add getEQReserves() to MockSpace in order for this to work
-        // // 2. Roll into the first Series.
-        // autoRoller.roll();
-        // uint256 targetBalPost = target.balanceOf(address(this));
-        // uint256 stakeBalPost = stake.balanceOf(address(this));
-
-        // // Check that extra Target was pulled in during the roll to ensure the Vault had 0.01 unit of Target to initialize a rate with.
-        // assertEq(targetBalPre - targetBalPost, 0.01e18);
-        // assertEq(stakeBalPre - stakeBalPost, STAKE_SIZE);
     }
 }

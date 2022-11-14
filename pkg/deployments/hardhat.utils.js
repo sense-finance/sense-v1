@@ -10,6 +10,8 @@ exports.STORAGE_SLOT = {
   wstETH: 0,
   WETH: 3,
   USDC: 9,
+  maDAI: 51,
+  maUSDC: 51,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders
@@ -162,10 +164,13 @@ exports.verifyOnEtherscan = async contractName => {
   }
 };
 
-exports.generateStakeTokens = async (stakeAddress, to, signer) => {
-  const ERC20_ABI = ["function symbol() public view returns (string)"];
-  const stake = new ethers.Contract(stakeAddress, ERC20_ABI, signer);
-  const symbol = await stake.symbol();
+exports.generateTokens = async (tokenAddress, to, signer) => {
+  const ERC20_ABI = [
+    "function symbol() public view returns (string)",
+    "function balanceOf(address) public view returns (uint256)",
+  ];
+  const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+  const symbol = await token.symbol();
 
   // Get storage slot index
   const index = ethers.utils.solidityKeccak256(
@@ -174,11 +179,15 @@ exports.generateStakeTokens = async (stakeAddress, to, signer) => {
   );
 
   await setStorageAt(
-    stakeAddress,
+    tokenAddress,
     index.toString(),
     this.toBytes32(ethers.utils.parseEther("10000")).toString(),
   );
-  log(`\n - 10'000 ${symbol} transferred to deployer: ${to}`);
+  if ((await token.balanceOf(to)).gt(0)) {
+    log(`\n - 10'000 ${symbol} transferred to deployer: ${to}`);
+  } else {
+    throw new Error(`\n - Failed to generate 10'000 ${symbol} to deployer: ${to}`);
+  }
 };
 
 // Returns signer using OZ Relayer's API
