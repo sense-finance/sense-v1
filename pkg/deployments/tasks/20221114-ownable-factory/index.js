@@ -68,7 +68,9 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
     },
     log: true,
   });
-  console.log(`\nSpace Factoy deployed to ${spaceFactoryAddress}`);
+  console.log(`\nSpace Factory deployed to ${spaceFactoryAddress}`);
+  // TODO: Either remove Space Factory re-deployment from here and create a new script 
+  // or add missing pieces (check older script) 
 
   console.log("\nDeploying RollerUtils");
   const { address: rollerUtilsAddress } = await deploy("RollerUtils", {

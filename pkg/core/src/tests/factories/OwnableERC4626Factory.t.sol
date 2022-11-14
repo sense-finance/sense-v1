@@ -126,6 +126,9 @@ contract OwnableERC4626FactoryTest is TestHelper {
     }
 
     function testFactoryWithRollerFactory() public {
+        MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
+        someTarget.mint(1e18, address(this));
+
         // Deploy an Auto Roller
         RollerUtils utils = new RollerUtils();
         RollerPeriphery rollerPeriphery = new RollerPeriphery();
@@ -157,13 +160,12 @@ contract OwnableERC4626FactoryTest is TestHelper {
             factoryParams,
             address(arFactory)
         );
-        oFactory.supportTarget(address(target), true);
+        oFactory.supportTarget(address(someTarget), true);
         divider.setIsTrusted(address(oFactory), true);
         periphery.setFactory(address(oFactory), true);
 
-        // Deploy Ownable ERC4626 Adapter (oAdapter) for Auto Roller
-        vm.prank(address(periphery));
-        address oAdapter = oFactory.deployAdapter(address(target), "");
+        // Deploy Ownable ERC4626 Adapter (oAdapter) for Auto Roller using oFactory
+        address oAdapter = periphery.deployAdapter(address(oFactory), address(someTarget), "");
 
         // Deploy an autoroller
         AutoRoller autoRoller = arFactory.create(
@@ -172,14 +174,49 @@ contract OwnableERC4626FactoryTest is TestHelper {
             3 // target duration
         );
 
-        // Onboard adapter
-        periphery.onboardAdapter(address(oAdapter), true);
-
         // Approve Target & Stake
         target.approve(address(autoRoller), 2e18);
         stake.approve(address(autoRoller), 1e18);
 
         // Check we can make deposit.
         autoRoller.deposit(0.05e18, address(this));
+    }
+
+    function testCanModifyRLVFactory() public {
+        // Deploy Ownable ERC4626 factory (oFactory)
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            stake: address(stake),
+            oracle: ORACLE,
+            ifee: ISSUANCE_FEE,
+            stakeSize: STAKE_SIZE,
+            minm: MIN_MATURITY,
+            maxm: MAX_MATURITY,
+            mode: MODE,
+            tilt: 0,
+            guard: 123e18
+        });
+        OwnableERC4626Factory oFactory = new OwnableERC4626Factory(
+            address(divider),
+            Constants.RESTRICTED_ADMIN,
+            Constants.REWARDS_RECIPIENT,
+            factoryParams,
+            RLV_FACTORY
+        );
+
+        vm.record();
+
+        // 1. Can't modify RLV factory if not owner
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x4b1d));
+        oFactory.setRlvFactory(address(0xfede));
+        assertEq(oFactory.rlvFactory(), RLV_FACTORY);
+
+        // 2. Can modify RLV factory if owner
+        oFactory.setRlvFactory(address(0xfede));
+        assertEq(oFactory.rlvFactory(), address(0xfede));
+
+        (, bytes32[] memory writes) = vm.accesses(address(oFactory));
+        // Check only 1 storage slot was written
+        assertEq(writes.length,1);
     }
 }
