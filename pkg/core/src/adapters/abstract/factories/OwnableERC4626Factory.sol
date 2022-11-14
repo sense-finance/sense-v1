@@ -69,8 +69,8 @@ contract OwnableERC4626Factory is ERC4626Factory {
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 
-    /// @notice Modify RLV Factory address 
-    /// @param _rlvFactory Address of the new factory 
+    /// @notice Modify RLV Factory address
+    /// @param _rlvFactory Address of the new factory
     function setRlvFactory(address _rlvFactory) external requiresTrust {
         rlvFactory = _rlvFactory;
         emit RlvFactoryChannged(_rlvFactory);

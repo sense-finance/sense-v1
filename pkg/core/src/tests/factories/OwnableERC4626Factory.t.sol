@@ -217,6 +217,6 @@ contract OwnableERC4626FactoryTest is TestHelper {
 
         (, bytes32[] memory writes) = vm.accesses(address(oFactory));
         // Check only 1 storage slot was written
-        assertEq(writes.length,1);
+        assertEq(writes.length, 1);
     }
 }
