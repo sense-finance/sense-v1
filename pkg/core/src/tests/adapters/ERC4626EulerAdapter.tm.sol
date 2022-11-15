@@ -2,7 +2,7 @@
 
 // TODO: this tests fail because they were using the 4626 factory that was deprecated
 // once we set the new one, uncomment!
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 // import "forge-std/Test.sol";
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 // External references
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
