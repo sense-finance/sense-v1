@@ -80,7 +80,7 @@ module.exports = {
       // saveDeployments: false,
       // blockGasLimit: 21000000,
       // blockNumber: 13491969,
-      // allowUnlimitedContractSize: false,
+      allowUnlimitedContractSize: true,
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
@@ -98,7 +98,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.13",
+        version: "0.8.15",
         settings: {
           optimizer: {
             enabled: true,
