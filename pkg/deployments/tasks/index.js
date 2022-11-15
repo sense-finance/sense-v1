@@ -15,3 +15,5 @@ require("./20220922-4626-crop-factory");
 require("./20220922-4626-factory");
 require("./20220926-euler");
 require("./20221007-morpho-adapters");
+require("./20221031-factories-and-morpho");
+require("./20221112-periphery-v1.4");
