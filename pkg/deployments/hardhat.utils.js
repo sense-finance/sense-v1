@@ -127,6 +127,27 @@ async function setStorageAt(address, index, value) {
 }
 exports.setStorageAt = setStorageAt;
 
+async function setBalance(address, value) {
+  await network.provider.send("hardhat_setBalance", [address, `0x${value}`]);
+}
+exports.setBalance = setBalance;
+
+async function startPrank(address) {
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+}
+exports.startPrank = startPrank;
+
+async function stopPrank(address) {
+  await hre.network.provider.request({
+    method: "hardhat_stopImpersonatingAccount",
+    params: [address],
+  });
+}
+exports.stopPrank = stopPrank;
+
 const delay = n => new Promise(r => setTimeout(r, n * 1000));
 exports.delay = delay;
 
@@ -183,9 +204,7 @@ exports.generateTokens = async (tokenAddress, to, signer) => {
     index.toString(),
     this.toBytes32(ethers.utils.parseEther("10000")).toString(),
   );
-  if ((await token.balanceOf(to)).gt(0)) {
-    log(`\n - 10'000 ${symbol} transferred to deployer: ${to}`);
-  } else {
+  if ((await token.balanceOf(to)).eq(0)) {
     throw new Error(`\n - Failed to generate 10'000 ${symbol} to deployer: ${to}`);
   }
 };
