@@ -127,6 +127,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
 
     function testFactoryWithRollerFactory() public {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
+        underlying.approve(address(someTarget), type(uint256).max);
         someTarget.mint(1e18, address(this));
 
         // Deploy an Auto Roller
@@ -175,7 +176,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
         );
 
         // Approve Target & Stake
-        target.approve(address(autoRoller), 2e18);
+        someTarget.approve(address(autoRoller), 2e18);
         stake.approve(address(autoRoller), 1e18);
 
         // Check we can make deposit.
