@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import { AutoRollerFactory } from "@auto-roller/src/AutoRollerFactory.sol";
 import { AutoRoller, RollerUtils, DividerLike, OwnedAdapterLike } from "@auto-roller/src/AutoRoller.sol";
