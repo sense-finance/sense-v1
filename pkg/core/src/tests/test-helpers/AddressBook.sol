@@ -47,6 +47,7 @@ library AddressBook {
     address public constant POOL_MANAGER_1_2_0 = 0xf01eb98de53ed964AC3F786b80ED8ce33f05F417;
     address public constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address public constant PERIPHERY_1_3_0 = 0xFff11417a58781D3C72083CB45EF54d79Cd02437;
+    address public constant PERIPHERY_1_4_0 = 0xaa17633AA5A3Cb56698838561161bdb16Cebb8E3;
 
     // 4626 factories
     address public constant NON_CROP_4626_FACTORY = 0xD28372e7b9904589d05BD257B85FeA40FbD4dF2b;

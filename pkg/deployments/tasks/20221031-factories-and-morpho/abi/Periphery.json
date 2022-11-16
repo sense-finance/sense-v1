@@ -66,16 +66,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "TargetNotSupported",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "UnexpectedSwapAmount",
-    "type": "error"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -120,7 +110,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "adapter",
+        "name": "factory",
         "type": "address"
       },
       {
@@ -131,6 +121,25 @@
       }
     ],
     "name": "FactoryChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldPoolManager",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newPoolManager",
+        "type": "address"
+      }
+    ],
+    "name": "PoolManagerChanged",
     "type": "event"
   },
   {
@@ -156,6 +165,25 @@
       }
     ],
     "name": "SeriesSponsored",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldSpaceFactory",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newSpaceFactory",
+        "type": "address"
+      }
+    ],
+    "name": "SpaceFactoryChanged",
     "type": "event"
   },
   {
@@ -224,6 +252,49 @@
       }
     ],
     "name": "UserTrustUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "targetIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "targetReturned",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "ytOut",
+        "type": "uint256"
+      }
+    ],
+    "name": "YTsPurchased",
     "type": "event"
   },
   {
@@ -536,7 +607,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "amountBorrrowed",
         "type": "uint256"
       },
       {
@@ -727,6 +798,32 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newPoolManager",
+        "type": "address"
+      }
+    ],
+    "name": "setPoolManager",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newSpaceFactory",
+        "type": "address"
+      }
+    ],
+    "name": "setSpaceFactory",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "spaceFactory",
     "outputs": [
@@ -889,17 +986,27 @@
       },
       {
         "internalType": "uint256",
-        "name": "tBal",
+        "name": "targetIn",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "minAccepted",
+        "name": "targetToBorrow",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minOut",
         "type": "uint256"
       }
     ],
     "name": "swapTargetForYTs",
     "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "targetBal",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "ytBal",
@@ -957,17 +1064,27 @@
       },
       {
         "internalType": "uint256",
-        "name": "uBal",
+        "name": "underlyingIn",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "minAccepted",
+        "name": "targetToBorrow",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minOut",
         "type": "uint256"
       }
     ],
     "name": "swapUnderlyingForYTs",
     "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "targetBal",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "ytBal",

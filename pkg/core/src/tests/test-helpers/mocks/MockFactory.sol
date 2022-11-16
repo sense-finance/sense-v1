@@ -67,7 +67,10 @@ contract MockFactory is BaseFactory {
             )
         );
 
-        _setGuard(adapter);
+        // We only want to execute this if divider is guarded
+        if (Divider(divider).guarded()) {
+            Divider(divider).setGuard(adapter, type(uint256).max);
+        }
 
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }

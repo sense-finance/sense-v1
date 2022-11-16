@@ -5,6 +5,7 @@ const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.address
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
+const poolManagerAbi = require("./abi/PoolManager.json");
 
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
@@ -30,6 +31,7 @@ task("20221112-periphery-v1.4", "Deploys and authenticates a new Periphery").set
 
     let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
     let oldPeriphery = new ethers.Contract(oldPeripheryAddress, peripheryAbi, deployerSigner);
+    let poolManager = new ethers.Contract(poolManagerAddress, poolManagerAbi, deployerSigner);
 
     console.log("\n-------------------------------------------------------");
     console.log("\nDeploy Periphery");
@@ -85,11 +87,13 @@ task("20221112-periphery-v1.4", "Deploys and authenticates a new Periphery").set
       }
     }
 
-    console.log("\nAdding admin multisig as admin on Periphery");
-    await newPeriphery.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
+    if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
+      console.log("\nAdding admin multisig as admin on Periphery");
+      await newPeriphery.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
 
-    console.log("\nRemoving deployer as admin on Periphery");
-    await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
+      console.log("\nRemoving deployer as admin on Periphery");
+      await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
+    }
 
     if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
@@ -113,11 +117,24 @@ task("20221112-periphery-v1.4", "Deploys and authenticates a new Periphery").set
       oldPeriphery = oldPeriphery.connect(multisigSigner);
       divider = divider.connect(multisigSigner);
 
-      console.log("\nUnset the multisig as an authority on the old Periphery");
-      await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
+      if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
+        console.log("\nUnset the multisig as an authority on the old Periphery");
+        await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
+      }
+    }
 
+    if ([CHAINS.GOERLI, CHAINS.HARDHAT].includes(chainId)) {
       console.log("\nSet the periphery on the Divider");
       await divider.setPeriphery(peripheryAddress).then(t => t.wait());
+    }
+
+    // Only for Goerli as Mainnet has the NoopPoolManager which is not Trust
+    if (CHAINS.GOERLI === chainId) {
+      console.log("\nSet new Periphery as trusted on Pool Manager");
+      await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+
+      console.log("\nUnset old Periphery as trusted on Pool Manager");
+      await (await poolManager.setIsTrusted(oldPeriphery.address, false)).wait();
     }
 
     if (VERIFY_CHAINS.includes(chainId)) {
@@ -125,6 +142,8 @@ task("20221112-periphery-v1.4", "Deploys and authenticates a new Periphery").set
       console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
       console.log("\n1. Unset the multisig as an authority on the old Periphery");
       console.log("\n2. Set the periphery on the Divider");
+      console.log("\n3. Set the periphery as trusted on Pool Manager (if needed)");
+      console.log("\n4. Unset the old periphery as trusted on Pool Manager (if needed)");
     }
     console.log("\n-------------------------------------------------------");
   },
