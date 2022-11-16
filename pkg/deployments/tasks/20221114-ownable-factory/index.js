@@ -266,10 +266,11 @@ subtask("deploy-space-factory", "Deploys a new Space Factory").setAction(async a
     .mul(ethers.utils.parseEther("1"))
     .div(ethers.utils.parseEther("950"));
   const oracleEnabled = true;
+  const balancerFeesEnabled = false;
 
   const { address: spaceFactoryAddress, abi } = await deploy("SpaceFactory", {
     from: deployer,
-    args: [balancerVault, divider.address, TS, G1, G2, oracleEnabled],
+    args: [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
     libraries: {
       QueryProcessor: QUERY_PROCESSOR.get(chainId),
     },
