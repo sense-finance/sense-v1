@@ -64,7 +64,7 @@ module.exports = {
     divider: "0x09B10E45A912BcD4E80a8A3119f0cfCcad1e1f12",
     periphery: "0x876CaD23753F033E5308CFcc66E7608645527a9e",
     oracle: "0xB3e70779c1d1f2637483A02f1446b211fe4183Fa",
-    oldSpaceFactory: "",
+    oldSpaceFactory: "0x93158100B4351935c9BC2DE9A33357c4D54D94Bb",
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.GOERLI),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.GOERLI),
     rlvFactory: RLV_FACTORY.get(CHAINS.GOERLI),
