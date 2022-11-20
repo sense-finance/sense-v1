@@ -498,7 +498,7 @@ subtask("deploy-auto-roller-factory", "Deploys a new Space Factory").setAction(a
 
   console.log("\nDeploying an AutoRoller Factory");
   const autoRollerArtifact = await deployments.getArtifact("AutoRoller");
-  const { address: autoRollerFactoryAddress, abi } = await deploy("AutoRollerFactory", {
+  const { address: autoRollerFactoryAddress } = await deploy("AutoRollerFactory", {
     from: deployer,
     args: [
       divider.address,
