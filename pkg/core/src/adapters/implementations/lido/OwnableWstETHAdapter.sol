@@ -10,7 +10,6 @@ interface Opener {
 
 /// @notice Adapter contract for wstETH
 contract OwnableWstETHAdapter is WstETHAdapter {
-    
     /// @notice Ownabale param
     uint256 internal open = 1;
 
