@@ -131,7 +131,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
         someTarget.mint(1e18, address(this));
 
         // Deploy an Auto Roller
-        RollerUtils utils = new RollerUtils();
+        RollerUtils utils = new RollerUtils(address(divider));
         RollerPeriphery rollerPeriphery = new RollerPeriphery();
         AutoRollerFactory arFactory = new AutoRollerFactory(
             DividerLike(address(divider)),
@@ -141,6 +141,9 @@ contract OwnableERC4626FactoryTest is TestHelper {
             utils,
             type(AutoRoller).creationCode
         );
+
+        // Set AutoRollerFactory as trusted address on RollerPeriphery to be able to use the approve() function
+        rollerPeriphery.setIsTrusted(address(arFactory), true);
 
         // Deploy Ownable ERC4626 factory (oFactory)
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({

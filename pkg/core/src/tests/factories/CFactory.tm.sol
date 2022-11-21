@@ -141,7 +141,7 @@ contract CFactories is CAdapterTestHelper {
         // Convert DEFAULT_GUARD (which is $100'000 in 18 decimals) to target
         // using target's price (18 decimals)
         uint256 guardInTarget = DEFAULT_GUARD.fdiv(price, 10**tDecimals);
-        assertApproxEqAbs(guard, guardInTarget, guard.fmul(0.010e18));
+        assertApproxEqAbs(guard, guardInTarget, guard.fmul(0.050e18));
     }
 
     function testMainnetDeployAdapterWithNonERC20() public {

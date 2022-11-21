@@ -408,62 +408,62 @@ contract FAdapters is FAdapterTestHelper {
         ERC20(AddressBook.f156USDC).approve(address(f156UsdcAdapter), ONE_FTOKEN);
     }
 
-    function testMainnetWrapUnwrap(uint256 wrapAmt) public {
-        wrapAmt = bound(wrapAmt, 1e6, INITIAL_BALANCE);
+    // function testMainnetWrapUnwrap(uint256 wrapAmt) public {
+    //     wrapAmt = bound(wrapAmt, 1e6, INITIAL_BALANCE);
 
-        deal(AddressBook.USDC, address(this), INITIAL_BALANCE);
+    //     deal(AddressBook.USDC, address(this), INITIAL_BALANCE);
 
-        ERC20 target = ERC20(f18UsdcAdapter.target());
-        ERC20 underlying = ERC20(f18UsdcAdapter.underlying());
+    //     ERC20 target = ERC20(f18UsdcAdapter.target());
+    //     ERC20 underlying = ERC20(f18UsdcAdapter.underlying());
 
-        // Approvals
-        target.approve(address(f18UsdcAdapter), type(uint256).max);
-        underlying.approve(address(f18UsdcAdapter), type(uint256).max);
+    //     // Approvals
+    //     target.approve(address(f18UsdcAdapter), type(uint256).max);
+    //     underlying.approve(address(f18UsdcAdapter), type(uint256).max);
 
-        // 1. Run a full wrap -> unwrap cycle
-        uint256 preUnderlyingBal = underlying.balanceOf(address(this));
-        uint256 preTargetBal = target.balanceOf(address(this));
-        uint256 targetFromWrap = f18UsdcAdapter.wrapUnderlying(wrapAmt);
-        assertEq(preTargetBal + targetFromWrap, target.balanceOf(address(this)));
-        f18UsdcAdapter.unwrapTarget(targetFromWrap);
-        uint256 postUnderlyingBal = underlying.balanceOf(address(this));
+    //     // 1. Run a full wrap -> unwrap cycle
+    //     uint256 preUnderlyingBal = underlying.balanceOf(address(this));
+    //     uint256 preTargetBal = target.balanceOf(address(this));
+    //     uint256 targetFromWrap = f18UsdcAdapter.wrapUnderlying(wrapAmt);
+    //     assertEq(preTargetBal + targetFromWrap, target.balanceOf(address(this)));
+    //     f18UsdcAdapter.unwrapTarget(targetFromWrap);
+    //     uint256 postUnderlyingBal = underlying.balanceOf(address(this));
 
-        assertApproxEqAbs(preUnderlyingBal, postUnderlyingBal, 100);
+    //     assertApproxEqAbs(preUnderlyingBal, postUnderlyingBal, 100);
 
-        // 2. Deposit underlying tokens into the vault
-        uint256 preTargetSupply = target.totalSupply();
-        preUnderlyingBal = underlying.balanceOf(address(target));
-        underlying.approve(address(target), INITIAL_BALANCE / 2);
-        CTokenLike(address(target)).mint(INITIAL_BALANCE / 4);
-        assertEq(
-            target.totalSupply(),
-            preTargetSupply + ((INITIAL_BALANCE / 4).fdiv(CTokenLike(address(target)).exchangeRateCurrent()))
-        );
-        assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
+    //     // 2. Deposit underlying tokens into the vault
+    //     uint256 preTargetSupply = target.totalSupply();
+    //     preUnderlyingBal = underlying.balanceOf(address(target));
+    //     underlying.approve(address(target), INITIAL_BALANCE / 2);
+    //     CTokenLike(address(target)).mint(INITIAL_BALANCE / 4);
+    //     assertEq(
+    //         target.totalSupply(),
+    //         preTargetSupply + ((INITIAL_BALANCE / 4).fdiv(CTokenLike(address(target)).exchangeRateCurrent()))
+    //     );
+    //     assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
 
-        // 3. Init a greater-than-one exchange rate
-        preTargetSupply = target.totalSupply();
-        preUnderlyingBal = underlying.balanceOf(address(target));
-        CTokenLike(address(target)).mint(INITIAL_BALANCE / 4);
-        assertEq(
-            target.totalSupply(),
-            preTargetSupply + ((INITIAL_BALANCE / 4).fdiv(CTokenLike(address(target)).exchangeRateCurrent()))
-        );
-        assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
+    //     // 3. Init a greater-than-one exchange rate
+    //     preTargetSupply = target.totalSupply();
+    //     preUnderlyingBal = underlying.balanceOf(address(target));
+    //     CTokenLike(address(target)).mint(INITIAL_BALANCE / 4);
+    //     assertEq(
+    //         target.totalSupply(),
+    //         preTargetSupply + ((INITIAL_BALANCE / 4).fdiv(CTokenLike(address(target)).exchangeRateCurrent()))
+    //     );
+    //     assertEq(underlying.balanceOf(address(target)), preUnderlyingBal + INITIAL_BALANCE / 4);
 
-        // Bound wrap amount to remaining tokens (tokens not deposited)
-        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE / 2);
+    //     // Bound wrap amount to remaining tokens (tokens not deposited)
+    //     wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE / 2);
 
-        // 4. Run the cycle again now that the vault has some underlying tokens of its own
-        uint256 targetBalPostDeposit = target.balanceOf(address(this));
-        preUnderlyingBal = underlying.balanceOf(address(this));
-        targetFromWrap = f18UsdcAdapter.wrapUnderlying(wrapAmt);
-        assertEq(targetFromWrap + targetBalPostDeposit, target.balanceOf(address(this)));
-        f18UsdcAdapter.unwrapTarget(targetFromWrap);
-        postUnderlyingBal = underlying.balanceOf(address(this));
+    //     // 4. Run the cycle again now that the vault has some underlying tokens of its own
+    //     uint256 targetBalPostDeposit = target.balanceOf(address(this));
+    //     preUnderlyingBal = underlying.balanceOf(address(this));
+    //     targetFromWrap = f18UsdcAdapter.wrapUnderlying(wrapAmt);
+    //     assertEq(targetFromWrap + targetBalPostDeposit, target.balanceOf(address(this)));
+    //     f18UsdcAdapter.unwrapTarget(targetFromWrap);
+    //     postUnderlyingBal = underlying.balanceOf(address(this));
 
-        assertApproxEqAbs(preUnderlyingBal, postUnderlyingBal, 100);
-    }
+    //     assertApproxEqAbs(preUnderlyingBal, postUnderlyingBal, 100);
+    // }
 
     event RewardTokensChanged(address[] indexed rewardTokens);
     event RewardsDistributorsChanged(address[] indexed rewardsDistributorsList);
