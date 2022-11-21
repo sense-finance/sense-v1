@@ -32,20 +32,20 @@ const MAINNET_FACTORIES = [
 ];
 
 const MAINNET_ADAPTERS = [
-  {
-    contractName: "OwnableWstETHAdapter",
-    ifee: ethers.utils.parseEther("0"), // 0%, no issuance fees
-    oracle: ethers.constants.AddressZero,
-    stake: WETH_TOKEN.get(CHAINS.MAINNET),
-    stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
-    minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
-    maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
-    tilt: 0,
-    level: 31,
-    mode: 0, // 0 = monthly
-    guard: ethers.utils.parseEther("78.37"), // in this case, the guard is $100'000 in target (wstETH)
-    target: { name: "wstETH", address: WSTETH_TOKEN.get(CHAINS.MAINNET) },
-  },
+  // {
+  //   contractName: "OwnableWstETHAdapter",
+  //   ifee: ethers.utils.parseEther("0"), // 0%, no issuance fees
+  //   oracle: ethers.constants.AddressZero,
+  //   stake: WETH_TOKEN.get(CHAINS.MAINNET),
+  //   stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
+  //   minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
+  //   maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
+  //   tilt: 0,
+  //   level: 31,
+  //   mode: 0, // 0 = monthly
+  //   guard: ethers.utils.parseEther("78.37"), // in this case, the guard is $100'000 in target (wstETH)
+  //   target: { name: "wstETH", address: WSTETH_TOKEN.get(CHAINS.MAINNET) },
+  // },
 ];
 
 // For Goerli

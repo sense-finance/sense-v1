@@ -1,0 +1,1088 @@
+{
+  "address": "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_divider",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_target",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_rewardsRecipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint128",
+          "name": "_ifee",
+          "type": "uint128"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "oracle",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "stake",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stakeSize",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minm",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxm",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint64",
+              "name": "tilt",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint48",
+              "name": "level",
+              "type": "uint48"
+            },
+            {
+              "internalType": "uint16",
+              "name": "mode",
+              "type": "uint16"
+            }
+          ],
+          "internalType": "struct BaseAdapter.AdapterParams",
+          "name": "_adapterParams",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "FlashCallbackFailed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidPrice",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OnlyPeriphery",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TokenNotSupported",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardsClaimed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "oldRecipient",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newRecipient",
+          "type": "address"
+        }
+      ],
+      "name": "RewardsRecipientChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "trusted",
+          "type": "bool"
+        }
+      ],
+      "name": "UserTrustUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "CALLBACK_SUCCESS",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ETH_USD_PRICEFEED",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STETH",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STETH_USD_PRICEFEED",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "WSTETH",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "adapterParams",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "oracle",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "stake",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stakeSize",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "minm",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxm",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint64",
+          "name": "tilt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint48",
+          "name": "level",
+          "type": "uint48"
+        },
+        {
+          "internalType": "uint16",
+          "name": "mode",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "divider",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "extractToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "flashFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC3156FlashBorrower",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "flashLoan",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMaturityBounds",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getStakeAndTarget",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getUnderlyingPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "price",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ifee",
+      "outputs": [
+        {
+          "internalType": "uint128",
+          "name": "",
+          "type": "uint128"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "isTrusted",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "level",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "maxFlashLoan",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "mode",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "name": "notify",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "onRedeem",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "openSponsorWindow",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "rewardsRecipient",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "scale",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "exRate",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "scaleStored",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "trusted",
+          "type": "bool"
+        }
+      ],
+      "name": "setIsTrusted",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        }
+      ],
+      "name": "setRewardsRecipient",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "target",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "tilt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "underlying",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "unwrapTarget",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "stETH",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "wrapUnderlying",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "wstETH",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xd555c7d4f19c74e6c003c525bc49f8fde1bba593297d8ea3ece8b9045f465749",
+  "receipt": {
+    "to": null,
+    "from": "0x59A181710F926Eae6FddfbF27a14259E8DD00cA2",
+    "contractAddress": "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680",
+    "transactionIndex": 104,
+    "gasUsed": "1762623",
+    "logsBloom": "0x00000100000000010000000000000000000000901000000000000000000000000000000000000000000000000000000002000000080000004000000000200000000000000000000000000000000000000000000000000000200400000000000000000000000000008000000000200000000000000000800000000000000000000000000000000040008080000000000000000000000000000000000000002000020000001000000000000000000200000000000000000000000000000000000000004000000000100000000000000080000000000000000000000000000000000010200000000000000000008000000000000000004060000000000000000000",
+    "blockHash": "0x4787776e3a1e0261df5b81a0417b55b57d39ba60a7d8a6e20ad4c79e346bad86",
+    "transactionHash": "0xd555c7d4f19c74e6c003c525bc49f8fde1bba593297d8ea3ece8b9045f465749",
+    "logs": [
+      {
+        "transactionIndex": 104,
+        "blockNumber": 16019004,
+        "transactionHash": "0xd555c7d4f19c74e6c003c525bc49f8fde1bba593297d8ea3ece8b9045f465749",
+        "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "topics": [
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0x00000000000000000000000066e1ad7cda66a0b291aec63f3dbd8cb9eaf76680",
+          "0x00000000000000000000000086ba3e96be68563e41c2f5769f1af9faf758e6e0"
+        ],
+        "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "logIndex": 180,
+        "blockHash": "0x4787776e3a1e0261df5b81a0417b55b57d39ba60a7d8a6e20ad4c79e346bad86"
+      },
+      {
+        "transactionIndex": 104,
+        "blockNumber": 16019004,
+        "transactionHash": "0xd555c7d4f19c74e6c003c525bc49f8fde1bba593297d8ea3ece8b9045f465749",
+        "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "topics": [
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0x00000000000000000000000066e1ad7cda66a0b291aec63f3dbd8cb9eaf76680",
+          "0x00000000000000000000000086ba3e96be68563e41c2f5769f1af9faf758e6e0"
+        ],
+        "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "logIndex": 181,
+        "blockHash": "0x4787776e3a1e0261df5b81a0417b55b57d39ba60a7d8a6e20ad4c79e346bad86"
+      },
+      {
+        "transactionIndex": 104,
+        "blockNumber": 16019004,
+        "transactionHash": "0xd555c7d4f19c74e6c003c525bc49f8fde1bba593297d8ea3ece8b9045f465749",
+        "address": "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680",
+        "topics": [
+          "0xe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986",
+          "0x00000000000000000000000059a181710f926eae6fddfbf27a14259e8dd00ca2"
+        ],
+        "data": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "logIndex": 182,
+        "blockHash": "0x4787776e3a1e0261df5b81a0417b55b57d39ba60a7d8a6e20ad4c79e346bad86"
+      },
+      {
+        "transactionIndex": 104,
+        "blockNumber": 16019004,
+        "transactionHash": "0xd555c7d4f19c74e6c003c525bc49f8fde1bba593297d8ea3ece8b9045f465749",
+        "address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+        "topics": [
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0x00000000000000000000000066e1ad7cda66a0b291aec63f3dbd8cb9eaf76680",
+          "0x0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+        ],
+        "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "logIndex": 183,
+        "blockHash": "0x4787776e3a1e0261df5b81a0417b55b57d39ba60a7d8a6e20ad4c79e346bad86"
+      }
+    ],
+    "blockNumber": 16019004,
+    "cumulativeGasUsed": "11116092",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0",
+    "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+    "0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57",
+    "0",
+    [
+      "0x0000000000000000000000000000000000000000",
+      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "250000000000000000",
+      "2629800",
+      "315576000",
+      0,
+      31,
+      0
+    ]
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "093ad0cd8f849a43d88edf3a5ee36c9a",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.15+commit.e14f2714\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_divider\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_target\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rewardsRecipient\",\"type\":\"address\"},{\"internalType\":\"uint128\",\"name\":\"_ifee\",\"type\":\"uint128\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"oracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"stake\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"stakeSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minm\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxm\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"tilt\",\"type\":\"uint64\"},{\"internalType\":\"uint48\",\"name\":\"level\",\"type\":\"uint48\"},{\"internalType\":\"uint16\",\"name\":\"mode\",\"type\":\"uint16\"}],\"internalType\":\"struct BaseAdapter.AdapterParams\",\"name\":\"_adapterParams\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"FlashCallbackFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPrice\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyPeriphery\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TokenNotSupported\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"RewardsClaimed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oldRecipient\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newRecipient\",\"type\":\"address\"}],\"name\":\"RewardsRecipientChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"trusted\",\"type\":\"bool\"}],\"name\":\"UserTrustUpdated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"CALLBACK_SUCCESS\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ETH_USD_PRICEFEED\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"STETH\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"STETH_USD_PRICEFEED\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"WSTETH\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"adapterParams\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"oracle\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"stake\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"stakeSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minm\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxm\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"tilt\",\"type\":\"uint64\"},{\"internalType\":\"uint48\",\"name\":\"level\",\"type\":\"uint48\"},{\"internalType\":\"uint16\",\"name\":\"mode\",\"type\":\"uint16\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"divider\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"extractToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"flashFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract IERC3156FlashBorrower\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"flashLoan\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMaturityBounds\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getStakeAndTarget\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUnderlyingPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ifee\",\"outputs\":[{\"internalType\":\"uint128\",\"name\":\"\",\"type\":\"uint128\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"isTrusted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"level\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"maxFlashLoan\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"mode\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"name\":\"notify\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"onRedeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"openSponsorWindow\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardsRecipient\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"scale\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"exRate\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"scaleStored\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"trusted\",\"type\":\"bool\"}],\"name\":\"setIsTrusted\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}],\"name\":\"setRewardsRecipient\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"target\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"tilt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"underlying\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"unwrapTarget\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"stETH\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"wrapUnderlying\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"wstETH\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"flashLoan(address,address,uint256,bytes)\":{\"params\":{\"amount\":\"The amount of target lent.\",\"data\":\"(encoded adapter address, maturity and YT amount the use has sent in)\",\"receiver\":\"The contract receiving target, needs to implement the `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.\"}},\"getUnderlyingPrice()\":{\"details\":\"To calculate stETH-ETH price we use Chainlink's stETH-USD and ETH-USD price feeds.\"},\"maxFlashLoan(address)\":{\"details\":\"The amount of currency available to be lent.\",\"params\":{\"token\":\"The loan currency.\"},\"returns\":{\"_0\":\"The amount of `token` that can be borrowed.\"}},\"scale()\":{\"returns\":{\"exRate\":\"Eth per wstEtH (natively in 18 decimals)\"}},\"unwrapTarget(uint256)\":{\"params\":{\"amount\":\"Target amount\"},\"returns\":{\"stETH\":\"amount of underlying returned\"}},\"wrapUnderlying(uint256)\":{\"params\":{\"amount\":\"Underlying amount\"},\"returns\":{\"wstETH\":\"amount of target returned\"}}},\"version\":1},\"userdoc\":{\"events\":{\"RewardsRecipientChanged(address,address)\":{\"notice\":\"----------------------------------------------------------------------- Logs -----------------------------------------------------------------------\"}},\"kind\":\"user\",\"methods\":{\"adapterParams()\":{\"notice\":\"adapter params\"},\"divider()\":{\"notice\":\"Sense core Divider address\"},\"extractToken(address)\":{\"notice\":\"Transfers reward tokens from the adapter to Sense's reward container\"},\"flashLoan(address,address,uint256,bytes)\":{\"notice\":\"Loan `amount` target to `receiver`, and takes it back after the callback.\"},\"ifee()\":{\"notice\":\"Issuance fee\"},\"notify(address,uint256,bool)\":{\"notice\":\"Notification whenever the Divider adds or removes Target\"},\"onRedeem(uint256,uint256,uint256,uint256)\":{\"notice\":\"Hook called whenever a user redeems PT\"},\"rewardsRecipient()\":{\"notice\":\"Rewards recipient\"},\"scaleStored()\":{\"notice\":\"Cached scale value from the last call to `scale()`\"},\"setRewardsRecipient(address)\":{\"notice\":\"----------------------------------------------------------------------- Admin functions -----------------------------------------------------------------------\"},\"target()\":{\"notice\":\"Target token to divide\"},\"underlying()\":{\"notice\":\"Underlying for the Target\"},\"unwrapTarget(uint256)\":{\"notice\":\"Deposits target `amount`in return for underlying. Must be overriden by child contracts\"},\"wrapUnderlying(uint256)\":{\"notice\":\"Deposits underlying `amount`in return for target. Must be overriden by child contracts\"}},\"notice\":\"Adapter contract for wstETH\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol\":\"OwnableWstETHAdapter\"},\"evmVersion\":\"london\",\"libraries\":{\":__CACHE_BREAKER__\":\"0x0000000000000031363639303431303632383637\"},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":500},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/security/Pausable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.7.0) (security/Pausable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/Context.sol\\\";\\n\\n/**\\n * @dev Contract module which allows children to implement an emergency stop\\n * mechanism that can be triggered by an authorized account.\\n *\\n * This module is used through inheritance. It will make available the\\n * modifiers `whenNotPaused` and `whenPaused`, which can be applied to\\n * the functions of your contract. Note that they will not be pausable by\\n * simply including this module, only once the modifiers are put in place.\\n */\\nabstract contract Pausable is Context {\\n    /**\\n     * @dev Emitted when the pause is triggered by `account`.\\n     */\\n    event Paused(address account);\\n\\n    /**\\n     * @dev Emitted when the pause is lifted by `account`.\\n     */\\n    event Unpaused(address account);\\n\\n    bool private _paused;\\n\\n    /**\\n     * @dev Initializes the contract in unpaused state.\\n     */\\n    constructor() {\\n        _paused = false;\\n    }\\n\\n    /**\\n     * @dev Modifier to make a function callable only when the contract is not paused.\\n     *\\n     * Requirements:\\n     *\\n     * - The contract must not be paused.\\n     */\\n    modifier whenNotPaused() {\\n        _requireNotPaused();\\n        _;\\n    }\\n\\n    /**\\n     * @dev Modifier to make a function callable only when the contract is paused.\\n     *\\n     * Requirements:\\n     *\\n     * - The contract must be paused.\\n     */\\n    modifier whenPaused() {\\n        _requirePaused();\\n        _;\\n    }\\n\\n    /**\\n     * @dev Returns true if the contract is paused, and false otherwise.\\n     */\\n    function paused() public view virtual returns (bool) {\\n        return _paused;\\n    }\\n\\n    /**\\n     * @dev Throws if the contract is paused.\\n     */\\n    function _requireNotPaused() internal view virtual {\\n        require(!paused(), \\\"Pausable: paused\\\");\\n    }\\n\\n    /**\\n     * @dev Throws if the contract is not paused.\\n     */\\n    function _requirePaused() internal view virtual {\\n        require(paused(), \\\"Pausable: not paused\\\");\\n    }\\n\\n    /**\\n     * @dev Triggers stopped state.\\n     *\\n     * Requirements:\\n     *\\n     * - The contract must not be paused.\\n     */\\n    function _pause() internal virtual whenNotPaused {\\n        _paused = true;\\n        emit Paused(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Returns to normal state.\\n     *\\n     * Requirements:\\n     *\\n     * - The contract must be paused.\\n     */\\n    function _unpause() internal virtual whenPaused {\\n        _paused = false;\\n        emit Unpaused(_msgSender());\\n    }\\n}\\n\",\"keccak256\":\"0x0849d93b16c9940beb286a7864ed02724b248b93e0d80ef6355af5ef15c64773\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Context.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract Context {\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n}\\n\",\"keccak256\":\"0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7\",\"license\":\"MIT\"},\"@sense-finance/v1-core/src/Divider.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n// External references\\nimport { Pausable } from \\\"@openzeppelin/contracts/security/Pausable.sol\\\";\\nimport { ERC20 } from \\\"solmate/src/tokens/ERC20.sol\\\";\\nimport { SafeTransferLib } from \\\"solmate/src/utils/SafeTransferLib.sol\\\";\\nimport { ReentrancyGuard } from \\\"solmate/src/utils/ReentrancyGuard.sol\\\";\\nimport { DateTime } from \\\"./external/DateTime.sol\\\";\\nimport { FixedMath } from \\\"./external/FixedMath.sol\\\";\\n\\n// Internal references\\nimport { Errors } from \\\"@sense-finance/v1-utils/src/libs/Errors.sol\\\";\\n\\nimport { Levels } from \\\"@sense-finance/v1-utils/src/libs/Levels.sol\\\";\\nimport { Trust } from \\\"@sense-finance/v1-utils/src/Trust.sol\\\";\\nimport { YT } from \\\"./tokens/YT.sol\\\";\\nimport { Token } from \\\"./tokens/Token.sol\\\";\\nimport { BaseAdapter as Adapter } from \\\"./adapters/abstract/BaseAdapter.sol\\\";\\n\\n/// @title Sense Divider: Divide Assets in Two\\n/// @author fedealconada + jparklev\\n/// @notice You can use this contract to issue, combine, and redeem Sense ERC20 Principal and Yield Tokens\\ncontract Divider is Trust, ReentrancyGuard, Pausable {\\n    using SafeTransferLib for ERC20;\\n    using FixedMath for uint256;\\n    using Levels for uint256;\\n\\n    /* ========== PUBLIC CONSTANTS ========== */\\n\\n    /// @notice Buffer before and after the actual maturity in which only the sponsor can settle the Series\\n    uint256 public constant SPONSOR_WINDOW = 3 hours;\\n\\n    /// @notice Buffer after the sponsor window in which anyone can settle the Series\\n    uint256 public constant SETTLEMENT_WINDOW = 3 hours;\\n\\n    /// @notice 5% issuance fee cap\\n    uint256 public constant ISSUANCE_FEE_CAP = 0.05e18;\\n\\n    /* ========== PUBLIC MUTABLE STORAGE ========== */\\n\\n    address public periphery;\\n\\n    /// @notice Sense community multisig\\n    address public immutable cup;\\n\\n    /// @notice Principal/Yield tokens deployer\\n    address public immutable tokenHandler;\\n\\n    /// @notice Permissionless flag\\n    bool public permissionless;\\n\\n    /// @notice Guarded launch flag\\n    bool public guarded = true;\\n\\n    /// @notice Number of adapters (including turned off)\\n    uint248 public adapterCounter;\\n\\n    /// @notice adapter ID -> adapter address\\n    mapping(uint256 => address) public adapterAddresses;\\n\\n    /// @notice adapter data\\n    mapping(address => AdapterMeta) public adapterMeta;\\n\\n    /// @notice adapter -> maturity -> Series\\n    mapping(address => mapping(uint256 => Series)) public series;\\n\\n    /// @notice adapter -> maturity -> user -> lscale (last scale)\\n    mapping(address => mapping(uint256 => mapping(address => uint256))) public lscales;\\n\\n    /* ========== DATA STRUCTURES ========== */\\n\\n    struct Series {\\n        // Principal ERC20 token\\n        address pt;\\n        // Timestamp of series initialization\\n        uint48 issuance;\\n        // Yield ERC20 token\\n        address yt;\\n        // % of underlying principal initially reserved for Yield\\n        uint96 tilt;\\n        // Actor who initialized the Series\\n        address sponsor;\\n        // Tracks fees due to the series' settler\\n        uint256 reward;\\n        // Scale at issuance\\n        uint256 iscale;\\n        // Scale at maturity\\n        uint256 mscale;\\n        // Max scale value from this series' lifetime\\n        uint256 maxscale;\\n    }\\n\\n    struct AdapterMeta {\\n        // Adapter ID\\n        uint248 id;\\n        // Adapter enabled/disabled\\n        bool enabled;\\n        // Max amount of Target allowed to be issued\\n        uint256 guard;\\n        // Adapter level\\n        uint248 level;\\n    }\\n\\n    constructor(address _cup, address _tokenHandler) Trust(msg.sender) {\\n        cup = _cup;\\n        tokenHandler = _tokenHandler;\\n    }\\n\\n    /* ========== MUTATIVE FUNCTIONS ========== */\\n\\n    /// @notice Enable an adapter\\n    /// @dev when permissionless is disabled, only the Periphery can onboard adapters\\n    /// @dev after permissionless is enabled, anyone can onboard adapters\\n    /// @param adapter Adapter's address\\n    function addAdapter(address adapter) external whenNotPaused {\\n        if (!permissionless && msg.sender != periphery) revert Errors.OnlyPermissionless();\\n        if (adapterMeta[adapter].id > 0 && !adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();\\n        _setAdapter(adapter, true);\\n    }\\n\\n    /// @notice Initializes a new Series\\n    /// @dev Deploys two ERC20 contracts, one for PTs and the other one for YTs\\n    /// @dev Transfers some fixed amount of stake asset to this contract\\n    /// @param adapter Adapter to associate with the Series\\n    /// @param maturity Maturity date for the new Series, in units of unix time\\n    /// @param sponsor Sponsor of the Series that puts up a token stake and receives the issuance fees\\n    function initSeries(\\n        address adapter,\\n        uint256 maturity,\\n        address sponsor\\n    ) external nonReentrant whenNotPaused returns (address pt, address yt) {\\n        if (periphery != msg.sender) revert Errors.OnlyPeriphery();\\n        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();\\n        if (_exists(adapter, maturity)) revert Errors.DuplicateSeries();\\n        if (!_isValid(adapter, maturity)) revert Errors.InvalidMaturity();\\n\\n        // Transfer stake asset stake from caller to adapter\\n        (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();\\n\\n        // Deploy Principal & Yield Tokens for this new Series\\n        (pt, yt) = TokenHandler(tokenHandler).deploy(adapter, adapterMeta[adapter].id, maturity);\\n\\n        // Initialize the new Series struct\\n        uint256 scale = Adapter(adapter).scale();\\n\\n        series[adapter][maturity].pt = pt;\\n        series[adapter][maturity].issuance = uint48(block.timestamp);\\n        series[adapter][maturity].yt = yt;\\n        series[adapter][maturity].tilt = uint96(Adapter(adapter).tilt());\\n        series[adapter][maturity].sponsor = sponsor;\\n        series[adapter][maturity].iscale = scale;\\n        series[adapter][maturity].maxscale = scale;\\n\\n        ERC20(stake).safeTransferFrom(msg.sender, adapter, stakeSize);\\n\\n        emit SeriesInitialized(adapter, maturity, pt, yt, sponsor, target);\\n    }\\n\\n    /// @notice Settles a Series and transfers the settlement reward to the caller\\n    /// @dev The Series' sponsor has a grace period where only they can settle the Series\\n    /// @dev After that, the reward becomes MEV\\n    /// @param adapter Adapter to associate with the Series\\n    /// @param maturity Maturity date for the new Series\\n    function settleSeries(address adapter, uint256 maturity) external nonReentrant whenNotPaused {\\n        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();\\n        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();\\n        if (_settled(adapter, maturity)) revert Errors.AlreadySettled();\\n        if (!_canBeSettled(adapter, maturity)) revert Errors.OutOfWindowBoundaries();\\n\\n        // The maturity scale value is all a Series needs for us to consider it \\\"settled\\\"\\n        uint256 mscale = Adapter(adapter).scale();\\n        series[adapter][maturity].mscale = mscale;\\n\\n        if (mscale > series[adapter][maturity].maxscale) {\\n            series[adapter][maturity].maxscale = mscale;\\n        }\\n\\n        // Reward the caller for doing the work of settling the Series at around the correct time\\n        (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();\\n        ERC20(target).safeTransferFrom(adapter, msg.sender, series[adapter][maturity].reward);\\n        ERC20(stake).safeTransferFrom(adapter, msg.sender, stakeSize);\\n\\n        emit SeriesSettled(adapter, maturity, msg.sender);\\n    }\\n\\n    /// @notice Mint Principal & Yield Tokens of a specific Series\\n    /// @param adapter Adapter address for the Series\\n    /// @param maturity Maturity date for the Series [unix time]\\n    /// @param tBal Balance of Target to deposit\\n    /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)\\n    function issue(\\n        address adapter,\\n        uint256 maturity,\\n        uint256 tBal\\n    ) external nonReentrant whenNotPaused returns (uint256 uBal) {\\n        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();\\n        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();\\n        if (_settled(adapter, maturity)) revert Errors.IssueOnSettle();\\n\\n        uint256 level = adapterMeta[adapter].level;\\n        if (level.issueRestricted() && msg.sender != adapter) revert Errors.IssuanceRestricted();\\n\\n        ERC20 target = ERC20(Adapter(adapter).target());\\n\\n        // Take the issuance fee out of the deposited Target, and put it towards the settlement reward\\n        uint256 issuanceFee = Adapter(adapter).ifee();\\n        if (issuanceFee > ISSUANCE_FEE_CAP) revert Errors.IssuanceFeeCapExceeded();\\n        uint256 fee = tBal.fmul(issuanceFee);\\n\\n        unchecked {\\n            // Safety: bounded by the Target's total token supply\\n            series[adapter][maturity].reward += fee;\\n        }\\n        uint256 tBalSubFee = tBal - fee;\\n\\n        // Ensure the caller won't hit the issuance cap with this action\\n        unchecked {\\n            // Safety: bounded by the Target's total token supply\\n            if (guarded && target.balanceOf(adapter) + tBal > adapterMeta[address(adapter)].guard)\\n                revert Errors.GuardCapReached();\\n        }\\n\\n        // Update values on adapter\\n        Adapter(adapter).notify(msg.sender, tBalSubFee, true);\\n\\n        uint256 scale = level.collectDisabled() ? series[adapter][maturity].iscale : Adapter(adapter).scale();\\n\\n        // Determine the amount of Underlying equal to the Target being sent in (the principal)\\n        uBal = tBalSubFee.fmul(scale);\\n\\n        // If the caller has not collected on YT before, use the current scale, otherwise\\n        // use the harmonic mean of the last and the current scale value\\n        lscales[adapter][maturity][msg.sender] = lscales[adapter][maturity][msg.sender] == 0\\n            ? scale\\n            : _reweightLScale(\\n                adapter,\\n                maturity,\\n                YT(series[adapter][maturity].yt).balanceOf(msg.sender),\\n                uBal,\\n                msg.sender,\\n                scale\\n            );\\n\\n        // Mint equal amounts of PT and YT\\n        Token(series[adapter][maturity].pt).mint(msg.sender, uBal);\\n        YT(series[adapter][maturity].yt).mint(msg.sender, uBal);\\n\\n        target.safeTransferFrom(msg.sender, adapter, tBal);\\n\\n        emit Issued(adapter, maturity, uBal, msg.sender);\\n    }\\n\\n    /// @notice Reconstitute Target by burning PT and YT\\n    /// @dev Explicitly burns YTs before maturity, and implicitly does it at/after maturity through `_collect()`\\n    /// @param adapter Adapter address for the Series\\n    /// @param maturity Maturity date for the Series\\n    /// @param uBal Balance of PT and YT to burn\\n    function combine(\\n        address adapter,\\n        uint256 maturity,\\n        uint256 uBal\\n    ) external nonReentrant whenNotPaused returns (uint256 tBal) {\\n        if (!adapterMeta[adapter].enabled) revert Errors.InvalidAdapter();\\n        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();\\n\\n        uint256 level = adapterMeta[adapter].level;\\n        if (level.combineRestricted() && msg.sender != adapter) revert Errors.CombineRestricted();\\n\\n        // Burn the PT\\n        Token(series[adapter][maturity].pt).burn(msg.sender, uBal);\\n\\n        // Collect whatever excess is due\\n        uint256 collected = _collect(msg.sender, adapter, maturity, uBal, uBal, address(0));\\n\\n        uint256 cscale = series[adapter][maturity].mscale;\\n        bool settled = _settled(adapter, maturity);\\n        if (!settled) {\\n            // If it's not settled, then YT won't be burned automatically in `_collect()`\\n            YT(series[adapter][maturity].yt).burn(msg.sender, uBal);\\n            // If collect has been restricted, use the initial scale, otherwise use the current scale\\n            cscale = level.collectDisabled()\\n                ? series[adapter][maturity].iscale\\n                : lscales[adapter][maturity][msg.sender];\\n        }\\n\\n        // Convert from units of Underlying to units of Target\\n        tBal = uBal.fdiv(cscale);\\n        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);\\n\\n        // Notify only when Series is not settled as when it is, the _collect() call above would trigger a _redeemYT which will call notify\\n        if (!settled) Adapter(adapter).notify(msg.sender, tBal, false);\\n        unchecked {\\n            // Safety: bounded by the Target's total token supply\\n            tBal += collected;\\n        }\\n        emit Combined(adapter, maturity, tBal, msg.sender);\\n    }\\n\\n    /// @notice Burn PT of a Series once it's been settled\\n    /// @dev The balance of redeemable Target is a function of the change in Scale\\n    /// @param adapter Adapter address for the Series\\n    /// @param maturity Maturity date for the Series\\n    /// @param uBal Amount of PT to burn, which should be equivalent to the amount of Underlying owed to the caller\\n    function redeem(\\n        address adapter,\\n        uint256 maturity,\\n        uint256 uBal\\n    ) external nonReentrant whenNotPaused returns (uint256 tBal) {\\n        // If a Series is settled, we know that it must have existed as well, so that check is unnecessary\\n        if (!_settled(adapter, maturity)) revert Errors.NotSettled();\\n\\n        uint256 level = adapterMeta[adapter].level;\\n        if (level.redeemRestricted() && msg.sender != adapter) revert Errors.RedeemRestricted();\\n\\n        // Burn the caller's PT\\n        Token(series[adapter][maturity].pt).burn(msg.sender, uBal);\\n\\n        // Principal Token holder's share of the principal = (1 - part of the principal that belongs to Yield)\\n        uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;\\n\\n        // If Principal Token are at a loss and Yield have some principal to help cover the shortfall,\\n        // take what we can from Yield Token's principal\\n        if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {\\n            tBal = (uBal * zShare) / series[adapter][maturity].mscale;\\n        } else {\\n            tBal = uBal.fdiv(series[adapter][maturity].maxscale);\\n        }\\n\\n        if (!level.redeemHookDisabled()) {\\n            Adapter(adapter).onRedeem(uBal, series[adapter][maturity].mscale, series[adapter][maturity].maxscale, tBal);\\n        }\\n\\n        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, msg.sender, tBal);\\n        emit PTRedeemed(adapter, maturity, tBal);\\n    }\\n\\n    function collect(\\n        address usr,\\n        address adapter,\\n        uint256 maturity,\\n        uint256 uBalTransfer,\\n        address to\\n    ) external nonReentrant onlyYT(adapter, maturity) whenNotPaused returns (uint256 collected) {\\n        uint256 uBal = YT(msg.sender).balanceOf(usr);\\n        return _collect(usr, adapter, maturity, uBal, uBalTransfer > 0 ? uBalTransfer : uBal, to);\\n    }\\n\\n    /// @notice Collect YT excess before, at, or after maturity\\n    /// @dev If `to` is set, we copy the lscale value from usr to this address\\n    /// @param usr User who's collecting for their YTs\\n    /// @param adapter Adapter address for the Series\\n    /// @param maturity Maturity date for the Series\\n    /// @param uBal yield Token balance\\n    /// @param uBalTransfer original transfer value\\n    /// @param to address to set the lscale value from usr\\n    function _collect(\\n        address usr,\\n        address adapter,\\n        uint256 maturity,\\n        uint256 uBal,\\n        uint256 uBalTransfer,\\n        address to\\n    ) internal returns (uint256 collected) {\\n        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();\\n\\n        // If the adapter is disabled, its Yield Token can only collect\\n        // if associated Series has been settled, which implies that an admin\\n        // has backfilled it\\n        if (!adapterMeta[adapter].enabled && !_settled(adapter, maturity)) revert Errors.InvalidAdapter();\\n\\n        Series memory _series = series[adapter][maturity];\\n\\n        // Get the scale value from the last time this holder collected (default to maturity)\\n        uint256 lscale = lscales[adapter][maturity][usr];\\n\\n        uint256 level = adapterMeta[adapter].level;\\n        if (level.collectDisabled()) {\\n            // If this Series has been settled, we ensure everyone's YT will\\n            // collect yield accrued since issuance\\n            if (_settled(adapter, maturity)) {\\n                lscale = series[adapter][maturity].iscale;\\n                // If the Series is not settled, we ensure no collections can happen\\n            } else {\\n                return 0;\\n            }\\n        }\\n\\n        // If the Series has been settled, this should be their last collect, so redeem the user's Yield Tokens for them\\n        if (_settled(adapter, maturity)) {\\n            _redeemYT(usr, adapter, maturity, uBal);\\n        } else {\\n            // If we're not settled and we're past maturity + the sponsor window,\\n            // anyone can settle this Series so revert until someone does\\n            if (block.timestamp > maturity + SPONSOR_WINDOW) {\\n                revert Errors.CollectNotSettled();\\n                // Otherwise, this is a valid pre-settlement collect and we need to determine the scale value\\n            } else {\\n                uint256 cscale = Adapter(adapter).scale();\\n                // If this is larger than the largest scale we've seen for this Series, use it\\n                if (cscale > _series.maxscale) {\\n                    _series.maxscale = cscale;\\n                    lscales[adapter][maturity][usr] = cscale;\\n                    // If not, use the previously noted max scale value\\n                } else {\\n                    lscales[adapter][maturity][usr] = _series.maxscale;\\n                }\\n            }\\n        }\\n\\n        // Determine how much underlying has accrued since the last time this user collected, in units of Target.\\n        // (Or take the last time as issuance if they haven't yet)\\n        //\\n        // Reminder: `Underlying / Scale = Target`\\n        // So the following equation is saying, for some amount of Underlying `u`:\\n        // \\\"Balance of Target that equaled `u` at the last collection _minus_ Target that equals `u` now\\\"\\n        //\\n        // Because maxscale must be increasing, the Target balance needed to equal `u` decreases, and that \\\"excess\\\"\\n        // is what Yield holders are collecting\\n        uint256 tBalNow = uBal.fdivUp(_series.maxscale); // preventive round-up towards the protocol\\n        uint256 tBalPrev = uBal.fdiv(lscale);\\n        unchecked {\\n            collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;\\n        }\\n        ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, collected);\\n        Adapter(adapter).notify(usr, collected, false); // Distribute reward tokens\\n\\n        // If this collect is a part of a token transfer to another address, set the receiver's\\n        // last collection to a synthetic scale weighted based on the scale on their last collect,\\n        // the time elapsed, and the current scale\\n        if (to != address(0)) {\\n            uint256 ytBal = YT(_series.yt).balanceOf(to);\\n            // If receiver holds yields, we set lscale to a computed \\\"synthetic\\\" lscales value that,\\n            // for the updated yield balance, still assigns the correct amount of yield.\\n            lscales[adapter][maturity][to] = ytBal > 0\\n                ? _reweightLScale(adapter, maturity, ytBal, uBalTransfer, to, _series.maxscale)\\n                : _series.maxscale;\\n            uint256 tBalTransfer = uBalTransfer.fdiv(_series.maxscale);\\n            Adapter(adapter).notify(usr, tBalTransfer, false);\\n            Adapter(adapter).notify(to, tBalTransfer, true);\\n        }\\n        series[adapter][maturity] = _series;\\n\\n        emit Collected(adapter, maturity, collected);\\n    }\\n\\n    /// @notice calculate the harmonic mean of the current scale and the last scale,\\n    /// weighted by amounts associated with each\\n    function _reweightLScale(\\n        address adapter,\\n        uint256 maturity,\\n        uint256 ytBal,\\n        uint256 uBal,\\n        address receiver,\\n        uint256 scale\\n    ) internal view returns (uint256) {\\n        // Target Decimals * 18 Decimals [from fdiv] / (Target Decimals * 18 Decimals [from fdiv] / 18 Decimals)\\n        // = 18 Decimals, which is the standard for scale values\\n        return (ytBal + uBal).fdiv((ytBal.fdiv(lscales[adapter][maturity][receiver]) + uBal.fdiv(scale)));\\n    }\\n\\n    function _redeemYT(\\n        address usr,\\n        address adapter,\\n        uint256 maturity,\\n        uint256 uBal\\n    ) internal {\\n        // Burn the users's YTs\\n        YT(series[adapter][maturity].yt).burn(usr, uBal);\\n\\n        // Default principal for a YT\\n        uint256 tBal = 0;\\n\\n        // Principal Token holder's share of the principal = (1 - part of the principal that belongs to Yield Tokens)\\n        uint256 zShare = FixedMath.WAD - series[adapter][maturity].tilt;\\n\\n        // If PTs are at a loss and YTs had their principal cut to help cover the shortfall,\\n        // calculate how much YTs have left\\n        if (series[adapter][maturity].mscale.fdiv(series[adapter][maturity].maxscale) >= zShare) {\\n            tBal = uBal.fdiv(series[adapter][maturity].maxscale) - (uBal * zShare) / series[adapter][maturity].mscale;\\n            ERC20(Adapter(adapter).target()).safeTransferFrom(adapter, usr, tBal);\\n        }\\n\\n        // Always notify the Adapter of the full Target balance that will no longer\\n        // have its rewards distributed\\n        Adapter(adapter).notify(usr, uBal.fdivUp(series[adapter][maturity].maxscale), false);\\n\\n        emit YTRedeemed(adapter, maturity, tBal);\\n    }\\n\\n    /* ========== ADMIN ========== */\\n\\n    /// @notice Enable or disable a adapter\\n    /// @param adapter Adapter's address\\n    /// @param isOn Flag setting this adapter to enabled or disabled\\n    function setAdapter(address adapter, bool isOn) public requiresTrust {\\n        _setAdapter(adapter, isOn);\\n    }\\n\\n    /// @notice Set adapter's guard\\n    /// @param adapter Adapter address\\n    /// @param cap The max target that can be deposited on the Adapter\\n    function setGuard(address adapter, uint256 cap) external requiresTrust {\\n        adapterMeta[adapter].guard = cap;\\n        emit GuardChanged(adapter, cap);\\n    }\\n\\n    /// @notice Set guarded mode\\n    /// @param _guarded bool\\n    function setGuarded(bool _guarded) external requiresTrust {\\n        guarded = _guarded;\\n        emit GuardedChanged(_guarded);\\n    }\\n\\n    /// @notice Set periphery's contract\\n    /// @param _periphery Target address\\n    function setPeriphery(address _periphery) external requiresTrust {\\n        periphery = _periphery;\\n        emit PeripheryChanged(_periphery);\\n    }\\n\\n    /// @notice Set paused flag\\n    /// @param _paused boolean\\n    function setPaused(bool _paused) external requiresTrust {\\n        _paused ? _pause() : _unpause();\\n    }\\n\\n    /// @notice Set permissioless mode\\n    /// @param _permissionless bool\\n    function setPermissionless(bool _permissionless) external requiresTrust {\\n        permissionless = _permissionless;\\n        emit PermissionlessChanged(_permissionless);\\n    }\\n\\n    /// @notice Backfill a Series' Scale value at maturity if keepers failed to settle it\\n    /// @param adapter Adapter's address\\n    /// @param maturity Maturity date for the Series\\n    /// @param mscale Value to set as the Series' Scale value at maturity\\n    /// @param _usrs Values to set on lscales mapping\\n    /// @param _lscales Values to set on lscales mapping\\n    function backfillScale(\\n        address adapter,\\n        uint256 maturity,\\n        uint256 mscale,\\n        address[] calldata _usrs,\\n        uint256[] calldata _lscales\\n    ) external requiresTrust {\\n        if (!_exists(adapter, maturity)) revert Errors.SeriesDoesNotExist();\\n\\n        uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;\\n        // Admin can never backfill before maturity\\n        if (block.timestamp <= cutoff) revert Errors.OutOfWindowBoundaries();\\n\\n        // Set user's last scale values the Series (needed for the `collect` method)\\n        for (uint256 i = 0; i < _usrs.length; i++) {\\n            lscales[adapter][maturity][_usrs[i]] = _lscales[i];\\n        }\\n\\n        if (mscale > 0) {\\n            Series memory _series = series[adapter][maturity];\\n            // Set the maturity scale for the Series (needed for `redeem` methods)\\n            series[adapter][maturity].mscale = mscale;\\n            if (mscale > _series.maxscale) {\\n                series[adapter][maturity].maxscale = mscale;\\n            }\\n\\n            (address target, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();\\n\\n            address stakeDst = adapterMeta[adapter].enabled ? cup : _series.sponsor;\\n            ERC20(target).safeTransferFrom(adapter, cup, _series.reward);\\n            series[adapter][maturity].reward = 0;\\n            ERC20(stake).safeTransferFrom(adapter, stakeDst, stakeSize);\\n        }\\n\\n        emit Backfilled(adapter, maturity, mscale, _usrs, _lscales);\\n    }\\n\\n    /* ========== INTERNAL VIEWS ========== */\\n\\n    function _exists(address adapter, uint256 maturity) internal view returns (bool) {\\n        return series[adapter][maturity].pt != address(0);\\n    }\\n\\n    function _settled(address adapter, uint256 maturity) internal view returns (bool) {\\n        return series[adapter][maturity].mscale > 0;\\n    }\\n\\n    function _canBeSettled(address adapter, uint256 maturity) internal view returns (bool) {\\n        uint256 cutoff = maturity + SPONSOR_WINDOW + SETTLEMENT_WINDOW;\\n        // If the sender is the sponsor for the Series\\n        if (msg.sender == series[adapter][maturity].sponsor) {\\n            return maturity - SPONSOR_WINDOW <= block.timestamp && cutoff >= block.timestamp;\\n        } else {\\n            return maturity + SPONSOR_WINDOW < block.timestamp && cutoff >= block.timestamp;\\n        }\\n    }\\n\\n    function _isValid(address adapter, uint256 maturity) internal view returns (bool) {\\n        (uint256 minm, uint256 maxm) = Adapter(adapter).getMaturityBounds();\\n        if (maturity < block.timestamp + minm || maturity > block.timestamp + maxm) return false;\\n        (, , uint256 day, uint256 hour, uint256 minute, uint256 second) = DateTime.timestampToDateTime(maturity);\\n\\n        if (hour != 0 || minute != 0 || second != 0) return false;\\n        uint256 mode = Adapter(adapter).mode();\\n        if (mode == 0) {\\n            return day == 1;\\n        }\\n        if (mode == 1) {\\n            return DateTime.getDayOfWeek(maturity) == 1;\\n        }\\n        return false;\\n    }\\n\\n    /* ========== INTERNAL UTILS ========== */\\n\\n    function _setAdapter(address adapter, bool isOn) internal {\\n        AdapterMeta memory am = adapterMeta[adapter];\\n        if (am.enabled == isOn) revert Errors.ExistingValue();\\n        am.enabled = isOn;\\n\\n        // If this adapter is being added for the first time\\n        if (isOn && am.id == 0) {\\n            am.id = ++adapterCounter;\\n            adapterAddresses[am.id] = adapter;\\n        }\\n\\n        // Set level and target (can only be done once);\\n        am.level = uint248(Adapter(adapter).level());\\n        adapterMeta[adapter] = am;\\n        emit AdapterChanged(adapter, am.id, isOn);\\n    }\\n\\n    /* ========== PUBLIC GETTERS ========== */\\n\\n    /// @notice Returns address of Principal Token\\n    function pt(address adapter, uint256 maturity) public view returns (address) {\\n        return series[adapter][maturity].pt;\\n    }\\n\\n    /// @notice Returns address of Yield Token\\n    function yt(address adapter, uint256 maturity) public view returns (address) {\\n        return series[adapter][maturity].yt;\\n    }\\n\\n    function mscale(address adapter, uint256 maturity) public view returns (uint256) {\\n        return series[adapter][maturity].mscale;\\n    }\\n\\n    /* ========== MODIFIERS ========== */\\n\\n    modifier onlyYT(address adapter, uint256 maturity) {\\n        if (series[adapter][maturity].yt != msg.sender) revert Errors.OnlyYT();\\n        _;\\n    }\\n\\n    /* ========== LOGS ========== */\\n\\n    /// @notice Admin\\n    event Backfilled(\\n        address indexed adapter,\\n        uint256 indexed maturity,\\n        uint256 mscale,\\n        address[] _usrs,\\n        uint256[] _lscales\\n    );\\n    event GuardChanged(address indexed adapter, uint256 cap);\\n    event AdapterChanged(address indexed adapter, uint256 indexed id, bool indexed isOn);\\n    event PeripheryChanged(address indexed periphery);\\n\\n    /// @notice Series lifecycle\\n    /// *---- beginning\\n    event SeriesInitialized(\\n        address adapter,\\n        uint256 indexed maturity,\\n        address pt,\\n        address yt,\\n        address indexed sponsor,\\n        address indexed target\\n    );\\n    /// -***- middle\\n    event Issued(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);\\n    event Combined(address indexed adapter, uint256 indexed maturity, uint256 balance, address indexed sender);\\n    event Collected(address indexed adapter, uint256 indexed maturity, uint256 collected);\\n    /// ----* end\\n    event SeriesSettled(address indexed adapter, uint256 indexed maturity, address indexed settler);\\n    event PTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);\\n    event YTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);\\n    /// *----* misc\\n    event GuardedChanged(bool indexed guarded);\\n    event PermissionlessChanged(bool indexed permissionless);\\n}\\n\\ncontract TokenHandler is Trust {\\n    /// @notice Program state\\n    address public divider;\\n\\n    constructor() Trust(msg.sender) {}\\n\\n    function init(address _divider) external requiresTrust {\\n        if (divider != address(0)) revert Errors.AlreadyInitialized();\\n        divider = _divider;\\n    }\\n\\n    function deploy(\\n        address adapter,\\n        uint248 id,\\n        uint256 maturity\\n    ) external returns (address pt, address yt) {\\n        if (msg.sender != divider) revert Errors.OnlyDivider();\\n\\n        ERC20 target = ERC20(Adapter(adapter).target());\\n        uint8 decimals = target.decimals();\\n        string memory symbol = target.symbol();\\n        (string memory d, string memory m, string memory y) = DateTime.toDateString(maturity);\\n        string memory date = DateTime.format(maturity);\\n        string memory datestring = string(abi.encodePacked(d, \\\"-\\\", m, \\\"-\\\", y));\\n        string memory adapterId = DateTime.uintToString(id);\\n        pt = address(\\n            new Token(\\n                string(abi.encodePacked(date, \\\" \\\", symbol, \\\" Sense Principal Token, A\\\", adapterId)),\\n                string(abi.encodePacked(\\\"sP-\\\", symbol, \\\":\\\", datestring, \\\":\\\", adapterId)),\\n                decimals,\\n                divider\\n            )\\n        );\\n\\n        yt = address(\\n            new YT(\\n                adapter,\\n                maturity,\\n                string(abi.encodePacked(date, \\\" \\\", symbol, \\\" Sense Yield Token, A\\\", adapterId)),\\n                string(abi.encodePacked(\\\"sY-\\\", symbol, \\\":\\\", datestring, \\\":\\\", adapterId)),\\n                decimals,\\n                divider\\n            )\\n        );\\n    }\\n}\\n\",\"keccak256\":\"0xf6844d67e70c2f11522133173ed85cfaf94d2bf6f2bc35667af63a46585f855f\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n// External references\\nimport { ERC20 } from \\\"solmate/src/tokens/ERC20.sol\\\";\\nimport { SafeTransferLib } from \\\"solmate/src/utils/SafeTransferLib.sol\\\";\\nimport { IERC3156FlashLender } from \\\"../../external/flashloan/IERC3156FlashLender.sol\\\";\\nimport { IERC3156FlashBorrower } from \\\"../../external/flashloan/IERC3156FlashBorrower.sol\\\";\\n\\n// Internal references\\nimport { Divider } from \\\"../../Divider.sol\\\";\\nimport { Errors } from \\\"@sense-finance/v1-utils/src/libs/Errors.sol\\\";\\n\\n/// @title Assign value to Target tokens\\nabstract contract BaseAdapter is IERC3156FlashLender {\\n    using SafeTransferLib for ERC20;\\n\\n    /* ========== CONSTANTS ========== */\\n\\n    bytes32 public constant CALLBACK_SUCCESS = keccak256(\\\"ERC3156FlashBorrower.onFlashLoan\\\");\\n\\n    /* ========== PUBLIC IMMUTABLES ========== */\\n\\n    /// @notice Sense core Divider address\\n    address public immutable divider;\\n\\n    /// @notice Target token to divide\\n    address public immutable target;\\n\\n    /// @notice Underlying for the Target\\n    address public immutable underlying;\\n\\n    /// @notice Issuance fee\\n    uint128 public immutable ifee;\\n\\n    /// @notice adapter params\\n    AdapterParams public adapterParams;\\n\\n    /* ========== DATA STRUCTURES ========== */\\n\\n    struct AdapterParams {\\n        /// @notice Oracle address\\n        address oracle;\\n        /// @notice Token to stake at issuance\\n        address stake;\\n        /// @notice Amount to stake at issuance\\n        uint256 stakeSize;\\n        /// @notice Min maturity (seconds after block.timstamp)\\n        uint256 minm;\\n        /// @notice Max maturity (seconds after block.timstamp)\\n        uint256 maxm;\\n        /// @notice WAD number representing the percentage of the total\\n        /// principal that's set aside for Yield Tokens (e.g. 0.1e18 means that 10% of the principal is reserved).\\n        /// @notice If `0`, it means no principal is set aside for Yield Tokens\\n        uint64 tilt;\\n        /// @notice The number this function returns will be used to determine its access by checking for binary\\n        /// digits using the following scheme:\\u00a0<onRedeem(y/n)><collect(y/n)><combine(y/n)><issue(y/n)>\\n        /// (e.g. 0101 enables `collect` and `issue`, but not `combine`)\\n        uint48 level;\\n        /// @notice 0 for monthly, 1 for weekly\\n        uint16 mode;\\n    }\\n\\n    /* ========== METADATA STORAGE ========== */\\n\\n    string public name;\\n\\n    string public symbol;\\n\\n    constructor(\\n        address _divider,\\n        address _target,\\n        address _underlying,\\n        uint128 _ifee,\\n        AdapterParams memory _adapterParams\\n    ) {\\n        divider = _divider;\\n        target = _target;\\n        underlying = _underlying;\\n        ifee = _ifee;\\n        adapterParams = _adapterParams;\\n\\n        name = string(abi.encodePacked(ERC20(_target).name(), \\\" Adapter\\\"));\\n        symbol = string(abi.encodePacked(ERC20(_target).symbol(), \\\"-adapter\\\"));\\n\\n        ERC20(_target).safeApprove(divider, type(uint256).max);\\n        ERC20(_adapterParams.stake).safeApprove(divider, type(uint256).max);\\n    }\\n\\n    /// @notice Loan `amount` target to `receiver`, and takes it back after the callback.\\n    /// @param receiver The contract receiving target, needs to implement the\\n    /// `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface.\\n    /// @param amount The amount of target lent.\\n    /// @param data (encoded adapter address, maturity and YT amount the use has sent in)\\n    function flashLoan(\\n        IERC3156FlashBorrower receiver,\\n        address, /* fee */\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (bool) {\\n        if (Divider(divider).periphery() != msg.sender) revert Errors.OnlyPeriphery();\\n        ERC20(target).safeTransfer(address(receiver), amount);\\n        bytes32 keccak = IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, target, amount, 0, data);\\n        if (keccak != CALLBACK_SUCCESS) revert Errors.FlashCallbackFailed();\\n        ERC20(target).safeTransferFrom(address(receiver), address(this), amount);\\n        return true;\\n    }\\n\\n    /* ========== REQUIRED VALUE GETTERS ========== */\\n\\n    /// @notice Calculate and return this adapter's Scale value for the current timestamp. To be overriden by child contracts\\n    /// @dev For some Targets, such as cTokens, this is simply the exchange rate, or `supply cToken / supply underlying`\\n    /// @dev For other Targets, such as AMM LP shares, specialized logic will be required\\n    /// @dev This function _must_ return a WAD number representing the current exchange rate\\n    /// between the Target and the Underlying.\\n    /// @return value WAD Scale value\\n    function scale() external virtual returns (uint256);\\n\\n    /// @notice Cached scale value getter\\n    /// @dev For situations where you need scale from a view function\\n    function scaleStored() external view virtual returns (uint256);\\n\\n    /// @notice Returns the current price of the underlying in ETH terms\\n    function getUnderlyingPrice() external view virtual returns (uint256);\\n\\n    /* ========== REQUIRED UTILITIES ========== */\\n\\n    /// @notice Deposits underlying `amount`in return for target. Must be overriden by child contracts\\n    /// @param amount Underlying amount\\n    /// @return amount of target returned\\n    function wrapUnderlying(uint256 amount) external virtual returns (uint256);\\n\\n    /// @notice Deposits target `amount`in return for underlying. Must be overriden by child contracts\\n    /// @param amount Target amount\\n    /// @return amount of underlying returned\\n    function unwrapTarget(uint256 amount) external virtual returns (uint256);\\n\\n    function flashFee(address token, uint256) external view returns (uint256) {\\n        if (token != target) revert Errors.TokenNotSupported();\\n        return 0;\\n    }\\n\\n    function maxFlashLoan(address token) external view override returns (uint256) {\\n        return ERC20(token).balanceOf(address(this));\\n    }\\n\\n    /* ========== OPTIONAL HOOKS ========== */\\n\\n    /// @notice Notification whenever the Divider adds or removes Target\\n    function notify(\\n        address, /* usr */\\n        uint256, /* amt */\\n        bool /* join */\\n    ) public virtual {\\n        return;\\n    }\\n\\n    /// @notice Hook called whenever a user redeems PT\\n    function onRedeem(\\n        uint256, /* uBal */\\n        uint256, /* mscale */\\n        uint256, /* maxscale */\\n        uint256 /* tBal */\\n    ) public virtual {\\n        return;\\n    }\\n\\n    /* ========== PUBLIC STORAGE ACCESSORS ========== */\\n\\n    function getMaturityBounds() external view virtual returns (uint256, uint256) {\\n        return (adapterParams.minm, adapterParams.maxm);\\n    }\\n\\n    function getStakeAndTarget()\\n        external\\n        view\\n        returns (\\n            address,\\n            address,\\n            uint256\\n        )\\n    {\\n        return (target, adapterParams.stake, adapterParams.stakeSize);\\n    }\\n\\n    function mode() external view returns (uint256) {\\n        return adapterParams.mode;\\n    }\\n\\n    function tilt() external view returns (uint256) {\\n        return adapterParams.tilt;\\n    }\\n\\n    function level() external view returns (uint256) {\\n        return adapterParams.level;\\n    }\\n}\\n\",\"keccak256\":\"0xda0e2780d7f4c37511bd3fffbcef76df3b5b7f6818db482d2e5e341048af9c0b\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/adapters/abstract/extensions/ExtractableReward.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0\\npragma solidity 0.8.15;\\n\\nimport { ERC20 } from \\\"solmate/src/tokens/ERC20.sol\\\";\\nimport { SafeTransferLib } from \\\"solmate/src/utils/SafeTransferLib.sol\\\";\\nimport { Trust } from \\\"@sense-finance/v1-utils/src/Trust.sol\\\";\\nimport { Errors } from \\\"@sense-finance/v1-utils/src/libs/Errors.sol\\\";\\n\\n/// @title ExtractableReward\\n/// @notice Allows to extract rewards from the contract to the `rewardsRecepient`\\nabstract contract ExtractableReward is Trust {\\n    /// -----------------------------------------------------------------------\\n    /// Libraries usage\\n    /// -----------------------------------------------------------------------\\n\\n    using SafeTransferLib for ERC20;\\n\\n    /// @notice Rewards recipient\\n    address public rewardsRecipient;\\n\\n    /// -----------------------------------------------------------------------\\n    /// Constructor\\n    /// -----------------------------------------------------------------------\\n\\n    constructor(address _rewardsRecipient) Trust(msg.sender) {\\n        rewardsRecipient = _rewardsRecipient;\\n    }\\n\\n    /// -----------------------------------------------------------------------\\n    /// Rewards extractor\\n    /// -----------------------------------------------------------------------\\n\\n    /// @notice Receives a token address and returns whether it is an\\n    /// extractable token or not\\n    /// @dev To be overriden by the inheriting contract\\n    function _isValid(address _token) internal virtual returns (bool);\\n\\n    /// @notice Transfers reward tokens from the adapter to Sense's reward container\\n    function extractToken(address token) external {\\n        if (!_isValid(token)) revert Errors.TokenNotSupported();\\n        ERC20 t = ERC20(token);\\n        uint256 tBal = t.balanceOf(address(this));\\n        t.safeTransfer(rewardsRecipient, t.balanceOf(address(this)));\\n        emit RewardsClaimed(token, rewardsRecipient, tBal);\\n    }\\n\\n    /// -----------------------------------------------------------------------\\n    /// Admin functions\\n    /// -----------------------------------------------------------------------\\n    function setRewardsRecipient(address recipient) external requiresTrust {\\n        emit RewardsRecipientChanged(rewardsRecipient, recipient);\\n        rewardsRecipient = recipient;\\n    }\\n\\n    /// -----------------------------------------------------------------------\\n    /// Logs\\n    /// -----------------------------------------------------------------------\\n    event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);\\n    event RewardsClaimed(address indexed token, address indexed recipient, uint256 indexed amount);\\n}\\n\",\"keccak256\":\"0x92da8c9af316e0a4f6bbd5c8725b8bab37cf0025b5cd8cf7170a3d69c9d3a3a1\",\"license\":\"AGPL-3.0\"},\"@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\nimport { BaseAdapter } from \\\"../../abstract/BaseAdapter.sol\\\";\\nimport { WstETHAdapter } from \\\"../../implementations/lido/WstETHAdapter.sol\\\";\\n\\ninterface Opener {\\n    function onSponsorWindowOpened(address, uint256) external;\\n}\\n\\n/// @notice Adapter contract for wstETH\\ncontract OwnableWstETHAdapter is WstETHAdapter {\\n    /// @notice Ownabale param\\n    uint256 internal open = 1;\\n\\n    constructor(\\n        address _divider,\\n        address _target,\\n        address _rewardsRecipient,\\n        uint128 _ifee,\\n        BaseAdapter.AdapterParams memory _adapterParams\\n    ) WstETHAdapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) {}\\n\\n    function openSponsorWindow() external requiresTrust {\\n        open = 2;\\n        Opener(msg.sender).onSponsorWindowOpened(adapterParams.stake, adapterParams.stakeSize);\\n        open = 1;\\n    }\\n\\n    function getMaturityBounds() external view override returns (uint256, uint256) {\\n        return open == 2 ? (adapterParams.minm, adapterParams.maxm) : (0, 0);\\n    }\\n}\\n\",\"keccak256\":\"0x0a92403b0480a896b10291b9985bd0ef02510aac8f5787203bf92b4f9313bb5f\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/adapters/implementations/lido/WstETHAdapter.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n// External references\\nimport { FixedMath } from \\\"../../../external/FixedMath.sol\\\";\\n\\n// Internal references\\nimport { BaseAdapter } from \\\"../../abstract/BaseAdapter.sol\\\";\\nimport { ExtractableReward } from \\\"../../abstract/extensions/ExtractableReward.sol\\\";\\nimport { ERC20 } from \\\"solmate/src/tokens/ERC20.sol\\\";\\nimport { SafeTransferLib } from \\\"solmate/src/utils/SafeTransferLib.sol\\\";\\nimport { Errors } from \\\"@sense-finance/v1-utils/src/libs/Errors.sol\\\";\\n\\ninterface WstETHLike {\\n    /// @notice Exchanges wstETH to stETH\\n    function unwrap(uint256 _wstETHAmount) external returns (uint256);\\n\\n    /// @notice Exchanges stETH to wstETH\\n    function wrap(uint256 _stETHAmount) external returns (uint256);\\n}\\n\\ninterface StETHLike {\\n    /// @notice Get amount of stETH for a one wstETH\\n    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);\\n}\\n\\ninterface PriceOracleLike {\\n    function latestRoundData()\\n        external\\n        view\\n        returns (\\n            uint80 roundId,\\n            int256 answer,\\n            uint256 startedAt,\\n            uint256 updatedAt,\\n            uint80 answeredInRound\\n        );\\n}\\n\\n/// @notice Adapter contract for wstETH\\ncontract WstETHAdapter is BaseAdapter, ExtractableReward {\\n    using FixedMath for uint256;\\n    using SafeTransferLib for ERC20;\\n\\n    address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;\\n    address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;\\n    address public constant STETH_USD_PRICEFEED = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8; // Chainlink stETH-USD price feed\\n    address public constant ETH_USD_PRICEFEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419; // Chainlink ETH-USD price feed\\n\\n    /// @notice Cached scale value from the last call to `scale()`\\n    uint256 public override scaleStored;\\n\\n    constructor(\\n        address _divider,\\n        address _target,\\n        address _rewardsRecipient,\\n        uint128 _ifee,\\n        BaseAdapter.AdapterParams memory _adapterParams\\n    ) BaseAdapter(_divider, _target, STETH, _ifee, _adapterParams) ExtractableReward(_rewardsRecipient) {\\n        // approve wstETH contract to pull stETH (used on wrapUnderlying())\\n        ERC20(STETH).approve(WSTETH, type(uint256).max);\\n        // set an inital cached scale value\\n        scaleStored = StETHLike(STETH).getPooledEthByShares(1 ether);\\n    }\\n\\n    /// @return exRate Eth per wstEtH (natively in 18 decimals)\\n    function scale() external virtual override returns (uint256 exRate) {\\n        exRate = StETHLike(STETH).getPooledEthByShares(1 ether);\\n\\n        if (exRate != scaleStored) {\\n            // update value only if different than the previous\\n            scaleStored = exRate;\\n        }\\n    }\\n\\n    /// @dev To calculate stETH-ETH price we use Chainlink's stETH-USD and ETH-USD price feeds.\\n    function getUnderlyingPrice() external view override returns (uint256 price) {\\n        (, int256 stethPrice, , uint256 stethUpdatedAt, ) = PriceOracleLike(STETH_USD_PRICEFEED).latestRoundData();\\n        (, int256 ethPrice, , uint256 ethUpdatedAt, ) = PriceOracleLike(ETH_USD_PRICEFEED).latestRoundData();\\n        if (block.timestamp - stethUpdatedAt > 2 hours) revert Errors.InvalidPrice();\\n        if (block.timestamp - ethUpdatedAt > 2 hours) revert Errors.InvalidPrice();\\n        price = uint256(stethPrice).fdiv(uint256(ethPrice));\\n        if (price < 0) revert Errors.InvalidPrice();\\n    }\\n\\n    function unwrapTarget(uint256 amount) external override returns (uint256 stETH) {\\n        ERC20(WSTETH).safeTransferFrom(msg.sender, address(this), amount); // pull wstETH\\n        // unwrap wstETH into stETH and transfer it back to sender\\n        ERC20(STETH).safeTransfer(msg.sender, stETH = WstETHLike(WSTETH).unwrap(amount));\\n    }\\n\\n    function wrapUnderlying(uint256 amount) external override returns (uint256 wstETH) {\\n        ERC20(STETH).safeTransferFrom(msg.sender, address(this), amount); // pull STETH\\n        // wrap stETH into wstETH and transfer it back to sender\\n        ERC20(WSTETH).safeTransfer(msg.sender, wstETH = WstETHLike(WSTETH).wrap(amount));\\n    }\\n\\n    function _isValid(address _token) internal override returns (bool) {\\n        return (_token != target && _token != adapterParams.stake);\\n    }\\n}\\n\",\"keccak256\":\"0x314443c09c8d716e213bf42bdb2e11d1ed402dbf5326be037d1dcca086ec4660\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/external/DateTime.sol\":{\"content\":\"pragma solidity 0.8.15;\\n\\n/// @author Taken from: https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary\\nlibrary DateTime {\\n    uint256 constant SECONDS_PER_DAY = 24 * 60 * 60;\\n    uint256 constant SECONDS_PER_HOUR = 60 * 60;\\n    uint256 constant SECONDS_PER_MINUTE = 60;\\n    int256 constant OFFSET19700101 = 2440588;\\n\\n    function timestampToDate(uint256 timestamp)\\n        internal\\n        pure\\n        returns (\\n            uint256 year,\\n            uint256 month,\\n            uint256 day\\n        )\\n    {\\n        (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);\\n    }\\n\\n    function timestampToDateTime(uint256 timestamp)\\n        internal\\n        pure\\n        returns (\\n            uint256 year,\\n            uint256 month,\\n            uint256 day,\\n            uint256 hour,\\n            uint256 minute,\\n            uint256 second\\n        )\\n    {\\n        (year, month, day) = _daysToDate(timestamp / SECONDS_PER_DAY);\\n        uint256 secs = timestamp % SECONDS_PER_DAY;\\n        hour = secs / SECONDS_PER_HOUR;\\n        secs = secs % SECONDS_PER_HOUR;\\n        minute = secs / SECONDS_PER_MINUTE;\\n        second = secs % SECONDS_PER_MINUTE;\\n    }\\n\\n    function toDateString(uint256 _timestamp)\\n        internal\\n        pure\\n        returns (\\n            string memory d,\\n            string memory m,\\n            string memory y\\n        )\\n    {\\n        (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);\\n        d = uintToString(day);\\n        m = uintToString(month);\\n        y = uintToString(year);\\n        // append a 0 to numbers < 10 so we should, e.g, 01 instead of just 1\\n        if (day < 10) d = string(abi.encodePacked(\\\"0\\\", d));\\n        if (month < 10) m = string(abi.encodePacked(\\\"0\\\", m));\\n    }\\n\\n    function format(uint256 _timestamp) internal pure returns (string memory datestring) {\\n        string[12] memory months = [\\n            \\\"Jan\\\",\\n            \\\"Feb\\\",\\n            \\\"Mar\\\",\\n            \\\"Apr\\\",\\n            \\\"May\\\",\\n            \\\"June\\\",\\n            \\\"July\\\",\\n            \\\"Aug\\\",\\n            \\\"Sept\\\",\\n            \\\"Oct\\\",\\n            \\\"Nov\\\",\\n            \\\"Dec\\\"\\n        ];\\n        (uint256 year, uint256 month, uint256 day) = timestampToDate(_timestamp);\\n        uint256 last = day % 10;\\n        string memory suffix = \\\"th\\\";\\n        if (day < 11 || day > 20) {\\n            if (last == 1) suffix = \\\"st\\\";\\n            if (last == 2) suffix = \\\"nd\\\";\\n            if (last == 3) suffix = \\\"rd\\\";\\n        }\\n        return string(abi.encodePacked(uintToString(day), suffix, \\\" \\\", months[month - 1], \\\" \\\", uintToString(year)));\\n    }\\n\\n    function getDayOfWeek(uint256 timestamp) internal pure returns (uint256 dayOfWeek) {\\n        uint256 _days = timestamp / SECONDS_PER_DAY;\\n        dayOfWeek = ((_days + 3) % 7) + 1;\\n    }\\n\\n    /// Taken from https://stackoverflow.com/questions/47129173/how-to-convert-uint-to-string-in-solidity\\n    function uintToString(uint256 _i) internal pure returns (string memory _uintAsString) {\\n        if (_i == 0) return \\\"0\\\";\\n        uint256 j = _i;\\n        uint256 len;\\n        while (j != 0) {\\n            len++;\\n            j /= 10;\\n        }\\n        bytes memory bstr = new bytes(len);\\n        uint256 k = len;\\n        while (_i != 0) {\\n            k = k - 1;\\n            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));\\n            bytes1 b1 = bytes1(temp);\\n            bstr[k] = b1;\\n            _i /= 10;\\n        }\\n        return string(bstr);\\n    }\\n\\n    // ------------------------------------------------------------------------\\n    // Calculate the number of days from 1970/01/01 to year/month/day using\\n    // the date conversion algorithm from\\n    //   http://aa.usno.navy.mil/faq/docs/JD_Formula.php\\n    // and subtracting the offset 2440588 so that 1970/01/01 is day 0\\n    //\\n    // days = day\\n    //      - 32075\\n    //      + 1461 * (year + 4800 + (month - 14) / 12) / 4\\n    //      + 367 * (month - 2 - (month - 14) / 12 * 12) / 12\\n    //      - 3 * ((year + 4900 + (month - 14) / 12) / 100) / 4\\n    //      - offset\\n    // ------------------------------------------------------------------------\\n    function _daysFromDate(\\n        uint256 year,\\n        uint256 month,\\n        uint256 day\\n    ) internal pure returns (uint256 _days) {\\n        require(year >= 1970);\\n        int256 _year = int256(year);\\n        int256 _month = int256(month);\\n        int256 _day = int256(day);\\n\\n        int256 __days = _day -\\n            32075 +\\n            (1461 * (_year + 4800 + (_month - 14) / 12)) /\\n            4 +\\n            (367 * (_month - 2 - ((_month - 14) / 12) * 12)) /\\n            12 -\\n            (3 * ((_year + 4900 + (_month - 14) / 12) / 100)) /\\n            4 -\\n            OFFSET19700101;\\n\\n        _days = uint256(__days);\\n    }\\n\\n    // ------------------------------------------------------------------------\\n    // Calculate year/month/day from the number of days since 1970/01/01 using\\n    // the date conversion algorithm from\\n    //   http://aa.usno.navy.mil/faq/docs/JD_Formula.php\\n    // and adding the offset 2440588 so that 1970/01/01 is day 0\\n    //\\n    // int L = days + 68569 + offset\\n    // int N = 4 * L / 146097\\n    // L = L - (146097 * N + 3) / 4\\n    // year = 4000 * (L + 1) / 1461001\\n    // L = L - 1461 * year / 4 + 31\\n    // month = 80 * L / 2447\\n    // dd = L - 2447 * month / 80\\n    // L = month / 11\\n    // month = month + 2 - 12 * L\\n    // year = 100 * (N - 49) + year + L\\n    // ------------------------------------------------------------------------\\n    function _daysToDate(uint256 _days)\\n        internal\\n        pure\\n        returns (\\n            uint256 year,\\n            uint256 month,\\n            uint256 day\\n        )\\n    {\\n        int256 __days = int256(_days);\\n\\n        int256 L = __days + 68569 + OFFSET19700101;\\n        int256 N = (4 * L) / 146097;\\n        L = L - (146097 * N + 3) / 4;\\n        int256 _year = (4000 * (L + 1)) / 1461001;\\n        L = L - (1461 * _year) / 4 + 31;\\n        int256 _month = (80 * L) / 2447;\\n        int256 _day = L - (2447 * _month) / 80;\\n        L = _month / 11;\\n        _month = _month + 2 - 12 * L;\\n        _year = 100 * (N - 49) + _year + L;\\n\\n        year = uint256(_year);\\n        month = uint256(_month);\\n        day = uint256(_day);\\n    }\\n}\\n\",\"keccak256\":\"0x161ffa42bb0b7508a9372db90a7710088adbfb38cee34cdf523ff932b9b51043\"},\"@sense-finance/v1-core/src/external/FixedMath.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/// @title Fixed point arithmetic library\\n/// @author Taken from https://github.com/Rari-Capital/solmate/blob/main/src/utils/FixedPointMathLib.sol\\nlibrary FixedMath {\\n    uint256 internal constant WAD = 1e18;\\n    uint256 internal constant RAY = 1e27;\\n\\n    function fmul(\\n        uint256 x,\\n        uint256 y,\\n        uint256 baseUnit\\n    ) internal pure returns (uint256) {\\n        return mulDivDown(x, y, baseUnit); // Equivalent to (x * y) / baseUnit rounded down.\\n    }\\n\\n    function fmul(uint256 x, uint256 y) internal pure returns (uint256) {\\n        return mulDivDown(x, y, WAD); // Equivalent to (x * y) / WAD rounded down.\\n    }\\n\\n    function fmulUp(\\n        uint256 x,\\n        uint256 y,\\n        uint256 baseUnit\\n    ) internal pure returns (uint256) {\\n        return mulDivUp(x, y, baseUnit); // Equivalent to (x * y) / baseUnit rounded up.\\n    }\\n\\n    function fmulUp(uint256 x, uint256 y) internal pure returns (uint256) {\\n        return mulDivUp(x, y, WAD); // Equivalent to (x * y) / WAD rounded up.\\n    }\\n\\n    function fdiv(\\n        uint256 x,\\n        uint256 y,\\n        uint256 baseUnit\\n    ) internal pure returns (uint256) {\\n        return mulDivDown(x, baseUnit, y); // Equivalent to (x * baseUnit) / y rounded down.\\n    }\\n\\n    function fdiv(uint256 x, uint256 y) internal pure returns (uint256) {\\n        return mulDivDown(x, WAD, y); // Equivalent to (x * WAD) / y rounded down.\\n    }\\n\\n    function fdivUp(\\n        uint256 x,\\n        uint256 y,\\n        uint256 baseUnit\\n    ) internal pure returns (uint256) {\\n        return mulDivUp(x, baseUnit, y); // Equivalent to (x * baseUnit) / y rounded up.\\n    }\\n\\n    function fdivUp(uint256 x, uint256 y) internal pure returns (uint256) {\\n        return mulDivUp(x, WAD, y); // Equivalent to (x * WAD) / y rounded up.\\n    }\\n\\n    function mulDivDown(\\n        uint256 x,\\n        uint256 y,\\n        uint256 denominator\\n    ) internal pure returns (uint256 z) {\\n        assembly {\\n            // Store x * y in z for now.\\n            z := mul(x, y)\\n\\n            // Equivalent to require(denominator != 0 && (x == 0 || (x * y) / x == y))\\n            if iszero(and(iszero(iszero(denominator)), or(iszero(x), eq(div(z, x), y)))) {\\n                revert(0, 0)\\n            }\\n\\n            // Divide z by the denominator.\\n            z := div(z, denominator)\\n        }\\n    }\\n\\n    function mulDivUp(\\n        uint256 x,\\n        uint256 y,\\n        uint256 denominator\\n    ) internal pure returns (uint256 z) {\\n        assembly {\\n            // Store x * y in z for now.\\n            z := mul(x, y)\\n\\n            // Equivalent to require(denominator != 0 && (x == 0 || (x * y) / x == y))\\n            if iszero(and(iszero(iszero(denominator)), or(iszero(x), eq(div(z, x), y)))) {\\n                revert(0, 0)\\n            }\\n\\n            // First, divide z - 1 by the denominator and add 1.\\n            // We allow z - 1 to underflow if z is 0, because we multiply the\\n            // end result by 0 if z is zero, ensuring we return 0 if z is zero.\\n            z := mul(iszero(iszero(z)), add(div(sub(z, 1), denominator), 1))\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x466c07d32dda6d18099092be426495d84246b84d2654f212f69a623a1a63847d\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/external/flashloan/IERC3156FlashBorrower.sol\":{\"content\":\"pragma solidity ^0.8.0;\\n\\ninterface IERC3156FlashBorrower {\\n    /// @dev Receive a flash loan.\\n    /// @param initiator The initiator of the loan.\\n    /// @param token The loan currency.\\n    /// @param amount The amount of tokens lent.\\n    /// @param fee The additional amount of tokens to repay.\\n    /// @param data Arbitrary data structure, intended to contain user-defined parameters.\\n    /// @return The keccak256 hash of \\\"ERC3156FlashBorrower.onFlashLoan\\\"\\n    function onFlashLoan(\\n        address initiator,\\n        address token,\\n        uint256 amount,\\n        uint256 fee,\\n        bytes calldata data\\n    ) external returns (bytes32);\\n}\\n\",\"keccak256\":\"0xa2007326dfc89668d1864d688373d7e1ee07fee48f605d4f6726224004bdc8e5\"},\"@sense-finance/v1-core/src/external/flashloan/IERC3156FlashLender.sol\":{\"content\":\"pragma solidity ^0.8.0;\\nimport \\\"./IERC3156FlashBorrower.sol\\\";\\n\\ninterface IERC3156FlashLender {\\n    /// @dev The amount of currency available to be lent.\\n    /// @param token The loan currency.\\n    /// @return The amount of `token` that can be borrowed.\\n    function maxFlashLoan(address token) external view returns (uint256);\\n\\n    /// @dev The fee to be charged for a given loan.\\n    /// @param token The loan currency.\\n    /// @param amount The amount of tokens lent.\\n    /// @return The amount of `token` to be charged for the loan, on top of the returned principal.\\n    function flashFee(address token, uint256 amount) external view returns (uint256);\\n\\n    /// @dev Initiate a flash loan.\\n    /// @param receiver The receiver of the tokens in the loan, and the receiver of the callback.\\n    /// @param token The loan currency.\\n    /// @param amount The amount of tokens lent.\\n    /// @param data Arbitrary data structure, intended to contain user-defined parameters.\\n    function flashLoan(\\n        IERC3156FlashBorrower receiver,\\n        address token,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (bool);\\n}\\n\",\"keccak256\":\"0xc91333a7ff49db20853c817de2c277a0559a1ee75eb1deeb7d2096a5d1022d61\"},\"@sense-finance/v1-core/src/tokens/Token.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n// External references\\nimport { ERC20 } from \\\"solmate/src/tokens/ERC20.sol\\\";\\n\\n// Internal references\\nimport { Trust } from \\\"@sense-finance/v1-utils/src/Trust.sol\\\";\\n\\n/// @title Base Token\\ncontract Token is ERC20, Trust {\\n    constructor(\\n        string memory _name,\\n        string memory _symbol,\\n        uint8 _decimals,\\n        address _trusted\\n    ) ERC20(_name, _symbol, _decimals) Trust(_trusted) {}\\n\\n    /// @param usr The address to send the minted tokens\\n    /// @param amount The amount to be minted\\n    function mint(address usr, uint256 amount) public requiresTrust {\\n        _mint(usr, amount);\\n    }\\n\\n    /// @param usr The address from where to burn tokens from\\n    /// @param amount The amount to be burned\\n    function burn(address usr, uint256 amount) public requiresTrust {\\n        _burn(usr, amount);\\n    }\\n}\\n\",\"keccak256\":\"0xe7ba2a15fdf5f1d20a10c108c5883cd3e35d473c262eee755e579d4e9272fa3a\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-core/src/tokens/YT.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n// Internal references\\nimport { Divider } from \\\"../Divider.sol\\\";\\nimport { Token } from \\\"./Token.sol\\\";\\n\\n/// @title Yield Token\\n/// @notice Strips off excess before every transfer\\ncontract YT is Token {\\n    address public immutable adapter;\\n    address public immutable divider;\\n    uint256 public immutable maturity;\\n\\n    constructor(\\n        address _adapter,\\n        uint256 _maturity,\\n        string memory _name,\\n        string memory _symbol,\\n        uint8 _decimals,\\n        address _divider\\n    ) Token(_name, _symbol, _decimals, _divider) {\\n        adapter = _adapter;\\n        maturity = _maturity;\\n        divider = _divider;\\n    }\\n\\n    function collect() external returns (uint256 _collected) {\\n        return Divider(divider).collect(msg.sender, adapter, maturity, 0, address(0));\\n    }\\n\\n    function transfer(address to, uint256 value) public override returns (bool) {\\n        Divider(divider).collect(msg.sender, adapter, maturity, value, to);\\n        return super.transfer(to, value);\\n    }\\n\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 value\\n    ) public override returns (bool) {\\n        if (value > 0) Divider(divider).collect(from, adapter, maturity, value, to);\\n        return super.transferFrom(from, to, value);\\n    }\\n}\\n\",\"keccak256\":\"0x81bdc71bc663bd88015cdf4e43c235345b7479f5d86e7b3a59ad64a8df3203f8\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-utils/src/Trust.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.7.0;\\n\\n/// @notice Ultra minimal authorization logic for smart contracts.\\n/// @author From https://github.com/Rari-Capital/solmate/blob/fab107565a51674f3a3b5bfdaacc67f6179b1a9b/src/auth/Trust.sol\\nabstract contract Trust {\\n    event UserTrustUpdated(address indexed user, bool trusted);\\n\\n    mapping(address => bool) public isTrusted;\\n\\n    constructor(address initialUser) {\\n        isTrusted[initialUser] = true;\\n\\n        emit UserTrustUpdated(initialUser, true);\\n    }\\n\\n    function setIsTrusted(address user, bool trusted) public virtual requiresTrust {\\n        isTrusted[user] = trusted;\\n\\n        emit UserTrustUpdated(user, trusted);\\n    }\\n\\n    modifier requiresTrust() {\\n        require(isTrusted[msg.sender], \\\"UNTRUSTED\\\");\\n\\n        _;\\n    }\\n}\\n\",\"keccak256\":\"0x2d3887076c81425d3954aea7735aebd9093e3df69c8132b1713fae4a34201d43\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-utils/src/libs/Errors.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.8.4;\\n\\nlibrary Errors {\\n    // Auth\\n    error CombineRestricted();\\n    error IssuanceRestricted();\\n    error NotAuthorized();\\n    error OnlyYT();\\n    error OnlyDivider();\\n    error OnlyPeriphery();\\n    error OnlyPermissionless();\\n    error RedeemRestricted();\\n    error Untrusted();\\n\\n    // Adapters\\n    error TokenNotSupported();\\n    error FlashCallbackFailed();\\n    error SenderNotEligible();\\n    error TargetMismatch();\\n    error TargetNotSupported();\\n    error InvalidAdapterType();\\n    error PriceOracleNotFound();\\n\\n    // Divider\\n    error AlreadySettled();\\n    error CollectNotSettled();\\n    error GuardCapReached();\\n    error IssuanceFeeCapExceeded();\\n    error IssueOnSettle();\\n    error NotSettled();\\n\\n    // Input & validations\\n    error AlreadyInitialized();\\n    error DuplicateSeries();\\n    error ExistingValue();\\n    error InvalidAdapter();\\n    error InvalidMaturity();\\n    error InvalidParam();\\n    error NotImplemented();\\n    error OutOfWindowBoundaries();\\n    error SeriesDoesNotExist();\\n    error SwapTooSmall();\\n    error TargetParamsNotSet();\\n    error PoolParamsNotSet();\\n    error PTParamsNotSet();\\n    error AttemptFailed();\\n    error InvalidPrice();\\n    error BadContractInteration();\\n\\n    // Periphery\\n    error FactoryNotSupported();\\n    error FlashBorrowFailed();\\n    error FlashUntrustedBorrower();\\n    error FlashUntrustedLoanInitiator();\\n    error UnexpectedSwapAmount();\\n    error TooMuchLeftoverTarget();\\n\\n    // Fuse\\n    error AdapterNotSet();\\n    error FailedBecomeAdmin();\\n    error FailedAddTargetMarket();\\n    error FailedToAddPTMarket();\\n    error FailedAddLpMarket();\\n    error OracleNotReady();\\n    error PoolAlreadyDeployed();\\n    error PoolNotDeployed();\\n    error PoolNotSet();\\n    error SeriesNotQueued();\\n    error TargetExists();\\n    error TargetNotInFuse();\\n\\n    // Tokens\\n    error MintFailed();\\n    error RedeemFailed();\\n    error TransferFailed();\\n}\\n\",\"keccak256\":\"0x5eece5ee6069054e8485c7c799ad1ea764446248088ee16bc0ae08c84f0c52b9\",\"license\":\"AGPL-3.0-only\"},\"@sense-finance/v1-utils/src/libs/Levels.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\npragma solidity >=0.7.0;\\n\\nlibrary Levels {\\n    uint256 private constant _INIT_BIT = 0x1;\\n    uint256 private constant _ISSUE_BIT = 0x2;\\n    uint256 private constant _COMBINE_BIT = 0x4;\\n    uint256 private constant _COLLECT_BIT = 0x8;\\n    uint256 private constant _REDEEM_BIT = 0x10;\\n    uint256 private constant _REDEEM_HOOK_BIT = 0x20;\\n\\n    function initRestricted(uint256 level) internal pure returns (bool) {\\n        return level & _INIT_BIT != _INIT_BIT;\\n    }\\n\\n    function issueRestricted(uint256 level) internal pure returns (bool) {\\n        return level & _ISSUE_BIT != _ISSUE_BIT;\\n    }\\n\\n    function combineRestricted(uint256 level) internal pure returns (bool) {\\n        return level & _COMBINE_BIT != _COMBINE_BIT;\\n    }\\n\\n    function collectDisabled(uint256 level) internal pure returns (bool) {\\n        return level & _COLLECT_BIT != _COLLECT_BIT;\\n    }\\n\\n    function redeemRestricted(uint256 level) internal pure returns (bool) {\\n        return level & _REDEEM_BIT != _REDEEM_BIT;\\n    }\\n\\n    function redeemHookDisabled(uint256 level) internal pure returns (bool) {\\n        return level & _REDEEM_HOOK_BIT != _REDEEM_HOOK_BIT;\\n    }\\n}\\n\",\"keccak256\":\"0x6c71e17beb73fca7577fb8868086159303eaecb1b397a446e8891b42f73fd502\",\"license\":\"AGPL-3.0-only\"},\"solmate/src/tokens/ERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity >=0.8.0;\\n\\n/// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.\\n/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)\\n/// @author Modified from Uniswap (https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2ERC20.sol)\\n/// @dev Do not manually set balances without updating totalSupply, as the sum of all user balances must not exceed it.\\nabstract contract ERC20 {\\n    /*//////////////////////////////////////////////////////////////\\n                                 EVENTS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    event Transfer(address indexed from, address indexed to, uint256 amount);\\n\\n    event Approval(address indexed owner, address indexed spender, uint256 amount);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            METADATA STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    string public name;\\n\\n    string public symbol;\\n\\n    uint8 public immutable decimals;\\n\\n    /*//////////////////////////////////////////////////////////////\\n                              ERC20 STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    uint256 public totalSupply;\\n\\n    mapping(address => uint256) public balanceOf;\\n\\n    mapping(address => mapping(address => uint256)) public allowance;\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            EIP-2612 STORAGE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    uint256 internal immutable INITIAL_CHAIN_ID;\\n\\n    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;\\n\\n    mapping(address => uint256) public nonces;\\n\\n    /*//////////////////////////////////////////////////////////////\\n                               CONSTRUCTOR\\n    //////////////////////////////////////////////////////////////*/\\n\\n    constructor(\\n        string memory _name,\\n        string memory _symbol,\\n        uint8 _decimals\\n    ) {\\n        name = _name;\\n        symbol = _symbol;\\n        decimals = _decimals;\\n\\n        INITIAL_CHAIN_ID = block.chainid;\\n        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                               ERC20 LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function approve(address spender, uint256 amount) public virtual returns (bool) {\\n        allowance[msg.sender][spender] = amount;\\n\\n        emit Approval(msg.sender, spender, amount);\\n\\n        return true;\\n    }\\n\\n    function transfer(address to, uint256 amount) public virtual returns (bool) {\\n        balanceOf[msg.sender] -= amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(msg.sender, to, amount);\\n\\n        return true;\\n    }\\n\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) public virtual returns (bool) {\\n        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.\\n\\n        if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - amount;\\n\\n        balanceOf[from] -= amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(from, to, amount);\\n\\n        return true;\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                             EIP-2612 LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function permit(\\n        address owner,\\n        address spender,\\n        uint256 value,\\n        uint256 deadline,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) public virtual {\\n        require(deadline >= block.timestamp, \\\"PERMIT_DEADLINE_EXPIRED\\\");\\n\\n        // Unchecked because the only math done is incrementing\\n        // the owner's nonce which cannot realistically overflow.\\n        unchecked {\\n            address recoveredAddress = ecrecover(\\n                keccak256(\\n                    abi.encodePacked(\\n                        \\\"\\\\x19\\\\x01\\\",\\n                        DOMAIN_SEPARATOR(),\\n                        keccak256(\\n                            abi.encode(\\n                                keccak256(\\n                                    \\\"Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)\\\"\\n                                ),\\n                                owner,\\n                                spender,\\n                                value,\\n                                nonces[owner]++,\\n                                deadline\\n                            )\\n                        )\\n                    )\\n                ),\\n                v,\\n                r,\\n                s\\n            );\\n\\n            require(recoveredAddress != address(0) && recoveredAddress == owner, \\\"INVALID_SIGNER\\\");\\n\\n            allowance[recoveredAddress][spender] = value;\\n        }\\n\\n        emit Approval(owner, spender, value);\\n    }\\n\\n    function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {\\n        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator();\\n    }\\n\\n    function computeDomainSeparator() internal view virtual returns (bytes32) {\\n        return\\n            keccak256(\\n                abi.encode(\\n                    keccak256(\\\"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)\\\"),\\n                    keccak256(bytes(name)),\\n                    keccak256(\\\"1\\\"),\\n                    block.chainid,\\n                    address(this)\\n                )\\n            );\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                        INTERNAL MINT/BURN LOGIC\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function _mint(address to, uint256 amount) internal virtual {\\n        totalSupply += amount;\\n\\n        // Cannot overflow because the sum of all user\\n        // balances can't exceed the max uint256 value.\\n        unchecked {\\n            balanceOf[to] += amount;\\n        }\\n\\n        emit Transfer(address(0), to, amount);\\n    }\\n\\n    function _burn(address from, uint256 amount) internal virtual {\\n        balanceOf[from] -= amount;\\n\\n        // Cannot underflow because a user's balance\\n        // will never be larger than the total supply.\\n        unchecked {\\n            totalSupply -= amount;\\n        }\\n\\n        emit Transfer(from, address(0), amount);\\n    }\\n}\\n\",\"keccak256\":\"0x43aa1509bb753f053143530705d9c4eee415691d26a4779769bf028a74e6ac69\",\"license\":\"MIT\"},\"solmate/src/utils/ReentrancyGuard.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity >=0.8.0;\\n\\n/// @notice Gas optimized reentrancy protection for smart contracts.\\n/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/ReentrancyGuard.sol)\\n/// @author Modified from OpenZeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/ReentrancyGuard.sol)\\nabstract contract ReentrancyGuard {\\n    uint256 private locked = 1;\\n\\n    modifier nonReentrant() virtual {\\n        require(locked == 1, \\\"REENTRANCY\\\");\\n\\n        locked = 2;\\n\\n        _;\\n\\n        locked = 1;\\n    }\\n}\\n\",\"keccak256\":\"0xa0e50a0f232da7f289430601ba927c315266b20ec739761430b0fde926fefe55\",\"license\":\"MIT\"},\"solmate/src/utils/SafeTransferLib.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity >=0.8.0;\\n\\nimport {ERC20} from \\\"../tokens/ERC20.sol\\\";\\n\\n/// @notice Safe ETH and ERC20 transfer library that gracefully handles missing return values.\\n/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/SafeTransferLib.sol)\\n/// @dev Caution! This library won't check that a token has code, responsibility is delegated to the caller.\\nlibrary SafeTransferLib {\\n    /*//////////////////////////////////////////////////////////////\\n                             ETH OPERATIONS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function safeTransferETH(address to, uint256 amount) internal {\\n        bool success;\\n\\n        assembly {\\n            // Transfer the ETH and store if it succeeded or not.\\n            success := call(gas(), to, amount, 0, 0, 0, 0)\\n        }\\n\\n        require(success, \\\"ETH_TRANSFER_FAILED\\\");\\n    }\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            ERC20 OPERATIONS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function safeTransferFrom(\\n        ERC20 token,\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) internal {\\n        bool success;\\n\\n        assembly {\\n            // We'll write our calldata to this slot below, but restore it later.\\n            let memPointer := mload(0x40)\\n\\n            // Write the abi-encoded calldata into memory, beginning with the function selector.\\n            mstore(0, 0x23b872dd00000000000000000000000000000000000000000000000000000000)\\n            mstore(4, from) // Append the \\\"from\\\" argument.\\n            mstore(36, to) // Append the \\\"to\\\" argument.\\n            mstore(68, amount) // Append the \\\"amount\\\" argument.\\n\\n            success := and(\\n                // Set success to whether the call reverted, if not we check it either\\n                // returned exactly 1 (can't just be non-zero data), or had no return data.\\n                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),\\n                // We use 100 because that's the total length of our calldata (4 + 32 * 3)\\n                // Counterintuitively, this call() must be positioned after the or() in the\\n                // surrounding and() because and() evaluates its arguments from right to left.\\n                call(gas(), token, 0, 0, 100, 0, 32)\\n            )\\n\\n            mstore(0x60, 0) // Restore the zero slot to zero.\\n            mstore(0x40, memPointer) // Restore the memPointer.\\n        }\\n\\n        require(success, \\\"TRANSFER_FROM_FAILED\\\");\\n    }\\n\\n    function safeTransfer(\\n        ERC20 token,\\n        address to,\\n        uint256 amount\\n    ) internal {\\n        bool success;\\n\\n        assembly {\\n            // We'll write our calldata to this slot below, but restore it later.\\n            let memPointer := mload(0x40)\\n\\n            // Write the abi-encoded calldata into memory, beginning with the function selector.\\n            mstore(0, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)\\n            mstore(4, to) // Append the \\\"to\\\" argument.\\n            mstore(36, amount) // Append the \\\"amount\\\" argument.\\n\\n            success := and(\\n                // Set success to whether the call reverted, if not we check it either\\n                // returned exactly 1 (can't just be non-zero data), or had no return data.\\n                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),\\n                // We use 68 because that's the total length of our calldata (4 + 32 * 2)\\n                // Counterintuitively, this call() must be positioned after the or() in the\\n                // surrounding and() because and() evaluates its arguments from right to left.\\n                call(gas(), token, 0, 0, 68, 0, 32)\\n            )\\n\\n            mstore(0x60, 0) // Restore the zero slot to zero.\\n            mstore(0x40, memPointer) // Restore the memPointer.\\n        }\\n\\n        require(success, \\\"TRANSFER_FAILED\\\");\\n    }\\n\\n    function safeApprove(\\n        ERC20 token,\\n        address to,\\n        uint256 amount\\n    ) internal {\\n        bool success;\\n\\n        assembly {\\n            // We'll write our calldata to this slot below, but restore it later.\\n            let memPointer := mload(0x40)\\n\\n            // Write the abi-encoded calldata into memory, beginning with the function selector.\\n            mstore(0, 0x095ea7b300000000000000000000000000000000000000000000000000000000)\\n            mstore(4, to) // Append the \\\"to\\\" argument.\\n            mstore(36, amount) // Append the \\\"amount\\\" argument.\\n\\n            success := and(\\n                // Set success to whether the call reverted, if not we check it either\\n                // returned exactly 1 (can't just be non-zero data), or had no return data.\\n                or(and(eq(mload(0), 1), gt(returndatasize(), 31)), iszero(returndatasize())),\\n                // We use 68 because that's the total length of our calldata (4 + 32 * 2)\\n                // Counterintuitively, this call() must be positioned after the or() in the\\n                // surrounding and() because and() evaluates its arguments from right to left.\\n                call(gas(), token, 0, 0, 68, 0, 32)\\n            )\\n\\n            mstore(0x60, 0) // Restore the zero slot to zero.\\n            mstore(0x40, memPointer) // Restore the memPointer.\\n        }\\n\\n        require(success, \\\"APPROVE_FAILED\\\");\\n    }\\n}\\n\",\"keccak256\":\"0x5f2e1158c68c1f3d15b80e8a7dd92b6849f873066969562ad33c0abb80e536ff\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6101006040526001600b553480156200001757600080fd5b5060405162002080380380620020808339810160408190526200003a9162000576565b6001600160a01b03808616608090815281861660a081815273ae7ab96520de3a18e5e111b5eaab095312d7fe8460c08181526001600160801b03881660e09081528751600080549189166001600160a01b031992831617815560208a01516001805491909a1692169190911790975560408089015160025560608901516003559588015160049081559388015160058054938a0151928a015161ffff16600160701b0261ffff60701b1965ffffffffffff90941668010000000000000000026001600160701b03199095166001600160401b0390931692909217939093179190911617905583516306fdde0360e01b815293518a958a958a958a958a95889533958c958c9593948b948b9490936306fdde039380840193919291908290030181865afa1580156200016f573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f19168201604052620001999190810190620006c2565b604051602001620001ab91906200077a565b60405160208183030381529060405260069081620001ca919062000837565b50836001600160a01b03166395d89b416040518163ffffffff1660e01b8152600401600060405180830381865afa1580156200020a573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f19168201604052620002349190810190620006c2565b60405160200162000246919062000903565b6040516020818303038152906040526007908162000265919062000837565b506200028f608051600019866001600160a01b03166200046560201b620010ad179092919060201c565b620002bc60805160001983602001516001600160a01b03166200046560201b620010ad179092919060201c565b505050506001600160a01b038216600081815260086020908152604091829020805460ff1916600190811790915591519182529192507fe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986910160405180910390a250600980546001600160a01b0319166001600160a01b039290921691909117905560405163095ea7b360e01b8152737f39c581f595b53c5cb19bd0b3f8da6c935e2ca06004820152600019602482015273ae7ab96520de3a18e5e111b5eaab095312d7fe849063095ea7b3906044016020604051808303816000875af1158015620003ac573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190620003d2919062000931565b50604051630f451f7160e31b8152670de0b6b3a7640000600482015273ae7ab96520de3a18e5e111b5eaab095312d7fe8490637a28fb8890602401602060405180830381865afa1580156200042b573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906200045191906200095c565b600a55506200097698505050505050505050565b600060405163095ea7b360e01b6000528360045282602452602060006044600080895af13d15601f3d1160016000511416171691506000606052806040525080620004e75760405162461bcd60e51b815260206004820152600e60248201526d1054141493d59157d1905253115160921b604482015260640160405180910390fd5b50505050565b80516001600160a01b03811681146200050557600080fd5b919050565b634e487b7160e01b600052604160045260246000fd5b60405161010081016001600160401b03811182821017156200054657620005466200050a565b60405290565b805165ffffffffffff811681146200050557600080fd5b805161ffff811681146200050557600080fd5b60008060008060008587036101808112156200059157600080fd5b6200059c87620004ed565b9550620005ac60208801620004ed565b9450620005bc60408801620004ed565b60608801519094506001600160801b0381168114620005da57600080fd5b9250610100607f198201811315620005f157600080fd5b620005fb62000520565b91506200060b60808901620004ed565b82526200061b60a08901620004ed565b602083015260c0880151604083015260e0880151606083015287015160808201526101208701516001600160401b03811681146200065857600080fd5b60a08201526200066c61014088016200054c565b60c082015262000680610160880162000563565b60e0820152809150509295509295909350565b60005b83811015620006b057818101518382015260200162000696565b83811115620004e75750506000910152565b600060208284031215620006d557600080fd5b81516001600160401b0380821115620006ed57600080fd5b818401915084601f8301126200070257600080fd5b8151818111156200071757620007176200050a565b604051601f8201601f19908116603f011681019083821181831017156200074257620007426200050a565b816040528281528760208487010111156200075c57600080fd5b6200076f83602083016020880162000693565b979650505050505050565b600082516200078e81846020870162000693565b671020b230b83a32b960c11b920191825250600801919050565b600181811c90821680620007bd57607f821691505b602082108103620007de57634e487b7160e01b600052602260045260246000fd5b50919050565b601f8211156200083257600081815260208120601f850160051c810160208610156200080d5750805b601f850160051c820191505b818110156200082e5782815560010162000819565b5050505b505050565b81516001600160401b038111156200085357620008536200050a565b6200086b81620008648454620007a8565b84620007e4565b602080601f831160018114620008a357600084156200088a5750858301515b600019600386901b1c1916600185901b1785556200082e565b600085815260208120601f198616915b82811015620008d457888601518255948401946001909101908401620008b3565b5085821015620008f35787850151600019600388901b60f8161c191681555b5050505050600190811b01905550565b600082516200091781846020870162000693565b6716b0b230b83a32b960c11b920191825250600801919050565b6000602082840312156200094457600080fd5b815180151581146200095557600080fd5b9392505050565b6000602082840312156200096f57600080fd5b5051919050565b60805160a05160c05160e05161169f620009e1600039600061053e0152600061047b0152600081816103370152818161059801528181610c7801528181610cc801528181610d8a01528181610fc2015261127c01526000818161038d0152610bc4015261169f6000f3fe608060405234801561001057600080fd5b50600436106101fb5760003560e01c8063613255ab1161011a578063b484972a116100ad578063d9d98ce41161007c578063d9d98ce4146105ba578063d9fb643a146105cd578063e00bfe50146105e8578063f51e181a14610603578063ff2a7d301461060b57600080fd5b8063b484972a14610526578063b8c15a9f14610539578063c39a3b2914610581578063d4b839921461059357600080fd5b80638237e538116100e95780638237e538146104b957806395d89b41146104e057806396d64879146104e8578063985579a41461050b57600080fd5b8063613255ab1461044657806364c56e3c146104595780636f307dc3146104765780636fd5ae151461049d57600080fd5b80632c5786b8116101925780634aae9fed116101615780634aae9fed146103ea57806351c39ea1146103fd5780635cffe9de14610410578063608c44d61461043357600080fd5b80632c5786b814610380578063378efa371461038857806340cc63e1146103c7578063468f02d2146103e257600080fd5b80631a54259c116101ce5780631a54259c146102f9578063226778491461030c57806327b327d014610323578063295a52121461036d57600080fd5b806306fdde0314610200578063083118d51461021e5780631393916a146102d057806314282f58146102e5575b600080fd5b61020861061e565b60405161021591906112ec565b60405180910390f35b600054600154600254600354600454600554610274956001600160a01b0390811695169392919067ffffffffffffffff81169068010000000000000000810465ffffffffffff1690600160701b900461ffff1688565b604080516001600160a01b03998a168152989097166020890152958701949094526060860192909252608085015267ffffffffffffffff1660a084015265ffffffffffff1660c083015261ffff1660e082015261010001610215565b6102e36102de366004611369565b6106ac565b005b6102e36102f336600461139e565b50505050565b6102e36103073660046113d0565b61075b565b610315600a5481565b604051908152602001610215565b600154600254604080516001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000811682529093166020840152820152606001610215565b600554600160701b900461ffff16610315565b6102e361080f565b6103af7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610215565b6103af735f4ec3df9cbd43714fe2740f5e3616155c5b841981565b6103156108cc565b6103156103f83660046113ed565b610a39565b61031561040b3660046113ed565b610afa565b61042361041e366004611406565b610bb6565b6040519015158152602001610215565b6102e36104413660046113d0565b610dbf565b6103156104543660046113d0565b610f1c565b610461610f8d565b60408051928352602083019190915201610215565b6103af7f000000000000000000000000000000000000000000000000000000000000000081565b60055468010000000000000000900465ffffffffffff16610315565b6103157f439148f0bbc682ca079e46d6e2c2f0c1e3b820f1a291b069d8882abf8cf18dd981565b610208610fb1565b6104236104f63660046113d0565b60086020526000908152604090205460ff1681565b6103af73cfe54b5cd566ab89272946f602d76ea879cab4a881565b6102e36105343660046114a5565b505050565b6105607f000000000000000000000000000000000000000000000000000000000000000081565b6040516fffffffffffffffffffffffffffffffff9091168152602001610215565b60055467ffffffffffffffff16610315565b6103af7f000000000000000000000000000000000000000000000000000000000000000081565b6103156105c83660046114e3565b610fbe565b6103af737f39c581f595b53c5cb19bd0b3f8da6c935e2ca081565b6103af73ae7ab96520de3a18e5e111b5eaab095312d7fe8481565b61031561101b565b6009546103af906001600160a01b031681565b6006805461062b9061150f565b80601f01602080910402602001604051908101604052809291908181526020018280546106579061150f565b80156106a45780601f10610679576101008083540402835291602001916106a4565b820191906000526020600020905b81548152906001019060200180831161068757829003601f168201915b505050505081565b3360009081526008602052604090205460ff166106fc5760405162461bcd60e51b8152602060048201526009602482015268155395149554d5115160ba1b60448201526064015b60405180910390fd5b6001600160a01b038216600081815260086020908152604091829020805460ff191685151590811790915591519182527fe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986910160405180910390a25050565b3360009081526008602052604090205460ff166107a65760405162461bcd60e51b8152602060048201526009602482015268155395149554d5115160ba1b60448201526064016106f3565b6009546040516001600160a01b038084169216907f952c654458751f95c1440bdb1537809137b3de28466b80ad096a711707ae987a90600090a36009805473ffffffffffffffffffffffffffffffffffffffff19166001600160a01b0392909216919091179055565b3360009081526008602052604090205460ff1661085a5760405162461bcd60e51b8152602060048201526009602482015268155395149554d5115160ba1b60448201526064016106f3565b6002600b819055600154905460405163dfd4718f60e01b81526001600160a01b0390921660048301526024820152339063dfd4718f90604401600060405180830381600087803b1580156108ad57600080fd5b505af11580156108c1573d6000803e3d6000fd5b50506001600b555050565b600080600073cfe54b5cd566ab89272946f602d76ea879cab4a86001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa158015610923573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109479190611563565b50935050925050600080735f4ec3df9cbd43714fe2740f5e3616155c5b84196001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa1580156109a3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109c79190611563565b50935050925050611c2083426109dd91906115b3565b11156109fb5760405162bfc92160e01b815260040160405180910390fd5b611c20610a0882426115b3565b1115610a265760405162bfc92160e01b815260040160405180910390fd5b610a308483611139565b94505050505090565b6000610a5b73ae7ab96520de3a18e5e111b5eaab095312d7fe84333085611155565b604051630ea598cb60e41b815260048101839052610af5903390737f39c581f595b53c5cb19bd0b3f8da6c935e2ca09063ea598cb0906024016020604051808303816000875af1158015610ab3573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ad791906115d8565b9250737f39c581f595b53c5cb19bd0b3f8da6c935e2ca090836111ec565b919050565b6000610b1c737f39c581f595b53c5cb19bd0b3f8da6c935e2ca0333085611155565b604051636f074d1f60e11b815260048101839052610af5903390737f39c581f595b53c5cb19bd0b3f8da6c935e2ca09063de0e9a3e906024016020604051808303816000875af1158015610b74573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610b9891906115d8565b925073ae7ab96520de3a18e5e111b5eaab095312d7fe8490836111ec565b6000336001600160a01b03167f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166377aace1a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610c20573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c4491906115f1565b6001600160a01b031614610c6b5760405163fb02114960e01b815260040160405180910390fd5b610c9f6001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001687866111ec565b6040516323e30c8b60e01b81526000906001600160a01b038816906323e30c8b90610cf89033907f0000000000000000000000000000000000000000000000000000000000000000908a9087908b908b9060040161160e565b6020604051808303816000875af1158015610d17573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d3b91906115d8565b90507f439148f0bbc682ca079e46d6e2c2f0c1e3b820f1a291b069d8882abf8cf18dd98114610d7d5760405163081f7c8760e21b815260040160405180910390fd5b610db26001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016883088611155565b5060019695505050505050565b610dc881611278565b610de557604051633dd1b30560e01b815260040160405180910390fd5b6040516370a0823160e01b815230600482015281906000906001600160a01b038316906370a0823190602401602060405180830381865afa158015610e2e573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610e5291906115d8565b6009546040516370a0823160e01b8152306004820152919250610ed9916001600160a01b03918216918516906370a0823190602401602060405180830381865afa158015610ea4573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ec891906115d8565b6001600160a01b03851691906111ec565b60095460405182916001600160a01b0390811691908616907f9310ccfcb8de723f578a9e4282ea9f521f05ae40dc08f3068dfad528a65ee3c790600090a4505050565b6040516370a0823160e01b81523060048201526000906001600160a01b038316906370a0823190602401602060405180830381865afa158015610f63573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610f8791906115d8565b92915050565b600080600b54600214610fa257600080610fa9565b6003546004545b915091509091565b6007805461062b9061150f565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316836001600160a01b03161461101257604051633dd1b30560e01b815260040160405180910390fd5b50600092915050565b604051630f451f7160e31b8152670de0b6b3a7640000600482015260009073ae7ab96520de3a18e5e111b5eaab095312d7fe8490637a28fb8890602401602060405180830381865afa158015611075573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061109991906115d8565b9050600a5481146110aa57600a8190555b90565b600060405163095ea7b360e01b6000528360045282602452602060006044600080895af13d15601f3d11600160005114161716915060006060528060405250806102f35760405162461bcd60e51b815260206004820152600e60248201527f415050524f56455f4641494c454400000000000000000000000000000000000060448201526064016106f3565b600061114e83670de0b6b3a7640000846112cd565b9392505050565b60006040516323b872dd60e01b6000528460045283602452826044526020600060646000808a5af13d15601f3d11600160005114161716915060006060528060405250806111e55760405162461bcd60e51b815260206004820152601460248201527f5452414e534645525f46524f4d5f4641494c454400000000000000000000000060448201526064016106f3565b5050505050565b600060405163a9059cbb60e01b6000528360045282602452602060006044600080895af13d15601f3d11600160005114161716915060006060528060405250806102f35760405162461bcd60e51b815260206004820152600f60248201527f5452414e534645525f4641494c4544000000000000000000000000000000000060448201526064016106f3565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b031614158015610f875750506001546001600160a01b039081169116141590565b8282028115158415858304851417166112e557600080fd5b0492915050565b600060208083528351808285015260005b81811015611319578581018301518582016040015282016112fd565b8181111561132b576000604083870101525b50601f01601f1916929092016040019392505050565b6001600160a01b038116811461135657600080fd5b50565b80358015158114610af557600080fd5b6000806040838503121561137c57600080fd5b823561138781611341565b915061139560208401611359565b90509250929050565b600080600080608085870312156113b457600080fd5b5050823594602084013594506040840135936060013592509050565b6000602082840312156113e257600080fd5b813561114e81611341565b6000602082840312156113ff57600080fd5b5035919050565b60008060008060006080868803121561141e57600080fd5b853561142981611341565b9450602086013561143981611341565b935060408601359250606086013567ffffffffffffffff8082111561145d57600080fd5b818801915088601f83011261147157600080fd5b81358181111561148057600080fd5b89602082850101111561149257600080fd5b9699959850939650602001949392505050565b6000806000606084860312156114ba57600080fd5b83356114c581611341565b9250602084013591506114da60408501611359565b90509250925092565b600080604083850312156114f657600080fd5b823561150181611341565b946020939093013593505050565b600181811c9082168061152357607f821691505b60208210810361154357634e487b7160e01b600052602260045260246000fd5b50919050565b805169ffffffffffffffffffff81168114610af557600080fd5b600080600080600060a0868803121561157b57600080fd5b61158486611549565b94506020860151935060408601519250606086015191506115a760808701611549565b90509295509295909350565b6000828210156115d357634e487b7160e01b600052601160045260246000fd5b500390565b6000602082840312156115ea57600080fd5b5051919050565b60006020828403121561160357600080fd5b815161114e81611341565b60006001600160a01b03808916835280881660208401525085604083015284606083015260a060808301528260a0830152828460c0840137600060c0848401015260c0601f19601f850116830101905097965050505050505056fea26469706673582212201ebbb17654b093fef7e5a634d7f58faf7166c34e0179069d659184a741116e0e64736f6c634300080f0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101fb5760003560e01c8063613255ab1161011a578063b484972a116100ad578063d9d98ce41161007c578063d9d98ce4146105ba578063d9fb643a146105cd578063e00bfe50146105e8578063f51e181a14610603578063ff2a7d301461060b57600080fd5b8063b484972a14610526578063b8c15a9f14610539578063c39a3b2914610581578063d4b839921461059357600080fd5b80638237e538116100e95780638237e538146104b957806395d89b41146104e057806396d64879146104e8578063985579a41461050b57600080fd5b8063613255ab1461044657806364c56e3c146104595780636f307dc3146104765780636fd5ae151461049d57600080fd5b80632c5786b8116101925780634aae9fed116101615780634aae9fed146103ea57806351c39ea1146103fd5780635cffe9de14610410578063608c44d61461043357600080fd5b80632c5786b814610380578063378efa371461038857806340cc63e1146103c7578063468f02d2146103e257600080fd5b80631a54259c116101ce5780631a54259c146102f9578063226778491461030c57806327b327d014610323578063295a52121461036d57600080fd5b806306fdde0314610200578063083118d51461021e5780631393916a146102d057806314282f58146102e5575b600080fd5b61020861061e565b60405161021591906112ec565b60405180910390f35b600054600154600254600354600454600554610274956001600160a01b0390811695169392919067ffffffffffffffff81169068010000000000000000810465ffffffffffff1690600160701b900461ffff1688565b604080516001600160a01b03998a168152989097166020890152958701949094526060860192909252608085015267ffffffffffffffff1660a084015265ffffffffffff1660c083015261ffff1660e082015261010001610215565b6102e36102de366004611369565b6106ac565b005b6102e36102f336600461139e565b50505050565b6102e36103073660046113d0565b61075b565b610315600a5481565b604051908152602001610215565b600154600254604080516001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000811682529093166020840152820152606001610215565b600554600160701b900461ffff16610315565b6102e361080f565b6103af7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610215565b6103af735f4ec3df9cbd43714fe2740f5e3616155c5b841981565b6103156108cc565b6103156103f83660046113ed565b610a39565b61031561040b3660046113ed565b610afa565b61042361041e366004611406565b610bb6565b6040519015158152602001610215565b6102e36104413660046113d0565b610dbf565b6103156104543660046113d0565b610f1c565b610461610f8d565b60408051928352602083019190915201610215565b6103af7f000000000000000000000000000000000000000000000000000000000000000081565b60055468010000000000000000900465ffffffffffff16610315565b6103157f439148f0bbc682ca079e46d6e2c2f0c1e3b820f1a291b069d8882abf8cf18dd981565b610208610fb1565b6104236104f63660046113d0565b60086020526000908152604090205460ff1681565b6103af73cfe54b5cd566ab89272946f602d76ea879cab4a881565b6102e36105343660046114a5565b505050565b6105607f000000000000000000000000000000000000000000000000000000000000000081565b6040516fffffffffffffffffffffffffffffffff9091168152602001610215565b60055467ffffffffffffffff16610315565b6103af7f000000000000000000000000000000000000000000000000000000000000000081565b6103156105c83660046114e3565b610fbe565b6103af737f39c581f595b53c5cb19bd0b3f8da6c935e2ca081565b6103af73ae7ab96520de3a18e5e111b5eaab095312d7fe8481565b61031561101b565b6009546103af906001600160a01b031681565b6006805461062b9061150f565b80601f01602080910402602001604051908101604052809291908181526020018280546106579061150f565b80156106a45780601f10610679576101008083540402835291602001916106a4565b820191906000526020600020905b81548152906001019060200180831161068757829003601f168201915b505050505081565b3360009081526008602052604090205460ff166106fc5760405162461bcd60e51b8152602060048201526009602482015268155395149554d5115160ba1b60448201526064015b60405180910390fd5b6001600160a01b038216600081815260086020908152604091829020805460ff191685151590811790915591519182527fe95aec380cae16330d146d5499ef7db6f3657e477104a733e771bc09e500d986910160405180910390a25050565b3360009081526008602052604090205460ff166107a65760405162461bcd60e51b8152602060048201526009602482015268155395149554d5115160ba1b60448201526064016106f3565b6009546040516001600160a01b038084169216907f952c654458751f95c1440bdb1537809137b3de28466b80ad096a711707ae987a90600090a36009805473ffffffffffffffffffffffffffffffffffffffff19166001600160a01b0392909216919091179055565b3360009081526008602052604090205460ff1661085a5760405162461bcd60e51b8152602060048201526009602482015268155395149554d5115160ba1b60448201526064016106f3565b6002600b819055600154905460405163dfd4718f60e01b81526001600160a01b0390921660048301526024820152339063dfd4718f90604401600060405180830381600087803b1580156108ad57600080fd5b505af11580156108c1573d6000803e3d6000fd5b50506001600b555050565b600080600073cfe54b5cd566ab89272946f602d76ea879cab4a86001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa158015610923573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109479190611563565b50935050925050600080735f4ec3df9cbd43714fe2740f5e3616155c5b84196001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa1580156109a3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109c79190611563565b50935050925050611c2083426109dd91906115b3565b11156109fb5760405162bfc92160e01b815260040160405180910390fd5b611c20610a0882426115b3565b1115610a265760405162bfc92160e01b815260040160405180910390fd5b610a308483611139565b94505050505090565b6000610a5b73ae7ab96520de3a18e5e111b5eaab095312d7fe84333085611155565b604051630ea598cb60e41b815260048101839052610af5903390737f39c581f595b53c5cb19bd0b3f8da6c935e2ca09063ea598cb0906024016020604051808303816000875af1158015610ab3573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ad791906115d8565b9250737f39c581f595b53c5cb19bd0b3f8da6c935e2ca090836111ec565b919050565b6000610b1c737f39c581f595b53c5cb19bd0b3f8da6c935e2ca0333085611155565b604051636f074d1f60e11b815260048101839052610af5903390737f39c581f595b53c5cb19bd0b3f8da6c935e2ca09063de0e9a3e906024016020604051808303816000875af1158015610b74573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610b9891906115d8565b925073ae7ab96520de3a18e5e111b5eaab095312d7fe8490836111ec565b6000336001600160a01b03167f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166377aace1a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610c20573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c4491906115f1565b6001600160a01b031614610c6b5760405163fb02114960e01b815260040160405180910390fd5b610c9f6001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001687866111ec565b6040516323e30c8b60e01b81526000906001600160a01b038816906323e30c8b90610cf89033907f0000000000000000000000000000000000000000000000000000000000000000908a9087908b908b9060040161160e565b6020604051808303816000875af1158015610d17573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d3b91906115d8565b90507f439148f0bbc682ca079e46d6e2c2f0c1e3b820f1a291b069d8882abf8cf18dd98114610d7d5760405163081f7c8760e21b815260040160405180910390fd5b610db26001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016883088611155565b5060019695505050505050565b610dc881611278565b610de557604051633dd1b30560e01b815260040160405180910390fd5b6040516370a0823160e01b815230600482015281906000906001600160a01b038316906370a0823190602401602060405180830381865afa158015610e2e573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610e5291906115d8565b6009546040516370a0823160e01b8152306004820152919250610ed9916001600160a01b03918216918516906370a0823190602401602060405180830381865afa158015610ea4573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ec891906115d8565b6001600160a01b03851691906111ec565b60095460405182916001600160a01b0390811691908616907f9310ccfcb8de723f578a9e4282ea9f521f05ae40dc08f3068dfad528a65ee3c790600090a4505050565b6040516370a0823160e01b81523060048201526000906001600160a01b038316906370a0823190602401602060405180830381865afa158015610f63573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610f8791906115d8565b92915050565b600080600b54600214610fa257600080610fa9565b6003546004545b915091509091565b6007805461062b9061150f565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316836001600160a01b03161461101257604051633dd1b30560e01b815260040160405180910390fd5b50600092915050565b604051630f451f7160e31b8152670de0b6b3a7640000600482015260009073ae7ab96520de3a18e5e111b5eaab095312d7fe8490637a28fb8890602401602060405180830381865afa158015611075573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061109991906115d8565b9050600a5481146110aa57600a8190555b90565b600060405163095ea7b360e01b6000528360045282602452602060006044600080895af13d15601f3d11600160005114161716915060006060528060405250806102f35760405162461bcd60e51b815260206004820152600e60248201527f415050524f56455f4641494c454400000000000000000000000000000000000060448201526064016106f3565b600061114e83670de0b6b3a7640000846112cd565b9392505050565b60006040516323b872dd60e01b6000528460045283602452826044526020600060646000808a5af13d15601f3d11600160005114161716915060006060528060405250806111e55760405162461bcd60e51b815260206004820152601460248201527f5452414e534645525f46524f4d5f4641494c454400000000000000000000000060448201526064016106f3565b5050505050565b600060405163a9059cbb60e01b6000528360045282602452602060006044600080895af13d15601f3d11600160005114161716915060006060528060405250806102f35760405162461bcd60e51b815260206004820152600f60248201527f5452414e534645525f4641494c4544000000000000000000000000000000000060448201526064016106f3565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b031614158015610f875750506001546001600160a01b039081169116141590565b8282028115158415858304851417166112e557600080fd5b0492915050565b600060208083528351808285015260005b81811015611319578581018301518582016040015282016112fd565b8181111561132b576000604083870101525b50601f01601f1916929092016040019392505050565b6001600160a01b038116811461135657600080fd5b50565b80358015158114610af557600080fd5b6000806040838503121561137c57600080fd5b823561138781611341565b915061139560208401611359565b90509250929050565b600080600080608085870312156113b457600080fd5b5050823594602084013594506040840135936060013592509050565b6000602082840312156113e257600080fd5b813561114e81611341565b6000602082840312156113ff57600080fd5b5035919050565b60008060008060006080868803121561141e57600080fd5b853561142981611341565b9450602086013561143981611341565b935060408601359250606086013567ffffffffffffffff8082111561145d57600080fd5b818801915088601f83011261147157600080fd5b81358181111561148057600080fd5b89602082850101111561149257600080fd5b9699959850939650602001949392505050565b6000806000606084860312156114ba57600080fd5b83356114c581611341565b9250602084013591506114da60408501611359565b90509250925092565b600080604083850312156114f657600080fd5b823561150181611341565b946020939093013593505050565b600181811c9082168061152357607f821691505b60208210810361154357634e487b7160e01b600052602260045260246000fd5b50919050565b805169ffffffffffffffffffff81168114610af557600080fd5b600080600080600060a0868803121561157b57600080fd5b61158486611549565b94506020860151935060408601519250606086015191506115a760808701611549565b90509295509295909350565b6000828210156115d357634e487b7160e01b600052601160045260246000fd5b500390565b6000602082840312156115ea57600080fd5b5051919050565b60006020828403121561160357600080fd5b815161114e81611341565b60006001600160a01b03808916835280881660208401525085604083015284606083015260a060808301528260a0830152828460c0840137600060c0848401015260c0601f19601f850116830101905097965050505050505056fea26469706673582212201ebbb17654b093fef7e5a634d7f58faf7166c34e0179069d659184a741116e0e64736f6c634300080f0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "flashLoan(address,address,uint256,bytes)": {
+        "params": {
+          "amount": "The amount of target lent.",
+          "data": "(encoded adapter address, maturity and YT amount the use has sent in)",
+          "receiver": "The contract receiving target, needs to implement the `onFlashLoan(address user, address adapter, uint256 maturity, uint256 amount)` interface."
+        }
+      },
+      "getUnderlyingPrice()": {
+        "details": "To calculate stETH-ETH price we use Chainlink's stETH-USD and ETH-USD price feeds."
+      },
+      "maxFlashLoan(address)": {
+        "details": "The amount of currency available to be lent.",
+        "params": {
+          "token": "The loan currency."
+        },
+        "returns": {
+          "_0": "The amount of `token` that can be borrowed."
+        }
+      },
+      "scale()": {
+        "returns": {
+          "exRate": "Eth per wstEtH (natively in 18 decimals)"
+        }
+      },
+      "unwrapTarget(uint256)": {
+        "params": {
+          "amount": "Target amount"
+        },
+        "returns": {
+          "stETH": "amount of underlying returned"
+        }
+      },
+      "wrapUnderlying(uint256)": {
+        "params": {
+          "amount": "Underlying amount"
+        },
+        "returns": {
+          "wstETH": "amount of target returned"
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "events": {
+      "RewardsRecipientChanged(address,address)": {
+        "notice": "----------------------------------------------------------------------- Logs -----------------------------------------------------------------------"
+      }
+    },
+    "kind": "user",
+    "methods": {
+      "adapterParams()": {
+        "notice": "adapter params"
+      },
+      "divider()": {
+        "notice": "Sense core Divider address"
+      },
+      "extractToken(address)": {
+        "notice": "Transfers reward tokens from the adapter to Sense's reward container"
+      },
+      "flashLoan(address,address,uint256,bytes)": {
+        "notice": "Loan `amount` target to `receiver`, and takes it back after the callback."
+      },
+      "ifee()": {
+        "notice": "Issuance fee"
+      },
+      "notify(address,uint256,bool)": {
+        "notice": "Notification whenever the Divider adds or removes Target"
+      },
+      "onRedeem(uint256,uint256,uint256,uint256)": {
+        "notice": "Hook called whenever a user redeems PT"
+      },
+      "rewardsRecipient()": {
+        "notice": "Rewards recipient"
+      },
+      "scaleStored()": {
+        "notice": "Cached scale value from the last call to `scale()`"
+      },
+      "setRewardsRecipient(address)": {
+        "notice": "----------------------------------------------------------------------- Admin functions -----------------------------------------------------------------------"
+      },
+      "target()": {
+        "notice": "Target token to divide"
+      },
+      "underlying()": {
+        "notice": "Underlying for the Target"
+      },
+      "unwrapTarget(uint256)": {
+        "notice": "Deposits target `amount`in return for underlying. Must be overriden by child contracts"
+      },
+      "wrapUnderlying(uint256)": {
+        "notice": "Deposits underlying `amount`in return for target. Must be overriden by child contracts"
+      }
+    },
+    "notice": "Adapter contract for wstETH",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 7480,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "adapterParams",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_struct(AdapterParams)7505_storage"
+      },
+      {
+        "astId": 7507,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "name",
+        "offset": 0,
+        "slot": "6",
+        "type": "t_string_storage"
+      },
+      {
+        "astId": 7509,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "symbol",
+        "offset": 0,
+        "slot": "7",
+        "type": "t_string_storage"
+      },
+      {
+        "astId": 20673,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "isTrusted",
+        "offset": 0,
+        "slot": "8",
+        "type": "t_mapping(t_address,t_bool)"
+      },
+      {
+        "astId": 9920,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "rewardsRecipient",
+        "offset": 0,
+        "slot": "9",
+        "type": "t_address"
+      },
+      {
+        "astId": 13094,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "scaleStored",
+        "offset": 0,
+        "slot": "10",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 12942,
+        "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+        "label": "open",
+        "offset": 0,
+        "slot": "11",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      },
+      "t_string_storage": {
+        "encoding": "bytes",
+        "label": "string",
+        "numberOfBytes": "32"
+      },
+      "t_struct(AdapterParams)7505_storage": {
+        "encoding": "inplace",
+        "label": "struct BaseAdapter.AdapterParams",
+        "members": [
+          {
+            "astId": 7483,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "oracle",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 7486,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "stake",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address"
+          },
+          {
+            "astId": 7489,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "stakeSize",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 7492,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "minm",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 7495,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "maxm",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 7498,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "tilt",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint64"
+          },
+          {
+            "astId": 7501,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "level",
+            "offset": 8,
+            "slot": "5",
+            "type": "t_uint48"
+          },
+          {
+            "astId": 7504,
+            "contract": "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol:OwnableWstETHAdapter",
+            "label": "mode",
+            "offset": 14,
+            "slot": "5",
+            "type": "t_uint16"
+          }
+        ],
+        "numberOfBytes": "192"
+      },
+      "t_uint16": {
+        "encoding": "inplace",
+        "label": "uint16",
+        "numberOfBytes": "2"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      },
+      "t_uint48": {
+        "encoding": "inplace",
+        "label": "uint48",
+        "numberOfBytes": "6"
+      },
+      "t_uint64": {
+        "encoding": "inplace",
+        "label": "uint64",
+        "numberOfBytes": "8"
+      }
+    }
+  }
+}
