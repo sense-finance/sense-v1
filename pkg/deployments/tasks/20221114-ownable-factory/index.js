@@ -523,7 +523,7 @@ subtask("deploy-auto-roller-factory", "Deploys a new Space Factory").setAction(a
   );
   await (await rollerPeriphery.setIsTrusted(autoRollerFactoryAddress, true)).wait();
 
-  console.log(`\n\n- Set multisig as trusted address of AutoRollerFactory`);
+  console.log(`\n- Set multisig as trusted address of AutoRollerFactory`);
   await (await autoRollerFactory.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
   console.log(`\n- Unset deployer as trusted address of AutoRollerFactory`);

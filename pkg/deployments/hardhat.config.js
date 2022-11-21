@@ -102,7 +102,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: process.env.SIM === "true" ? 100 : 12000,
+            runs: process.env.SIM === "true" ? 100 : 500,
           },
         },
       },
