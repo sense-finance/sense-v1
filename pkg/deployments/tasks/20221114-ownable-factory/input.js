@@ -16,25 +16,25 @@ const SAMPLE_TARGETS = [
 ];
 
 const MAINNET_FACTORIES = [
-  {
-    contractName: "OwnableERC4626Factory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
-    oracle: "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
-    stake: WETH_TOKEN.get(CHAINS.MAINNET),
-    stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
-    minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
-    maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
-    mode: 0, // 0 = monthly
-    tilt: 0,
-    guard: ethers.utils.parseEther("100000"), // $100'000
-    targets: SAMPLE_TARGETS,
-  },
+  // {
+  //   contractName: "OwnableERC4626Factory",
+  //   ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+  //   oracle: "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
+  //   stake: WETH_TOKEN.get(CHAINS.MAINNET),
+  //   stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
+  //   minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
+  //   maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
+  //   mode: 0, // 0 = monthly
+  //   tilt: 0,
+  //   guard: ethers.utils.parseEther("100000"), // $100'000
+  //   targets: SAMPLE_TARGETS,
+  // },
 ];
 
 const MAINNET_ADAPTERS = [
   {
     contractName: "OwnableWstETHAdapter",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+    ifee: ethers.utils.parseEther("0"), // 0%, no issuance fees
     oracle: ethers.constants.AddressZero,
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
