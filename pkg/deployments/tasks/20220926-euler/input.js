@@ -4,7 +4,7 @@ const {
   EULER_USDC,
   NON_CROP_4626_FACTORY,
   DIVIDER_1_2_0,
-  PERIPHERY_1_3_0,
+  PERIPHERY_1_4_0,
 } = require("../../hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
@@ -39,7 +39,7 @@ module.exports = {
   // mainnet
   1: {
     divider: DIVIDER_1_2_0.get(CHAINS.MAINNET),
-    periphery: PERIPHERY_1_3_0.get(CHAINS.MAINNET),
+    periphery: PERIPHERY_1_4_0.get(CHAINS.MAINNET),
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.MAINNET),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.MAINNET),
     markets: MAINNET_EULER_MARKETS,

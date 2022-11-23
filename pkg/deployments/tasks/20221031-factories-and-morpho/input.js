@@ -72,6 +72,22 @@ const MAINNET_FACTORIES = [
   },
 ];
 
+const GOERLI_FACTORIES = [
+  {
+    contract: "MockFactory",
+    contractName: "MockFactory",
+    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+    stake: WETH_TOKEN.get(CHAINS.GOERLI),
+    stakeSize: ethers.utils.parseEther("0.05"), // 0.05 WETH
+    minm: 0, // 0 days
+    maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
+    mode: 1, // 0 = weekly
+    tilt: 0,
+    guard: ethers.utils.parseEther("100000"), // $100'000 (not used in Goerli)
+    targets: [],
+  },
+];
+
 module.exports = {
   // mainnet
   1: {
@@ -81,5 +97,13 @@ module.exports = {
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.MAINNET),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.MAINNET),
     factories: MAINNET_FACTORIES,
+  },
+  5: {
+    divider: "0x09B10E45A912BcD4E80a8A3119f0cfCcad1e1f12",
+    periphery: "0x4bCBA1316C95B812cC014CA18C08971Ce1C10861",
+    oracle: "0xB3e70779c1d1f2637483A02f1446b211fe4183Fa",
+    restrictedAdmin: SENSE_MULTISIG.get(CHAINS.GOERLI),
+    rewardsRecipient: SENSE_MULTISIG.get(CHAINS.GOERLI),
+    factories: GOERLI_FACTORIES,
   },
 };

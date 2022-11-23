@@ -50,7 +50,7 @@ pragma solidity 0.8.15;
 //     uint256 public decimals;
 
 //     Divider public divider = Divider(AddressBook.DIVIDER_1_2_0);
-//     Periphery public periphery = Periphery(AddressBook.PERIPHERY_1_3_0);
+//     Periphery public periphery = Periphery(AddressBook.PERIPHERY_1_4_0);
 //     ERC4626Factory public factory = ERC4626Factory(AddressBook.NON_CROP_4626_FACTORY);
 //     ERC4626Adapter public adapter;
 
