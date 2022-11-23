@@ -73,10 +73,10 @@ contract OwnableERC4626Factory is ERC4626Factory {
     /// @param _rlvFactory Address of the new factory
     function setRlvFactory(address _rlvFactory) external requiresTrust {
         rlvFactory = _rlvFactory;
-        emit RlvFactoryChannged(_rlvFactory);
+        emit RlvFactoryChanged(_rlvFactory);
     }
 
     /* ========== LOGS ========== */
 
-    event RlvFactoryChannged(address indexed rlvFactory);
+    event RlvFactoryChanged(address indexed rlvFactory);
 }

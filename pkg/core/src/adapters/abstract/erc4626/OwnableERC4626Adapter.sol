@@ -8,6 +8,8 @@ interface Opener {
 }
 
 /// @notice Ownable Adapter contract for Rolling Liquidity Vaults
+/// This adapter allows only the owner, which must comply with the Opener
+/// interface, to Sponsor a Series
 contract OwnableERC4626Adapter is ERC4626Adapter {
     uint256 internal open = 1;
 
@@ -25,6 +27,8 @@ contract OwnableERC4626Adapter is ERC4626Adapter {
         open = 1;
     }
 
+    // @notice If the Sponsor Window is open (which can only be done by the owner of this contract),
+    // return the maturity bounds. Otherwise, return 0 making the sponsoring to revert.
     function getMaturityBounds() external view override returns (uint256, uint256) {
         return open == 2 ? (adapterParams.minm, adapterParams.maxm) : (0, 0);
     }
