@@ -286,7 +286,13 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
 
     if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan(adapterContractName, adapterContract.address, [divider.address, t.address, rewardsRecipient, ifee, adapterParams]);
+      await verifyOnEtherscan(adapterContractName, adapterContract.address, [
+        divider.address,
+        t.address,
+        rewardsRecipient,
+        ifee,
+        adapterParams,
+      ]);
     } else {
       await startPrank(senseAdminMultisigAddress);
 
@@ -431,12 +437,14 @@ subtask("deploy-space-factory", "Deploys a new Space Factory").setAction(async a
   let i = 1;
   for (let { adapter, maturity } of sponsoredSeries) {
     const pool = await oldSpaceFactory.pools(adapter, maturity);
-    console.log(`- Pool ${i}`)
+    console.log(`- Pool ${i}`);
     if ((await spaceFactory.pools(adapter, maturity)) === ethers.constants.AddressZero) {
       console.log(
         `\n- Adding ${adapter} ${maturity} Series with pool ${pool} to new Space Factory pools mapping`,
       );
-      await spaceFactory.setPool(adapter, maturity, pool, { gasLimit: 55000, gasPrice: 16000000000 }).then(t => t.wait());
+      await spaceFactory
+        .setPool(adapter, maturity, pool, { gasLimit: 55000, gasPrice: 16000000000 })
+        .then(t => t.wait());
       console.log(`  Added pool ${await spaceFactory.pools(adapter, maturity)}`);
     }
     i++;
@@ -445,10 +453,10 @@ subtask("deploy-space-factory", "Deploys a new Space Factory").setAction(async a
   if (chainId !== CHAINS.HARDHAT) {
     console.log("\n-------------------------------------------------------");
     await verifyOnEtherscan(
-      "SpaceFactory", 
-      spaceFactory.address, 
+      "SpaceFactory",
+      spaceFactory.address,
       [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
-      { QueryProcessor: QUERY_PROCESSOR.get(chainId) }
+      { QueryProcessor: QUERY_PROCESSOR.get(chainId) },
     );
   } else {
     await startPrank(senseAdminMultisigAddress);
@@ -509,13 +517,7 @@ subtask("deploy-auto-roller-factory", "Deploys a new Space Factory").setAction(a
   console.log("\nDeploying an AutoRoller Factory");
   await deploy("AutoRollerFactory", {
     from: deployer,
-    args: [
-      divider.address,
-      balancerVault,
-      periphery.address,
-      rollerPeriphery.address,
-      rollerUtils.address
-    ],
+    args: [divider.address, balancerVault, periphery.address, rollerPeriphery.address, rollerUtils.address],
     log: true,
   });
   const autoRollerFactory = await ethers.getContract("AutoRollerFactory", deployerSigner);
@@ -529,7 +531,7 @@ subtask("deploy-auto-roller-factory", "Deploys a new Space Factory").setAction(a
       balancerVault,
       periphery.address,
       rollerPeriphery.address,
-      rollerUtils.address
+      rollerUtils.address,
     ]);
     await verifyOnEtherscan("RollerPeriphery", rollerPeriphery.address, []);
   }
