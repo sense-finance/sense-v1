@@ -11,6 +11,7 @@ import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Periphery } from "../../Periphery.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { WstETHAdapter, StETHLike, WstETHLike } from "../../adapters/implementations/lido/WstETHAdapter.sol";
+import { OwnableWstETHAdapter } from "../../adapters/implementations/lido/OwnableWstETHAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
@@ -53,11 +54,34 @@ interface CurveStableSwapLike {
     ) external view returns (uint256);
 }
 
+contract Opener is Test {
+    Divider public divider;
+    uint256 public maturity;
+    address public adapter;
+
+    constructor(
+        Divider _divider,
+        uint256 _maturity,
+        address _adapter
+    ) {
+        divider = _divider;
+        maturity = _maturity;
+        adapter = _adapter;
+    }
+
+    function onSponsorWindowOpened(address, uint256) external {
+        vm.prank(divider.periphery()); // impersonate Periphery
+        divider.initSeries(adapter, maturity, msg.sender);
+    }
+}
+
 contract WstETHAdapterTestHelper is Test {
     WstETHAdapter internal adapter;
+    OwnableWstETHAdapter internal oAdapter;
     Divider internal divider;
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
+    Opener public opener;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -92,6 +116,15 @@ contract WstETHAdapterTestHelper is Test {
             ISSUANCE_FEE,
             adapterParams
         ); // wstETH adapter
+
+        adapterParams.mode = 1;
+        oAdapter = new OwnableWstETHAdapter(
+            address(divider),
+            AddressBook.WSTETH,
+            Constants.REWARDS_RECIPIENT,
+            ISSUANCE_FEE,
+            adapterParams
+        ); // Ownable wstETH adapter (for RLVs)
     }
 
     function sendEther(address to, uint256 amt) external returns (bool) {
@@ -182,5 +215,38 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
 
         // When wrapping and then unwrapping on Lido we end up with 1 wei less.
         assertApproxEqAbs(prebal, postbal, 1);
+    }
+
+    function testOpenSponsorWindow() public {
+        vm.warp(1631664000); // 15-09-21 00:00 UTC
+
+        // Add oAdapter to Divider
+        divider.setAdapter(address(oAdapter), true);
+
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
+        opener = new Opener(divider, maturity, address(oAdapter));
+
+        // Add Opener as trusted address on ownable adapter
+        oAdapter.setIsTrusted(address(opener), true);
+
+        vm.prank(address(0xfede));
+        vm.expectRevert("UNTRUSTED");
+        oAdapter.openSponsorWindow();
+
+        // No one can sponsor series directly using Divider (even if it's the Periphery)
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        divider.initSeries(address(oAdapter), maturity, msg.sender);
+
+        // Mint some stake to sponsor Series
+        deal(AddressBook.DAI, divider.periphery(), STAKE_SIZE);
+
+        // Periphery approves divider to pull stake to sponsor series
+        vm.prank(divider.periphery());
+        ERC20(AddressBook.DAI).approve(address(divider), STAKE_SIZE);
+
+        // Open can open sponsor window
+        vm.prank(address(opener));
+        vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
+        oAdapter.openSponsorWindow();
     }
 }
