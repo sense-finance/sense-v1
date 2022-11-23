@@ -7,7 +7,13 @@ const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
-const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
+const {
+  verifyOnEtherscan,
+  generateTokens,
+  setBalance,
+  stopPrank,
+  startPrank,
+} = require("../../hardhat.utils");
 
 task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT").setAction(
   async (_, { ethers }) => {
@@ -84,25 +90,17 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
         await verifyOnEtherscan(factoryContractName);
       }
 
+      // Mainnet would require multisig to make these calls
       if ([CHAINS.HARDHAT, CHAINS.GOERLI].includes(chainId)) {
         if (chainId === CHAINS.HARDHAT) {
           console.log(`\n - Fund multisig to be able to make calls from that address`);
-          await (
-            await deployerSigner.sendTransaction({
-              to: senseAdminMultisigAddress,
-              value: ethers.utils.parseEther("1"),
-            })
-          ).wait();
-
-          await hre.network.provider.request({
-            method: "hardhat_impersonateAccount",
-            params: [senseAdminMultisigAddress],
-          });
-
-          const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
-          divider = divider.connect(multisigSigner);
-          periphery = periphery.connect(multisigSigner);
+          await setBalance(senseAdminMultisigAddress, ethers.utils.parseEther("1").toString());
+          await startPrank(senseAdminMultisigAddress);
         }
+
+        const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
+        divider = divider.connect(multisigSigner);
+        periphery = periphery.connect(multisigSigner);
 
         console.log(`\n - Add ${factoryContractName} support to Periphery`);
         await (await periphery.setFactory(factoryAddress, true)).wait();
@@ -111,10 +109,7 @@ task("20221031-factories-and-morpho", "Deploys 4626 Factories & maUSDC & maUSDT"
         await (await divider.setIsTrusted(factoryAddress, true)).wait();
 
         if (chainId === CHAINS.HARDHAT) {
-          await hre.network.provider.request({
-            method: "hardhat_stopImpersonatingAccount",
-            params: [senseAdminMultisigAddress],
-          });
+          await stopPrank(senseAdminMultisigAddress);
 
           console.log("\n-------------------------------------------------------");
           console.log(`\nDeploy adapters for: ${factoryContractName}`);
