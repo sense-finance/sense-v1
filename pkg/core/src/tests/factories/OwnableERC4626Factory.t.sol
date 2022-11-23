@@ -138,8 +138,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
             address(balancerVault),
             address(periphery),
             address(rollerPeriphery),
-            utils,
-            type(AutoRoller).creationCode
+            utils
         );
 
         // Set AutoRollerFactory as trusted address on RollerPeriphery to be able to use the approve() function
