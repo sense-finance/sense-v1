@@ -7,9 +7,11 @@ import "@sense-finance/v1-core/src/adapters/abstract/BaseAdapter.sol";
 import "@sense-finance/v1-core/src/adapters/implementations/compound/CFactory.sol";
 import "@sense-finance/v1-core/src/adapters/implementations/fuse/FFactory.sol";
 import "@sense-finance/v1-core/src/adapters/implementations/lido/WstETHAdapter.sol";
+import "@sense-finance/v1-core/src/adapters/implementations/lido/OwnableWstETHAdapter.sol";
 import "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol";
 import "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626CropsFactory.sol";
 import "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626CropFactory.sol";
+import "@sense-finance/v1-core/src/adapters/abstract/factories/OwnableERC4626Factory.sol";
 import "@sense-finance/v1-core/src/adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import "@sense-finance/v1-core/src/adapters/implementations/oracles/MasterPriceOracle.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/fuse/MockOracle.sol";
@@ -28,5 +30,9 @@ import { MockERC4626 } from "solmate/test/utils/mocks/MockERC4626.sol";
 
 import { EulerERC4626WrapperFactory } from "@sense-finance/v1-core/src/adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { RewardsDistributor } from "../lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol";
+
+import { AutoRollerFactory } from "@auto-roller/src/AutoRollerFactory.sol";
+import { AutoRoller, RollerUtils } from "@auto-roller/src/AutoRoller.sol";
+import { RollerPeriphery } from "@auto-roller/src/RollerPeriphery.sol";
 
 import "./Versioning.sol";

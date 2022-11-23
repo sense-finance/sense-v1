@@ -103,6 +103,20 @@ contract MockSpacePool is MockToken {
         targeti = 0;
     }
 
+    function pti() public view returns (uint256) {
+        return 1;
+    }
+
+    function g1() public view returns (uint256) {
+        // 0.95 for selling Target
+        return uint256(950e18).fdiv(1000e18);
+    }
+
+    function g2() public view returns (uint256) {
+        // 1 / 0.95 for selling PT
+        return uint256(1000e18).fdiv(950e18);
+    }
+
     function getFairBPTPrice(uint256) external view returns (uint256) {
         return 1e18;
     }
@@ -125,6 +139,17 @@ contract MockSpacePool is MockToken {
 
     function setPriceFromImpliedRate(uint256 _price) external {
         priceFromImpliedRate = _price;
+    }
+
+    function getEQReserves(
+        uint256 stretchedRate,
+        uint256 _maturity,
+        uint256 ptReserves,
+        uint256 targetReserves,
+        uint256 _totalSupply,
+        uint256 fee
+    ) public view returns (uint256 eqPTReserves, uint256 eqTargetReserves) {
+        return (0e18, 0e18);
     }
 }
 

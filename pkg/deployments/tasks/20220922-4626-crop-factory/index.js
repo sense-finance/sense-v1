@@ -15,7 +15,7 @@ const peripheryAbi = require("./abi/Periphery.json");
 const oracleAbi = require("./abi/MasterPriceOracle.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
-const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
 
 task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory").setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
@@ -156,7 +156,7 @@ task("20220912-4626-crop-factory", "Deploys 4626 Crop Factory").setAction(async 
         await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
         console.log(`Mint stake tokens...`);
-        await generateStakeTokens(stake, deployer, deployerSigner);
+        await generateTokens(stake, deployer, deployerSigner);
 
         // deploy Series
         for (let m of t.series) {

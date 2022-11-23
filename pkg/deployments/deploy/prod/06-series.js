@@ -1,6 +1,6 @@
 const dayjs = require("dayjs");
 const { CHAINS } = require("../../hardhat.addresses");
-const { getDeployedAdapters, generateStakeTokens } = require("../../hardhat.utils");
+const { getDeployedAdapters, generateTokens } = require("../../hardhat.utils");
 const log = console.log;
 
 module.exports = async function () {
@@ -53,7 +53,7 @@ module.exports = async function () {
       if (balance.lt(stakeSize)) {
         // if fork from mainnet
         if (chainId == CHAINS.HARDHAT && process.env.FORK_TOP_UP == "true") {
-          await generateStakeTokens(stakeAddress, deployer, signer);
+          await generateTokens(stakeAddress, deployer, signer);
         } else {
           throw Error("Not enough stake funds on wallet");
         }

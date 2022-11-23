@@ -27,7 +27,7 @@
         "@openzeppelin/contracts": "^4.7.3",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
         "@sense-finance/v1-utils": "workspace:pkg/utils",
-        "solmate": "^6.6.1"
+        "solmate": "transmissions11/solmate#v7"
     },
     "devDependencies": {
         "@types/prettier": "^2",

@@ -82,7 +82,7 @@ module.exports = async function () {
         await divider.issue(adapter.address, seriesMaturity, oneMillion).then(tx => tx.wait());
       }
 
-      const { abi: spaceAbi } = await deployments.getArtifact("Space");
+      const { abi: spaceAbi } = await deployments.getArtifact("lib/v1-space/src/Space.sol:Space");
       const poolAddress = await spaceFactory.pools(adapter.address, seriesMaturity);
       const pool = new ethers.Contract(poolAddress, spaceAbi, signer);
       const poolId = await pool.getPoolId();

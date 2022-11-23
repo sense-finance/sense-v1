@@ -4,7 +4,7 @@ const { SENSE_MULTISIG, CHAINS } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
-const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
 
 task("20220727-cfactory", "Deploys a new Compound Factory and adds it to the Periphery").setAction(
   async (_, { ethers }) => {
@@ -121,7 +121,7 @@ task("20220727-cfactory", "Deploys a new Compound Factory and adds it to the Per
           await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
           console.log(`Mint stake tokens...`);
-          await generateStakeTokens(stake, deployer, deployerSigner);
+          await generateTokens(stake, deployer, deployerSigner);
 
           // deploy Series
           for (let m of t.series) {

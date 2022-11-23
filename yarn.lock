@@ -1363,7 +1363,7 @@ __metadata:
     prettier-plugin-solidity: ^1.0.0-beta.17
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
-    solmate: ^6.6.1
+    solmate: "transmissions11/solmate#v7"
   languageName: unknown
   linkType: soft
 
@@ -1396,7 +1396,7 @@ __metadata:
     hardhat-spdx-license-identifier: ^2.0.3
     hardhat-watcher: ^2.5.0
     prettier: ^2.7.1
-    solmate: ^6.6.1
+    solmate: "transmissions11/solmate#v7"
     yarn: ^1.22.19
   languageName: unknown
   linkType: soft
@@ -1412,7 +1412,7 @@ __metadata:
     prettier-plugin-solidity: ^1.0.0-beta.17
     solhint: ^3.3.7
     solhint-plugin-prettier: ^0.0.5
-    solmate: ^6.6.1
+    solmate: "transmissions11/solmate#v7"
   languageName: unknown
   linkType: soft
 
@@ -6056,10 +6056,10 @@ resolve@1.17.0:
   languageName: node
   linkType: hard
 
-"solmate@npm:^6.6.1":
-  version: 6.6.1
-  resolution: "solmate@npm:6.6.1"
-  checksum: f06bfb7db04cd93b268b1af9717c4d20c4c866cb880e0cf1c9ccbf1f2b5f1b52c3a656871bfdf928ecfcf34b0b01ec34a864bcb78b6ab7cb9655ae4b4869450b
+"solmate@transmissions11/solmate#v7":
+  version: 7.0.0-alpha.3
+  resolution: "solmate@https://github.com/transmissions11/solmate.git#commit=ed67feda67b24fdeff8ad1032360f0ee6047ba0a"
+  checksum: 8fb7e2aaf0c3178946c95257fadef8eb186232130ad573e7d722553264fbc29dc642897d78ee5a5a865248990e3e6d2bda23b740ab86e7cdf92218e76a3069f1
   languageName: node
   linkType: hard
 

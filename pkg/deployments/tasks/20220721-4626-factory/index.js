@@ -15,7 +15,7 @@ const peripheryAbi = require("./abi/Periphery.json");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 const erc20Abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
-const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
 
 task(
   "20220721-4626-factory",
@@ -180,7 +180,7 @@ task(
         await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
 
         console.log(`Mint stake tokens...`);
-        await generateStakeTokens(stake, deployer, deployerSigner);
+        await generateTokens(stake, deployer, deployerSigner);
 
         // deploy Series
         for (let m of t.series) {

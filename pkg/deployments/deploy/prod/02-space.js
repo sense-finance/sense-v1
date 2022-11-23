@@ -35,10 +35,11 @@ module.exports = async function () {
     .mul(ethers.utils.parseEther("1"))
     .div(ethers.utils.parseEther("950"));
   const oracleEnabled = true;
+  const balancerFeesEnabled = false;
 
   await deploy("SpaceFactory", {
     from: deployer,
-    args: [balancerVault, divider.address, TS, G1, G2, oracleEnabled],
+    args: [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
     libraries: {
       QueryProcessor: queryProcessor.address,
     },

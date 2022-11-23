@@ -19,7 +19,7 @@ const eulerMarketsAbi = [
   "function eTokenToUnderlying(address eToken) external view returns (address underlying)",
 ];
 
-const { verifyOnEtherscan, generateStakeTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, generateTokens } = require("../../hardhat.utils");
 
 task("20220926-euler", "Deploys Euler 4626 Wrapper Factory and 4626 Euler Vaults").setAction(
   async (_, { ethers }) => {
@@ -151,7 +151,7 @@ task("20220926-euler", "Deploys Euler 4626 Wrapper Factory and 4626 Euler Vaults
         );
 
         const { stake } = await adptr.getStakeAndTarget();
-        await generateStakeTokens(stake, deployer, deployerSigner);
+        await generateTokens(stake, deployer, deployerSigner);
 
         console.log(`\n - Prepare to and sponsor series:`);
         console.log(`  * Approve Periphery to pull stake`);

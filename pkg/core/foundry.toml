@@ -12,4 +12,6 @@ remappings = [
     'solmate/=../../node_modules/solmate/src',
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts',
     '@yield-daddy=lib/yield-daddy',
+    '@auto-roller=lib/auto-roller',
+    'sense-v1-utils=../utils/src/'
 ]

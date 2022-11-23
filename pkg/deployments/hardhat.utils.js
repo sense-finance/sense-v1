@@ -10,6 +10,8 @@ exports.STORAGE_SLOT = {
   wstETH: 0,
   WETH: 3,
   USDC: 9,
+  maDAI: 51,
+  maUSDC: 51,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders
@@ -125,47 +127,88 @@ async function setStorageAt(address, index, value) {
 }
 exports.setStorageAt = setStorageAt;
 
+async function setBalance(address, value) {
+  await network.provider.send("hardhat_setBalance", [address, `0x${value}`]);
+}
+exports.setBalance = setBalance;
+
+async function startPrank(address) {
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+}
+exports.startPrank = startPrank;
+
+async function stopPrank(address) {
+  await hre.network.provider.request({
+    method: "hardhat_stopImpersonatingAccount",
+    params: [address],
+  });
+}
+exports.stopPrank = stopPrank;
+
 const delay = n => new Promise(r => setTimeout(r, n * 1000));
 exports.delay = delay;
 
-exports.verifyOnEtherscan = async contractName => {
-  // Seems like verifying a contract using the built-in task from hardhat-deploy
-  // works well only if we use the param `solcInput` which should not be needed
-  // since this was a bug supposedly fixed from Solidity version +0.8
-  // (https://github.com/wighawag/hardhat-deploy#4-hardhat-etherscan-verify)
-  // Also, verifying contracts when using `hardhat-preprocessor` plugin
-  // generates a warning on Etherscan saying that there's a library (__CACHE_BREAKER)
-  // that has not been verified. Hence, the lines below are removing this library
-  // from the solcInput file (https://github.com/wighawag/hardhat-deploy/issues/78#issuecomment-786914537)
-
-  // Remove __CACHE_BREAKER library from solcInput
-  const path = `${__dirname}/deployments/${hre.network.name}/solcInputs`;
-  fs.readdirSync(path).forEach(file => {
-    var m = JSON.parse(fs.readFileSync(`${path}/${file}`).toString());
-    delete m?.settings?.libraries[""]?.__CACHE_BREAKER__;
-    fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
-  });
-
-  console.log("Waiting 20 seconds for Etherscan to sync...");
-  await delay(20);
-  console.log("Trying to verify contract on Etherscan...");
-  try {
-    await hre.run("etherscan-verify", {
-      contractName,
-      license: "AGPL-3.0",
-      forceLicense: true,
-      solcInput: true,
+// This utils function is used to verify contracts on Etherscan and it will do it using
+// the built-in hardhat `verify:verify` task or the `hardhat-deploy` `etherscan-verify` task
+// depending on the arguments passed to it:
+// - `contractName`: the name of the contract to verify
+// - `contractAddress`: the address of the contract to verify
+// - `constructorArguments`: the constructor arguments of the contract to verify
+// - `libraries`: the libraries used by the contract to verify (if any)
+// If you want this function to work with the `hardhat-deploy` `ethescan-verify``, you only need to
+// pass the `contractName`. Otherwise, you need to pass all the arguments.
+exports.verifyOnEtherscan = async (contractName, address, constructorArguments, libraries) => {
+  if (address) {
+    await hre.run("verify:verify", {
+      address,
+      constructorArguments,
+      libraries: libraries,
     });
-  } catch (e) {
-    console.log(e);
-    console.log("We couldn't verify the contract on Etherscan, you may try manually.");
+  } else {
+    // Seems like verifying a contract using the built-in task from hardhat-deploy
+    // works well only if we use the param `solcInput` which should not be needed
+    // since this was a bug supposedly fixed from Solidity version +0.8
+    // (https://github.com/wighawag/hardhat-deploy#4-hardhat-etherscan-verify)
+    // Also, verifying contracts when using `hardhat-preprocessor` plugin
+    // generates a warning on Etherscan saying that there's a library (__CACHE_BREAKER)
+    // that has not been verified. Hence, the lines below are removing this library
+    // from the solcInput file (https://github.com/wighawag/hardhat-deploy/issues/78#issuecomment-786914537)
+
+    // Remove __CACHE_BREAKER library from solcInput
+    const path = `${__dirname}/deployments/${hre.network.name}/solcInputs`;
+    fs.readdirSync(path).forEach(file => {
+      var m = JSON.parse(fs.readFileSync(`${path}/${file}`).toString());
+      delete m?.settings?.libraries[""]?.__CACHE_BREAKER__;
+      fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
+    });
+
+    console.log("Waiting 20 seconds for Etherscan to sync...");
+    await delay(20);
+    console.log("Trying to verify contract on Etherscan...");
+    try {
+      await hre.run("etherscan-verify", {
+        contractName,
+        license: "AGPL-3.0",
+        forceLicense: true,
+        solcInput: true,
+      });
+    } catch (e) {
+      console.log(e);
+      console.log("We couldn't verify the contract on Etherscan, you may try manually.");
+    }
   }
 };
 
-exports.generateStakeTokens = async (stakeAddress, to, signer) => {
-  const ERC20_ABI = ["function symbol() public view returns (string)"];
-  const stake = new ethers.Contract(stakeAddress, ERC20_ABI, signer);
-  const symbol = await stake.symbol();
+exports.generateTokens = async (tokenAddress, to, signer) => {
+  const ERC20_ABI = [
+    "function symbol() public view returns (string)",
+    "function balanceOf(address) public view returns (uint256)",
+  ];
+  const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+  const symbol = await token.symbol();
 
   // Get storage slot index
   const index = ethers.utils.solidityKeccak256(
@@ -174,11 +217,13 @@ exports.generateStakeTokens = async (stakeAddress, to, signer) => {
   );
 
   await setStorageAt(
-    stakeAddress,
+    tokenAddress,
     index.toString(),
     this.toBytes32(ethers.utils.parseEther("10000")).toString(),
   );
-  log(`\n - 10'000 ${symbol} transferred to deployer: ${to}`);
+  if ((await token.balanceOf(to)).eq(0)) {
+    throw new Error(`\n - Failed to generate 10'000 ${symbol} to deployer: ${to}`);
+  }
 };
 
 // Returns signer using OZ Relayer's API

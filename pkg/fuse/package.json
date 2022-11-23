@@ -25,7 +25,7 @@
     "dependencies": {
         "@sense-finance/v1-core": "workspace:pkg/core",
         "@sense-finance/v1-utils": "workspace:pkg/utils",
-        "solmate": "^6.6.1"
+        "solmate": "transmissions11/solmate#v7"
     },
     "devDependencies": {
         "@types/prettier": "^2",

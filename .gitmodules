@@ -1,6 +1,3 @@
-[submodule "pkg/deployments/lib/v1-space"]
-	path = pkg/deployments/lib/v1-space
-	url = https://github.com/sense-finance/space-v1
 [submodule "pkg/deployments/lib/morpho-core-v1"]
 	path = pkg/deployments/lib/morpho-core-v1
 	url = https://github.com/morpho-dao/morpho-core-v1
@@ -10,3 +7,12 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "pkg/core/lib/auto-roller"]
+	path = pkg/core/lib/auto-roller
+	url = https://github.com/sense-finance/auto-roller.git
+[submodule "pkg/deployments/lib/auto-roller"]
+	path = pkg/deployments/lib/auto-roller
+	url = https://github.com/sense-finance/auto-roller.git
+[submodule "pkg/deployments/lib/v1-space"]
+	path = pkg/deployments/lib/v1-space
+	url = https://github.com/sense-finance/space-v1
