@@ -151,6 +151,15 @@ exports.stopPrank = stopPrank;
 const delay = n => new Promise(r => setTimeout(r, n * 1000));
 exports.delay = delay;
 
+// This utils function is used to verify contracts on Etherscan and it will do it using
+// the built-in hardhat `verify:verify` task or the `hardhat-deploy` `etherscan-verify` task
+// depending on the arguments passed to it:
+// - `contractName`: the name of the contract to verify
+// - `contractAddress`: the address of the contract to verify
+// - `constructorArguments`: the constructor arguments of the contract to verify
+// - `libraries`: the libraries used by the contract to verify (if any)
+// If you want this function to work with the `hardhat-deploy` `ethescan-verify``, you only need to
+// pass the `contractName`. Otherwise, you need to pass all the arguments.
 exports.verifyOnEtherscan = async (contractName, address, constructorArguments, libraries) => {
   if (address) {
     await hre.run("verify:verify", {
@@ -177,7 +186,7 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
     });
 
     console.log("Waiting 20 seconds for Etherscan to sync...");
-    // await delay(20);
+    await delay(20);
     console.log("Trying to verify contract on Etherscan...");
     try {
       await hre.run("etherscan-verify", {

@@ -235,146 +235,146 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
   console.log("\n\n-------------------------------------------------------");
   console.log("\nDeploy Adapters directly");
   console.log("\n-------------------------------------------------------");
-  // for (const adapter of adapters) {
-  //   const {
-  //     contractName: adapterContractName,
-  //     contract,
-  //     ifee,
-  //     oracle,
-  //     stake: stakeAddress,
-  //     stakeSize,
-  //     minm,
-  //     maxm,
-  //     tilt,
-  //     level,
-  //     mode,
-  //     guard,
-  //     target: t,
-  //   } = adapter;
+  for (const adapter of adapters) {
+    const {
+      contractName: adapterContractName,
+      contract,
+      ifee,
+      oracle,
+      stake: stakeAddress,
+      stakeSize,
+      minm,
+      maxm,
+      tilt,
+      level,
+      mode,
+      guard,
+      target: t,
+    } = adapter;
 
-  //   console.log("\n\n---------------------------------------");
-  //   console.log(`Deploy ${adapterContractName}`);
-  //   console.log("---------------------------------------");
-  //   console.log(
-  //     `\n - Params: ${JSON.stringify({
-  //       t,
-  //       ifee: ifee.toString(),
-  //       stakeAddress,
-  //       stakeSize: stakeSize.toString(),
-  //       minm,
-  //       maxm,
-  //       mode,
-  //       oracle,
-  //       tilt,
-  //       guard,
-  //     })}}\n`,
-  //   );
+    console.log("\n\n---------------------------------------");
+    console.log(`Deploy ${adapterContractName}`);
+    console.log("---------------------------------------");
+    console.log(
+      `\n - Params: ${JSON.stringify({
+        t,
+        ifee: ifee.toString(),
+        stakeAddress,
+        stakeSize: stakeSize.toString(),
+        minm,
+        maxm,
+        mode,
+        oracle,
+        tilt,
+        guard,
+      })}}\n`,
+    );
 
-  //   const adapterParams = [oracle, stakeAddress, stakeSize, minm, maxm, tilt, level, mode];
+    const adapterParams = [oracle, stakeAddress, stakeSize, minm, maxm, tilt, level, mode];
 
-  //   const { address: adapterAddress, abi } = await deploy(adapterContractName, {
-  //     contract: contract || adapterContractName,
-  //     from: deployer,
-  //     args: [divider.address, t.address, rewardsRecipient, ifee, adapterParams],
-  //     log: true,
-  //   });
-  //   console.log(`${adapterContractName} deployed to ${adapterAddress}`);
-  //   const adapterContract = new ethers.Contract(adapterAddress, abi, deployerSigner);
+    const { address: adapterAddress, abi } = await deploy(adapterContractName, {
+      contract: contract || adapterContractName,
+      from: deployer,
+      args: [divider.address, t.address, rewardsRecipient, ifee, adapterParams],
+      log: true,
+    });
+    console.log(`${adapterContractName} deployed to ${adapterAddress}`);
+    const adapterContract = new ethers.Contract(adapterAddress, abi, deployerSigner);
 
-  //   // Auto Roller Factory must have adapter auth so that it can give auth to the RLV
-  //   await (await adapterContract.setIsTrusted(autoRollerFactoryAddress, true)).wait();
+    // Auto Roller Factory must have adapter auth so that it can give auth to the RLV
+    await (await adapterContract.setIsTrusted(autoRollerFactoryAddress, true)).wait();
 
-  //   if (chainId !== CHAINS.HARDHAT) {
-  //     console.log("\n-------------------------------------------------------");
-  //     await verifyOnEtherscan(adapterContractName, adapterContract.address, [divider.address, t.address, rewardsRecipient, ifee, adapterParams]);
-  //   } else {
-  //     await startPrank(senseAdminMultisigAddress);
+    if (chainId !== CHAINS.HARDHAT) {
+      console.log("\n-------------------------------------------------------");
+      await verifyOnEtherscan(adapterContractName, adapterContract.address, [divider.address, t.address, rewardsRecipient, ifee, adapterParams]);
+    } else {
+      await startPrank(senseAdminMultisigAddress);
 
-  //     const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
-  //     divider = divider.connect(multisigSigner);
-  //     periphery = periphery.connect(multisigSigner);
+      const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
+      divider = divider.connect(multisigSigner);
+      periphery = periphery.connect(multisigSigner);
 
-  //     console.log(`\n- Onboard ${t.name} adapter directly`);
-  //     await (await periphery.onboardAdapter(adapterAddress, true)).wait();
+      console.log(`\n- Onboard ${t.name} adapter directly`);
+      await (await periphery.onboardAdapter(adapterAddress, true)).wait();
 
-  //     console.log(`\n- Verify ${t.name} adapter directly`);
-  //     await (await periphery.verifyAdapter(adapterAddress, false)).wait();
-  //     console.log(`  ${t.name} ownable adapter address deployed to ${adapterAddress}`);
+      console.log(`\n- Verify ${t.name} adapter directly`);
+      await (await periphery.verifyAdapter(adapterAddress, false)).wait();
+      console.log(`  ${t.name} ownable adapter address deployed to ${adapterAddress}`);
 
-  //     console.log(`\n- Set guard for ${adapterContractName}`);
-  //     await (await divider.setGuard(adapterAddress, guard)).wait();
+      console.log(`\n- Set guard for ${adapterContractName}`);
+      await (await divider.setGuard(adapterAddress, guard)).wait();
 
-  //     await stopPrank(senseAdminMultisigAddress);
+      await stopPrank(senseAdminMultisigAddress);
 
-  //     console.log(`\n- Sanity check: can call scale value & guard value`);
-  //     const scale = await adapterContract.callStatic.scale();
-  //     console.log(`  * scale: ${scale.toString()}`);
+      console.log(`\n- Sanity check: can call scale value & guard value`);
+      const scale = await adapterContract.callStatic.scale();
+      console.log(`  * scale: ${scale.toString()}`);
 
-  //     const params = await divider.adapterMeta(adapterAddress);
-  //     console.log(`  * adapter guard: ${params[2]}`);
+      const params = await divider.adapterMeta(adapterAddress);
+      console.log(`  * adapter guard: ${params[2]}`);
 
-  //     console.log(
-  //       `\n- Deploy an AutoRoller for ${adapterContractName} with target ${t.name} via AutoRollerFactory`,
-  //     );
-  //     const autoRollerFactory = await ethers.getContract("AutoRollerFactory", deployerSigner);
-  //     const autoRollerAddress = await autoRollerFactory.callStatic.create(
-  //       adapterAddress,
-  //       senseAdminMultisigAddress,
-  //       3,
-  //     );
-  //     await (await autoRollerFactory.create(adapterAddress, senseAdminMultisigAddress, 3)).wait();
-  //     console.log(`  AutoRoller deployed to ${autoRollerAddress}`);
+      console.log(
+        `\n- Deploy an AutoRoller for ${adapterContractName} with target ${t.name} via AutoRollerFactory`,
+      );
+      const autoRollerFactory = await ethers.getContract("AutoRollerFactory", deployerSigner);
+      const autoRollerAddress = await autoRollerFactory.callStatic.create(
+        adapterAddress,
+        senseAdminMultisigAddress,
+        3,
+      );
+      await (await autoRollerFactory.create(adapterAddress, senseAdminMultisigAddress, 3)).wait();
+      console.log(`  AutoRoller deployed to ${autoRollerAddress}`);
 
-  //     console.log(`\n- Prepare to roll series on AutoRoller with OwnableAdapter whose target is ${t.name}`);
+      console.log(`\n- Prepare to roll series on AutoRoller with OwnableAdapter whose target is ${t.name}`);
 
-  //     // Mint stake & target tokens
-  //     await generateTokens(t.address, deployer, deployerSigner);
-  //     await generateTokens(stakeAddress, deployer, deployerSigner);
+      // Mint stake & target tokens
+      await generateTokens(t.address, deployer, deployerSigner);
+      await generateTokens(stakeAddress, deployer, deployerSigner);
 
-  //     const ERC20_ABI = [
-  //       "function approve(address spender, uint256 amount) public returns (bool)",
-  //       "function balanceOf(address account) public view returns (uint256)",
-  //     ];
+      const ERC20_ABI = [
+        "function approve(address spender, uint256 amount) public returns (bool)",
+        "function balanceOf(address account) public view returns (uint256)",
+      ];
 
-  //     console.log(`  Approve AutoRoller to pull ${t.name}`);
-  //     const target = new ethers.Contract(t.address, ERC20_ABI, deployerSigner);
-  //     await target.approve(autoRollerAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
+      console.log(`  Approve AutoRoller to pull ${t.name}`);
+      const target = new ethers.Contract(t.address, ERC20_ABI, deployerSigner);
+      await target.approve(autoRollerAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
 
-  //     console.log(`  Approve AutoRoller to pull stake`);
-  //     const stake = new ethers.Contract(stakeAddress, ERC20_ABI, deployerSigner);
-  //     await stake.approve(autoRollerAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
+      console.log(`  Approve AutoRoller to pull stake`);
+      const stake = new ethers.Contract(stakeAddress, ERC20_ABI, deployerSigner);
+      await stake.approve(autoRollerAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
 
-  //     // Roll into the first Series
-  //     const autoRollerArtifact = await deployments.getArtifact("AutoRoller");
-  //     const autoRoller = new ethers.Contract(autoRollerAddress, autoRollerArtifact.abi, deployerSigner);
-  //     console.log(`\n- Roll Series on AutoRoller with OwnableAdapter whose target is ${t.name}`);
-  //     await (await autoRoller.roll()).wait();
-  //     console.log(`  Successfully rolled Series!`);
-  //   }
+      // Roll into the first Series
+      const autoRollerArtifact = await deployments.getArtifact("AutoRoller");
+      const autoRoller = new ethers.Contract(autoRollerAddress, autoRollerArtifact.abi, deployerSigner);
+      console.log(`\n- Roll Series on AutoRoller with OwnableAdapter whose target is ${t.name}`);
+      await (await autoRoller.roll()).wait();
+      console.log(`  Successfully rolled Series!`);
+    }
 
-  //   // Unset deployer and set multisig as trusted address
-  //   console.log(`\n\n- Set multisig as trusted address of ${adapterContractName}`);
-  //   await (await adapterContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+    // Unset deployer and set multisig as trusted address
+    console.log(`\n\n- Set multisig as trusted address of ${adapterContractName}`);
+    await (await adapterContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
-  //   console.log(`- Unset deployer as trusted address of ${adapterContractName}`);
-  //   await (await adapterContract.setIsTrusted(deployer, false)).wait();
+    console.log(`- Unset deployer as trusted address of ${adapterContractName}`);
+    await (await adapterContract.setIsTrusted(deployer, false)).wait();
 
-  //   if (VERIFY_CHAINS.includes(chainId)) {
-  //     console.log("\n-------------------------------------------------------");
-  //     console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
+    if (VERIFY_CHAINS.includes(chainId)) {
+      console.log("\n-------------------------------------------------------");
+      console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
 
-  //     console.log("\n1. Onboard wstETH Ownable Adapter on Periphery");
-  //     console.log("\n2. Verify wstETH Ownable Adapter on Periphery");
-  //     console.log(`\n3. Set guard for wstETH Ownable Adapter on Divider`);
-  //     console.log("\n4. Deploy OwnableAdapter using OwnableFactory for a given target");
-  //     console.log("\n5. Deploy AutoRoller using AutoRollerFactory using the OwnableAdapter deployed");
-  //     console.log(`\n6. Approve AutoRoller to pull target`);
-  //     console.log(`\n7. Approve AutoRoller to pull stake`);
-  //     console.log("\n8. For each AutoRoller, roll into first Series");
-  //   }
+      console.log("\n1. Onboard wstETH Ownable Adapter on Periphery");
+      console.log("\n2. Verify wstETH Ownable Adapter on Periphery");
+      console.log(`\n3. Set guard for wstETH Ownable Adapter on Divider`);
+      console.log("\n4. Deploy OwnableAdapter using OwnableFactory for a given target");
+      console.log("\n5. Deploy AutoRoller using AutoRollerFactory using the OwnableAdapter deployed");
+      console.log(`\n6. Approve AutoRoller to pull target`);
+      console.log(`\n7. Approve AutoRoller to pull stake`);
+      console.log("\n8. For each AutoRoller, roll into first Series");
+    }
 
-  //   console.log("\n-------------------------------------------------------");
-  // }
+    console.log("\n-------------------------------------------------------");
+  }
 });
 
 // Deploys a new Space Factory (the one with getEqReserevs())
@@ -412,17 +412,15 @@ subtask("deploy-space-factory", "Deploys a new Space Factory").setAction(async a
   const oracleEnabled = true;
   const balancerFeesEnabled = false;
 
-  // const { address: spaceFactoryAddress, abi } = await deploy("SpaceFactory", {
-  //   from: deployer,
-  //   args: [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
-  //   libraries: {
-  //     QueryProcessor: QUERY_PROCESSOR.get(chainId),
-  //   },
-  //   log: true,
-  // });
-  const spaceFactoryAddress = "0x9e629751b3FE0b030C219e567156adCB70ad5541";
+  await deploy("SpaceFactory", {
+    from: deployer,
+    args: [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
+    libraries: {
+      QueryProcessor: QUERY_PROCESSOR.get(chainId),
+    },
+    log: true,
+  });
   const spaceFactory = await ethers.getContract("SpaceFactory", deployerSigner);
-  // const spaceFactory = new ethers.Contract(spaceFactoryAddress, abi, deployerSigner);
   console.log(`\nSpace Factory deployed to ${spaceFactory.address}`);
 
   const sponsoredSeries = (
@@ -430,28 +428,28 @@ subtask("deploy-space-factory", "Deploys a new Space Factory").setAction(async a
   ).map(series => ({ adapter: series.args.adapter, maturity: series.args.maturity.toString() }));
 
   console.log(`\nSetting ${sponsoredSeries.length} pools...`);
-  // let i = 1;
-  // for (let { adapter, maturity } of sponsoredSeries) {
-  //   const pool = await oldSpaceFactory.pools(adapter, maturity);
-  //   console.log(`- Pool ${i}`)
-  //   // if ((await spaceFactory.pools(adapter, maturity)) === ethers.constants.AddressZero) {
-  //   //   console.log(
-  //   //     `\n- Adding ${adapter} ${maturity} Series with pool ${pool} to new Space Factory pools mapping`,
-  //   //   );
-  //   //   await spaceFactory.setPool(adapter, maturity, pool, { gasLimit: 55000, gasPrice: 16000000000 }).then(t => t.wait());
-  //   //   console.log(`  Added pool ${await spaceFactory.pools(adapter, maturity)}`);
-  //   // }
-  //   i++;
-  // }
+  let i = 1;
+  for (let { adapter, maturity } of sponsoredSeries) {
+    const pool = await oldSpaceFactory.pools(adapter, maturity);
+    console.log(`- Pool ${i}`)
+    if ((await spaceFactory.pools(adapter, maturity)) === ethers.constants.AddressZero) {
+      console.log(
+        `\n- Adding ${adapter} ${maturity} Series with pool ${pool} to new Space Factory pools mapping`,
+      );
+      await spaceFactory.setPool(adapter, maturity, pool, { gasLimit: 55000, gasPrice: 16000000000 }).then(t => t.wait());
+      console.log(`  Added pool ${await spaceFactory.pools(adapter, maturity)}`);
+    }
+    i++;
+  }
 
   if (chainId !== CHAINS.HARDHAT) {
     console.log("\n-------------------------------------------------------");
-    // await verifyOnEtherscan(
-    //   "SpaceFactory", 
-    //   spaceFactory.address, 
-    //   [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
-    //   { QueryProcessor: QUERY_PROCESSOR.get(chainId) }
-    // );
+    await verifyOnEtherscan(
+      "SpaceFactory", 
+      spaceFactory.address, 
+      [balancerVault, divider.address, TS, G1, G2, oracleEnabled, balancerFeesEnabled],
+      { QueryProcessor: QUERY_PROCESSOR.get(chainId) }
+    );
   } else {
     await startPrank(senseAdminMultisigAddress);
 
@@ -465,11 +463,11 @@ subtask("deploy-space-factory", "Deploys a new Space Factory").setAction(async a
     await stopPrank(senseAdminMultisigAddress);
   }
 
-  // console.log(`\n\n- Set multisig as trusted address of SpaceFactory`);
-  // await (await spaceFactory.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+  console.log(`\n\n- Set multisig as trusted address of SpaceFactory`);
+  await (await spaceFactory.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
-  // console.log(`\n- Unset deployer as trusted address of SpaceFactory`);
-  // await (await spaceFactory.setIsTrusted(deployer, false)).wait();
+  console.log(`\n- Unset deployer as trusted address of SpaceFactory`);
+  await (await spaceFactory.setIsTrusted(deployer, false)).wait();
   console.log("\n\n");
 });
 
@@ -491,80 +489,67 @@ subtask("deploy-auto-roller-factory", "Deploys a new Space Factory").setAction(a
   } = args;
 
   console.log("\nDeploying RollerUtils");
-  // const { address: rollerUtilsAddress } = await deploy("RollerUtils", {
-  //   from: deployer,
-  //   args: [divider.address],
-  //   log: true,
-  // });
+  await deploy("RollerUtils", {
+    from: deployer,
+    args: [divider.address],
+    log: true,
+  });
   const rollerUtils = await ethers.getContract("RollerUtils", deployerSigner);
+  console.log(`\nRollerUtils deployed to ${rollerUtils.address}`);
 
   console.log("\nDeploying RollerPeriphery");
-  // const { address: rollerPeripheryAddress } = await deploy("RollerPeriphery", {
-  //   from: deployer,
-  //   args: [],
-  //   log: true,
-  // });
+  await deploy("RollerPeriphery", {
+    from: deployer,
+    args: [],
+    log: true,
+  });
   const rollerPeriphery = await ethers.getContract("RollerPeriphery", deployerSigner);
   console.log(`\nRollerPeriphery deployed to ${rollerPeriphery.address}`);
 
   console.log("\nDeploying an AutoRoller Factory");
-  const autoRollerArtifact = await deployments.getArtifact("AutoRoller");
-  // const { address: autoRollerFactoryAddress } = await deploy("AutoRollerFactory", {
-  //   from: deployer,
-  //   args: [
-  //     divider.address,
-  //     balancerVault,
-  //     periphery.address,
-  //     rollerPeriphery.address,
-  //     rollerUtils.address,
-  //     autoRollerArtifact.bytecode,
-  //   ],
-  //   log: true,
-  // });
-  const autoRollerFactory = await ethers.getContract("AutoRollerFactory", deployerSigner);
-  console.log(`\nAutoRollerFactory deployed to ${autoRollerFactory.address}`);
-  console.log("DATA", [
-    divider.address,
-    balancerVault,
-    periphery.address,
-    rollerPeriphery.address,
-    rollerUtils.address,
-    autoRollerArtifact.bytecode,
-  ]);
-
-  if (chainId !== CHAINS.HARDHAT) {
-    console.log("\n-------------------------------------------------------");
-    const data = ethers.utils.defaultAbiCoder.encode(["address", "address", "address", "address", "address", "bytes"], [
+  await deploy("AutoRollerFactory", {
+    from: deployer,
+    args: [
       divider.address,
       balancerVault,
       periphery.address,
       rollerPeriphery.address,
-      rollerUtils.address,
-      autoRollerArtifact.bytecode,
-    ]);
-    console.log('data', data)
+      rollerUtils.address
+    ],
+    log: true,
+  });
+  const autoRollerFactory = await ethers.getContract("AutoRollerFactory", deployerSigner);
+  console.log(`\nAutoRollerFactory deployed to ${autoRollerFactory.address}`);
+
+  if (chainId !== CHAINS.HARDHAT) {
+    console.log("\n-------------------------------------------------------");
 
     await verifyOnEtherscan("AutoRollerFactory", autoRollerFactory.address, [
       divider.address,
       balancerVault,
       periphery.address,
       rollerPeriphery.address,
-      rollerUtils.address,
-      autoRollerArtifact.bytecode,
+      rollerUtils.address
     ]);
-    // await verifyOnEtherscan("RollerPeriphery", rollerPeriphery.address, []);
+    await verifyOnEtherscan("RollerPeriphery", rollerPeriphery.address, []);
   }
 
   console.log(
     `\n- Set AutoRollerFactory as trusted address on RollerPeriphery to be able to use the approve() function`,
   );
-  // await (await rollerPeriphery.setIsTrusted(autoRollerFactory.address, true, { nonce: 515, gasPrice: 14000000000 })).wait();
+  await (await rollerPeriphery.setIsTrusted(autoRollerFactory.address, true)).wait();
 
   console.log(`\n- Set multisig as trusted address of AutoRollerFactory`);
-  // await (await autoRollerFactory.setIsTrusted(senseAdminMultisigAddress, true, { gasPrice: 14000000000 })).wait();
+  await (await autoRollerFactory.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
   console.log(`\n- Unset deployer as trusted address of AutoRollerFactory`);
-  // await (await autoRollerFactory.setIsTrusted(deployer, false, { gasPrice: 14000000000 })).wait();
+  await (await autoRollerFactory.setIsTrusted(deployer, false)).wait();
+
+  console.log(`\n- Set multisig as trusted address of RollerPeriphery`);
+  await (await rollerPeriphery.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+
+  console.log(`\n- Unset deployer as trusted address of RollerPeriphery`);
+  await (await rollerPeriphery.setIsTrusted(deployer, false)).wait();
 
   console.log("\n\n");
   return autoRollerFactory.address;
