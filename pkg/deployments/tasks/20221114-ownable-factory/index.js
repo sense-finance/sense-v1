@@ -45,7 +45,7 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
     rewardsRecipient,
     factories,
     adapters,
-    autoRollerFactory: autoRollerFactoryAddress,
+    rlvFactory: rlvFactoryAddress,
   } = data[chainId] || data[CHAINS.MAINNET];
 
   let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
@@ -65,8 +65,8 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
   });
 
   // Deploy an Auto Roller Factory
-  if (!autoRollerFactoryAddress) {
-    autoRollerFactoryAddress = await hre.run("deploy-auto-roller-factory", {
+  if (!rlvFactoryAddress) {
+    rlvFactoryAddress = await hre.run("deploy-auto-roller-factory", {
       deploy,
       deployer,
       deployerSigner,
@@ -111,19 +111,19 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
         masterOracleAddress,
         tilt,
         guard,
-        autoRollerFactoryAddress,
+        rlvFactoryAddress,
       })}}\n`,
     );
 
     const factoryParams = [masterOracleAddress, stakeAddress, stakeSize, minm, maxm, ifee, mode, tilt, guard];
 
-    const { address: factoryAddress, abi } = await deploy(factoryContractName, {
+    const { address: factoryAddress } = await deploy(factoryContractName, {
       contract: contract || factoryContractName,
       from: deployer,
-      args: [divider.address, restrictedAdmin, rewardsRecipient, factoryParams, autoRollerFactoryAddress],
+      args: [divider.address, restrictedAdmin, rewardsRecipient, factoryParams, rlvFactoryAddress],
       log: true,
     });
-    const factoryContract = new ethers.Contract(factoryAddress, abi, deployerSigner);
+    const factoryContract = await ethers.getContractAt(factoryContractName, factoryAddress, deployerSigner);
     console.log(`${factoryContractName} deployed to ${factoryAddress}`);
 
     if (chainId !== CHAINS.HARDHAT) {
@@ -143,16 +143,18 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
       await (await divider.setIsTrusted(factoryAddress, true)).wait();
 
       await stopPrank(senseAdminMultisigAddress);
+    }
 
-      for (const t of targets) {
+    for (const t of targets) {
+      periphery = periphery.connect(deployerSigner);
+
+      console.log(`\n- Add target ${t.name} to the factory supported list`);
+      await (await factoryContract.supportTarget(t.address, true)).wait();
+
+      if ([CHAINS.HARDHAT, CHAINS.GOERLI].includes(chainId)) {
         console.log("\n\n---------------------------------------");
         console.log(`Deploy ${t.name} ownable adapter via ${factoryContractName}`);
         console.log("---------------------------------------");
-
-        periphery = periphery.connect(deployerSigner);
-
-        console.log(`\n- Add target ${t.name} to the factory supported list`);
-        await (await factoryContract.supportTarget(t.address, true)).wait();
 
         console.log(`\n- Onboard target ${t.name} @ ${t.address} via ${factoryContractName}`);
         const data = ethers.utils.defaultAbiCoder.encode(["address[]"], [[]]);
@@ -171,7 +173,11 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
         console.log(
           `\n- Deploy an AutoRoller for Ownable Adapter with target ${t.name} via AutoRollerFactory`,
         );
-        const autoRollerFactory = await ethers.getContract("AutoRollerFactory", deployerSigner);
+        const autoRollerFactory = await ethers.getContractAt(
+          "AutoRollerFactory",
+          rlvFactoryAddress,
+          deployerSigner,
+        );
         const autoRollerAddress = await autoRollerFactory.callStatic.create(
           adapterAddress,
           senseAdminMultisigAddress,
@@ -208,27 +214,27 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
 
         console.log("\n-------------------------------------------------------");
       }
+    }
 
-      // Unset deployer and set multisig as trusted address
-      console.log(`\n\n- Set multisig as trusted address of ${factoryContractName}`);
-      await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
+    // Unset deployer and set multisig as trusted address
+    console.log(`\n\n- Set multisig as trusted address of ${factoryContractName}`);
+    await (await factoryContract.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
-      console.log(`- Unset deployer as trusted address of ${factoryContractName}`);
-      await (await factoryContract.setIsTrusted(deployer, false)).wait();
+    console.log(`- Unset deployer as trusted address of ${factoryContractName}`);
+    await (await factoryContract.setIsTrusted(deployer, false)).wait();
 
-      if (VERIFY_CHAINS.includes(chainId)) {
-        console.log("\n-------------------------------------------------------");
-        console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
+    if (VERIFY_CHAINS.includes(chainId)) {
+      console.log("\n-------------------------------------------------------");
+      console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
 
-        console.log("\n1. Set factory on Periphery");
-        console.log("\n2. Set factory as trusted on Divider");
-        console.log(`\n3. Set new SpaceFactory on Periphery`);
-        console.log("\n4. Deploy OwnableAdapter using OwnableFactory for a given target");
-        console.log("\n5. Deploy AutoRoller using AutoRollerFactory using the OwnableAdapter deployed");
-        console.log(`\n6. Approve AutoRoller to pull target`);
-        console.log(`\n7. Approve AutoRoller to pull stake`);
-        console.log("\n8. For each AutoRoller, roll into first Series");
-      }
+      console.log("\n1. Set factory on Periphery");
+      console.log("\n2. Set factory as trusted on Divider");
+      console.log(`\n3. Set new SpaceFactory on Periphery`);
+      console.log("\n4. Deploy OwnableAdapter using OwnableFactory for a given target");
+      console.log("\n5. Deploy AutoRoller using AutoRollerFactory using the OwnableAdapter deployed");
+      console.log(`\n6. Approve AutoRoller to pull target`);
+      console.log(`\n7. Approve AutoRoller to pull stake`);
+      console.log("\n8. For each AutoRoller, roll into first Series");
     }
   }
 
@@ -282,7 +288,7 @@ task("20221114-ownable-factory", "Deploys RLV 4626 Factory").setAction(async (_,
     const adapterContract = new ethers.Contract(adapterAddress, abi, deployerSigner);
 
     // Auto Roller Factory must have adapter auth so that it can give auth to the RLV
-    await (await adapterContract.setIsTrusted(autoRollerFactoryAddress, true)).wait();
+    await (await adapterContract.setIsTrusted(rlvFactoryAddress, true)).wait();
 
     if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
