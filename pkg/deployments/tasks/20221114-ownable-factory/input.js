@@ -6,6 +6,7 @@ const {
   MORPHO_DAI,
   RLV_FACTORY,
   WSTETH_TOKEN,
+  MORPHO_USDT,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
@@ -13,13 +14,13 @@ const ethers = require("ethers");
 const SAMPLE_TARGETS = [
   { name: "maDAI", address: MORPHO_DAI.get(CHAINS.MAINNET) },
   { name: "maUSDC", address: MORPHO_USDC.get(CHAINS.MAINNET) },
-  { name: "maUSDT", address: MORPHO_USDC.get(CHAINS.MAINNET) },
+  { name: "maUSDT", address: MORPHO_USDT.get(CHAINS.MAINNET) },
 ];
 
 const MAINNET_FACTORIES = [
   {
     contractName: "OwnableERC4626Factory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+    ifee: ethers.utils.parseEther("0.0005"), // 0.05%
     oracle: "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101",
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
@@ -55,7 +56,7 @@ const SAMPLE_TARGETS_GOERLI = [{ name: "maDAI", address: MORPHO_DAI.get(CHAINS.G
 const GOERLI_FACTORIES = [
   {
     contractName: "OwnableERC4626Factory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+    ifee: ethers.utils.parseEther("0.0005"), // 0.05%
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
     minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
@@ -75,7 +76,7 @@ module.exports = {
     oldSpaceFactory: "0x5f6e8e9C888760856e22057CBc81dD9e0494aA34",
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.MAINNET),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.MAINNET),
-    rlvFactoryr: RLV_FACTORY.get(CHAINS.MAINNET),
+    rlvFactory: RLV_FACTORY.get(CHAINS.MAINNET),
     factories: MAINNET_FACTORIES,
     adapters: MAINNET_ADAPTERS,
   },
