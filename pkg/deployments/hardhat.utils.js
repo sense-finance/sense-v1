@@ -12,6 +12,7 @@ exports.STORAGE_SLOT = {
   USDC: 9,
   maDAI: 51,
   maUSDC: 51,
+  maUSDT: 51,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders
@@ -161,44 +162,45 @@ exports.delay = delay;
 // If you want this function to work with the `hardhat-deploy` `ethescan-verify``, you only need to
 // pass the `contractName`. Otherwise, you need to pass all the arguments.
 exports.verifyOnEtherscan = async (contractName, address, constructorArguments, libraries) => {
-  if (address) {
-    await hre.run("verify:verify", {
-      address,
-      constructorArguments,
-      libraries: libraries,
-    });
-  } else {
-    // Seems like verifying a contract using the built-in task from hardhat-deploy
-    // works well only if we use the param `solcInput` which should not be needed
-    // since this was a bug supposedly fixed from Solidity version +0.8
-    // (https://github.com/wighawag/hardhat-deploy#4-hardhat-etherscan-verify)
-    // Also, verifying contracts when using `hardhat-preprocessor` plugin
-    // generates a warning on Etherscan saying that there's a library (__CACHE_BREAKER)
-    // that has not been verified. Hence, the lines below are removing this library
-    // from the solcInput file (https://github.com/wighawag/hardhat-deploy/issues/78#issuecomment-786914537)
+  try {
+    if (address) {
+      await hre.run("verify:verify", {
+        contract: contractName,
+        address,
+        constructorArguments,
+        libraries: libraries,
+      });
+    } else {
+      // Seems like verifying a contract using the built-in task from hardhat-deploy
+      // works well only if we use the param `solcInput` which should not be needed
+      // since this was a bug supposedly fixed from Solidity version +0.8
+      // (https://github.com/wighawag/hardhat-deploy#4-hardhat-etherscan-verify)
+      // Also, verifying contracts when using `hardhat-preprocessor` plugin
+      // generates a warning on Etherscan saying that there's a library (__CACHE_BREAKER)
+      // that has not been verified. Hence, the lines below are removing this library
+      // from the solcInput file (https://github.com/wighawag/hardhat-deploy/issues/78#issuecomment-786914537)
 
-    // Remove __CACHE_BREAKER library from solcInput
-    const path = `${__dirname}/deployments/${hre.network.name}/solcInputs`;
-    fs.readdirSync(path).forEach(file => {
-      var m = JSON.parse(fs.readFileSync(`${path}/${file}`).toString());
-      delete m?.settings?.libraries[""]?.__CACHE_BREAKER__;
-      fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
-    });
+      // Remove __CACHE_BREAKER library from solcInput
+      const path = `${__dirname}/deployments/${hre.network.name}/solcInputs`;
+      fs.readdirSync(path).forEach(file => {
+        var m = JSON.parse(fs.readFileSync(`${path}/${file}`).toString());
+        delete m?.settings?.libraries[""]?.__CACHE_BREAKER__;
+        fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
+      });
 
-    console.log("Waiting 20 seconds for Etherscan to sync...");
-    await delay(20);
-    console.log("Trying to verify contract on Etherscan...");
-    try {
+      console.log("Waiting 10 seconds for Etherscan to sync...");
+      await delay(10);
+      console.log("Trying to verify contract on Etherscan...");
       await hre.run("etherscan-verify", {
         contractName,
         license: "AGPL-3.0",
         forceLicense: true,
         solcInput: true,
       });
-    } catch (e) {
-      console.log(e);
-      console.log("We couldn't verify the contract on Etherscan, you may try manually.");
     }
+  } catch (e) {
+    console.log(e);
+    console.log("We couldn't verify your contract on Etherscan or it was already verified.");
   }
 };
 
@@ -228,8 +230,13 @@ exports.generateTokens = async (tokenAddress, to, signer) => {
 
 // Returns signer using OZ Relayer's API
 exports.getRelayerSigner = async () => {
-  const { RELAYER_API_KEY_MAINNET, RELAYER_API_SECRET_MAINNET } = process.env;
-  const credentials = { apiKey: RELAYER_API_KEY_MAINNET, apiSecret: RELAYER_API_SECRET_MAINNET };
-  const provider = new DefenderRelayProvider(credentials);
-  return new DefenderRelaySigner(credentials, provider, { speed: "fast" });
+  const { RELAYER_API_KEY: apiKey, RELAYER_API_SECRET: apiSecret } = process.env;
+  const provider = new DefenderRelayProvider({ apiKey, apiSecret });
+  return new DefenderRelaySigner({ apiKey, apiSecret }, provider, { speed: "fast" });
+};
+
+exports.trust = async (token, address) => {
+  if (!(await token.isTrusted(address))) {
+    await (await token.setIsTrusted(address, true)).wait();
+  }
 };

@@ -6,3 +6,4 @@ solmate/=solmate/src/
 @sense-finance/v1-core/=@sense-finance/v1-core/src/
 @auto-roller=../lib/auto-roller
 sense-v1-utils=@sense-finance/v1-utils/src
+sense-v1-core=@sense-finance/v1-core/src

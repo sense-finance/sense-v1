@@ -81,7 +81,7 @@ const GOERLI_FACTORIES = [
     stakeSize: ethers.utils.parseEther("0.05"), // 0.05 WETH
     minm: 0, // 0 days
     maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
-    mode: 1, // 0 = weekly
+    mode: 1, // 1 = weekly
     tilt: 0,
     guard: ethers.utils.parseEther("100000"), // $100'000 (not used in Goerli)
     targets: [],
