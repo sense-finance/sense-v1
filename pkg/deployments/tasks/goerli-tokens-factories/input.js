@@ -25,6 +25,7 @@ const {
   CUSDC_OWNABLE_ADAPTER,
   CDAI_OWNABLE_ADAPTER,
   CUSDT_OWNABLE_ADAPTER,
+  USDT_TOKEN,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
@@ -100,7 +101,7 @@ const GOERLI_TOKENS = {
         name: "Tether USDT",
         symbol: "USDT",
         decimals: 6,
-        address: USDC_TOKEN.get(CHAINS.GOERLI),
+        address: USDT_TOKEN.get(CHAINS.GOERLI),
       },
       target: {
         contractName: "AuthdMockTarget",

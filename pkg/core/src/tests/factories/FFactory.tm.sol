@@ -10,7 +10,7 @@ import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from ".../../scripts/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 

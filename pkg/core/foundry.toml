@@ -2,6 +2,7 @@
 root = "."
 libs = ['../../node_modules/', '../../']
 tests = "./src/tests"
+fs_permissions = [{ access = "read-write", path = "./" }]
 ffi = true
 verbosity = 3
 # fork_block_number = using last block

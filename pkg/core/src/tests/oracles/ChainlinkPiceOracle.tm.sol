@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 // Internal references
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from ".../../scripts/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
 

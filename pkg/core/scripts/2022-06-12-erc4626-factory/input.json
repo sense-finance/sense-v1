@@ -1,0 +1,14 @@
+{
+    "factoryParams": {
+        "oracle": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "stake": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "stakeSize": 250000000000000000,
+        "minm": 2629800,
+        "maxm": 315576000,
+        "ifee": 1000000000000000,
+        "mode": 0,
+        "tilt": 0,
+        "guard": 100000000000000000000000
+    },
+    "targets": [ "0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048" ]
+}

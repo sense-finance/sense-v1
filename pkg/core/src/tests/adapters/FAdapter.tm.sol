@@ -13,7 +13,7 @@ import { FAdapter, PriceOracleLike } from "../../adapters/implementations/fuse/F
 import { CTokenLike } from "../../adapters/implementations/compound/CAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from ".../../scripts/AddressBook.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 

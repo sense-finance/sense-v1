@@ -3,6 +3,11 @@ pragma solidity 0.8.15;
 
 /// @notice Program error types
 library AddressBook {
+    // chains
+    uint256 public constant MAINNET = 1;
+    uint256 public constant GOERLI = 5;
+    uint256 public constant FORK = 111;
+
     // coins
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -48,6 +53,7 @@ library AddressBook {
     address public constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address public constant PERIPHERY_1_3_0 = 0xFff11417a58781D3C72083CB45EF54d79Cd02437;
     address public constant PERIPHERY_1_4_0 = 0xaa17633AA5A3Cb56698838561161bdb16Cebb8E3;
+    address public constant SENSE_MULTISIG = 0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57;
 
     // 4626 factories
     address public constant NON_CROP_4626_FACTORY = 0xD28372e7b9904589d05BD257B85FeA40FbD4dF2b;
@@ -94,4 +100,7 @@ library AddressBook {
     address public constant EULER_MARKETS = 0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3; // Euler Markets
     address public constant EULER_USDC = 0xEb91861f8A4e1C12333F42DCE8fB0Ecdc28dA716;
     address public constant EULER_WSTETH = 0xbd1bd5C956684f7EB79DA40f582cbE1373A1D593;
+
+    // Idle Finance
+    address public constant BB_wstETH4626 = 0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048; // IdleCDO BB Tranche - wstETH4626Adapter
 }

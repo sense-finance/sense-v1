@@ -14,7 +14,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from ".../../scripts/AddressBook.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
