@@ -240,3 +240,9 @@ exports.trust = async (token, address) => {
     await (await token.setIsTrusted(address, true)).wait();
   }
 };
+
+exports.approve = async (token, owner, spender) => {
+  if ((await token.allowance(owner, spender)).eq(0)) {
+    await token.approve(spender, ethers.constants.MaxUint256).then(tx => tx.wait());
+  }
+};

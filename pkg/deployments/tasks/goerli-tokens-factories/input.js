@@ -16,6 +16,15 @@ const {
   BALANCER_VAULT,
   ROLLER_PERIPHERY,
   ROLLER_UTILS,
+  SENSE_MASTER_ORACLE,
+  CUSDC_ADAPTER,
+  CDAI_ADAPTER,
+  CUSDT_ADAPTER,
+  CROP_FACTORY,
+  CROP_4626_FACTORY,
+  CUSDC_OWNABLE_ADAPTER,
+  CDAI_OWNABLE_ADAPTER,
+  CUSDT_OWNABLE_ADAPTER,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
@@ -32,7 +41,7 @@ dayjs.locale({
 });
 
 // next week
-const MATURITIES = [dayjs().utc().weekday(7).startOf("week").unix()];
+const MATURITIES = [dayjs().utc().weekday(7).startOf("week").add(1, "week")];
 
 // If address is not passed, the token will be deployed and verified on Etherscan
 const GOERLI_TOKENS = {
@@ -54,7 +63,7 @@ const GOERLI_TOKENS = {
         symbol: "cUSDC",
         decimals: 8,
         address: CUSDC_TOKEN.get(CHAINS.GOERLI),
-        adapter: "0x3de1bEE160898B204D470F41a82d9Bd066CfE6a6",
+        adapter: CUSDC_ADAPTER.get(CHAINS.GOERLI),
       },
     },
     {
@@ -73,7 +82,7 @@ const GOERLI_TOKENS = {
         symbol: "cDAI",
         decimals: 8,
         address: CDAI_TOKEN.get(CHAINS.GOERLI),
-        adapter: "0xfcC6ba91745F0a81f2334D7608c7D2B72c9E8e84",
+        adapter: CDAI_ADAPTER.get(CHAINS.GOERLI),
       },
       target4626: {
         contractName: "MockERC4626_Unique",
@@ -100,7 +109,7 @@ const GOERLI_TOKENS = {
         symbol: "cUSDT",
         decimals: 8,
         address: CUSDT_TOKEN.get(CHAINS.GOERLI),
-        adapter: "0xAFe0235D674Be9A63316eAd6e6Cd5E3FA9047b43",
+        adapter: CUSDT_ADAPTER.get(CHAINS.GOERLI),
       },
       target4626: {
         contractName: "MockERC4626_Unique",
@@ -133,7 +142,7 @@ const GOERLI_TOKENS = {
 
 const GOERLI_FACTORIES = [
   {
-    address: "0xDbE7deE84f9A32E5b2CA8215ea6Ad85b4c293655",
+    address: CROP_FACTORY.get(CHAINS.GOERLI),
     contract: "MockCropFactory",
     contractName: "MockCropFactory",
     ifee: ethers.utils.parseEther("0.0010"), // 0.1%
@@ -149,7 +158,7 @@ const GOERLI_FACTORIES = [
     reward: GOERLI_TOKENS.reward,
   },
   {
-    address: "0x27F6f7E23b4D77FE9aD7f9A0756a9b40bddE32c9",
+    address: CROP_4626_FACTORY.get(CHAINS.GOERLI),
     contract: "Mock4626CropFactory",
     contractName: "Mock4626CropFactory",
     ifee: ethers.utils.parseEther("0.0010"), // 0.1%
@@ -169,7 +178,7 @@ const GOERLI_FACTORIES = [
 const GOERLI_ADAPTERS = [
   {
     isOwnable: true,
-    address: "0x7b6da076144b0a9cf0cddf908f605924d9e0a180",
+    address: CUSDC_OWNABLE_ADAPTER.get(CHAINS.GOERLI),
     contractName: "MockOwnableAdapter",
     ifee: ethers.utils.parseEther("0"), // 0%, no issuance fees
     oracle: ethers.constants.AddressZero,
@@ -179,13 +188,13 @@ const GOERLI_ADAPTERS = [
     maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
     tilt: 0,
     level: 31,
-    mode: 0, // 1 = weekly
+    mode: 0, // 0 = monthly
     target: GOERLI_TOKENS.tokens[0].target,
     maturities: [],
   },
   {
     isOwnable: true,
-    address: "0xA1Dc1E9C1a2a087874634cc7D0395658A741027c",
+    address: CDAI_OWNABLE_ADAPTER.get(CHAINS.GOERLI),
     contractName: "MockOwnableAdapter",
     ifee: ethers.utils.parseEther("0"), // 0%, no issuance fees
     oracle: ethers.constants.AddressZero,
@@ -195,13 +204,13 @@ const GOERLI_ADAPTERS = [
     maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
     tilt: 0,
     level: 31,
-    mode: 0, // 1 = weekly
+    mode: 0, // 0 = monthly
     target: GOERLI_TOKENS.tokens[1].target,
     maturities: [],
   },
   {
     isOwnable: true,
-    address: "0xa4f9b98c1Bce4b0A9Bbe5dcBf17dc64a55C79477",
+    address: CUSDT_OWNABLE_ADAPTER.get(CHAINS.GOERLI),
     contractName: "MockOwnableAdapter",
     ifee: ethers.utils.parseEther("0"), // 0%, no issuance fees
     oracle: ethers.constants.AddressZero,
@@ -211,7 +220,7 @@ const GOERLI_ADAPTERS = [
     maxm: (10 * 365.25 * 24 * 60 * 60).toString(), // 10 years
     tilt: 0,
     level: 31,
-    mode: 0, // 1 = weekly
+    mode: 0, // 0 = monthly
     target: GOERLI_TOKENS.tokens[2].target,
     maturities: [],
   },
@@ -221,7 +230,7 @@ module.exports = {
   5: {
     divider: DIVIDER_1_2_0.get(CHAINS.GOERLI),
     periphery: PERIPHERY_1_4_0.get(CHAINS.GOERLI),
-    oracle: "0xB3e70779c1d1f2637483A02f1446b211fe4183Fa",
+    oracle: SENSE_MASTER_ORACLE.get(CHAINS.GOERLI),
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.GOERLI),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.GOERLI),
     factories: GOERLI_FACTORIES,

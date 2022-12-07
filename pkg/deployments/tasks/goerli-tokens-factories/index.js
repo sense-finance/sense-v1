@@ -4,7 +4,7 @@ const input = require("./input");
 const { CHAINS, OZ_RELAYER } = require("../../hardhat.addresses");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
-const { verifyOnEtherscan, getRelayerSigner, trust } = require("../../hardhat.utils");
+const { verifyOnEtherscan, getRelayerSigner, trust, approve } = require("../../hardhat.utils");
 
 const deployToken = async (token, underlying, deploy, signer) => {
   let deployedData;
@@ -75,6 +75,46 @@ task(
     rollerPeripheryAddress,
     rlvFactoryAddress,
   });
+
+  // Deploy factories and adapters via those factories
+  await hre.run("goerli-deploy-factories", {
+    deploy,
+    deployer,
+    deployerSigner,
+    relayerSigner,
+    factories,
+    rlvFactory,
+    masterOracleAddress,
+    rewardsRecipient,
+    restrictedAdmin,
+    periphery,
+    divider,
+  });
+
+  // Deploy adapters directly (without a factory)
+  await hre.run("goerli-deploy-adapters", {
+    deploy,
+    deployerSigner,
+    adapters,
+    rlvFactory,
+    rewardsRecipient,
+    restrictedAdmin,
+  });
+});
+
+task("goerli-deploy-factories", "Deploy factories and adapters via those factories").setAction(async args => {
+  let {
+    deploy,
+    deployer,
+    deployerSigner,
+    relayerSigner,
+    factories,
+    rlvFactory,
+    masterOracleAddress,
+    rewardsRecipient,
+    periphery,
+    divider,
+  } = args;
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Factories");
@@ -150,10 +190,8 @@ task(
 
     const stakeContract = await ethers.getContractAt("AuthdMockToken", stake, relayerSigner);
 
-    if ((await stakeContract.allowance(deployer, periphery.address)).eq(0)) {
-      console.log(`\n - Approve Periphery to pull stake...`);
-      await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-    }
+    console.log(`\n - Approve Periphery to pull stake...`);
+    await approve(stakeContract, deployer, periphery.address);
 
     if ((await stakeContract.balanceOf(OZ_RELAYER.get(CHAINS.GOERLI))).eq(0)) {
       console.log(` - Mint stake tokens to relayer...`);
@@ -179,16 +217,15 @@ task(
         await (await periphery.deployAdapter(factoryAddress, t.address, data)).wait();
         console.log(`- ${t.symbol} adapter address: ${adapterAddress}`);
       } else {
-        console.log(`\nUsing ${t.symbol} adapter deployed to ${adapterAddress}`);
+        console.log(`\n- Using ${t.symbol} adapter deployed to ${adapterAddress}`);
       }
 
-      console.log(`\n- Can call scale value`);
+      console.log(`\n- Sanity check: can call scale value & guard value`);
       const adptr = new ethers.Contract(adapterAddress, adapterAbi, deployerSigner);
+      const params = await divider.adapterMeta(adapterAddress);
       const scale = await adptr.callStatic.scale();
-      console.log(`  -> scale: ${scale.toString()}`);
-
-      const params = await await divider.adapterMeta(adapterAddress);
-      console.log(`  -> adapter guard: ${params[2]}`);
+      console.log(`  * scale: ${scale.toString()}`);
+      console.log(`  * adapter guard: ${params[2]}`);
 
       // Create RLV (see subtask implementation at the end)
       if (isOwnable) {
@@ -206,13 +243,11 @@ task(
         periphery = periphery.connect(relayerSigner);
         const target = await ethers.getContractAt("AuthdMockTarget", t.address, relayerSigner);
 
-        if ((await target.allowance(deployer, periphery.address)).eq(0)) {
-          console.log(`\n - Approve Periphery to pull target...`);
-          await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-        }
+        console.log(`\n- Approve Periphery to pull target...`);
+        await approve(target, deployer, periphery.address);
 
         if ((await target.balanceOf(OZ_RELAYER.get(CHAINS.GOERLI))).eq(0)) {
-          console.log(` - Mint target tokens to relayer...`);
+          console.log(`- Mint target tokens to relayer...`);
           await target
             .mint(OZ_RELAYER.get(CHAINS.GOERLI), ethers.utils.parseEther("1"))
             .then(tx => tx.wait());
@@ -220,21 +255,24 @@ task(
 
         // sponsor Series
         for (let m of maturities) {
-          console.log(`Can sponsor series for ${t.symbol} with maturity ${m}`);
-          await periphery.callStatic.sponsorSeries(adapterAddress, m, false);
-          console.log(`  -> Series sponsored succesfully!`);
+          console.log(`  * Sponsor Series for ${t.symbol} @ ${adapterAddress} with maturity (${m.unix()})`);
+          await periphery.callStatic.sponsorSeries(adapterAddress, m.unix(), false);
         }
       }
-
       console.log("\n-------------------------------------------------------");
     }
 
     console.log("\n-------------------------------------------------------");
   }
+});
+
+task("goerli-deploy-adapters", "Deploy adapters without a factory").setAction(async args => {
+  let { deploy, deployerSigner, adapters, rlvFactory, rewardsRecipient } = args;
 
   console.log("\n\n-------------------------------------------------------");
   console.log("\nDeploy Adapters directly");
   console.log("\n-------------------------------------------------------");
+
   for (const adapter of adapters) {
     let {
       address: adapterAddress,
@@ -335,10 +373,12 @@ task(
       // sponsor Series
       for (let m of maturities) {
         console.log(
-          `  * Sponsor Series for ${await adapterContract.symbol()} @ ${balancerVault} with maturity ${m}`,
+          `  * Sponsor Series for ${await adapterContract.symbol()} @ ${balancerVault} with maturity ${m.format(
+            "ll",
+          )} (${m.unix()})`,
         );
-        await periphery.callStatic.sponsorSeries(adapterAddress, m, false);
-        await (await periphery.sponsorSeries(adapterAddress, m, false)).wait();
+        await periphery.callStatic.sponsorSeries(adapterAddress, m.unix(), false);
+        await (await periphery.sponsorSeries(adapterAddress, m.unix(), false)).wait();
       }
     }
 
@@ -387,12 +427,9 @@ task("goerli-rlv", "Create RLV").setAction(async args => {
   // create AutoRoller from OZ relayer
   console.log(`\n- Deploy an AutoRoller for Ownable Adapter with target ${t.name} via AutoRollerFactory`);
   const autoRollerFactory = await ethers.getContractAt("AutoRollerFactory", rlvFactory, relayerSigner);
-  let autoRollerAddress;
-  try {
-    autoRollerAddress = await autoRollerFactory.rollers(adapterAddress, 0);
-  } catch (e) {
-    console.log(`  ${adapterAddress} does not have an RLV. Creating one...`);
-  }
+  const autoRollerAddress = (await autoRollerFactory.rollers(adapterAddress, 0)).catch(e =>
+    console.log(`  ${adapterAddress} does not have an RLV. Creating one...`),
+  );
   if (!autoRollerAddress) {
     const autoRollerAddress = await autoRollerFactory.callStatic.create(
       adapterAddress,
@@ -422,15 +459,11 @@ task("goerli-rlv", "Create RLV").setAction(async args => {
   // Approvals and minting of stake
   const stakeContract = await ethers.getContractAt("AuthdMockToken", stakeAddress, relayerSigner);
 
-  if ((await stakeContract.allowance(OZ_RELAYER.get(CHAINS.GOERLI), periphery.address)).eq(0)) {
-    console.log(`\n- Approve Periphery to pull stake from relayer...`);
-    await stakeContract.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-  }
+  console.log(`\n- Approve Periphery to pull stake from relayer...`);
+  await approve(stakeContract, OZ_RELAYER.get(CHAINS.GOERLI), periphery.address);
 
-  if ((await stakeContract.allowance(OZ_RELAYER.get(CHAINS.GOERLI), autoRollerAddress)).eq(0)) {
-    console.log(`  Approve AutoRoller to pull stake`);
-    await stakeContract.approve(autoRollerAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
-  }
+  console.log(`  Approve AutoRoller to pull stake`);
+  await approve(stakeContract, OZ_RELAYER.get(CHAINS.GOERLI), autoRollerAddress);
 
   if ((await stakeContract.balanceOf(OZ_RELAYER.get(CHAINS.GOERLI))).eq(0)) {
     console.log(`- Mint stake tokens to relayer...`);
@@ -442,10 +475,8 @@ task("goerli-rlv", "Create RLV").setAction(async args => {
   // Approvals and minting of target
   const target = await ethers.getContractAt("AuthdMockTarget", t.address, relayerSigner);
 
-  if ((await target.allowance(OZ_RELAYER.get(CHAINS.GOERLI), autoRollerAddress)).eq(0)) {
-    console.log(`  Approve AutoRoller to pull ${t.name}`);
-    await target.approve(autoRollerAddress, ethers.constants.MaxUint256).then(tx => tx.wait());
-  }
+  console.log(`  Approve AutoRoller to pull ${t.name}`);
+  await approve(target, OZ_RELAYER.get(CHAINS.GOERLI), autoRollerAddress);
 
   if ((await target.balanceOf(OZ_RELAYER.get(CHAINS.GOERLI))).eq(0)) {
     console.log(`- Mint target tokens to relayer...`);
@@ -460,7 +491,7 @@ task("goerli-rlv", "Create RLV").setAction(async args => {
   console.log("\n\n");
 });
 
-// Deploys a new Space Factory (the one with getEqReserevs())
+// Deploys a new RLV Factory
 subtask("deploy-auto-roller-factory", "Deploys a new Auto Roller Factory").setAction(async args => {
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Auto Roller Factory");
