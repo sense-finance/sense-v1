@@ -7,8 +7,13 @@ import { AddressBookGoerli } from "./AddressBookGoerli.sol";
 
 contract AddressGuru {
     uint256 public chainId;
-    constructor(uint256 _chainId) {
-        chainId = _chainId;
+
+    constructor() {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        chainId = id == AddressBook.FORK ? AddressBook.MAINNET : id;
     }
 
     function divider() public returns (address) {

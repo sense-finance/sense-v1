@@ -23,7 +23,7 @@ contract ERC4626FactoryScript is Script {
         uint256 chainId = block.chainid;
         console.log("Chain ID:", chainId);
 
-        AddressGuru addressGuru = new AddressGuru(chainId == AddressBook.FORK ? AddressBook.MAINNET : chainId);
+        AddressGuru addressGuru = new AddressGuru();
         // Broadcast following txs from deployer
         vm.startBroadcast();
 
