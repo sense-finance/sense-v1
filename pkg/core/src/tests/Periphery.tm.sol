@@ -131,7 +131,7 @@ contract PeripheryTestHelper is Test {
         periphery.setFactory(address(ffactory), true);
 
         // Start multisig (admin) prank calls
-        vm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
+        vm.startPrank(AddressBook.SENSE_MULTISIG);
 
         // Give authority to factories soy they can setGuard when deploying adapters
         Divider(divider).setIsTrusted(address(cfactory), true);

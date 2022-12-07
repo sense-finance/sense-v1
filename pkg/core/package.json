@@ -19,6 +19,9 @@
         "test:fuzz": "time yarn exec ./src/tests/fuzz.sh",
         "lint": "solhint --config ../../.solhint.json -f table src/**/*.sol",
         "fix": "prettier --ignore-path .gitignore --write src/**/*.sol && yarn lint --fix",
+        "script:fork": "time forge script --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7 --chain-id 111 --optimize --optimizer-runs 500 -vvv --skip-simulation",
+        "script:mainnet": "time forge script --chain-id 1 --optimize --optimizer-runs 500 -vvv",
+        "script:goerli": "time forge script --chain-id 5 --optimize --optimizer-runs 500 -vvv",
         "coverage": "time forge coverage --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7 --report lcov",
         "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
         "gas-snapshot:diff": "forge snapshot --no-match-path \"*.tm*\" --diff"

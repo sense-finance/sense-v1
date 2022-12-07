@@ -5,7 +5,8 @@ import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
-import { AddressBook } from "../AddressBook.sol";
+import { AddressBook } from "./AddressBook.sol";
+import { AddressGuru } from "./AddressGuru.sol";
 import { Divider } from "../../src/Divider.sol";
 import { Periphery } from "../../src/Periphery.sol";
 import { ERC4626Factory } from "../../src/adapters/abstract/factories/ERC4626Factory.sol";
@@ -19,15 +20,14 @@ contract ERC4626FactoryScript is Script {
     using stdStorage for StdStorage;
 
     function run() external {
-        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // vm.startBroadcast(deployerPrivateKey);
+        uint256 chainId = block.chainid;
+        console.log("Chain ID:", chainId);
+
+        AddressGuru addressGuru = new AddressGuru(chainId == AddressBook.FORK ? AddressBook.MAINNET : chainId);
         // Broadcast following txs from deployer
         vm.startBroadcast();
 
         console.log("\nDeploying from:", msg.sender);
-
-        uint256 chainId = block.chainid;
-        console.log("Chain ID:", chainId);
 
         address senseMultisig = chainId == AddressBook.MAINNET || chainId == AddressBook.FORK ? AddressBook.SENSE_MULTISIG : msg.sender;
 
@@ -37,19 +37,19 @@ contract ERC4626FactoryScript is Script {
 
         // TODO: read factoryParms from input.json file (can't do this right now because of a foundry bug when parsing JSON)
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: AddressBook.WETH,
-            oracle: AddressBook.SENSE_MASTER_PRICE_ORACLE,
-            ifee: 1000000000000000, // 0.1%
-            stakeSize: 250000000000000000, // 0.25 WETH
+            stake: addressGuru.weth(),
+            oracle: addressGuru.oracle(),
+            ifee: 1e15, // 0.1%
+            stakeSize: 25e16, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
             mode: 0, // 0 = monthly
             tilt: 0,
-            guard: 100000000000000000000000 // $100'000
+            guard: 100000e18 // $100'000
         });
 
         ERC4626Factory factory = new ERC4626Factory(
-            AddressBook.DIVIDER_1_2_0,
+            addressGuru.divider(),
             senseMultisig,
             senseMultisig,
             factoryParams
@@ -66,8 +66,8 @@ contract ERC4626FactoryScript is Script {
                 vm.deal(senseMultisig, 1 ether);
             }
 
-            Periphery periphery = Periphery(AddressBook.PERIPHERY_1_4_0);
-            Divider divider = Divider(AddressBook.DIVIDER_1_2_0);
+            Periphery periphery = Periphery(addressGuru.periphery());
+            Divider divider = Divider(addressGuru.divider());
 
             // Broadcast following txs from multisig
             vm.startBroadcast(senseMultisig);
@@ -89,7 +89,7 @@ contract ERC4626FactoryScript is Script {
                 console.log("-------------------------------------------------------");
 
                 // TODO: read targets from input.json file (can't do this right now because of a foundry bug when parsing JSON)
-                address[1] memory targets = [AddressBook.BB_wstETH4626];
+                address[1] memory targets = [addressGuru.BB_wstETH4626()];
 
                 for(uint i = 0; i < targets.length; i++){
                     ERC20 t = ERC20(targets[i]);

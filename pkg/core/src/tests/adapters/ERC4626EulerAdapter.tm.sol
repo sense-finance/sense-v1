@@ -87,7 +87,7 @@ pragma solidity 0.8.15;
 //         deal(address(underlying), address(this), 5 * 10**decimals);
 
 //         // Support deployed target
-//         vm.prank(AddressBook.SENSE_ADMIN_MULTISIG);
+//         vm.prank(AddressBook.SENSE_MULTISIG);
 //         factory.supportTarget(address(target), true);
 
 //         // Deploy Euler USDC ERC4626 Wrapper Adapter

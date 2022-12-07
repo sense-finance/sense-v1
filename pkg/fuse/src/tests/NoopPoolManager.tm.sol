@@ -123,10 +123,10 @@ contract NoopPoolManagerTest is Test {
         uint256 maturity = _getValidMaturity();
         _initSeries(maturity);
 
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         // _Can_ deploy pool twice
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
     }
 
     function testMainnetAddTargetSucceeds() public {
@@ -134,7 +134,7 @@ contract NoopPoolManagerTest is Test {
         noopPoolManager.addTarget(address(target), address(mockAdapter));
 
         // Can add a Target after deploying a pool
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         // Can now still add Target
         noopPoolManager.addTarget(address(target), address(mockAdapter));
@@ -151,7 +151,7 @@ contract NoopPoolManagerTest is Test {
 
         _initSeries(maturity);
 
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         // _Can_ queue if Target has not been added to the pool
         noopPoolManager.queueSeries(address(mockAdapter), maturity, address(0));
@@ -218,7 +218,7 @@ contract NoopPoolManagerTest is Test {
     }
 
     function testFailEmitTargetAdded() public {
-        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        noopPoolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         vm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
@@ -237,7 +237,7 @@ contract NoopPoolManagerTest is Test {
         });
         poolManager.setParams("TARGET_PARAMS", paramsTarget);
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         vm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
