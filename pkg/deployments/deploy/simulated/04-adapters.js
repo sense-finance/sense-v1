@@ -175,7 +175,7 @@ module.exports = async function () {
     log(`\nDeploy simulated ${tName} with ${tDecimals} decimals (ERC-4626)`);
 
     const underlying = await getUnderlyingForTarget(tName, uDecimals);
-    const targetContract = await deploy4626Target(tName, underlying.address);
+    const targetContract = await deploy4626Target(tName, tDecimals, underlying.address);
 
     await new Promise(res => setTimeout(res, 500));
 
@@ -251,11 +251,11 @@ module.exports = async function () {
     return await ethers.getContract(underlyingName, signer);
   }
 
-  async function deploy4626Target(targetName, underlyingAddress) {
+  async function deploy4626Target(targetName, tDecimals, underlyingAddress) {
     await deploy(targetName, {
-      contract: "MockERC4626",
+      contract: "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockERC4626.sol:MockERC4626",
       from: deployer,
-      args: [underlyingAddress, targetName, targetName],
+      args: [underlyingAddress, targetName, targetName, tDecimals],
       log: true,
     });
     return await ethers.getContract(targetName, signer);

@@ -1381,7 +1381,7 @@ __metadata:
     "@tenderly/hardhat-tenderly": ^1.1.6
     add: ^2.0.6
     dayjs: ^1.11.6
-    defender-relay-client: ^1.31.1
+    defender-relay-client: ^1.37.0
     dotenv: ^16.0.2
     eslint: ^8.22.0
     eslint-plugin-prettier: ^4.2.1
@@ -2663,26 +2663,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"defender-base-client@npm:1.31.1":
-  version: 1.31.1
-  resolution: "defender-base-client@npm:1.31.1"
+"defender-base-client@npm:1.37.0":
+  version: 1.37.0
+  resolution: "defender-base-client@npm:1.37.0"
   dependencies:
     amazon-cognito-identity-js: ^4.3.3
     async-retry: ^1.3.3
     axios: ^0.21.2
     lodash: ^4.17.19
     node-fetch: ^2.6.0
-  checksum: 5930072189615b56b23b0b4a3ddd905b9e1a2576a4875c0f2138c8f81e64d5af11b5b079873de3d7ba319b2e0be0a96fbf5ab52682c637a56d5dc938cbddcf5f
+  checksum: 6852758e4cfb82fed97a74fabd3f24d8e93096b55e92ff2d565b9849dab7160386e953b8faab94cabab271726a1d1d0f7018d1d98477c67faec1d233812eb2e3
   languageName: node
   linkType: hard
 
-"defender-relay-client@npm:^1.31.1":
-  version: 1.31.1
-  resolution: "defender-relay-client@npm:1.31.1"
+"defender-relay-client@npm:^1.37.0":
+  version: 1.37.0
+  resolution: "defender-relay-client@npm:1.37.0"
   dependencies:
     amazon-cognito-identity-js: ^4.3.3
     axios: ^0.21.2
-    defender-base-client: 1.31.1
+    defender-base-client: 1.37.0
     lodash: ^4.17.19
     node-fetch: ^2.6.0
   peerDependencies:
@@ -2693,7 +2693,7 @@ __metadata:
     "@ethersproject/transactions": ^5.6.2
     web3-core: ^1.7.3
     web3-core-helpers: ^1.7.3
-  checksum: ecbc9f45d581dd553c1f707773c478eb61ee99ed7b338e05c006e9952dfbc4b41730bfc1ac94fcac82d572e0c7e87ba948c406827b67bef1d5f694928517fe0f
+  checksum: 1a80d3f5bcedf2d723c90a20a050d1b5f0eaf1018ef4864aef963fbb7467b110f4f543b2c7ffd85f0b339f32fca6076a3b40c48857b48561eb93b152d45d3935
   languageName: node
   linkType: hard
 

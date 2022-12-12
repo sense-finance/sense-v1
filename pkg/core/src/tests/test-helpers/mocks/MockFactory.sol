@@ -123,7 +123,10 @@ contract MockCropFactory is CropFactory {
             )
         );
 
-        _setGuard(adapter);
+        // We only want to execute this if divider is guarded
+        if (Divider(divider).guarded()) {
+            Divider(divider).setGuard(adapter, type(uint256).max);
+        }
 
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
@@ -179,7 +182,10 @@ contract MockCropsFactory is BaseFactory {
             )
         );
 
-        _setGuard(adapter);
+        // We only want to execute this if divider is guarded
+        if (Divider(divider).guarded()) {
+            Divider(divider).setGuard(adapter, type(uint256).max);
+        }
 
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
@@ -191,7 +197,6 @@ contract Mock4626CropFactory is CropFactory {
     using Bytes32AddressLib for address;
 
     mapping(address => bool) public targets;
-    bool public is4626Target;
 
     constructor(
         address _divider,
@@ -234,6 +239,11 @@ contract Mock4626CropFactory is CropFactory {
                 reward
             )
         );
+
+        // We only want to execute this if divider is guarded
+        if (Divider(divider).guarded()) {
+            Divider(divider).setGuard(adapter, type(uint256).max);
+        }
 
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
@@ -289,7 +299,10 @@ contract Mock4626CropsFactory is BaseFactory {
             )
         );
 
-        _setGuard(adapter);
+        // We only want to execute this if divider is guarded
+        if (Divider(divider).guarded()) {
+            Divider(divider).setGuard(adapter, type(uint256).max);
+        }
 
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }

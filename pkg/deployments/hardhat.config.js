@@ -66,11 +66,22 @@ module.exports = {
       chainId: 5,
       saveDeployments: true,
     },
+    goerli_fork: {
+      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      accounts,
+      chainId: 5,
+      saveDeployments: false,
+      forking: {
+        enabled: true,
+        url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      },
+    },
     hardhat: {
       mining: {
         auto: true,
       },
       accounts,
+      saveDeployments: false,
       forking: {
         enabled: true,
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,

@@ -7,6 +7,7 @@ const {
   RLV_FACTORY,
   WSTETH_TOKEN,
   MORPHO_USDT,
+  SENSE_MASTER_ORACLE,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
@@ -83,7 +84,7 @@ module.exports = {
   5: {
     divider: "0x09B10E45A912BcD4E80a8A3119f0cfCcad1e1f12",
     periphery: "0x4bCBA1316C95B812cC014CA18C08971Ce1C10861",
-    oracle: "0xB3e70779c1d1f2637483A02f1446b211fe4183Fa",
+    oracle: SENSE_MASTER_ORACLE.get(CHAINS.GOERLI),
     oldSpaceFactory: "0x93158100B4351935c9BC2DE9A33357c4D54D94Bb",
     restrictedAdmin: SENSE_MULTISIG.get(CHAINS.GOERLI),
     rewardsRecipient: SENSE_MULTISIG.get(CHAINS.GOERLI),

@@ -246,7 +246,8 @@ contract TestHelper is Test {
         address a = periphery.deployAdapter(address(factory), address(target), data); // deploy & onboard target through Periphery
         adapter = MockCropAdapter(a);
 
-        divider.setGuard(address(adapter), 10 * 2**128);
+        // Init scale
+        adapter.scale();
 
         // users
         MAX_TARGET = AMT * 10**target.decimals();

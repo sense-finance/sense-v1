@@ -21,12 +21,12 @@ import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockAdapter.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
+import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockERC4626.sol";
 import { CAdapter } from "@sense-finance/v1-core/src/adapters/implementations/compound/CAdapter.sol";
 import { FAdapter } from "@sense-finance/v1-core/src/adapters/implementations/fuse/FAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { NoopPoolManager } from "@sense-finance/v1-fuse/src/NoopPoolManager.sol";
 import { EmergencyStop } from "@sense-finance/v1-utils/src/EmergencyStop.sol";
-import { MockERC4626 } from "solmate/test/utils/mocks/MockERC4626.sol";
 
 import { EulerERC4626WrapperFactory } from "@sense-finance/v1-core/src/adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { RewardsDistributor } from "../lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol";
@@ -34,5 +34,6 @@ import { RewardsDistributor } from "../lib/morpho-core-v1/contracts/common/rewar
 import { AutoRollerFactory } from "@auto-roller/src/AutoRollerFactory.sol";
 import { AutoRoller, RollerUtils } from "@auto-roller/src/AutoRoller.sol";
 import { RollerPeriphery } from "@auto-roller/src/RollerPeriphery.sol";
+import { MockOwnableAdapter } from "@auto-roller/src/test/utils/MockOwnedAdapter.sol";
 
 import "./Versioning.sol";

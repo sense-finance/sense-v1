@@ -18,3 +18,5 @@ require("./20221007-morpho-adapters");
 require("./20221031-factories-and-morpho");
 require("./20221112-periphery-v1.4");
 require("./20221114-ownable-factory");
+require("./goerli-tokens-factories");
+require("./verify-adapters");

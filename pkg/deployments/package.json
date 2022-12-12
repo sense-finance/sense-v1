@@ -34,7 +34,7 @@
     "@sense-finance/v1-core": "workspace:pkg/core",
     "@sense-finance/v1-utils": "workspace:pkg/utils",
     "add": "^2.0.6",
-    "defender-relay-client": "^1.31.1",
+    "defender-relay-client": "^1.37.0",
     "fs-extra": "^10.0.1",
     "solmate": "transmissions11/solmate#v7",
     "yarn": "^1.22.19"
