@@ -245,7 +245,7 @@ contract TestHelper is Test {
         // Deploy adapter
         address a = periphery.deployAdapter(address(factory), address(target), data); // deploy & onboard target through Periphery
         adapter = MockCropAdapter(a);
-        
+
         // Init scale
         adapter.scale();
 

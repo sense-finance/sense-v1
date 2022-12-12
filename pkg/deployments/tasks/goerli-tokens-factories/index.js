@@ -89,16 +89,19 @@ task(
     restrictedAdmin,
     periphery,
     divider,
+    rlvFactoryAddress,
   });
 
   // Deploy adapters directly (without a factory)
   await hre.run("goerli-deploy-adapters", {
     deploy,
+    deployer,
     deployerSigner,
     adapters,
     rlvFactory,
     rewardsRecipient,
     restrictedAdmin,
+    periphery,
   });
 });
 
@@ -114,6 +117,8 @@ task("goerli-deploy-factories", "Deploy factories and adapters via those factori
     rewardsRecipient,
     periphery,
     divider,
+    restrictedAdmin,
+    rlvFactoryAddress,
   } = args;
 
   console.log("\n-------------------------------------------------------");
@@ -267,7 +272,18 @@ task("goerli-deploy-factories", "Deploy factories and adapters via those factori
 });
 
 task("goerli-deploy-adapters", "Deploy adapters without a factory").setAction(async args => {
-  let { deploy, deployerSigner, adapters, rlvFactory, rewardsRecipient } = args;
+  let {
+    deploy,
+    deployer,
+    deployerSigner,
+    relayerSigner,
+    adapters,
+    rlvFactory,
+    rewardsRecipient,
+    periphery,
+    balancerVault,
+    divider,
+  } = args;
 
   console.log("\n\n-------------------------------------------------------");
   console.log("\nDeploy Adapters directly");
@@ -427,7 +443,7 @@ task("goerli-rlv", "Create RLV").setAction(async args => {
   // create AutoRoller from OZ relayer
   console.log(`\n- Deploy an AutoRoller for Ownable Adapter with target ${t.name} via AutoRollerFactory`);
   const autoRollerFactory = await ethers.getContractAt("AutoRollerFactory", rlvFactory, relayerSigner);
-  const autoRollerAddress = (await autoRollerFactory.rollers(adapterAddress, 0)).catch(e =>
+  const autoRollerAddress = (await autoRollerFactory.rollers(adapterAddress, 0)).catch(() =>
     console.log(`  ${adapterAddress} does not have an RLV. Creating one...`),
   );
   if (!autoRollerAddress) {
