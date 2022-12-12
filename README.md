@@ -53,14 +53,13 @@ sY-cUSDC:01-07-2022:6 | [0x4ACA82E5686226A679875AACde7ECdf5fC5477ec](https://eth
 
 \* We are aware that the Name and Symbol does not include the Space LP Share. This will be fixed in the next version of Space.
 
-### Goerli v1.3.1
+### Goerli v1.4.0
 
 | Contract   | Address                                                                                                                                        |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Divider | [0xa1514E3bA51C59d4E76956409143aE9734883Fd5](https://goerli.etherscan.io/address/0xa1514E3bA51C59d4E76956409143aE9734883Fd5#code)                     |
-| Periphery  | [0x03E98F3e15260C315eD60205a2708F9f37214776](https://goerli.etherscan.io/address/0x03E98F3e15260C315eD60205a2708F9f37214776#code)      |
-| PoolManager | [0xaBFA7080ABe1012f6A8f74E2CDDd9033c34d1A44](https://goerli.etherscan.io/address/0xaBFA7080ABe1012f6A8f74E2CDDd9033c34d1A44#code)                     |
-| BalancerVault  | [0x2063c8a2d5E7d30277a5BF96720884d0ed0C242D](https://goerli.etherscan.io/address/0x2063c8a2d5E7d30277a5BF96720884d0ed0C242D#code)      
+| Divider | [0x09B10E45A912BcD4E80a8A3119f0cfCcad1e1f12](https://goerli.etherscan.io/address/0x09B10E45A912BcD4E80a8A3119f0cfCcad1e1f12#code)                     |
+| Periphery  | [0x4bCBA1316C95B812cC014CA18C08971Ce1C10861](https://goerli.etherscan.io/address/0x4bCBA1316C95B812cC014CA18C08971Ce1C10861#code)      |
+| BalancerVault  | [0x1aB16CB0cb0e5520e0C081530C679B2e846e4D37](https://goerli.etherscan.io/address/0x1aB16CB0cb0e5520e0C081530C679B2e846e4D37#code)      
 
 ## Development
 
