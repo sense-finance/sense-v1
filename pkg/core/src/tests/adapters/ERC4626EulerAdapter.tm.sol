@@ -24,7 +24,7 @@ pragma solidity 0.8.15;
 // import { Divider } from "../../Divider.sol";
 // import { Periphery } from "../../Periphery.sol";
 
-// import { AddressBook } from ".../../scripts/AddressBook.sol";
+// import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 // import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 // import { Constants } from "../test-helpers/Constants.sol";
 

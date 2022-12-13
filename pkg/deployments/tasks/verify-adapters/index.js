@@ -2,15 +2,15 @@ const { task } = require("hardhat/config");
 const data = require("./input");
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
-task("verify-adapters", "Verifies adapters on Etherscan").setAction(async () => {
+task("verify-contracts", "Verifies contracts on Etherscan").setAction(async () => {
   const chainId = await getChainId();
-  let { adapters } = data[chainId];
+  let { contracts } = data[chainId];
   console.log("\n-------------------------------------------------------");
-  console.log("Verify adapters");
+  console.log("Verify contracts on chain", chainId);
   console.log("-------------------------------------------------------");
-  for (const adapter of adapters) {
-    const { contractName, address, divider, target, rewardsRecipient, ifee, adapterParams } = adapter;
+  for (const contract of contracts) {
+    const { contractName, address, args } = contract;
     console.log(`\n`);
-    await verifyOnEtherscan(contractName, address, [divider, target, rewardsRecipient, ifee, adapterParams]);
+    await verifyOnEtherscan(contractName, address, args);
   }
 });

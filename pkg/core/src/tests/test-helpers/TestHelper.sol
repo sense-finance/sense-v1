@@ -21,7 +21,7 @@ import { ERC4626CropsFactory } from "../../adapters/abstract/factories/ERC4626Cr
 import { ERC4626CropFactory } from "../../adapters/abstract/factories/ERC4626CropFactory.sol";
 import { MockFactory, MockCropFactory, MockCropsFactory, Mock4626CropsFactory } from "./mocks/MockFactory.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { AddressBook } from "../../../scripts/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { Constants } from "./Constants.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 

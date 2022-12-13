@@ -2,47 +2,59 @@
 pragma solidity 0.8.15;
 
 import "forge-std/Script.sol";
-import "forge-std/StdJson.sol";
-import { stdStorage, StdStorage } from "forge-std/Test.sol";
+import { stdStorage } from "forge-std/Test.sol";
 
-import { AddressBook } from "./AddressBook.sol";
-import { AddressGuru } from "./AddressGuru.sol";
-import { Divider } from "../../src/Divider.sol";
-import { Periphery } from "../../src/Periphery.sol";
-import { ERC4626Factory } from "../../src/adapters/abstract/factories/ERC4626Factory.sol";
-import { ERC4626Adapter } from "../../src/adapters/abstract/erc4626/ERC4626Adapter.sol";
-import { BaseFactory } from "../../src/adapters/abstract/factories/BaseFactory.sol";
+import { AddressGuru, Constants } from "@sense-finance/v1-utils/addresses/AddressGuru.sol";
+import { Divider } from "@sense-finance/v1-core/Divider.sol";
+import { Periphery } from "@sense-finance/v1-core/Periphery.sol";
+import { ERC4626Factory } from "@sense-finance/v1-core/adapters/abstract/factories/ERC4626Factory.sol";
+import { ERC4626Factory } from "@sense-finance/v1-core/adapters/abstract/factories/ERC4626Factory.sol";
+import { ERC4626Adapter } from "@sense-finance/v1-core/adapters/abstract/erc4626/ERC4626Adapter.sol";
+import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/BaseFactory.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { DateTime } from "@auto-roller/src/external/DateTime.sol";
 
 contract ERC4626FactoryScript is Script {
-    using stdJson for string;
     using stdStorage for StdStorage;
+
+    uint256 public mainnetFork;
+    string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
     function run() external {
         uint256 chainId = block.chainid;
         console.log("Chain ID:", chainId);
 
+        if (chainId == Constants.FORK) {
+            mainnetFork = vm.createFork(MAINNET_RPC_URL);
+            vm.selectFork(mainnetFork);
+        }
+
         AddressGuru addressGuru = new AddressGuru();
-        // Broadcast following txs from deployer
-        vm.startBroadcast();
 
-        console.log("\nDeploying from:", msg.sender);
-
-        address senseMultisig = chainId == AddressBook.MAINNET || chainId == AddressBook.FORK ? AddressBook.SENSE_MULTISIG : msg.sender;
+        // Get deployer from mnemonic
+        string memory deployerMnemonic = vm.envString("MNEMONIC");
+        uint256 deployerPrivateKey = vm.deriveKey(deployerMnemonic, 0);
+        address deployer = vm.rememberKey(deployerPrivateKey);
+        console.log("Deploying from:", deployer);
+        
+        address senseMultisig = chainId == Constants.GOERLI ? deployer : addressGuru.multisig();
+        console.log("Sense multisig is:", senseMultisig);
 
         console.log("-------------------------------------------------------");
         console.log("Deploy factory");
         console.log("-------------------------------------------------------");
 
+        // Broadcast following txs from deployer
+        vm.startBroadcast(deployer);
+
         // TODO: read factoryParms from input.json file (can't do this right now because of a foundry bug when parsing JSON)
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: addressGuru.weth(),
             oracle: addressGuru.oracle(),
-            ifee: 1e15, // 0.1%
+            stake: addressGuru.weth(),
             stakeSize: 25e16, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
+            ifee: 1e15, // 0.001%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000
@@ -55,13 +67,12 @@ contract ERC4626FactoryScript is Script {
             factoryParams
         );
         console.log("- Factory deployed @ %s", address(factory));
-
         vm.stopBroadcast();
 
         // Mainnet would require multisig to make these calls
-        if (chainId == AddressBook.FORK || chainId == AddressBook.GOERLI) {
+        if (chainId == Constants.FORK || chainId == Constants.GOERLI) {
             
-            if (chainId == AddressBook.FORK) {
+            if (chainId == Constants.FORK) {
                 console.log("- Fund multisig to be able to make calls from that address");
                 vm.deal(senseMultisig, 1 ether);
             }
@@ -80,9 +91,9 @@ contract ERC4626FactoryScript is Script {
 
             vm.stopBroadcast();
 
-            if (chainId == AddressBook.FORK) {
+            if (chainId == Constants.FORK) {
                 // Broadcast following txs from deployer
-                vm.startBroadcast(msg.sender);
+                vm.startBroadcast(deployer);
 
                 console.log("-------------------------------------------------------");
                 console.log("Deploy adapters for factory");
@@ -106,41 +117,47 @@ contract ERC4626FactoryScript is Script {
                     console.log("- %s adapter address: %s", name, adapter);
 
                     console.log("- Can call scale value");
-                    ERC4626Adapter adptr = ERC4626Adapter(adapter);
-                    console.log("  -> scale: %s", adptr.scale());
+                    console.log("  -> scale: %s", ERC4626Adapter(adapter).scale());
 
-                    (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
-                    console.log("  -> adapter guard: %s", guard);
+                    {
+                        (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
+                        console.log("  -> adapter guard: %s", guard);
+                    }
 
                     console.log("- Approve Periphery to pull stake...");
-                    ERC20 stake = ERC20(factoryParams.stake);
-                    stake.approve(address(periphery), type(uint256).max);
+                    ERC20(factoryParams.stake).approve(address(periphery), type(uint256).max);
 
                     console.log("- Mint stake tokens...");
-                    setTokenBalance(msg.sender, factoryParams.stake, factoryParams.stakeSize);
+                    setTokenBalance(deployer, factoryParams.stake, factoryParams.stakeSize);
 
                     // get next month maturity
                     (uint256 year, uint256 month, ) = DateTime.timestampToDate(DateTime.addMonths(block.timestamp, 2));
                     uint256 maturity = DateTime.timestampFromDateTime(year, month, 1 /* top of the month */, 0, 0, 0);
 
                     // deploy Series
-                    console.log("\n- Sponsor Series for %s @ %s with maturity %s", adptr.name(), address(t), maturity);
+                    console.log("\n- Sponsor Series for %s @ %s with maturity %s", ERC4626Adapter(adapter).name(), address(t), maturity);
                     periphery.sponsorSeries(adapter, maturity, false);
+                    console.log(" Series successfully sponsored!");
+
                     console.log("\n-------------------------------------------------------");
                 }
             }
         }
 
-        if (msg.sender != senseMultisig) {
+        if (deployer != senseMultisig) {
+            vm.startBroadcast(deployer);
+
             // Unset deployer and set multisig as trusted address
-            console.log("\n- Set multisig as trusted address of Factory");
+            console.log("- Set multisig as trusted address of Factory");
             factory.setIsTrusted(senseMultisig, true);
 
-            console.log("\n- Unset deployer as trusted address of Factory");
-            factory.setIsTrusted(msg.sender, false);
+            console.log("- Unset deployer as trusted address of Factory");
+            factory.setIsTrusted(deployer, false);
+
+            vm.stopBroadcast();
         }
 
-        if (chainId == AddressBook.MAINNET) {
+        if (chainId == Constants.MAINNET) {
             console.log("-------------------------------------------------------");
             console.log("ACTIONS TO BE DONE ON DEFENDER: ");
             console.log("1. Set factory on Periphery");
@@ -149,8 +166,6 @@ contract ERC4626FactoryScript is Script {
             console.log("4. For each adapter, sponsor Series on Periphery");
             console.log("5. For each series, run capital seeder");
         }
-
-        vm.stopBroadcast();
     }
 
     function setTokenBalance(address who, address token, uint256 amt) internal {

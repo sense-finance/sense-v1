@@ -27,7 +27,7 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 
 // Constants/Addresses
 import { Constants } from "./test-helpers/Constants.sol";
-import { AddressBook } from "../../scripts/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 
 import { BalancerVault } from "../external/balancer/Vault.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";

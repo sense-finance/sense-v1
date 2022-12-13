@@ -3,11 +3,6 @@ pragma solidity 0.8.15;
 
 /// @notice Mainnet AddressBook
 library AddressBook {
-    // chains
-    uint256 public constant MAINNET = 1;
-    uint256 public constant GOERLI = 5;
-    uint256 public constant FORK = 111;
-
     // coins
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
