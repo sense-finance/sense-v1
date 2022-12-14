@@ -84,64 +84,6 @@ contract ERC4626AdapterTest is Test {
         );
     }
 
-    function testWrapUnwrap(uint256 wrapAmt) public {
-        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE);
-
-        // Approvals
-        target.approve(address(erc4626Adapter), type(uint256).max);
-        underlying.approve(address(erc4626Adapter), type(uint256).max);
-
-        // 1. Run a full wrap -> unwrap cycle
-        uint256 prebal = underlying.balanceOf(address(this));
-        uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
-        assertEq(targetFromWrap, target.balanceOf(address(this)));
-        assertGt(targetFromWrap, 0);
-        erc4626Adapter.unwrapTarget(targetFromWrap);
-        uint256 postbal = underlying.balanceOf(address(this));
-
-        assertEq(prebal, postbal);
-
-        // 2. Deposit underlying tokens into the vault
-        underlying.approve(address(target), INITIAL_BALANCE / 2);
-        target.deposit(INITIAL_BALANCE / 4, address(this));
-        assertEq(target.totalSupply(), INITIAL_BALANCE / 4);
-        assertEq(target.totalAssets(), INITIAL_BALANCE / 4);
-        // 3. Init a greater-than-one exchange rate
-        target.deposit(INITIAL_BALANCE / 4, address(this));
-        assertEq(target.totalSupply(), INITIAL_BALANCE / 2);
-        assertEq(target.totalAssets(), INITIAL_BALANCE / 2);
-        uint256 targetBalPostDeposit = target.balanceOf(address(this));
-
-        // Bound wrap amount to remaining tokens (tokens not deposited)
-        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE / 2);
-
-        // 4. Run the cycle again now that the vault has some underlying tokens of its own
-        prebal = underlying.balanceOf(address(this));
-        targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
-        assertEq(targetFromWrap + targetBalPostDeposit, target.balanceOf(address(this)));
-        assertGt(targetFromWrap + targetBalPostDeposit, 0);
-        erc4626Adapter.unwrapTarget(targetFromWrap);
-        postbal = underlying.balanceOf(address(this));
-
-        assertEq(prebal, postbal);
-    }
-
-    function testWrapUnwrapZeroAmt() public {
-        uint256 wrapAmt = 0;
-
-        // Approvals
-        target.approve(address(erc4626Adapter), type(uint256).max);
-        underlying.approve(address(erc4626Adapter), type(uint256).max);
-
-        // Trying to wrap 0 underlying should revert
-        vm.expectRevert("ZERO_SHARES");
-        uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
-
-        // Trying to unwrap 0 target should revert
-        vm.expectRevert("ZERO_ASSETS");
-        erc4626Adapter.unwrapTarget(targetFromWrap);
-    }
-
     function testCantWrapMoreThanBalance() public {
         uint256 wrapAmt = INITIAL_BALANCE + 1;
 
@@ -165,6 +107,65 @@ contract ERC4626AdapterTest is Test {
 
         vm.expectRevert(abi.encodeWithSignature("Panic(uint256)", 0x11));
         erc4626Adapter.unwrapTarget(targetFromWrap + 1);
+    }
+
+    function testWrapUnwrapZeroAmt() public {
+        uint256 wrapAmt = 0;
+
+        // Approvals
+        target.approve(address(erc4626Adapter), type(uint256).max);
+        underlying.approve(address(erc4626Adapter), type(uint256).max);
+
+        // Trying to wrap 0 underlying should revert
+        vm.expectRevert("ZERO_SHARES");
+        uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
+
+        // Trying to unwrap 0 target should revert
+        vm.expectRevert("ZERO_ASSETS");
+        erc4626Adapter.unwrapTarget(targetFromWrap);
+    }
+
+    function testWrapUnwrap(uint256 wrapAmt) public {
+        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE);
+
+        // Approvals
+        target.approve(address(erc4626Adapter), type(uint256).max);
+        underlying.approve(address(erc4626Adapter), type(uint256).max);
+
+        // 1. Run a full wrap -> unwrap cycle
+        uint256 prebal = underlying.balanceOf(address(this));
+        uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
+        assertEq(targetFromWrap, target.balanceOf(address(this)));
+        assertGt(targetFromWrap, 0);
+        erc4626Adapter.unwrapTarget(targetFromWrap);
+        uint256 postbal = underlying.balanceOf(address(this));
+
+        assertEq(prebal, postbal);
+
+        // 2. Deposit underlying tokens into the vault
+        underlying.approve(address(target), INITIAL_BALANCE / 2);
+        target.deposit(INITIAL_BALANCE / 4, address(this));
+        assertEq(target.totalSupply(), INITIAL_BALANCE / 4);
+        assertEq(target.totalAssets(), INITIAL_BALANCE / 4);
+
+        // 3. Init a greater-than-one exchange rate
+        target.deposit(INITIAL_BALANCE / 4, address(this));
+        assertEq(target.totalSupply(), INITIAL_BALANCE / 2);
+        assertEq(target.totalAssets(), INITIAL_BALANCE / 2);
+        uint256 targetBalPostDeposit = target.balanceOf(address(this));
+
+        // Bound wrap amount to remaining tokens (tokens not deposited)
+        wrapAmt = bound(wrapAmt, 1, INITIAL_BALANCE / 2);
+
+        // 4. Run the cycle again now that the vault has some underlying tokens of its own
+        prebal = underlying.balanceOf(address(this));
+        targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
+        assertEq(targetFromWrap + targetBalPostDeposit, target.balanceOf(address(this)));
+        assertGt(targetFromWrap + targetBalPostDeposit, 0);
+        erc4626Adapter.unwrapTarget(targetFromWrap);
+        postbal = underlying.balanceOf(address(this));
+
+        assertEq(prebal, postbal);
     }
 
     function testScale() public {
@@ -255,6 +256,8 @@ contract ERC4626AdapterTest is Test {
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidPrice.selector));
         erc4626Adapter.getUnderlyingPrice();
     }
+
+    // Oracle-related tests
 
     function testGetUnderlyingPriceCustomOracle() public {
         // Deploy a custom oracle
