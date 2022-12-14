@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import "forge-std/Script.sol";
-import { stdStorage } from "forge-std/Test.sol";
+import "forge-std/StdCheats.sol";
 
 import { AddressGuru, Constants } from "@sense-finance/v1-utils/addresses/AddressGuru.sol";
 import { Divider } from "@sense-finance/v1-core/Divider.sol";
@@ -14,9 +14,7 @@ import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { DateTime } from "@auto-roller/src/external/DateTime.sol";
 
-contract ERC4626FactoryScript is Script {
-    using stdStorage for StdStorage;
-
+contract ERC4626FactoryScript is Script, StdCheats {
     uint256 public mainnetFork;
     string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
@@ -128,7 +126,7 @@ contract ERC4626FactoryScript is Script {
                     ERC20(factoryParams.stake).approve(address(periphery), type(uint256).max);
 
                     console.log("- Mint stake tokens...");
-                    setTokenBalance(deployer, factoryParams.stake, factoryParams.stakeSize);
+                    deal(factoryParams.stake, deployer, factoryParams.stakeSize);
 
                     // get next month maturity
                     (uint256 year, uint256 month, ) = DateTime.timestampToDate(DateTime.addMonths(block.timestamp, 2));
@@ -168,11 +166,4 @@ contract ERC4626FactoryScript is Script {
         }
     }
 
-    function setTokenBalance(address who, address token, uint256 amt) internal {
-        stdstore
-            .target(token)
-            .sig(ERC20(token).balanceOf.selector)
-            .with_key(who)
-            .checked_write(amt);
-    }
 }

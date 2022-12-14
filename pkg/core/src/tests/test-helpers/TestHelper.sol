@@ -630,23 +630,19 @@ contract TestHelper is Test {
         }
 
         try vm.envBool("ERC4626_TARGET") returns (bool val) {
-            is4626Target = val;
-        } catch {}
-
-        try vm.envBool("ERC4626_TARGET") returns (bool val) {
-            is4626Target = val;
+            if (!is4626Target) is4626Target = val;
         } catch {}
 
         try vm.envBool("NON_ERC20_TARGET") returns (bool val) {
-            nonERC20Target = val;
+            if (!nonERC20Target) nonERC20Target = val;
         } catch {}
 
         try vm.envBool("NON_ERC20_UNDERLYING") returns (bool val) {
-            nonERC20Underlying = val;
+            if (!nonERC20Underlying) nonERC20Underlying = val;
         } catch {}
 
         try vm.envBool("NON_ERC20_STAKE") returns (bool val) {
-            nonERC20Stake = val;
+            if (!nonERC20Stake) nonERC20Stake = val;
         } catch {}
     }
 

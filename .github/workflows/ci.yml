@@ -39,14 +39,23 @@ jobs:
     - name: Run local tests
       if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
       run: yarn test
+      env:
+        MAINNET_RPC_URL: "test"
+        GOERLI_RPC_URL: "test"
 
     - name: Run mainnet tests
       run: yarn test:mainnet
+      env:
+        MAINNET_RPC_URL: "test"
+        GOERLI_RPC_URL: "test"
 
     # Only when there's a push to dev or master, we run all the possible combinations of tests (PAUSED UNTIL FIXED)
     - name: Run local tests with all possible combinations of ERC20, nonERC20, ERC4626 and 6, 8 and 18 decimals for Target, Underlying and Stake
       if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
       run: yarn workspace @sense-finance/v1-core run test:fuzz
+      env:
+        MAINNET_RPC_URL: "test"
+        GOERLI_RPC_URL: "test"
 
     - name: Check deploy scripts on a local mainnet fork
       run: cd pkg/deployments; yarn deploy:hardhat-fork:prod

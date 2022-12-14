@@ -19,7 +19,7 @@ import { MockFactory } from "@sense-finance/v1-core/tests/test-helpers/mocks/Moc
 import { MockToken } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/tests/test-helpers/DateTimeFull.sol";
-import { AddressBook } from "@sense-finance/v1-core/../script/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
 import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
 
