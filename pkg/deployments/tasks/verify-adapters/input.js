@@ -27,7 +27,7 @@ const MAINNET_CONTRACTS = [
         0,
         31,
       ],
-    ]
+    ],
   },
 ];
 
@@ -50,7 +50,7 @@ const GOERLI_CONTRACTS = [
         0,
         31,
       ],
-    ]
+    ],
   },
 ];
 

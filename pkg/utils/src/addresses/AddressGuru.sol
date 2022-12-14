@@ -14,7 +14,7 @@ library Constants {
 
 contract AddressGuru {
     uint256 public chainId;
-    
+
     constructor() {
         uint256 id;
         assembly {
@@ -87,5 +87,4 @@ contract AddressGuru {
     function BB_wstETH4626() public view returns (address) {
         return chainId == Constants.MAINNET ? AddressBook.BB_wstETH4626 : AddressBookGoerli.BB_wstETH4626;
     }
-    
 }

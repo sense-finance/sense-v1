@@ -3,7 +3,6 @@ pragma solidity 0.8.15;
 
 /// @notice Goerli AddressBook
 library AddressBookGoerli {
-
     // underlyings
     address public constant DAI = 0x436f3D3f1e0B7a2335594b57670c7A05Bc5F0dc6;
     address public constant USDC = 0xc4723445bD201f685A8128DC2D602DD86B696E22;
