@@ -6,6 +6,7 @@ import "./ERC4626.test.sol";
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/mixins/ERC4626.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 
 /// @title ERC4626 Property Tests
 /// @author Taken from https://github.com/a16z/erc4626-tests
@@ -15,12 +16,15 @@ contract ERC4626StdTest is ERC4626Test {
     address public userWithAssets;
 
     function setUp() public override {
-        address vault = vm.envAddress("ERC4626_ADDRESS");
+        try vm.envAddress("ERC4626_ADDRESS") returns (address vault) {
+            _vault_ = vault;
+        } catch {
+            _vault_ = AddressBook.IMUSD;
+        }
         try vm.envAddress("USER_WITH_ASSETS") {
             userWithAssets = vm.envAddress("USER_WITH_ASSETS");
         } catch {}
-        _underlying_ = address(ERC4626(vault).asset());
-        _vault_ = vault;
+        _underlying_ = address(ERC4626(_vault_).asset());
         _delta_ = 10;
         _vaultMayBeEmpty = false;
         _unlimitedAmount = false;

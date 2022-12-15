@@ -31,17 +31,17 @@ contract ERC4626Adapters is Test {
     uint256 public delta;
 
     function setUp() public {
-        try vm.envAddress("ERC4626_ADDRESS") {
-            target = ERC4626(vm.envAddress("ERC4626_ADDRESS"));
+        try vm.envAddress("ERC4626_ADDRESS") returns (address vault) {
+            target = ERC4626(vault);
+            console.log("Running tests for token: ", target.symbol());
         } catch {
             target = ERC4626(AddressBook.IMUSD);
         }
         underlying = ERC20(target.asset());
-        console.log("Running tests for token: ", target.symbol());
 
         // set `userWithAssets` if exists
-        try vm.envAddress("USER_WITH_ASSETS") {
-            userWithAssets = vm.envAddress("USER_WITH_ASSETS");
+        try vm.envAddress("USER_WITH_ASSETS") returns (address user) {
+            userWithAssets = user;
         } catch {}
 
         if (address(underlying) == AddressBook.MUSD) {
