@@ -112,8 +112,8 @@ module.exports = {
         version: "0.8.15",
         settings: {
           optimizer: {
-            enabled: false,
-            runs: process.env.SIM === "true" ? 100 : 0,
+            enabled: true,
+            runs: process.env.SIM === "true" ? 100 : 500,
           },
         },
       },
