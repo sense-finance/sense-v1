@@ -17,6 +17,10 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 
+interface IMUSD {
+    function depositInterest(uint256 _amount) external;
+}
+
 /// Mainnet tests
 /// @dev reads from ENV the target address or defaults to imUSD 4626 token if none
 /// @dev reads from ENV an address of a user with underlying balance. This is used in case tha
@@ -31,8 +35,8 @@ contract ERC4626Adapters is Test {
     uint256 public delta;
 
     function setUp() public {
-        try vm.envAddress("ERC4626_ADDRESS") returns (address vault) {
-            target = ERC4626(vault);
+        try vm.envAddress("ERC4626_ADDRESS") returns (address _target) {
+            target = ERC4626(_target);
             console.log("Running tests for token: ", target.symbol());
         } catch {
             target = ERC4626(AddressBook.IMUSD);
@@ -40,8 +44,15 @@ contract ERC4626Adapters is Test {
         underlying = ERC20(target.asset());
 
         // set `userWithAssets` if exists
-        try vm.envAddress("USER_WITH_ASSETS") returns (address user) {
-            userWithAssets = user;
+        try vm.envAddress("USER_WITH_ASSETS") returns (address _userWithAssets) {
+            userWithAssets = _userWithAssets;
+        } catch {
+            if (address(underlying) == AddressBook.STETH) delta = 1;
+        }
+
+        // set `userWithAssets` if exists
+        try vm.envUint("DELTA") returns (uint256 _delta) {
+            delta = _delta;
         } catch {}
 
         if (address(underlying) == AddressBook.MUSD) {
@@ -56,15 +67,7 @@ contract ERC4626Adapters is Test {
         }
 
         // Add some balance of underlying to this contract
-        if (userWithAssets == address(0)) {
-            deal(address(underlying), address(this), 10 * 10**underlying.decimals());
-        } else {
-            uint256 underlyingBalance = underlying.balanceOf(userWithAssets);
-            vm.prank(userWithAssets);
-            underlying.transfer(address(this), underlyingBalance);
-        }
-
-        if (address(underlying) == AddressBook.STETH) delta = 1;
+        deal(address(underlying), address(this), 10 * 10**underlying.decimals());
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: AddressBook.SENSE_MASTER_ORACLE,
@@ -155,21 +158,22 @@ contract ERC4626Adapters is Test {
         assertEq(erc4626Adapter.scale(), scale);
     }
 
-    // function testScale() public {
-    //     // 1. Deposit initial underlying tokens into the target
-    //     underlying.approve(address(target), INITIAL_BALANCE / 2);
-    //     target.deposit(INITIAL_BALANCE / 2, address(this));
+    /// @notice scale() and scaleStored() have the same implementation
+    /// @dev given the fact that totalAssets() might be implemented differently by each protocol,
+    function testScaleAndScaleStored() public {
+        // Sanity check: vault is already initialised and scale > 0
+        uint256 scale = erc4626Adapter.scale();
+        uint256 scaleStored = erc4626Adapter.scaleStored();
+        assertGt(scale, 0);
+        assertGt(scaleStored, 0);
 
-    //     // Initializes at 1:1
-    //     assertEq(erc4626Adapter.scale(), 1e18);
+        // 1. Vault mutates by +2e18 tokens (simulated yield returned from strategy)
+        _mutateVault(2 * 10 ** underlying.decimals());
 
-    //     // 2. Vault mutates by +2e18 tokens (simulated yield returned from strategy)
-    //     underlying.mint(address(target), 2e18);
-
-    //     // 3. Check that the value per share is now higher
-    //     assertGt(erc4626Adapter.scale(), 1e18);
-    //     assertEq(erc4626Adapter.scale(), ((INITIAL_BALANCE / 2 + 2e18) * 1e18) / (INITIAL_BALANCE / 2));
-    // }
+        // 2. Check that the value per share is now higher
+        assertGt(erc4626Adapter.scale(), scale, "you may need to implement a custom case for this token on _mutateVault() function");
+        assertGt(erc4626Adapter.scaleStored(), scaleStored, "you may need to implement a custom case for this token on _mutateVault() function");
+    }
 
     function testScaleIsExRate() public {
         // 1. Deposit initial underlying tokens into the target and simulate yield returns
@@ -186,39 +190,16 @@ contract ERC4626Adapters is Test {
         assertGt(targetPrebal, 0);
         // Leave something in the target
         uint256 underlyingFromUnwrap = erc4626Adapter.unwrapTarget(targetPrebal / 2);
-        assertApproxEqAbs(((targetPrebal / 2) * erc4626Adapter.scale()) / 1e18, underlyingFromUnwrap, delta);
+        uint256 scaleFactor = 10 ** (target.decimals() - underlying.decimals());
+        assertApproxEqAbs(((targetPrebal / 2) * erc4626Adapter.scale()) / 1e18 / scaleFactor, underlyingFromUnwrap, delta);
 
         vm.roll(block.number + 1);
 
         // 3. Check that a wrapped amount reflects scale as an ex rate
         uint256 underlyingBalPre = underlying.balanceOf(address(this));
         uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(underlyingBalPre / 2);
-        assertApproxEqAbs(((underlyingBalPre / 2) * 1e18) / erc4626Adapter.scale(), targetFromWrap, 1);
+        assertApproxEqAbs(((underlyingBalPre / 2) * 1e18) / erc4626Adapter.scale(), targetFromWrap / scaleFactor, delta);
     }
-
-    /// @notice scale() and scaleStored() have the same implementation
-    /// @dev given the fact that totalAssets() might be implemented differently by each protocol,
-    /// this test may fail and we cannot generalise it
-    // function testScaleAndScaleStored() public {
-    //     // // 1. Deposit initial underlying tokens into the target
-    //     uint256 underlyingBalance = target.totalAssets();
-    //     uint256 scale = erc4626Adapter.scale();
-    //     uint256 scaleStored = erc4626Adapter.scaleStored();
-
-    //     // 1. Vault mutates by +2e18 tokens (simulated yield returned from strategy)
-    //     uint256 uAmt = 2 * 10 ** underlying.decimals();
-    //     deal(address(underlying), address(0xfede), uAmt);
-    //     vm.prank(address(0xfede));
-    //     underlying.transfer(address(target), uAmt);
-
-    //     // 2. Check that the value per share is now higher
-    //     assertGt(erc4626Adapter.scale(), scale);
-    //     assertGt(erc4626Adapter.scaleStored(), scaleStored);
-
-    //     scale = ((underlyingBalance + uAmt) * 1e18) / (underlyingBalance);
-    //     assertEq(erc4626Adapter.scale(), scale);
-    //     assertEq(erc4626Adapter.scaleStored(), scale);
-    // }
 
     function testMainnetGetUnderlyingPrice() public {
         // Since the MasterPriceOracle uses Rari's master oracle, the prices should match
@@ -240,5 +221,36 @@ contract ERC4626Adapters is Test {
 
         uint256 price = oracle.price(address(underlying));
         assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+    }
+
+    // utils
+
+    function _mutateVault(uint256 amt) internal {
+        // set balance if needed
+        if (underlying.balanceOf(address(this)) < amt) deal(address(underlying), address(this), amt);
+
+        if (address(target) == AddressBook.IMUSD) {
+            deal(address(underlying), AddressBook.IMUSD_SAVINGS_MANAGER, amt);
+            vm.prank(AddressBook.IMUSD_SAVINGS_MANAGER); // imUSD savings manager
+            IMUSD(address(target)).depositInterest(amt);
+            return;
+        }
+
+        if (address(target) == AddressBook.BB_wstETH4626) {
+            underlying.transfer(AddressBook.IDLE_CDO, amt);
+            return;
+        }
+
+        // try mutating vault by transfering underlying to the vault 
+        underlying.transfer(address(target), amt);
+    }
+
+    function deal(address token, address to, uint256 amt) internal override{
+        if (userWithAssets == address(0)) {
+            deal(token, to, amt);
+        } else {
+            vm.prank(userWithAssets);
+            underlying.transfer(to, amt);
+        }
     }
 }
