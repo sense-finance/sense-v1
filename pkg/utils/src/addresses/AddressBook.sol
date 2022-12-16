@@ -50,7 +50,7 @@ library AddressBook {
     address public constant SENSE_MASTER_ORACLE = 0x11D341d35BF95654BC7A9db59DBc557cCB4ea101;
 
     // 4626 factories
-    // address public constant ERC_4626_FACTORY = ;
+    address public constant ERC4626_FACTORY = 0xeE15E6c4c6dacBA162E6BD8C6C7185049BeBa212;
 
     // sense
     address public constant SENSE_MULTISIG = 0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57;
