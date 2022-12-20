@@ -168,7 +168,7 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
         contract: contractName,
         address,
         constructorArguments,
-        libraries: libraries,
+        libraries,
       });
     } else {
       // Seems like verifying a contract using the built-in task from hardhat-deploy

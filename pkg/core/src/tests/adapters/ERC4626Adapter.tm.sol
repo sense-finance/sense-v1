@@ -14,7 +14,7 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 

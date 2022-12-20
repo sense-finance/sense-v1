@@ -1,7 +1,7 @@
 const { task, subtask } = require("hardhat/config");
 const input = require("./input");
 
-const { CHAINS, OZ_RELAYER } = require("../../hardhat.addresses");
+const { CHAINS, OZ_RELAYER, MULTIMINT } = require("../../hardhat.addresses");
 const adapterAbi = ["function scale() public view returns (uint256)"];
 
 const { verifyOnEtherscan, getRelayerSigner, trust, approve } = require("../../hardhat.utils");
@@ -422,6 +422,9 @@ task("goerli-deploy-tokens", "Deploy tokens").setAction(async args => {
       if (type !== "target4626") {
         console.log(`\n - Set relayer as trusted of ${token[type].symbol} so it can mint tokens`);
         await trust(deployedTokens[token[type].symbol], OZ_RELAYER.get(CHAINS.GOERLI));
+
+        console.log(`\n - Set MultiMint as trusted of ${token[type].symbol} so it can mint tokens`);
+        await trust(deployedTokens[token[type].symbol], MULTIMINT.get(CHAINS.GOERLI));
       }
     }
   }
@@ -431,6 +434,8 @@ task("goerli-deploy-tokens", "Deploy tokens").setAction(async args => {
   deployedTokens[reward.symbol] = await deployToken(reward, null, deploy, deployerSigner);
   console.log(`\n - Set relayer as trusted of ${stake.symbol} so it can mint tokens`);
   await trust(deployedTokens[stake.symbol], OZ_RELAYER.get(CHAINS.GOERLI));
+  console.log(`\n - Set MultiMint as trusted of ${stake.symbol} so it can mint tokens`);
+  await trust(deployedTokens[stake.symbol], MULTIMINT.get(CHAINS.GOERLI));
 
   console.log("\n\n");
   return deployedTokens;

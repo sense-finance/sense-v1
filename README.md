@@ -113,7 +113,7 @@ yarn fix
 1. Create a local `.env` file in the root directory of this project
 2. Set `ALCHEMY_KEY` to a valid Alchemy API key
 3. Set `MNEMONIC` to a valid seed phrase for deployments
-4. Set `ETHERSCAN_API_KEY` to a valid Ethersccan API key (used for verification)
+4. Set `ETHERSCAN_API_KEY` to a valid Etherscan API key (used for verification)
 
 ### Deployment & upgrades
 

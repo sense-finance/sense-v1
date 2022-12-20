@@ -15,7 +15,7 @@ import { OwnableWstETHAdapter } from "../../adapters/implementations/lido/Ownabl
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { Constants } from "../test-helpers/Constants.sol";

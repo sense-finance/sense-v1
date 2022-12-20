@@ -12,7 +12,7 @@ import { Divider, TokenHandler } from "../../Divider.sol";
 import { CAdapter, CTokenLike, PriceOracleLike } from "../../adapters/implementations/compound/CAdapter.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 
-import { AddressBook } from "../test-helpers/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 

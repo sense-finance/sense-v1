@@ -19,7 +19,7 @@ import { MockTarget } from "@sense-finance/v1-core/tests/test-helpers/mocks/Mock
 import { MockToken } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockToken.sol";
 import { MockAdapter } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockAdapter.sol";
 import { DateTimeFull } from "@sense-finance/v1-core/tests/test-helpers/DateTimeFull.sol";
-import { AddressBook } from "@sense-finance/v1-core/tests/test-helpers/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
 import { PriceOracle } from "../external/PriceOracle.sol";
@@ -111,13 +111,13 @@ contract PoolManagerTest is Test {
         _initSeries(maturity);
 
         assertTrue(poolManager.comptroller() == address(0));
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         assertTrue(poolManager.comptroller() != address(0));
 
         // Can't deploy pool twice
         vm.expectRevert("ERC1167: create2 failed");
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
     }
 
     function testMainnetAddTarget() public {
@@ -126,7 +126,7 @@ contract PoolManagerTest is Test {
         poolManager.addTarget(address(target), address(mockAdapter));
 
         // Can add a Target after deploying a pool
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         // Cannot add a Target before params have been set
         vm.expectRevert(abi.encodeWithSelector(Errors.TargetParamsNotSet.selector));
@@ -159,7 +159,7 @@ contract PoolManagerTest is Test {
         vm.expectRevert();
         poolManager.queueSeries(address(mockAdapter), maturity, address(0));
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
 
         // Cannot queue if Target has not been added to the Fuse pool
         vm.expectRevert(abi.encodeWithSelector(Errors.TargetNotInFuse.selector));
@@ -180,7 +180,7 @@ contract PoolManagerTest is Test {
         uint256 maturity = _getValidMaturity();
         _initSeries(maturity);
 
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
         PoolManager.AssetParams memory paramsTarget = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,
@@ -264,7 +264,7 @@ contract PoolManagerTest is Test {
     }
 
     function testMainnetAdminPassthrough() public {
-        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.MASTER_ORACLE);
+        poolManager.deployPool("Sense Pool", 0.051 ether, 1 ether, AddressBook.RARI_ORACLE);
         PoolManager.AssetParams memory params = PoolManager.AssetParams({
             irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
             reserveFactor: 0.1 ether,

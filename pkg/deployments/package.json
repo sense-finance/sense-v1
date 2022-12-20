@@ -24,7 +24,7 @@
     "prepare": "cp -n ../../.env ./.env || true && git submodule update --init --recursive",
     "lint": "eslint .",
     "fix": "prettier . --write && yarn lint --fix",
-    "task": "yarn hardhat compile && yarn hardhat"
+    "task": "cp ../../.env ./.env && yarn hardhat"
   },
   "dependencies": {
     "@balancer-labs/v2-pool-utils": "2.0.1",

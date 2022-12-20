@@ -1,7 +1,12 @@
 # interfaces are automatically ignored by forge coverage
 ignore:
-  - "**/tests/**/*"                         # ignore all files inside tests/ folders
-  - "**/**.t*.sol"                          # ignore all files ending in t*.sol
-  - "pkg/utils/src/libs"                    # ignore all utils libs
-  - "pkg/utils/src/Trust.sol"               # ignore Trust since it's forked
-  - "pkg/core/src/external/FixedMath.sol"   # ignore FixedMath since it's forked
+  - "**/tests/**/*"                                   # ignore all files inside tests/ folders
+  - "**/**.t*.sol"                                    # ignore all files ending in t*.sol
+  - "**/scripts/**/*"                                 # ignore all files inside scripts/ folders
+  - "**/**.s.sol"                                     # ignore all files ending in s*.sol
+  - "pkg/utils/src/libs"                              # ignore all utils libs
+  - "pkg/utils/src/Trust.sol"                         # ignore Trust since it's forked
+  - "pkg/utils/src/addresses/AddressGuru.sol"         # ignore AddressGuru since it's used for tests and scripts only
+  - "pkg/utils/src/addresses/AddressBook.sol"         # ignore AddressBook since it's used for tests and scripts only
+  - "pkg/utils/src/addresses/AddressBookGoerli.sol"   # ignore AddressBookGoerli since it's used for tests and scripts only
+  - "pkg/core/src/external/FixedMath.sol"             # ignore FixedMath since it's forked

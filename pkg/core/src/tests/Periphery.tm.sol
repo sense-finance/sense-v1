@@ -27,7 +27,7 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 
 // Constants/Addresses
 import { Constants } from "./test-helpers/Constants.sol";
-import { AddressBook } from "./test-helpers/AddressBook.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 
 import { BalancerVault } from "../external/balancer/Vault.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
@@ -131,7 +131,7 @@ contract PeripheryTestHelper is Test {
         periphery.setFactory(address(ffactory), true);
 
         // Start multisig (admin) prank calls
-        vm.startPrank(AddressBook.SENSE_ADMIN_MULTISIG);
+        vm.startPrank(AddressBook.SENSE_MULTISIG);
 
         // Give authority to factories soy they can setGuard when deploying adapters
         Divider(divider).setIsTrusted(address(cfactory), true);
