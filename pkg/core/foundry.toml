@@ -16,11 +16,3 @@ remappings = [
     '@auto-roller=lib/auto-roller',
     'sense-v1-utils=../utils/src/'
 ]
-
-[rpc_endpoints]
-goerli = "${GOERLI_RPC_URL}"
-mainnet = "${MAINNET_RPC_URL}"
-
-[etherscan]
-goerli = { key = "${ETHERSCAN_API_KEY}" }
-mainnet = { key = "${ETHERSCAN_API_KEY}" }
