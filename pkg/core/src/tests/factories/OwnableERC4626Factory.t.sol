@@ -9,10 +9,10 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 import { MockAdapter } from "../test-helpers/mocks/MockAdapter.sol";
-import { MockToken } from "../test-helpers/mocks/MockToken.sol";
+import { MockToken, MockNonERC20Token } from "../test-helpers/mocks/MockToken.sol";
 import { MockERC4626 } from "../test-helpers/mocks/MockERC4626.sol";
 
-import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
+import { MockTarget, MockNonERC20Target } from "../test-helpers/mocks/MockTarget.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
@@ -127,8 +127,12 @@ contract OwnableERC4626FactoryTest is TestHelper {
 
     function testFactoryWithRollerFactory() public {
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
-        underlying.approve(address(someTarget), type(uint256).max);
-        someTarget.mint(1e18, address(this));
+        if (nonERC20Underlying) {
+            MockNonERC20Token(address(underlying)).approve(address(someTarget), type(uint256).max);
+        } else {
+            underlying.approve(address(someTarget), type(uint256).max);
+        }
+        someTarget.mint(10**tDecimals, address(this));
 
         // Deploy an Auto Roller
         RollerUtils utils = new RollerUtils(address(divider));
@@ -178,11 +182,19 @@ contract OwnableERC4626FactoryTest is TestHelper {
         );
 
         // Approve Target & Stake
-        someTarget.approve(address(autoRoller), 2e18);
-        stake.approve(address(autoRoller), 1e18);
+        if (nonERC20Target) {
+            MockNonERC20Target(address(someTarget)).approve(address(autoRoller), 2 * 10**tDecimals);
+        } else {
+            someTarget.approve(address(autoRoller), 2 * 10**tDecimals);
+        }
+        if (nonERC20Stake) {
+            MockNonERC20Token(address(stake)).approve(address(autoRoller), 10**tDecimals);
+        } else {
+            stake.approve(address(autoRoller), 10**sDecimals);
+        }
 
         // Check we can make deposit.
-        autoRoller.deposit(0.05e18, address(this));
+        autoRoller.deposit(5 * 10**(tDecimals - 2), address(this)); // deposit 0.05
     }
 
     function testCanModifyRLVFactory() public {

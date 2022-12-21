@@ -41,7 +41,9 @@ contract CropsAdapters is TestHelper {
         cropsFactory = MockCropsFactory(deployCropsFactory(address(aTarget), rewardTokens, true));
         address a = periphery.deployAdapter(address(cropsFactory), address(aTarget), abi.encode(rewardTokens)); // deploy & onboard target through Periphery
         cropsAdapter = MockCropsAdapter(a);
-        divider.setGuard(address(cropsAdapter), 10 * 2**128);
+
+        // set guarded to false to avoid reverts by issuing more than guard when fuzzing
+        divider.setGuarded(false);
 
         initUser(alice, aTarget, AMT);
         initUser(bob, aTarget, AMT);

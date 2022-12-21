@@ -149,7 +149,7 @@ contract TestHelper is Test {
 
         // To avoid precision errors when using `assertApproxEqAbs` (specially on the crop tests)
         // we set the reward token decimals to the same as the target decimals
-        rDecimals = 18;
+        rDecimals = tDecimals;
         reward = new MockToken("Reward Token", "RT", rDecimals);
 
         // Log target setup
@@ -289,7 +289,11 @@ contract TestHelper is Test {
         if (is4626Target) {
             uint256 assets = target.previewMint(targetAmt);
             underlying.mint(usr, assets);
-            underlying.approve(address(target), type(uint256).max);
+            if (nonERC20Target) {
+                MockNonERC20Token(address(underlying)).approve(address(target), type(uint256).max);
+            } else {
+                underlying.approve(address(target), type(uint256).max);
+            }
             target.mint(targetAmt, usr);
         } else {
             target.mint(usr, targetAmt);
@@ -629,21 +633,28 @@ contract TestHelper is Test {
             sDecimals = uint8(18);
         }
 
-        try vm.envBool("ERC4626_TARGET") returns (bool val) {
-            if (!is4626Target) is4626Target = val;
-        } catch {}
+        if (!is4626Target) {
+            try vm.envBool("ERC4626_TARGET") returns (bool val) {
+                is4626Target = val;
+            } catch {}
+        }
 
-        try vm.envBool("NON_ERC20_TARGET") returns (bool val) {
-            if (!nonERC20Target) nonERC20Target = val;
-        } catch {}
+        if (!nonERC20Target) {
+            try vm.envBool("NON_ERC20_TARGET") returns (bool val) {
+                nonERC20Target = val;
+            } catch {}
+        }
+        if (!nonERC20Underlying) {
+            try vm.envBool("NON_ERC20_UNDERLYING") returns (bool val) {
+                nonERC20Underlying = val;
+            } catch {}
+        }
 
-        try vm.envBool("NON_ERC20_UNDERLYING") returns (bool val) {
-            if (!nonERC20Underlying) nonERC20Underlying = val;
-        } catch {}
-
-        try vm.envBool("NON_ERC20_STAKE") returns (bool val) {
-            if (!nonERC20Stake) nonERC20Stake = val;
-        } catch {}
+        if (!nonERC20Stake) {
+            try vm.envBool("NON_ERC20_STAKE") returns (bool val) {
+                nonERC20Stake = val;
+            } catch {}
+        }
     }
 
     function assertApproxEqAbs(uint256 a, uint256 b) public virtual {

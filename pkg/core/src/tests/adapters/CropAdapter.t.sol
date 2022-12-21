@@ -30,6 +30,9 @@ contract CropAdapters is TestHelper {
 
         // freeze scale to 1e18 (only for non 4626 targets)
         if (!is4626Target) adapter.setScale(1e18);
+
+        // set guarded to false to avoid reverts by issuing more than guard when fuzzing
+        divider.setGuarded(false);
     }
 
     function testAdapterHasParams() public {
