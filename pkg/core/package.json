@@ -14,7 +14,7 @@
     ],
     "scripts": {
         "test": "time forge test --match-path \"*.t.sol\"",
-        "test:mainnet": "time forge test --match-path \"*.tm*\" --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7",
+        "test:mainnet": "time forge test --match-path \"*.tm*\" --no-match-contract \"ERC4626StdTest\" --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7",
         "test:4626": "time && ERC4626_TARGET=true forge test --match-path \"**/*.t.sol\"",
         "test:4626:integration": "time && forge test --match-contract \"ERC4626StdTest|ERC4626Adapters\" --fork-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7",
         "test:fuzz": "time yarn exec ./src/tests/fuzz.sh",
