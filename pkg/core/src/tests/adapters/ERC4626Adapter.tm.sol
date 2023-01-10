@@ -31,7 +31,7 @@ contract ERC4626Adapters is Test {
     ERC20 public underlying;
     ERC4626 public target;
     ERC4626Adapter public erc4626Adapter;
-    address public userWithAssets; // address of a userr with underlying balance
+    address public userWithAssets; // address of a user with underlying balance
     uint256 public delta = 1;
 
     function setUp() public {
@@ -166,18 +166,18 @@ contract ERC4626Adapters is Test {
         assertGt(scaleStored, 0);
 
         // 1. Vault mutates by +2e18 tokens (simulated yield returned from strategy)
-        _mutateVault(2 * 10**underlying.decimals());
+        _increaseVaultYield(2 * 10**underlying.decimals());
 
         // 2. Check that the value per share is now higher
         assertGt(
             erc4626Adapter.scale(),
             scale,
-            "you may need to implement a custom case for this token on _mutateVault() function"
+            "you may need to implement a custom case for this token on _increaseVaultYield() function"
         );
         assertGt(
             erc4626Adapter.scaleStored(),
             scaleStored,
-            "you may need to implement a custom case for this token on _mutateVault() function"
+            "you may need to implement a custom case for this token on _increaseVaultYield() function"
         );
     }
 
@@ -231,7 +231,7 @@ contract ERC4626Adapters is Test {
 
     // utils
 
-    function _mutateVault(uint256 amt) internal {
+    function _increaseVaultYield(uint256 amt) internal {
         // set balance if needed
         if (underlying.balanceOf(address(this)) < amt) deal(address(underlying), address(this), amt);
 
