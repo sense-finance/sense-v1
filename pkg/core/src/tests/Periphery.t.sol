@@ -1487,6 +1487,7 @@ contract PeripheryTest is TestHelper {
     }
 
     /* ========== issuance tests ========== */
+
     function testIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
@@ -1521,6 +1522,49 @@ contract PeripheryTest is TestHelper {
         assertEq(ptBalBefore + uBalSubFee, ERC20(pt).balanceOf(alice));
         assertEq(ytBalBefore + uBalSubFee, ERC20(yt).balanceOf(alice));
         assertEq(uBalBefore, ERC20(adapter.underlying()).balanceOf(alice) + uBal);
+    }
+
+    function testCombine() public {
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        uint256 uBal = periphery.issue(address(adapter), maturity, tBal, alice);
+
+        uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
+        uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(alice);
+
+        ERC20(pt).approve(address(periphery), ptBalBefore);
+        ERC20(yt).approve(address(periphery), ytBalBefore);
+        periphery.combine(address(adapter), maturity, uBal, alice);
+
+        assertEq(ptBalBefore - uBal, ERC20(pt).balanceOf(alice));
+        assertEq(ytBalBefore - uBal, ERC20(yt).balanceOf(alice));
+
+        uint256 tBalSubFee = tBal - tBal.fmul(adapter.ifee());
+        assertEq(tBalBefore, ERC20(adapter.target()).balanceOf(alice) - tBalSubFee);
+    }
+
+    function testCombineToUnderlying() public {
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        uint256 uBal = periphery.issue(address(adapter), maturity, tBal, alice);
+
+        uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
+        uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
+        uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(alice);
+
+        ERC20(pt).approve(address(periphery), ptBalBefore);
+        ERC20(yt).approve(address(periphery), ytBalBefore);
+        periphery.combineToUnderlying(address(adapter), maturity, uBal, alice);
+
+        assertEq(ptBalBefore - uBal, ERC20(pt).balanceOf(alice));
+        assertEq(ytBalBefore - uBal, ERC20(yt).balanceOf(alice));
+
+        uint256 tBalSubFee = tBal - tBal.fmul(adapter.ifee());
+        uint256 uBalSubFee = tBalSubFee.fmul(adapter.scale());
+        assertEq(uBalBefore, ERC20(adapter.underlying()).balanceOf(alice) - uBalSubFee);
     }
 
     /* ========== LOGS ========== */
