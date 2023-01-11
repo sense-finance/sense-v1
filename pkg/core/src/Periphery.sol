@@ -445,6 +445,45 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         (tAmount, issued, lpShares) = _addLiquidity(dstAdapter, dstMaturity, tBal, mode, minBptOut, msg.sender);
     }
 
+    /* ========== ISSUANCE UTILS ========== */
+
+    /// @notice Mint PTs & YTs of a specific Series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series [unix time]
+    /// @param amt Amount of Target to deposit
+    /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
+    /// @param receiver Address where the resulting Underlying will be transferred to
+    function issue(
+        address adapter,
+        uint256 maturity,
+        uint256 amt,
+        address receiver
+    ) external returns (uint256 uBal) {
+        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), amt); // pull target
+        uBal = divider.issue(adapter, maturity, amt);
+        ERC20(divider.pt(adapter, maturity)).safeTransfer(receiver, uBal); // Send PTs to the receiver
+        ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, uBal); // Send YT to the receiver
+    }
+
+    /// @notice Mint Principal & Yield Tokens of a specific Series
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series [unix time]
+    /// @param amt Amount of Underlying to deposit
+    /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
+    /// @param receiver Address where the resulting Underlying will be transferred to
+    function issueFromUnderlying(
+        address adapter,
+        uint256 maturity,
+        uint256 amt,
+        address receiver
+    ) external returns (uint256 uBal) {
+        ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), amt); // pull underlying
+        uint256 tBal = Adapter(adapter).wrapUnderlying(amt);
+        uBal = divider.issue(adapter, maturity, tBal);
+        ERC20(divider.pt(adapter, maturity)).safeTransfer(receiver, uBal); // Send PTs to the receiver
+        ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, uBal); // Send YT to the receiver
+    }
+
     /* ========== ADMIN ========== */
 
     /// @notice Enable or disable a factory
