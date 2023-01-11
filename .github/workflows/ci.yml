@@ -54,6 +54,8 @@ jobs:
         ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         MNEMONIC: ${{ secrets.MNEMONIC }}
         FORK_TOP_UP: ${{ secrets.FORK_TOP_UP }}
+        MAINNET_RPC_URL: "test"
+        GOERLI_RPC_URL: "test"
 
     - name: Check code coverage
       run: yarn coverage

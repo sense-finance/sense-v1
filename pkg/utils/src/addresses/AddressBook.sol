@@ -59,7 +59,8 @@ library AddressBook {
     address public constant EULER = 0x27182842E098f60e3D576794A5bFFb0777E025d3; // Euler
     address public constant EULER_MARKETS = 0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3; // Euler Markets
 
-    // Idle Finance
+    // idle finance
+    address public constant IDLE_CDO = 0x34dCd573C5dE4672C8248cd12A99f875Ca112Ad8;
     address public constant BB_wstETH4626 = 0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048; // IdleCDO BB Tranche - wstETH4626Adapter
 
     /////////// Others ///////////
@@ -82,6 +83,7 @@ library AddressBook {
 
     // mstable
     address public constant IMUSD = 0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19; // Interest bearing mStable USD (ERC-4626)
+    address public constant IMUSD_SAVINGS_MANAGER = 0xBC3B550E0349D74bF5148D86114A48C3B4Aa856F; // imUSD Savings Manager
     address public constant RARI_MSTABLE_ORACLE = 0xeb988f5492C86584f8D8f1B8662188D5A9BfE357; // Rari's mStable price oracle
     address public constant CHAINLINK_REGISTRY = 0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf; // Chainlink's Feed Registry
 
