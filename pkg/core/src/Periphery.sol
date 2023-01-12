@@ -486,7 +486,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Reconstitute Target by burning PT and YT
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param amt Amount of PT and YT to burn
+    /// @param uBal Amount of PT and YT to burn
     /// @param receiver Address where the resulting Target will be transferred
     function combine(
         address adapter,
@@ -496,7 +496,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) external returns (uint256 tBal) {
         ERC20(divider.pt(adapter, maturity)).safeTransferFrom(msg.sender, address(this), uBal); // Pull PTs
         ERC20(divider.yt(adapter, maturity)).safeTransferFrom(msg.sender, address(this), uBal); // Pull YTs
-        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal = divider.combine(adapter, maturity, amt)); // Send Target to the receiver
+        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal = divider.combine(adapter, maturity, uBal)); // Send Target to the receiver
     }
 
     /// @notice Reconstitute Target by burning PT and YT and unwrapping it
