@@ -450,7 +450,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Mint PTs & YTs of a specific Series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series [unix time]
-    /// @param amt Amount of Target to issue with
+    /// @param targetIn Amount of Target to issue with
     /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
     /// @param receiver Address where the resulting PTs and YTs will be transferred to
     function issue(
@@ -468,7 +468,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Mint Principal & Yield Tokens of a specific Series from Underlying
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series [unix time]
-    /// @param amt Amount of Underlying to deposit
+    /// @param underlyingIn Amount of Underlying to deposit
     /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
     /// @param receiver Address where the resulting PTs and YTs will be transferred to
     function issueFromUnderlying(
