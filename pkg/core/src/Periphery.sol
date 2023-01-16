@@ -465,10 +465,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
     }
 
-    /// @notice Mint Principal & Yield Tokens of a specific Series from Underlying
+    /// @notice Mint PTs & YTs of a specific Series from Underlying
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series [unix time]
-    /// @param underlyingIn Amount of Underlying to deposit
+    /// @param underlyingIn Amount of Underlying to issue with
     /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
     /// @param receiver Address where the resulting PTs and YTs will be transferred to
     function issueFromUnderlying(
