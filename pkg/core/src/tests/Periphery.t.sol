@@ -693,8 +693,10 @@ contract PeripheryTest is TestHelper {
         vm.prank(from);
         ERC20(pt).approve(address(periphery), ptBalBefore);
 
-        vm.expectEmit(true, false, false, false);
-        emit PTRedeemed(address(adapter), maturity, 0);
+        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        uint256 tBalRedeemed = ptBalBefore.fdiv(mscale);
+        vm.expectEmit(true, true, true, false);
+        emit PTRedeemed(address(adapter), maturity, tBalRedeemed);
 
         vm.prank(from);
         uint256 redeemed = periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0, receiver);
