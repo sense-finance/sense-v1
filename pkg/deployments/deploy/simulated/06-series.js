@@ -120,7 +120,7 @@ module.exports = async function () {
       log("- adding liquidity via target");
       if (balances[0].lt(one)) {
         await periphery
-          .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0)
+          .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0, deployer)
           .then(t => t.wait());
       }
 
@@ -129,7 +129,7 @@ module.exports = async function () {
       let lpBalance = await pool.balanceOf(deployer);
       if (lpBalance.gte(ethers.utils.parseEther("0"))) {
         await periphery
-          .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false)
+          .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false, deployer)
           .then(t => t.wait());
       }
 
@@ -139,7 +139,7 @@ module.exports = async function () {
       log("- adding liquidity via target");
       if (balances[0].lt(oneMillion.mul(2))) {
         await periphery
-          .addLiquidityFromTarget(adapter.address, seriesMaturity, oneMillion.mul(2), 1, 0)
+          .addLiquidityFromTarget(adapter.address, seriesMaturity, oneMillion.mul(2), 1, 0, deployer)
           .then(t => t.wait());
       }
 
@@ -147,7 +147,7 @@ module.exports = async function () {
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
       await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0)
+        .swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0, deployer)
         .then(t => t.wait());
 
       data = await balancerVault.getPoolTokens(poolId);
@@ -197,20 +197,30 @@ module.exports = async function () {
       log(`--- Sanity check swaps ---`);
 
       log("swapping target for pt");
-      await periphery.swapTargetForPTs(adapter.address, seriesMaturity, one, 0).then(tx => tx.wait());
+      await periphery
+        .swapTargetForPTs(adapter.address, seriesMaturity, one, 0, deployer)
+        .then(tx => tx.wait());
 
       log("swapping target for yields");
-      await periphery.swapTargetForYTs(adapter.address, seriesMaturity, one, one, one).then(tx => tx.wait());
+      await periphery
+        .swapTargetForYTs(adapter.address, seriesMaturity, one, one, one, deployer)
+        .then(tx => tx.wait());
 
       log("swapping pt for target");
       await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
-      await periphery.swapPTsForTarget(adapter.address, seriesMaturity, one.div(2), 0).then(tx => tx.wait());
+      await periphery
+        .swapPTsForTarget(adapter.address, seriesMaturity, one.div(2), 0, deployer)
+        .then(tx => tx.wait());
 
       log("swapping yields for target");
-      await periphery.swapYTsForTarget(adapter.address, seriesMaturity, one.div(2)).then(tx => tx.wait());
+      await periphery
+        .swapYTsForTarget(adapter.address, seriesMaturity, one.div(2), deployer)
+        .then(tx => tx.wait());
 
       log("adding liquidity via target");
-      await periphery.addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0).then(t => t.wait());
+      await periphery
+        .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0, deployer)
+        .then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
       // If there's anything more than dust in the Periphery, throw

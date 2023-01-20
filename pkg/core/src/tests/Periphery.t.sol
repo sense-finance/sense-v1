@@ -1619,7 +1619,7 @@ contract PeripheryTest is TestHelper {
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
-        // assertEq(lpShares, lpBalAfter - lpBalBefore); // TODO: fix if fixing `lpShares` return value
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal, tBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
     }
@@ -1649,7 +1649,7 @@ contract PeripheryTest is TestHelper {
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
-        // assertEq(lpShares, lpBalAfter - lpBalBefore); // TODO: fix if fixing `lpShares` return value
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal, tBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
     }
@@ -1679,7 +1679,7 @@ contract PeripheryTest is TestHelper {
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
-        // assertEq(lpShares, lpBalAfter - lpBalBefore); // TODO: fix if fixing `lpShares` return value
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal, tBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
     }
@@ -1761,7 +1761,7 @@ contract PeripheryTest is TestHelper {
 
         assertTrue(targetBal > 0);
         assertTrue(ytBal > 0);
-        // assertEq(lpShares, lpBalAfter - lpBalBefore); // TODO: fix if fixing `lpShares` return value
+        assertEq(lpShares, lpBalAfter - lpBalBefore);
         assertEq(tBalBefore - tBal, tBalAfter);
         assertEq(jimTBalBefore + remainingYTInTarget, jimTBalAfter);
         assertEq(lpBalBefore + 100e18, lpBalAfter);
@@ -1813,7 +1813,7 @@ contract PeripheryTest is TestHelper {
 
             assertEq(targetBal, 0);
             assertTrue(ytBal > 0);
-            // assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(jim) - lpBalBefore); // TODO: fix if fixing `lpShares` return value
+            assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(jim) - lpBalBefore);
 
             // bob gets his target balance decreased
             assertEq(tBalBefore - tBal, ERC20(adapter.target()).balanceOf(bob));
