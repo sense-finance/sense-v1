@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
 import { Divider, TokenHandler } from "@sense-finance/v1-core/Divider.sol";
@@ -13,6 +11,7 @@ import { PoolManager, MasterOracleLike } from "../PoolManager.sol";
 import { BaseAdapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapter.sol";
 
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 import { MockFactory } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockFactory.sol";
 import { MockOracle } from "@sense-finance/v1-core/tests/test-helpers/mocks/fuse/MockOracle.sol";
 import { MockTarget } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockTarget.sol";
@@ -43,7 +42,7 @@ interface ComptrollerLike {
     function markets(address cToken) external view returns (Market memory);
 }
 
-contract PoolManagerTest is Test {
+contract PoolManagerTest is ForkTest {
     using FixedMath for uint256;
 
     MockToken internal stake;
@@ -59,6 +58,8 @@ contract PoolManagerTest is Test {
     MockSpaceFactory internal spaceFactory;
 
     function setUp() public {
+        fork();
+
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));

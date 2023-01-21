@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 
@@ -18,6 +16,7 @@ import { CFactory } from "../adapters/implementations/compound/CFactory.sol";
 import { FFactory } from "../adapters/implementations/fuse/FFactory.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 // Mocks
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
@@ -45,7 +44,7 @@ interface SpaceFactoryLike {
     ) external;
 }
 
-contract PeripheryTestHelper is Test {
+contract PeripheryTestHelper is ForkTest {
     uint256 public origin;
 
     Periphery internal periphery;
@@ -67,6 +66,7 @@ contract PeripheryTestHelper is Test {
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
     function setUp() public {
+        fork();
         origin = block.timestamp;
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);

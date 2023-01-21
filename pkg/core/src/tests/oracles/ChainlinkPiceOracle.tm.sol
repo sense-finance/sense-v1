@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 // Internal references
 import { ChainlinkPriceOracle } from "../../adapters/implementations/oracles/ChainlinkPriceOracle.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { FixedMath } from "../../external/FixedMath.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 interface FeedLike {
     function latestRoundData()
@@ -24,7 +23,7 @@ interface FeedLike {
     function decimals() external view returns (uint8);
 }
 
-contract ChainPriceOracleTestHelper is Test {
+contract ChainPriceOracleTestHelper is ForkTest {
     using FixedMath for uint256;
 
     ChainlinkPriceOracle internal oracle;
@@ -36,6 +35,7 @@ contract ChainPriceOracleTestHelper is Test {
     address public constant CHAINLINK_BTC_ORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8; // BTC/ETH
 
     function setUp() public {
+        fork();
         // Deploy Chainlink price oracle
         oracle = new ChainlinkPriceOracle(0);
     }

@@ -13,3 +13,6 @@ remappings = [
     'solmate/=../../node_modules/solmate/src',
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts'
 ]
+
+[rpc_endpoints]
+mainnet = "${RPC_URL_MAINNET}"

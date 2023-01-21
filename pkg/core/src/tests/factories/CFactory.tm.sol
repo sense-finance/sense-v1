@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 // Internal references
 import { CAdapter } from "../../adapters/implementations/compound/CAdapter.sol";
 import { CFactory } from "../../adapters/implementations/compound/CFactory.sol";
@@ -15,8 +13,9 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
-contract CAdapterTestHelper is Test {
+contract CAdapterTestHelper is ForkTest {
     CFactory internal factory;
     Divider internal divider;
     TokenHandler internal tokenHandler;
@@ -29,6 +28,8 @@ contract CAdapterTestHelper is Test {
     uint256 public constant DEFAULT_GUARD = 100000 * 1e18; // 100'000 USD in 18 decimals
 
     function setUp() public {
+        fork();
+
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));

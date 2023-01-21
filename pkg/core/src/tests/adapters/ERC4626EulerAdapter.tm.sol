@@ -4,8 +4,6 @@
 // once we set the new one, uncomment!
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/mixins/ERC4626.sol";
 
@@ -27,6 +25,7 @@ import { Periphery } from "../../Periphery.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 interface EulerERC4626Like {
     function eToken() external returns (address);
@@ -41,7 +40,7 @@ interface IEulerTokenLike {
 }
 
 // Mainnet tests with imUSD 4626 token
-contract ERC4626EulerAdapters is Test {
+contract ERC4626EulerAdapters is ForkTest {
     using FixedMath for uint256;
 
     ERC4626 public target;
@@ -67,6 +66,8 @@ contract ERC4626EulerAdapters is Test {
     uint256 public constant INITIAL_BALANCE = 10**6;
 
     function setUp() public {
+        fork();
+
         // Deploy a Euler 4626 Wrapper Factory
         wFactory = new EulerERC4626WrapperFactory(
             AddressBook.EULER,

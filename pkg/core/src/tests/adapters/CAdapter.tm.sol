@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
@@ -15,6 +13,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 interface ComptrollerLike {
     function updateContributorRewards(address contributor) external;
@@ -28,7 +27,7 @@ interface ComptrollerLike {
     function compAccrued(address usr) external view returns (uint256);
 }
 
-contract CAdapterTestHelper is Test {
+contract CAdapterTestHelper is ForkTest {
     using SafeTransferLib for ERC20;
 
     CAdapter internal cDaiAdapter;
@@ -48,6 +47,7 @@ contract CAdapterTestHelper is Test {
     uint256 public constant MAX_MATURITY = 14 weeks;
 
     function setUp() public {
+        fork();
         deal(AddressBook.DAI, address(this), 20e18);
         deal(AddressBook.WETH, address(this), 20e18);
 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 // Internal references
 import { FixedMath } from "@sense-finance/v1-core/external/FixedMath.sol";
 import { Divider, TokenHandler } from "@sense-finance/v1-core/Divider.sol";
@@ -14,6 +12,7 @@ import { BaseAdapter } from "@sense-finance/v1-core/adapters/abstract/BaseAdapte
 import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/BaseFactory.sol";
 
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 import { MockAdapter } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockAdapter.sol";
 import { MockFactory } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockFactory.sol";
 import { MockToken } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockToken.sol";
@@ -23,7 +22,7 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
 import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
 
-contract NoopPoolManagerTest is Test {
+contract NoopPoolManagerTest is ForkTest {
     using FixedMath for uint256;
 
     MockToken internal stake;
@@ -44,6 +43,8 @@ contract NoopPoolManagerTest is Test {
     BaseAdapter.AdapterParams internal adapterParams;
 
     function setUp() public {
+        fork();
+
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));

@@ -1471,6 +1471,65 @@ contract PeripheryTest is TestHelper {
         assertEq(ptBalAfter, ptBalBefore + ptToBeIssued);
     }
 
+    function testRemoveLiquidityAndSwap() public {
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 maturity = getValidMaturity(2021, 10);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        uint256 lscale = adapter.scale();
+        uint256[] memory minAmountsOut = new uint256[](2);
+
+        // add liquidity to mockUniSwapRouter
+        addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
+
+        {
+            // calculate pt to be issued when adding liquidity
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            uint256 fee = adapter.ifee();
+            uint256 tBase = 10**tDecimals;
+            uint256 proportionalTarget = tBal.fmul(
+                balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
+                tBase
+            );
+            uint256 ptToBeIssued = proportionalTarget.fmul(lscale);
+
+            // prepare minAmountsOut for removing liquidity
+            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale); // underlying amount
+            minAmountsOut[1] = ptToBeIssued; // pt to be issued
+        }
+
+        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, address(this));
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(alice);
+        uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
+        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+
+        // // force balancer vault to mint 1 extra PT when swapping
+        // balancerVault.setReturnPTs(true);
+        // // allow balancer vault to mint PTs
+        // vm.prank(address(divider));
+        // Token(pt).setIsTrusted(address(balancerVault), true);
+
+        balancerVault.yieldSpacePool().approve(address(periphery), lpBal);
+
+        vm.expectEmit(true, false, false, false);
+        emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
+
+        (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
+            address(adapter),
+            maturity,
+            lpBal,
+            minAmountsOut,
+            0,
+            true,
+            alice
+        );
+
+        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(alice);
+        assertEq(tBalAfter, tBalBefore + targetBal);
+        assertEq(ptBal, 0);
+        assertEq(ERC20(balancerVault.yieldSpacePool()).balanceOf(alice), 0);
+        assertEq(ERC20(pt).balanceOf(alice), 0);
+    }
+
     function testRemoveLiquidityAndUnwrapTarget() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);

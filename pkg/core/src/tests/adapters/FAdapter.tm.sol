@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
@@ -16,12 +14,13 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 interface RewardsDistributorLike {
     function accrue(ERC20 market, address user) external returns (uint256);
 }
 
-contract FAdapterTestHelper is Test {
+contract FAdapterTestHelper is ForkTest {
     FAdapter internal f18DaiAdapter; // olympus pool party adapter
     FAdapter internal f18EthAdapter; // olympus pool party adapter
     FAdapter internal f18UsdcAdapter; // olympus pool party adapter
@@ -41,9 +40,9 @@ contract FAdapterTestHelper is Test {
     uint256 public constant MIN_MATURITY = 2 weeks;
     uint256 public constant MAX_MATURITY = 14 weeks;
 
-    uint256 public mainnetFork;
-
     function setUp() public {
+        fork();
+
         // Roll to block mined on Apr 18 2022 at 12:00:10 AM UTC (before Fuse bug)
         vm.rollFork(14605885);
 
