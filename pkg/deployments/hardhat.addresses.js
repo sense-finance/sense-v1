@@ -313,6 +313,12 @@ SENSE_MASTER_ORACLE.set("111", "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101");
 const MULTIMINT = new Map();
 MULTIMINT.set("5", "0xe318c4014330a84e09f08ed5556e2fa6a2fc8dcc");
 
+
+// Uniswap
+const PERMIT2 = new Map();
+PERMIT2.set("1", "0x000000000022D473030F116dDEE9F6B43aC78BA3"); // Sense multisig
+PERMIT2.set("111", "0x000000000022D473030F116dDEE9F6B43aC78BA3");
+
 ////// SENSE END //////
 
 // Tokens
@@ -444,5 +450,6 @@ exports.REWARD_TOKEN = REWARD_TOKEN;
 exports.CHAINS = CHAINS;
 exports.VERIFY_CHAINS = VERIFY_CHAINS;
 exports.VERIFY_CHAINS = VERIFY_CHAINS;
+exports.PERMIT2 = PERMIT2;
 
 // ------------------------------------

@@ -1,9 +1,11 @@
+const { PERMIT2 } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const signer = await ethers.getSigner(deployer);
+  const chainId = await getChainId();
 
   const divider = await ethers.getContract("Divider", signer);
   const poolManager = await ethers.getContract("PoolManager", signer);
@@ -14,7 +16,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   log("\nDeploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [divider.address, poolManager.address, spaceFactory.address, balancerVault.address],
+    args: [divider.address, poolManager.address, spaceFactory.address, balancerVault.address, PERMIT2.get(chainId)],
     log: true,
   });
 
