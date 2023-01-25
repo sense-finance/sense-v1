@@ -19,6 +19,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
@@ -190,9 +191,11 @@ contract ERC4626FactoryTest is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
 
         // Sponsor series
-        (address principal, address yield) = periphery.sponsorSeries(adapter, maturity, true);
-        assertTrue(principal != address(0));
-        assertTrue(yield != address(0));
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(adapter, maturity, true, pmsg);
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {

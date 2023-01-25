@@ -14,6 +14,7 @@ import { FixedMath } from "../../external/FixedMath.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract MockRevertAdapter is MockAdapter {
     constructor(BaseAdapter.AdapterParams memory _adapterParams)
@@ -301,9 +302,12 @@ contract Factories is TestHelper {
         assertEq(scale, 1e18);
         vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        (address principal, address yield) = periphery.sponsorSeries(f, maturity, true);
-        assertTrue(principal != address(0));
-        assertTrue(yield != address(0));
+
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(f, maturity, true, pmsg);
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {

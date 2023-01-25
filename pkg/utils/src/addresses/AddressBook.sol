@@ -71,6 +71,9 @@ library AddressBook {
     address public constant FRAX_POOL_MANAGER = 0x6b4eE7352406707003bC6f6b96595FD35925af48;
     address public constant ANGLE = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
 
+    // permit2
+    address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
     /////////// Others ///////////
 
     // fuse f18 olympus pool party

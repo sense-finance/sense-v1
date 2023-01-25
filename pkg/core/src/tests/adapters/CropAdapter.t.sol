@@ -19,6 +19,7 @@ import { MockTarget } from "../test-helpers/mocks/MockTarget.sol";
 import { MockClaimer } from "../test-helpers/mocks/MockClaimer.sol";
 import { TestHelper, MockTargetLike } from "../test-helpers/TestHelper.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract CropAdapters is TestHelper {
     using FixedMath for uint256;
@@ -118,7 +119,9 @@ contract CropAdapters is TestHelper {
     function testFuzzDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         vm.prank(bob);
@@ -149,7 +152,9 @@ contract CropAdapters is TestHelper {
     function testFuzzSingleDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (100 * tBal) / 100);
         assertApproxRewardBal(ERC20(reward).balanceOf(alice), 0);
@@ -177,7 +182,9 @@ contract CropAdapters is TestHelper {
     function testFuzzProportionalDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         vm.prank(bob);
@@ -224,7 +231,9 @@ contract CropAdapters is TestHelper {
     function testFuzzSimpleDistributionAndCollect(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         vm.prank(bob);
@@ -242,7 +251,9 @@ contract CropAdapters is TestHelper {
     function testFuzzDistributionCollectAndTransferMultiStep(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100);
         // bob issues 40, now the pool is 40% bob and 60% alice
@@ -296,7 +307,9 @@ contract CropAdapters is TestHelper {
     function testFuzzCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, tBal);
 
@@ -307,6 +320,7 @@ contract CropAdapters is TestHelper {
 
         reward.mint(address(adapter), airdrop);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         YT(yt).collect();
 
@@ -320,7 +334,9 @@ contract CropAdapters is TestHelper {
     function testFuzzReconcileMoreThanOnce(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -331,6 +347,7 @@ contract CropAdapters is TestHelper {
         reward.mint(address(adapter), 50 * 10**rDecimals);
 
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Bob's position
@@ -356,7 +373,9 @@ contract CropAdapters is TestHelper {
     function testFuzzGetMaturedSeriesRewardsIfReconcileAfterMaturity(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -367,6 +386,7 @@ contract CropAdapters is TestHelper {
         reward.mint(address(adapter), 50 * 10**rDecimals);
 
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Bob's position
@@ -387,7 +407,9 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledInSingleDistribution(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, 100);
         assertApproxRewardBal(ERC20(reward).balanceOf(alice), 0);
@@ -404,6 +426,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's position
@@ -422,7 +445,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         divider.issue(address(adapter), newMaturity, 50 * 10**rDecimals);
         assertApproxRewardBal(ERC20(reward).balanceOf(alice), 30 * 10**rDecimals);
@@ -440,7 +465,9 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledAndCombineS1_YTsFirstI(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -458,6 +485,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
@@ -484,7 +512,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // Issue an amount equal to the users' `reconciledAmt`
         divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
@@ -525,7 +555,9 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledAndCombineS1_YTsFirstII(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -543,6 +575,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
@@ -569,7 +602,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // Issue an amount bigger than the users' `reconciledAmt`
         divider.issue(address(adapter), newMaturity, (120 * tBal) / 100);
@@ -610,7 +645,9 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledAndCombineS1_YTsFirstIII(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -628,6 +665,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
@@ -654,7 +692,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // Issue an amount bigger than the users' `reconciledAmt`
         divider.issue(address(adapter), newMaturity, (30 * tBal) / 100);
@@ -695,10 +735,14 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledAndCombineS1_YTsFirstIV(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // alice issues on S1
         divider.issue(address(adapter), maturity, (100 * tBal) / 100);
@@ -719,6 +763,7 @@ contract CropAdapters is TestHelper {
 
         // settle S1
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's position
@@ -748,7 +793,9 @@ contract CropAdapters is TestHelper {
     function testFuzzCantDiluteRewardsIfReconciledInProportionalDistributionWithScaleChanges(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -779,6 +826,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
@@ -807,7 +855,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
         vm.prank(bob);
@@ -843,7 +893,9 @@ contract CropAdapters is TestHelper {
     {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -864,6 +916,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // reconcile Alice's & Bob's positions
@@ -891,7 +944,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         divider.issue(address(adapter), newMaturity, (60 * tBal) / 100);
         vm.prank(bob);
@@ -923,7 +978,9 @@ contract CropAdapters is TestHelper {
     function testFuzzDiluteRewardsIfNoReconcile(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -943,6 +1000,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // Bob closes his YT position
@@ -958,7 +1016,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // Bob issues some target and this should represent 100% of the rewards
         // but, as Alice is still holding some YTs, she will dilute Bob's rewards
@@ -989,7 +1049,9 @@ contract CropAdapters is TestHelper {
     function testFuzzDiluteRewardsIfLateReconcile(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
         vm.prank(bob);
@@ -1009,6 +1071,7 @@ contract CropAdapters is TestHelper {
 
         // settle series
         vm.warp(maturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // Bob closes his YT position and rewards
@@ -1024,7 +1087,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor new Series
         uint256 newMaturity = getValidMaturity(2021, 11);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // Bob issues some target and this should represent 100% of the shares
         // but, as Alice is still holding some YTs from previous series, she will dilute Bob's rewards
@@ -1077,7 +1142,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor a 12 month maturity (December 1st 2021)
         uint256 maturity = getValidMaturity(2021, 12);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // Alice issues on December Series
         divider.issue(address(adapter), maturity, (60 * tBal) / 100); // 60%
@@ -1089,7 +1156,9 @@ contract CropAdapters is TestHelper {
 
         // sponsor July Series
         uint256 newMaturity = getValidMaturity(2021, 7);
-        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address newYt) = periphery.sponsorSeries(address(adapter), newMaturity, true, pmsg);
 
         // Alice issues 0 on July series and she gets rewards from the December Series
         divider.issue(address(adapter), newMaturity, 0);
@@ -1104,6 +1173,7 @@ contract CropAdapters is TestHelper {
 
         // Moving to July Series maturity to be able to settle the series
         vm.warp(newMaturity + 1 seconds);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), newMaturity);
 
         // reconcile Alice's and Bob's positions
@@ -1195,7 +1265,9 @@ contract CropAdapters is TestHelper {
     function testFuzzSimpleDistributionAndCollectWithClaimer(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
@@ -1221,7 +1293,9 @@ contract CropAdapters is TestHelper {
     function testFuzzSimpleDistributionAndCollectWithClaimerReverts(uint256 tBal) public {
         assumeBounds(tBal);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = address(reward);
