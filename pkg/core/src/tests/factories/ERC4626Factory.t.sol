@@ -20,6 +20,7 @@ import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
+import { Periphery } from "../../Periphery.sol";
 
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
@@ -178,10 +179,10 @@ contract ERC4626FactoryTest is TestHelper {
 
         // Prepare data
         address[] memory rewardTokens;
-        bytes memory data = abi.encode(rewardTokens);
+        bytes memory rdata = abi.encode(rewardTokens);
 
         // Deploy adapter
-        address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), data);
+        address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), rdata);
         assertTrue(adapter != address(0));
 
         uint256 scale = MockAdapter(adapter).scale();
@@ -191,9 +192,9 @@ contract ERC4626FactoryTest is TestHelper {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
 
         // Sponsor series
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(adapter, maturity, true, pmsg);
+        (address pt, address yt) = periphery.sponsorSeries(adapter, maturity, true, data);
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
     }

@@ -7,6 +7,7 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { TestHelper } from "./test-helpers/TestHelper.sol";
 import { FixedMath } from "../external/FixedMath.sol";
 import { Divider } from "../Divider.sol";
+import { Periphery } from "../Periphery.sol";
 import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract Yield is TestHelper {
@@ -15,9 +16,9 @@ contract Yield is TestHelper {
     function testFuzzCollect(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -43,9 +44,9 @@ contract Yield is TestHelper {
     function testFuzzCollectOnTransfer(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -77,9 +78,9 @@ contract Yield is TestHelper {
     function testFuzzCollectOnTransferFrom(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -111,9 +112,9 @@ contract Yield is TestHelper {
     function testEmptyTransferFromDoesNotCollect() public {
         uint256 tBal = 10 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);

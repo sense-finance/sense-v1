@@ -7,6 +7,7 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 // Permit2
 import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
+import { Periphery } from "@sense-finance/v1-core/Periphery.sol";
 
 contract Permit2Helper is Test {
     uint256 private _nonce;
@@ -40,21 +41,21 @@ contract Permit2Helper is Test {
         uint256 ownerPrivKey,
         address spender,
         address token
-    ) public returns (bytes memory permit) {
+    ) public returns (Periphery.PermitData memory permit) {
         IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
             permitted: IPermit2.TokenPermissions({ token: ERC20(token), amount: type(uint256).max }),
             nonce: _randomUint256(),
             deadline: block.timestamp
         });
         bytes memory sig = _signPermit(permit, spender, ownerPrivKey);
-        return abi.encode(permit, sig);
+        return Periphery.PermitData(permit, sig);
     }
 
     function generatePermit(
         uint256 ownerPrivKey,
         address spender,
         address[] memory tokens
-    ) public returns (bytes memory permit) {
+    ) public returns (Periphery.PermitBatchData memory permit) {
         IPermit2.TokenPermissions[] memory permitted = new IPermit2.TokenPermissions[](tokens.length);
         for (uint256 i = 0; i < tokens.length; ++i) {
             permitted[i] = IPermit2.TokenPermissions({ token: ERC20(tokens[i]), amount: type(uint256).max });
@@ -66,7 +67,7 @@ contract Permit2Helper is Test {
             deadline: block.timestamp
         });
         bytes memory sig = _signPermit(permit, spender, ownerPrivKey);
-        return abi.encode(permit, sig);
+        return Periphery.PermitBatchData(permit, sig);
     }
 
     function _randomBytes32() internal view returns (bytes32) {

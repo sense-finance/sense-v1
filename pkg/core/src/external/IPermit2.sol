@@ -1,5 +1,5 @@
 // Minimal Permit2 interface, derived from
-// https://github.com/Uniswap/permit2/blob/main/src/interfaces/IPermit2.sol
+// https://github.com/Uniswap/permit2/blob/main/src/interfaces/ISignatureTransfer.sol
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 interface IPermit2 {

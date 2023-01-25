@@ -15,6 +15,7 @@ import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
 import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
+import { Periphery } from "../../Periphery.sol";
 
 contract MockRevertAdapter is MockAdapter {
     constructor(BaseAdapter.AdapterParams memory _adapterParams)
@@ -299,9 +300,9 @@ contract Factories is TestHelper {
         vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
 
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(f, maturity, true, pmsg);
+        (address pt, address yt) = periphery.sponsorSeries(f, maturity, true, data);
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
     }
