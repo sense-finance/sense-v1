@@ -670,6 +670,41 @@ contract PeripheryTest is TestHelper {
         assertEq(tBalBefore + swapped, target.balanceOf(receiver));
     }
 
+    function testSwapFuzzPTsForTargetAutoRedeem(address from, address receiver) public {
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        // add liquidity to mockBalancerVault
+        addLiquidityToBalancerVault(maturity, 1000e18);
+
+        initUser(from, target, tBal);
+        vm.prank(from);
+        divider.issue(address(adapter), maturity, tBal);
+
+        // settle series
+        vm.warp(maturity);
+        divider.settleSeries(address(adapter), maturity);
+
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(receiver);
+        uint256 ptBalBefore = ERC20(pt).balanceOf(receiver);
+
+        vm.prank(from);
+        ERC20(pt).approve(address(periphery), ptBalBefore);
+
+        (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
+        uint256 tBalRedeemed = ptBalBefore.fdiv(mscale);
+        vm.expectEmit(true, true, true, false);
+        emit PTRedeemed(address(adapter), maturity, tBalRedeemed);
+
+        vm.prank(from);
+        uint256 redeemed = periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0, receiver);
+        uint256 ptBalAfter = ERC20(pt).balanceOf(receiver);
+        assertEq(ptBalAfter, 0);
+        assertEq(tBalBefore + redeemed, target.balanceOf(receiver));
+    }
+
     function testFuzzSwapPTsForUnderlying(address from, address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
@@ -1585,6 +1620,7 @@ contract PeripheryTest is TestHelper {
         uint256 amountOut,
         bytes4 indexed sig
     );
+    event PTRedeemed(address indexed adapter, uint256 indexed maturity, uint256 redeemed);
 
     // Pool Manager
     event TargetAdded(address indexed target, address indexed cTarget);

@@ -611,17 +611,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ptBal,
         uint256 minAccepted
     ) internal returns (uint256 tBal) {
-        address principalToken = divider.pt(adapter, maturity);
-        ERC20(principalToken).safeTransferFrom(msg.sender, address(this), ptBal); // pull PTs
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        tBal = _swap(
-            principalToken,
-            Adapter(adapter).target(),
-            ptBal,
-            pool.getPoolId(),
-            minAccepted,
-            payable(address(this))
-        ); // swap PTs for underlying
+        address pt = divider.pt(adapter, maturity);
+        ERC20(pt).safeTransferFrom(msg.sender, address(this), ptBal); // pull PTs
+        if (divider.mscale(adapter, maturity) > 0) {
+            tBal = divider.redeem(adapter, maturity, ptBal);
+        } else {
+            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+            tBal = _swap(pt, Adapter(adapter).target(), ptBal, pool.getPoolId(), minAccepted, payable(address(this))); // swap PTs for underlying
+        }
     }
 
     function _swapTargetForPTs(
