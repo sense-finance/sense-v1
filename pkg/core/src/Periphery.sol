@@ -445,7 +445,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         (tAmount, issued, lpShares) = _addLiquidity(dstAdapter, dstMaturity, tBal, mode, minBptOut, msg.sender);
     }
 
-    /* ========== ISSUANCE UTILS ========== */
+    /* ========== UTILS ========== */
 
     /// @notice Mint PTs & YTs of a specific Series
     /// @param adapter Adapter address for the Series
@@ -481,6 +481,40 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uBal = divider.issue(adapter, maturity, Adapter(adapter).wrapUnderlying(underlyingIn));
         ERC20(divider.pt(adapter, maturity)).transfer(receiver, uBal); // Send PTs to the receiver
         ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
+    }
+
+    /// @notice Reconstitute Target by burning PT and YT
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param uBal Amount of PT and YT to burn
+    /// @param receiver Address where the resulting Target will be transferred
+    function combine(
+        address adapter,
+        uint256 maturity,
+        uint256 uBal,
+        address receiver
+    ) external returns (uint256 tBal) {
+        ERC20(divider.pt(adapter, maturity)).safeTransferFrom(msg.sender, address(this), uBal); // Pull PTs
+        ERC20(divider.yt(adapter, maturity)).safeTransferFrom(msg.sender, address(this), uBal); // Pull YTs
+        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal = divider.combine(adapter, maturity, uBal)); // Send Target to the receiver
+    }
+
+    /// @notice Reconstitute Target by burning PT and YT and unwrapping it
+    /// @dev Explicitly burns YTs before maturity, and implicitly does it at/after maturity through `_collect()`
+    /// @param adapter Adapter address for the Series
+    /// @param maturity Maturity date for the Series
+    /// @param amt Amount of PT and YT to burn
+    /// @param receiver Address where the resulting Underlying will be transferred to
+    function combineToUnderlying(
+        address adapter,
+        uint256 maturity,
+        uint256 amt,
+        address receiver
+    ) external returns (uint256 uBal) {
+        ERC20(divider.pt(adapter, maturity)).transferFrom(msg.sender, address(this), amt); // Pull PTs
+        ERC20(divider.yt(adapter, maturity)).transferFrom(msg.sender, address(this), amt); // Pull YTs
+        uint256 tBal = divider.combine(adapter, maturity, amt);
+        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying to the receiver
     }
 
     /* ========== ADMIN ========== */
