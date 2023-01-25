@@ -105,6 +105,7 @@ contract PoolManagerTest is ForkTest {
 
         balancerVault = new MockBalancerVault();
         spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
+        balancerVault.setSpaceFactory(address(spaceFactory));
     }
 
     function testMainnetDeployPool() public {

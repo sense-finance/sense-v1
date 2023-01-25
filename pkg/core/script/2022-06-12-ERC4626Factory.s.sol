@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/StdCheats.sol";
 
 import { AddressGuru, Constants } from "@sense-finance/v1-utils/addresses/AddressGuru.sol";
+import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { Divider } from "@sense-finance/v1-core/Divider.sol";
 import { Periphery } from "@sense-finance/v1-core/Periphery.sol";
 import { ERC4626Factory } from "@sense-finance/v1-core/adapters/abstract/factories/ERC4626Factory.sol";
@@ -13,10 +14,17 @@ import { ERC4626Adapter } from "@sense-finance/v1-core/adapters/abstract/erc4626
 import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/BaseFactory.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { DateTime } from "@auto-roller/src/external/DateTime.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
+import { Permit2Helper } from "@sense-finance/v1-core/tests/test-helpers/Permit2Helper.sol";
 
 contract ERC4626FactoryScript is Script, StdCheats {
     uint256 public mainnetFork;
     string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+
+    AddressGuru public addressGuru;
+    Permit2Helper public permit2Helper;
+    Periphery public periphery;
+    Divider public divider;
 
     function run() external {
         uint256 chainId = block.chainid;
@@ -27,7 +35,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
             vm.selectFork(mainnetFork);
         }
 
-        AddressGuru addressGuru = new AddressGuru();
+        addressGuru = new AddressGuru();
 
         // Get deployer from mnemonic
         string memory deployerMnemonic = vm.envString("MNEMONIC");
@@ -37,6 +45,9 @@ contract ERC4626FactoryScript is Script, StdCheats {
         
         address senseMultisig = chainId == Constants.GOERLI ? deployer : addressGuru.multisig();
         console.log("Sense multisig is:", senseMultisig);
+
+        divider = Divider(addressGuru.divider());
+        periphery = Periphery(addressGuru.periphery());
 
         console.log("-------------------------------------------------------");
         console.log("Deploy factory");
@@ -59,12 +70,13 @@ contract ERC4626FactoryScript is Script, StdCheats {
         });
 
         ERC4626Factory factory = new ERC4626Factory(
-            addressGuru.divider(),
+            address(divider),
             senseMultisig,
             senseMultisig,
             factoryParams
         );
         console.log("- Factory deployed @ %s", address(factory));
+        
         vm.stopBroadcast();
 
         // Mainnet would require multisig to make these calls
@@ -75,9 +87,6 @@ contract ERC4626FactoryScript is Script, StdCheats {
                 vm.deal(senseMultisig, 1 ether);
             }
 
-            Periphery periphery = Periphery(addressGuru.periphery());
-            Divider divider = Divider(addressGuru.divider());
-
             // Broadcast following txs from multisig
             vm.startBroadcast(senseMultisig);
 
@@ -86,10 +95,14 @@ contract ERC4626FactoryScript is Script, StdCheats {
 
             console.log("- Set factory as trusted address of Divider so it can call setGuard() \n");
             divider.setIsTrusted(address(factory), true);
-
+            
             vm.stopBroadcast();
 
             if (chainId == Constants.FORK) {
+                // permit2 address on permit2 helper
+                permit2Helper = new Permit2Helper();
+                permit2Helper.setPermit2(AddressBook.PERMIT2);
+
                 // Broadcast following txs from deployer
                 vm.startBroadcast(deployer);
 
@@ -100,19 +113,22 @@ contract ERC4626FactoryScript is Script, StdCheats {
                 // TODO: read targets from input.json file (can't do this right now because of a foundry bug when parsing JSON)
                 address[1] memory targets = [addressGuru.BB_wstETH4626()];
 
+                // get next month maturity
+                (uint256 year, uint256 month, ) = DateTime.timestampToDate(DateTime.addMonths(block.timestamp, 2));
+                uint256 maturity = DateTime.timestampFromDateTime(year, month, 1 /* top of the month */, 0, 0, 0);
+
                 for(uint i = 0; i < targets.length; i++){
                     ERC20 t = ERC20(targets[i]);
-                    string memory name = t.name();
 
-                    console.log("%s", name);
+                    console.log("%s", t.name());
                     console.log("-------------------------------------------------------\n");
 
-                    console.log("- Add target %s to the whitelist", name);
+                    console.log("- Add target %s to the whitelist", t.name());
                     factory.supportTarget(address(t), true);
 
-                    console.log("- Deploy adapter with target %s @ %s via factory", name, address(t));
+                    console.log("- Deploy adapter with target %s @ %s via factory", t.name(), address(t));
                     address adapter = periphery.deployAdapter(address(factory), address(t), "");
-                    console.log("- %s adapter address: %s", name, adapter);
+                    console.log("- %s adapter address: %s", t.name(), adapter);
 
                     console.log("- Can call scale value");
                     console.log("  -> scale: %s", ERC4626Adapter(adapter).scale());
@@ -122,21 +138,13 @@ contract ERC4626FactoryScript is Script, StdCheats {
                         console.log("  -> adapter guard: %s", guard);
                     }
 
-                    console.log("- Approve Periphery to pull stake...");
-                    ERC20(factoryParams.stake).approve(address(periphery), type(uint256).max);
+                    console.log("- Approve Permit2 to pull stake...");
+                    ERC20(addressGuru.weth()).approve(AddressBook.PERMIT2, type(uint256).max);
 
                     console.log("- Mint stake tokens...");
-                    deal(factoryParams.stake, deployer, factoryParams.stakeSize);
-
-                    // get next month maturity
-                    (uint256 year, uint256 month, ) = DateTime.timestampToDate(DateTime.addMonths(block.timestamp, 2));
-                    uint256 maturity = DateTime.timestampFromDateTime(year, month, 1 /* top of the month */, 0, 0, 0);
-
-                    // deploy Series
-                    console.log("\n- Sponsor Series for %s @ %s with maturity %s", ERC4626Adapter(adapter).name(), address(t), maturity);
-                    periphery.sponsorSeries(adapter, maturity, false);
-                    console.log(" Series successfully sponsored!");
-
+                    deal(addressGuru.weth(), deployer, 25e16);
+                    
+                    _sponsorSeries(adapter, address(t), maturity, deployerPrivateKey);
                     console.log("\n-------------------------------------------------------");
                 }
             }
@@ -164,6 +172,15 @@ contract ERC4626FactoryScript is Script, StdCheats {
             console.log("4. For each adapter, sponsor Series on Periphery");
             console.log("5. For each series, run capital seeder");
         }
+    }
+
+    function _sponsorSeries(address adapter, address target, uint256 maturity, uint256 privKey) internal {
+        // deploy Series
+        console.log("\n- Sponsor Series for %s @ %s with maturity %s", ERC4626Adapter(adapter).name(), address(target), maturity);
+        
+        // bytes memory pmsg = permit2Helper.generatePermit(deployerPrivateKey, addressGuru.periphery(), factoryParams.stake);
+        periphery.sponsorSeries(adapter, maturity, false, permit2Helper.generatePermit(privKey, addressGuru.periphery(), addressGuru.weth()));
+        console.log(" Series successfully sponsored!");
     }
 
 }

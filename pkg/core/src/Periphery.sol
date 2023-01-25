@@ -8,6 +8,7 @@ import { FixedMath } from "./external/FixedMath.sol";
 import { BalancerVault, IAsset } from "./external/balancer/Vault.sol";
 import { BalancerPool } from "./external/balancer/Pool.sol";
 import { IERC3156FlashBorrower } from "./external/flashloan/IERC3156FlashBorrower.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 // Internal references
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
@@ -46,6 +47,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Sense core Divider address
     BalancerVault public immutable balancerVault;
 
+    /// @notice Permit2 contract
+    IPermit2 public immutable permit2;
+
     /* ========== PUBLIC MUTABLE STORAGE ========== */
 
     /// @notice Sense core Divider address
@@ -72,12 +76,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address _divider,
         address _poolManager,
         address _spaceFactory,
-        address _balancerVault
+        address _balancerVault,
+        address _permit2
     ) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
         spaceFactory = SpaceFactoryLike(_spaceFactory);
         balancerVault = BalancerVault(_balancerVault);
+        permit2 = IPermit2(_permit2);
     }
 
     /* ========== SERIES / ADAPTER MANAGEMENT ========== */
@@ -90,12 +96,22 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     function sponsorSeries(
         address adapter,
         uint256 maturity,
-        bool withPool
+        bool withPool,
+        bytes memory permit
     ) external returns (address pt, address yt) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
 
         // Transfer stakeSize from sponsor into this contract
-        ERC20(stake).safeTransferFrom(msg.sender, address(this), stakeSize);
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg, // permit message.
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: stakeSize }), // transfer recipient and amount.
+            msg.sender, // owner of the tokens
+            signature // packed signature that was the result of signing the EIP712 hash of `permit`.
+        );
 
         // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
@@ -149,9 +165,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 tBal,
         uint256 minAccepted,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 ptBal) {
-        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal); // pull target
+        // pull underlying
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: tBal }),
+            msg.sender,
+            signature
+        );
         return _swapTargetForPTs(adapter, maturity, tBal, minAccepted, receiver);
     }
 
@@ -167,10 +194,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 uBal,
         uint256 minAccepted,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 ptBal) {
-        ERC20 underlying = ERC20(Adapter(adapter).underlying());
-        underlying.safeTransferFrom(msg.sender, address(this), uBal); // pull underlying
+        // pull underlying
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal }),
+            msg.sender,
+            signature
+        );
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
         ptBal = _swapTargetForPTs(adapter, maturity, tBal, minAccepted, receiver);
     }
@@ -190,9 +227,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 targetIn,
         uint256 targetToBorrow,
         uint256 minOut,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 targetBal, uint256 ytBal) {
-        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), targetIn);
+        // pull target
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: targetIn }),
+            msg.sender,
+            signature
+        );
         (targetBal, ytBal) = _flashBorrowAndSwapToYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, targetBal);
         ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, ytBal);
@@ -213,13 +261,26 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 underlyingIn,
         uint256 targetToBorrow,
         uint256 minOut,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 targetBal, uint256 ytBal) {
-        ERC20 underlying = ERC20(Adapter(adapter).underlying());
-        underlying.safeTransferFrom(msg.sender, address(this), underlyingIn); // Pull Underlying
+        // pull underlying
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: underlyingIn }),
+            msg.sender,
+            signature
+        );
         // Wrap Underlying into Target and swap it for YTs
-        uint256 targetIn = Adapter(adapter).wrapUnderlying(underlyingIn);
-        (targetBal, ytBal) = _flashBorrowAndSwapToYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
+        {
+            uint256 targetIn = Adapter(adapter).wrapUnderlying(underlyingIn);
+            (targetBal, ytBal) = _flashBorrowAndSwapToYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
+        }
+
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, targetBal);
         ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, ytBal);
     }
@@ -236,9 +297,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 ptBal,
         uint256 minAccepted,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 tBal) {
-        tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted); // swap PTs for target
+        tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted, permit); // swap PTs for target
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal); // transfer target to receiver
     }
 
@@ -254,11 +316,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 ptBal,
         uint256 minAccepted,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 uBal) {
-        uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted); // swap PTs for target
-        uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into Underlying
-        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal); // transfer Underlying to receiver
+        uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted, permit); // swap PTs for target
+        uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
+        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal); // transfer underlying to receiver
     }
 
     /// @notice Swap YT for Target of a particular series
@@ -271,9 +334,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 tBal) {
-        tBal = _swapYTsForTarget(msg.sender, adapter, maturity, ytBal);
+        tBal = _swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit);
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal);
     }
 
@@ -287,9 +351,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 uBal) {
-        uint256 tBal = _swapYTsForTarget(msg.sender, adapter, maturity, ytBal);
+        uint256 tBal = _swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit);
         uBal = Adapter(adapter).unwrapTarget(tBal);
         ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal);
     }
@@ -308,7 +373,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 tBal,
         uint8 mode,
         uint256 minBptOut,
-        address receiver
+        address receiver,
+        bytes memory permit
     )
         external
         returns (
@@ -317,8 +383,18 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             uint256 lpShares
         )
     {
-        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), tBal);
-        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut, receiver);
+        // pull target
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: tBal }),
+            msg.sender,
+            signature
+        );
+        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut, receiver, permit);
     }
 
     /// @notice Adds liquidity providing underlying
@@ -335,7 +411,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 uBal,
         uint8 mode,
         uint256 minBptOut,
-        address receiver
+        address receiver,
+        bytes memory permit
     )
         external
         returns (
@@ -344,11 +421,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             uint256 lpShares
         )
     {
-        ERC20 underlying = ERC20(Adapter(adapter).underlying());
-        underlying.safeTransferFrom(msg.sender, address(this), uBal);
+        // pull underlying
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal }),
+            msg.sender,
+            signature
+        );
         // Wrap Underlying into Target
         uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
-        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut, receiver);
+        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut, receiver, permit);
     }
 
     /// @notice Removes liquidity providing an amount of LP tokens and returns target
@@ -368,9 +454,19 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         bool intoTarget,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 tBal, uint256 ptBal) {
-        (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, intoTarget, receiver);
+        (tBal, ptBal) = _removeLiquidity(
+            adapter,
+            maturity,
+            lpBal,
+            minAmountsOut,
+            minAccepted,
+            intoTarget,
+            receiver,
+            permit
+        );
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal); // Send Target to the receiver
     }
 
@@ -391,10 +487,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         bool intoTarget,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 uBal, uint256 ptBal) {
         uint256 tBal;
-        (tBal, ptBal) = _removeLiquidity(adapter, maturity, lpBal, minAmountsOut, minAccepted, intoTarget, receiver);
+        (tBal, ptBal) = _removeLiquidity(
+            adapter,
+            maturity,
+            lpBal,
+            minAmountsOut,
+            minAccepted,
+            intoTarget,
+            receiver,
+            permit
+        );
         ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying to the receiver
     }
 
@@ -421,7 +527,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted,
         uint8 mode,
         bool intoTarget,
-        uint256 minBptOut
+        uint256 minBptOut,
+        bytes memory permit
     )
         external
         returns (
@@ -432,17 +539,28 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         )
     {
         if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
-        uint256 tBal;
-        (tBal, ptBal) = _removeLiquidity(
-            srcAdapter,
-            srcMaturity,
-            lpBal,
-            minAmountsOut,
-            minAccepted,
-            intoTarget,
-            msg.sender
-        );
-        (tAmount, issued, lpShares) = _addLiquidity(dstAdapter, dstMaturity, tBal, mode, minBptOut, msg.sender);
+        {
+            (, ptBal) = _removeLiquidity(
+                srcAdapter,
+                srcMaturity,
+                lpBal,
+                minAmountsOut,
+                minAccepted,
+                intoTarget,
+                msg.sender,
+                permit
+            );
+            ERC20 target = ERC20(Adapter(srcAdapter).target());
+            (tAmount, issued, lpShares) = _addLiquidity(
+                dstAdapter,
+                dstMaturity,
+                target.balanceOf(address(this)),
+                mode,
+                minBptOut,
+                msg.sender,
+                permit
+            );
+        }
     }
 
     /* ========== UTILS ========== */
@@ -457,9 +575,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 targetIn,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 uBal) {
-        ERC20(Adapter(adapter).target()).safeTransferFrom(msg.sender, address(this), targetIn); // pull target
+        // pull target
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: targetIn }),
+            msg.sender,
+            signature
+        );
         uBal = divider.issue(adapter, maturity, targetIn);
         ERC20(divider.pt(adapter, maturity)).transfer(receiver, uBal); // Send PTs to the receiver
         ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
@@ -475,9 +604,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 underlyingIn,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 uBal) {
-        ERC20(Adapter(adapter).underlying()).safeTransferFrom(msg.sender, address(this), underlyingIn); // pull underlying
+        // pull underlying
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: underlyingIn }),
+            msg.sender,
+            signature
+        );
         uBal = divider.issue(adapter, maturity, Adapter(adapter).wrapUnderlying(underlyingIn));
         ERC20(divider.pt(adapter, maturity)).transfer(receiver, uBal); // Send PTs to the receiver
         ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
@@ -492,10 +632,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 uBal,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 tBal) {
-        ERC20(divider.pt(adapter, maturity)).safeTransferFrom(msg.sender, address(this), uBal); // Pull PTs
-        ERC20(divider.yt(adapter, maturity)).safeTransferFrom(msg.sender, address(this), uBal); // Pull YTs
+        // pull underlying
+        (IPermit2.PermitBatchTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitBatchTransferFrom, bytes)
+        );
+
+        IPermit2.SignatureTransferDetails[] memory sigs = new IPermit2.SignatureTransferDetails[](2);
+        sigs[0] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal });
+        sigs[1] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal });
+
+        permit2.permitTransferFrom(pmsg, sigs, msg.sender, signature);
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal = divider.combine(adapter, maturity, uBal)); // Send Target to the receiver
     }
 
@@ -509,10 +659,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) external returns (uint256 uBal) {
-        ERC20(divider.pt(adapter, maturity)).transferFrom(msg.sender, address(this), amt); // Pull PTs
-        ERC20(divider.yt(adapter, maturity)).transferFrom(msg.sender, address(this), amt); // Pull YTs
+        // pull underlying
+        (IPermit2.PermitBatchTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitBatchTransferFrom, bytes)
+        );
+
+        IPermit2.SignatureTransferDetails[] memory sigs = new IPermit2.SignatureTransferDetails[](2);
+        sigs[0] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amt });
+        sigs[1] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amt });
+
+        permit2.permitTransferFrom(pmsg, sigs, msg.sender, signature);
         uint256 tBal = divider.combine(adapter, maturity, amt);
         ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying to the receiver
     }
@@ -609,15 +769,32 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ptBal,
-        uint256 minAccepted
+        uint256 minAccepted,
+        bytes memory permit
     ) internal returns (uint256 tBal) {
-        address pt = divider.pt(adapter, maturity);
-        ERC20(pt).safeTransferFrom(msg.sender, address(this), ptBal); // pull PTs
+        // pull PTs
+        (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+            permit,
+            (IPermit2.PermitTransferFrom, bytes)
+        );
+        permit2.permitTransferFrom(
+            pmsg,
+            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: ptBal }),
+            msg.sender,
+            signature
+        );
+
         if (divider.mscale(adapter, maturity) > 0) {
             tBal = divider.redeem(adapter, maturity, ptBal);
         } else {
-            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-            tBal = _swap(pt, Adapter(adapter).target(), ptBal, pool.getPoolId(), minAccepted, payable(address(this))); // swap PTs for underlying
+            tBal = _swap(
+                divider.pt(adapter, maturity),
+                Adapter(adapter).target(),
+                ptBal,
+                BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
+                minAccepted,
+                payable(address(this))
+            ); // swap PTs for underlying
         }
     }
 
@@ -628,35 +805,39 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted,
         address receiver
     ) internal returns (uint256 ptBal) {
-        address principalToken = divider.pt(adapter, maturity);
+        address pt = divider.pt(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        ptBal = _swap(
-            Adapter(adapter).target(),
-            principalToken,
-            tBal,
-            pool.getPoolId(),
-            minAccepted,
-            payable(receiver)
-        ); // swap target for PTs
+        ptBal = _swap(Adapter(adapter).target(), pt, tBal, pool.getPoolId(), minAccepted, payable(receiver)); // swap target for Principal Tokens
     }
 
     function _swapYTsForTarget(
         address sender,
         address adapter,
         uint256 maturity,
-        uint256 ytBal
+        uint256 ytBal,
+        bytes memory permit
     ) internal returns (uint256 tBal) {
-        address yt = divider.yt(adapter, maturity);
-
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
-        if (ytBal * 10**(18 - ERC20(yt).decimals()) <= MIN_YT_SWAP_IN) revert Errors.SwapTooSmall();
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+        if (ytBal * 10**(18 - ERC20(divider.yt(adapter, maturity)).decimals()) <= MIN_YT_SWAP_IN)
+            revert Errors.SwapTooSmall();
 
         // Transfer YTs into this contract if needed
-        if (sender != address(this)) ERC20(yt).safeTransferFrom(msg.sender, address(this), ytBal);
+        if (sender != address(this)) {
+            (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+                permit,
+                (IPermit2.PermitTransferFrom, bytes)
+            );
+            permit2.permitTransferFrom(
+                pmsg,
+                IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: ytBal }),
+                msg.sender,
+                signature
+            );
+        }
 
         // Calculate target to borrow by calling AMM
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         bytes32 poolId = pool.getPoolId();
         (uint256 pti, uint256 targeti) = pool.getIndices();
         (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
@@ -691,7 +872,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 tBal,
         uint8 mode,
         uint256 minBptOut,
-        address receiver
+        address receiver,
+        bytes memory permit
     )
         internal
         returns (
@@ -707,7 +889,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             // issue = 0 means that we are on the first pool provision or that the pt:target ratio is 0:target
             if (mode == 0) {
                 // (2) Sell YTs
-                tAmount = _swapYTsForTarget(address(this), adapter, maturity, issued);
+                tAmount = _swapYTsForTarget(address(this), adapter, maturity, issued, permit);
+
                 // (3) Send remaining Target to the receiver
                 ERC20(Adapter(adapter).target()).safeTransfer(receiver, tAmount);
             } else {
@@ -769,19 +952,36 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
         bool intoTarget,
-        address receiver
+        address receiver,
+        bytes memory permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
-        address target = Adapter(adapter).target();
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-
         // (0) Pull LP tokens from sender
-        ERC20(address(pool)).safeTransferFrom(msg.sender, address(this), lpBal);
+        {
+            (IPermit2.PermitTransferFrom memory pmsg, bytes memory signature) = abi.decode(
+                permit,
+                (IPermit2.PermitTransferFrom, bytes)
+            );
+            permit2.permitTransferFrom(
+                pmsg,
+                IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: lpBal }),
+                msg.sender,
+                signature
+            );
+        }
 
         // (1) Remove liquidity from Space
         {
+            // address target = Adapter(adapter).target();
+            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
             address pt = divider.pt(adapter, maturity);
             uint256 _ptBal;
-            (tBal, _ptBal) = _removeLiquidityFromSpace(pool.getPoolId(), pt, target, minAmountsOut, lpBal);
+            (tBal, _ptBal) = _removeLiquidityFromSpace(
+                pool.getPoolId(),
+                pt,
+                Adapter(adapter).target(),
+                minAmountsOut,
+                lpBal
+            );
             if (divider.mscale(adapter, maturity) > 0) {
                 if (uint256(Adapter(adapter).level()).redeemRestricted()) {
                     ptBal = _ptBal;
@@ -792,7 +992,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             } else {
                 // (2) Sell PTs for Target (if there are)
                 if (_ptBal > 0 && intoTarget) {
-                    tBal += _swap(pt, target, _ptBal, pool.getPoolId(), minAccepted, payable(address(this)));
+                    tBal += _swap(
+                        pt,
+                        Adapter(adapter).target(),
+                        _ptBal,
+                        pool.getPoolId(),
+                        minAccepted,
+                        payable(address(this))
+                    );
                 } else {
                     ptBal = _ptBal;
                 }
@@ -819,7 +1026,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bytes memory data = abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, true);
         bool result = Adapter(adapter).flashLoan(this, address(target), amountToBorrow, data);
         if (!result) revert Errors.FlashBorrowFailed();
-
         tBal = target.balanceOf(address(this));
     }
 

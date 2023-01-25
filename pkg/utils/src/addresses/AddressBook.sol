@@ -63,6 +63,9 @@ library AddressBook {
     address public constant IDLE_CDO = 0x34dCd573C5dE4672C8248cd12A99f875Ca112Ad8;
     address public constant BB_wstETH4626 = 0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048; // IdleCDO BB Tranche - wstETH4626Adapter
 
+    // permit2
+    address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
     /////////// Others ///////////
 
     // fuse f18 olympus pool party

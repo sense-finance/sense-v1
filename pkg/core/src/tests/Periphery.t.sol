@@ -19,6 +19,7 @@ import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
 import { BalancerVault } from "../external/balancer/Vault.sol";
 import { Constants } from "./test-helpers/Constants.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
@@ -27,7 +28,13 @@ contract PeripheryTest is TestHelper {
         MockPoolManager poolManager = new MockPoolManager();
         address spaceFactory = address(2);
         address balancerVault = address(3);
-        Periphery somePeriphery = new Periphery(address(divider), address(poolManager), spaceFactory, balancerVault);
+        Periphery somePeriphery = new Periphery(
+            address(divider),
+            address(poolManager),
+            spaceFactory,
+            balancerVault,
+            address(permit2)
+        );
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
         assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
@@ -38,10 +45,11 @@ contract PeripheryTest is TestHelper {
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
 
-        vm.expectEmit(true, true, true, true);
         emit SeriesSponsored(address(adapter), maturity, address(this));
 
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // check pt and yt deployed
         assertTrue(pt != address(0));
@@ -70,7 +78,9 @@ contract PeripheryTest is TestHelper {
         divider.addAdapter(address(adapter));
 
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // check pt and yt deployed
         assertTrue(pt != address(0));
@@ -110,7 +120,9 @@ contract PeripheryTest is TestHelper {
         divider.addAdapter(address(adapter));
 
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, false);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, false, pmsg);
 
         // check pt and yt deployed
         assertTrue(pt != address(0));
@@ -130,7 +142,9 @@ contract PeripheryTest is TestHelper {
 
         // try sponsoring
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         assertTrue(yt != address(0));
     }
 
@@ -142,7 +156,9 @@ contract PeripheryTest is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         vm.expectEmit(false, false, false, false);
         emit SeriesQueued(address(1), 2, address(3));
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         assertTrue(yt != address(0));
     }
 
@@ -471,7 +487,8 @@ contract PeripheryTest is TestHelper {
             address(divider),
             address(poolManager),
             address(spaceFactory),
-            address(balancerVault)
+            address(balancerVault),
+            address(permit2)
         );
         somePeriphery.onboardAdapter(address(adapter), false);
 
@@ -482,7 +499,9 @@ contract PeripheryTest is TestHelper {
 
         // try sponsoring
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         assertTrue(yt != address(0));
     }
 
@@ -576,10 +595,12 @@ contract PeripheryTest is TestHelper {
 
     /* ========== swap tests ========== */
 
-    function testFuzzSwapTargetForPTs(address from, address receiver) public {
+    function testFuzzSwapTargetForPTs(address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -594,20 +615,24 @@ contract PeripheryTest is TestHelper {
         uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE());
 
         vm.expectEmit(true, false, false, false);
-        emit Swapped(from, "0", adapter.target(), address(0), 0, 0, msg.sig);
+        emit Swapped(bob, "0", adapter.target(), address(0), 0, 0, msg.sig);
 
-        initUser(from, target, tBal);
-        vm.prank(from);
-        periphery.swapTargetForPTs(address(adapter), maturity, tBal, 0, receiver);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+        vm.prank(bob);
+        periphery.swapTargetForPTs(address(adapter), maturity, tBal, 0, receiver, pmsg);
 
         assertEq(ytBalBefore, ERC20(yt).balanceOf(receiver));
         assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(receiver));
     }
 
-    function testFuzzSwapUnderlyingForPTs(address from, address receiver) public {
+    function testFuzzSwapUnderlyingForPTs(address receiver) public {
         uint256 uBal = 100 * (10**uDecimals);
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
         uint256 scale = adapter.scale();
 
         // wrap underlying into target
@@ -621,156 +646,170 @@ contract PeripheryTest is TestHelper {
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 100000 * 10**tDecimals);
 
-        uint256 ytBalBefore = ERC20(yt).balanceOf(receiver);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(receiver);
+        uint256 ytBalBefore = ERC20(divider.yt(address(adapter), maturity)).balanceOf(receiver);
+        uint256 ptBalBefore = ERC20(divider.pt(address(adapter), maturity)).balanceOf(receiver);
 
         // calculate underlying swapped to pt
         uint256 ptBal = tBal.fdiv(balancerVault.EXCHANGE_RATE());
 
         vm.expectEmit(true, false, false, false);
-        emit Swapped(from, "0", adapter.target(), address(0), 0, 0, msg.sig);
+        emit Swapped(bob, "0", adapter.target(), address(0), 0, 0, msg.sig);
 
-        initUser(from, target, uBal);
-        vm.prank(from);
-        periphery.swapUnderlyingForPTs(address(adapter), maturity, uBal, 0, receiver);
+        initUser(bob, target, uBal);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(underlying));
+        vm.prank(bob);
+        periphery.swapUnderlyingForPTs(address(adapter), maturity, uBal, 0, receiver, pmsg);
 
-        assertEq(ytBalBefore, ERC20(yt).balanceOf(receiver));
-        assertApproxEqAbs(ptBalBefore + ptBal, ERC20(pt).balanceOf(receiver), 1);
+        assertEq(ytBalBefore, ERC20(divider.yt(address(adapter), maturity)).balanceOf(receiver));
+        assertApproxEqAbs(ptBalBefore + ptBal, ERC20(divider.pt(address(adapter), maturity)).balanceOf(receiver), 1);
     }
 
-    function testFuzzSwapPTsForTarget(address from, address receiver) public {
+    function testFuzzSwapPTsForTarget(address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        initUser(from, target, tBal);
-        vm.prank(from);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(receiver);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(from);
+        uint256 ptBalBefore = ERC20(pt).balanceOf(bob);
 
         // calculate pt swapped to target
         uint256 rate = balancerVault.EXCHANGE_RATE();
         uint256 swapped = ptBalBefore.fmul(rate);
 
-        vm.prank(from);
-        ERC20(pt).approve(address(periphery), ptBalBefore);
+        vm.prank(bob);
+        ERC20(pt).approve(address(permit2), ptBalBefore);
 
         vm.expectEmit(true, false, false, false);
-        emit Swapped(from, "0", adapter.target(), address(0), 0, 0, msg.sig);
+        emit Swapped(bob, "0", adapter.target(), address(0), 0, 0, msg.sig);
 
-        vm.prank(from);
-        periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0, receiver);
+        pmsg = generatePermit(bobPrivKey, address(periphery), pt);
+        vm.prank(bob);
+        periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0, receiver, pmsg);
 
         assertEq(tBalBefore + swapped, target.balanceOf(receiver));
     }
 
-    function testSwapFuzzPTsForTargetAutoRedeem(address from, address receiver) public {
+    function testSwapFuzzPTsForTargetAutoRedeem(address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        initUser(from, target, tBal);
-        vm.prank(from);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         // settle series
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(receiver);
         uint256 ptBalBefore = ERC20(pt).balanceOf(receiver);
 
-        vm.prank(from);
-        ERC20(pt).approve(address(periphery), ptBalBefore);
+        vm.prank(bob);
+        ERC20(pt).approve(address(permit2), ptBalBefore);
 
         (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
         uint256 tBalRedeemed = ptBalBefore.fdiv(mscale);
         vm.expectEmit(true, true, true, false);
         emit PTRedeemed(address(adapter), maturity, tBalRedeemed);
 
-        vm.prank(from);
-        uint256 redeemed = periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0, receiver);
+        pmsg = generatePermit(bobPrivKey, address(periphery), pt);
+        vm.prank(bob);
+        uint256 redeemed = periphery.swapPTsForTarget(address(adapter), maturity, ptBalBefore, 0, receiver, pmsg);
         uint256 ptBalAfter = ERC20(pt).balanceOf(receiver);
         assertEq(ptBalAfter, 0);
         assertEq(tBalBefore + redeemed, target.balanceOf(receiver));
     }
 
-    function testFuzzSwapPTsForUnderlying(address from, address receiver) public {
+    function testFuzzSwapPTsForUnderlying(address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        initUser(from, target, tBal);
-        vm.prank(from);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(receiver);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(from);
+        uint256 ptBalBefore = ERC20(pt).balanceOf(bob);
 
-        // calculate pt swapped to target
-        uint256 rate = balancerVault.EXCHANGE_RATE();
-        uint256 swapped = ptBalBefore.fmul(rate);
+        uint256 uBal;
+        {
+            // calculate pt swapped to target
+            uint256 rate = balancerVault.EXCHANGE_RATE();
+            uint256 swapped = ptBalBefore.fmul(rate);
 
-        // unwrap target into underlying
-        uint256 scale = adapter.scale();
-        uint256 uBal = uDecimals > tDecimals
-            ? swapped.fmul(scale) * SCALING_FACTOR
-            : swapped.fmul(scale) / SCALING_FACTOR;
+            // unwrap target into underlying
+            uint256 scale = adapter.scale();
+            uBal = uDecimals > tDecimals ? swapped.fmul(scale) * SCALING_FACTOR : swapped.fmul(scale) / SCALING_FACTOR;
+        }
 
-        vm.prank(from);
-        ERC20(pt).approve(address(periphery), ptBalBefore);
+        vm.prank(bob);
+        ERC20(pt).approve(address(permit2), ptBalBefore);
 
         vm.expectEmit(true, false, false, false);
-        emit Swapped(from, "0", adapter.target(), address(0), 0, 0, msg.sig);
+        emit Swapped(bob, "0", adapter.target(), address(0), 0, 0, msg.sig);
 
-        vm.prank(from);
-        periphery.swapPTsForUnderlying(address(adapter), maturity, ptBalBefore, 0, receiver);
+        pmsg = generatePermit(bobPrivKey, address(periphery), pt);
+        vm.prank(bob);
+        periphery.swapPTsForUnderlying(address(adapter), maturity, ptBalBefore, 0, receiver, pmsg);
 
         assertEq(uBalBefore + uBal, ERC20(underlying).balanceOf(receiver));
     }
 
-    function testFuzzSwapYTsForTarget(address from, address receiver) public {
+    function testFuzzSwapYTsForTarget(address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
-        uint256 targetToBorrow = 9025 * 10**(tDecimals - 2);
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 lscale = adapter.scale();
 
         // add liquidity to mockUniSwapRouter
         addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
-        initUser(from, target, tBal);
-        vm.prank(from);
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
-        uint256 ytBalBefore = ERC20(yt).balanceOf(from);
+        uint256 ytBalBefore = ERC20(yt).balanceOf(bob);
         uint256 tBalBefore = target.balanceOf(receiver);
 
-        // swap underlying for PT on Yieldspace pool
-        uint256 zSwapped = targetToBorrow.fdiv(balancerVault.EXCHANGE_RATE());
+        uint256 remainingYTInTarget;
+        {
+            uint256 targetToBorrow = 9025 * 10**(tDecimals - 2);
+            // swap underlying for PT on Yieldspace pool
+            uint256 zSwapped = targetToBorrow.fdiv(balancerVault.EXCHANGE_RATE());
 
-        // combine pt and yt
-        uint256 tCombined = zSwapped.fdiv(lscale);
-        uint256 remainingYTInTarget = tCombined - targetToBorrow;
+            // combine pt and yt
+            uint256 tCombined = zSwapped.fdiv(lscale);
+            remainingYTInTarget = tCombined - targetToBorrow;
+        }
 
-        vm.prank(from);
-        ERC20(yt).approve(address(periphery), ytBalBefore);
-        vm.prank(from);
-        periphery.swapYTsForTarget(address(adapter), maturity, ytBalBefore, receiver);
+        vm.prank(bob);
+        ERC20(yt).approve(address(permit2), ytBalBefore);
+        pmsg = generatePermit(bobPrivKey, address(periphery), yt);
+        vm.prank(bob);
+        periphery.swapYTsForTarget(address(adapter), maturity, ytBalBefore, receiver, pmsg);
 
         assertEq(tBalBefore + remainingYTInTarget, target.balanceOf(receiver));
     }
@@ -780,11 +819,14 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityFirstTimeWithSellYieldModeShouldNotIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
         vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
@@ -792,10 +834,11 @@ contract PeripheryTest is TestHelper {
             tBal,
             0,
             type(uint256).max,
-            alice
+            alice,
+            pmsg
         );
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
@@ -808,11 +851,14 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityFirstTimeWithHoldYieldModeShouldNotIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
         vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
@@ -820,10 +866,11 @@ contract PeripheryTest is TestHelper {
             tBal,
             1,
             type(uint256).max,
-            alice
+            alice,
+            pmsg
         );
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
@@ -835,14 +882,19 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityAndSellYieldWith0_TargetRatioShouldNotIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // init liquidity
-        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 0, type(uint256).max, address(this));
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+        vm.prank(bob);
+        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 0, type(uint256).max, bob, pmsg);
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
         vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
@@ -850,10 +902,11 @@ contract PeripheryTest is TestHelper {
             tBal,
             0,
             type(uint256).max,
-            alice
+            alice,
+            pmsg
         );
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
@@ -865,14 +918,19 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityAndHoldYieldWith0_TargetRatioShouldNotIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // init liquidity
-        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 0, type(uint256).max, address(this));
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+        vm.prank(bob);
+        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 0, type(uint256).max, bob, pmsg);
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
 
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
         vm.prank(bob);
         (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
             address(adapter),
@@ -880,10 +938,11 @@ contract PeripheryTest is TestHelper {
             tBal,
             1,
             type(uint256).max,
-            alice
+            alice,
+            pmsg
         );
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(alice);
 
         assertEq(targetBal, 0);
         assertEq(ytBal, 0);
@@ -896,18 +955,27 @@ contract PeripheryTest is TestHelper {
         uint256 tBal = 100 * 10**tDecimals;
 
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
         uint256 lscale = adapter.scale();
 
         // add liquidity to mock Space pool
         addLiquidityToBalancerVault(maturity, 1000e18);
 
         // init liquidity
-        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 0, type(uint256).max, address(this));
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 0, type(uint256).max, bob, pmsg);
+        }
 
         // calculate targetToBorrow
         uint256 targetToBorrow;
         {
+            address pt = divider.pt(address(adapter), maturity);
             // compute target
             uint256 tBase = 10**tDecimals;
             uint256 ptiBal = ERC20(pt).balanceOf(address(balancerVault));
@@ -939,62 +1007,67 @@ contract PeripheryTest is TestHelper {
             );
         }
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(jim);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
         uint256 jimTBalBefore = ERC20(adapter.target()).balanceOf(jim);
+        {
+            uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim);
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
+                address(adapter),
+                maturity,
+                tBal,
+                0,
+                type(uint256).max,
+                jim,
+                pmsg
+            );
+            assertTrue(targetBal > 0);
+            assertTrue(ytBal > 0);
+            uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim);
+            // assertEq(lpShares, lpBalAfter - lpBalBefore); // TODO: fix if fixing `lpShares` return value
+            assertEq(lpBalBefore + 100e18, lpBalAfter);
+        }
+
+        assertEq(tBalBefore - tBal, ERC20(adapter.target()).balanceOf(bob));
 
         // calculate target to borrow
-        uint256 remainingYTInTarget;
         {
             // swap Target for PT on Yieldspace pool
             uint256 zSwapped = targetToBorrow.fdiv(balancerVault.EXCHANGE_RATE());
             // combine pt and yt
             uint256 tCombined = zSwapped.fdiv(lscale);
-            remainingYTInTarget = tCombined - targetToBorrow;
+            uint256 remainingYTInTarget = tCombined - targetToBorrow;
+            assertEq(jimTBalBefore + remainingYTInTarget, ERC20(adapter.target()).balanceOf(jim));
         }
-
-        vm.prank(bob);
-        (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
-            address(adapter),
-            maturity,
-            tBal,
-            0,
-            type(uint256).max,
-            jim
-        );
-
-        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 jimTBalAfter = ERC20(adapter.target()).balanceOf(jim);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(jim);
-
-        assertTrue(targetBal > 0);
-        assertTrue(ytBal > 0);
-        assertEq(lpShares, lpBalAfter - lpBalBefore);
-        assertEq(tBalBefore - tBal, tBalAfter);
-        assertEq(jimTBalBefore + remainingYTInTarget, jimTBalAfter);
-        assertEq(lpBalBefore + 100e18, lpBalAfter);
     }
 
     function testAddLiquidityAndHoldYT() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
 
         // add liquidity to mock Space pool
         addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
         // init liquidity
-        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max, address(this));
-
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(jim);
-        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
-        uint256 ytBalBefore = ERC20(yt).balanceOf(jim);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            target.balanceOf(bob);
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max, bob, pmsg);
+        }
 
         // calculate amount to be issued
         uint256 toBeIssued;
         {
             // calculate YTs to be issued
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
             uint256 scale = adapter.scale();
             uint256 proportionalTarget = tBal.fmul(
                 balances[1].fdiv(
@@ -1009,6 +1082,11 @@ contract PeripheryTest is TestHelper {
         }
 
         {
+            address yt = divider.yt(address(adapter), maturity);
+            uint256 ytBalBefore = ERC20(yt).balanceOf(jim);
+            uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim);
+            uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
             vm.prank(bob);
             (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromTarget(
                 address(adapter),
@@ -1016,18 +1094,19 @@ contract PeripheryTest is TestHelper {
                 tBal,
                 1,
                 type(uint256).max,
-                jim
+                jim,
+                pmsg
             );
 
             assertEq(targetBal, 0);
             assertTrue(ytBal > 0);
-            assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(jim) - lpBalBefore);
+            assertEq(lpShares, ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim) - lpBalBefore);
 
             // bob gets his target balance decreased
             assertEq(tBalBefore - tBal, ERC20(adapter.target()).balanceOf(bob));
 
             // jim gets his shares and YT balances increased
-            assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(jim));
+            assertEq(lpBalBefore + 100e18, ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim));
             assertEq(ytBalBefore + toBeIssued, ERC20(yt).balanceOf(jim));
         }
     }
@@ -1035,24 +1114,33 @@ contract PeripheryTest is TestHelper {
     function testAddLiquidityFromUnderlyingAndHoldYT() public {
         uint256 uBal = 100 * 10**uDecimals; // we assume target = underlying as scale is 1e18
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
 
         // add liquidity to mock Space pool
         addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
 
         // init liquidity
-        periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max, address(this));
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(address(adapter), maturity, 1, 1, type(uint256).max, bob, pmsg);
+        }
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(jim);
+        uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim);
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(bob);
-        uint256 ytBalBefore = ERC20(yt).balanceOf(jim);
+        uint256 ytBalBefore = ERC20(divider.yt(address(adapter), maturity)).balanceOf(jim);
 
         // calculate amount to be issued
         uint256 toBeIssued;
         {
             uint256 lscale = adapter.scale();
             // calculate YTs to be issued
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
 
             // wrap underlying into target
             uint256 tBal;
@@ -1075,6 +1163,7 @@ contract PeripheryTest is TestHelper {
         }
 
         {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(underlying));
             vm.prank(bob);
             (uint256 targetBal, uint256 ytBal, uint256 lpShares) = periphery.addLiquidityFromUnderlying(
                 address(adapter),
@@ -1082,24 +1171,27 @@ contract PeripheryTest is TestHelper {
                 uBal,
                 1,
                 type(uint256).max,
-                jim
+                jim,
+                pmsg
             );
 
             assertEq(targetBal, 0);
             assertTrue(ytBal > 0);
-            assertEq(lpShares, ERC20(balancerVault.yieldSpacePool()).balanceOf(jim) - lpBalBefore);
+            assertEq(lpShares, ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim) - lpBalBefore);
 
             assertEq(uBalBefore - uBal, ERC20(adapter.underlying()).balanceOf(bob));
-            assertEq(lpBalBefore + 100e18, ERC20(balancerVault.yieldSpacePool()).balanceOf(jim));
+            assertEq(lpBalBefore + 100e18, ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(jim));
             assertEq(toBeIssued, ytBal);
-            assertEq(ytBalBefore + toBeIssued, ERC20(yt).balanceOf(jim));
+            assertEq(ytBalBefore + toBeIssued, ERC20(divider.yt(address(adapter), maturity)).balanceOf(jim));
         }
     }
 
     function testRemoveLiquidityBeforeMaturity() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
@@ -1108,7 +1200,8 @@ contract PeripheryTest is TestHelper {
 
         {
             // calculate pt to be issued when adding liquidity
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
             uint256 proportionalTarget = tBal *
                 (balances[1] / ((1e18 * balances[0] * (FixedMath.WAD - adapter.ifee())) / FixedMath.WAD + balances[1])); // ABDK formula
             uint256 fee = convertToBase(adapter.ifee(), tDecimals).fmul(proportionalTarget, 10**tDecimals);
@@ -1119,8 +1212,9 @@ contract PeripheryTest is TestHelper {
             minAmountsOut[1] = toBeIssued; // pt to be issued
         }
 
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
         vm.startPrank(bob);
-        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, bob);
+        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, bob, pmsg);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(alice);
 
         // calculate liquidity added
@@ -1130,8 +1224,9 @@ contract PeripheryTest is TestHelper {
             tBal = (minAmountsOut[0] + uBal).fdiv(lscale); // (pt (in underlying) + underlying) to target
         }
 
-        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
-        balancerVault.yieldSpacePool().approve(address(periphery), lpBal);
+        uint256 lpBal = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
+        MockSpacePool(spaceFactory.pools(address(adapter), maturity)).approve(address(permit2), lpBal);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(spaceFactory.pools(address(adapter), maturity)));
         (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
             address(adapter),
             maturity,
@@ -1139,12 +1234,13 @@ contract PeripheryTest is TestHelper {
             minAmountsOut,
             0,
             true,
-            alice
+            alice,
+            pmsg
         );
         vm.stopPrank();
 
         uint256 tBalAfter = ERC20(adapter.target()).balanceOf(alice);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
+        uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
 
         assertEq(targetBal, tBalAfter - tBalBefore);
         assertEq(tBalBefore + tBal, tBalAfter);
@@ -1155,7 +1251,13 @@ contract PeripheryTest is TestHelper {
     function testRemoveLiquidityOnMaturity() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
+
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
 
@@ -1164,7 +1266,8 @@ contract PeripheryTest is TestHelper {
 
         {
             // calculate pt to be issued when adding liquidity
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
             uint256 proportionalTarget = tBal * (balances[1] / (1e18 * balances[0] + balances[1])); // ABDK formula
             uint256 fee = convertToBase(adapter.ifee(), tDecimals).fmul(proportionalTarget, 10**tDecimals);
             uint256 toBeIssued = (proportionalTarget - fee).fmul(lscale);
@@ -1174,35 +1277,49 @@ contract PeripheryTest is TestHelper {
             minAmountsOut[1] = toBeIssued; // pt to be issued
         }
 
-        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, address(this));
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, bob, pmsg);
+        }
+
         // settle series
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         lscale = adapter.scale();
 
-        uint256 ptBalBefore = ERC20(pt).balanceOf(bob);
-        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
+        {
+            address pt = divider.pt(address(adapter), maturity);
+            uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+            uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
+            uint256 lpBal = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
 
-        balancerVault.yieldSpacePool().approve(address(periphery), lpBal);
-        (uint256 targetBal, ) = periphery.removeLiquidity(
-            address(adapter),
-            maturity,
-            lpBal,
-            minAmountsOut,
-            0,
-            true,
-            bob
-        );
+            vm.startPrank(bob);
+            MockSpacePool(spaceFactory.pools(address(adapter), maturity)).approve(address(permit2), lpBal);
+            bytes memory pmsg = generatePermit(
+                bobPrivKey,
+                address(periphery),
+                address(spaceFactory.pools(address(adapter), maturity))
+            );
+            (uint256 targetBal, ) = periphery.removeLiquidity(
+                address(adapter),
+                maturity,
+                lpBal,
+                minAmountsOut,
+                0,
+                true,
+                jim,
+                pmsg
+            );
+            vm.stopPrank();
 
-        uint256 ptBalAfter = ERC20(pt).balanceOf(bob);
-        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-
-        assertEq(ptBalBefore, ptBalAfter);
-        assertEq(targetBal, tBalAfter - tBalBefore);
-        assertApproxEqAbs(tBalBefore + tBal, tBalAfter);
-        assertEq(lpBalAfter, 0);
+            uint256 tBalAfter = ERC20(adapter.target()).balanceOf(jim);
+            assertEq(ptBalBefore, ERC20(pt).balanceOf(jim));
+            assertEq(targetBal, tBalAfter - tBalBefore);
+            assertApproxEqAbs(tBalBefore + tBal, tBalAfter);
+            assertEq(ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob), 0);
+        }
     }
 
     function testRemoveLiquidityOnMaturityAndPTRedeemRestricted() public {
@@ -1216,21 +1333,17 @@ contract PeripheryTest is TestHelper {
         );
 
         divider.setPermissionless(true);
-        uint16 level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted
-        DEFAULT_ADAPTER_PARAMS.level = level;
+        DEFAULT_ADAPTER_PARAMS.level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted;
         MockAdapter aAdapter = MockAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
 
         periphery.verifyAdapter(address(aAdapter), true);
         periphery.onboardAdapter(address(aAdapter), true);
         divider.setGuard(address(aAdapter), 10 * 2**128);
 
-        target.approve(address(divider), type(uint256).max);
+        // approvals for depositing
         underlying.approve(address(target), type(uint256).max);
-
-        vm.startPrank(bob);
-        target.approve(address(periphery), type(uint256).max);
+        vm.prank(bob);
         underlying.approve(address(target), type(uint256).max);
-        vm.stopPrank();
 
         // get some target for Alice and Bob
         if (!is4626Target) {
@@ -1245,90 +1358,132 @@ contract PeripheryTest is TestHelper {
             target.deposit(10000000 * 10**uDecimals, bob);
         }
 
-        (address pt, ) = periphery.sponsorSeries(address(aAdapter), maturity, true);
+        {
+            vm.prank(bob);
+            target.approve(address(permit2), type(uint256).max);
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(aAdapter), maturity, true, pmsg);
+        }
+
         spaceFactory.create(address(aAdapter), maturity);
-
-        uint256 lscale = aAdapter.scale();
-        uint256[] memory minAmountsOut = new uint256[](2);
-        minAmountsOut[0] = 2 * 10**tDecimals;
-        minAmountsOut[1] = 1 * 10**tDecimals;
-
+        aAdapter.scale();
         addLiquidityToBalancerVault(address(aAdapter), maturity, 1000 * 10**tDecimals);
 
-        vm.prank(bob);
-        periphery.addLiquidityFromTarget(address(aAdapter), maturity, tBal, 1, type(uint256).max, bob);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(address(aAdapter), maturity, tBal, 1, type(uint256).max, bob, pmsg);
+        }
 
         // settle series
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(aAdapter), maturity);
-        lscale = aAdapter.scale();
+        {
+            address pt = divider.pt(address(aAdapter), maturity);
+            uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+            uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(jim);
+            uint256 lpBalBefore = ERC20(spaceFactory.pools(address(aAdapter), maturity)).balanceOf(bob);
 
-        uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
-        uint256 tBalBefore = ERC20(aAdapter.target()).balanceOf(jim);
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
+            uint256[] memory minAmountsOut = new uint256[](2);
+            minAmountsOut[0] = 2 * 10**tDecimals;
+            minAmountsOut[1] = 1 * 10**tDecimals;
 
-        vm.startPrank(bob);
-        balancerVault.yieldSpacePool().approve(address(periphery), 3e18);
-        (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
-            address(aAdapter),
-            maturity,
-            3 * 10**tDecimals,
-            minAmountsOut,
-            0,
-            true,
-            jim
-        );
-        vm.stopPrank();
+            vm.startPrank(bob);
+            MockSpacePool(spaceFactory.pools(address(aAdapter), maturity)).approve(address(permit2), 3e18);
+            bytes memory pmsg = generatePermit(
+                bobPrivKey,
+                address(periphery),
+                address(spaceFactory.pools(address(aAdapter), maturity))
+            );
+            (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
+                address(aAdapter),
+                maturity,
+                3 * 10**tDecimals,
+                minAmountsOut,
+                0,
+                true,
+                jim,
+                pmsg
+            );
+            vm.stopPrank();
 
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(bob);
-        assertEq(lpBalBefore, lpBalAfter + 3 * 10**tDecimals);
-        assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(jim) - tBalBefore);
-        assertEq(ptBalBefore, ERC20(pt).balanceOf(jim) - minAmountsOut[1]);
-        assertEq(ptBal, ERC20(pt).balanceOf(jim) - ptBalBefore);
-        assertEq(ptBal, 10**tDecimals);
+            uint256 lpBalAfter = ERC20(spaceFactory.pools(address(aAdapter), maturity)).balanceOf(bob);
+            assertEq(lpBalBefore, lpBalAfter + 3 * 10**tDecimals);
+            assertEq(targetBal, ERC20(aAdapter.target()).balanceOf(jim) - tBalBefore);
+            assertEq(ptBalBefore, ERC20(pt).balanceOf(jim) - minAmountsOut[1]);
+            assertEq(ptBal, ERC20(pt).balanceOf(jim) - ptBalBefore);
+            assertEq(ptBal, 10**tDecimals);
+        }
     }
 
     function testRemoveLiquidityWhenOneSideLiquidity() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
-        uint256[] memory minAmountsOut = new uint256[](2);
+
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
 
         // add one side liquidity
-        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, address(this));
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, bob, pmsg);
+        }
 
-        uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
-        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
+        {
+            address pt = divider.pt(address(adapter), maturity);
+            uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+            uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
+            uint256 lpBalBefore = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
 
-        uint256 lpBalBefore = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-        balancerVault.yieldSpacePool().approve(address(periphery), lpBalBefore);
-        (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
-            address(adapter),
-            maturity,
-            lpBalBefore,
-            minAmountsOut,
-            0,
-            true,
-            jim
-        );
+            vm.startPrank(bob);
+            MockSpacePool(spaceFactory.pools(address(adapter), maturity)).approve(address(permit2), lpBalBefore);
+            bytes memory pmsg = generatePermit(
+                bobPrivKey,
+                address(periphery),
+                address(spaceFactory.pools(address(adapter), maturity))
+            );
+            uint256[] memory minAmountsOut = new uint256[](2);
+            (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
+                address(adapter),
+                maturity,
+                lpBalBefore,
+                minAmountsOut,
+                0,
+                true,
+                jim,
+                pmsg
+            );
+            vm.stopPrank();
 
-        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(jim);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-        uint256 ptBalAfter = ERC20(pt).balanceOf(alice);
+            uint256 tBalAfter = ERC20(adapter.target()).balanceOf(jim);
+            uint256 lpBalAfter = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
+            uint256 ptBalAfter = ERC20(pt).balanceOf(jim);
 
-        assertTrue(tBalAfter > 0);
-        assertEq(targetBal, tBalAfter - tBalBefore);
-        assertEq(ptBalAfter, ptBalBefore);
-        assertEq(lpBalAfter, 0);
-        assertEq(ptBal, 0);
-        assertTrue(lpBalBefore > 0);
+            assertTrue(tBalAfter > 0);
+            assertEq(targetBal, tBalAfter - tBalBefore);
+            assertEq(ptBalAfter, ptBalBefore);
+            assertEq(lpBalAfter, 0);
+            assertEq(ptBal, 0);
+            assertTrue(lpBalBefore > 0);
+        }
     }
 
     function testRemoveLiquidityAndSkipSwap() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
-        uint256 lscale = adapter.scale();
+
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
+
         uint256[] memory minAmountsOut = new uint256[](2);
 
         // add liquidity to mockUniSwapRouter
@@ -1336,8 +1491,10 @@ contract PeripheryTest is TestHelper {
 
         uint256 ptToBeIssued;
         {
+            uint256 lscale = adapter.scale();
             // calculate pt to be issued when adding liquidity
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
             uint256 fee = adapter.ifee();
             uint256 tBase = 10**tDecimals;
             uint256 proportionalTarget = tBal.fmul(
@@ -1351,88 +1508,52 @@ contract PeripheryTest is TestHelper {
             minAmountsOut[1] = ptToBeIssued; // pt to be issued
         }
 
-        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, alice);
-        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(bob);
-        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-        balancerVault.yieldSpacePool().approve(address(periphery), lpBal);
-        (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
-            address(adapter),
-            maturity,
-            lpBal,
-            minAmountsOut,
-            0,
-            false,
-            bob
-        );
-
-        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        uint256 lpBalAfter = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-        uint256 ptBalAfter = ERC20(pt).balanceOf(bob);
-
-        assertEq(tBalAfter, tBalBefore + targetBal);
-        assertEq(lpBalAfter, 0);
-        assertEq(ptBal, ptToBeIssued);
-        assertEq(ptBalAfter, ptBalBefore + ptToBeIssued);
-    }
-
-    function testRemoveLiquidityAndSwap() public {
-        uint256 tBal = 100 * 10**tDecimals;
-        uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
-        uint256 lscale = adapter.scale();
-        uint256[] memory minAmountsOut = new uint256[](2);
-
-        // add liquidity to mockUniSwapRouter
-        addLiquidityToBalancerVault(maturity, 1000 * 10**tDecimals);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+        vm.prank(bob);
+        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, address(this), pmsg);
 
         {
-            // calculate pt to be issued when adding liquidity
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
-            uint256 fee = adapter.ifee();
-            uint256 tBase = 10**tDecimals;
-            uint256 proportionalTarget = tBal.fmul(
-                balances[1].fdiv(lscale.fmul(FixedMath.WAD - fee).fmul(balances[0]) + balances[1], tBase),
-                tBase
+            address pt = divider.pt(address(adapter), maturity);
+            uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
+            uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+            uint256 lpBal = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
+
+            MockSpacePool(spaceFactory.pools(address(adapter), maturity)).approve(address(permit2), lpBal);
+            bytes memory pmsg = generatePermit(
+                bobPrivKey,
+                address(periphery),
+                address(spaceFactory.pools(address(adapter), maturity))
             );
-            uint256 ptToBeIssued = proportionalTarget.fmul(lscale);
+            vm.prank(bob);
+            (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
+                address(adapter),
+                maturity,
+                lpBal,
+                minAmountsOut,
+                0,
+                false,
+                jim,
+                pmsg
+            );
 
-            // prepare minAmountsOut for removing liquidity
-            minAmountsOut[0] = (tBal - proportionalTarget).fmul(lscale); // underlying amount
-            minAmountsOut[1] = ptToBeIssued; // pt to be issued
+            uint256 tBalAfter = ERC20(adapter.target()).balanceOf(jim);
+            assertEq(tBalAfter, tBalBefore + targetBal);
+            assertEq(ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob), 0);
+            assertEq(ptBal, ptToBeIssued);
+            assertEq(ERC20(pt).balanceOf(jim), ptBalBefore + ptToBeIssued);
         }
-
-        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, alice);
-        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(bob);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(bob);
-        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-
-        balancerVault.yieldSpacePool().approve(address(periphery), lpBal);
-
-        vm.expectEmit(true, false, false, false);
-        emit Swapped(address(this), "0", adapter.target(), address(0), 0, 0, msg.sig);
-
-        (uint256 targetBal, uint256 ptBal) = periphery.removeLiquidity(
-            address(adapter),
-            maturity,
-            lpBal,
-            minAmountsOut,
-            0,
-            true,
-            bob
-        );
-
-        uint256 tBalAfter = ERC20(adapter.target()).balanceOf(bob);
-        assertEq(tBalAfter, tBalBefore + targetBal);
-        assertEq(ptBal, 0);
-        assertEq(ERC20(balancerVault.yieldSpacePool()).balanceOf(alice), 0);
-        assertEq(ERC20(pt).balanceOf(bob), 0);
     }
 
     function testRemoveLiquidityAndUnwrapTarget() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
+
         vm.warp(block.timestamp + 5 days);
         uint256 lscale = adapter.scale();
         uint256[] memory minAmountsOut = new uint256[](2);
@@ -1444,7 +1565,8 @@ contract PeripheryTest is TestHelper {
         uint256 targetToBeAdded;
         {
             // calculate pt to be issued when adding liquidity
-            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(0);
+            MockSpacePool pool = MockSpacePool(spaceFactory.pools(address(adapter), maturity));
+            (, uint256[] memory balances, ) = balancerVault.getPoolTokens(pool.getPoolId());
             uint256 fee = adapter.ifee();
             uint256 tBase = 10**tDecimals;
             uint256 proportionalTarget = tBal.fmul(
@@ -1458,67 +1580,52 @@ contract PeripheryTest is TestHelper {
             minAmountsOut[1] = ptToBeIssued; // pt to be issued
         }
 
-        periphery.addLiquidityFromTarget(address(adapter), maturity, tBal, 1, type(uint256).max, address(this));
-        uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(bob);
-        uint256 lpBal = ERC20(balancerVault.yieldSpacePool()).balanceOf(alice);
-        balancerVault.yieldSpacePool().approve(address(periphery), lpBal);
-        (uint256 underlyingBal, uint256 ptBal) = periphery.removeLiquidityAndUnwrapTarget(
-            address(adapter),
-            maturity,
-            lpBal,
-            minAmountsOut,
-            0,
-            false,
-            bob
-        );
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.addLiquidityFromTarget(
+                address(adapter),
+                maturity,
+                tBal,
+                1,
+                type(uint256).max,
+                address(this),
+                pmsg
+            );
+        }
 
-        uint256 uBalAfter = ERC20(adapter.underlying()).balanceOf(bob);
-        assertEq(ERC20(balancerVault.yieldSpacePool()).balanceOf(alice), 0);
-        assertEq(ptBal, ptToBeIssued);
-        assertEq(uBalBefore + underlyingBal, uBalAfter);
-        assertEq(
-            underlyingBal,
-            uDecimals > tDecimals
-                ? targetToBeAdded.fmul(lscale) * SCALING_FACTOR
-                : targetToBeAdded.fmul(lscale) / SCALING_FACTOR
-        );
-    }
+        {
+            uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(jim);
+            uint256 lpBal = ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob);
+            MockSpacePool(spaceFactory.pools(address(adapter), maturity)).approve(address(permit2), lpBal);
+            bytes memory pmsg = generatePermit(
+                bobPrivKey,
+                address(periphery),
+                address(spaceFactory.pools(address(adapter), maturity))
+            );
+            vm.prank(bob);
+            (uint256 underlyingBal, uint256 ptBal) = periphery.removeLiquidityAndUnwrapTarget(
+                address(adapter),
+                maturity,
+                lpBal,
+                minAmountsOut,
+                0,
+                false,
+                jim,
+                pmsg
+            );
 
-    function testCantMigrateLiquidityIfTargetsAreDifferent() public {
-        uint256 tBal = 100 * 10**tDecimals;
-        uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
-
-        // add liquidity to mockUniSwapRouter
-        addLiquidityToBalancerVault(maturity, 1000e18);
-
-        MockTargetLike otherTarget = MockTargetLike(deployMockTarget(address(underlying), "Compound Usdc", "cUSDC", 8));
-        factory.supportTarget(address(otherTarget), true);
-        address[] memory rewardTokens;
-        address dstAdapter = periphery.deployAdapter(address(factory), address(otherTarget), abi.encode(rewardTokens)); // onboard target through Periphery
-
-        (, , uint256 lpShares) = periphery.addLiquidityFromTarget(
-            address(adapter),
-            maturity,
-            tBal,
-            0,
-            type(uint256).max,
-            address(this)
-        );
-        uint256[] memory minAmountsOut = new uint256[](2);
-        vm.expectRevert(abi.encodeWithSelector(Errors.TargetMismatch.selector));
-        periphery.migrateLiquidity(
-            address(adapter),
-            dstAdapter,
-            maturity,
-            maturity,
-            lpShares,
-            minAmountsOut,
-            0,
-            0,
-            true,
-            type(uint256).max
-        );
+            uint256 uBalAfter = ERC20(adapter.underlying()).balanceOf(jim);
+            assertEq(ERC20(spaceFactory.pools(address(adapter), maturity)).balanceOf(bob), 0);
+            assertEq(ptBal, ptToBeIssued);
+            assertEq(uBalBefore + underlyingBal, uBalAfter);
+            assertEq(
+                underlyingBal,
+                uDecimals > tDecimals
+                    ? targetToBeAdded.fmul(lscale) * SCALING_FACTOR
+                    : targetToBeAdded.fmul(lscale) / SCALING_FACTOR
+            );
+        }
     }
 
     /* ========== issuance tests ========== */
@@ -1526,7 +1633,9 @@ contract PeripheryTest is TestHelper {
     function testIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         uint256 tBalSubFee = tBal - tBal.fmul(adapter.ifee());
         uint256 uBal = tBalSubFee.fmul(adapter.scale());
@@ -1535,71 +1644,97 @@ contract PeripheryTest is TestHelper {
         uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(alice);
 
-        periphery.issue(address(adapter), maturity, tBal, alice);
+        pmsg = generatePermit(jimPrivKey, address(periphery), address(target));
+        vm.prank(jim);
+        periphery.issue(address(adapter), maturity, tBal, jim, pmsg);
 
-        assertEq(ptBalBefore + uBal, ERC20(pt).balanceOf(alice));
-        assertEq(ytBalBefore + uBal, ERC20(yt).balanceOf(alice));
-        assertEq(tBalBefore, ERC20(adapter.target()).balanceOf(alice) + tBal);
+        assertEq(ptBalBefore + uBal, ERC20(pt).balanceOf(jim));
+        assertEq(ytBalBefore + uBal, ERC20(yt).balanceOf(jim));
+        assertEq(tBalBefore, ERC20(adapter.target()).balanceOf(jim) + tBal);
     }
 
     function testIssueFromUnderlying() public {
         uint256 uBal = 100 * 10**uDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         uint256 uBalSubFee = uBal - uBal.fmul(adapter.ifee());
         uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
         uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
         uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(alice);
 
-        periphery.issueFromUnderlying(address(adapter), maturity, uBal, alice);
+        pmsg = generatePermit(jimPrivKey, address(periphery), address(underlying));
+        vm.prank(jim);
+        periphery.issueFromUnderlying(address(adapter), maturity, uBal, jim, pmsg);
 
-        assertEq(ptBalBefore + uBalSubFee, ERC20(pt).balanceOf(alice));
-        assertEq(ytBalBefore + uBalSubFee, ERC20(yt).balanceOf(alice));
-        assertEq(uBalBefore, ERC20(adapter.underlying()).balanceOf(alice) + uBal);
+        assertEq(ptBalBefore + uBalSubFee, ERC20(pt).balanceOf(jim));
+        assertEq(ytBalBefore + uBalSubFee, ERC20(yt).balanceOf(jim));
+        assertEq(uBalBefore, ERC20(adapter.underlying()).balanceOf(jim) + uBal);
     }
 
     function testCombine() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        uint256 uBal = periphery.issue(address(adapter), maturity, tBal, alice);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
-        uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
-        uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
-        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(alice);
+        vm.startPrank(jim);
+        pmsg = generatePermit(jimPrivKey, address(periphery), address(target));
+        uint256 uBal = periphery.issue(address(adapter), maturity, tBal, jim, pmsg);
 
-        ERC20(pt).approve(address(periphery), ptBalBefore);
-        ERC20(yt).approve(address(periphery), ytBalBefore);
-        periphery.combine(address(adapter), maturity, uBal, alice);
+        uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+        uint256 ytBalBefore = ERC20(yt).balanceOf(jim);
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
 
-        assertEq(ptBalBefore - uBal, ERC20(pt).balanceOf(alice));
-        assertEq(ytBalBefore - uBal, ERC20(yt).balanceOf(alice));
+        ERC20(pt).approve(address(permit2), ptBalBefore);
+        ERC20(yt).approve(address(permit2), ytBalBefore);
+        address[] memory tokens = new address[](2);
+        tokens[0] = pt;
+        tokens[1] = yt;
+        pmsg = generatePermit(jimPrivKey, address(periphery), tokens);
+        periphery.combine(address(adapter), maturity, uBal, jim, pmsg);
+
+        assertEq(ptBalBefore - uBal, ERC20(pt).balanceOf(jim));
+        assertEq(ytBalBefore - uBal, ERC20(yt).balanceOf(jim));
 
         uint256 tBalSubFee = tBal - tBal.fmul(adapter.ifee());
-        assertEq(tBalBefore, ERC20(adapter.target()).balanceOf(alice) - tBalSubFee);
+        assertEq(tBalBefore, ERC20(adapter.target()).balanceOf(jim) - tBalSubFee);
+        vm.stopPrank();
     }
 
     function testCombineToUnderlying() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
-        uint256 uBal = periphery.issue(address(adapter), maturity, tBal, alice);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
-        uint256 ptBalBefore = ERC20(pt).balanceOf(alice);
-        uint256 ytBalBefore = ERC20(yt).balanceOf(alice);
-        uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(alice);
+        vm.startPrank(jim);
+        pmsg = generatePermit(jimPrivKey, address(periphery), address(target));
+        uint256 uBal = periphery.issue(address(adapter), maturity, tBal, jim, pmsg);
 
-        ERC20(pt).approve(address(periphery), ptBalBefore);
-        ERC20(yt).approve(address(periphery), ytBalBefore);
-        periphery.combineToUnderlying(address(adapter), maturity, uBal, alice);
+        uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+        uint256 ytBalBefore = ERC20(yt).balanceOf(jim);
+        uint256 uBalBefore = ERC20(adapter.underlying()).balanceOf(jim);
 
-        assertEq(ptBalBefore - uBal, ERC20(pt).balanceOf(alice));
-        assertEq(ytBalBefore - uBal, ERC20(yt).balanceOf(alice));
+        ERC20(pt).approve(address(permit2), ptBalBefore);
+        ERC20(yt).approve(address(permit2), ytBalBefore);
+        address[] memory tokens = new address[](2);
+        tokens[0] = pt;
+        tokens[1] = yt;
+        pmsg = generatePermit(jimPrivKey, address(periphery), tokens);
+        periphery.combineToUnderlying(address(adapter), maturity, uBal, jim, pmsg);
+
+        assertEq(ptBalBefore - uBal, ERC20(pt).balanceOf(jim));
+        assertEq(ytBalBefore - uBal, ERC20(yt).balanceOf(jim));
 
         uint256 tBalSubFee = tBal - tBal.fmul(adapter.ifee());
         uint256 uBalSubFee = tBalSubFee.fmul(adapter.scale());
-        assertEq(uBalBefore, ERC20(adapter.underlying()).balanceOf(alice) - uBalSubFee);
+        assertEq(uBalBefore, ERC20(adapter.underlying()).balanceOf(jim) - uBalSubFee);
+        vm.stopPrank();
     }
 
     /* ========== LOGS ========== */

@@ -16,6 +16,7 @@ import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
 import { Divider } from "../Divider.sol";
 import { Token } from "../tokens/Token.sol";
 import { YT } from "../tokens/YT.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract Dividers is TestHelper {
     using SafeTransferLib for ERC20;
@@ -30,32 +31,45 @@ contract Dividers is TestHelper {
     /* ========== initSeries() tests ========== */
 
     function testCantInitSeriesNotEnoughStakeBalance() public {
-        uint256 balance = stake.balanceOf(alice);
-        stake.transfer(bob, balance - STAKE_SIZE / 2);
+        uint256 balance = stake.balanceOf(bob);
+        vm.prank(bob);
+        stake.transfer(alice, balance - STAKE_SIZE / 2);
         uint256 maturity = getValidMaturity(2021, 10);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.expectRevert("TRANSFER_FROM_FAILED");
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesNotEnoughStakeAllowance() public {
-        ERC20(address(stake)).safeApprove(address(periphery), 0);
+        vm.prank(bob);
+        ERC20(address(stake)).safeApprove(address(permit2), 0);
         uint256 maturity = getValidMaturity(2021, 10);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert("TRANSFER_FROM_FAILED");
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesAdapterNotEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         divider.setAdapter(address(adapter), false);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesIfAlreadyExists() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.DuplicateSeries.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesActiveSeriesReached() public {
@@ -63,37 +77,48 @@ contract Dividers is TestHelper {
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
             uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
-            (address pt, address yt) = periphery.sponsorSeries(address(adapter), nextMonthDate, true);
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            (address pt, address yt) = periphery.sponsorSeries(address(adapter), nextMonthDate, true, pmsg);
             increaseScale(address(target));
             assertTrue(address(pt) != address(0));
             assertTrue(address(yt) != address(0));
         }
         uint256 lastDate = DateTimeFull.addMonths(block.timestamp, SERIES_TO_INIT + 1);
         lastDate = getValidMaturity(DateTimeFull.getYear(lastDate), DateTimeFull.getMonth(lastDate));
+
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        periphery.sponsorSeries(address(adapter), lastDate, true);
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), lastDate, true, pmsg);
     }
 
     function testCantInitSeriesWithMaturityBeforeTimestamp() public {
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 8, 1, 0, 0, 0);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesLessThanMinMaturity() public {
         vm.warp(1631923200);
         // 18-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesMoreThanMaxMaturity() public {
         vm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2022, 1, 1, 0, 0, 0);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesIfModeInvalid() public {
@@ -101,13 +126,14 @@ contract Dividers is TestHelper {
         MockCropAdapter adapter = MockCropAdapter(
             deployMockAdapter(address(divider), address(target), address(reward))
         );
-
         divider.setAdapter(address(adapter), true);
         vm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Tuesday
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testCantInitSeriesIfNotTopWeek() public {
@@ -120,8 +146,10 @@ contract Dividers is TestHelper {
         vm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 5, 0, 0, 0); // Tuesday
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testInitSeriesWeekly() public {
@@ -134,10 +162,13 @@ contract Dividers is TestHelper {
         vm.warp(1631664000); // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
 
-        vm.expectEmit(true, true, true, false);
-        emit SeriesInitialized(address(adapter), maturity, address(0), address(0), address(this), adapter.target());
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
 
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        vm.expectEmit(true, true, true, false);
+        emit SeriesInitialized(address(adapter), maturity, address(0), address(0), bob, adapter.target());
+
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
@@ -150,13 +181,17 @@ contract Dividers is TestHelper {
     function testCantInitSeriesIfPaused() public {
         divider.setPaused(true);
         uint256 maturity = getValidMaturity(2021, 10);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
         vm.expectRevert("Pausable: paused");
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testInitSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
         assertEq(ERC20(pt).name(), "1st Oct 2021 cDAI Sense Principal Token, A1");
@@ -168,10 +203,12 @@ contract Dividers is TestHelper {
     function testInitSeriesWithdrawStake() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(alice);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         assertTrue(address(pt) != address(0));
         assertTrue(address(yt) != address(0));
-        uint256 afterBalance = stake.balanceOf(alice);
+        uint256 afterBalance = stake.balanceOf(bob);
         assertEq(afterBalance, beforeBalance - STAKE_SIZE);
     }
 
@@ -180,7 +217,9 @@ contract Dividers is TestHelper {
         for (uint256 i = 1; i <= SERIES_TO_INIT; i++) {
             uint256 nextMonthDate = DateTimeFull.addMonths(block.timestamp, i);
             nextMonthDate = getValidMaturity(DateTimeFull.getYear(nextMonthDate), DateTimeFull.getMonth(nextMonthDate));
-            (address pt, address yt) = periphery.sponsorSeries(address(adapter), nextMonthDate, true);
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            (address pt, address yt) = periphery.sponsorSeries(address(adapter), nextMonthDate, true, pmsg);
             increaseScale(address(target));
             assertTrue(address(pt) != address(0));
             assertTrue(address(yt) != address(0));
@@ -191,21 +230,27 @@ contract Dividers is TestHelper {
         vm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     function testInitSeriesOnMaxMaturity() public {
         vm.warp(1631664000);
         // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 12, 1, 0, 0, 0);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
     }
 
     /* ========== settleSeries() tests ========== */
 
     function testCantSettleSeriesIfDisabledAdapter() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         divider.setAdapter(address(adapter), false);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
         divider.settleSeries(address(adapter), maturity);
@@ -213,8 +258,11 @@ contract Dividers is TestHelper {
 
     function testCantSettleSeriesAlreadySettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         vm.expectRevert(abi.encodeWithSelector(Errors.AlreadySettled.selector));
         divider.settleSeries(address(adapter), maturity);
@@ -222,16 +270,19 @@ contract Dividers is TestHelper {
 
     function testCantSettleSeriesIfNotSponsorAndSponsorWindow() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
-        vm.warp(maturity);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        vm.warp(maturity);
         vm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         divider.settleSeries(address(adapter), maturity);
     }
 
     function testCantSettleSeriesIfNotSponsorCutoffTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
@@ -240,7 +291,9 @@ contract Dividers is TestHelper {
 
     function testCantSettleSeriesIfSponsorAndCutoffTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         vm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         divider.settleSeries(address(adapter), maturity);
@@ -248,9 +301,10 @@ contract Dividers is TestHelper {
 
     function testCantSettleSeriesIfNotSponsorAndSponsorTime() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
-        vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW - 1 minutes));
         vm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         divider.settleSeries(address(adapter), maturity);
     }
@@ -264,46 +318,63 @@ contract Dividers is TestHelper {
 
     function testSettleSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
 
         vm.expectEmit(true, true, true, true);
-        emit SeriesSettled(address(adapter), maturity, address(this));
+        emit SeriesSettled(address(adapter), maturity, bob);
 
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSponsorWindow() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMinLimit() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.subSeconds(maturity, SPONSOR_WINDOW));
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndOnSponsorWindowMaxLimit() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW));
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfSponsorAndSettlementWindow() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
     }
 
     function testSettleSeriesIfNotSponsorAndSettlementWindow() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW));
         vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
@@ -312,8 +383,11 @@ contract Dividers is TestHelper {
     function testSettleSeriesStakeIsTransferredIfSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 beforeBalance = stake.balanceOf(alice);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         uint256 afterBalance = stake.balanceOf(alice);
         assertEq(beforeBalance, afterBalance);
@@ -321,12 +395,13 @@ contract Dividers is TestHelper {
 
     function testSettleSeriesStakeIsTransferredIfNotSponsor() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = stake.balanceOf(bob);
-        periphery.sponsorSeries(address(adapter), maturity, true);
-        vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
+        uint256 beforeBalance = stake.balanceOf(alice);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + 1 seconds));
         divider.settleSeries(address(adapter), maturity);
-        uint256 afterBalance = stake.balanceOf(bob);
+        uint256 afterBalance = stake.balanceOf(alice);
         assertEq(afterBalance, beforeBalance + STAKE_SIZE);
     }
 
@@ -342,23 +417,29 @@ contract Dividers is TestHelper {
         );
         divider.addAdapter(address(aAdapter));
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(aAdapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(aAdapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(aAdapter), maturity);
     }
 
     function testFuzzSettleSeriesFeesAreTransferredIfSponsor(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        uint256 beforeBalance = target.balanceOf(alice);
-        periphery.sponsorSeries(address(adapter), maturity, true);
-        divider.issue(address(adapter), maturity, tBal);
+        uint256 beforeBalance = target.balanceOf(bob);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
+        divider.issue(address(adapter), maturity, tBal);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, 10**tDecimals);
-        uint256 afterBalance = target.balanceOf(alice);
+        uint256 afterBalance = target.balanceOf(bob);
         assertApproxEqAbs(afterBalance, beforeBalance - tBal + fee * 2);
     }
 
@@ -367,7 +448,9 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 aliceBeforeBalance = target.balanceOf(alice);
         uint256 bobBeforeBalance = target.balanceOf(bob);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         divider.issue(address(adapter), maturity, tBal);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -385,7 +468,9 @@ contract Dividers is TestHelper {
 
     function testCantIssueAdapterDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 tBal = 100 * 10**tDecimals;
         divider.setAdapter(address(adapter), false);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
@@ -402,7 +487,9 @@ contract Dividers is TestHelper {
     function testCantIssueNotEnoughBalance() public {
         uint256 aliceBalance = target.balanceOf(alice);
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         divider.setGuard(address(adapter), aliceBalance * 2);
         vm.expectRevert("TRANSFER_FROM_FAILED");
         divider.issue(address(adapter), maturity, aliceBalance + 1);
@@ -413,15 +500,20 @@ contract Dividers is TestHelper {
         target.approve(address(divider), 0);
         divider.setGuard(address(adapter), aliceBalance);
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.expectRevert("TRANSFER_FROM_FAILED");
         divider.issue(address(adapter), maturity, aliceBalance);
     }
 
     function testCantIssueIfSeriesSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         uint256 amount = target.balanceOf(alice);
         vm.expectRevert(abi.encodeWithSelector(Errors.IssueOnSettle.selector));
@@ -430,7 +522,9 @@ contract Dividers is TestHelper {
 
     function testCantIssueIfMoreThanCap() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 targetBalance = target.balanceOf(alice);
         divider.setGuard(address(adapter), targetBalance);
         divider.issue(address(adapter), maturity, targetBalance);
@@ -447,7 +541,9 @@ contract Dividers is TestHelper {
 
         divider.addAdapter(address(aAdapter));
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(aAdapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(aAdapter), maturity, true, pmsg);
         uint256 amount = target.balanceOf(alice);
         vm.expectRevert(abi.encodeWithSelector(Errors.IssuanceFeeCapExceeded.selector));
         divider.issue(address(aAdapter), maturity, amount);
@@ -472,7 +568,9 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
 
         // Should be possible to init series
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // Can't issue directly through the divider
         vm.expectRevert(abi.encodeWithSelector(Errors.IssuanceRestricted.selector));
@@ -506,7 +604,9 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
 
         // Should be possible to sponsor series
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         // Issue PTs andn YTs from user
         divider.issue(address(adapter), maturity, 2 * 10**tDecimals);
@@ -517,6 +617,7 @@ contract Dividers is TestHelper {
 
         // Move to maturity and settle
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         uint256 uBalUser = ERC20(pt).balanceOf(address(this));
@@ -543,7 +644,9 @@ contract Dividers is TestHelper {
     function testFuzzIssue(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, 10**tDecimals); // 1 target
         uint256 tBalanceBefore = target.balanceOf(alice);
@@ -566,7 +669,9 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), balance - 1);
         divider.setGuarded(false);
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         (, , uint256 guard, ) = divider.adapterMeta(address(adapter));
         divider.issue(address(adapter), maturity, guard + 1);
     }
@@ -576,7 +681,9 @@ contract Dividers is TestHelper {
         // it will attempt to do a division by 0.
         bal = uint128(bound(bal, 1000, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         uint256 tBase = 10**tDecimals;
         uint256 tBal = bal.fdiv(4 * tBase, tBase);
@@ -596,7 +703,9 @@ contract Dividers is TestHelper {
     function testIssueReweightScale() public {
         uint256 tBal = 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
         uint256 lscaleFirst = divider.lscales(address(adapter), maturity, alice);
@@ -632,7 +741,9 @@ contract Dividers is TestHelper {
 
     function testCantCombineAdapterDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 tBal = 100 * 10**tDecimals;
         divider.setAdapter(address(adapter), false);
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAdapter.selector));
@@ -662,7 +773,9 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         vm.startPrank(bob);
         divider.issue(address(adapter), maturity, 10**tDecimals);
@@ -690,7 +803,9 @@ contract Dividers is TestHelper {
     function testFuzzCantCombineNotEnoughBalance(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 issued = divider.issue(address(adapter), maturity, tBal);
         vm.expectRevert(abi.encodeWithSignature("Panic(uint256)", 0x11));
         divider.combine(address(adapter), maturity, issued + 1);
@@ -699,7 +814,9 @@ contract Dividers is TestHelper {
     function testFuzzCantCombineNotEnoughAllowance(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 issued = divider.issue(address(adapter), maturity, tBal);
         target.approve(address(periphery), 0);
         vm.expectRevert(abi.encodeWithSignature("Panic(uint256)", 0x11));
@@ -709,7 +826,9 @@ contract Dividers is TestHelper {
     function testFuzzCombine(uint128 tBal) public {
         tBal = uint128(bound(tBal, 11, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
         increaseScale(address(target));
@@ -734,23 +853,24 @@ contract Dividers is TestHelper {
     function testFuzzCombineAtMaturity(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         increaseScale(address(target));
-        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
-        uint256 tBalanceBefore = target.balanceOf(bob);
-        uint256 ptBalanceBefore = ERC20(pt).balanceOf(bob);
+        uint256 tBalanceBefore = target.balanceOf(alice);
+        uint256 ptBalanceBefore = ERC20(pt).balanceOf(alice);
 
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
-        uint256 lscale = divider.lscales(address(adapter), maturity, bob);
-        vm.prank(bob);
+        uint256 lscale = divider.lscales(address(adapter), maturity, alice);
         divider.combine(address(adapter), maturity, ptBalanceBefore);
-        uint256 tBalanceAfter = target.balanceOf(bob);
-        uint256 ptBalanceAfter = ERC20(pt).balanceOf(bob);
-        uint256 ytBalanceAfter = ERC20(yt).balanceOf(bob);
+        uint256 tBalanceAfter = target.balanceOf(alice);
+        uint256 ptBalanceAfter = ERC20(pt).balanceOf(alice);
+        uint256 ytBalanceAfter = ERC20(yt).balanceOf(alice);
 
         assertEq(ptBalanceAfter, 0);
         assertEq(ytBalanceAfter, 0);
@@ -761,13 +881,16 @@ contract Dividers is TestHelper {
 
     function testCanRedeemPrincipal() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, 10**tDecimals);
         vm.warp(maturity);
         uint256 balance = ERC20(pt).balanceOf(alice);
 
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         increaseScale(address(target));
 
@@ -784,13 +907,20 @@ contract Dividers is TestHelper {
 
     function testCanRedeemPrincipalOnDisabledAdapter() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
+        address pt = divider.pt(address(adapter), maturity);
+
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, 10**tDecimals);
         vm.warp(maturity);
         uint256 balance = ERC20(pt).balanceOf(alice);
 
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         divider.setAdapter(address(adapter), false);
 
@@ -812,7 +942,9 @@ contract Dividers is TestHelper {
 
     function testCantRedeemPrincipalSeriesNotSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         uint256 tBal = 100 * 10**tDecimals;
         divider.issue(address(adapter), maturity, tBal);
@@ -824,8 +956,11 @@ contract Dividers is TestHelper {
 
     function testCantRedeemPrincipalMoreThanBalance() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         uint256 balance = ERC20(pt).balanceOf(alice) + 1e18;
         vm.expectRevert(abi.encodeWithSignature("Panic(uint256)", 0x11));
@@ -842,10 +977,13 @@ contract Dividers is TestHelper {
     function testFuzzRedeemPrincipal(uint128 tBal) public {
         tBal = uint128(bound(tBal, 1000, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         increaseScale(address(target));
         uint256 ptBalanceBefore = ERC20(pt).balanceOf(alice);
@@ -863,8 +1001,11 @@ contract Dividers is TestHelper {
 
     function testRedeemPrincipalBalanceIsZero() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         uint256 tBalanceBefore = target.balanceOf(alice);
         uint256 balance = 0;
@@ -888,32 +1029,36 @@ contract Dividers is TestHelper {
         assertEq(adapter.tilt(), tilt);
 
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         uint256 tBal = 100 * 10**tDecimals;
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         // Transfer Principal that would ideally redeem for 50 Underlying at maturity
         // 50 = pt bal * 1 - tilt
-        Token(pt).transfer(bob, intendedRedemptionValue.fdiv(1e18 - tilt, 1e18));
+        vm.prank(bob);
+        Token(pt).transfer(alice, intendedRedemptionValue.fdiv(1e18 - tilt, 1e18));
 
-        uint256 tBalanceBeforeRedeem = target.balanceOf(bob);
-        uint256 principalBalanceBefore = ERC20(pt).balanceOf(bob);
+        uint256 tBalanceBeforeRedeem = target.balanceOf(alice);
+        uint256 principalBalanceBefore = ERC20(pt).balanceOf(alice);
         vm.warp(maturity);
         // Set scale to 90% of its initial value
         !is4626Target
             ? adapter.setScale(0.9e18)
             : underlying.burn(address(target), (target.totalAssets()).fmul(0.1e18, 1e18));
 
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
-        vm.prank(bob);
         uint256 redeemed = divider.redeem(address(adapter), maturity, principalBalanceBefore);
 
         // Even though the scale has gone down, Principal should redeem for 100% of their intended redemption
         assertApproxEqAbs(redeemed, intendedRedemptionValue.fdiv(adapter.scale(), 1e18), 10);
 
-        uint256 tBalanceAfterRedeem = target.balanceOf(bob);
+        uint256 tBalanceAfterRedeem = target.balanceOf(alice);
         // Redeemed amount should match the amount of Target bob got back
         assertEq(tBalanceAfterRedeem - tBalanceBeforeRedeem, redeemed);
 
@@ -932,17 +1077,25 @@ contract Dividers is TestHelper {
         uint256 intendedRedemptionValue = 50 * 10**tDecimals;
 
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
 
         uint256 tBal = 100 * 10**tDecimals;
+        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
-        // Alice transfers Principal that would ideally redeem for 50 Underlying at maturity
+        address pt = divider.pt(address(adapter), maturity);
+        // BOb transfers Principal that would ideally redeem for 50 Underlying at maturity
         // 50 = pt bal * 1 - tilt
-        Token(pt).transfer(bob, intendedRedemptionValue.fdiv(1e18 - adapter.tilt(), 1e18));
+        uint256 tilt = adapter.tilt();
+        vm.prank(bob);
+        Token(pt).transfer(alice, intendedRedemptionValue.fdiv(1e18 - tilt, 1e18));
 
-        uint256 tBalanceBeforeRedeem = target.balanceOf(bob);
-        uint256 principalBalanceBefore = ERC20(pt).balanceOf(bob);
+        uint256 tBalanceBeforeRedeem = target.balanceOf(alice);
+        uint256 principalBalanceBefore = ERC20(pt).balanceOf(alice);
         vm.warp(maturity);
 
         // Set scale to 90% of its initial value
@@ -950,14 +1103,14 @@ contract Dividers is TestHelper {
             ? adapter.setScale(0.9e18)
             : underlying.burn(address(target), (target.totalAssets()).fmul(0.1e18, 1e18));
 
-        divider.settleSeries(address(adapter), maturity);
         vm.prank(bob);
+        divider.settleSeries(address(adapter), maturity);
         uint256 redeemed = divider.redeem(address(adapter), maturity, principalBalanceBefore);
 
         // Without any Yield pt to cut into, Principal holders should be down to 90% of their intended redemption
         assertApproxEqAbs(redeemed, intendedRedemptionValue.fdiv(adapter.scale(), 1e18).fmul(0.9e18, 1e18), 10);
 
-        uint256 tBalanceAfterRedeem = target.balanceOf(bob);
+        uint256 tBalanceAfterRedeem = target.balanceOf(alice);
         // Redeemed amount should match the amount of Target bob got back
         assertEq(tBalanceAfterRedeem - tBalanceBeforeRedeem, redeemed);
 
@@ -978,12 +1131,15 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         vm.prank(bob);
         divider.issue(address(adapter), maturity, 10**tDecimals);
 
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         uint256 btBal = ERC20(pt).balanceOf(bob);
@@ -1001,12 +1157,15 @@ contract Dividers is TestHelper {
         divider.setAdapter(address(adapter), true);
         divider.setGuard(address(adapter), type(uint256).max);
         uint256 maturity = getValidMaturity(2021, 10);
-        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, ) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         vm.prank(bob);
         divider.issue(address(adapter), maturity, 10**tDecimals);
 
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         uint256 btBal = ERC20(pt).balanceOf(bob);
@@ -1029,8 +1188,12 @@ contract Dividers is TestHelper {
         divider.setGuard(address(adapter), type(uint256).max);
 
         uint256 maturity = getValidMaturity(2021, 10);
-        vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        {
+            bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+            vm.prank(bob);
+            periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+        }
+        address yt = divider.yt(address(adapter), maturity);
 
         // Can collect normally
         increaseScale(address(target));
@@ -1087,7 +1250,9 @@ contract Dividers is TestHelper {
 
         uint256 maturity = getValidMaturity(2021, 10);
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         uint256 tBal = 100 * 10**tDecimals;
         divider.issue(address(adapter), maturity, tBal);
@@ -1121,7 +1286,9 @@ contract Dividers is TestHelper {
     function testCanCollect() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 initScale = adapter.scale();
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         divider.issue(address(adapter), maturity, 10**tDecimals);
 
         increaseScale(address(target));
@@ -1137,7 +1304,9 @@ contract Dividers is TestHelper {
     function testCanCollectDisabledAdapterIfSettled() public {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 initScale = adapter.scale();
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         divider.issue(address(adapter), maturity, 10**tDecimals);
         increaseScale(address(target));
 
@@ -1167,7 +1336,9 @@ contract Dividers is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         uint256 initScale = adapter.scale();
 
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         divider.issue(address(adapter), maturity, 10**tDecimals);
         increaseScale(address(target));
 
@@ -1179,6 +1350,7 @@ contract Dividers is TestHelper {
         assertEq(collected, 0);
 
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         // But it can be collected at maturity
@@ -1192,7 +1364,9 @@ contract Dividers is TestHelper {
     function testFuzzCantCollectIfMaturityAndNotSettled(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
         vm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
@@ -1203,7 +1377,9 @@ contract Dividers is TestHelper {
     function testFuzzCantCollectIfPaused(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
         vm.warp(maturity + divider.SPONSOR_WINDOW() + 1);
@@ -1222,7 +1398,9 @@ contract Dividers is TestHelper {
     function testFuzzCollectSmallTBal(uint128 tBal) public {
         tBal = uint128(bound(tBal, 0, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         vm.warp(block.timestamp + 1 days);
         divider.issue(address(adapter), maturity, tBal);
@@ -1250,12 +1428,15 @@ contract Dividers is TestHelper {
     function testFuzzCollect(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
         increaseScale(address(target));
         uint256 lscale = divider.lscales(address(adapter), maturity, alice);
+
         uint256 ytBalanceBefore = ERC20(yt).balanceOf(alice);
         uint256 tBalanceBefore = target.balanceOf(alice);
 
@@ -1280,7 +1461,9 @@ contract Dividers is TestHelper {
     function testFuzzCollectReward(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, tBal);
         uint256 lscale = divider.lscales(address(adapter), maturity, alice);
@@ -1311,7 +1494,10 @@ contract Dividers is TestHelper {
     function testFuzzCollectRewardMultipleUsers(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
+
         address[3] memory users = [alice, bob, jim];
 
         divider.issue(address(adapter), maturity, tBal);
@@ -1350,7 +1536,9 @@ contract Dividers is TestHelper {
     function testCollectRewardSettleSeriesAndCheckTBalanceIsZero(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         divider.issue(address(adapter), maturity, tBal);
 
@@ -1363,6 +1551,7 @@ contract Dividers is TestHelper {
 
         increaseScale(address(target));
         vm.warp(maturity);
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         YT(yt).collect();
@@ -1375,31 +1564,32 @@ contract Dividers is TestHelper {
     function testFuzzCollectAtMaturityBurnYieldAndDoesNotCallBurnTwice(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
 
-        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         increaseScale(address(target));
         vm.warp(maturity);
-        uint256 lscale = divider.lscales(address(adapter), maturity, bob);
-        uint256 ytBalanceBefore = ERC20(yt).balanceOf(bob);
-        uint256 tBalanceBefore = target.balanceOf(bob);
+        uint256 lscale = divider.lscales(address(adapter), maturity, alice);
+        uint256 ytBalanceBefore = ERC20(yt).balanceOf(alice);
+        uint256 tBalanceBefore = target.balanceOf(alice);
 
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
 
         vm.expectEmit(true, true, true, false);
         emit YTRedeemed(address(adapter), maturity, 0);
 
-        vm.prank(bob);
         uint256 collected = YT(yt).collect();
 
         // since YTs are burnt, tBalance should be 0
-        if (tBal > 0) assertApproxEqAbs(adapter.tBalance(bob), 0); // TODO: why was it > 0? must be 0 (or close to 0 because of rounding), right?
+        if (tBal > 0) assertApproxEqAbs(adapter.tBalance(alice), 0); // TODO: why was it > 0? must be 0 (or close to 0 because of rounding), right?
 
-        uint256 ytBalanceAfter = ERC20(yt).balanceOf(bob);
-        uint256 tBalanceAfter = target.balanceOf(bob);
+        uint256 ytBalanceAfter = ERC20(yt).balanceOf(alice);
+        uint256 tBalanceAfter = target.balanceOf(alice);
         (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
         uint256 cscale = block.timestamp >= maturity ? mscale : adapter.scale();
 
@@ -1409,13 +1599,15 @@ contract Dividers is TestHelper {
         assertEq(collected, collect);
         assertEq(ytBalanceAfter, 0);
         assertEq(tBalanceAfter, tBalanceBefore + collected);
-        assertApproxEqAbs(adapter.tBalance(bob), 0);
+        assertApproxEqAbs(adapter.tBalance(alice), 0);
     }
 
     function testFuzzCollectAfterMaturityAfterEmergencyDoesNotReplaceBackfilled(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
 
         divider.issue(address(adapter), maturity, tBal);
@@ -1438,26 +1630,27 @@ contract Dividers is TestHelper {
     function testFuzzCollectBeforeMaturityAndSettled(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
 
-        vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
 
         vm.warp(maturity - SPONSOR_WINDOW);
-        uint256 lscale = divider.lscales(address(adapter), maturity, bob);
-        uint256 ytBalanceBefore = ERC20(yt).balanceOf(bob);
-        uint256 tBalanceBefore = target.balanceOf(bob);
+        uint256 lscale = divider.lscales(address(adapter), maturity, alice);
+        uint256 ytBalanceBefore = ERC20(yt).balanceOf(alice);
+        uint256 tBalanceBefore = target.balanceOf(alice);
         uint256 lvalue = adapter.scale();
 
+        vm.prank(bob);
         divider.settleSeries(address(adapter), maturity);
         increaseScale(address(target));
 
-        vm.prank(bob);
         uint256 collected = YT(yt).collect();
 
-        uint256 ytBalanceAfter = ERC20(yt).balanceOf(bob);
-        uint256 tBalanceAfter = target.balanceOf(bob);
+        uint256 ytBalanceAfter = ERC20(yt).balanceOf(alice);
+        uint256 tBalanceAfter = target.balanceOf(alice);
         (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
         // Formula: collect = tBal / lscale - tBal / scale
         uint256 collect = ytBalanceBefore.fdiv(lscale);
@@ -1472,7 +1665,9 @@ contract Dividers is TestHelper {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
 
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
 
         vm.prank(bob);
@@ -1508,7 +1703,9 @@ contract Dividers is TestHelper {
     function testFuzzCollectTransferAndCollectWithReceiverHoldingYT(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -1568,7 +1765,9 @@ contract Dividers is TestHelper {
     function testFuzzCollectTransferLessThanBalanceAndCollectWithReceiverHoldingYT(uint128 tBal) public {
         tBal = uint128(bound(tBal, 1e6, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -1631,7 +1830,9 @@ contract Dividers is TestHelper {
     function testFuzzCollectTransferToMyselfAndCollect(uint128 tBal) public {
         tBal = uint128(bound(tBal, MIN_TARGET, MAX_TARGET));
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         increaseScale(address(target));
         divider.issue(address(adapter), maturity, tBal);
@@ -1668,7 +1869,9 @@ contract Dividers is TestHelper {
 
     function testCantBackfillScaleBeforeCutoffAndAdapterEnabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         (, , , , , , uint256 iscale, uint256 mscale, ) = divider.series(address(adapter), maturity);
         vm.expectRevert(abi.encodeWithSelector(Errors.OutOfWindowBoundaries.selector));
         divider.backfillScale(address(adapter), maturity, iscale + 1, usrs, lscales);
@@ -1676,7 +1879,9 @@ contract Dividers is TestHelper {
 
     function testCantBackfillScaleSeriesNotGov() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
         uint256 tBase = 10**tDecimals;
         vm.prank(bob);
@@ -1686,7 +1891,9 @@ contract Dividers is TestHelper {
 
     function testCantBackfillScaleBeforeCutoffAndAdapterDisabled() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         vm.warp(maturity);
         divider.setAdapter(address(adapter), false);
         uint256 newScale = 1.5e18;
@@ -1696,7 +1903,9 @@ contract Dividers is TestHelper {
 
     function testBackfillScale() public {
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
 
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
 
@@ -1721,12 +1930,13 @@ contract Dividers is TestHelper {
 
     function testBackfillScaleDoesNotTransferRewardsIfAlreadyTransferred() public {
         // add some target and stake into adapter
-        vm.prank(alice);
         target.transfer(address(adapter), 100 * 10**tDecimals);
         stake.mint(address(adapter), 100 * 10**sDecimals);
 
         uint256 maturity = getValidMaturity(2021, 10);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         uint256 issueAmt = 10**tDecimals;
         divider.issue(address(adapter), maturity, issueAmt);
         vm.warp(DateTimeFull.addSeconds(maturity, SPONSOR_WINDOW + SETTLEMENT_WINDOW + 1 seconds));
@@ -1754,7 +1964,9 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceBefore = target.balanceOf(bob);
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(bob);
         vm.prank(bob);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, 10**tDecimals); // 1 target
         vm.prank(jim);
@@ -1782,7 +1994,9 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceBefore = target.balanceOf(bob);
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(bob);
         vm.prank(bob);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, 10**tDecimals); // 1 target
         vm.prank(jim);
@@ -1809,7 +2023,9 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceBefore = target.balanceOf(bob);
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(bob);
         vm.prank(bob);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
 
         uint256 fee = convertToBase(ISSUANCE_FEE, tDecimals).fmul(tBal, 10**tDecimals); // 1 target
@@ -1840,7 +2056,9 @@ contract Dividers is TestHelper {
         uint256 sponsorTargetBalanceBefore = target.balanceOf(bob);
         uint256 sponsorStakeBalanceBefore = stake.balanceOf(bob);
         vm.prank(bob);
-        periphery.sponsorSeries(address(adapter), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, pmsg);
         increaseScale(address(target));
 
         vm.prank(jim);

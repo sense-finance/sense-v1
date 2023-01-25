@@ -33,6 +33,9 @@ import { MockComptroller } from "./mocks/fuse/MockComptroller.sol";
 import { MockFuseDirectory } from "./mocks/fuse/MockFuseDirectory.sol";
 import { MockOracle } from "./mocks/fuse/MockOracle.sol";
 
+// Permit2
+import { Permit2Helper } from "./Permit2Helper.sol";
+
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 import { DateTimeFull } from "./DateTimeFull.sol";
@@ -73,7 +76,7 @@ interface CTokenInterface {
     function mint(uint256 mintAmount) external returns (uint256);
 }
 
-contract TestHelper is Test {
+contract TestHelper is Test, Permit2Helper {
     using SafeTransferLib for ERC20;
     using FixedMath for uint256;
     using FixedMath for uint64;
@@ -91,9 +94,11 @@ contract TestHelper is Test {
     TokenHandler internal tokenHandler;
     Periphery internal periphery;
 
-    address internal alice = address(1);
-    address internal bob = address(2);
-    address internal jim = address(3);
+    address internal alice = address(this); // alice is the default user
+    uint256 internal bobPrivKey = _randomUint256();
+    address internal bob = vm.addr(bobPrivKey);
+    uint256 internal jimPrivKey = _randomUint256();
+    address internal jim = vm.addr(jimPrivKey);
 
     // balancer/space
     MockSpaceFactory internal spaceFactory;
@@ -170,6 +175,7 @@ contract TestHelper is Test {
         // balancer/space mocks
         balancerVault = new MockBalancerVault();
         spaceFactory = new MockSpaceFactory(address(balancerVault), address(divider));
+        balancerVault.setSpaceFactory(address(spaceFactory));
 
         // fuse & comp mocks
         comptroller = new MockComptroller();
@@ -197,7 +203,8 @@ contract TestHelper is Test {
             address(divider),
             address(poolManager),
             address(spaceFactory),
-            address(balancerVault)
+            address(balancerVault),
+            address(permit2)
         );
         divider.setPeriphery(address(periphery));
         poolManager.setIsTrusted(address(periphery), true);
@@ -251,7 +258,6 @@ contract TestHelper is Test {
 
         // users
         MAX_TARGET = AMT * 10**target.decimals();
-        alice = address(this); // alice is the default user
         vm.label(alice, "Alice");
         initUser(alice, target, AMT);
         vm.label(bob, "Bob");
@@ -267,13 +273,14 @@ contract TestHelper is Test {
     ) public {
         vm.startPrank(usr);
 
-        // approvals
-        ERC20(address(underlying)).safeApprove(address(periphery), type(uint256).max);
+        // divider approvals
         ERC20(address(underlying)).safeApprove(address(divider), type(uint256).max);
-        ERC20(address(target)).safeApprove(address(periphery), type(uint256).max);
         ERC20(address(target)).safeApprove(address(divider), type(uint256).max);
-        ERC20(address(stake)).safeApprove(address(periphery), type(uint256).max);
-        ERC20(address(stake)).safeApprove(address(divider), type(uint256).max);
+
+        // permit2 approvals (used on `Periphery`)
+        ERC20(address(underlying)).safeApprove(address(permit2), type(uint256).max);
+        ERC20(address(target)).safeApprove(address(permit2), type(uint256).max);
+        ERC20(address(stake)).safeApprove(address(permit2), type(uint256).max);
 
         // amounts to mint
         uint256 underlyingAmt = amt * 10**uDecimals;
@@ -344,6 +351,7 @@ contract TestHelper is Test {
         }
 
         // issue PTs using half the tBal and transfer it to the vault
+        ERC20(address(target)).safeApprove(address(divider), tBal / 2);
         uint256 issued = divider.issue(address(adapter), maturity, tBal / 2);
         MockToken(divider.pt(address(adapter), maturity)).transfer(address(balancerVault), issued);
     }

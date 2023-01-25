@@ -24,6 +24,10 @@ import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.s
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 
+// Permit2
+import { Permit2Helper } from "./test-helpers/Permit2Helper.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
+
 // Constants/Addresses
 import { Constants } from "./test-helpers/Constants.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
@@ -44,7 +48,7 @@ interface SpaceFactoryLike {
     ) external;
 }
 
-contract PeripheryTestHelper is ForkTest {
+contract PeripheryTestHelper is ForkTest, Permit2Helper {
     uint256 public origin;
 
     Periphery internal periphery;
@@ -61,6 +65,10 @@ contract PeripheryTestHelper is ForkTest {
     address internal spaceFactory;
     address internal poolManager;
     address internal divider;
+    address internal stake;
+
+    uint256 internal bobPrivKey = _randomUint256();
+    address internal bob = vm.addr(bobPrivKey);
 
     // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
@@ -80,11 +88,12 @@ contract PeripheryTestHelper is ForkTest {
         spaceFactory = AddressBook.SPACE_FACTORY_1_2_0;
         balancerVault = AddressBook.BALANCER_VAULT;
         poolManager = AddressBook.POOL_MANAGER_1_2_0;
+        stake = address(new MockToken("Stake", "ST", 18));
 
         mockOracle = new MockOracle();
         BaseAdapter.AdapterParams memory mockAdapterParams = BaseAdapter.AdapterParams({
             oracle: address(mockOracle),
-            stake: address(new MockToken("Stake", "ST", 18)), // stake size is 0, so the we don't actually need any stake token
+            stake: stake, // stake size is 0, so the we don't actually need any stake token
             stakeSize: 0,
             minm: 0, // 0 minm, so there's not lower bound on future maturity
             maxm: type(uint64).max, // large maxm, so there's not upper bound on future maturity
@@ -125,7 +134,8 @@ contract PeripheryTestHelper is ForkTest {
         );
         ffactory = new FFactory(divider, Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
 
-        periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault);
+        permit2 = IPermit2(AddressBook.PERMIT2);
+        periphery = new Periphery(divider, poolManager, spaceFactory, balancerVault, address(permit2));
 
         periphery.setFactory(address(cfactory), true);
         periphery.setFactory(address(ffactory), true);
@@ -154,8 +164,9 @@ contract PeripheryTestHelper is ForkTest {
         // Set adapter scale to 1
         mockAdapter.setScale(1e18);
 
-        // Give the Periphery approvals for the mock Target
-        mockTarget.approve(address(periphery), type(uint256).max);
+        // Give the permit2 approvals for the mock Target
+        vm.prank(bob);
+        mockTarget.approve(AddressBook.PERMIT2, type(uint256).max);
     }
 }
 
@@ -170,8 +181,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         vm.warp(origin);
         address f = periphery.deployAdapter(address(cfactory), AddressBook.cBAT, "");
         CAdapter cadapter = CAdapter(payable(f));
-        // Mint this address MAX_UINT AddressBook.DAI
-        deal(AddressBook.DAI, address(this), type(uint256).max);
+        // Mint bob MAX_UINT AddressBook.DAI
+        deal(AddressBook.DAI, bob, type(uint256).max);
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
             block.timestamp + Constants.DEFAULT_MIN_MATURITY
         );
@@ -184,8 +195,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             0
         );
 
-        ERC20(AddressBook.DAI).approve(address(periphery), type(uint256).max);
-        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false);
+        vm.prank(bob);
+        ERC20(AddressBook.DAI).approve(AddressBook.PERMIT2, type(uint256).max);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, pmsg);
 
         // Check pt and yt deployed
         assertTrue(pt != address(0));
@@ -207,7 +221,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         );
         FAdapter fadapter = FAdapter(payable(f));
         // Mint this address MAX_UINT AddressBook.DAI for stake
-        deal(AddressBook.DAI, address(this), type(uint256).max);
+        deal(AddressBook.DAI, bob, type(uint256).max);
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
             block.timestamp + Constants.DEFAULT_MIN_MATURITY
@@ -221,8 +235,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             0
         );
 
-        ERC20(AddressBook.DAI).approve(address(periphery), type(uint256).max);
-        (address pt, address yt) = periphery.sponsorSeries(address(fadapter), maturity, false);
+        vm.prank(bob);
+        ERC20(AddressBook.DAI).approve(AddressBook.PERMIT2, type(uint256).max);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(fadapter), maturity, false, pmsg);
 
         // Check pt and yt deployed
         assertTrue(pt != address(0));
@@ -267,13 +284,15 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 2. Initialize the pool by joining 0.5 Target in, then swapping 0.5 PTs in for Target
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
 
-        // 3. Swap 10% of this address' YTs for Target
-        uint256 ytBalPre = ERC20(yt).balanceOf(address(this));
-        uint256 targetBalPre = mockTarget.balanceOf(address(this));
-        ERC20(yt).approve(address(periphery), ytBalPre / 10);
-        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10, address(this));
-        uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
-        uint256 targetBalPost = mockTarget.balanceOf(address(this));
+        // 3. Swap 10% of bob's YTs for Target
+        vm.startPrank(bob);
+        uint256 ytBalPre = ERC20(yt).balanceOf(bob);
+        uint256 targetBalPre = mockTarget.balanceOf(bob);
+        ERC20(yt).approve(AddressBook.PERMIT2, ytBalPre / 10);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), yt);
+        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10, bob, pmsg);
+        uint256 ytBalPost = ERC20(yt).balanceOf(bob);
+        uint256 targetBalPost = mockTarget.balanceOf(bob);
 
         // Check that this address has fewer YTs and more Target
         assertLt(ytBalPost, ytBalPre);
@@ -292,8 +311,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Calculated using sense-v1/yt-buying-lib
         uint256 TARGET_TO_BORROW = 0.1413769e18;
 
-        uint256 targetBalPre = mockTarget.balanceOf(address(this));
-        uint256 ytBalPre = ERC20(yt).balanceOf(address(this));
+        uint256 targetBalPre = mockTarget.balanceOf(bob);
+        uint256 ytBalPre = ERC20(yt).balanceOf(bob);
+
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
             maturity,
@@ -301,10 +323,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             TARGET_TO_BORROW,
             TARGET_TO_BORROW, // Min out is just the amount of Target borrowed
             // (if at least the Target borrowed is not swapped out, then we won't be able to pay back the flashloan)
-            address(this)
+            bob,
+            pmsg
         );
-        uint256 targetBalPost = mockTarget.balanceOf(address(this));
-        uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
+        uint256 targetBalPost = mockTarget.balanceOf(bob);
+        uint256 ytBalPost = ERC20(yt).balanceOf(bob);
 
         // Check that the return values reflect the token balance changes
         assertEq(targetBalPre - targetBalPost + targetReturned, TARGET_IN);
@@ -449,13 +472,17 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         (uint256 targetReturnedPreview, ) = _callStaticBuyYTs(maturity, TARGET_IN, TARGET_TO_BORROW, TARGET_TO_BORROW);
 
         mockTarget.mint(address(periphery), TARGET_TRANSFERRED_IN);
+
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
             maturity,
             TARGET_IN,
             TARGET_TO_BORROW,
             TARGET_TO_BORROW,
-            msg.sender
+            msg.sender,
+            pmsg
         );
 
         assertEq(targetReturnedPreview + TARGET_TRANSFERRED_IN, targetReturned);
@@ -521,7 +548,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         maturity = DateTimeFull.timestampFromDateTime(year + 1, month, 1, 0, 0, 0);
-        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false, pmsg);
     }
 
     function _initializePool(
@@ -532,18 +561,23 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     ) public {
         // Issue some PTs (& YTs) we'll use to initialize the pool with
         uint256 targetToIssueWith = ptsToSwapIn.fdivUp(1e18 - mockAdapter.ifee()).fdivUp(mockAdapter.scale());
-        mockTarget.mint(address(this), targetToIssueWith + targetToJoin);
+        mockTarget.mint(bob, targetToIssueWith + targetToJoin);
+
+        vm.startPrank(bob);
         mockTarget.approve(address(divider), targetToIssueWith);
         Divider(divider).issue(address(mockAdapter), maturity, targetToIssueWith);
         // Sanity check that we have the PTs we need to swap in, either exactly, or close to (modulo rounding)
-        assertTrue(pt.balanceOf(address(this)) >= ptsToSwapIn && pt.balanceOf(address(this)) <= ptsToSwapIn + 100);
+        assertTrue(pt.balanceOf(bob) >= ptsToSwapIn && pt.balanceOf(bob) <= ptsToSwapIn + 100);
 
         // Add Target to the Space pool
-        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0, address(this));
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0, bob, pmsg);
 
         // Swap PT balance in for Target to initialize the PT side of the pool
-        pt.approve(address(periphery), ptsToSwapIn);
-        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0, address(this));
+        pt.approve(AddressBook.PERMIT2, ptsToSwapIn);
+        pmsg = generatePermit(bobPrivKey, address(periphery), address(pt));
+        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0, bob, pmsg);
+        vm.stopPrank();
     }
 
     function _checkYTBuyingParameters(
@@ -552,13 +586,16 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public {
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
             maturity,
             targetIn,
             targetToBorrow,
             minOut,
-            address(this)
+            bob,
+            pmsg
         );
 
         // Check that less than 0.01% of our Target got returned
@@ -582,13 +619,16 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public {
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
             maturity,
             targetIn,
             targetToBorrow,
             minOut,
-            msg.sender
+            msg.sender,
+            pmsg
         );
 
         revert(string(abi.encode(targetReturned, ytsOut)));

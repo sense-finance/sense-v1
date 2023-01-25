@@ -21,8 +21,9 @@ import { DateTimeFull } from "@sense-finance/v1-core/tests/test-helpers/DateTime
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
 import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
+import { Permit2Helper } from "@sense-finance/v1-core/tests/test-helpers/Permit2Helper.sol";
 
-contract NoopPoolManagerTest is ForkTest {
+contract NoopPoolManagerTest is ForkTest, Permit2Helper {
     using FixedMath for uint256;
 
     MockToken internal stake;
@@ -41,6 +42,10 @@ contract NoopPoolManagerTest is ForkTest {
     MockSpaceFactory internal spaceFactory;
 
     BaseAdapter.AdapterParams internal adapterParams;
+
+    // user
+    uint256 internal bobPrivKey = _randomUint256();
+    address internal bob = vm.addr(bobPrivKey);
 
     function setUp() public {
         fork();
@@ -65,7 +70,8 @@ contract NoopPoolManagerTest is ForkTest {
             address(divider),
             address(noopPoolManager),
             address(spaceFactory),
-            address(balancerVault)
+            address(balancerVault),
+            AddressBook.PERMIT2
         );
 
         // Enable the adapter
@@ -116,8 +122,12 @@ contract NoopPoolManagerTest is ForkTest {
         mockAdapter.scale();
         divider.setAdapter(address(mockAdapter), true);
 
+        setPermit2(AddressBook.PERMIT2);
         stake.mint(address(this), 2e18);
-        stake.approve(address(periphery), 2e18);
+        stake.mint(bob, 2e18);
+        stake.approve(address(permit2), 2e18);
+        vm.prank(bob);
+        stake.approve(address(permit2), 2e18);
     }
 
     function testMainnetDeployPoolSucceeds() public {
@@ -215,7 +225,9 @@ contract NoopPoolManagerTest is ForkTest {
 
         uint256 maturity = _getValidMaturity();
 
-        periphery.sponsorSeries(address(mockAdapter2), maturity, true);
+        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(mockAdapter2), maturity, true, pmsg);
     }
 
     function testFailEmitTargetAdded() public {
