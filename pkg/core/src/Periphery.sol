@@ -266,6 +266,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param ytBal Balance of Yield Tokens to swap
     /// @param receiver Address to receive the Target
+    /// @return tBal amount of Target received
     function swapYTsForTarget(
         address adapter,
         uint256 maturity,
@@ -614,7 +615,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     /// @return tAmount if mode = 0, target received from selling YTs, otherwise, returns 0
     /// @return issued returns amount of YTs issued (and received) except first provision which returns 0
-    /// @return lpShares Space LP shares received given the liquidity added
+    /// @return lpShares LP Shares received from adding liquidity to a Space
     function _addLiquidity(
         address adapter,
         uint256 maturity,
