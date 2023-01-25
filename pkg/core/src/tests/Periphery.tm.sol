@@ -197,9 +197,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         vm.prank(bob);
         ERC20(AddressBook.DAI).approve(AddressBook.PERMIT2, type(uint256).max);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, pmsg);
+        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data);
 
         // Check pt and yt deployed
         assertTrue(pt != address(0));
@@ -237,9 +237,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         vm.prank(bob);
         ERC20(AddressBook.DAI).approve(AddressBook.PERMIT2, type(uint256).max);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(address(fadapter), maturity, false, pmsg);
+        (address pt, address yt) = periphery.sponsorSeries(address(fadapter), maturity, false, data);
 
         // Check pt and yt deployed
         assertTrue(pt != address(0));
@@ -289,8 +289,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 ytBalPre = ERC20(yt).balanceOf(bob);
         uint256 targetBalPre = mockTarget.balanceOf(bob);
         ERC20(yt).approve(AddressBook.PERMIT2, ytBalPre / 10);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), yt);
-        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10, bob, pmsg);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), yt);
+        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10, bob, data);
         uint256 ytBalPost = ERC20(yt).balanceOf(bob);
         uint256 targetBalPost = mockTarget.balanceOf(bob);
 
@@ -314,7 +314,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetBalPre = mockTarget.balanceOf(bob);
         uint256 ytBalPre = ERC20(yt).balanceOf(bob);
 
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
@@ -324,7 +324,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             TARGET_TO_BORROW, // Min out is just the amount of Target borrowed
             // (if at least the Target borrowed is not swapped out, then we won't be able to pay back the flashloan)
             bob,
-            pmsg
+            data
         );
         uint256 targetBalPost = mockTarget.balanceOf(bob);
         uint256 ytBalPost = ERC20(yt).balanceOf(bob);
@@ -473,7 +473,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         mockTarget.mint(address(periphery), TARGET_TRANSFERRED_IN);
 
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
@@ -482,7 +482,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             TARGET_TO_BORROW,
             TARGET_TO_BORROW,
             msg.sender,
-            pmsg
+            data
         );
 
         assertEq(targetReturnedPreview + TARGET_TRANSFERRED_IN, targetReturned);
@@ -548,9 +548,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     {
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         maturity = DateTimeFull.timestampFromDateTime(year + 1, month, 1, 0, 0, 0);
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(stake));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false, pmsg);
+        (pt, yt) = periphery.sponsorSeries(address(mockAdapter), maturity, false, data);
     }
 
     function _initializePool(
@@ -570,13 +570,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(pt.balanceOf(bob) >= ptsToSwapIn && pt.balanceOf(bob) <= ptsToSwapIn + 100);
 
         // Add Target to the Space pool
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
-        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0, bob, pmsg);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0, bob, data);
 
         // Swap PT balance in for Target to initialize the PT side of the pool
         pt.approve(AddressBook.PERMIT2, ptsToSwapIn);
-        pmsg = generatePermit(bobPrivKey, address(periphery), address(pt));
-        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0, bob, pmsg);
+        data = generatePermit(bobPrivKey, address(periphery), address(pt));
+        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0, bob, data);
         vm.stopPrank();
     }
 
@@ -586,7 +586,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public {
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
@@ -595,7 +595,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             targetToBorrow,
             minOut,
             bob,
-            pmsg
+            data
         );
 
         // Check that less than 0.01% of our Target got returned
@@ -619,7 +619,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public {
-        bytes memory pmsg = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapTargetForYTs(
             address(mockAdapter),
@@ -628,7 +628,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             targetToBorrow,
             minOut,
             msg.sender,
-            pmsg
+            data
         );
 
         revert(string(abi.encode(targetReturned, ytsOut)));
