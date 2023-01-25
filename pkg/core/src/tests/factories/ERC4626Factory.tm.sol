@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 // Internal references
 import { ERC4626Adapter } from "../../adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { ERC4626CropsAdapter } from "../../adapters/abstract/erc4626/ERC4626CropsAdapter.sol";
@@ -19,10 +17,9 @@ import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
-contract ERC4626TestHelper is Test {
-    uint256 public mainnetFork;
-
+contract ERC4626TestHelper is ForkTest {
     ERC4626Factory internal factory;
     ERC4626CropsFactory internal cropsFactory;
     Divider internal divider;
@@ -37,6 +34,8 @@ contract ERC4626TestHelper is Test {
     uint256 public constant DEFAULT_GUARD = 100000 * 1e18;
 
     function setUp() public {
+        fork();
+
         tokenHandler = new TokenHandler();
         divider = new Divider(address(this), address(tokenHandler));
         tokenHandler.init(address(divider));

@@ -186,7 +186,7 @@ contract MockBalancerVault {
                 amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE);
             }
         }
-        Token(address(singleSwap.assetOut)).transfer(msg.sender, amountInOrOut);
+        Token(address(singleSwap.assetOut)).transfer(funds.recipient, amountInOrOut);
         return amountInOrOut;
     }
 

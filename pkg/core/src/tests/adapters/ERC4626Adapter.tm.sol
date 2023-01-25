@@ -16,6 +16,7 @@ import { Periphery } from "../../Periphery.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 interface IMUSD {
     function depositInterest(uint256 _amount) external;
@@ -25,7 +26,7 @@ interface IMUSD {
 /// @dev reads from ENV the target address or defaults to imUSD 4626 token if none
 /// @dev reads from ENV an address of a user with underlying balance. This is used in case tha
 /// the `deal()` fails at finding the storage slot for the vault.
-contract ERC4626Adapters is Test {
+contract ERC4626Adapters is ForkTest {
     using FixedMath for uint256;
 
     ERC20 public underlying;
@@ -35,6 +36,8 @@ contract ERC4626Adapters is Test {
     uint256 public delta = 1;
 
     function setUp() public {
+        fork();
+
         try vm.envAddress("ERC4626_ADDRESS") returns (address _target) {
             target = ERC4626(_target);
             console.log("Running tests for token: ", target.symbol());

@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
 import "./ERC4626.test.sol";
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/mixins/ERC4626.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 /// @title ERC4626 Property Tests
 /// @author Taken from https://github.com/a16z/erc4626-tests
 /// @dev Modified to work with a deployed vault whose address is read from env.
 /// It also provides the `_needsRolling` property and support for vaults where `deal()` can't find the storage slot.
-contract ERC4626StdTest is ERC4626Test {
+contract ERC4626StdTest is ERC4626Test, ForkTest {
     address public userWithAssets;
 
     function setUp() public override {
+        fork();
         try vm.envAddress("ERC4626_ADDRESS") returns (address vault) {
             _vault_ = vault;
         } catch {

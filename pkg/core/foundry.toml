@@ -16,3 +16,6 @@ remappings = [
     '@auto-roller=lib/auto-roller',
     'sense-v1-utils=../utils/src/'
 ]
+
+[rpc_endpoints]
+mainnet = "${RPC_URL_MAINNET}"

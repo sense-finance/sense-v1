@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 
@@ -18,6 +16,7 @@ import { CFactory } from "../adapters/implementations/compound/CFactory.sol";
 import { FFactory } from "../adapters/implementations/fuse/FFactory.sol";
 
 import { DateTimeFull } from "./test-helpers/DateTimeFull.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 // Mocks
 import { MockOracle } from "./test-helpers/mocks/fuse/MockOracle.sol";
@@ -45,7 +44,7 @@ interface SpaceFactoryLike {
     ) external;
 }
 
-contract PeripheryTestHelper is Test {
+contract PeripheryTestHelper is ForkTest {
     uint256 public origin;
 
     Periphery internal periphery;
@@ -67,6 +66,7 @@ contract PeripheryTestHelper is Test {
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
     function setUp() public {
+        fork();
         origin = block.timestamp;
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
@@ -271,7 +271,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 ytBalPre = ERC20(yt).balanceOf(address(this));
         uint256 targetBalPre = mockTarget.balanceOf(address(this));
         ERC20(yt).approve(address(periphery), ytBalPre / 10);
-        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10);
+        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10, address(this));
         uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
         uint256 targetBalPost = mockTarget.balanceOf(address(this));
 
@@ -299,8 +299,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             TARGET_IN,
             TARGET_TO_BORROW,
-            TARGET_TO_BORROW // Min out is just the amount of Target borrowed
+            TARGET_TO_BORROW, // Min out is just the amount of Target borrowed
             // (if at least the Target borrowed is not swapped out, then we won't be able to pay back the flashloan)
+            address(this)
         );
         uint256 targetBalPost = mockTarget.balanceOf(address(this));
         uint256 ytBalPost = ERC20(yt).balanceOf(address(this));
@@ -453,7 +454,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             TARGET_IN,
             TARGET_TO_BORROW,
-            TARGET_TO_BORROW
+            TARGET_TO_BORROW,
+            msg.sender
         );
 
         assertEq(targetReturnedPreview + TARGET_TRANSFERRED_IN, targetReturned);
@@ -537,11 +539,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(pt.balanceOf(address(this)) >= ptsToSwapIn && pt.balanceOf(address(this)) <= ptsToSwapIn + 100);
 
         // Add Target to the Space pool
-        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0);
+        periphery.addLiquidityFromTarget(address(mockAdapter), maturity, targetToJoin, 1, 0, address(this));
 
         // Swap PT balance in for Target to initialize the PT side of the pool
         pt.approve(address(periphery), ptsToSwapIn);
-        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0);
+        periphery.swapPTsForTarget(address(mockAdapter), maturity, ptsToSwapIn, 0, address(this));
     }
 
     function _checkYTBuyingParameters(
@@ -555,7 +557,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             targetIn,
             targetToBorrow,
-            minOut
+            minOut,
+            address(this)
         );
 
         // Check that less than 0.01% of our Target got returned
@@ -584,7 +587,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             targetIn,
             targetToBorrow,
-            minOut
+            minOut,
+            msg.sender
         );
 
         revert(string(abi.encode(targetReturned, ytsOut)));

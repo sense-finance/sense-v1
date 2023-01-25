@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "forge-std/Test.sol";
-
 import { FixedMath } from "../../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
@@ -19,6 +17,7 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
 interface PriceOracleLike {
     function latestRoundData()
@@ -54,7 +53,7 @@ interface CurveStableSwapLike {
     ) external view returns (uint256);
 }
 
-contract Opener is Test {
+contract Opener is ForkTest {
     Divider public divider;
     uint256 public maturity;
     address public adapter;
@@ -75,7 +74,7 @@ contract Opener is Test {
     }
 }
 
-contract WstETHAdapterTestHelper is Test {
+contract WstETHAdapterTestHelper is ForkTest {
     WstETHAdapter internal adapter;
     OwnableWstETHAdapter internal oAdapter;
     Divider internal divider;
@@ -92,6 +91,8 @@ contract WstETHAdapterTestHelper is Test {
     uint64 public constant DEFAULT_TILT = 0;
 
     function setUp() public {
+        fork();
+
         deal(AddressBook.WETH, address(this), 1e18);
         deal(AddressBook.WSTETH, address(this), 1e18);
         tokenHandler = new TokenHandler();
