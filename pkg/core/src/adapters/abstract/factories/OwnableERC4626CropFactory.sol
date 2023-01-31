@@ -12,7 +12,7 @@ import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 // External references
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
 
-/// @notice Ownable Crop Factoy contract that deploys Ownable Crop Adapters for Rolling Liquidity Vaults
+/// @notice Ownable Crop Factory contract that deploys Ownable Crop Adapters for Rolling Liquidity Vaults
 contract OwnableERC4626CropFactory is ERC4626CropFactory {
     using Bytes32AddressLib for address;
 

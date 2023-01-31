@@ -119,11 +119,9 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
             adapter.setClaimer(address(claimer));
 
             // create RLV
-            if (chainId != Constants.MAINNET) {
-                AutoRoller rlv = _createRLV(adapter, AutoRollerFactory(rlvFactory), address(distributor));
-                // roll first series
-                _roll(rlv);
-            }
+            AutoRoller rlv = _createRLV(adapter, AutoRollerFactory(rlvFactory), address(distributor));
+            // roll first series
+            _roll(rlv);
         }
 
         if (deployer != senseMultisig) {

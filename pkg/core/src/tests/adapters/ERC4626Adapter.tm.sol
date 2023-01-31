@@ -281,7 +281,7 @@ contract ERC4626Adapters is ForkTest {
             address sanToken = Token(address(target)).sanToken();
             address stableMaster = Token(sanToken).stableMaster();
             MockToken(AddressBook.FRAX).approve(stableMaster, amt);
-            Token(stableMaster).mint(amt, address(this), 0x6b4eE7352406707003bC6f6b96595FD35925af48, 0);
+            Token(stableMaster).mint(amt, address(this), AddressBook.FRAX_POOL_MANAGER, 0);
 
             vm.warp(block.timestamp + 1 days);
             return;
@@ -290,8 +290,6 @@ contract ERC4626Adapters is ForkTest {
         // try mutating vault by transfering underlying to the vault
         underlying.transfer(address(target), amt);
     }
-
-    event Hola(uint256);
 
     function deal(
         address token,

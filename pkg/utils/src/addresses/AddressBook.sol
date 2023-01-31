@@ -66,6 +66,7 @@ library AddressBook {
     // angle finance
     address public constant sanFRAX_EUR_Wrapper = 0x14244978b1CC189324C3e35685D6Ae2F632e9846;
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
+    address public constant FRAX_POOL_MANAGER = 0x6b4eE7352406707003bC6f6b96595FD35925af48;
     address public constant ANGLE = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
 
     /////////// Others ///////////
