@@ -8,6 +8,7 @@ import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { ERC4626CropAdapter } from "../../adapters/abstract/erc4626/ERC4626CropAdapter.sol";
+import { PingPongClaimer } from "../../adapters/implementations/claimers/PingPongClaimer.sol";
 import { Divider } from "../../Divider.sol";
 import { YT } from "../../tokens/YT.sol";
 
@@ -1235,6 +1236,22 @@ contract CropAdapters is TestHelper {
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.BadContractInteration.selector));
         divider.issue(address(adapter), maturity, (40 * tBal) / 100);
+    }
+
+    function testPingPongClaimer() public {
+        uint256 tBal = 100e18;
+        uint256 maturity = getValidMaturity(2021, 10);
+        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(reward);
+
+        PingPongClaimer claimer = new PingPongClaimer();
+        vm.prank(Constants.RESTRICTED_ADMIN);
+        adapter.setClaimer(address(claimer));
+
+        // calling issue does not revert
+        divider.issue(address(adapter), maturity, tBal);
     }
 
     // helpers

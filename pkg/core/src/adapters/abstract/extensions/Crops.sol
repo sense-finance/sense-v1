@@ -140,7 +140,7 @@ abstract contract Crops is Trust {
                 ERC20(target).transfer(claimer, tBal);
 
                 // Make claimer to claim rewards
-                IClaimer(claimer).claim();
+                IClaimer(claimer).claim(address(this));
 
                 // Get the target back
                 if (ERC20(target).balanceOf(address(this)) < tBal) revert Errors.BadContractInteration();

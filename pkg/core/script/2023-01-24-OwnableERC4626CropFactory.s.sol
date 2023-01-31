@@ -98,6 +98,10 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
 
         address reward = chainId == Constants.FORK || chainId == Constants.MAINNET ? AddressBook.ANGLE : AddressBookGoerli.DAI;
         
+        console.log("- Deploy sanFRAX_EUR_Wrapper rewards claimer");
+        vm.broadcast(deployer);
+        PingPongClaimer claimer = new PingPongClaimer();
+
         // deploy the rewards distributor
         RewardsDistributor distributor = _deployRewardsDistributor(reward);
 
@@ -110,10 +114,6 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
 
             // deploy and set claimer
             // TODO: for Mainnet, this will have to be done after we have deployed the adapter (via Defender)
-            console.log("- Deploy sanFRAX_EUR_Wrapper rewards claimer");
-            vm.broadcast(deployer);
-            PingPongClaimer claimer = new PingPongClaimer(address(adapter));
-
             console.log("- Set claimer to adapter");
             vm.broadcast(senseMultisig); // broadcast following tx from multisig
             adapter.setClaimer(address(claimer));

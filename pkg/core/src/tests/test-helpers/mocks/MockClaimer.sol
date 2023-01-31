@@ -21,7 +21,7 @@ contract MockClaimer is IClaimer {
         rewardTokens = _rewardTokens;
     }
 
-    function claim() external virtual {
+    function claim(address) external virtual {
         for (uint256 i = 0; i < rewardTokens.length; i++) {
             MockToken(rewardTokens[i]).mint(address(msg.sender), 60 * 10**MockToken(rewardTokens[i]).decimals());
         }

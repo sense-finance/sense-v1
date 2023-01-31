@@ -3,5 +3,5 @@ pragma solidity 0.8.15;
 
 interface IClaimer {
     /// @dev Claims rewards on protocol.
-    function claim() external;
+    function claim(address adapter) external;
 }
