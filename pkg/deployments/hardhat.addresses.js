@@ -125,6 +125,17 @@ const BB_wstETH4626 = new Map();
 BB_wstETH4626.set("1", "0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048");
 BB_wstETH4626.set("111", "0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048");
 
+// sanFRAX_EUR_Wrapper
+const sanFRAX_EUR_Wrapper = new Map();
+sanFRAX_EUR_Wrapper.set("1", "0x14244978b1CC189324C3e35685D6Ae2F632e9846");
+sanFRAX_EUR_Wrapper.set("5", "0x5A13CC452Bb4225fe1c1005f965C27be05aeF7C5"); // cUSDC
+sanFRAX_EUR_Wrapper.set("111", "0x14244978b1CC189324C3e35685D6Ae2F632e9846");
+
+const ANGLE = new Map();
+ANGLE.set("1", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
+ANGLE.set("111", "0x31429d1856aD1377A8A0079410B297e1a9e214c2");
+ANGLE.set("5", "0x6b175474e89094c44da98b954eedeac495271d0f"); // DAI
+
 // mStable
 const IMUSD_TOKEN = new Map();
 IMUSD_TOKEN.set("1", "0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19");
@@ -365,6 +376,10 @@ exports.MORPHO_USDT = MORPHO_USDT;
 
 // Idle Finance
 exports.BB_wstETH4626 = BB_wstETH4626;
+
+// Angle
+exports.sanFRAX_EUR_Wrapper = sanFRAX_EUR_Wrapper;
+exports.ANGLE = ANGLE;
 
 // mStable
 exports.MUSD_TOKEN = MUSD_TOKEN;

@@ -1,0 +1,332 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract DividerLike",
+        "name": "_divider",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_balancerVault",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_periphery",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_rollerPeriphery",
+        "type": "address"
+      },
+      {
+        "internalType": "contract RollerUtils",
+        "name": "_utils",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "RollerQuantityLimitExceeded",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "autoRoller",
+        "type": "address"
+      }
+    ],
+    "name": "PeripheryChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "autoRoller",
+        "type": "address"
+      }
+    ],
+    "name": "RollerCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "autoRoller",
+        "type": "address"
+      }
+    ],
+    "name": "RollerPeripheryChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "trusted",
+        "type": "bool"
+      }
+    ],
+    "name": "UserTrustUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "autoRoller",
+        "type": "address"
+      }
+    ],
+    "name": "UtilsChanged",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract OwnedAdapterLike",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "rewardRecipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetDuration",
+        "type": "uint256"
+      }
+    ],
+    "name": "create",
+    "outputs": [
+      {
+        "internalType": "contract AutoRoller",
+        "name": "autoRoller",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getCreationCode",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getCreationCodeContracts",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "contractA",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "contractB",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isTrusted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "periphery",
+    "outputs": [
+      {
+        "internalType": "contract PeripheryLike",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rollerPeriphery",
+    "outputs": [
+      {
+        "internalType": "contract RollerPeripheryLike",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "rollers",
+    "outputs": [
+      {
+        "internalType": "contract AutoRoller",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "trusted",
+        "type": "bool"
+      }
+    ],
+    "name": "setIsTrusted",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newPeriphery",
+        "type": "address"
+      }
+    ],
+    "name": "setPeriphery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newRollerPeriphery",
+        "type": "address"
+      }
+    ],
+    "name": "setRollerPeriphery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newUtils",
+        "type": "address"
+      }
+    ],
+    "name": "setUtils",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "utils",
+    "outputs": [
+      {
+        "internalType": "contract RollerUtils",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
