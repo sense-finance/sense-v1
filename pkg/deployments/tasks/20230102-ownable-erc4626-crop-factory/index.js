@@ -190,26 +190,26 @@ task(
   }
 
   if (chainId !== CHAINS.MAINNET) {
-    // const adapter = await _deployAdapter(periphery, divider, factory, target);
-    // // set claimer
-    // // TODO: for Mainnet, this will have to be done after we have deployed the adapter (via Defender)
-    // console.log("- Set deployer address as a trusted on adapter");
-    // await (await factory.setAdapterTrusted(adapter.address, deployer, true)).wait();
-    // console.log("- Set claimer to adapter");
-    // await (await adapter.setClaimer(claimerAddress)).wait();
-    // // create RLV
-    // console.log("\n-------------------------------------------------------");
-    // console.log("Create RLV for %s", await adapter.name());
-    // console.log("-------------------------------------------------------\n");
-    // const rlvAddress = await rlvFactory.callStatic.create(adapter.address, rdAddress, 3);
-    // await (await rlvFactory.create(adapter.address, rdAddress, 3)).wait();
-    // const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
-    // console.log("- RLV %s deployed @ %s", await rlv.name(), rlvAddress);
-    // // roll first series
-    // const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
-    // const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
-    // const targetContract = new ethers.Contract(target.address, ERC20_ABI, deployerSigner);
-    // await _roll(targetContract, stakeContract, stakeSize, rlv);
+    const adapter = await _deployAdapter(periphery, divider, factory, target);
+    // set claimer
+    // TODO: for Mainnet, this will have to be done after we have deployed the adapter (via Defender)
+    console.log("- Set deployer address as a trusted on adapter");
+    await (await factory.setAdapterTrusted(adapter.address, deployer, true)).wait();
+    console.log("- Set claimer to adapter");
+    await (await adapter.setClaimer(claimerAddress)).wait();
+    // create RLV
+    console.log("\n-------------------------------------------------------");
+    console.log("Create RLV for %s", await adapter.name());
+    console.log("-------------------------------------------------------\n");
+    const rlvAddress = await rlvFactory.callStatic.create(adapter.address, rdAddress, 3);
+    await (await rlvFactory.create(adapter.address, rdAddress, 3)).wait();
+    const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
+    console.log("- RLV %s deployed @ %s", await rlv.name(), rlvAddress);
+    // roll first series
+    const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
+    const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
+    const targetContract = new ethers.Contract(target.address, ERC20_ABI, deployerSigner);
+    await _roll(targetContract, stakeContract, stakeSize, rlv);
   }
 
   console.log("\n-------------------------------------------------------");
