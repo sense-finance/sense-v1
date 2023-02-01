@@ -8,6 +8,7 @@ const peripheryAbi = require("./abi/Periphery.json");
 const adapterAbi = require("./abi/OwnableERC4626CropAdapter.json");
 const rlvFactoryAbi = require("./abi/AutoRollerFactory.json");
 const rlvAbi = require("./abi/AutoRoller.json");
+const rewardsDistributorAbi = require("./abi/RewardsDistributor.json");
 
 const {
   verifyOnEtherscan,
@@ -223,6 +224,7 @@ task(
     await (await factory.setIsTrusted(deployer, false)).wait();
 
     console.log("- Unset deployer as trusted address of Factory");
+    const distributor = new ethers.Contract(rdAddress, rewardsDistributorAbi, deployerSigner);
     await (await distributor.transferOwnership(senseAdminMultisigAddress)).wait();
   }
 
