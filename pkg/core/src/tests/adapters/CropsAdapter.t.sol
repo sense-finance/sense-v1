@@ -1412,9 +1412,17 @@ contract CropsAdapters is TestHelper {
         vm.prank(Constants.RESTRICTED_ADMIN);
         cropsAdapter.setClaimer(address(claimer));
 
+        divider.issue(address(cropsAdapter), maturity, tBal);
+
+        // assert the ping pong claimer emits a transfer event
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(address(claimer), address(cropsAdapter), tBal);
+
         // calling issue does not revert
         divider.issue(address(cropsAdapter), maturity, tBal);
     }
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     // helpers
     function assumeBounds(uint256 tBal) internal {

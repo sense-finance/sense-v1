@@ -14,7 +14,6 @@ remappings = [
     '@openzeppelin/contracts=../../node_modules/@openzeppelin/contracts',
     '@yield-daddy=lib/yield-daddy',
     '@auto-roller=lib/auto-roller',
-    'sense-v1-utils=../utils/src/'
     'sense-v1-utils=../utils/src/',
     '@morpho=lib/morpho-core-v1',
     '@rari-capital/solmate/=../../node_modules/solmate'

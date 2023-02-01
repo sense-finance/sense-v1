@@ -54,10 +54,10 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             oracle: addressGuru.oracle(),
             stake: addressGuru.weth(),
-            stakeSize: 25e16, // 0.25 WETH
+            stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
-            ifee: 5e14, // 0.005%
+            ifee: 5e15, // 0.005%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000
@@ -95,28 +95,26 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
 
             vm.stopBroadcast();
         }
-
-        address reward = chainId == Constants.FORK || chainId == Constants.MAINNET ? AddressBook.ANGLE : AddressBookGoerli.DAI;
         
         console.log("- Deploy sanFRAX_EUR_Wrapper rewards claimer");
         vm.broadcast(deployer);
         PingPongClaimer claimer = new PingPongClaimer();
 
         // deploy the rewards distributor
+        address reward = chainId == Constants.FORK || chainId == Constants.MAINNET ? AddressBook.ANGLE : AddressBookGoerli.DAI;
         RewardsDistributor distributor = _deployRewardsDistributor(reward);
 
         if (chainId != Constants.MAINNET) {
             // TODO: read targets from input.json file (can't do this right now because of a foundry bug when parsing JSON)
-            address sanFRAX_EUR_Wrapper = chainId == Constants.FORK || chainId == Constants.MAINNET ? AddressBook.sanFRAX_EUR_Wrapper : AddressBookGoerli.cUSDC;
+            address sanFRAX_EUR_Wrapper = AddressBookGoerli.cUSDC;
 
             // deploy ownable adapter
             OwnableERC4626CropAdapter adapter = _deployAdapter(periphery, factory, ERC20(sanFRAX_EUR_Wrapper), reward);
-
-            // deploy and set claimer
-            // TODO: for Mainnet, this will have to be done after we have deployed the adapter (via Defender)
+        
+            // set claimer
             console.log("- Set claimer to adapter");
             vm.broadcast(senseMultisig); // broadcast following tx from multisig
-            adapter.setClaimer(address(claimer));
+            factory.setClaimer(address(claimer));
 
             // create RLV
             AutoRoller rlv = _createRLV(adapter, AutoRollerFactory(rlvFactory), address(distributor));
@@ -181,7 +179,6 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
         // create RLV for ownable adapter
         console.log("- Create RLV for %s", OwnableERC4626CropAdapter(adapter).name());
         
-        // TODO: replace address(0xFED) for rewards distributor!!!!!!!!!
         rlv = rlvFactory.create(OwnedAdapterLike(address(adapter)), distributor, 3); // target duration
         console.log("- RLV %s deployed @ %s", rlv.name(), address(rlv));
     }

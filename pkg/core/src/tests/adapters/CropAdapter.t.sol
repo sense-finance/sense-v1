@@ -1250,9 +1250,17 @@ contract CropAdapters is TestHelper {
         vm.prank(Constants.RESTRICTED_ADMIN);
         adapter.setClaimer(address(claimer));
 
+        divider.issue(address(adapter), maturity, tBal);
+
+        // assert the ping pong claimer emits a transfer event
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(address(claimer), address(adapter), tBal);
+
         // calling issue does not revert
         divider.issue(address(adapter), maturity, tBal);
     }
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     // helpers
 

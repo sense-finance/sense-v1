@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.15;
 
-import { BaseAdapter } from "../BaseAdapter.sol";
-import { ERC4626Adapter } from "./ERC4626Adapter.sol";
-import { Crop } from "../extensions/Crop.sol";
+import { ERC4626CropAdapter } from "./ERC4626CropAdapter.sol";
 
 interface Opener {
     function onSponsorWindowOpened(address, uint256) external;
@@ -12,7 +10,7 @@ interface Opener {
 /// @notice Ownable Crop Adapter contract for Rolling Liquidity Vaults
 /// This adapter allows only the owner, which must comply with the Opener
 /// interface, to Sponsor a Series
-contract OwnableERC4626CropAdapter is ERC4626Adapter, Crop {
+contract OwnableERC4626CropAdapter is ERC4626CropAdapter {
     uint256 internal open = 1;
 
     constructor(
@@ -22,7 +20,7 @@ contract OwnableERC4626CropAdapter is ERC4626Adapter, Crop {
         uint128 _ifee,
         AdapterParams memory _adapterParams,
         address _reward
-    ) ERC4626Adapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams) Crop(_divider, _reward) {}
+    ) ERC4626CropAdapter(_divider, _target, _rewardsRecipient, _ifee, _adapterParams, _reward) {}
 
     function openSponsorWindow() external requiresTrust {
         open = 2;
@@ -34,17 +32,5 @@ contract OwnableERC4626CropAdapter is ERC4626Adapter, Crop {
     // return the maturity bounds. Otherwise, return 0 making the sponsoring to revert.
     function getMaturityBounds() external view override returns (uint256, uint256) {
         return open == 2 ? (adapterParams.minm, adapterParams.maxm) : (0, 0);
-    }
-
-    function notify(
-        address _usr,
-        uint256 amt,
-        bool join
-    ) public override(BaseAdapter, Crop) {
-        super.notify(_usr, amt, join);
-    }
-
-    function _isValid(address _token) internal override returns (bool) {
-        return (_token != target && _token != adapterParams.stake && _token != reward);
     }
 }
