@@ -110,11 +110,11 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
 
             // deploy ownable adapter
             OwnableERC4626CropAdapter adapter = _deployAdapter(periphery, factory, ERC20(sanFRAX_EUR_Wrapper), reward);
-        
+
             // set claimer
             console.log("- Set claimer to adapter");
             vm.broadcast(senseMultisig); // broadcast following tx from multisig
-            factory.setClaimer(address(claimer));
+            adapter.setClaimer(address(claimer));
 
             // create RLV
             AutoRoller rlv = _createRLV(adapter, AutoRollerFactory(rlvFactory), address(distributor));
