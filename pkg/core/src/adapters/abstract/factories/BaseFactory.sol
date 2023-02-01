@@ -131,7 +131,8 @@ abstract contract BaseFactory is Trust {
     }
 
     /// @notice sets trusted address for an adapter
-    function setIsTrusted(
+    /// @dev factory must already be a trusted address for the adapter 
+    function setAdapterTrusted(
         address _adapter,
         address _user,
         bool _trusted
