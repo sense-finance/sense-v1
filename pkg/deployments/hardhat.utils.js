@@ -204,7 +204,7 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
   }
 };
 
-exports.generateTokens = async (tokenAddress, to, amount, signer) => {
+exports.generateTokens = async (tokenAddress, to, signer, amount) => {
   const ERC20_ABI = [
     "function symbol() public view returns (string)",
     "function balanceOf(address) public view returns (uint256)",

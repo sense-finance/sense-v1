@@ -61,8 +61,8 @@ task(
     await (await stake.approve(rlv.address, stakeSize)).wait();
 
     // load wallet
-    await generateTokens(stake.address, deployer, stakeSize, deployerSigner);
-    await generateTokens(target.address, deployer, ethers.utils.parseEther("10"), deployerSigner);
+    await generateTokens(stake.address, deployer, deployerSigner, stakeSize);
+    await generateTokens(target.address, deployer, deployerSigner, ethers.utils.parseEther("10"));
 
     // roll 1st series
     await (await rlv.roll()).wait();
