@@ -13,6 +13,7 @@ exports.STORAGE_SLOT = {
   maDAI: 51,
   maUSDC: 51,
   maUSDT: 51,
+  FRAX: 0,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders
@@ -213,9 +214,10 @@ exports.generateTokens = async (tokenAddress, to, signer, amount) => {
   const symbol = await token.symbol();
 
   // Get storage slot index
+  const slot = this.STORAGE_SLOT[symbol];
   const index = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
-    [to, this.STORAGE_SLOT[symbol] || 2], // key, slot
+    [to, typeof slot !== "undefined" ? slot : 2], // key, slot
   );
 
   const amt = amount || ethers.utils.parseEther("10000");

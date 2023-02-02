@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 const data = require("./input");
 
-const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.addresses");
+const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS, FRAX, WETH_TOKEN, ANGLE } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
@@ -9,6 +9,7 @@ const adapterAbi = require("./abi/OwnableERC4626CropAdapter.json");
 const rlvFactoryAbi = require("./abi/AutoRollerFactory.json");
 const rlvAbi = require("./abi/AutoRoller.json");
 const rewardsDistributorAbi = require("./abi/RewardsDistributor.json");
+const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
 const {
   verifyOnEtherscan,
@@ -35,7 +36,7 @@ task(
     await (await factory.supportTarget(address, true)).wait();
 
     console.log(`- Onboard target ${name} @ ${address} via factory`);
-    const data = ethers.utils.defaultAbiCoder.encode(["address[]"], [[]]);
+    const data = ethers.utils.defaultAbiCoder.encode(["address"], [ANGLE.get(chainId)]);
     const adapterAddress = await periphery.callStatic.deployAdapter(factoryAddress, address, data);
     await (await periphery.deployAdapter(factoryAddress, address, data)).wait();
     console.log(`- ${name} adapter address: ${adapterAddress}`);
@@ -62,7 +63,27 @@ task(
 
     // load wallet
     await generateTokens(stake.address, deployer, deployerSigner, stakeSize);
-    await generateTokens(target.address, deployer, deployerSigner, ethers.utils.parseEther("10"));
+
+    // load wallet with FRAX
+    await generateTokens(FRAX.get(chainId), deployer, deployerSigner, ethers.utils.parseEther("10"));
+
+    // approve sanFRAX_EUR_Wrapper to pull FRAX
+    const frax = new ethers.Contract(FRAX.get(chainId), ERC20_ABI, deployerSigner);
+    await (await frax.approve(target.address, ethers.constants.MaxUint256)).wait();
+
+    // wrap FRAX into sanFRAX_EUR_Wrapper
+    const wrapperAbi = [...ERC20_ABI, "function deposit(uint256 amount, address to) external"];
+
+    console.log("- Wrap FRAX into sanFRAX_EUR_Wrapper");
+    const wrapper = new ethers.Contract(target.address, wrapperAbi, deployerSigner);
+    await (await wrapper.deposit(ethers.utils.parseEther("10"), deployer)).wait();
+
+    console.log("- Approve rlv to pull sanFRAX_EUR_Wrapper");
+    await (await wrapper.approve(rlv.address, ethers.utils.parseEther("10"))).wait();
+
+    console.log("- Approve rlv to pull WETH");
+    const weth = new ethers.Contract(WETH_TOKEN.get(chainId), ERC20_ABI, deployerSigner);
+    await (await weth.approve(rlv.address, ethers.utils.parseEther("10"))).wait();
 
     // roll 1st series
     await (await rlv.roll()).wait();
@@ -207,7 +228,6 @@ task(
     const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
     console.log("- RLV %s deployed @ %s", await rlv.name(), rlvAddress);
     // roll first series
-    const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
     const stakeContract = new ethers.Contract(stake, ERC20_ABI, deployerSigner);
     const targetContract = new ethers.Contract(target.address, ERC20_ABI, deployerSigner);
     await _roll(targetContract, stakeContract, stakeSize, rlv);
