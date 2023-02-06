@@ -3,10 +3,11 @@ const {
   CHAINS,
   SENSE_MULTISIG,
   DIVIDER_1_2_0,
-  BB_wstETH4626,
   SENSE_MASTER_ORACLE,
   NON_CROP_4626_FACTORY,
-  BB_wstETH4626_ADAPTER,
+  sanFRAX_EUR_Wrapper,
+  sanFRAX_EUR_Wrapper_ADAPTER,
+  ANGLE,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
 
@@ -32,13 +33,14 @@ const MAINNET_CONTRACTS = [
   //   ],
   // },
   {
-    contractName: "@sense-finance/v1-core/src/adapters/abstract/erc4626/ERC4626Adapter.sol:ERC4626Adapter",
-    address: BB_wstETH4626_ADAPTER.get(CHAINS.MAINNET),
+    contractName:
+      "@sense-finance/v1-core/src/adapters/abstract/erc4626/OwnableERC4626CropAdapter.sol:OwnableERC4626CropAdapter",
+    address: sanFRAX_EUR_Wrapper_ADAPTER.get(CHAINS.MAINNET),
     args: [
       DIVIDER_1_2_0.get(CHAINS.MAINNET),
-      BB_wstETH4626.get(CHAINS.MAINNET),
+      sanFRAX_EUR_Wrapper.get(CHAINS.MAINNET),
       SENSE_MULTISIG.get(CHAINS.MAINNET),
-      1e15,
+      5e15,
       [
         SENSE_MASTER_ORACLE.get(CHAINS.MAINNET),
         WETH_TOKEN.get(CHAINS.MAINNET),
@@ -49,6 +51,7 @@ const MAINNET_CONTRACTS = [
         31,
         0, // 0 = monthly
       ],
+      ANGLE.get(CHAINS.HARDHAT),
     ],
   },
 ];
