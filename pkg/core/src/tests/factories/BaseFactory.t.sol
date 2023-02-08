@@ -354,7 +354,7 @@ contract Factories is TestHelper {
 
     function testSetFactoryParams() public {
         BaseFactory.FactoryParams memory factoryParams;
-        
+
         // Can not set factory params if not trusted
         vm.expectRevert("UNTRUSTED");
         vm.prank(address(0x123));
