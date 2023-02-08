@@ -140,8 +140,16 @@ abstract contract BaseFactory is Trust {
         Trust(_adapter).setIsTrusted(_user, _trusted);
     }
 
+    /// Set factory params
+    /// @dev existing adapters will not be affected
+    function setFactoryParams(FactoryParams calldata _factoryParams) external requiresTrust {
+        emit FactoryParamsChanged(_factoryParams);
+        factoryParams = _factoryParams;
+    }
+
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);
     event RestrictedAdminChanged(address indexed oldAdmin, address indexed newAdmin);
+    event FactoryParamsChanged(FactoryParams factoryParams);
 }

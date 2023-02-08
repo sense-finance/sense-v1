@@ -352,8 +352,55 @@ contract Factories is TestHelper {
         assertEq(factory.rewardsRecipient(), address(0x111));
     }
 
+    function testSetFactoryParams() public {
+        BaseFactory.FactoryParams memory factoryParams;
+        
+        // Can not set factory params if not trusted
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x123));
+        factory.setFactoryParams(factoryParams);
+
+        // Can set rewards recipient
+        factoryParams.stake = address(0xFED);
+        factoryParams.oracle = address(0xFED);
+        factoryParams.ifee = 111e18;
+        factoryParams.stakeSize = 111e18;
+        factoryParams.minm = 111e18;
+        factoryParams.maxm = 111e18;
+        factoryParams.mode = 1;
+        factoryParams.tilt = 1;
+        factoryParams.guard = 111e1;
+
+        vm.expectEmit(true, true, true, true);
+        emit FactoryParamsChanged(factoryParams);
+        factory.setFactoryParams(factoryParams);
+
+        (
+            address oracle,
+            address stake,
+            uint256 stakeSize,
+            uint256 minm,
+            uint256 maxm,
+            uint256 ifee,
+            uint16 mode,
+            uint64 tilt,
+            uint256 guard
+        ) = factory.factoryParams();
+
+        assertEq(stake, factoryParams.stake);
+        assertEq(oracle, factoryParams.oracle);
+        assertEq(stakeSize, factoryParams.stakeSize);
+        assertEq(minm, factoryParams.minm);
+        assertEq(maxm, factoryParams.maxm);
+        assertEq(ifee, factoryParams.ifee);
+        assertEq(mode, factoryParams.mode);
+        assertEq(tilt, factoryParams.tilt);
+        assertEq(guard, factoryParams.guard);
+    }
+
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed recipient, address indexed newRecipient);
     event RestrictedAdminChanged(address indexed admin, address indexed newAdmin);
+    event FactoryParamsChanged(BaseFactory.FactoryParams factoryParams);
 }
