@@ -15,11 +15,36 @@ import { Periphery } from "../../Periphery.sol";
 
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
+import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
-interface IMUSD {
+interface Token {
+    // IMUSD
     function depositInterest(uint256 _amount) external;
+
+    // sanFRAX
+    function stableMaster() external returns (address);
+
+    // sanFRAX_Wrapper
+    function sanToken() external returns (address);
+
+    // sanFrax_Gauge
+    function deposit(uint256 _amount) external;
+
+    // stableMaster
+    function deposit(
+        uint256 amount,
+        address user,
+        address poolManager
+    ) external;
+
+    function mint(
+        uint256 amount,
+        address user,
+        address poolManager,
+        uint256 minStableAmount
+    ) external;
 }
 
 /// Mainnet tests
@@ -211,9 +236,10 @@ contract ERC4626Adapters is ForkTest {
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        // Since the MasterPriceOracle uses Rari's master oracle, the prices should match
+        // MasterPriceOracle uses Chainlink's data feeds as main source
+        // We are comparing here with the prices from Rari's oracle and it should be approx the same (within 0.5%)
         uint256 price = IPriceFeed(AddressBook.RARI_ORACLE).price(address(underlying));
-        assertEq(erc4626Adapter.getUnderlyingPrice(), price);
+        assertApproxEqAbs(erc4626Adapter.getUnderlyingPrice(), price, price.fmul(0.005e18));
     }
 
     function testMainnetGetUnderlyingPriceWhenCustomOracle() public {
@@ -241,12 +267,23 @@ contract ERC4626Adapters is ForkTest {
         if (address(target) == AddressBook.IMUSD) {
             deal(address(underlying), AddressBook.IMUSD_SAVINGS_MANAGER, amt);
             vm.prank(AddressBook.IMUSD_SAVINGS_MANAGER); // imUSD savings manager
-            IMUSD(address(target)).depositInterest(amt);
+            Token(address(target)).depositInterest(amt);
             return;
         }
 
         if (address(target) == AddressBook.BB_wstETH4626) {
             underlying.transfer(AddressBook.IDLE_CDO, amt);
+            return;
+        }
+
+        if (address(target) == AddressBook.sanFRAX_EUR_Wrapper) {
+            deal(AddressBook.FRAX, address(this), amt);
+            address sanToken = Token(address(target)).sanToken();
+            address stableMaster = Token(sanToken).stableMaster();
+            MockToken(AddressBook.FRAX).approve(stableMaster, amt);
+            Token(stableMaster).mint(amt, address(this), AddressBook.FRAX_POOL_MANAGER, 0);
+
+            vm.warp(block.timestamp + 1 days);
             return;
         }
 

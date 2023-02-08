@@ -12,6 +12,7 @@ import { MasterPriceOracle } from "../../adapters/implementations/oracles/Master
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { OwnableERC4626Adapter } from "../../adapters/abstract/erc4626/OwnableERC4626Adapter.sol";
+import { OwnableERC4626CropAdapter } from "../../adapters/abstract/erc4626/OwnableERC4626CropAdapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
@@ -56,9 +57,11 @@ contract OwnableERC4626AdapterTest is Test {
     MasterPriceOracle public masterOracle;
     ChainlinkPriceOracle public chainlinkOracle;
     Opener public opener;
+    Opener public cropOpener;
 
     Divider public divider;
     OwnableERC4626Adapter public adapter;
+    OwnableERC4626CropAdapter public cropAdapter;
 
     uint64 public constant ISSUANCE_FEE = 0.01e18;
     uint256 public constant STAKE_SIZE = 1e18;
@@ -106,15 +109,27 @@ contract OwnableERC4626AdapterTest is Test {
             adapterParams
         );
 
+        cropAdapter = new OwnableERC4626CropAdapter(
+            address(divider),
+            address(target),
+            Constants.REWARDS_RECIPIENT,
+            ISSUANCE_FEE,
+            adapterParams,
+            AddressBook.DAI
+        );
+
         // Add adapter to Divider
         divider.setAdapter(address(adapter), true);
+        divider.setAdapter(address(cropAdapter), true);
 
         vm.warp(1631664000); // 15-09-21 00:00 UTC
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
         opener = new Opener(divider, maturity, address(adapter));
+        cropOpener = new Opener(divider, maturity, address(cropAdapter));
 
         // Add Opener as trusted address on ownable adapter
         adapter.setIsTrusted(address(opener), true);
+        cropAdapter.setIsTrusted(address(cropOpener), true);
     }
 
     function testOpenSponsorWindow() public {
@@ -138,5 +153,28 @@ contract OwnableERC4626AdapterTest is Test {
         vm.prank(address(opener));
         vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
         adapter.openSponsorWindow();
+    }
+
+    function testCropOpenSponsorWindow() public {
+        vm.prank(address(0xfede));
+        vm.expectRevert("UNTRUSTED");
+        cropAdapter.openSponsorWindow();
+
+        // No one can sponsor series directly using Divider (even if it's the Periphery)
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        divider.initSeries(address(cropAdapter), maturity, msg.sender);
+
+        // Mint some stake to sponsor Series
+        stake.mint(divider.periphery(), 1e18);
+
+        // Periphery approves divider to pull stake to sponsor series
+        vm.prank(divider.periphery());
+        stake.approve(address(divider), 1e18);
+
+        // Open can open sponsor window
+        vm.prank(address(cropOpener));
+        vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
+        cropAdapter.openSponsorWindow();
     }
 }

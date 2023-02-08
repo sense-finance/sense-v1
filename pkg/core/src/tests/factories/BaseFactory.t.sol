@@ -249,6 +249,10 @@ contract Factories is TestHelper {
         } else if (tDecimals == 18) {
             assertEq(guard, is4626Target ? 52631578947368421052 : 26315789473684210526);
         }
+
+        // check deployer can set trusted addresses
+        someFactory.setAdapterTrusted(address(adapter), address(0xFEDE), true);
+        assertTrue(adapter.isTrusted(address(0xFEDE)));
     }
 
     function testDeployAdapterDoesNotSetGuardWhenNotGuarded() public {

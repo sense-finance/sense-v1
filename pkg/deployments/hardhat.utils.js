@@ -13,6 +13,7 @@ exports.STORAGE_SLOT = {
   maDAI: 51,
   maUSDC: 51,
   maUSDT: 51,
+  FRAX: 0,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders
@@ -188,8 +189,8 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
         fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
       });
 
-      console.log("Waiting 10 seconds for Etherscan to sync...");
-      await delay(10);
+      console.log("Waiting 30 seconds for Etherscan to sync...");
+      await delay(30);
       console.log("Trying to verify contract on Etherscan...");
       await hre.run("etherscan-verify", {
         contractName,
@@ -204,7 +205,7 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
   }
 };
 
-exports.generateTokens = async (tokenAddress, to, signer) => {
+exports.generateTokens = async (tokenAddress, to, signer, amount) => {
   const ERC20_ABI = [
     "function symbol() public view returns (string)",
     "function balanceOf(address) public view returns (uint256)",
@@ -213,18 +214,20 @@ exports.generateTokens = async (tokenAddress, to, signer) => {
   const symbol = await token.symbol();
 
   // Get storage slot index
+  const slot = this.STORAGE_SLOT[symbol];
   const index = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
-    [to, this.STORAGE_SLOT[symbol] || 2], // key, slot
+    [to, typeof slot !== "undefined" ? slot : 2], // key, slot
   );
 
+  const amt = amount || ethers.utils.parseEther("10000");
   await setStorageAt(
     tokenAddress,
     index.toString(),
-    this.toBytes32(ethers.utils.parseEther("10000")).toString(),
+    this.toBytes32(amount || ethers.utils.parseEther("10000")).toString(),
   );
   if ((await token.balanceOf(to)).eq(0)) {
-    throw new Error(`\n - Failed to generate 10'000 ${symbol} to deployer: ${to}`);
+    throw new Error(`\n - Failed to generate ${amt} ${symbol} to deployer: ${to}`);
   }
 };
 

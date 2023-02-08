@@ -63,6 +63,12 @@ library AddressBook {
     address public constant IDLE_CDO = 0x34dCd573C5dE4672C8248cd12A99f875Ca112Ad8;
     address public constant BB_wstETH4626 = 0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048; // IdleCDO BB Tranche - wstETH4626Adapter
 
+    // angle finance
+    address public constant sanFRAX_EUR_Wrapper = 0x14244978b1CC189324C3e35685D6Ae2F632e9846;
+    address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
+    address public constant FRAX_POOL_MANAGER = 0x6b4eE7352406707003bC6f6b96595FD35925af48;
+    address public constant ANGLE = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
+
     /////////// Others ///////////
 
     // fuse f18 olympus pool party

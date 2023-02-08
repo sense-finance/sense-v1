@@ -3,31 +3,36 @@ pragma solidity 0.8.15;
 
 // Internal references
 import { Divider } from "../../../Divider.sol";
-import { ERC4626CropAdapter } from "../erc4626/ERC4626CropAdapter.sol";
 import { BaseAdapter } from "../../abstract/BaseAdapter.sol";
+import { OwnableERC4626CropAdapter } from "../erc4626/OwnableERC4626CropAdapter.sol";
+import { ERC4626CropFactory } from "./ERC4626CropFactory.sol";
 import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
-import { CropFactory } from "./CropFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 // External references
 import { Bytes32AddressLib } from "solmate/utils/Bytes32AddressLib.sol";
 
-contract ERC4626CropFactory is CropFactory {
+/// @notice Ownable Crop Factory contract that deploys Ownable Crop Adapters for Rolling Liquidity Vaults
+contract OwnableERC4626CropFactory is ERC4626CropFactory {
     using Bytes32AddressLib for address;
 
-    mapping(address => bool) public supportedTargets;
+    /// @notice Rolling Liquidity Vault Factory address
+    address public rlvFactory;
 
     constructor(
         address _divider,
         address _restrictedAdmin,
         address _rewardsRecipient,
-        FactoryParams memory _factoryParams
-    ) CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams, address(0)) {}
+        FactoryParams memory _factoryParams,
+        address _rlvFactory
+    ) ERC4626CropFactory(_divider, _restrictedAdmin, _rewardsRecipient, _factoryParams) {
+        rlvFactory = _rlvFactory;
+    }
 
-    /// @notice Deploys an ERC4626Adapter contract
+    /// @notice Deploys an OwnableERC4626Adapter contract
     /// @param _target The target address
-    /// @param data ABI encoded data
-    function deployAdapter(address _target, bytes memory data) external virtual override returns (address adapter) {
+    /// @param data ABI encoded reward tokens address array
+    function deployAdapter(address _target, bytes memory data) external override returns (address adapter) {
         address reward = abi.decode(data, (address));
 
         /// Sanity checks
@@ -46,10 +51,10 @@ contract ERC4626CropFactory is CropFactory {
         });
 
         // Use the CREATE2 opcode to deploy a new Adapter contract.
-        // This will revert if am ERC4626 adapter with the provided target has already
+        // This will revert if an ERC4626 adapter with the provided target has already
         // been deployed, as the salt would be the same and we can't deploy with it twice.
         adapter = address(
-            new ERC4626CropAdapter{ salt: _target.fillLast12Bytes() }(
+            new OwnableERC4626CropAdapter{ salt: _target.fillLast12Bytes() }(
                 divider,
                 _target,
                 rewardsRecipient,
@@ -61,28 +66,20 @@ contract ERC4626CropFactory is CropFactory {
 
         _setGuard(adapter);
 
+        // Factory must have adapter auth so that it can give auth to the RLV
+        OwnableERC4626CropAdapter(adapter).setIsTrusted(rlvFactory, true);
+
         ExtractableReward(adapter).setIsTrusted(restrictedAdmin, true);
     }
 
-    /// @notice (Un)support target
-    /// @param _target The target address
-    /// @param supported Whether the target should be supported or not
-    function supportTarget(address _target, bool supported) external requiresTrust {
-        supportedTargets[_target] = supported;
-        emit TargetSupported(_target, supported);
-    }
-
-    /// @notice (Un)support multiple target at once
-    /// @param _targets Array of target addresses
-    /// @param supported Whether the targets should be supported or not
-    function supportTargets(address[] memory _targets, bool supported) external requiresTrust {
-        for (uint256 i = 0; i < _targets.length; i++) {
-            supportedTargets[_targets[i]] = supported;
-            emit TargetSupported(_targets[i], supported);
-        }
+    /// @notice Modify RLV Factory address
+    /// @param _rlvFactory Address of the new factory
+    function setRlvFactory(address _rlvFactory) external requiresTrust {
+        rlvFactory = _rlvFactory;
+        emit RlvFactoryChanged(_rlvFactory);
     }
 
     /* ========== LOGS ========== */
 
-    event TargetSupported(address indexed target, bool indexed supported);
+    event RlvFactoryChanged(address indexed rlvFactory);
 }

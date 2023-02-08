@@ -24,4 +24,7 @@ library AddressBookGoerli {
     address public constant POOL_MANAGER = 0xaBFA7080ABe1012f6A8f74E2CDDd9033c34d1A44;
     address public constant BALANCER_VAULT = 0x1aB16CB0cb0e5520e0C081530C679B2e846e4D37;
     address public constant SENSE_MASTER_ORACLE = 0xB3e70779c1d1f2637483A02f1446b211fe4183Fa;
+
+    // sense
+    address public constant SENSE_MULTISIG = 0xF13519734649F7464E5BE4aa91987A35594b2B16;
 }

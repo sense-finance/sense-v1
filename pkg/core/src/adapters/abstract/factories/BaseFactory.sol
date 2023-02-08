@@ -130,6 +130,16 @@ abstract contract BaseFactory is Trust {
         rewardsRecipient = _recipient;
     }
 
+    /// @notice sets trusted address for an adapter
+    /// @dev factory must already be a trusted address for the adapter
+    function setAdapterTrusted(
+        address _adapter,
+        address _user,
+        bool _trusted
+    ) public requiresTrust {
+        Trust(_adapter).setIsTrusted(_user, _trusted);
+    }
+
     /* ========== LOGS ========== */
 
     event RewardsRecipientChanged(address indexed oldRecipient, address indexed newRecipient);

@@ -24,8 +24,10 @@ contract AddressGuru {
     }
 
     function multisig() public view returns (address) {
-        require(chainId == Constants.MAINNET, "Use deployer address");
-        return AddressBook.SENSE_MULTISIG;
+        return
+            chainId == Constants.FORK || chainId == Constants.MAINNET
+                ? AddressBook.SENSE_MULTISIG
+                : AddressBookGoerli.SENSE_MULTISIG;
     }
 
     function divider() public view returns (address) {

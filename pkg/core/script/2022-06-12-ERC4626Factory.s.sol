@@ -49,7 +49,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             oracle: addressGuru.oracle(),
             stake: addressGuru.weth(),
-            stakeSize: 25e16, // 0.25 WETH
+            stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
             ifee: 1e15, // 0.001%
