@@ -23,13 +23,18 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 
 contract OwnableERC4626FactoryTest is TestHelper {
     address public constant RLV_FACTORY = address(0x1);
+    OwnableERC4626Factory public oFactory;
+    OwnableERC4626CropFactory public oCropFactory;
 
     function setUp() public override {
         is4626Target = true;
         super.setUp();
+
+        _deployFactory();
+        _deployCropFactory();
     }
 
-    function testDeployFactory() public {
+    function _deployFactory() internal {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -41,19 +46,22 @@ contract OwnableERC4626FactoryTest is TestHelper {
             tilt: 0,
             guard: 123e18
         });
-        OwnableERC4626Factory oFactory = new OwnableERC4626Factory(
+        oFactory = new OwnableERC4626Factory(
             address(divider),
             Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             RLV_FACTORY
         );
+        oFactory.supportTarget(address(target), true);
+        divider.setIsTrusted(address(oFactory), true);
+        periphery.setFactory(address(oFactory), true);
 
         assertTrue(address(oFactory) != address(0));
-        assertEq(OwnableERC4626Factory(oFactory).divider(), address(divider));
-        assertEq(OwnableERC4626Factory(oFactory).restrictedAdmin(), Constants.RESTRICTED_ADMIN);
-        assertEq(OwnableERC4626Factory(oFactory).rewardsRecipient(), Constants.REWARDS_RECIPIENT);
-        assertEq(OwnableERC4626Factory(oFactory).rlvFactory(), RLV_FACTORY);
+        assertEq(oFactory.divider(), address(divider));
+        assertEq(oFactory.restrictedAdmin(), Constants.RESTRICTED_ADMIN);
+        assertEq(oFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
+        assertEq(oFactory.rlvFactory(), RLV_FACTORY);
 
         (
             address oracle,
@@ -78,7 +86,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
         assertEq(guard, 123e18);
     }
 
-    function testDeployCropFactory() public {
+    function _deployCropFactory() internal {
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: address(stake),
             oracle: ORACLE,
@@ -90,19 +98,22 @@ contract OwnableERC4626FactoryTest is TestHelper {
             tilt: 0,
             guard: 123e18
         });
-        OwnableERC4626CropFactory oFactory = new OwnableERC4626CropFactory(
+        oCropFactory = new OwnableERC4626CropFactory(
             address(divider),
             Constants.RESTRICTED_ADMIN,
             Constants.REWARDS_RECIPIENT,
             factoryParams,
             RLV_FACTORY
         );
+        oCropFactory.supportTarget(address(target), true);
+        divider.setIsTrusted(address(oCropFactory), true);
+        periphery.setFactory(address(oCropFactory), true);
 
-        assertTrue(address(oFactory) != address(0));
-        assertEq(OwnableERC4626CropFactory(oFactory).divider(), address(divider));
-        assertEq(OwnableERC4626CropFactory(oFactory).restrictedAdmin(), Constants.RESTRICTED_ADMIN);
-        assertEq(OwnableERC4626CropFactory(oFactory).rewardsRecipient(), Constants.REWARDS_RECIPIENT);
-        assertEq(OwnableERC4626CropFactory(oFactory).rlvFactory(), RLV_FACTORY);
+        assertTrue(address(oCropFactory) != address(0));
+        assertEq(oCropFactory.divider(), address(divider));
+        assertEq(oCropFactory.restrictedAdmin(), Constants.RESTRICTED_ADMIN);
+        assertEq(oCropFactory.rewardsRecipient(), Constants.REWARDS_RECIPIENT);
+        assertEq(oCropFactory.rlvFactory(), RLV_FACTORY);
 
         (
             address oracle,
@@ -114,7 +125,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
             uint16 mode,
             uint64 tilt,
             uint256 guard
-        ) = OwnableERC4626CropFactory(oFactory).factoryParams();
+        ) = OwnableERC4626CropFactory(oCropFactory).factoryParams();
 
         assertEq(oracle, ORACLE);
         assertEq(stake, address(stake));
@@ -128,29 +139,6 @@ contract OwnableERC4626FactoryTest is TestHelper {
     }
 
     function testDeployOwnableERC4626Adapter() public {
-        // Deploy Ownable ERC4626 factory (oFactory)
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0,
-            guard: 123e18
-        });
-        OwnableERC4626Factory oFactory = new OwnableERC4626Factory(
-            address(divider),
-            Constants.RESTRICTED_ADMIN,
-            Constants.REWARDS_RECIPIENT,
-            factoryParams,
-            RLV_FACTORY
-        );
-        oFactory.supportTarget(address(target), true);
-        divider.setIsTrusted(address(oFactory), true);
-        periphery.setFactory(address(oFactory), true);
-
         // Deploy ownable adapter
         vm.prank(address(periphery));
         address adapter = oFactory.deployAdapter(address(target), "");
@@ -177,32 +165,9 @@ contract OwnableERC4626FactoryTest is TestHelper {
     }
 
     function testDeployOwnableERC4626CropAdapter() public {
-        // Deploy Ownable ERC4626 factory (oFactory)
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0,
-            guard: 123e18
-        });
-        OwnableERC4626CropFactory oFactory = new OwnableERC4626CropFactory(
-            address(divider),
-            Constants.RESTRICTED_ADMIN,
-            Constants.REWARDS_RECIPIENT,
-            factoryParams,
-            RLV_FACTORY
-        );
-        oFactory.supportTarget(address(target), true);
-        divider.setIsTrusted(address(oFactory), true);
-        periphery.setFactory(address(oFactory), true);
-
         // Deploy ownable adapter
         vm.prank(address(periphery));
-        address adapter = oFactory.deployAdapter(address(target), abi.encode(AddressBook.DAI));
+        address adapter = oCropFactory.deployAdapter(address(target), abi.encode(AddressBook.DAI));
         assertTrue(adapter != address(0));
 
         (address oracle, address stake, uint256 stakeSize, uint256 minm, uint256 maxm, , , ) = MockCropAdapter(adapter)
@@ -237,7 +202,7 @@ contract OwnableERC4626FactoryTest is TestHelper {
         }
         someTarget.mint(10**tDecimals, address(this));
 
-        // Deploy an Auto Roller
+        // Deploy an Auto Roller Factory
         RollerUtils utils = new RollerUtils(address(divider));
         RollerPeriphery rollerPeriphery = new RollerPeriphery();
         AutoRollerFactory arFactory = new AutoRollerFactory(
@@ -251,28 +216,11 @@ contract OwnableERC4626FactoryTest is TestHelper {
         // Set AutoRollerFactory as trusted address on RollerPeriphery to be able to use the approve() function
         rollerPeriphery.setIsTrusted(address(arFactory), true);
 
-        // Deploy Ownable ERC4626 factory (oFactory)
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0,
-            guard: 123e18
-        });
-        OwnableERC4626Factory oFactory = new OwnableERC4626Factory(
-            address(divider),
-            Constants.RESTRICTED_ADMIN,
-            Constants.REWARDS_RECIPIENT,
-            factoryParams,
-            address(arFactory)
-        );
+        // Support target on oFactory
         oFactory.supportTarget(address(someTarget), true);
-        divider.setIsTrusted(address(oFactory), true);
-        periphery.setFactory(address(oFactory), true);
+
+        // Change oFactory to use newly deployed arFactory
+        oFactory.setRlvFactory(address(arFactory));
 
         // Deploy Ownable ERC4626 Adapter (oAdapter) for Auto Roller using oFactory
         address oAdapter = periphery.deployAdapter(address(oFactory), address(someTarget), "");
@@ -301,26 +249,6 @@ contract OwnableERC4626FactoryTest is TestHelper {
     }
 
     function testCanModifyRLVFactory() public {
-        // Deploy Ownable ERC4626 factory (oFactory)
-        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
-            stake: address(stake),
-            oracle: ORACLE,
-            ifee: ISSUANCE_FEE,
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: MODE,
-            tilt: 0,
-            guard: 123e18
-        });
-        OwnableERC4626Factory oFactory = new OwnableERC4626Factory(
-            address(divider),
-            Constants.RESTRICTED_ADMIN,
-            Constants.REWARDS_RECIPIENT,
-            factoryParams,
-            RLV_FACTORY
-        );
-
         vm.record();
 
         // 1. Can't modify RLV factory if not owner
@@ -329,11 +257,23 @@ contract OwnableERC4626FactoryTest is TestHelper {
         oFactory.setRlvFactory(address(0xfede));
         assertEq(oFactory.rlvFactory(), RLV_FACTORY);
 
+        vm.expectRevert("UNTRUSTED");
+        vm.prank(address(0x4b1d));
+        oCropFactory.setRlvFactory(address(0xfede));
+        assertEq(oCropFactory.rlvFactory(), RLV_FACTORY);
+
         // 2. Can modify RLV factory if owner
         oFactory.setRlvFactory(address(0xfede));
         assertEq(oFactory.rlvFactory(), address(0xfede));
 
+        oCropFactory.setRlvFactory(address(0xfede));
+        assertEq(oCropFactory.rlvFactory(), address(0xfede));
+
         (, bytes32[] memory writes) = vm.accesses(address(oFactory));
+        // Check only 1 storage slot was written
+        assertEq(writes.length, 1);
+
+        (, writes) = vm.accesses(address(oCropFactory));
         // Check only 1 storage slot was written
         assertEq(writes.length, 1);
     }
