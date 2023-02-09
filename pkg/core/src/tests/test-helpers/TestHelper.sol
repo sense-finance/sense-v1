@@ -659,4 +659,20 @@ contract TestHelper is Test {
     function assertApproxEqAbs(uint256 a, uint256 b) public virtual {
         assertApproxEqAbs(a, b, 100);
     }
+
+    function percentageToDecimal(uint128 percentageFee) public returns (uint128) {
+        return percentageFee / 100;
+    }
+
+    function decimalToPercentage(uint128 percentageFee) public returns (uint128) {
+        return percentageFee * 100;
+    }
+
+    function percentageToBps(uint128 percentageFee) public returns (uint128) {
+        return percentageFee * 100;
+    }
+
+    function BpsToPercentage(uint128 percentageFee) public returns (uint128) {
+        return percentageFee / 100;
+    }
 }

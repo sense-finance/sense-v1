@@ -10,12 +10,13 @@ const {
   ANGLE,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
+const { percentageToDecimal } = require("../../hardhat.utils");
 
 const MAINNET_FACTORY = {
   contract:
     "@sense-finance/v1-core/src/adapters/abstract/factories/OwnableERC4626CropFactory.sol:OwnableERC4626CropFactory",
   contractName: "OwnableERC4626CropFactory",
-  ifee: ethers.utils.parseEther("0.005"), // 0.005%
+  ifee: ethers.utils.parseEther(percentageToDecimal(0.05).toString()), // 0.05%
   stake: WETH_TOKEN.get(CHAINS.MAINNET),
   stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
   minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
@@ -29,7 +30,7 @@ const GOERLI_FACTORY = {
   contract:
     "@sense-finance/v1-core/src/adapters/abstract/factories/OwnableERC4626CropFactory.sol:OwnableERC4626CropFactory",
   contractName: "OwnableERC4626CropFactory",
-  ifee: ethers.utils.parseEther("0.005"), // 0.005%
+  ifee: ethers.utils.parseEther(percentageToDecimal(0.05).toString()), // 0.05%
   stake: WETH_TOKEN.get(CHAINS.MAINNET),
   stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
   minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month

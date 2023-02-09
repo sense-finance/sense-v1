@@ -13,12 +13,14 @@ import { ERC4626Adapter } from "@sense-finance/v1-core/adapters/abstract/erc4626
 import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/BaseFactory.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { DateTime } from "@auto-roller/src/external/DateTime.sol";
+import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
 
 contract ERC4626FactoryScript is Script, StdCheats {
     uint256 public mainnetFork;
     string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
     function run() external {
+        TestHelper th = new TestHelper();
         uint256 chainId = block.chainid;
         console.log("Chain ID:", chainId);
 
@@ -52,7 +54,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
             stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
-            ifee: 1e15, // 0.001%
+            ifee: th.percentageToDecimal(0.05e18), // 0.05%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000
@@ -65,6 +67,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
             factoryParams
         );
         console.log("- Factory deployed @ %s", address(factory));
+        console.log("- Factory ifee: %s (%s %)", factoryParams.ifee, th.decimalToPercentage(factoryParams.ifee));
         vm.stopBroadcast();
 
         // Mainnet would require multisig to make these calls

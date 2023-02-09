@@ -10,6 +10,7 @@ const {
   ANGLE,
 } = require("../../hardhat.addresses");
 const ethers = require("ethers");
+const { percentageToDecimal } = require("../../hardhat.utils");
 
 const MAINNET_CONTRACTS = [
   // {
@@ -40,7 +41,7 @@ const MAINNET_CONTRACTS = [
       DIVIDER_1_2_0.get(CHAINS.MAINNET),
       sanFRAX_EUR_Wrapper.get(CHAINS.MAINNET),
       SENSE_MULTISIG.get(CHAINS.MAINNET),
-      5e15,
+      ethers.utils.parseEther(percentageToDecimal(0.05).toString()), // 0.05%
       [
         SENSE_MASTER_ORACLE.get(CHAINS.MAINNET),
         WETH_TOKEN.get(CHAINS.MAINNET),
