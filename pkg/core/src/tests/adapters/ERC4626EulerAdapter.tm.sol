@@ -80,7 +80,7 @@ contract ERC4626EulerAdapters is ForkTest {
             stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
-            ifee: 0.0005e18, // 0.05%
+            ifee: th.percentageToDecimal(0.05e18), // 0.05%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000
