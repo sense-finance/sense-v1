@@ -26,6 +26,8 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
+import { AddressGuru } from "@sense-finance/v1-utils/addresses/AddressGuru.sol";
+import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
 
 interface EulerERC4626Like {
     function eToken() external returns (address);
@@ -50,7 +52,7 @@ contract ERC4626EulerAdapters is ForkTest {
 
     Divider public divider = Divider(AddressBook.DIVIDER_1_2_0);
     Periphery public periphery = Periphery(AddressBook.PERIPHERY_1_4_0);
-    ERC4626Factory public factory = ERC4626Factory(AddressBook.ERC4626_FACTORY);
+    ERC4626Factory public factory;
     ERC4626Adapter public adapter;
 
     // Timeless
@@ -67,6 +69,41 @@ contract ERC4626EulerAdapters is ForkTest {
 
     function setUp() public {
         fork();
+
+        AddressGuru addressGuru = new AddressGuru();
+        TestHelper th = new TestHelper();
+
+        // Deploy ERC4626 Factory (since we've deprecated the existing one)
+        BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
+            oracle: addressGuru.oracle(),
+            stake: addressGuru.weth(),
+            stakeSize: 0.25e18, // 0.25 WETH
+            minm: 2629800, // 1 month
+            maxm: 315576000, // 10 years
+            ifee: 0.0005e18, // 0.05%
+            mode: 0, // 0 = monthly
+            tilt: 0,
+            guard: 100000e18 // $100'000
+        });
+
+        factory = new ERC4626Factory(
+            addressGuru.divider(),
+            addressGuru.multisig(),
+            addressGuru.multisig(),
+            factoryParams
+        );
+
+        // Set multisig as trusted of factory
+        factory.setIsTrusted(addressGuru.multisig(), true);
+
+        // Unset deployer as trusted of factory
+        factory.setIsTrusted(address(this), false);
+
+        // Add factory to Periphery
+        vm.prank(addressGuru.multisig());
+        periphery.setFactory(address(factory), true);
+        vm.prank(addressGuru.multisig());
+        divider.setIsTrusted(address(factory), true);
 
         // Deploy a Euler 4626 Wrapper Factory
         wFactory = new EulerERC4626WrapperFactory(
