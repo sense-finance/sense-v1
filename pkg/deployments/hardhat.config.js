@@ -91,7 +91,7 @@ module.exports = {
       // saveDeployments: false,
       // blockGasLimit: 21000000,
       // blockNumber: 13491969,
-      // allowUnlimitedContractSize: false,
+      allowUnlimitedContractSize: true,
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
@@ -113,7 +113,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: process.env.SIM === "true" ? 100 : 500,
+            runs: process.env.SIM === "true" ? 100 : 100,
           },
         },
       },
@@ -124,7 +124,7 @@ module.exports = {
             enabled: true,
             // The Balancer Vault becomes too large to deploy with more optimizer runs,
             // but we only need to deploy it on sim runs (we use the existing mainnet Vault on prod runs)
-            runs: process.env.SIM === "true" ? 100 : 500,
+            runs: process.env.SIM === "true" ? 100 : 100,
           },
         },
       },

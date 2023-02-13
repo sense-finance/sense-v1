@@ -55,6 +55,7 @@ library Errors {
     error FlashUntrustedLoanInitiator();
     error UnexpectedSwapAmount();
     error TooMuchLeftoverTarget();
+    error InvalidExchangeProxy();
 
     // Fuse
     error AdapterNotSet();

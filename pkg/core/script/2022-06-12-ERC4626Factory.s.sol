@@ -15,6 +15,7 @@ import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { DateTime } from "@auto-roller/src/external/DateTime.sol";
 import { Utils } from "../utils/Utils.sol";
 import { Permit2Helper } from "@sense-finance/v1-core/tests/test-helpers/Permit2Helper.sol";
+import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
 
 contract ERC4626FactoryScript is Script, StdCheats {
     uint256 public mainnetFork;
@@ -47,7 +48,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
         console.log("Sense multisig is:", senseMultisig);
 
         divider = Divider(addressGuru.divider());
-        periphery = Periphery(addressGuru.periphery());
+        periphery = Periphery(payable(addressGuru.periphery()));
 
         console.log("-------------------------------------------------------");
         console.log("Deploy factory");
@@ -177,11 +178,13 @@ contract ERC4626FactoryScript is Script, StdCheats {
     }
 
     function _sponsorSeries(address adapter, address target, uint256 maturity, uint256 privKey) internal {
+        TestHelper helper = new TestHelper();
+
         // deploy Series
         console.log("\n- Sponsor Series for %s @ %s with maturity %s", ERC4626Adapter(adapter).name(), address(target), maturity);
         
         // Periphery.PermitData memory data = permit2Helper.generatePermit(deployerPrivateKey, addressGuru.periphery(), factoryParams.stake);
-        periphery.sponsorSeries(adapter, maturity, false, permit2Helper.generatePermit(privKey, addressGuru.periphery(), addressGuru.weth()));
+        periphery.sponsorSeries(adapter, maturity, false, permit2Helper.generatePermit(privKey, addressGuru.periphery(), addressGuru.weth()), helper._getQuote(adapter, addressGuru.weth(), addressGuru.weth()));
         console.log(" Series successfully sponsored!");
     }
 

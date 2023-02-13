@@ -1,4 +1,4 @@
-const { PERMIT2 } = require("../../hardhat.addresses");
+const { PERMIT2, EXCHANGE_PROXY } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
@@ -16,7 +16,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   log("\nDeploy a Periphery with mocked dependencies");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [divider.address, poolManager.address, spaceFactory.address, balancerVault.address, PERMIT2.get(chainId)],
+    args: [
+      divider.address,
+      poolManager.address,
+      spaceFactory.address,
+      balancerVault.address,
+      PERMIT2.get(chainId),
+      EXCHANGE_PROXY.get(chainId),
+    ],
     log: true,
   });
 

@@ -1,4 +1,4 @@
-const { BALANCER_VAULT } = require("../../hardhat.addresses");
+const { BALANCER_VAULT, PERMIT2, EXCHANGE_PROXY } = require("../../hardhat.addresses");
 const log = console.log;
 
 module.exports = async function () {
@@ -9,6 +9,8 @@ module.exports = async function () {
 
   if (!BALANCER_VAULT.has(chainId)) throw Error("No balancer vault found");
   const balancerVault = BALANCER_VAULT.get(chainId);
+  const permit2 = PERMIT2.get(chainId);
+  const exchangeProxy = EXCHANGE_PROXY.get(chainId);
 
   const divider = await ethers.getContract("Divider", signer);
   const spaceFactory = await ethers.getContract("SpaceFactory", signer);
@@ -18,7 +20,7 @@ module.exports = async function () {
   log("\nDeploy Periphery");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [divider.address, poolManager.address, spaceFactory.address, balancerVault],
+    args: [divider.address, poolManager.address, spaceFactory.address, balancerVault, permit2, exchangeProxy],
     log: true,
   });
 

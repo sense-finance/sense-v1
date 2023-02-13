@@ -1,3 +1,9 @@
+// ETH
+const ETH_TOKEN = new Map();
+ETH_TOKEN.set("1", "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
+ETH_TOKEN.set("5", "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
+ETH_TOKEN.set("111", "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
+
 // Balancer
 const BALANCER_VAULT = new Map();
 BALANCER_VAULT.set("1", "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
@@ -313,11 +319,16 @@ SENSE_MASTER_ORACLE.set("111", "0x11D341d35BF95654BC7A9db59DBc557cCB4ea101");
 const MULTIMINT = new Map();
 MULTIMINT.set("5", "0xe318c4014330a84e09f08ed5556e2fa6a2fc8dcc");
 
-
 // Uniswap
 const PERMIT2 = new Map();
-PERMIT2.set("1", "0x000000000022D473030F116dDEE9F6B43aC78BA3"); // Sense multisig
+PERMIT2.set("1", "0x000000000022D473030F116dDEE9F6B43aC78BA3"); 
 PERMIT2.set("111", "0x000000000022D473030F116dDEE9F6B43aC78BA3");
+
+// 0x
+const EXCHANGE_PROXY = new Map();
+EXCHANGE_PROXY.set("1", "0xDef1C0ded9bec7F1a1670819833240f027b25EfF"); 
+EXCHANGE_PROXY.set("111", "0xDef1C0ded9bec7F1a1670819833240f027b25EfF");
+
 
 ////// SENSE END //////
 
@@ -441,6 +452,7 @@ exports.sanFRAX_EUR_Wrapper_ADAPTER = sanFRAX_EUR_Wrapper_ADAPTER;
 exports.MULTIMINT = MULTIMINT;
 
 // Tokens
+exports.ETH_TOKEN = ETH_TOKEN;
 exports.DAI_TOKEN = DAI_TOKEN;
 exports.USDC_TOKEN = USDC_TOKEN;
 exports.USDT_TOKEN = USDT_TOKEN;
@@ -451,5 +463,6 @@ exports.CHAINS = CHAINS;
 exports.VERIFY_CHAINS = VERIFY_CHAINS;
 exports.VERIFY_CHAINS = VERIFY_CHAINS;
 exports.PERMIT2 = PERMIT2;
+exports.EXCHANGE_PROXY = EXCHANGE_PROXY;
 
 // ------------------------------------

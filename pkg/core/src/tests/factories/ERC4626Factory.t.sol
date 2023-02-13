@@ -172,21 +172,24 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testDeployAdapterAndInitializeSeries() public {
+        address adapter;
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
-        // Deploy non-crop factory
-        ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
+        {
+            // Prepare data
+            address[] memory rewardTokens;
+            bytes memory rdata = abi.encode(rewardTokens);
 
-        // Prepare data
-        address[] memory rewardTokens;
-        bytes memory rdata = abi.encode(rewardTokens);
+            // Deploy non-crop factory
+            ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
-        // Deploy adapter
-        address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), rdata);
-        assertTrue(adapter != address(0));
+            // Deploy adapter
+            adapter = periphery.deployAdapter(address(someFactory), address(someTarget), rdata);
+            assertTrue(adapter != address(0));
 
-        uint256 scale = MockAdapter(adapter).scale();
-        assertEq(scale, 1e18);
+            uint256 scale = MockAdapter(adapter).scale();
+            assertEq(scale, 1e18);
+        }
 
         vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
@@ -194,7 +197,13 @@ contract ERC4626FactoryTest is TestHelper {
         // Sponsor series
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(adapter, maturity, true, data);
+        (address pt, address yt) = periphery.sponsorSeries(
+            adapter,
+            maturity,
+            true,
+            data,
+            _getQuote(adapter, address(stake), address(stake))
+        );
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
     }

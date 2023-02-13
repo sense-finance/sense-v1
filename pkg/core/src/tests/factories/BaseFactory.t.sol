@@ -289,24 +289,35 @@ contract Factories is TestHelper {
     }
 
     function testDeployAdapterAndinitializeSeries() public {
-        MockToken someReward = new MockToken("Some Reward", "SR", 18);
-        MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
-        MockTargetLike someTarget = MockTargetLike(deployMockTarget(address(underlying), "Some Target", "ST", 18));
+        MockTargetLike someTarget;
+        address someAdapter;
 
-        address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(someReward);
-        MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
+        {
+            MockToken someUnderlying = new MockToken("Some Underlying", "SU", 18);
+            someTarget = MockTargetLike(deployMockTarget(address(someUnderlying), "Some Target", "ST", 18));
 
-        address f = periphery.deployAdapter(address(someFactory), address(someTarget), abi.encode(rewardTokens));
-        assertTrue(f != address(0));
-        uint256 scale = MockAdapter(f).scale();
-        assertEq(scale, 1e18);
+            address[] memory rewardTokens = new address[](1);
+            rewardTokens[0] = address(new MockToken("Some Reward", "SR", 18));
+            MockCropFactory someFactory = MockCropFactory(deployCropsFactory(address(someTarget), rewardTokens, false));
+
+            someAdapter = periphery.deployAdapter(address(someFactory), address(someTarget), abi.encode(rewardTokens));
+            assertTrue(someAdapter != address(0));
+            uint256 scale = MockAdapter(someAdapter).scale();
+            assertEq(scale, 1e18);
+        }
+
         vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(f, maturity, true, data);
+        (address pt, address yt) = periphery.sponsorSeries(
+            someAdapter,
+            maturity,
+            true,
+            data,
+            _getQuote(someAdapter, address(stake), address(stake))
+        );
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
     }

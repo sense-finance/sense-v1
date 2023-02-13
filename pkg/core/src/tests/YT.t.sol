@@ -18,7 +18,13 @@ contract Yield is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
+        (, address yt) = periphery.sponsorSeries(
+            address(adapter),
+            maturity,
+            true,
+            data,
+            _getQuote(address(adapter), address(stake), address(stake))
+        );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -46,7 +52,13 @@ contract Yield is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
+        (, address yt) = periphery.sponsorSeries(
+            address(adapter),
+            maturity,
+            true,
+            data,
+            _getQuote(address(adapter), address(stake), address(stake))
+        );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -80,7 +92,13 @@ contract Yield is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
+        (, address yt) = periphery.sponsorSeries(
+            address(adapter),
+            maturity,
+            true,
+            data,
+            _getQuote(address(adapter), address(stake), address(stake))
+        );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);
@@ -114,7 +132,13 @@ contract Yield is TestHelper {
         uint256 maturity = getValidMaturity(2021, 10);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(address(adapter), maturity, true, data);
+        (, address yt) = periphery.sponsorSeries(
+            address(adapter),
+            maturity,
+            true,
+            data,
+            _getQuote(address(adapter), address(stake), address(stake))
+        );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
         divider.issue(address(adapter), maturity, tBal);

@@ -71,7 +71,8 @@ contract NoopPoolManagerTest is ForkTest, Permit2Helper {
             address(noopPoolManager),
             address(spaceFactory),
             address(balancerVault),
-            AddressBook.PERMIT2
+            AddressBook.PERMIT2,
+            address(0)
         );
 
         // Enable the adapter

@@ -19,6 +19,14 @@ import { BaseFactory as AdapterFactory } from "./adapters/abstract/factories/Bas
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 
+interface IERC20 {
+    function balanceOf(address owner) external view returns (uint256);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
 
@@ -39,6 +47,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Acceptable error when estimating the tokens resulting from a specific swap
     uint256 public constant PRICE_ESTIMATE_ACCEPTABLE_ERROR = 0.00000001e18;
 
+    /// @notice ETH address
+    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /* ========== PUBLIC IMMUTABLES ========== */
 
     /// @notice Sense core Divider address
@@ -48,7 +59,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     BalancerVault public immutable balancerVault;
 
     /// @notice Permit2 contract
-    IPermit2 public immutable permit2;
+    IPermit2 public immutable permit2; // TODO: do we want this to be mutable?
+
+    // 0x ExchangeProxy address. See https://docs.0x.org/developer-resources/contract-addresses
+    address public immutable exchangeProxy; // TODO: do we want this to be mutable?
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
 
@@ -82,18 +96,28 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bytes sig;
     }
 
+    struct SwapQuote {
+        IERC20 sellToken;
+        IERC20 buyToken;
+        address spender;
+        address payable swapTarget;
+        bytes swapCallData;
+    }
+
     constructor(
         address _divider,
         address _poolManager,
         address _spaceFactory,
         address _balancerVault,
-        address _permit2
+        address _permit2,
+        address _exchangeProxy
     ) Trust(msg.sender) {
         divider = Divider(_divider);
         poolManager = PoolManager(_poolManager);
         spaceFactory = SpaceFactoryLike(_spaceFactory);
         balancerVault = BalancerVault(_balancerVault);
         permit2 = IPermit2(_permit2);
+        exchangeProxy = _exchangeProxy;
     }
 
     /* ========== SERIES / ADAPTER MANAGEMENT ========== */
@@ -107,17 +131,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         bool withPool,
-        PermitData memory permit
-    ) external returns (address pt, address yt) {
+        PermitData memory permit,
+        SwapQuote memory quote
+    ) external payable returns (address pt, address yt) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
-
-        // Transfer stakeSize from sponsor into this contract
-        permit2.permitTransferFrom(
-            permit.msg, // permit message.
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: stakeSize }), // transfer recipient and amount.
-            msg.sender, // owner of the tokens
-            permit.sig // packed permit.sig that was the result of signing the EIP712 hash of `permit`.
-        );
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, stake, stakeSize);
+        if (address(quote.sellToken) != stake) _fillQuote(quote);
 
         // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
@@ -159,159 +178,93 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     /* ========== LIQUIDITY UTILS ========== */
 
-    /// @notice Swap Target to PTs of a particular series
+    /// @notice Swap for PTs of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param tBal Balance of Target to sell
+    /// @param amt Amount to swap for PTs
     /// @param minAccepted Min accepted amount of PT
     /// @param receiver Address to receive the PT
+    /// @param permit Permit to pull the tokens to swap from
+    /// @param quote Quote with swap details
+    /// @dev if quote.sellToken is neither target nor underlying, it will be swapped for underlying
+    /// on 0x and wrapped into the target
     /// @return ptBal amount of PT received
-    function swapTargetForPTs(
+    function swapForPTs(
         address adapter,
         uint256 maturity,
-        uint256 tBal,
+        uint256 amt,
         uint256 minAccepted,
         address receiver,
-        PermitData memory permit
-    ) external returns (uint256 ptBal) {
-        // pull underlying
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: tBal }),
-            msg.sender,
-            permit.sig
-        );
-        return _swapTargetForPTs(adapter, maturity, tBal, minAccepted, receiver);
+        PermitData memory permit,
+        SwapQuote memory quote
+    ) external payable returns (uint256 ptBal) {
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
+        return _swapTargetForPTs(adapter, maturity, _toTarget(adapter, amt, quote), minAccepted, receiver);
     }
 
-    /// @notice Swap Underlying to PTs of a particular series
+    /// @notice Swap to YTs of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Balance of Underlying to sell
-    /// @param minAccepted Min accepted amount of PT
-    /// @param receiver Address to receive the PT
-    /// @return ptBal amount of PT received
-    function swapUnderlyingForPTs(
+    /// @param amt Amount to sell
+    /// @param targetToBorrow Amount of Target to borrow
+    /// @param minAccepted Min accepted amount of YT
+    /// @param receiver Address to receive the YT
+    /// @param permit Permit to pull the tokens to swap from
+    /// @param quote Quote with swap details
+    /// @return targetBal amount of Target sent back
+    /// @return ytBal amount of YT received
+    /// @dev if quote.sellToken is neither target nor underlying, it will be swapped for underlying
+    /// on 0x and wrapped into the target
+    function swapForYTs(
         address adapter,
         uint256 maturity,
-        uint256 uBal,
+        uint256 amt,
+        uint256 targetToBorrow,
         uint256 minAccepted,
         address receiver,
-        PermitData memory permit
-    ) external returns (uint256 ptBal) {
-        // pull underlying
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal }),
-            msg.sender,
-            permit.sig
-        );
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal); // wrap underlying into target
-        ptBal = _swapTargetForPTs(adapter, maturity, tBal, minAccepted, receiver);
-    }
+        PermitData memory permit,
+        SwapQuote memory quote
+    ) external payable returns (uint256 targetBal, uint256 ytBal) {
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
 
-    /// @notice Swap Target to YTs of a particular series
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param targetIn Balance of Target to sell
-    /// @param targetToBorrow Balance of Target to borrow
-    /// @param minOut Min accepted amount of YT
-    /// @param receiver Address to receive the YT
-    /// @return targetBal amount of Target sent back
-    /// @return ytBal amount of YT received
-    function swapTargetForYTs(
-        address adapter,
-        uint256 maturity,
-        uint256 targetIn,
-        uint256 targetToBorrow,
-        uint256 minOut,
-        address receiver,
-        PermitData memory permit
-    ) external returns (uint256 targetBal, uint256 ytBal) {
-        // pull target
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: targetIn }),
-            msg.sender,
-            permit.sig
+        // swap sellToken to target, borrow more target and swap to YTs
+        (targetBal, ytBal) = _flashBorrowAndSwapToYTs(
+            adapter,
+            maturity,
+            _toTarget(adapter, amt, quote),
+            targetToBorrow,
+            minAccepted
         );
-        (targetBal, ytBal) = _flashBorrowAndSwapToYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
-        ERC20(Adapter(adapter).target()).safeTransfer(receiver, targetBal);
-        ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, ytBal);
-    }
-
-    /// @notice Swap Underlying to Yield of a particular series
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param underlyingIn Balance of Underlying to sell
-    /// @param targetToBorrow Balance of Target to borrow
-    /// @param minOut Min accepted amount of YT
-    /// @param receiver Address to receive the YT
-    /// @return targetBal amount of Target sent back
-    /// @return ytBal amount of YT received
-    function swapUnderlyingForYTs(
-        address adapter,
-        uint256 maturity,
-        uint256 underlyingIn,
-        uint256 targetToBorrow,
-        uint256 minOut,
-        address receiver,
-        PermitData memory permit
-    ) external returns (uint256 targetBal, uint256 ytBal) {
-        // pull underlying
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: underlyingIn }),
-            msg.sender,
-            permit.sig
-        );
-        // Wrap Underlying into Target and swap it for YTs
-        {
-            uint256 targetIn = Adapter(adapter).wrapUnderlying(underlyingIn);
-            (targetBal, ytBal) = _flashBorrowAndSwapToYTs(adapter, maturity, targetIn, targetToBorrow, minOut);
-        }
 
         ERC20(Adapter(adapter).target()).safeTransfer(receiver, targetBal);
         ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, ytBal);
     }
 
-    /// @notice Swap PTs for Target of a particular series
+    /// @notice Swap PTs of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param ptBal Balance of PT to sell
     /// @param minAccepted Min accepted amount of Target
     /// @param receiver Address to receive the Target
-    /// @return tBal amount of Target received
-    function swapPTsForTarget(
+    /// @param permit Permit to pull PTs
+    /// @param quote Quote with swap details
+    /// @return amt amount of tokens received
+    /// @dev if quote.buyToken is neither target nor underlying, it will unwrap target
+    /// and swap it on 0x
+    function swapPTs(
         address adapter,
         uint256 maturity,
         uint256 ptBal,
         uint256 minAccepted,
         address receiver,
-        PermitData memory permit
-    ) external returns (uint256 tBal) {
-        tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted, permit); // swap PTs for target
-        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal); // transfer target to receiver
-    }
-
-    /// @notice Swap PTs for Underlying of a particular series
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param ptBal Balance of PT to sell
-    /// @param minAccepted Min accepted amount of Target
-    /// @param receiver Address to receive the Underlying
-    /// @return uBal amount of Underlying received
-    function swapPTsForUnderlying(
-        address adapter,
-        uint256 maturity,
-        uint256 ptBal,
-        uint256 minAccepted,
-        address receiver,
-        PermitData memory permit
-    ) external returns (uint256 uBal) {
-        uint256 tBal = _swapPTsForTarget(adapter, maturity, ptBal, minAccepted, permit); // swap PTs for target
-        uBal = Adapter(adapter).unwrapTarget(tBal); // unwrap target into underlying
-        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal); // transfer underlying to receiver
+        PermitData memory permit,
+        SwapQuote memory quote
+    ) external returns (uint256 amt) {
+        if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
+            revert("swapPTs: invalid quote");
+        // swap PTs for target and swap target for quote.buyToken
+        amt = _fromTarget(adapter, _swapPTsForTarget(adapter, maturity, ptBal, minAccepted, permit), quote);
+        ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
     }
 
     /// @notice Swap YT for Target of a particular series
@@ -319,86 +272,48 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param ytBal Balance of YTs to swap
     /// @param receiver Address to receive the Target
-    /// @return tBal amount of Target received
-    function swapYTsForTarget(
+    /// @param permit Permit to pull YTs
+    /// @param quote Quote with swap details
+    /// @return amt amount of Target received
+    /// @dev if quote.buyToken is neither target nor underlying, it will unwrap target
+    /// and swap it on 0x
+    // TODO: why we dont have minAccepted here? Should we?
+    function swapYTs(
         address adapter,
         uint256 maturity,
         uint256 ytBal,
         address receiver,
-        PermitData memory permit
-    ) external returns (uint256 tBal) {
-        tBal = _swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit);
-        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal);
-    }
-
-    /// @notice Swap YT for Underlying of a particular series
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param ytBal Balance of YTs to swap
-    /// @param receiver Address to receive the Underlying
-    /// @return uBal amount of Underlying received
-    function swapYTsForUnderlying(
-        address adapter,
-        uint256 maturity,
-        uint256 ytBal,
-        address receiver,
-        PermitData memory permit
-    ) external returns (uint256 uBal) {
-        uint256 tBal = _swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit);
-        uBal = Adapter(adapter).unwrapTarget(tBal);
-        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal);
-    }
-
-    /// @notice Adds liquidity providing target
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param tBal Balance of Target to provide
-    /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @param minBptOut Minimum BPT the user will accept out for this transaction
-    /// @param receiver Address to receive the BPT
-    /// @dev see return description of _addLiquidity
-    function addLiquidityFromTarget(
-        address adapter,
-        uint256 maturity,
-        uint256 tBal,
-        uint8 mode,
-        uint256 minBptOut,
-        address receiver,
-        PermitData memory permit
-    )
-        external
-        returns (
-            uint256 tAmount,
-            uint256 issued,
-            uint256 lpShares
-        )
-    {
-        // pull target
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: tBal }),
-            msg.sender,
-            permit.sig
-        );
-        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut, receiver, permit);
+        PermitData memory permit,
+        SwapQuote memory quote
+    ) external returns (uint256 amt) {
+        if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
+            revert("swapPTs: invalid quote");
+        // swap YTs for target and swap target for quote.buyToken
+        amt = _fromTarget(adapter, _swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit), quote);
+        ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
     }
 
     /// @notice Adds liquidity providing underlying
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
-    /// @param uBal Balance of Underlying to provide
+    /// @param amt Amount to provide
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
     /// @param minBptOut Minimum BPT the user will accept out for this transaction
     /// @param receiver Address to receive the BPT
+    /// @param permit Permit to pull the tokens to swap from
+    /// @param quote Quote with swap details
     /// @dev see return description of _addLiquidity
-    function addLiquidityFromUnderlying(
+    /// @dev if quote.sellToken is neither target nor underlying, it will be swapped for underlying
+    /// on 0x and wrapped into the target
+    function addLiquidity(
         address adapter,
         uint256 maturity,
-        uint256 uBal,
+        uint256 amt,
         uint8 mode,
         uint256 minBptOut,
         address receiver,
-        PermitData memory permit
+        PermitData memory permit,
+        SwapQuote memory quote
     )
         external
         returns (
@@ -407,49 +322,16 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             uint256 lpShares
         )
     {
-        // pull underlying
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal }),
-            msg.sender,
-            permit.sig
-        );
-        // Wrap Underlying into Target
-        uint256 tBal = Adapter(adapter).wrapUnderlying(uBal);
-        (tAmount, issued, lpShares) = _addLiquidity(adapter, maturity, tBal, mode, minBptOut, receiver, permit);
-    }
-
-    /// @notice Removes liquidity providing an amount of LP tokens and returns target
-    /// @dev More info on `minAmountsOut`: https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-exits.md#minamountsout
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping PTs to underlying
-    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
-    /// @param receiver Address to receive the Target
-    /// @return tBal amount of target received and ptBal amount of PTs (in case it's called after maturity and redeem is restricted)
-    function removeLiquidity(
-        address adapter,
-        uint256 maturity,
-        uint256 lpBal,
-        uint256[] memory minAmountsOut,
-        uint256 minAccepted,
-        bool intoTarget,
-        address receiver,
-        PermitData memory permit
-    ) external returns (uint256 tBal, uint256 ptBal) {
-        (tBal, ptBal) = _removeLiquidity(
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
+        (tAmount, issued, lpShares) = _addLiquidity(
             adapter,
             maturity,
-            lpBal,
-            minAmountsOut,
-            minAccepted,
-            intoTarget,
+            _toTarget(adapter, amt, quote),
+            mode,
+            minBptOut,
             receiver,
             permit
         );
-        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal); // Send Target to the receiver
     }
 
     /// @notice Removes liquidity providing an amount of LP tokens and returns underlying
@@ -461,8 +343,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping PTs to underlying
     /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
     /// @param receiver Address to receive the Underlying
-    /// @return uBal amount of underlying received and ptBal PTs (in case it's called after maturity and redeem is restricted or intoTarget is false)
-    function removeLiquidityAndUnwrapTarget(
+    /// @param permit Permit to pull the LP tokens
+    /// @param quote Quote with swap details
+    /// @return amt amount of tokens received and ptBal PTs (in case it's called after maturity and redeem is restricted or intoTarget is false)
+    /// @dev if quote.buyToken is neither target nor underlying, it will unwrap target
+    /// and swap it on 0x
+    function removeLiquidity(
         address adapter,
         uint256 maturity,
         uint256 lpBal,
@@ -470,8 +356,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted,
         bool intoTarget,
         address receiver,
-        PermitData memory permit
-    ) external returns (uint256 uBal, uint256 ptBal) {
+        PermitData memory permit,
+        SwapQuote memory quote
+    ) external returns (uint256 amt, uint256 ptBal) {
         uint256 tBal;
         (tBal, ptBal) = _removeLiquidity(
             adapter,
@@ -483,116 +370,91 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             receiver,
             permit
         );
-        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying to the receiver
+        ERC20(address(quote.buyToken)).safeTransfer(receiver, amt = _fromTarget(adapter, tBal, quote)); // transfer bought tokens to receiver
     }
 
-    /// @notice Migrates liquidity position from one series to another
-    /// @dev More info on `minAmountsOut`: https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-exits.md#minamountsout
-    /// @param srcAdapter Adapter address for the source Series
-    /// @param dstAdapter Adapter address for the destination Series
-    /// @param srcMaturity Maturity date for the source Series
-    /// @param dstMaturity Maturity date for the destination Series
-    /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    /// @param minAccepted Min accepted amount of target when swapping PTs (only used when removing liquidity on/after maturity)
-    /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap
-    /// @param minBptOut Minimum BPT the user will accept out for this transaction
-    /// @dev see return description of _addLiquidity. It also returns amount of PTs (in case it's called after maturity and redeem is restricted or inttoTarget is false)
-    function migrateLiquidity(
-        address srcAdapter,
-        address dstAdapter,
-        uint256 srcMaturity,
-        uint256 dstMaturity,
-        uint256 lpBal,
-        uint256[] memory minAmountsOut,
-        uint256 minAccepted,
-        uint8 mode,
-        bool intoTarget,
-        uint256 minBptOut,
-        PermitData memory permit
-    )
-        external
-        returns (
-            uint256 tAmount,
-            uint256 issued,
-            uint256 lpShares,
-            uint256 ptBal
-        )
-    {
-        if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
-        {
-            (, ptBal) = _removeLiquidity(
-                srcAdapter,
-                srcMaturity,
-                lpBal,
-                minAmountsOut,
-                minAccepted,
-                intoTarget,
-                msg.sender,
-                permit
-            );
-            ERC20 target = ERC20(Adapter(srcAdapter).target());
-            (tAmount, issued, lpShares) = _addLiquidity(
-                dstAdapter,
-                dstMaturity,
-                target.balanceOf(address(this)),
-                mode,
-                minBptOut,
-                msg.sender,
-                permit
-            );
-        }
-    }
+    // /// @notice Migrates liquidity position from one series to another
+    // /// @dev More info on `minAmountsOut`: https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-exits.md#minamountsout
+    // /// @param srcAdapter Adapter address for the source Series
+    // /// @param dstAdapter Adapter address for the destination Series
+    // /// @param srcMaturity Maturity date for the source Series
+    // /// @param dstMaturity Maturity date for the destination Series
+    // /// @param lpBal Balance of LP tokens to provide
+    // /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
+    // /// @param minAccepted Min accepted amount of target when swapping PTs (only used when removing liquidity on/after maturity)
+    // /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
+    // /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap
+    // /// @param minBptOut Minimum BPT the user will accept out for this transaction
+    // /// @dev see return description of _addLiquidity. It also returns amount of PTs (in case it's called after maturity and redeem is restricted or inttoTarget is false)
+    // function migrateLiquidity(
+    //     address srcAdapter,
+    //     address dstAdapter,
+    //     uint256 srcMaturity,
+    //     uint256 dstMaturity,
+    //     uint256 lpBal,
+    //     uint256[] memory minAmountsOut,
+    //     uint256 minAccepted,
+    //     uint8 mode,
+    //     bool intoTarget,
+    //     uint256 minBptOut,
+    //     PermitData memory permit
+    // )
+    //     external
+    //     returns (
+    //         uint256 tAmount,
+    //         uint256 issued,
+    //         uint256 lpShares,
+    //         uint256 ptBal
+    //     )
+    // {
+    //     if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
+    //     {
+    //         (, ptBal) = _removeLiquidity(
+    //             srcAdapter,
+    //             srcMaturity,
+    //             lpBal,
+    //             minAmountsOut,
+    //             minAccepted,
+    //             intoTarget,
+    //             msg.sender,
+    //             permit
+    //         );
+    //         ERC20 target = ERC20(Adapter(srcAdapter).target());
+    //         (tAmount, issued, lpShares) = _addLiquidity(
+    //             dstAdapter,
+    //             dstMaturity,
+    //             target.balanceOf(address(this)),
+    //             mode,
+    //             minBptOut,
+    //             msg.sender,
+    //             permit
+    //         );
+    //     }
+    // }
 
     /* ========== UTILS ========== */
 
     /// @notice Mint PTs & YTs of a specific Series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series [unix time]
-    /// @param targetIn Amount of Target to issue with
+    /// @param amt Amount to issue with
     /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
     /// @param receiver Address where the resulting PTs and YTs will be transferred to
+    /// @param permit Permit to pull tokens
+    /// @param quote Quote with swap details
+    /// @return uBal Amount of PTs and YTs minted
+    /// @dev if quote.sellToken is neither target nor underlying, it will unwrap target
+    /// and swap it on 0x
     function issue(
         address adapter,
         uint256 maturity,
-        uint256 targetIn,
+        uint256 amt,
         address receiver,
-        PermitData memory permit
+        PermitData memory permit,
+        SwapQuote memory quote
     ) external returns (uint256 uBal) {
-        // pull target
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: targetIn }),
-            msg.sender,
-            permit.sig
-        );
-        uBal = divider.issue(adapter, maturity, targetIn);
-        ERC20(divider.pt(adapter, maturity)).transfer(receiver, uBal); // Send PTs to the receiver
-        ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
-    }
-
-    /// @notice Mint PTs & YTs of a specific Series from Underlying
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series [unix time]
-    /// @param underlyingIn Amount of Underlying to issue with
-    /// @dev The balance of PTs and YTs minted will be the same value in units of underlying (less fees)
-    /// @param receiver Address where the resulting PTs and YTs will be transferred to
-    function issueFromUnderlying(
-        address adapter,
-        uint256 maturity,
-        uint256 underlyingIn,
-        address receiver,
-        PermitData memory permit
-    ) external returns (uint256 uBal) {
-        // pull underlying
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: underlyingIn }),
-            msg.sender,
-            permit.sig
-        );
-        uBal = divider.issue(adapter, maturity, Adapter(adapter).wrapUnderlying(underlyingIn));
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
+        uBal = divider.issue(adapter, maturity, _toTarget(adapter, amt, quote));
         ERC20(divider.pt(adapter, maturity)).transfer(receiver, uBal); // Send PTs to the receiver
         ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
     }
@@ -602,43 +464,29 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param uBal Amount of PT and YT to burn
     /// @param receiver Address where the resulting Target will be transferred
+    /// @param permit Permit to pull PT and YT
+    /// @param quote Quote with swap details
+    /// @return amt Amount of tokens received from reconstituting target
+    /// @dev if quote.buyToken is neither target nor underlying, it will unwrap target
+    /// and swap it on 0x
     function combine(
         address adapter,
         uint256 maturity,
         uint256 uBal,
         address receiver,
-        PermitBatchData memory permit
-    ) external returns (uint256 tBal) {
+        PermitBatchData memory permit,
+        SwapQuote memory quote
+    ) external returns (uint256 amt) {
         IPermit2.SignatureTransferDetails[] memory sigs = new IPermit2.SignatureTransferDetails[](2);
         sigs[0] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal });
         sigs[1] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal });
 
         // pull underlying
         permit2.permitTransferFrom(permit.msg, sigs, msg.sender, permit.sig);
-        ERC20(Adapter(adapter).target()).safeTransfer(receiver, tBal = divider.combine(adapter, maturity, uBal)); // Send Target to the receiver
-    }
-
-    /// @notice Reconstitute Target by burning PT and YT and unwrapping it
-    /// @dev Explicitly burns YTs before maturity, and implicitly does it at/after maturity through `_collect()`
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
-    /// @param amt Amount of PT and YT to burn
-    /// @param receiver Address where the resulting Underlying will be transferred to
-    function combineToUnderlying(
-        address adapter,
-        uint256 maturity,
-        uint256 amt,
-        address receiver,
-        PermitBatchData memory permit
-    ) external returns (uint256 uBal) {
-        // pull underlying
-        IPermit2.SignatureTransferDetails[] memory sigs = new IPermit2.SignatureTransferDetails[](2);
-        sigs[0] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amt });
-        sigs[1] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amt });
-
-        permit2.permitTransferFrom(permit.msg, sigs, msg.sender, permit.sig);
-        uint256 tBal = divider.combine(adapter, maturity, amt);
-        ERC20(Adapter(adapter).underlying()).safeTransfer(receiver, uBal = Adapter(adapter).unwrapTarget(tBal)); // Send Underlying to the receiver
+        ERC20(Adapter(adapter).target()).safeTransfer(
+            receiver,
+            amt = _fromTarget(adapter, divider.combine(adapter, maturity, uBal), quote)
+        );
     }
 
     /* ========== ADMIN ========== */
@@ -736,13 +584,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted,
         PermitData memory permit
     ) internal returns (uint256 tBal) {
-        // pull PTs
-        permit2.permitTransferFrom(
-            permit.msg,
-            IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: ptBal }),
-            msg.sender,
-            permit.sig
-        );
+        _transferFrom(permit, divider.pt(adapter, maturity), ptBal);
 
         if (divider.mscale(adapter, maturity) > 0) {
             tBal = divider.redeem(adapter, maturity, ptBal);
@@ -783,14 +625,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             revert Errors.SwapTooSmall();
 
         // Transfer YTs into this contract if needed
-        if (sender != address(this)) {
-            permit2.permitTransferFrom(
-                permit.msg,
-                IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: ytBal }),
-                msg.sender,
-                permit.sig
-            );
-        }
+        if (sender != address(this)) _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
 
         // Calculate target to borrow by calling AMM
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
@@ -850,6 +685,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
+                    // permit // we send the permit thought it won't be used
                     PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
                 );
 
@@ -917,19 +753,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address receiver,
         PermitData memory permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
-        // (0) Pull LP tokens from sender
-        {
-            permit2.permitTransferFrom(
-                permit.msg,
-                IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: lpBal }),
-                msg.sender,
-                permit.sig
-            );
-        }
-
-        // (1) Remove liquidity from Space
+        // Remove liquidity from Space
         {
             BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+            _transferFrom(permit, address(pool), lpBal);
             address pt = divider.pt(adapter, maturity);
             uint256 _ptBal;
             (tBal, _ptBal) = _removeLiquidityFromSpace(
@@ -943,11 +770,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 if (uint256(Adapter(adapter).level()).redeemRestricted()) {
                     ptBal = _ptBal;
                 } else {
-                    // (2) Redeem PTs for Target
+                    // Redeem PTs for Target
                     tBal += divider.redeem(adapter, maturity, _ptBal);
                 }
             } else {
-                // (2) Sell PTs for Target (if there are)
+                // Sell PTs for Target (if there are)
                 if (_ptBal > 0 && intoTarget) {
                     tBal += _swap(
                         pt,
@@ -961,7 +788,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     ptBal = _ptBal;
                 }
             }
-            if (ptBal > 0) ERC20(pt).transfer(receiver, ptBal); // Send PTs to the receiver
+            if (ptBal > 0) ERC20(pt).transfer(receiver, ptBal);
         }
     }
 
@@ -991,7 +818,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity taturity
     /// @param targetIn Target amount the user has sent in
     /// @param amountToBorrow Target amount to borrow
-    /// @param minOut minimum amount of Target accepted out for the issued PTs
+    /// @param minAccepted minimum amount of Target accepted out for the issued PTs
     /// @return targetBal amount of Target remaining after the flashloan has been paid back
     /// @return ytBal amount of YTs issued with the borrowed Target and the Target sent in
     function _flashBorrowAndSwapToYTs(
@@ -999,9 +826,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 targetIn,
         uint256 amountToBorrow,
-        uint256 minOut
+        uint256 minAccepted
     ) internal returns (uint256 targetBal, uint256 ytBal) {
-        bytes memory data = abi.encode(adapter, uint256(maturity), targetIn, minOut, false);
+        bytes memory data = abi.encode(adapter, uint256(maturity), targetIn, minAccepted, false);
         bool result = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amountToBorrow, data);
         if (!result) revert Errors.FlashBorrowFailed();
 
@@ -1018,7 +845,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256, /* fee */
         bytes calldata data
     ) external returns (bytes32) {
-        (address adapter, uint256 maturity, uint256 amountIn, uint256 minOut, bool ytToTarget) = abi.decode(
+        (address adapter, uint256 maturity, uint256 amountIn, uint256 minAccepted, bool ytToTarget) = abi.decode(
             data,
             (address, uint256, uint256, uint256, bool)
         );
@@ -1036,7 +863,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 divider.pt(adapter, maturity),
                 target.balanceOf(address(this)),
                 pool.getPoolId(),
-                minOut, // min pt out
+                minAccepted, // min pt out
                 payable(address(this))
             );
 
@@ -1053,9 +880,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 Adapter(adapter).target(),
                 pt.balanceOf(address(this)),
                 pool.getPoolId(),
-                minOut, // min Target out
+                minAccepted, // min Target accepted
                 payable(address(this))
-            ); // minOut should be close to amountBorrrowed so that minimal Target dust is sent back to the caller
+            ); // minAccepted should be close to amountBorrrowed so that minimal Target dust is sent back to the caller
 
             // Flashloaner contract will revert if not enough Target has been swapped out to pay back the loan
         }
@@ -1113,6 +940,119 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ptBal = ERC20(pt).balanceOf(address(this)) - ptBal;
     }
 
+    // @dev Swaps ETH->ERC20, ERC20->ERC20 or ERC20->ETH held by this contract using a 0x-API quote
+    function _fillQuote(SwapQuote memory quote) internal returns (uint256 boughtAmount) {
+        if (quote.sellToken == quote.buyToken) return 0; // No swap if the tokens are the same.
+        if (quote.swapTarget != exchangeProxy) revert Errors.InvalidExchangeProxy();
+
+        // Track our balance of the buyToken to determine how much we've bought.
+        boughtAmount = address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this));
+
+        if (address(quote.sellToken) != ETH) {
+            // Give `spender` an infinite allowance to spend this contract's `sellToken`.
+            // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
+            // allowance to 0 before being able to update it.
+            // TODO: add tests for USDT!!
+            ERC20(address(quote.sellToken)).safeApprove(quote.spender, type(uint256).max);
+        }
+
+        // Call the encoded swap function call on the contract at `swapTarget`,
+        // passing along any ETH attached to this function call to cover protocol fees.
+        (bool success, bytes memory res) = quote.swapTarget.call{ value: msg.value }(quote.swapCallData);
+        if (!success) revert(_getRevertMsg(res));
+
+        // Use our current buyToken balance to determine how much we've bought.
+        boughtAmount =
+            (address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this))) -
+            boughtAmount;
+
+        // TODO: add tests for this! and check if we actually need it
+        // Refund any unspent protocol fees to the sender.
+        uint256 refundAmt = address(this).balance;
+        if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
+        payable(msg.sender).transfer(refundAmt);
+
+        emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), boughtAmount);
+        return boughtAmount;
+    }
+
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        if (_returnData.length < 68) return "SWAP_CALL_FAILED";
+        assembly {
+            _returnData := add(_returnData, 0x04)
+        }
+    }
+
+    /// @notice Given an amount and a quote, decides whether it needs to wrap and make a swap on 0x,
+    /// simply wrap tokens or do nothing
+    function _toTarget(
+        address adapter,
+        uint256 _amt,
+        SwapQuote memory quote
+    ) internal returns (uint256 amt) {
+        if (address(quote.sellToken) == Adapter(adapter).underlying()) {
+            amt = Adapter(adapter).wrapUnderlying(_amt);
+        } else if (address(quote.sellToken) != Adapter(adapter).target()) {
+            // sell tokens for underlying and wrap into target
+            amt = Adapter(adapter).wrapUnderlying(_fillQuote(quote));
+        } else {
+            amt = _amt;
+        }
+    }
+
+    /// @notice Given an amount and a quote, decides whether it needs to unwrap and make a swap on 0x,
+    /// simply unwrap tokens or do nothing
+    function _fromTarget(
+        address adapter,
+        uint256 _amt,
+        SwapQuote memory quote
+    ) internal returns (uint256 amt) {
+        if (address(quote.buyToken) == Adapter(adapter).underlying()) {
+            amt = Adapter(adapter).unwrapTarget(_amt);
+        } else if (address(quote.buyToken) != Adapter(adapter).target()) {
+            // TODO:the issue here is that the quote needs to calculate off-chain the amount of underlying that will be received from the unwrapTarget
+            // and this underlying amount is what it is swapped on 0x. What happens if there's a mismatch? Maybe better to do the swap with target?
+            // TODO: return non-swapped underlying if there is?
+            // sell tokens for underlying and wrap into target
+            Adapter(adapter).unwrapTarget(_amt);
+            amt = _fillQuote(quote);
+        } else {
+            amt = _amt;
+        }
+    }
+
+    function _transferFrom(
+        PermitData memory permit,
+        address token,
+        uint256 amt
+    ) internal {
+        // Generate calldata for a standard safeTransferFrom call.
+        bytes memory inputData = abi.encodeCall(ERC20.transferFrom, (msg.sender, address(this), amt));
+
+        bool success; // Call the token contract as normal, capturing whether it succeeded.
+        assembly {
+            success := and(
+                // Set success to whether the call reverted, if not we check it either
+                // returned exactly 1 (can't just be non-zero data), or had no return data.
+                or(eq(mload(0), 1), iszero(returndatasize())),
+                // Counterintuitively, this call() must be positioned after the or() in the
+                // surrounding and() because and() evaluates its arguments from right to left.
+                // We use 0 and 32 to copy up to 32 bytes of return data into the first slot of scratch space.
+                call(gas(), token, 0, add(inputData, 32), mload(inputData), 0, 32)
+            )
+        }
+
+        // We'll fall back to using Permit2 if calling transferFrom on the token directly reverted.
+        if (!success)
+            // TODO: do we need any sanity checks e.g require that the pulled token is the one we have to pull
+            permit2.permitTransferFrom(
+                permit.msg,
+                IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amt }),
+                msg.sender,
+                permit.sig
+            );
+    }
+
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
     /// @dev This helper function is a fast and cheap way to convert between IERC20[] and IAsset[] types
     function _convertERC20sToAssets(ERC20[] memory tokens) internal pure returns (IAsset[] memory assets) {
@@ -1120,6 +1060,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             assets := tokens
         }
     }
+
+    // required for refunds
+    receive() external payable {}
 
     /* ========== LOGS ========== */
 
@@ -1147,4 +1090,5 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amountOut,
         bytes4 indexed sig
     );
+    event BoughtTokens(address indexed sellToken, address indexed buyToken, uint256 indexed boughtAmount);
 }
