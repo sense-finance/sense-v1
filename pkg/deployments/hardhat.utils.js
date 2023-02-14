@@ -327,30 +327,6 @@ const createQueryString = params => {
     .join("&");
 };
 
-const generatePermit = async (token, amount, spender, permit2, chainId, signer) => {
-  const block = await ethers.provider.getBlock("latest");
-  const deadline = block.timestamp + 10000000;
-  const nonce = (await permit2.allowance(signer.address, token, spender)).expiration;
-  const message = {
-    permitted: {
-      token,
-      amount,
-    },
-    nonce,
-    deadline,
-  };
-
-  const { domain, types, values } = SignatureTransfer.getPermitData(
-    { ...message, spender },
-    permit2.address,
-    chainId,
-  );
-  const signature = await signer._signTypedData(domain, types, values);
-  return [signature, message];
-};
-
-exports.generatePermit = generatePermit;
-
 // utils
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;

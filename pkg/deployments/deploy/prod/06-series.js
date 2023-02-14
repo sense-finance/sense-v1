@@ -59,15 +59,16 @@ module.exports = async function () {
 
       // approve permit2 to pull sellToken and generate message and signature
       await sellToken.approve(permit2.address, ethers.constants.MaxUint256);
-      [signature, message] = await generatePermit(
-        sellToken.address,
-        one(decimals),
-        periphery.address,
-        permit2,
-        chainId,
-        signer,
-      );
     }
+
+    [signature, message] = await generatePermit(
+      sellToken.address,
+      one(decimals),
+      periphery.address,
+      permit2,
+      chainId,
+      signer,
+    );
 
     console.info(` - Swap ${isETH ? "ETH" : await sellToken.symbol()} for PTs...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
@@ -148,7 +149,7 @@ module.exports = async function () {
     await _swapForPTs(adapter, maturity, quote);
   }
 
-  async function _swapPTs(adapter, maturity, ptAmt, quote) {
+  async function _swapPTs(adapter, maturity, ptAmt, quote, callStatic) {
     const buyToken = await ethers.getContractAt(tokenAbi, quote.buyTokenAddress, signer);
     const sellToken = await ethers.getContractAt(tokenAbi, quote.sellTokenAddress, signer);
     const pt = await ethers.getContractAt(tokenAbi, await divider.pt(adapter.address, maturity), signer);
@@ -166,7 +167,7 @@ module.exports = async function () {
       signer,
     );
 
-    console.info(` - Swap PTs for ${isETH ? "ETH" : await buyToken.symbol()}...`);
+    if (!callStatic) console.info(` - Swap PTs for ${isETH ? "ETH" : await buyToken.symbol()}...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
     const fnParams = [
       adapter.address,
@@ -178,24 +179,25 @@ module.exports = async function () {
       [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
     ];
     const amtOut = await periphery.callStatic.swapPTs(...fnParams);
+    if (!callStatic) {
     const receipt = await (await periphery.swapPTs(...fnParams)).wait();
-
-    console.info(
-      `  ${"✔"} Successfully swapped PTs for ${
-        quote.sellTokenAddress === zeroAddress()
-          ? isETH
-            ? "ETH"
-            : await buyToken.symbol()
-          : await sellToken.symbol()
-      }!`,
-    );
-    if (quote.sellTokenAddress !== zeroAddress()) {
-      const boughtAmount = receipt.events.find(e => e.event === "BoughtTokens").args.boughtAmount;
       console.info(
-        `  ${"✔"} Successfully sold ${ethers.utils.formatEther(boughtAmount)} ${
-          isETH ? "ETH" : await buyToken.symbol()
-        } for ${ethers.utils.formatEther(one(decimals))} ${await sellToken.symbol()} via 0x!`,
+        `  ${"✔"} Successfully swapped PTs for ${
+          quote.sellTokenAddress === zeroAddress()
+            ? isETH
+              ? "ETH"
+              : await buyToken.symbol()
+            : await sellToken.symbol()
+        }!`,
       );
+      if (quote.sellTokenAddress !== zeroAddress()) {
+        const boughtAmount = receipt.events.find(e => e.event === "BoughtTokens").args.boughtAmount;
+        console.info(
+          `  ${"✔"} Successfully sold ${ethers.utils.formatEther(boughtAmount)} ${
+            isETH ? "ETH" : await buyToken.symbol()
+          } for ${ethers.utils.formatEther(one(decimals))} ${await sellToken.symbol()} via 0x!`,
+        );
+      }
     }
     return amtOut;
   }
@@ -236,15 +238,25 @@ module.exports = async function () {
     log("\n3. Swap PTs for DAI");
     sellAddr = await adapter.underlying();
     buyAddr = DAI_TOKEN.get(chainId);
-    // We know how much the YT we want to sell is worth in underlying from the previous call (`underlyingOut`)
-    // and we use this value because the swap we will do in 0x is underlying to DAI
-    quote = await getQuote(sellAddr, buyAddr, underlyingOut.toString()); // get quote from 0x-API
+    // In order to know how much the PT we want to sell is worth in underlying we first do a staticCall and save the `underlyingAmt`
+    // Then, we use this value to generate the quote so then the Periphery will do the underlying to DAI swap on 0x
+    // TODO: check this, sometimes fails...
+    const toUnderlyingQuote = {
+      sellTokenAddress: zeroAddress(),
+      buyTokenAddress: underlyingAddr,
+      allowanceTarget: zeroAddress(),
+      to: zeroAddress(),
+      data: "0x",
+    };
+    let underlyingAmt = await _swapPTs(adapter, maturity, ptAmt, toUnderlyingQuote, true);
+    quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
     await _swapPTs(adapter, maturity, ptAmt, quote);
 
     log("\n4. Swap PTs for ETH");
     sellAddr = await adapter.underlying();
     buyAddr = ETH_TOKEN.get(chainId);
-    quote = await getQuote(sellAddr, buyAddr, underlyingOut.toString()); // get quote from 0x-API
+    underlyingAmt = await _swapPTs(adapter, maturity, ptAmt, toUnderlyingQuote, true);
+    quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
     await _swapPTs(adapter, maturity, ptAmt, quote);
   }
 
@@ -263,15 +275,15 @@ module.exports = async function () {
 
       // approve permit2 to pull sellToken and generate message and signature
       await sellToken.approve(permit2.address, ethers.constants.MaxUint256);
-      [signature, message] = await generatePermit(
-        sellToken.address,
-        one(decimals),
-        periphery.address,
-        permit2,
-        chainId,
-        signer,
-      );
     }
+    [signature, message] = await generatePermit(
+      sellToken.address,
+      one(decimals),
+      periphery.address,
+      permit2,
+      chainId,
+      signer,
+    );
 
     console.info(` - Swap ${isETH ? "ETH" : await sellToken.symbol()} for YTs...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
@@ -441,6 +453,9 @@ module.exports = async function () {
     log("\n3. Swap YTs for DAI");
     sellAddr = await adapter.underlying();
     buyAddr = DAI_TOKEN.get(chainId);
+    // In order to know how much the YT we want to sell is worth in underlying we first do a staticCall and save the `underlyingAmt`
+    // Then, we use this value to generate the quote so then the Periphery will do the underlying to DAI swap on 0x
+    // TODO: check this, sometimes fails...
     const toUnderlyingQuote = {
       sellTokenAddress: zeroAddress(),
       buyTokenAddress: underlyingAddr,
@@ -448,11 +463,7 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    // In order to know how much the YT we want to sell is worth in underlying we first do a staticCall and save the `underlyingAmt`
-    // Then, we use this value to generate the quote so then the Periphery will do the underlying to DAI swap on 0x
-    // TODO: check this, sometimes fails...
     let underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true);
-    console.log("underlyingAmt", underlyingAmt.toString());
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
     await _swapYTs(adapter, maturity, ytAmt, quote);
 
@@ -460,7 +471,6 @@ module.exports = async function () {
     sellAddr = await adapter.underlying();
     buyAddr = ETH_TOKEN.get(chainId);
     underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true);
-    console.log("underlyingAmt", underlyingAmt.toString());
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
     await _swapYTs(adapter, maturity, ytAmt, quote);
   }
@@ -479,7 +489,7 @@ module.exports = async function () {
     if (!(await target.allowance(deployer, divider.address)).eq(ethers.constants.MaxUint256)) {
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
     }
-
+    
     for (let seriesMaturity of series) {
       const adapter = new ethers.Contract(adapters[targetName], adapterAbi, signer);
 
@@ -552,7 +562,7 @@ module.exports = async function () {
       const pool = new ethers.Contract(poolAddress, spaceAbi, signer);
       const poolId = await pool.getPoolId();
 
-      log("Sending PT to mock Balancer Vault");
+      log("\nSend PT to mock Balancer Vault");
       if (!(await target.allowance(deployer, balancerVault.address)).eq(ethers.constants.MaxUint256)) {
         await target.approve(balancerVault.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       }
@@ -563,7 +573,7 @@ module.exports = async function () {
 
       const { defaultAbiCoder } = ethers.utils;
 
-      log("Make all Permit2 approvals");
+      log("\nMake all Permit2 approvals");
       if (!(await target.allowance(deployer, permit2.address)).eq(ethers.constants.MaxUint256)) {
         await target.approve(permit2.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       }
@@ -577,13 +587,12 @@ module.exports = async function () {
         await yt.approve(permit2.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       }
 
-      log("Initializing Target in pool with the first join");
+      log("\nInitialize Target in pool with the first join");
 
       let balances = (await balancerVault.getPoolTokens(poolId)).balances;
 
       log("- add liquidity via target");
       if (balances[0].lt(one(decimals))) {
-        const quote = [target.address(), zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
         const [signature, message] = await generatePermit(
           target.address,
           one(decimals),
@@ -601,7 +610,7 @@ module.exports = async function () {
             0,
             deployer,
             { msg: message, sig: signature },
-            quote,
+            [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
           )
           .then(t => t.wait());
       }
@@ -622,7 +631,9 @@ module.exports = async function () {
           .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false, deployer, {
             msg: message,
             sig: signature,
-          })
+          },
+          [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"],
+          )
           .then(t => t.wait());
       }
 
@@ -630,7 +641,7 @@ module.exports = async function () {
 
       log("- add liquidity via target");
       if (balances[0].lt(oneMillion(decimals).mul(2))) {
-        const quote = [target.address(), zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+        const quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
         const [signature, message] = await generatePermit(
           target.address,
           oneMillion(decimals).mul(2),
@@ -654,7 +665,7 @@ module.exports = async function () {
       }
 
       let signature, message;
-      log("Making swap to init PT");
+      log("- make swap to init PT");
       balances = (await balancerVault.getPoolTokens(poolId)).balances;
       [signature, message] = await generatePermit(
         pt.address,
@@ -711,11 +722,11 @@ module.exports = async function () {
 
       log(
         `
-          Target ${targetName}
-          Maturity: ${dayjs(seriesMaturity * 1000).format("YYYY-MM-DD")}
-          Implied rate: ${discountRate}
-          PT price in Target: ${principalPriceInTarget}
-          PT price in Underlying: ${principalPriceInUnderlying}
+        Target ${targetName}
+        Maturity: ${dayjs(seriesMaturity * 1000).format("YYYY-MM-DD")}
+        Implied rate: ${discountRate}
+        PT price in Target: ${principalPriceInTarget}
+        PT price in Underlying: ${principalPriceInUnderlying}
         `,
       );
 
@@ -726,8 +737,7 @@ module.exports = async function () {
       await swapPTsForAll(adapter, seriesMaturity);
       await swapYTsForAll(adapter, seriesMaturity);
 
-      log("adding liquidity via target");
-      quote = [target.address(), zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+      log("\nAdd liquidity via target");
       [signature, message] = await generatePermit(
         target.address,
         one(decimals),
@@ -745,7 +755,7 @@ module.exports = async function () {
           0,
           deployer,
           { msg: message, sig: signature },
-          quote,
+          [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
         )
         .then(t => t.wait());
 

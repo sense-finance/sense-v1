@@ -404,7 +404,7 @@ const MAINNET_ADAPTERS = [
     target: {
       name: "wstETH",
       address: WSTETH_TOKEN.get(chainId),
-      guard: ethers.utils.parseEther("1"),
+      guard: ethers.constants.MaxUint256,
       series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
     ifee: ethers.utils.parseEther("0.01"),
@@ -426,7 +426,7 @@ const MAINNET_ADAPTERS = [
     target: {
       name: "fFRAX3CRV-f-156",
       address: F156FRAX3CRV_TOKEN.get(chainId),
-      guard: ethers.utils.parseEther("1"),
+      guard: ethers.utils.parseEther("100000"),
       series: CUSDC_WSTETH_SERIES_MATURITIES,
       comptroller: TRIBE_CONVEX.get(chainId),
       rewardsTokens: [CRV_TOKEN.get(chainId), CONVEX_TOKEN.get(chainId)],

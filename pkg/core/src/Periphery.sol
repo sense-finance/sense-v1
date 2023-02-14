@@ -373,65 +373,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20(address(quote.buyToken)).safeTransfer(receiver, amt = _fromTarget(adapter, tBal, quote)); // transfer bought tokens to receiver
     }
 
-    // /// @notice Migrates liquidity position from one series to another
-    // /// @dev More info on `minAmountsOut`: https://github.com/balancer-labs/docs-developers/blob/main/resources/joins-and-exits/pool-exits.md#minamountsout
-    // /// @param srcAdapter Adapter address for the source Series
-    // /// @param dstAdapter Adapter address for the destination Series
-    // /// @param srcMaturity Maturity date for the source Series
-    // /// @param dstMaturity Maturity date for the destination Series
-    // /// @param lpBal Balance of LP tokens to provide
-    // /// @param minAmountsOut Minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    // /// @param minAccepted Min accepted amount of target when swapping PTs (only used when removing liquidity on/after maturity)
-    // /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    // /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap
-    // /// @param minBptOut Minimum BPT the user will accept out for this transaction
-    // /// @dev see return description of _addLiquidity. It also returns amount of PTs (in case it's called after maturity and redeem is restricted or inttoTarget is false)
-    // function migrateLiquidity(
-    //     address srcAdapter,
-    //     address dstAdapter,
-    //     uint256 srcMaturity,
-    //     uint256 dstMaturity,
-    //     uint256 lpBal,
-    //     uint256[] memory minAmountsOut,
-    //     uint256 minAccepted,
-    //     uint8 mode,
-    //     bool intoTarget,
-    //     uint256 minBptOut,
-    //     PermitData memory permit
-    // )
-    //     external
-    //     returns (
-    //         uint256 tAmount,
-    //         uint256 issued,
-    //         uint256 lpShares,
-    //         uint256 ptBal
-    //     )
-    // {
-    //     if (Adapter(srcAdapter).target() != Adapter(dstAdapter).target()) revert Errors.TargetMismatch();
-    //     {
-    //         (, ptBal) = _removeLiquidity(
-    //             srcAdapter,
-    //             srcMaturity,
-    //             lpBal,
-    //             minAmountsOut,
-    //             minAccepted,
-    //             intoTarget,
-    //             msg.sender,
-    //             permit
-    //         );
-    //         ERC20 target = ERC20(Adapter(srcAdapter).target());
-    //         (tAmount, issued, lpShares) = _addLiquidity(
-    //             dstAdapter,
-    //             dstMaturity,
-    //             target.balanceOf(address(this)),
-    //             mode,
-    //             minBptOut,
-    //             msg.sender,
-    //             permit
-    //         );
-    //     }
-    // }
-
     /* ========== UTILS ========== */
 
     /// @notice Mint PTs & YTs of a specific Series
@@ -673,13 +614,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             uint256 lpShares
         )
     {
-        // (1) compute target, issue PTs & YTs & add liquidity to space
+        // 1. Compute target, issue PTs & YTs & add liquidity to space
         (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal, minBptOut, receiver);
 
         if (issued > 0) {
             // issue = 0 means that we are on the first pool provision or that the pt:target ratio is 0:target
             if (mode == 0) {
-                // (2) Sell YTs
+                // 2. Sell YTs
                 tAmount = _swapYTsForTarget(
                     address(this),
                     adapter,
@@ -689,10 +630,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
                 );
 
-                // (3) Send remaining Target to the receiver
+                // 3. Send remaining Target to the receiver
                 ERC20(Adapter(adapter).target()).safeTransfer(receiver, tAmount);
             } else {
-                // (4) Send YTs to the receiver
+                // 2. Send YTs to the receiver
                 ERC20(divider.yt(adapter, maturity)).safeTransfer(receiver, issued);
             }
         }
@@ -753,43 +694,43 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address receiver,
         PermitData memory permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
-        // Remove liquidity from Space
-        {
-            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-            _transferFrom(permit, address(pool), lpBal);
-            address pt = divider.pt(adapter, maturity);
-            uint256 _ptBal;
-            (tBal, _ptBal) = _removeLiquidityFromSpace(
-                pool.getPoolId(),
-                pt,
-                Adapter(adapter).target(),
-                minAmountsOut,
-                lpBal
-            );
-            if (divider.mscale(adapter, maturity) > 0) {
-                if (uint256(Adapter(adapter).level()).redeemRestricted()) {
-                    ptBal = _ptBal;
-                } else {
-                    // Redeem PTs for Target
-                    tBal += divider.redeem(adapter, maturity, _ptBal);
-                }
+        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+        _transferFrom(permit, address(pool), lpBal);
+
+        // 1. Remove liquidity from Space
+        address pt = divider.pt(adapter, maturity);
+        uint256 _ptBal;
+        (tBal, _ptBal) = _removeLiquidityFromSpace(
+            pool.getPoolId(),
+            pt,
+            Adapter(adapter).target(),
+            minAmountsOut,
+            lpBal
+        );
+
+        if (divider.mscale(adapter, maturity) > 0) {
+            if (uint256(Adapter(adapter).level()).redeemRestricted()) {
+                ptBal = _ptBal;
             } else {
-                // Sell PTs for Target (if there are)
-                if (_ptBal > 0 && intoTarget) {
-                    tBal += _swap(
-                        pt,
-                        Adapter(adapter).target(),
-                        _ptBal,
-                        pool.getPoolId(),
-                        minAccepted,
-                        payable(address(this))
-                    );
-                } else {
-                    ptBal = _ptBal;
-                }
+                // 2. Redeem PTs for Target
+                tBal += divider.redeem(adapter, maturity, _ptBal);
             }
-            if (ptBal > 0) ERC20(pt).transfer(receiver, ptBal);
+        } else {
+            // 2. Sell PTs for Target (if there are)
+            if (_ptBal > 0 && intoTarget) {
+                tBal += _swap(
+                    pt,
+                    Adapter(adapter).target(),
+                    _ptBal,
+                    pool.getPoolId(),
+                    minAccepted,
+                    payable(address(this))
+                );
+            } else {
+                ptBal = _ptBal;
+            }
         }
+        if (ptBal > 0) ERC20(pt).transfer(receiver, ptBal);
     }
 
     /// @notice Initiates a flash loan of Target, swaps target amount to PTs and combines

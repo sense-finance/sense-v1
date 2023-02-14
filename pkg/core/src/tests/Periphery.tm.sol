@@ -689,7 +689,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             buyToken: IERC20(AddressBook.DAI),
             spender: 0xDef1C0ded9bec7F1a1670819833240f027b25EfF, // from 0x API
             swapTarget: payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF), // from 0x API
-            // https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
+            /////// https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
             swapCallData: hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000db564da66189a7b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000007d84779f8863e3ed0c"
         });
         vm.expectEmit(true, true, false, false);
@@ -972,7 +972,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         ERC20 token = ERC20(address(quote.sellToken));
 
         // 0. Get PT address
-        (address pt, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        address pt = Divider(divider).pt(adapter, maturity);
 
         // 1. Load token into Bob's address
         if (address(token) == AddressBook.STETH) {
@@ -1019,7 +1019,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     ) public {
         ERC20 token = ERC20(address(quote.buyToken));
         // 0. Get PT address
-        (address pt, , , , , , , , ) = Divider(divider).series(adapter, maturity);
+        address pt = Divider(divider).pt(adapter, maturity);
         ERC20 ptToken = ERC20(pt);
 
         // 1. Approve PERMIT2 to spend PTs
