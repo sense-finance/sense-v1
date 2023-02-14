@@ -131,8 +131,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         bool withPool,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external payable returns (address pt, address yt) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
         if (address(quote.sellToken) != ETH) _transferFrom(permit, stake, stakeSize);
@@ -195,8 +195,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amt,
         uint256 minAccepted,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external payable returns (uint256 ptBal) {
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
         return _swapTargetForPTs(adapter, maturity, _toTarget(adapter, amt, quote), minAccepted, receiver);
@@ -222,8 +222,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 targetToBorrow,
         uint256 minAccepted,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external payable returns (uint256 targetBal, uint256 ytBal) {
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
 
@@ -257,14 +257,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ptBal,
         uint256 minAccepted,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external returns (uint256 amt) {
-        if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
-            revert("swapPTs: invalid quote");
-        // swap PTs for target and swap target for quote.buyToken
-        amt = _fromTarget(adapter, _swapPTsForTarget(adapter, maturity, ptBal, minAccepted, permit), quote);
-        ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
+        amt = _swap(adapter, maturity, ptBal, minAccepted, 0, receiver, permit, quote);
     }
 
     /// @notice Swap YT for Target of a particular series
@@ -283,13 +279,28 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 ytBal,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external returns (uint256 amt) {
+        amt = _swap(adapter, maturity, ytBal, 0, 1, receiver, permit, quote);
+    }
+
+    function _swap(
+        address adapter,
+        uint256 maturity,
+        uint256 sellAmt,
+        uint256 minAccepted,
+        uint8 mode, // 0 = PTs, 1 = YTs
+        address receiver,
+        PermitData calldata permit,
+        SwapQuote calldata quote
+    ) private returns (uint256 amt) {
         if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
-            revert("swapPTs: invalid quote");
-        // swap YTs for target and swap target for quote.buyToken
-        amt = _fromTarget(adapter, _swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit), quote);
+            revert Errors.InvalidQuote();
+        amt = (mode == 1)
+            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, permit)
+            : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);
+        amt = _fromTarget(adapter, amt, quote);
         ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
     }
 
@@ -312,8 +323,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint8 mode,
         uint256 minBptOut,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     )
         external
         returns (
@@ -356,8 +367,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted,
         bool intoTarget,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external returns (uint256 amt, uint256 ptBal) {
         uint256 tBal;
         (tBal, ptBal) = _removeLiquidity(
@@ -391,8 +402,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 amt,
         address receiver,
-        PermitData memory permit,
-        SwapQuote memory quote
+        PermitData calldata permit,
+        SwapQuote calldata quote
     ) external returns (uint256 uBal) {
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
         uBal = divider.issue(adapter, maturity, _toTarget(adapter, amt, quote));
@@ -415,8 +426,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 uBal,
         address receiver,
-        PermitBatchData memory permit,
-        SwapQuote memory quote
+        PermitBatchData calldata permit,
+        SwapQuote calldata quote
     ) external returns (uint256 amt) {
         IPermit2.SignatureTransferDetails[] memory sigs = new IPermit2.SignatureTransferDetails[](2);
         sigs[0] = IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: uBal });
@@ -487,7 +498,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     /* ========== INTERNAL UTILS ========== */
 
-    function _swap(
+    function _balancerSwap(
         address assetIn,
         address assetOut,
         uint256 amountIn,
@@ -523,14 +534,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 ptBal,
         uint256 minAccepted,
-        PermitData memory permit
+        PermitData calldata permit
     ) internal returns (uint256 tBal) {
         _transferFrom(permit, divider.pt(adapter, maturity), ptBal);
 
         if (divider.mscale(adapter, maturity) > 0) {
             tBal = divider.redeem(adapter, maturity, ptBal);
         } else {
-            tBal = _swap(
+            tBal = _balancerSwap(
                 divider.pt(adapter, maturity),
                 Adapter(adapter).target(),
                 ptBal,
@@ -550,7 +561,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) internal returns (uint256 ptBal) {
         address pt = divider.pt(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        ptBal = _swap(Adapter(adapter).target(), pt, tBal, pool.getPoolId(), minAccepted, payable(receiver)); // swap target for Principal Tokens
+        ptBal = _balancerSwap(Adapter(adapter).target(), pt, tBal, pool.getPoolId(), minAccepted, payable(receiver)); // swap target for Principal Tokens
     }
 
     function _swapYTsForTarget(
@@ -558,7 +569,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
-        PermitData memory permit
+        PermitData calldata permit
     ) internal returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
@@ -605,7 +616,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint8 mode,
         uint256 minBptOut,
         address receiver,
-        PermitData memory permit
+        PermitData calldata permit
     )
         internal
         returns (
@@ -626,8 +637,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
-                    // permit // we send the permit thought it won't be used
-                    PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
+                    permit // we send the permit thought it won't be used
+                    // PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
                 );
 
                 // 3. Send remaining Target to the receiver
@@ -692,7 +703,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 minAccepted,
         bool intoTarget,
         address receiver,
-        PermitData memory permit
+        PermitData calldata permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         _transferFrom(permit, address(pool), lpBal);
@@ -718,7 +729,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         } else {
             // 2. Sell PTs for Target (if there are)
             if (_ptBal > 0 && intoTarget) {
-                tBal += _swap(
+                tBal += _balancerSwap(
                     pt,
                     Adapter(adapter).target(),
                     _ptBal,
@@ -799,7 +810,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             ERC20 target = ERC20(Adapter(adapter).target());
 
             // Swap Target for PTs
-            uint256 ptBal = _swap(
+            uint256 ptBal = _balancerSwap(
                 address(target),
                 divider.pt(adapter, maturity),
                 target.balanceOf(address(this)),
@@ -816,7 +827,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             ERC20 pt = ERC20(divider.pt(adapter, maturity));
 
             // Swap PTs for Target
-            _swap(
+            _balancerSwap(
                 address(pt),
                 Adapter(adapter).target(),
                 pt.balanceOf(address(this)),
@@ -882,30 +893,27 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     }
 
     // @dev Swaps ETH->ERC20, ERC20->ERC20 or ERC20->ETH held by this contract using a 0x-API quote
-    function _fillQuote(SwapQuote memory quote) internal returns (uint256 boughtAmount) {
+    function _fillQuote(SwapQuote calldata quote) internal returns (uint256 boughtAmount) {
         if (quote.sellToken == quote.buyToken) return 0; // No swap if the tokens are the same.
         if (quote.swapTarget != exchangeProxy) revert Errors.InvalidExchangeProxy();
 
-        // Track our balance of the buyToken to determine how much we've bought.
-        boughtAmount = address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this));
-
-        if (address(quote.sellToken) != ETH) {
-            // Give `spender` an infinite allowance to spend this contract's `sellToken`.
-            // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
-            // allowance to 0 before being able to update it.
-            // TODO: add tests for USDT!!
+        // Give `spender` an infinite allowance to spend this contract's `sellToken`.
+        // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
+        // allowance to 0 before being able to update it.
+        // TODO: add tests for USDT!!
+        if (address(quote.sellToken) != ETH)
             ERC20(address(quote.sellToken)).safeApprove(quote.spender, type(uint256).max);
-        }
 
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
-        (bool success, bytes memory res) = quote.swapTarget.call{ value: msg.value }(quote.swapCallData);
-        if (!success) revert(_getRevertMsg(res));
+        (bool success, ) = quote.swapTarget.call{ value: msg.value }(quote.swapCallData);
+        // if (!success) revert(_getRevertMsg(res));
+        if (!success) revert Errors.ZeroExSwapFailed();
 
         // Use our current buyToken balance to determine how much we've bought.
-        boughtAmount =
-            (address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this))) -
-            boughtAmount;
+        boughtAmount = (
+            address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this))
+        );
 
         // TODO: add tests for this! and check if we actually need it
         // Refund any unspent protocol fees to the sender.
@@ -914,22 +922,21 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         payable(msg.sender).transfer(refundAmt);
 
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), boughtAmount);
-        return boughtAmount;
     }
 
-    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
-        if (_returnData.length < 68) return "SWAP_CALL_FAILED";
-        assembly {
-            _returnData := add(_returnData, 0x04)
-        }
-    }
+    // function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+    //     if (_returnData.length < 68) return "SWAP_CALL_FAILED";
+    //     assembly {
+    //         _returnData := add(_returnData, 0x04)
+    //     }
+    // }
 
     /// @notice Given an amount and a quote, decides whether it needs to wrap and make a swap on 0x,
     /// simply wrap tokens or do nothing
     function _toTarget(
         address adapter,
         uint256 _amt,
-        SwapQuote memory quote
+        SwapQuote calldata quote
     ) internal returns (uint256 amt) {
         if (address(quote.sellToken) == Adapter(adapter).underlying()) {
             amt = Adapter(adapter).wrapUnderlying(_amt);
@@ -946,7 +953,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     function _fromTarget(
         address adapter,
         uint256 _amt,
-        SwapQuote memory quote
+        SwapQuote calldata quote
     ) internal returns (uint256 amt) {
         if (address(quote.buyToken) == Adapter(adapter).underlying()) {
             amt = Adapter(adapter).unwrapTarget(_amt);
@@ -963,7 +970,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     }
 
     function _transferFrom(
-        PermitData memory permit,
+        PermitData calldata permit,
         address token,
         uint256 amt
     ) internal {

@@ -226,9 +226,12 @@ contract NoopPoolManagerTest is ForkTest, Permit2Helper {
 
         uint256 maturity = _getValidMaturity();
 
+        Periphery.SwapQuote memory quote;
+        quote.sellToken = address(stake);
+        quote.buyToken = address(stake);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        periphery.sponsorSeries(address(mockAdapter2), maturity, true, data);
+        periphery.sponsorSeries(address(mockAdapter2), maturity, true, data, quote);
     }
 
     function testFailEmitTargetAdded() public {

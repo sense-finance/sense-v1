@@ -3,6 +3,7 @@ pragma solidity 0.8.15;
 
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 // Internal references
 import { Periphery, IERC20 } from "../Periphery.sol";
@@ -35,6 +36,7 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 
 import { BalancerVault } from "../external/balancer/Vault.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
+import "hardhat/console.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
@@ -93,11 +95,11 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
 
     function setUp() public {
         fork();
+        origin = block.timestamp;
 
         // some tests are using an existing Series so we want to fix the block number
         vm.rollFork(16583087); // Feb-08-2023 09:12:23 AM +UTC
 
-        origin = block.timestamp;
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         vm.warp(firstDayOfMonth); // Set to first day of the month
@@ -201,6 +203,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
 
 contract PeripheryMainnetTests is PeripheryTestHelper {
     using FixedMath for uint256;
+    using SafeTransferLib for ERC20;
 
     /* ========== SERIES SPONSORING ========== */
 
@@ -391,9 +394,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         Periphery.SwapQuote memory quote = _getQuote(adapter, address(0), MockAdapter(adapter).target());
         // _swapPTs(adapter, maturity, quote);
 
-        // // 2. Swap PTs for underlying
-        // quote = _getQuote(adapter, address(0), MockAdapter(adapter).underlying());
-        // _swapPTs(adapter, maturity, quote);
+        // 2. Swap PTs for underlying
+        quote = _getQuote(adapter, address(0), MockAdapter(adapter).underlying());
+        _swapPTs(adapter, maturity, quote);
 
         // 3. Swap PTs for DAI
         // Create 0x API quote to do a X underlying to token swap
