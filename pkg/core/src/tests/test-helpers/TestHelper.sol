@@ -2,6 +2,7 @@
 pragma solidity 0.8.15;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 // Internal references
 import { Divider, TokenHandler } from "../../Divider.sol";
@@ -658,21 +659,5 @@ contract TestHelper is Test {
 
     function assertApproxEqAbs(uint256 a, uint256 b) public virtual {
         assertApproxEqAbs(a, b, 100);
-    }
-
-    function percentageToDecimal(uint128 percentageFee) public returns (uint128) {
-        return percentageFee / 100;
-    }
-
-    function decimalToPercentage(uint128 percentageFee) public returns (uint128) {
-        return percentageFee * 100;
-    }
-
-    function percentageToBps(uint128 percentageFee) public returns (uint128) {
-        return percentageFee * 100;
-    }
-
-    function BpsToPercentage(uint128 percentageFee) public returns (uint128) {
-        return percentageFee / 100;
     }
 }

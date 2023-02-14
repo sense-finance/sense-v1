@@ -18,7 +18,7 @@ import { AutoRoller, OwnedAdapterLike } from "@auto-roller/src/AutoRoller.sol";
 import { AutoRollerFactory } from "@auto-roller/src/AutoRollerFactory.sol";
 import { PingPongClaimer } from "@sense-finance/v1-core/adapters/implementations/claimers/PingPongClaimer.sol";
 import { RewardsDistributor } from "@morpho/contracts/common/rewards-distribution/RewardsDistributor.sol";
-import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
+import { Utils } from "../utils/Utils.sol";
 
 contract OwnableERC4626CropFactoryScript is Script, StdCheats {
     uint256 public chainId;
@@ -28,7 +28,6 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
     
 
     function run() external {
-        TestHelper th = new TestHelper();
         chainId = block.chainid;
         console.log("Chain ID:", chainId);
 
@@ -38,6 +37,7 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
         }
 
         AddressGuru addressGuru = new AddressGuru();
+        Utils utils = new Utils();
 
         // Get deployer from mnemonic
         string memory deployerMnemonic = vm.envString("MNEMONIC");
@@ -59,7 +59,7 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
             stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
-            ifee: th.percentageToDecimal(0.05e18), // 0.05%
+            ifee: utils.percentageToDecimal(0.05e18), // 0.05%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000
@@ -76,7 +76,7 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
             rlvFactory
         );
         console.log("- Ownable ERC4626 Crop Factory deployed @ %s", address(factory));
-        console.log("- Factory ifee: %s (%s %)", factoryParams.ifee, th.decimalToPercentage(factoryParams.ifee));
+        console.log("- Factory ifee: %s (%s %)", factoryParams.ifee, utils.decimalToPercentage(factoryParams.ifee));
 
         // Mainnet would require multisig to make these calls
         if (chainId == Constants.FORK) {

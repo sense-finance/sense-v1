@@ -27,7 +27,7 @@ import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 import { AddressGuru } from "@sense-finance/v1-utils/addresses/AddressGuru.sol";
-import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
+import { Utils } from "../../../utils/Utils.sol";
 
 interface EulerERC4626Like {
     function eToken() external returns (address);
@@ -71,7 +71,7 @@ contract ERC4626EulerAdapters is ForkTest {
         fork();
 
         AddressGuru addressGuru = new AddressGuru();
-        TestHelper th = new TestHelper();
+        Utils utils = new Utils();
 
         // Deploy ERC4626 Factory (since we've deprecated the existing one)
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
@@ -80,7 +80,7 @@ contract ERC4626EulerAdapters is ForkTest {
             stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
-            ifee: th.percentageToDecimal(0.05e18), // 0.05%
+            ifee: utils.percentageToDecimal(0.05e18), // 0.05%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000

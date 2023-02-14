@@ -8,19 +8,17 @@ import { AddressGuru, Constants } from "@sense-finance/v1-utils/addresses/Addres
 import { Divider } from "@sense-finance/v1-core/Divider.sol";
 import { Periphery } from "@sense-finance/v1-core/Periphery.sol";
 import { ERC4626Factory } from "@sense-finance/v1-core/adapters/abstract/factories/ERC4626Factory.sol";
-import { ERC4626Factory } from "@sense-finance/v1-core/adapters/abstract/factories/ERC4626Factory.sol";
 import { ERC4626Adapter } from "@sense-finance/v1-core/adapters/abstract/erc4626/ERC4626Adapter.sol";
 import { BaseFactory } from "@sense-finance/v1-core/adapters/abstract/factories/BaseFactory.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { DateTime } from "@auto-roller/src/external/DateTime.sol";
-import { TestHelper } from "@sense-finance/v1-core/tests/test-helpers/TestHelper.sol";
+import { Utils } from "../utils/Utils.sol";
 
 contract ERC4626FactoryScript is Script, StdCheats {
     uint256 public mainnetFork;
     string public MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
     function run() external {
-        TestHelper th = new TestHelper();
         uint256 chainId = block.chainid;
         console.log("Chain ID:", chainId);
 
@@ -30,6 +28,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
         }
 
         AddressGuru addressGuru = new AddressGuru();
+        Utils utils = new Utils();
 
         // Get deployer from mnemonic
         string memory deployerMnemonic = vm.envString("MNEMONIC");
@@ -43,10 +42,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
         console.log("-------------------------------------------------------");
         console.log("Deploy factory");
         console.log("-------------------------------------------------------");
-
-        // Broadcast following txs from deployer
-        vm.startBroadcast(deployer);
-
+        
         // TODO: read factoryParms from input.json file (can't do this right now because of a foundry bug when parsing JSON)
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             oracle: addressGuru.oracle(),
@@ -54,12 +50,14 @@ contract ERC4626FactoryScript is Script, StdCheats {
             stakeSize: 0.25e18, // 0.25 WETH
             minm: 2629800, // 1 month
             maxm: 315576000, // 10 years
-            ifee: th.percentageToDecimal(0.05e18), // 0.05%
+            ifee: utils.percentageToDecimal(0.05e18), // 0.05%
             mode: 0, // 0 = monthly
             tilt: 0,
             guard: 100000e18 // $100'000
         });
 
+        // Broadcast following txs from deployer
+        vm.startBroadcast(deployer);
         ERC4626Factory factory = new ERC4626Factory(
             addressGuru.divider(),
             senseMultisig,
@@ -67,7 +65,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
             factoryParams
         );
         console.log("- Factory deployed @ %s", address(factory));
-        console.log("- Factory ifee: %s (%s %)", factoryParams.ifee, th.decimalToPercentage(factoryParams.ifee));
+        console.log("- Factory ifee: %s (%s %)", factoryParams.ifee, utils.decimalToPercentage(factoryParams.ifee));
         vm.stopBroadcast();
 
         // Mainnet would require multisig to make these calls
@@ -142,6 +140,8 @@ contract ERC4626FactoryScript is Script, StdCheats {
 
                     console.log("\n-------------------------------------------------------");
                 }
+
+                vm.stopBroadcast();
             }
         }
 

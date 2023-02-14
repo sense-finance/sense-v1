@@ -260,6 +260,6 @@ task(
     console.log("3. Deploy ownable adapter on Periphery (Adapters UI using deployer address)");
     console.log("4. Set claimer to adapter (deployer)");
     console.log("5. Set multisig as trusted of adapter via factory `setAdapterIsTrusted` (multisig)");
-    console.log("5. Roll first series (Angle team or relayer)");
+    console.log("6. Roll first series (Angle team or relayer)");
   }
 });
