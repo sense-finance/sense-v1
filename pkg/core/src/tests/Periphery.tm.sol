@@ -95,11 +95,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
         fork();
 
         // some tests are using an existing Series so we want to fix the block number
-        // string memory url = vm.rpcUrl("mainnet");
-        // uint256 forkId = vm.createFork(url);
-        // vm.selectFork(forkId);
         vm.rollFork(16583087); // Feb-08-2023 09:12:23 AM +UTC
-        // assertEq(block.number, 16583087);
 
         origin = block.timestamp;
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
@@ -276,7 +272,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         Periphery.SwapQuote memory quote = _getQuote(address(cadapter), AddressBook.DAI, AddressBook.DAI);
         Periphery.PermitData memory data; // sending empty data because we are using normal approval
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data , quote);
+        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
 
         // Check pt and yt deployed
         assertTrue(pt != address(0));
@@ -288,8 +284,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     // TODO: from ETH and from other TOKEN
-    function testMainnetSponsorSeriesOnCAdapterFromETH() public {
-    }
+    function testMainnetSponsorSeriesOnCAdapterFromETH() public {}
 
     function testMainnetSponsorSeriesOnFAdapter() public {
         // We roll back to original block number (which is the latest block) because the call chainlink's oracle
@@ -682,14 +677,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     /* ========== ZAPS: FILL QUOTE ========== */
 
     function testMainnetFillQuote() public {
-        // USDC to DAI
+        // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         deal(AddressBook.USDC, address(periphery), 1e6);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
             sellToken: IERC20(AddressBook.USDC),
             buyToken: IERC20(AddressBook.DAI),
             spender: 0xDef1C0ded9bec7F1a1670819833240f027b25EfF, // from 0x API
             swapTarget: payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF), // from 0x API
-            /////// https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
             swapCallData: hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000db564da66189a7b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000007d84779f8863e3ed0c"
         });
         vm.expectEmit(true, true, false, false);
@@ -700,13 +694,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertEq(ERC20(AddressBook.USDC).balanceOf(address(periphery)), usdcBalanceBefore - 1e6);
         assertGt(ERC20(AddressBook.DAI).balanceOf(address(periphery)), daiBalanceBefore);
 
-        // DAI to wstETH
+        // DAI to wstETH: https://api.0x.org/swap/v1/quote?sellToken=DAI&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000
         deal(AddressBook.DAI, address(periphery), 1e18);
         quote.sellToken = IERC20(AddressBook.DAI);
         quote.buyToken = IERC20(AddressBook.WSTETH);
         quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
         quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
-        // https://api.0x.org/swap/v1/quote?sellToken=DAI&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000
         quote
             .swapCallData = hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000001e64c4e19add2000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000d993111fd763e3f3d5";
         vm.expectEmit(true, true, false, false);
@@ -717,14 +710,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertEq(ERC20(AddressBook.DAI).balanceOf(address(periphery)), daiBalanceBefore - 1e18);
         assertGt(ERC20(AddressBook.WSTETH).balanceOf(address(periphery)), wstETHBalanceBefore);
 
-        // wstETH to ETH
+        // wstETH to ETH: https://api.0x.org/swap/v1/quote?sellToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&buyToken=ETH&sellAmount=1000000000000000000
         deal(AddressBook.WSTETH, address(periphery), 1e18);
         vm.prank(address(periphery));
         quote.sellToken = IERC20(AddressBook.WSTETH);
         quote.buyToken = IERC20(periphery.ETH());
         quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
         quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
-        // https://api.0x.org/swap/v1/quote?sellToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&buyToken=ETH&sellAmount=1000000000000000000
         quote
             .swapCallData = hex"803ba26d00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000f355119a94095420000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b7f39c581f595b53c5cb19bd0b3f8da6c935e2ca00001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000002fffadbf5163e3f059";
         vm.expectEmit(true, true, false, false);
@@ -735,13 +727,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertEq(ERC20(AddressBook.WSTETH).balanceOf(address(periphery)), wstETHBalanceBefore - 1e18);
         assertGt(address(periphery).balance, ethBalanceBefore);
 
-        // ETH to USDC
+        // ETH to USDC: https://api.0x.org/swap/v1/quote?sellToken=ETH&buyToken=USDC&sellAmount=1000000000000000000
         deal(address(periphery), 1 ether);
         quote.sellToken = IERC20(periphery.ETH());
         quote.buyToken = IERC20(AddressBook.USDC);
         quote.spender = 0x0000000000000000000000000000000000000000; // from 0x API
         quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
-        // https://api.0x.org/swap/v1/quote?sellToken=ETH&buyToken=USDC&sellAmount=1000000000000000000
         quote
             .swapCallData = hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000006138608500000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000001b18fd746963e3ed22";
         vm.expectEmit(true, true, false, false);

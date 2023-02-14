@@ -59,7 +59,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     BalancerVault public immutable balancerVault;
 
     /// @notice Permit2 contract
-    IPermit2 public immutable permit2; // TODO: do we want this to be mutable?
+    IPermit2 public immutable permit2;
 
     // 0x ExchangeProxy address. See https://docs.0x.org/developer-resources/contract-addresses
     address public immutable exchangeProxy; // TODO: do we want this to be mutable?

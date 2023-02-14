@@ -180,7 +180,7 @@ module.exports = async function () {
     ];
     const amtOut = await periphery.callStatic.swapPTs(...fnParams);
     if (!callStatic) {
-    const receipt = await (await periphery.swapPTs(...fnParams)).wait();
+      const receipt = await (await periphery.swapPTs(...fnParams)).wait();
       console.info(
         `  ${"✔"} Successfully swapped PTs for ${
           quote.sellTokenAddress === zeroAddress()
@@ -233,7 +233,7 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    const underlyingOut = await _swapPTs(adapter, maturity, ptAmt, quote);
+    await _swapPTs(adapter, maturity, ptAmt, quote);
 
     log("\n3. Swap PTs for DAI");
     sellAddr = await adapter.underlying();
@@ -489,7 +489,7 @@ module.exports = async function () {
     if (!(await target.allowance(deployer, divider.address)).eq(ethers.constants.MaxUint256)) {
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
     }
-    
+
     for (let seriesMaturity of series) {
       const adapter = new ethers.Contract(adapters[targetName], adapterAbi, signer);
 
@@ -527,12 +527,18 @@ module.exports = async function () {
           seriesMaturity,
           true,
           { msg: message, sig: signature },
-          [target.address, target.address, zeroAddress(), zeroAddress(), "0x"]
+          [target.address, target.address, zeroAddress(), zeroAddress(), "0x"],
         );
         ptAddress = _ptAddress;
         ytAddress = _ytAddress;
         await periphery
-          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, [target.address, target.address, zeroAddress(), zeroAddress(), "0x"])
+          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, [
+            target.address,
+            target.address,
+            zeroAddress(),
+            zeroAddress(),
+            "0x",
+          ])
           .then(tx => tx.wait());
         log(`${"✔"} Series successfully sponsored`);
       }
@@ -628,11 +634,19 @@ module.exports = async function () {
           signer,
         );
         await periphery
-          .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false, deployer, {
-            msg: message,
-            sig: signature,
-          },
-          [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"],
+          .removeLiquidity(
+            adapter.address,
+            seriesMaturity,
+            lpBalance,
+            [0, 0],
+            0,
+            false,
+            deployer,
+            {
+              msg: message,
+              sig: signature,
+            },
+            [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"],
           )
           .then(t => t.wait());
       }
