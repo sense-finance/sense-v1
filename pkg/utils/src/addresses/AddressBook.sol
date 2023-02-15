@@ -60,8 +60,10 @@ library AddressBook {
     address public constant EULER_MARKETS = 0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3; // Euler Markets
 
     // idle finance
-    address public constant IDLE_CDO = 0x34dCd573C5dE4672C8248cd12A99f875Ca112Ad8;
-    address public constant BB_wstETH4626 = 0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048; // IdleCDO BB Tranche - wstETH4626Adapter
+    address public constant lido_stETH_CDO = 0x34dCd573C5dE4672C8248cd12A99f875Ca112Ad8;
+    address public constant BB_wstETH4626 = 0x79F05f75df6c156B2B98aC1FBfb3637fc1e6f048;
+    address public constant euler_eUSDC_CDO = 0xF5a3d259bFE7288284Bd41823eC5C8327a314054;
+    address public constant idleUSDCJunior4626 = 0xc3dA79e0De523eEf7AC1e4ca9aBFE3aAc9973133;
 
     // angle finance
     address public constant sanFRAX_EUR_Wrapper = 0x14244978b1CC189324C3e35685D6Ae2F632e9846;

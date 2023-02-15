@@ -47,6 +47,18 @@ interface Token {
     ) external;
 }
 
+interface IDLE {
+    function idleToken() external returns (address);
+
+    function mintIdleToken(
+        uint256 _amount,
+        bool,
+        address _referral
+    ) external returns (uint256 mintedTokens);
+
+    function getAllAvailableTokens() external returns (address[] memory);
+}
+
 /// Mainnet tests
 /// @dev reads from ENV the target address or defaults to imUSD 4626 token if none
 /// @dev reads from ENV an address of a user with underlying balance. This is used in case tha
@@ -74,9 +86,10 @@ contract ERC4626Adapters is ForkTest {
         // set `userWithAssets` if exists
         try vm.envAddress("USER_WITH_ASSETS") returns (address _userWithAssets) {
             userWithAssets = _userWithAssets;
+            console.log("User with assets is: ", userWithAssets);
         } catch {}
 
-        // set `userWithAssets` if exists
+        // set `delta` if exists
         try vm.envUint("DELTA") returns (uint256 _delta) {
             delta = _delta;
         } catch {}
@@ -161,11 +174,10 @@ contract ERC4626Adapters is ForkTest {
         uint256 prebal = underlying.balanceOf(address(this));
         wrapAmt = bound(wrapAmt, 1, prebal);
         uint256 targetPrebal = target.balanceOf(address(this));
-        uint256 assetPrebal = underlying.balanceOf(address(this));
         uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(wrapAmt);
         assertGt(targetFromWrap, 0);
 
-        assertApproxEqAbs(underlying.balanceOf(address(this)), assetPrebal - wrapAmt, delta);
+        assertApproxEqAbs(underlying.balanceOf(address(this)), prebal - wrapAmt, delta);
         assertApproxEqAbs(target.balanceOf(address(this)), targetPrebal + targetFromWrap, delta);
 
         // some protocols will revert if doing two actions on the same block (e.g deposit followed by withdraw)
@@ -179,8 +191,10 @@ contract ERC4626Adapters is ForkTest {
     }
 
     function testMainnetScale() public {
-        uint256 decimals = target.decimals();
-        uint256 scale = target.convertToAssets(10**decimals) * 10**(18 - decimals);
+        uint256 tDecimals = target.decimals();
+        uint256 uDecimals = ERC20(target.asset()).decimals();
+        // convert to assets and scale to 18 decimals
+        uint256 scale = target.convertToAssets(10**tDecimals) * 10**(18 - uDecimals);
         assertEq(erc4626Adapter.scale(), scale);
     }
 
@@ -272,7 +286,15 @@ contract ERC4626Adapters is ForkTest {
         }
 
         if (address(target) == AddressBook.BB_wstETH4626) {
-            underlying.transfer(AddressBook.IDLE_CDO, amt);
+            underlying.transfer(AddressBook.lido_stETH_CDO, amt);
+            return;
+        }
+
+        if (address(target) == AddressBook.idleUSDCJunior4626) {
+            IDLE idleToken = IDLE(IDLE(address(target)).idleToken());
+            address[] memory tokens = idleToken.getAllAvailableTokens();
+            deal(tokens[0], address(this), 1e18);
+            ERC20(tokens[0]).transfer(address(idleToken), 1e18);
             return;
         }
 
