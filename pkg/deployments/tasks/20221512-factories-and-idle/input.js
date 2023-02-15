@@ -12,6 +12,7 @@ const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
+const { percentageToDecimal } = require("../../hardhat.utils");
 
 dayjs.extend(weekOfYear);
 dayjs.extend(utc);
@@ -42,7 +43,7 @@ const MAINNET_FACTORIES = [
     // Since there's a contract from yield daddy library called ERC4626Factory, we need to use this format to specify specifically which contract we are referring to
     contract: "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol:ERC4626Factory",
     contractName: "ERC4626Factory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.001%
+    ifee: ethers.utils.parseEther(percentageToDecimal(0.05).toString()), // 0.05%
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
     minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month
@@ -59,7 +60,7 @@ const GOERLI_FACTORIES = [
     // Since there's a contract from yield daddy library called ERC4626Factory, we need to use this format to specify specifically which contract we are referring to
     contract: "@sense-finance/v1-core/src/adapters/abstract/factories/ERC4626Factory.sol:ERC4626Factory",
     contractName: "ERC4626Factory",
-    ifee: ethers.utils.parseEther("0.0010"), // 0.1%
+    ifee: ethers.utils.parseEther(percentageToDecimal(0.05).toString()), // 0.05%
     stake: WETH_TOKEN.get(CHAINS.MAINNET),
     stakeSize: ethers.utils.parseEther("0.25"), // 0.25 WETH
     minm: ((365.25 * 24 * 60 * 60) / 12).toString(), // 1 month

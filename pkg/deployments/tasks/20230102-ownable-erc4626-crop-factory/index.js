@@ -17,13 +17,14 @@ const {
   stopPrank,
   startPrank,
   generateTokens,
+  decimalToPercentage,
 } = require("../../hardhat.utils");
 
 task(
   "20230102-ownable-erc4626-crop-factory",
   "Deploys an Ownable 4626 Crop Factory & tests deploying an RLV for sanFRAX_EUR and rolling",
 ).setAction(async (_, { ethers }) => {
-  const _deployAdapter = async (periphery, divider, factory, target) => {
+  const _deployAdapter = async (periphery, divider, target) => {
     const { name, address } = target;
     console.log("\n-------------------------------------------------------");
     console.log("Deploy Ownable Adapter for %s", name);
@@ -31,9 +32,6 @@ task(
 
     // periphery = periphery.connect(deployerSigner);
     if (chainId === CHAINS.HARDHAT) startPrank(senseAdminMultisigAddress);
-
-    console.log(`- Add target ${name} to the whitelist`);
-    await (await factory.supportTarget(address, true)).wait();
 
     console.log(`- Onboard target ${name} @ ${address} via factory`);
     const data = ethers.utils.defaultAbiCoder.encode(["address"], [ANGLE.get(chainId)]);
@@ -136,7 +134,10 @@ task(
       oracle: masterOracleAddress,
       tilt,
       guard,
-    })}}\n`,
+    })}}`,
+  );
+  console.log(
+    `Factory ifee: ${ifee.toString()} (${decimalToPercentage(ethers.utils.formatEther(ifee.toString()))}%)\n`,
   );
 
   const factoryParams = [masterOracleAddress, stake, stakeSize, minm, maxm, ifee, mode, tilt, guard];
@@ -211,8 +212,11 @@ task(
     await verifyOnEtherscan("RewardsDistributor");
   }
 
+  console.log(`- Add target ${target.name} to the whitelist`);
+  await (await factory.supportTarget(target.address, true)).wait();
+
   if (chainId !== CHAINS.MAINNET) {
-    const adapter = await _deployAdapter(periphery, divider, factory, target);
+    const adapter = await _deployAdapter(periphery, divider, target);
     // set claimer
     // TODO: for Mainnet, this will have to be done after we have deployed the adapter (via Defender)
     console.log("- Set deployer address as a trusted on adapter");
@@ -253,10 +257,9 @@ task(
     console.log("ACTIONS TO BE DONE ON DEFENDER: ");
     console.log("1. Set factory on Periphery (multisig)");
     console.log("2. Set factory as trusted on Divider (multisig)");
-    console.log("3. Deploy ownable adapter on Periphery using factory (relayer)");
-    console.log("4. Go back to script, and deploy the claimer");
-    console.log("5. Set claimer to adapter (multisig)");
-    console.log("6. Create RLV using AutoRollerFactory and the rewards distributor address (relayer)");
-    console.log("7. Roll first series (relayer)");
+    console.log("3. Deploy ownable adapter on Periphery (Adapters UI using deployer address)");
+    console.log("4. Set claimer to adapter (deployer)");
+    console.log("5. Set multisig as trusted of adapter via factory `setAdapterIsTrusted` (multisig)");
+    console.log("6. Roll first series (Angle team or relayer)");
   }
 });

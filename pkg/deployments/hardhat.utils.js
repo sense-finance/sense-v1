@@ -249,3 +249,13 @@ exports.approve = async (token, owner, spender) => {
     await token.approve(spender, ethers.constants.MaxUint256).then(tx => tx.wait());
   }
 };
+
+// receives desired percentage and returns the decimal value
+// e.g 0.05% will return 0.0005
+exports.percentageToDecimal = percentage => percentage / 100;
+exports.decimalToPercentage = percentage => percentage * 100;
+
+// receives desired percentage and returns the bps value
+// e.g 0.05% will return 5
+exports.bpsToDecimal = percentage => percentage * 100;
+exports.decimalToBps = percentage => percentage / 100;
