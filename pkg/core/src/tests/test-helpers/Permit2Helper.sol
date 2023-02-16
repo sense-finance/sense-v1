@@ -40,12 +40,30 @@ contract Permit2Helper is Test {
     function generatePermit(
         uint256 ownerPrivKey,
         address spender,
+        address token,
+        uint256 deadline
+    ) public returns (Periphery.PermitData memory permit) {
+        return _generatePermit(ownerPrivKey, spender, token, deadline);
+    }
+
+    function generatePermit(
+        uint256 ownerPrivKey,
+        address spender,
         address token
     ) public returns (Periphery.PermitData memory permit) {
+        return _generatePermit(ownerPrivKey, spender, token, block.timestamp);
+    }
+
+    function _generatePermit(
+        uint256 ownerPrivKey,
+        address spender,
+        address token,
+        uint256 deadline
+    ) internal returns (Periphery.PermitData memory permit) {
         IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
             permitted: IPermit2.TokenPermissions({ token: ERC20(token), amount: type(uint256).max }),
             nonce: _randomUint256(),
-            deadline: block.timestamp
+            deadline: deadline
         });
         bytes memory sig = _signPermit(permit, spender, ownerPrivKey);
         return Periphery.PermitData(permit, sig);

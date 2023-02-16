@@ -184,7 +184,7 @@ contract ERC4626FactoryScript is Script, StdCheats {
         console.log("\n- Sponsor Series for %s @ %s with maturity %s", ERC4626Adapter(adapter).name(), address(target), maturity);
         
         // Periphery.PermitData memory data = permit2Helper.generatePermit(deployerPrivateKey, addressGuru.periphery(), factoryParams.stake);
-        periphery.sponsorSeries(adapter, maturity, false, permit2Helper.generatePermit(privKey, addressGuru.periphery(), addressGuru.weth()), helper._getQuote(adapter, addressGuru.weth(), addressGuru.weth()));
+        periphery.sponsorSeries(adapter, maturity, false, permit2Helper.generatePermit(privKey, addressGuru.periphery(), addressGuru.weth()), helper._getQuote(addressGuru.weth(), addressGuru.weth()));
         console.log(" Series successfully sponsored!");
     }
 

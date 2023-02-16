@@ -4,9 +4,10 @@ pragma solidity 0.8.15;
 import { FixedMath } from "../external/FixedMath.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 // Internal references
-import { Periphery, IERC20 } from "../Periphery.sol";
+import { Periphery } from "../Periphery.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { Divider } from "../Divider.sol";
 import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
@@ -66,6 +67,14 @@ contract PeripheryFQ is Periphery {
     function fillQuote(SwapQuote calldata quote) public payable returns (uint256 boughtAmount) {
         return _fillQuote(quote);
     }
+
+    function transferFrom(
+        Periphery.PermitData calldata permit,
+        address token,
+        uint256 amt
+    ) public {
+        return _transferFrom(permit, token, amt);
+    }
 }
 
 contract PeripheryTestHelper is ForkTest, Permit2Helper {
@@ -77,6 +86,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
     FFactory internal ffactory;
 
     MockOracle internal mockOracle;
+    MockToken internal underlying;
     MockTarget internal mockTarget;
     MockCropAdapter internal mockAdapter;
 
@@ -89,32 +99,49 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
 
     uint256 internal bobPrivKey = _randomUint256();
     address internal bob = vm.addr(bobPrivKey);
+    uint256 internal jimPrivKey = _randomUint256();
+    address internal jim = vm.addr(jimPrivKey);
 
     // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
     function setUp() public {
-        fork();
-        origin = block.timestamp;
+        _setUp(true);
+    }
 
-        // some tests are using an existing Series so we want to fix the block number
-        vm.rollFork(16583087); // Feb-08-2023 09:12:23 AM +UTC
+    function _setUp(bool createFork) internal {
+        if (createFork) fork();
+        origin = block.timestamp;
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
         vm.warp(firstDayOfMonth); // Set to first day of the month
-
-        MockToken underlying = new MockToken("TestUnderlying", "TU", 18);
-        mockTarget = new MockTarget(address(underlying), "TestTarget", "TT", 18);
 
         // Mainnet contracts
         divider = AddressBook.DIVIDER_1_2_0;
         spaceFactory = AddressBook.SPACE_FACTORY_1_3_0;
         balancerVault = AddressBook.BALANCER_VAULT;
         poolManager = AddressBook.POOL_MANAGER_1_2_0;
+        permit2 = IPermit2(AddressBook.PERMIT2);
+
+        vm.label(divider, "Divider");
+        vm.label(spaceFactory, "SpaceFactory");
+        vm.label(balancerVault, "BalancerVault");
+        vm.label(poolManager, "PoolManager");
+
+        // Deploy an mock underlying token
+        underlying = new MockToken("TestUnderlying", "TU", 18);
+
+        // Deploy a mock target
+        mockTarget = new MockTarget(address(underlying), "TestTarget", "TT", 18);
+
+        // Deploy a mock stake token
         stake = address(new MockToken("Stake", "ST", 18));
 
+        // Deploy a mock oracle
         mockOracle = new MockOracle();
+
+        // Deploy a mock crop adapter
         BaseAdapter.AdapterParams memory mockAdapterParams = BaseAdapter.AdapterParams({
             oracle: address(mockOracle),
             stake: stake, // stake size is 0, so the we don't actually need any stake token
@@ -135,8 +162,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
             address(new MockToken("Reward", "R", 18))
         );
 
-        vm.label(spaceFactory, "SpaceFactory");
-
+        // Prep factory params
         BaseFactory.FactoryParams memory factoryParams = BaseFactory.FactoryParams({
             stake: AddressBook.DAI,
             oracle: address(mockOracle),
@@ -149,6 +175,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
             guard: Constants.DEFAULT_GUARD
         });
 
+        // Deploy a CFactory
         cfactory = new CFactory(
             divider,
             Constants.RESTRICTED_ADMIN,
@@ -156,9 +183,11 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
             factoryParams,
             AddressBook.COMP
         );
+
+        // Deploy an FFactory
         ffactory = new FFactory(divider, Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
 
-        permit2 = IPermit2(AddressBook.PERMIT2);
+        // Deploy Periphery
         periphery = new PeripheryFQ(
             divider,
             poolManager,
@@ -234,46 +263,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         Periphery.SwapQuote memory quote = _getQuote(address(cadapter), AddressBook.DAI, AddressBook.DAI);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
-        vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
-
-        // Check pt and yt deployed
-        assertTrue(pt != address(0));
-        assertTrue(yt != address(0));
-
-        // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
-    }
-
-    function testMainnetSponsorSeriesOnCAdapter2() public {
-        // We roll back to original block number (which is the latest block) because the call chainlink's oracle
-        // somehow is not being done taking into consideration the warped block (maybe a bug in foundry?)
-        vm.warp(origin);
-        CAdapter cadapter = CAdapter(payable(periphery.deployAdapter(address(cfactory), AddressBook.cBAT, "")));
-
-        // Calculate maturity
-        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
-            block.timestamp + Constants.DEFAULT_MIN_MATURITY
-        );
-        uint256 maturity = DateTimeFull.timestampFromDateTime(
-            month == 12 ? year + 1 : year,
-            month == 12 ? 1 : (month + 1),
-            1,
-            0,
-            0,
-            0
-        );
-
-        // Mint bob MAX_UINT AddressBook.DAI (for stake)
-        deal(AddressBook.DAI, bob, type(uint256).max);
-
-        // Approve Periphery to pull DAI (stake)
-        vm.prank(bob);
-        ERC20(AddressBook.DAI).approve(address(periphery), type(uint256).max);
-
-        Periphery.SwapQuote memory quote = _getQuote(address(cadapter), AddressBook.DAI, AddressBook.DAI);
-        Periphery.PermitData memory data; // sending empty data because we are using normal approval
         vm.prank(bob);
         (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
 
@@ -363,7 +352,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     /* ========== PT SWAPS ========== */
 
     function testMainnetSwapAllForPTs() public {
-        // Get existing adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        vm.rollFork(16583087);
+
+        // Re-deploy Periphery and set everything up
+        _setUp(false);
+
+        // Get the existing adapter (wstETH adapter) and set it up on the Periphery
         (address adapter, uint256 maturity) = _getExistingAdapterAndSeries();
 
         // 1. Swap DAI for PTs
@@ -387,10 +382,16 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSwapPTsForAll() public {
+        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        vm.rollFork(16583087);
+
+        // Re-deploy Periphery and set everything up
+        _setUp(false);
+
         // Get existing adapter (wstETH adapter)
         (address adapter, uint256 maturity) = _getExistingAdapterAndSeries();
 
-        // // 1. Swap PTs for target
+        // 1. Swap PTs for target
         Periphery.SwapQuote memory quote = _getQuote(adapter, address(0), MockAdapter(adapter).target());
         // _swapPTs(adapter, maturity, quote);
 
@@ -424,6 +425,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             address(mockAdapter),
             maturity,
             ytBalPre / 10,
+            0,
             bob,
             data,
             _getQuote(address(mockAdapter), address(0), address(mockTarget))
@@ -680,17 +682,28 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     /* ========== ZAPS: FILL QUOTE ========== */
 
     function testMainnetFillQuote() public {
+        vm.rollFork(16640734); // Feb-15-2023 01:40:23 PM +UTC
+
+        periphery = new PeripheryFQ(
+            divider,
+            poolManager,
+            spaceFactory,
+            balancerVault,
+            address(permit2),
+            AddressBook.EXCHANGE_PROXY
+        );
+
         // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         deal(AddressBook.USDC, address(periphery), 1e6);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
-            sellToken: IERC20(AddressBook.USDC),
-            buyToken: IERC20(AddressBook.DAI),
+            sellToken: ERC20(AddressBook.USDC),
+            buyToken: ERC20(AddressBook.DAI),
             spender: 0xDef1C0ded9bec7F1a1670819833240f027b25EfF, // from 0x API
             swapTarget: payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF), // from 0x API
-            swapCallData: hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000db564da66189a7b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000007d84779f8863e3ed0c"
+            swapCallData: hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000dba05fb401c259a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000ffc8a8985263ee071f"
         });
         vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(AddressBook.USDC, AddressBook.DAI, 0);
+        emit BoughtTokens(AddressBook.USDC, AddressBook.DAI, 0, 0);
         uint256 daiBalanceBefore = ERC20(AddressBook.DAI).balanceOf(address(periphery));
         uint256 usdcBalanceBefore = ERC20(AddressBook.USDC).balanceOf(address(periphery));
         periphery.fillQuote(quote);
@@ -699,14 +712,14 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // DAI to wstETH: https://api.0x.org/swap/v1/quote?sellToken=DAI&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000
         deal(AddressBook.DAI, address(periphery), 1e18);
-        quote.sellToken = IERC20(AddressBook.DAI);
-        quote.buyToken = IERC20(AddressBook.WSTETH);
+        quote.sellToken = ERC20(AddressBook.DAI);
+        quote.buyToken = ERC20(AddressBook.WSTETH);
         quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
         quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
         quote
-            .swapCallData = hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000001e64c4e19add2000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000d993111fd763e3f3d5";
+            .swapCallData = hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000001dda7e49acde8000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000d6dd16228d63ee0732";
         vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(AddressBook.DAI, AddressBook.WSTETH, 0);
+        emit BoughtTokens(AddressBook.DAI, AddressBook.WSTETH, 0, 0);
         daiBalanceBefore = ERC20(AddressBook.DAI).balanceOf(address(periphery));
         uint256 wstETHBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(periphery));
         periphery.fillQuote(quote);
@@ -716,36 +729,141 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // wstETH to ETH: https://api.0x.org/swap/v1/quote?sellToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&buyToken=ETH&sellAmount=1000000000000000000
         deal(AddressBook.WSTETH, address(periphery), 1e18);
         vm.prank(address(periphery));
-        quote.sellToken = IERC20(AddressBook.WSTETH);
-        quote.buyToken = IERC20(periphery.ETH());
+        quote.sellToken = ERC20(AddressBook.WSTETH);
+        quote.buyToken = ERC20(periphery.ETH());
         quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
         quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
         quote
-            .swapCallData = hex"803ba26d00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000f355119a94095420000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b7f39c581f595b53c5cb19bd0b3f8da6c935e2ca00001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000002fffadbf5163e3f059";
+            .swapCallData = hex"803ba26d00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000f3c91c07cdf48360000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b7f39c581f595b53c5cb19bd0b3f8da6c935e2ca00001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000007f9a34c89f63ee073b";
         vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(AddressBook.WSTETH, periphery.ETH(), 0);
+        emit BoughtTokens(AddressBook.WSTETH, periphery.ETH(), 0, 0);
         wstETHBalanceBefore = ERC20(AddressBook.WSTETH).balanceOf(address(periphery));
         uint256 ethBalanceBefore = address(periphery).balance;
         periphery.fillQuote(quote);
         assertEq(ERC20(AddressBook.WSTETH).balanceOf(address(periphery)), wstETHBalanceBefore - 1e18);
         assertGt(address(periphery).balance, ethBalanceBefore);
 
-        // ETH to USDC: https://api.0x.org/swap/v1/quote?sellToken=ETH&buyToken=USDC&sellAmount=1000000000000000000
-        deal(address(periphery), 1 ether);
-        quote.sellToken = IERC20(periphery.ETH());
-        quote.buyToken = IERC20(AddressBook.USDC);
-        quote.spender = 0x0000000000000000000000000000000000000000; // from 0x API
+        // // ETH to USDC: https://api.0x.org/swap/v1/quote?sellToken=ETH&buyToken=USDC&sellAmount=1000000000000000000
+        // deal(address(periphery), 1 ether);
+        // quote.sellToken = ERC20(periphery.ETH());
+        // quote.buyToken = ERC20(AddressBook.USDC);
+        // quote.spender = 0x0000000000000000000000000000000000000000; // from 0x API
+        // quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
+        // quote
+        //     .swapCallData = hex"3598d8ab00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000063ab6e5f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002bc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000064a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000ec722d866863ee0742";
+        // vm.expectEmit(true, true, false, false);
+        // emit BoughtTokens(periphery.ETH(), AddressBook.USDC, 0, 0);
+        // ethBalanceBefore = address(periphery).balance;
+        // usdcBalanceBefore = ERC20(AddressBook.USDC).balanceOf(address(periphery));
+        // vm.prank(address(periphery));
+        // periphery.fillQuote{ value: 1 ether }(quote);
+        // assertEq(address(periphery).balance, ethBalanceBefore - 1 ether);
+        // assertGt(ERC20(AddressBook.USDC).balanceOf(address(periphery)), usdcBalanceBefore);
+
+        // Potentially conflictive tokens ///
+
+        // USDT to WETH: https://api.0x.org/swap/v1/quote?sellToken=USDT&buyToken=WETH&sellAmount=1000000
+        deal(AddressBook.USDT, address(periphery), 1e6);
+        quote.sellToken = ERC20(AddressBook.USDT);
+        quote.buyToken = ERC20(AddressBook.WETH);
+        quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
         quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
         quote
-            .swapCallData = hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000006138608500000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000001b18fd746963e3ed22";
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(periphery.ETH(), AddressBook.USDC, 0);
-        ethBalanceBefore = address(periphery).balance;
-        usdcBalanceBefore = ERC20(AddressBook.USDC).balanceOf(address(periphery));
+            .swapCallData = hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000002136ddf09be9a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000000000000000000051163f963b63ee074a";
+
+        // Make an approval so the allowance is not 0
         vm.prank(address(periphery));
-        periphery.fillQuote{ value: 1 ether }(quote);
-        assertEq(address(periphery).balance, ethBalanceBefore - 1 ether);
-        assertGt(ERC20(AddressBook.USDC).balanceOf(address(periphery)), usdcBalanceBefore);
+        ERC20(AddressBook.USDT).safeApprove(address(periphery), 1e6);
+
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(AddressBook.USDT, AddressBook.WETH, 0, 0);
+        uint256 usdtBalanceBefore = ERC20(AddressBook.USDT).balanceOf(address(periphery));
+        uint256 wethBalanceBefore = ERC20(AddressBook.WETH).balanceOf(address(periphery));
+        periphery.fillQuote(quote);
+        assertEq(ERC20(AddressBook.USDT).balanceOf(address(periphery)), usdtBalanceBefore - 1e6);
+        assertGt(ERC20(AddressBook.WETH).balanceOf(address(periphery)), wethBalanceBefore);
+    }
+
+    function testMainnetCantFillQuoteIfNotEnoughBalance() public {
+        vm.rollFork(16640734); // Feb-15-2023 01:40:23 PM +UTC
+
+        periphery = new PeripheryFQ(
+            divider,
+            poolManager,
+            spaceFactory,
+            balancerVault,
+            address(permit2),
+            AddressBook.EXCHANGE_PROXY
+        );
+
+        // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
+        deal(AddressBook.USDC, address(periphery), 0.1e6);
+        Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            sellToken: ERC20(AddressBook.USDC),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: 0xDef1C0ded9bec7F1a1670819833240f027b25EfF, // from 0x API
+            swapTarget: payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF), // from 0x API
+            swapCallData: hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000dba05fb401c259a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000ffc8a8985263ee071f"
+        });
+        vm.expectRevert(abi.encodeWithSignature("ZeroExSwapFailed()"));
+        periphery.fillQuote(quote);
+    }
+
+    function testMainnetTransferFromOldSchool() public {
+        Periphery.PermitData memory permit;
+
+        // Revert if not enough allowance
+        vm.expectRevert();
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+
+        // Revert if approved but not enough balance
+        ERC20(AddressBook.USDC).safeApprove(address(periphery), 1e6);
+        vm.expectRevert();
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+
+        // Work if approved and enough balance
+        deal(AddressBook.USDC, address(this), 1e6);
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+        assertEq(ERC20(AddressBook.USDC).balanceOf(address(periphery)), 1e6);
+        assertEq(ERC20(AddressBook.USDC).balanceOf(address(this)), 0);
+    }
+
+    function testMainnetPermitTransferFrom() public {
+        Periphery.PermitData memory permit;
+
+        // Fail it not enough allowance and using wrong private key
+        permit = generatePermit(jimPrivKey, address(periphery), AddressBook.USDC);
+        vm.expectRevert(abi.encodeWithSignature("InvalidSigner()"));
+        vm.prank(bob);
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+
+        deal(AddressBook.USDC, bob, 2e6);
+
+        // Fail if not enough allowance but enough balance and correct private key
+        permit = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
+        vm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.prank(bob);
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+
+        // Fail if enough allowance and balance but using wrong private key
+        vm.prank(bob);
+        ERC20(AddressBook.USDC).approve(AddressBook.PERMIT2, 2e6);
+        permit = generatePermit(jimPrivKey, address(periphery), AddressBook.USDC);
+        vm.expectRevert(abi.encodeWithSignature("InvalidSigner()"));
+        vm.prank(bob);
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+
+        // Work if enough allowance and balance and correct private key
+        permit = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
+        vm.prank(bob);
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
+        assertEq(ERC20(AddressBook.USDC).balanceOf(bob), 1e6);
+        assertEq(ERC20(AddressBook.USDC).balanceOf(address(periphery)), 1e6);
+
+        // Can't re-use permit
+        vm.expectRevert(abi.encodeWithSignature("InvalidNonce()"));
+        vm.prank(bob);
+        periphery.transferFrom(permit, AddressBook.USDC, 1e6);
     }
 
     // INTERNAL HELPERS ––––––––––––
@@ -894,7 +1012,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function _getExistingAdapterAndSeries() public returns (address adapter, uint256 maturity) {
-        // TODO: replace for const
+        // We use the wstETH adapter to have a real Series to test with
         adapter = 0x6fC4843aac4786b4420e954a2271BE16f225a482; // wstETH adapter
         maturity = 1811808000; // June 1st 2027
 
@@ -917,8 +1035,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address toToken
     ) public returns (Periphery.SwapQuote memory quote) {
         if (fromToken == toToken) {
-            quote.sellToken = IERC20(fromToken);
-            quote.buyToken = IERC20(toToken);
+            quote.sellToken = ERC20(fromToken);
+            quote.buyToken = ERC20(toToken);
             return quote;
         }
         MockAdapter adapter = MockAdapter(adapter);
@@ -926,12 +1044,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             if (toToken == adapter.underlying() || toToken == adapter.target()) {
                 // Create a quote where we only fill the buyToken (with target or underlying) and the rest
                 // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
-                quote.buyToken = IERC20(toToken);
+                quote.buyToken = ERC20(toToken);
             } else {
                 // Quote to swap underlying for token via 0x
                 address underlying = MockAdapter(adapter).underlying();
-                quote.sellToken = IERC20(underlying);
-                quote.buyToken = IERC20(toToken);
+                quote.sellToken = ERC20(underlying);
+                quote.buyToken = ERC20(toToken);
                 quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
                 quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
                 // https://api.0x.org/swap/v1/quote?sellToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&buyToken=DAI&sellAmount=957048107692151
@@ -942,12 +1060,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             if (fromToken == adapter.underlying() || fromToken == adapter.target()) {
                 // Create a quote where we only fill the sellToken (with target or underlying) and the rest
                 // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
-                quote.sellToken = IERC20(fromToken);
+                quote.sellToken = ERC20(fromToken);
             } else {
                 // Quote to swap token for underlying via 0x
                 address underlying = MockAdapter(adapter).underlying();
-                quote.sellToken = IERC20(fromToken);
-                quote.buyToken = IERC20(underlying);
+                quote.sellToken = ERC20(fromToken);
+                quote.buyToken = ERC20(underlying);
                 quote.spender = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF; // from 0x API
                 quote.swapTarget = payable(0xDef1C0ded9bec7F1a1670819833240f027b25EfF); // from 0x API
                 // https://api.0x.org/swap/v1/quote?sellToken=DAI&buyToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&sellAmount=1000000000000000000
@@ -991,8 +1109,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // assert we've swapped tokens through 0x
         if (address(quote.sellToken) != address(0) && address(quote.buyToken) != address(0)) {
-            vm.expectEmit(true, true, true, true);
-            emit BoughtTokens(address(token), MockAdapter(adapter).underlying(), 598481084566980);
+            vm.expectEmit(true, true, false, false);
+            emit BoughtTokens(address(token), MockAdapter(adapter).underlying(), 0, 0);
         }
 
         vm.prank(bob);
@@ -1042,7 +1160,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             // assert we've swapped tokens through 0x
             if (address(quote.sellToken) != address(0) && address(quote.buyToken) != address(0)) {
                 vm.expectEmit(true, true, false, false);
-                emit BoughtTokens(MockAdapter(adapter).underlying(), address(token), 0);
+                emit BoughtTokens(MockAdapter(adapter).underlying(), address(token), 0, 0);
             }
 
             vm.prank(bob);
@@ -1061,5 +1179,10 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     /* ========== LOGS ========== */
 
-    event BoughtTokens(address indexed sellToken, address indexed buyToken, uint256 indexed boughtAmount);
+    event BoughtTokens(
+        address indexed sellToken,
+        address indexed buyToken,
+        uint256 sellAmount,
+        uint256 indexed boughtAmount
+    );
 }

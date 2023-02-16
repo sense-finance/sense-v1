@@ -11,7 +11,7 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { IPriceFeed } from "../../adapters/abstract/IPriceFeed.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { Token } from "../../tokens/Token.sol";
-import { Periphery, IERC20 } from "../../Periphery.sol";
+import { Periphery } from "../../Periphery.sol";
 import { MockToken, MockNonERC20Token } from "./mocks/MockToken.sol";
 import { MockTarget, MockNonERC20Target } from "./mocks/MockTarget.sol";
 import { MockAdapter, MockCropAdapter, Mock4626CropAdapter } from "./mocks/MockAdapter.sol";
@@ -670,16 +670,11 @@ contract TestHelper is Test, Permit2Helper {
         assertApproxEqAbs(a, b, 100);
     }
 
-    function _getQuote(
-        address adapter,
-        address fromToken,
-        address toToken
-    ) public returns (Periphery.SwapQuote memory quote) {
-        MockAdapter adapter = MockAdapter(adapter);
+    function _getQuote(address fromToken, address toToken) public returns (Periphery.SwapQuote memory quote) {
         if (fromToken == address(0)) {
-            quote.buyToken = IERC20(toToken);
+            quote.buyToken = ERC20(toToken);
         } else {
-            quote.sellToken = IERC20(fromToken);
+            quote.sellToken = ERC20(fromToken);
         }
     }
 }

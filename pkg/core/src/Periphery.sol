@@ -19,14 +19,6 @@ import { BaseFactory as AdapterFactory } from "./adapters/abstract/factories/Bas
 import { Divider } from "./Divider.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 
-interface IERC20 {
-    function balanceOf(address owner) external view returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transfer(address to, uint256 amount) external returns (bool);
-}
-
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
 
@@ -97,8 +89,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     }
 
     struct SwapQuote {
-        IERC20 sellToken;
-        IERC20 buyToken;
+        ERC20 sellToken;
+        ERC20 buyToken;
         address spender;
         address payable swapTarget;
         bytes swapCallData;
@@ -260,13 +252,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt) {
-        amt = _swap(adapter, maturity, ptBal, minAccepted, 0, receiver, permit, quote);
+        amt = _swapSenseToken(adapter, maturity, ptBal, minAccepted, 0, receiver, permit, quote);
     }
 
     /// @notice Swap YT for Target of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param ytBal Balance of YTs to swap
+    /// @param minAccepted Min accepted amount of Target
     /// @param receiver Address to receive the Target
     /// @param permit Permit to pull YTs
     /// @param quote Quote with swap details
@@ -278,14 +271,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
+        uint256 minAccepted,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt) {
-        amt = _swap(adapter, maturity, ytBal, 0, 1, receiver, permit, quote);
+        amt = _swapSenseToken(adapter, maturity, ytBal, minAccepted, 1, receiver, permit, quote);
     }
 
-    function _swap(
+    function _swapSenseToken(
         address adapter,
         uint256 maturity,
         uint256 sellAmt,
@@ -298,7 +292,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
             revert Errors.InvalidQuote();
         amt = (mode == 1)
-            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, permit)
+            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, minAccepted, permit)
             : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);
         amt = _fromTarget(adapter, amt, quote);
         ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
@@ -569,6 +563,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
+        uint256 minAccepted,
         PermitData calldata permit
     ) internal returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
@@ -604,6 +599,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         // Flash borrow target (following actions in `onFlashLoan`)
         tBal = _flashBorrowAndSwapFromYTs(adapter, maturity, ytBal, targetToBorrow);
+
+        // Check that we got enough target
+        if (tBal < minAccepted) revert Errors.InvalidPrice();
     }
 
     /// @return tAmount if mode = 0, target received from selling YTs, otherwise, returns 0
@@ -637,6 +635,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
+                    0, // TODO: do we want to use 0 here or have yet another param? (minAccepted?)
                     permit // we send the permit thought it won't be used
                     // PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
                 );
@@ -904,13 +903,17 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (address(quote.sellToken) != ETH)
             ERC20(address(quote.sellToken)).safeApprove(quote.spender, type(uint256).max);
 
+        uint256 sellAmount = address(quote.buyToken) == ETH
+            ? address(this).balance
+            : quote.sellToken.balanceOf(address(this));
+
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
-        (bool success, ) = quote.swapTarget.call{ value: msg.value }(quote.swapCallData);
+        (bool success, bytes memory res) = quote.swapTarget.call{ value: msg.value }(quote.swapCallData);
         // if (!success) revert(_getRevertMsg(res));
-        if (!success) revert Errors.ZeroExSwapFailed();
+        if (!success) revert Errors.ZeroExSwapFailed(res);
 
-        // Use our current buyToken balance to determine how much we've bought.
+        // We assume the Periphery does not hold tokens so boughtAmount is always it's balance
         boughtAmount = (
             address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this))
         );
@@ -920,8 +923,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 refundAmt = address(this).balance;
         if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
         payable(msg.sender).transfer(refundAmt);
-
-        emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), boughtAmount);
+        emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
     }
 
     // function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
@@ -1038,5 +1040,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amountOut,
         bytes4 indexed sig
     );
-    event BoughtTokens(address indexed sellToken, address indexed buyToken, uint256 indexed boughtAmount);
+    event BoughtTokens(
+        address indexed sellToken,
+        address indexed buyToken,
+        uint256 sellAmount,
+        uint256 indexed boughtAmount
+    );
 }

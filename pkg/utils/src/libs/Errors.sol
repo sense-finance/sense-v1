@@ -56,7 +56,7 @@ library Errors {
     error UnexpectedSwapAmount();
     error TooMuchLeftoverTarget();
     error InvalidExchangeProxy();
-    error ZeroExSwapFailed();
+    error ZeroExSwapFailed(bytes res);
     error InvalidQuote();
 
     // Fuse

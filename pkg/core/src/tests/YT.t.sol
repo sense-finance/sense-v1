@@ -23,7 +23,7 @@ contract Yield is TestHelper {
             maturity,
             true,
             data,
-            _getQuote(address(adapter), address(stake), address(stake))
+            _getQuote(address(stake), address(stake))
         );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
@@ -57,7 +57,7 @@ contract Yield is TestHelper {
             maturity,
             true,
             data,
-            _getQuote(address(adapter), address(stake), address(stake))
+            _getQuote(address(stake), address(stake))
         );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
@@ -97,7 +97,7 @@ contract Yield is TestHelper {
             maturity,
             true,
             data,
-            _getQuote(address(adapter), address(stake), address(stake))
+            _getQuote(address(stake), address(stake))
         );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);
@@ -137,7 +137,7 @@ contract Yield is TestHelper {
             maturity,
             true,
             data,
-            _getQuote(address(adapter), address(stake), address(stake))
+            _getQuote(address(stake), address(stake))
         );
         vm.warp(block.timestamp + 1 days);
         vm.prank(bob);

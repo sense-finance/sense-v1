@@ -316,7 +316,7 @@ contract Factories is TestHelper {
             maturity,
             true,
             data,
-            _getQuote(someAdapter, address(stake), address(stake))
+            _getQuote(address(stake), address(stake))
         );
         assertTrue(pt != address(0));
         assertTrue(yt != address(0));
