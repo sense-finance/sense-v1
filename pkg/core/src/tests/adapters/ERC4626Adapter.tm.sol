@@ -200,6 +200,7 @@ contract ERC4626Adapters is ForkTest {
 
     /// @notice scale() and scaleStored() have the same implementation
     /// @dev given the fact that totalAssets() might be implemented differently by each protocol,
+    /// you may need to implement a custom case for the token given on _increaseVaultYield() function
     function testScaleAndScaleStored() public {
         // Sanity check: vault is already initialised and scale > 0
         uint256 scale = erc4626Adapter.scale();
