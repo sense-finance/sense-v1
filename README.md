@@ -84,11 +84,11 @@ git submodule update --init --recursive
 yarn install # or npm install
 
 # Run basic tests suite against a local chain. This is all tests ending in .t.sol
-# All tests run with underlying, target and stake aas ERC20 compliant tokens wth 18 decimals
+# All tests run with underlying, target and stake as ERC20 compliant tokens with 18 decimals
 yarn test
 
-# Run mainnet tests (against a mainnet fork). This is all tests endng in .tm.sol
-# All tests run with underlying, target and stake aas ERC20 compliant tokens wth 18 decimals
+# Run mainnet tests (against a mainnet fork). This is all tests ending in .tm.sol
+# All tests run with underlying, target and stake as ERC20 compliant tokens with 18 decimals
 # (unless they use existing tokens)
 yarn test:mainnet
 
@@ -189,7 +189,7 @@ To create a new task:
 
 4. Add *output* files into task folder:
 
-    After succesfully executing the task, Hardhat would have saved the resulting deployments (contract addresses along their abi, bytecode, metadata...) on `pkg/deployments/deployments`. **Move that folder inside `pkg/deployments/tasks/YYYYMMYY-TASK_NAME` and rename it to `output`**.
+    After successfully executing the task, Hardhat would have saved the resulting deployments (contract addresses along their abi, bytecode, metadata...) on `pkg/deployments/deployments`. **Move that folder inside `pkg/deployments/tasks/YYYYMMYY-TASK_NAME` and rename it to `output`**.
 
 5. Commit and push code to Github.
 
