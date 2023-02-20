@@ -148,6 +148,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 spaceFactory.create(adapter, maturity);
             }
         }
+
+        // Refund any excess stake assets
+        ERC20(stake).safeTransfer(msg.sender, ERC20(stake).balanceOf(address(this)));
+
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
 
@@ -266,7 +270,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @return amt amount of Target received
     /// @dev if quote.buyToken is neither target nor underlying, it will unwrap target
     /// and swap it on 0x
-    // TODO: why we dont have minAccepted here? Should we?
     function swapYTs(
         address adapter,
         uint256 maturity,
@@ -295,7 +298,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, minAccepted, permit)
             : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);
         amt = _fromTarget(adapter, amt, quote);
-        ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
+        address(quote.buyToken) == ETH
+            ? payable(receiver).transfer(amt)
+            : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
     }
 
     /// @notice Adds liquidity providing underlying
@@ -303,6 +308,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param amt Amount to provide
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
+    /// @param minAccepted Min accepted amount of Target (from the sell of YTs)
     /// @param minBptOut Minimum BPT the user will accept out for this transaction
     /// @param receiver Address to receive the BPT
     /// @param permit Permit to pull the tokens to swap from
@@ -314,13 +320,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
-        uint8 mode,
+        uint256 minAccepted,
         uint256 minBptOut,
+        uint8 mode,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     )
         external
+        payable
         returns (
             uint256 tAmount,
             uint256 issued,
@@ -332,8 +340,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             adapter,
             maturity,
             _toTarget(adapter, amt, quote),
-            mode,
+            minAccepted,
             minBptOut,
+            mode,
             receiver,
             permit
         );
@@ -346,20 +355,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param lpBal Balance of LP tokens to provide
     /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
     /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping PTs to underlying
-    /// @param intoTarget if true, it will try to swap PTs into Target. Will revert if there's not enough liquidity to perform the swap.
     /// @param receiver Address to receive the Underlying
     /// @param permit Permit to pull the LP tokens
     /// @param quote Quote with swap details
     /// @return amt amount of tokens received and ptBal PTs (in case it's called after maturity and redeem is restricted or intoTarget is false)
     /// @dev if quote.buyToken is neither target nor underlying, it will unwrap target
     /// and swap it on 0x
+    /// if quote.buyToken is PT, it will return target and PTs
     function removeLiquidity(
         address adapter,
         uint256 maturity,
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
-        bool intoTarget,
+        bool swapPTs,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
@@ -371,11 +380,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             lpBal,
             minAmountsOut,
             minAccepted,
-            intoTarget,
+            swapPTs,
             receiver,
             permit
         );
-        ERC20(address(quote.buyToken)).safeTransfer(receiver, amt = _fromTarget(adapter, tBal, quote)); // transfer bought tokens to receiver
+        amt = _fromTarget(adapter, tBal, quote);
+        address(quote.buyToken) == ETH
+            ? payable(receiver).transfer(amt)
+            : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
     }
 
     /* ========== UTILS ========== */
@@ -429,10 +441,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         // pull underlying
         permit2.permitTransferFrom(permit.msg, sigs, msg.sender, permit.sig);
-        ERC20(Adapter(adapter).target()).safeTransfer(
-            receiver,
-            amt = _fromTarget(adapter, divider.combine(adapter, maturity, uBal), quote)
-        );
+        amt = _fromTarget(adapter, divider.combine(adapter, maturity, uBal), quote);
+        address(quote.buyToken) == ETH
+            ? payable(receiver).transfer(amt)
+            : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
     }
 
     /* ========== ADMIN ========== */
@@ -611,8 +623,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint8 mode,
+        uint256 minAccepted,
         uint256 minBptOut,
+        uint8 mode,
         address receiver,
         PermitData calldata permit
     )
@@ -635,7 +648,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
-                    0, // TODO: do we want to use 0 here or have yet another param? (minAccepted?)
+                    minAccepted,
                     permit // we send the permit thought it won't be used
                     // PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
                 );
@@ -700,7 +713,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 lpBal,
         uint256[] memory minAmountsOut,
         uint256 minAccepted,
-        bool intoTarget,
+        bool swapPTs,
         address receiver,
         PermitData calldata permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
@@ -727,7 +740,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             }
         } else {
             // 2. Sell PTs for Target (if there are)
-            if (_ptBal > 0 && intoTarget) {
+            if (_ptBal > 0 && swapPTs) {
                 tBal += _balancerSwap(
                     pt,
                     Adapter(adapter).target(),
@@ -899,11 +912,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         // Give `spender` an infinite allowance to spend this contract's `sellToken`.
         // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
         // allowance to 0 before being able to update it.
-        // TODO: add tests for USDT!!
         if (address(quote.sellToken) != ETH)
             ERC20(address(quote.sellToken)).safeApprove(quote.spender, type(uint256).max);
 
-        uint256 sellAmount = address(quote.buyToken) == ETH
+        uint256 sellAmount = address(quote.sellToken) == ETH
             ? address(this).balance
             : quote.sellToken.balanceOf(address(this));
 
@@ -919,7 +931,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         );
 
         // TODO: add tests for this! and check if we actually need it
-        // Refund any unspent protocol fees to the sender.
+        // Refund any unspent protocol fees (paid in ether) to the sender.
         uint256 refundAmt = address(this).balance;
         if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
         payable(msg.sender).transfer(refundAmt);
@@ -994,7 +1006,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         // We'll fall back to using Permit2 if calling transferFrom on the token directly reverted.
         if (!success)
-            // TODO: do we need any sanity checks e.g require that the pulled token is the one we have to pull
             permit2.permitTransferFrom(
                 permit.msg,
                 IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amt }),
