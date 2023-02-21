@@ -22,6 +22,7 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { MockBalancerVault, MockSpaceFactory, MockSpacePool } from "@sense-finance/v1-core/tests/test-helpers/mocks/MockSpace.sol";
 import { Constants } from "@sense-finance/v1-core/tests/test-helpers/Constants.sol";
 import { Permit2Helper } from "@sense-finance/v1-core/tests/test-helpers/Permit2Helper.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 contract NoopPoolManagerTest is ForkTest, Permit2Helper {
     using FixedMath for uint256;
@@ -227,8 +228,8 @@ contract NoopPoolManagerTest is ForkTest, Permit2Helper {
         uint256 maturity = _getValidMaturity();
 
         Periphery.SwapQuote memory quote;
-        quote.sellToken = address(stake);
-        quote.buyToken = address(stake);
+        quote.sellToken = ERC20(address(stake));
+        quote.buyToken = ERC20(address(stake));
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
         periphery.sponsorSeries(address(mockAdapter2), maturity, true, data, quote);

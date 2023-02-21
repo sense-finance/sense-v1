@@ -515,6 +515,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     /* ========== LIQUIDITY ========== */
     // TODO: test addLiquidity with an invalid quote
     // TODO: test removeLiquidity with an invalid quote
+    // TODO: add tests for refund protocol fees
 
     function testMainnetAddLiquidity() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)

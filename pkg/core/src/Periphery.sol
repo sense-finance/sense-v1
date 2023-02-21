@@ -163,7 +163,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     function deployAdapter(
         address f,
         address target,
-        bytes memory data
+        bytes calldata data
     ) external returns (address adapter) {
         if (!factories[f]) revert Errors.FactoryNotSupported();
         adapter = AdapterFactory(f).deployAdapter(target, data);
@@ -292,8 +292,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) private returns (uint256 amt) {
-        if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
-            revert Errors.InvalidQuote();
+        // if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
+        // revert Errors.InvalidQuote(); // GAS SAVING
         amt = (mode == 1)
             ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, minAccepted, permit)
             : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);
@@ -301,6 +301,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address(quote.buyToken) == ETH
             ? payable(receiver).transfer(amt)
             : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
+
+        // transfer any remaining underlying to receiver
+        ERC20 underlying = ERC20(Adapter(adapter).underlying());
+        uint256 remaining = underlying.balanceOf(address(this));
+        if (remaining > 0) underlying.safeTransfer(receiver, remaining);
     }
 
     /// @notice Adds liquidity providing underlying
@@ -373,8 +378,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt, uint256 ptBal) {
-        uint256 tBal;
-        (tBal, ptBal) = _removeLiquidity(
+        (amt, ptBal) = _removeLiquidity(
             adapter,
             maturity,
             lpBal,
@@ -384,7 +388,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             receiver,
             permit
         );
-        amt = _fromTarget(adapter, tBal, quote);
+        amt = _fromTarget(adapter, amt, quote);
         address(quote.buyToken) == ETH
             ? payable(receiver).transfer(amt)
             : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
@@ -554,7 +558,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted,
                 payable(address(this))
-            ); // swap PTs for underlying
+            );
         }
     }
 
@@ -567,7 +571,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) internal returns (uint256 ptBal) {
         address pt = divider.pt(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        ptBal = _balancerSwap(Adapter(adapter).target(), pt, tBal, pool.getPoolId(), minAccepted, payable(receiver)); // swap target for Principal Tokens
+        ptBal = _balancerSwap(Adapter(adapter).target(), pt, tBal, pool.getPoolId(), minAccepted, payable(receiver)); // swap target for PTs
     }
 
     function _swapYTsForTarget(
@@ -771,8 +775,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20 target = ERC20(Adapter(adapter).target());
         uint256 decimals = target.decimals();
         uint256 acceptableError = decimals < 9 ? 1 : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - decimals);
-        bytes memory data = abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, true);
-        bool result = Adapter(adapter).flashLoan(this, address(target), amountToBorrow, data);
+        bool result = Adapter(adapter).flashLoan(
+            this,
+            address(target),
+            amountToBorrow,
+            abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, true)
+        );
         if (!result) revert Errors.FlashBorrowFailed();
         tBal = target.balanceOf(address(this));
     }
@@ -792,8 +800,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amountToBorrow,
         uint256 minAccepted
     ) internal returns (uint256 targetBal, uint256 ytBal) {
-        bytes memory data = abi.encode(adapter, uint256(maturity), targetIn, minAccepted, false);
-        bool result = Adapter(adapter).flashLoan(this, Adapter(adapter).target(), amountToBorrow, data);
+        bool result = Adapter(adapter).flashLoan(
+            this,
+            Adapter(adapter).target(),
+            amountToBorrow,
+            abi.encode(adapter, uint256(maturity), targetIn, minAccepted, false)
+        );
         if (!result) revert Errors.FlashBorrowFailed();
 
         targetBal = ERC20(Adapter(adapter).target()).balanceOf(address(this));
@@ -816,11 +828,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
         if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
+
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+        ERC20 target = ERC20(Adapter(adapter).target());
 
         if (ytToTarget) {
-            ERC20 target = ERC20(Adapter(adapter).target());
-
             // Swap Target for PTs
             uint256 ptBal = _balancerSwap(
                 address(target),
@@ -841,7 +853,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             // Swap PTs for Target
             _balancerSwap(
                 address(pt),
-                Adapter(adapter).target(),
+                address(target),
                 pt.balanceOf(address(this)),
                 pool.getPoolId(),
                 minAccepted, // min Target accepted
@@ -859,7 +871,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PoolLiquidity memory liq,
         address receiver
     ) internal returns (uint256 lpBal) {
-        bytes32 poolId = pool.getPoolId();
         IAsset[] memory assets = _convertERC20sToAssets(liq.tokens);
         for (uint8 i; i < liq.tokens.length; i++) {
             // Tokens and amounts must be in same order
@@ -875,7 +886,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             fromInternalBalance: false
         });
         lpBal = ERC20(address(pool)).balanceOf(receiver);
-        balancerVault.joinPool(poolId, address(this), receiver, request);
+        balancerVault.joinPool(pool.getPoolId(), address(this), receiver, request);
         lpBal = ERC20(address(pool)).balanceOf(receiver) - lpBal;
     }
 
@@ -888,9 +899,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) internal returns (uint256 tBal, uint256 ptBal) {
         // ExitPoolRequest params
         (ERC20[] memory tokens, , ) = balancerVault.getPoolTokens(poolId);
-        IAsset[] memory assets = _convertERC20sToAssets(tokens);
         BalancerVault.ExitPoolRequest memory request = BalancerVault.ExitPoolRequest({
-            assets: assets,
+            assets: _convertERC20sToAssets(tokens),
             minAmountsOut: minAmountsOut,
             userData: abi.encode(lpBal),
             toInternalBalance: false
@@ -930,7 +940,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this))
         );
 
-        // TODO: add tests for this! and check if we actually need it
         // Refund any unspent protocol fees (paid in ether) to the sender.
         uint256 refundAmt = address(this).balance;
         if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
@@ -974,7 +983,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         } else if (address(quote.buyToken) != Adapter(adapter).target()) {
             // TODO:the issue here is that the quote needs to calculate off-chain the amount of underlying that will be received from the unwrapTarget
             // and this underlying amount is what it is swapped on 0x. What happens if there's a mismatch? Maybe better to do the swap with target?
-            // TODO: return non-swapped underlying if there is?
             // sell tokens for underlying and wrap into target
             Adapter(adapter).unwrapTarget(_amt);
             amt = _fillQuote(quote);
