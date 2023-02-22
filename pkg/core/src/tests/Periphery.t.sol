@@ -725,6 +725,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testFuzzSwapPTsForTarget(address receiver) public {
+        vm.assume(receiver != address(balancerVault));
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
 
