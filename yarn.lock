@@ -601,6 +601,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ethersproject/providers@npm:5.7.2":
+  version: 5.7.2
+  resolution: "@ethersproject/providers@npm:5.7.2"
+  dependencies:
+    "@ethersproject/abstract-provider": ^5.7.0
+    "@ethersproject/abstract-signer": ^5.7.0
+    "@ethersproject/address": ^5.7.0
+    "@ethersproject/base64": ^5.7.0
+    "@ethersproject/basex": ^5.7.0
+    "@ethersproject/bignumber": ^5.7.0
+    "@ethersproject/bytes": ^5.7.0
+    "@ethersproject/constants": ^5.7.0
+    "@ethersproject/hash": ^5.7.0
+    "@ethersproject/logger": ^5.7.0
+    "@ethersproject/networks": ^5.7.0
+    "@ethersproject/properties": ^5.7.0
+    "@ethersproject/random": ^5.7.0
+    "@ethersproject/rlp": ^5.7.0
+    "@ethersproject/sha2": ^5.7.0
+    "@ethersproject/strings": ^5.7.0
+    "@ethersproject/transactions": ^5.7.0
+    "@ethersproject/web": ^5.7.0
+    bech32: 1.1.4
+    ws: 7.4.6
+  checksum: f9015bc79450281d8cbb17b6a7dd6ea242a2ce6cf5b997674eb6647151c844a70ce8299e8d530b2aab77a8b204208865d5232b701d2b91d956a30db10b3f88fc
+  languageName: node
+  linkType: hard
+
 "@ethersproject/random@npm:5.6.0, @ethersproject/random@npm:^5.6.0":
   version: 5.6.0
   resolution: "@ethersproject/random@npm:5.6.0"
@@ -1379,6 +1407,7 @@ __metadata:
     "@sense-finance/v1-core": "workspace:pkg/core"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@tenderly/hardhat-tenderly": ^1.1.6
+    "@uniswap/permit2-sdk": ^1.2.0
     add: ^2.0.6
     dayjs: ^1.11.6
     defender-relay-client: ^1.37.0
@@ -1612,6 +1641,16 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: d689734a6dfaf31ac5bf5276617df33bb1ff2356272b7cfcdf629f712540b3f7c9bea35e548ac3c69c4b7e10b05c0ea5ba72f5e99f65be6adc4d336d3fca1088
+  languageName: node
+  linkType: hard
+
+"@uniswap/permit2-sdk@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@uniswap/permit2-sdk@npm:1.2.0"
+  dependencies:
+    ethers: ^5.3.1
+    tiny-invariant: ^1.3.1
+  checksum: e286d67476b0120a0ba447cb6cc11ed03c3d512cd10145b302c8ce2fc2f0355340feb70a5f8a55604d9b3a2ff41ee4664b49a00e014766d7546d517a0cf2f13c
   languageName: node
   linkType: hard
 
@@ -3189,6 +3228,44 @@ __metadata:
     ethjs-util: 0.1.6
     rlp: ^2.2.3
   checksum: 1a954e8706a2be1e4064aa5d3104b58dea972fbe67cd8bcd96ff8962a3b3526e98a981661139b83dfefd41d93baa46171cbdae7dbdb5980e5bb1ac299d42edcc
+  languageName: node
+  linkType: hard
+
+"ethers@npm:^5.3.1":
+  version: 5.7.2
+  resolution: "ethers@npm:5.7.2"
+  dependencies:
+    "@ethersproject/abi": 5.7.0
+    "@ethersproject/abstract-provider": 5.7.0
+    "@ethersproject/abstract-signer": 5.7.0
+    "@ethersproject/address": 5.7.0
+    "@ethersproject/base64": 5.7.0
+    "@ethersproject/basex": 5.7.0
+    "@ethersproject/bignumber": 5.7.0
+    "@ethersproject/bytes": 5.7.0
+    "@ethersproject/constants": 5.7.0
+    "@ethersproject/contracts": 5.7.0
+    "@ethersproject/hash": 5.7.0
+    "@ethersproject/hdnode": 5.7.0
+    "@ethersproject/json-wallets": 5.7.0
+    "@ethersproject/keccak256": 5.7.0
+    "@ethersproject/logger": 5.7.0
+    "@ethersproject/networks": 5.7.1
+    "@ethersproject/pbkdf2": 5.7.0
+    "@ethersproject/properties": 5.7.0
+    "@ethersproject/providers": 5.7.2
+    "@ethersproject/random": 5.7.0
+    "@ethersproject/rlp": 5.7.0
+    "@ethersproject/sha2": 5.7.0
+    "@ethersproject/signing-key": 5.7.0
+    "@ethersproject/solidity": 5.7.0
+    "@ethersproject/strings": 5.7.0
+    "@ethersproject/transactions": 5.7.0
+    "@ethersproject/units": 5.7.0
+    "@ethersproject/wallet": 5.7.0
+    "@ethersproject/web": 5.7.1
+    "@ethersproject/wordlists": 5.7.0
+  checksum: 1ba7f7bb7a1b589fa7e5d4c94d75705cb1feb6bdb33caa55633e38150fd7ab0636a7380c92f067243a1d512d06b79196a07720ec048d3b4ccca06fad4f23245a
   languageName: node
   linkType: hard
 
@@ -6314,6 +6391,13 @@ resolve@1.17.0:
   version: 2.3.8
   resolution: "through@npm:2.3.8"
   checksum: 918d9151680b5355990011eb8c4b02e8cb8cf6e9fb6ea3d3e5a1faa688343789e261634ae35de4ea9167ab029d1e7bac6af2fe61b843931768d405fdc3e8897c
+  languageName: node
+  linkType: hard
+
+"tiny-invariant@npm:^1.3.1":
+  version: 1.3.1
+  resolution: "tiny-invariant@npm:1.3.1"
+  checksum: 7eef92e1b578e63e101d15fc6329456fc1d3b7ce56dca9b0325199014075a6a3e32d77d697c15671ddfd0cc6d8a48f511d718d664a7edbfe570660ae49b1d773
   languageName: node
   linkType: hard
 

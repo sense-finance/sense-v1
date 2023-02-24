@@ -10,6 +10,7 @@ library Errors {
     error OnlyDivider();
     error OnlyPeriphery();
     error OnlyPermissionless();
+    error OnlyAdapter();
     error RedeemRestricted();
     error Untrusted();
 
@@ -57,6 +58,7 @@ library Errors {
     error TooMuchLeftoverTarget();
     error InvalidExchangeProxy();
     error ZeroExSwapFailed(bytes res);
+    error ZeroBoughtAmt();
     error InvalidQuote();
 
     // Fuse

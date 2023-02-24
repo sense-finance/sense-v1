@@ -37,6 +37,7 @@ import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 
 import { BalancerVault } from "../external/balancer/Vault.sol";
 import { BalancerPool } from "../external/balancer/Pool.sol";
+import "hardhat/console.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
@@ -101,6 +102,31 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
 
     // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
+
+    // DAI to stETH quote
+    // https://api.0x.org/swap/v1/quote?sellToken=DAI&buyToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&sellAmount=1000000000000000000
+    bytes internal constant DAI_STETH_SWAP_QUOTE_DATA =
+        hex"415565b00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000021adf49ed07e000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000002537573686953776170000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000260ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000154c69646f000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000021adf49ed07e000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000030000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000b67119692563e364e7";
+
+    // stETH to DAI quote
+    // https://api.0x.org/swap/v1/quote?sellToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&buyToken=DAI&sellAmount=957048107692151
+    bytes internal constant STETH_DAI_SWAP_QUOTE_DATA =
+        hex"415565b0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000000000000000000000000000000003666e207df077000000000000000000000000000000000000000000000000141618cc9529b7c200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003a00000000000000000000000000000000000000000000000000000000000000760000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000003666e207df077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000154c69646f0000000000000000000000000000000000000000000000000000000000000000000000000003666e207df077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f00000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000002e0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e6973776170563300000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000141618cc9529b7c2000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000427f39c581f595b53c5cb19bd0b3f8da6c935e2ca00001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000004ca866b2c363ea5e3e";
+
+    // stETH to ETH quote
+    // https://api.0x.org/swap/v1/quote?sellToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&buyToken=ETH&sellAmount=97925288322265263
+    bytes internal constant STETH_ETH_SWAP_QUOTE_DATA =
+        hex"415565b0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000000000000000000000000000015be687e8f9f0af0000000000000000000000000000000000000000000000000157dfc637b25b4700000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000480000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000000000000000000000000000015be687e8f9f0af000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000143757276650000000000000000000000000000000000000000000000000000000000000000000000015be687e8f9f0af0000000000000000000000000000000000000000000000000157dfc637b25b4700000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000080000000000000000000000000dc24316b9ae028f1497c275eb9192a3ea0f670223df021240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000001000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000546d5ffb4763f4c578";
+
+    // https://api.0x.org/swap/v1/quote?sellToken=ETH&buyToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&sellAmount=1000000000000000000
+    // ETH to stETH quote
+    bytes internal constant ETH_STETH_SWAP_QUOTE_DATA =
+        hex"415565b0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000dbd425bda847d4800000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000480000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000001437572766500000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000dbd425bda847d4800000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000080000000000000000000000000dc24316b9ae028f1497c275eb9192a3ea0f670223df021240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000000000000000000099788145ed63f48648";
+
+    // https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&buyAmount=1000000000000000000
+    // NOTE we are using buyAmount instead of sellAmount
+    bytes internal constant USDC_DAI_SWAP_QUOTE_DATA =
+        hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f66690000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000b559b1466763f333ef";
 
     function setUp() public {
         _setUp(true);
@@ -258,7 +284,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         vm.prank(bob);
         ERC20(AddressBook.DAI).approve(AddressBook.PERMIT2, type(uint256).max);
 
-        Periphery.SwapQuote memory quote = _getQuote(address(cadapter), AddressBook.DAI, AddressBook.DAI);
+        Periphery.SwapQuote memory quote = _getQuote(AddressBook.DAI, AddressBook.DAI);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
         vm.prank(bob);
         (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
@@ -305,14 +331,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         ERC20(AddressBook.USDC).approve(AddressBook.PERMIT2, type(uint256).max);
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
-        // https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&buyAmount=1000000000000000000
-        // NOTE we are using buyAmount instead of sellAmount
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,
             swapTarget: payable(AddressBook.EXCHANGE_PROXY),
-            swapCallData: hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f66690000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000b559b1466763f333ef"
+            swapCallData: _getSwapCallData(AddressBook.USDC, AddressBook.DAI)
         });
         vm.prank(bob);
         (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
@@ -475,7 +499,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             false,
             data,
-            _getQuote(address(fadapter), AddressBook.DAI, AddressBook.DAI)
+            _getQuote(AddressBook.DAI, AddressBook.DAI)
         );
 
         // Check pt and yt deployed
@@ -514,7 +538,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     /* ========== LIQUIDITY ========== */
     // TODO: test addLiquidity with an invalid quote
-    // TODO: test removeLiquidity with an invalid quote
     // TODO: add tests for refund protocol fees
 
     function testMainnetAddLiquidity() public {
@@ -531,13 +554,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         ERC20 token = ERC20(AddressBook.DAI);
         uint256 amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying (stETH) swap
-        Periphery.SwapQuote memory quote = _getQuote(adapter, AddressBook.DAI, MockAdapter(adapter).underlying());
+        Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(adapter, AddressBook.DAI);
         _addLiquidityFromToken(adapter, maturity, quote, amt);
 
         // 2. Add liquidity from ETH
         amt = 1e18; // 1 ETH
         // Create quote from 0x API to do a 1 ETH to underlying (stETH) swap
-        quote = _getQuote(adapter, periphery.ETH(), MockAdapter(adapter).underlying());
+        quote = _getBuyUnderlyingQuote(adapter, periphery.ETH());
         _addLiquidityFromETH(adapter, maturity, quote, amt);
 
         // 3.1 Add liquidity from Target
@@ -545,7 +568,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         amt = 10**token.decimals(); // 1 Target
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
-        quote = _getQuote(adapter, address(token), address(0));
+        quote = _getBuyUnderlyingQuote(adapter, address(token));
         _addLiquidityFromToken(adapter, maturity, quote, amt);
 
         // 3.2 Add liquidity from Target
@@ -554,7 +577,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done. Eg. We are sending here buyToken = DAI but
         // will be ignored in this case. When adding liquidity, buyToken would always be the LP token
-        quote = _getQuote(adapter, address(token), AddressBook.DAI);
+        quote = _getBuyUnderlyingQuote(adapter, address(token));
+        quote.buyToken = ERC20(AddressBook.DAI);
         _addLiquidityFromToken(adapter, maturity, quote, amt);
 
         // 4. Add liquidity from Underlying
@@ -562,7 +586,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         amt = 10**token.decimals(); // 1 Target
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
-        quote = _getQuote(adapter, address(token), address(0));
+        quote = _getBuyUnderlyingQuote(adapter, address(token));
         _addLiquidityFromToken(adapter, maturity, quote, amt);
     }
 
@@ -579,34 +603,63 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 amt = 0.1e18; // 1 LP
 
         // 1. Remove liquidity to DAI
-        // Create quote from 0x API to do a 1 DAI to underlying (stETH) swap
-        Periphery.SwapQuote memory quote = _getQuote(adapter, address(0), AddressBook.DAI);
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        // Create quote from 0x API to do an underlying (stETH) to DAI swap
+        Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 2. Remove liquidity to ETH
-        // Create quote from 0x API to do a 1 ETH to underlying (stETH) swap
-        quote = _getQuote(adapter, address(0), periphery.ETH());
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        // Create quote from 0x API to do an underlying (stETH) to ETH swap
+        quote = _getSellUnderlyingQuote(adapter, periphery.ETH());
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 3.1 Remove liquidity to Target
         // Create quote only with buyToken as target. We don't care about the other params
         // since no swap on 0x will be done
-        quote = _getQuote(adapter, address(0), MockAdapter(adapter).target());
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
+        _removeLiquidityToToken(adapter, maturity, quote, amt, false);
 
         // 3.2 Remove liquidity to Target
         // Create quote only with buyToken as target. We don't care about the other params
         // since no swap on 0x will be done. Eg. We are sending here sellToken = DAI but
         // will be ignored in this case. When removing liquidity, sellToken would always be the LP token
-        // TODO: modify _removeLiquidityToToken so we can test this
-        // quote = _getQuote(adapter, AddressBook.DAI, MockAdapter(adapter).target());
-        // _removeLiquidityToToken(adapter, maturity, quote, amt);
+        quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
+        quote.sellToken = ERC20(AddressBook.DAI);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, false);
 
-        // 4 Remove liquidity to Underlying
+        // 4. Remove liquidity to Underlying
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
-        quote = _getQuote(adapter, address(0), MockAdapter(adapter).underlying());
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
+        _removeLiquidityToToken(adapter, maturity, quote, amt, false);
+
+        // 5. Remove liquidity with malformed quote
+        // Create quote from 0x API to do an underlying (stETH) to DAI swap
+        quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
+        // Malform quote by changing buyToken (which is DAI) to USDC
+        quote.buyToken = ERC20(AddressBook.USDC);
+        // Removing liquidity will do:
+        // 1. We pull LP tokens from the user
+        // 2. We swap LP tokens for target (Space)
+        // 3. We unwrap target for underlying (stETH)
+        // 4. We succefully execute a 0x swap from stETH to DAI (because that's what's in swapCallData)
+        // 5. Since buyToken is now USDC and we have received 0 USDC, it will revert
+        try this._removeLiquidityToToken(adapter, maturity, quote, amt, false) {} catch (bytes memory reason) {
+            assertEq(reason, abi.encodeWithSelector(Errors.ZeroBoughtAmt.selector));
+        }
+
+        // 6. Remove liquidity with malformed quote
+        // Create quote from 0x API to do an underlying (stETH) to DAI swap
+        quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
+        // Malform quote by changing sellToken (which is underlying) to USDC
+        quote.sellToken = ERC20(AddressBook.USDC);
+        // Removing liquidity will do:
+        // 1. We pull LP tokens from the user
+        // 2. We swap LP tokens for target (Space)
+        // 3. We unwrap target for underlying (stETH)
+        // 4. We succefully execute a 0x swap from stETH to DAI (because that's what's in swapCallData)
+        // The TX succeeds but and the user receives DAI (not USDC) // TODO: should we revert here?
+        // _removeLiquidityToToken(adapter, maturity, quote, amt, true);
+        // TODO: fix test
     }
 
     /* ========== PT SWAPS ========== */
@@ -625,20 +678,57 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         ERC20 token = ERC20(AddressBook.DAI);
         uint256 amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying swap
-        Periphery.SwapQuote memory quote = _getQuote(adapter, address(token), MockAdapter(adapter).underlying());
+        Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(adapter, address(token));
         _swapTokenForPTs(adapter, maturity, quote, amt);
 
         // 2. Swap target for PTs
         ERC20 target = ERC20(MockAdapter(adapter).target());
         amt = 10**(target.decimals() - 1); // 0.1 target
-        quote = _getQuote(adapter, address(target), address(0));
+        quote = _getBuyUnderlyingQuote(adapter, address(target));
         _swapTokenForPTs(adapter, maturity, quote, amt);
 
         // 3. Swap underlying for PTs
         ERC20 underlying = ERC20(MockAdapter(adapter).underlying());
         amt = 10**(underlying.decimals() - 1); // 0.1 underlying
-        quote = _getQuote(adapter, address(underlying), address(0));
+        quote = _getBuyUnderlyingQuote(adapter, address(underlying));
         _swapTokenForPTs(adapter, maturity, quote, amt);
+
+        // 4. Swap DAI for PTs (malformed quote)
+        token = ERC20(AddressBook.DAI);
+        amt = 10**token.decimals(); // 1 DAI
+        // Create quote from 0x API to do a 1 DAI to underlying swap
+        quote = _getBuyUnderlyingQuote(adapter, address(token));
+        // Malform quote by changing buyToken (which is underlying) to USDC
+        quote.buyToken = ERC20(AddressBook.USDC);
+        // swapForPTs will do:
+        // 1. We pull DAI tokens from the user
+        // 2. We succefully execute a 0x swap from DAI to stETH to DAI (because that's what's in swapCallData)
+        // Since buyToken is now USDC and we have received 0 USDC, it will revert
+        try this._swapTokenForPTs(adapter, maturity, quote, amt) {} catch (bytes memory reason) {
+            assertEq(reason, abi.encodeWithSelector(Errors.ZeroBoughtAmt.selector));
+        }
+
+        // 5. Swap DAI for PTs (malformed quote)
+        token = ERC20(AddressBook.DAI);
+        amt = 10**token.decimals(); // 1 DAI
+        // Create quote from 0x API to do a 1 DAI to underlying swap
+        quote = _getBuyUnderlyingQuote(adapter, address(token));
+        // Malform quote by changing sellToken (which is underlying) to USDC
+        quote.sellToken = ERC20(AddressBook.USDC);
+        // swapForPTs will do:
+        // 1. We pull DAI tokens from the user
+        // 2. We succefully execute a 0x swap from DAI to stETH to DAI (because that's what's in swapCallData)
+        // 3. We wrap stETH to wstETH
+        // 4. We swap Target for PTs (Space)
+        // The TX succeeds and the user got his DAI pulled (as per the swapCallData) instead of USDC.
+        // NOTE that this is possible also because the permit message was allowing the Periphery to pull DAI
+        // _swapTokenForPTs(adapter, maturity, quote, amt);
+        // TODO: fix test
+
+        // NOTE: In the case we had an adapter where wrap/unwrap allows receiving 0, he tx will work.
+        // The user will get his tokens pulled and will receive 0 PTs.
+        // TODO: Should we revert on this case? See Periphery.sol line 948
+        // Or it's the user's responsibility to send the correct params?
     }
 
     function testMainnetSwapPTsForAll() public {
@@ -652,18 +742,26 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         (address adapter, uint256 maturity) = _getExistingAdapterAndSeries();
 
         // 1. Swap PTs for target
-        Periphery.SwapQuote memory quote = _getQuote(adapter, address(0), MockAdapter(adapter).target());
+        Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
         _swapPTs(adapter, maturity, quote);
 
         // 2. Swap PTs for underlying
-        quote = _getQuote(adapter, address(0), MockAdapter(adapter).underlying());
+        quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
         _swapPTs(adapter, maturity, quote);
 
         // 3. Swap PTs for DAI
         // Create 0x API quote to do a X underlying to token swap
         // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
-        quote = _getQuote(adapter, address(0), AddressBook.DAI);
+        quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
         _swapPTs(adapter, maturity, quote);
+
+        // 4. Swap PTs for DAI
+        // Create 0x API quote to do a X underlying to token swap
+        // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
+        quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
+        // Malform quote by changing sellToken (which is underlying) to USDC
+        quote.sellToken = ERC20(AddressBook.USDC);
+        // TODO: complete!
     }
 
     /* ========== YT SWAPS ========== */
@@ -688,7 +786,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             0,
             bob,
             data,
-            _getQuote(address(mockAdapter), address(0), address(mockTarget))
+            _getSellUnderlyingQuote(address(mockAdapter), address(mockTarget))
         );
         uint256 ytBalPost = ERC20(yt).balanceOf(bob);
         uint256 targetBalPost = mockTarget.balanceOf(bob);
@@ -713,7 +811,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetBalPre = mockTarget.balanceOf(bob);
         uint256 ytBalPre = ERC20(yt).balanceOf(bob);
 
-        Periphery.SwapQuote memory quote = _getQuote(address(mockAdapter), address(mockTarget), address(0));
+        Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(address(mockAdapter), address(mockTarget));
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapForYTs(
@@ -874,7 +972,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         mockTarget.mint(address(periphery), TARGET_TRANSFERRED_IN);
 
-        Periphery.SwapQuote memory quote = _getQuote(address(mockAdapter), address(mockTarget), address(0));
+        Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(address(mockAdapter), address(mockTarget));
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapForYTs(
@@ -1062,6 +1160,98 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertGt(ERC20(AddressBook.USDC).balanceOf(address(periphery)), usdcBalanceBefore);
     }
 
+    function testMainnetFillQuoteEdgeCases() public {
+        vm.rollFork(16669120); // Feb-15-2023 01:40:23 PM +UTC
+
+        periphery = new PeripheryFQ(
+            divider,
+            poolManager,
+            spaceFactory,
+            balancerVault,
+            address(permit2),
+            AddressBook.EXCHANGE_PROXY
+        );
+
+        // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
+        bytes
+            memory USDC_DAI_SWAP_QUOTE = hex"d9627aa4000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000dcbcf018b24904300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000001a47bee37d63f3494d";
+
+        // 1. Revert if sell token is address(0)
+        deal(AddressBook.USDC, address(periphery), 1e6);
+        Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            sellToken: ERC20(address(0)),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: AddressBook.EXCHANGE_PROXY, // from 0x API
+            swapTarget: payable(AddressBook.EXCHANGE_PROXY), // from 0x API
+            swapCallData: USDC_DAI_SWAP_QUOTE
+        });
+        vm.expectRevert();
+        periphery.fillQuote(quote);
+
+        // 2. Revert if buy token is address(0)
+        deal(AddressBook.USDC, address(periphery), 1e6);
+        quote = Periphery.SwapQuote({
+            sellToken: ERC20(address(0)),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: AddressBook.EXCHANGE_PROXY, // from 0x API
+            swapTarget: payable(AddressBook.EXCHANGE_PROXY), // from 0x API
+            swapCallData: USDC_DAI_SWAP_QUOTE
+        });
+        vm.expectRevert();
+        periphery.fillQuote(quote);
+
+        // 3. Does NOT revert if sell token does not match the one in the swap call data
+        // but there's enough allowance and balance to spend the token of the swapCallData
+        // We assume there's approval from periphery to Exchange Proxy to spend USDC (probably from a previous swap)
+        deal(AddressBook.USDC, address(periphery), 1e6);
+        vm.prank(address(periphery));
+        ERC20(AddressBook.USDC).safeApprove(AddressBook.EXCHANGE_PROXY, type(uint256).max);
+
+        deal(AddressBook.USDT, address(periphery), 1e6);
+        quote = Periphery.SwapQuote({
+            sellToken: ERC20(AddressBook.USDT),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: AddressBook.EXCHANGE_PROXY, // from 0x API
+            swapTarget: payable(AddressBook.EXCHANGE_PROXY), // from 0x API
+            swapCallData: USDC_DAI_SWAP_QUOTE
+        });
+        periphery.fillQuote(quote);
+
+        // 4. Revert if sell token does not match the one in the swap call data
+        // and allowance is 0
+        // Reset approval from periphery to Exchange Proxy
+        vm.prank(address(periphery));
+        ERC20(AddressBook.USDC).safeApprove(AddressBook.EXCHANGE_PROXY, 0);
+
+        // Load USDT (NOT USDC)
+        deal(AddressBook.USDT, address(periphery), 1e6);
+        quote = Periphery.SwapQuote({
+            sellToken: ERC20(AddressBook.USDT),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: AddressBook.EXCHANGE_PROXY, // from 0x API
+            swapTarget: payable(AddressBook.EXCHANGE_PROXY), // from 0x API
+            swapCallData: USDC_DAI_SWAP_QUOTE
+        });
+        vm.expectRevert();
+        periphery.fillQuote(quote);
+
+        // 4. Revert if sell token does not match the one in the swap call data
+        // there's enough allowance but no balance
+        deal(AddressBook.USDC, address(periphery), 0);
+
+        // Load USDT (NOT USDC)
+        deal(AddressBook.USDT, address(periphery), 1e6);
+        quote = Periphery.SwapQuote({
+            sellToken: ERC20(AddressBook.USDT),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: AddressBook.EXCHANGE_PROXY, // from 0x API
+            swapTarget: payable(AddressBook.EXCHANGE_PROXY), // from 0x API
+            swapCallData: USDC_DAI_SWAP_QUOTE
+        });
+        vm.expectRevert();
+        periphery.fillQuote(quote);
+    }
+
     function testMainnetCantFillQuoteIfNotEnoughBalance() public {
         vm.rollFork(16664305); // Feb-15-2023 01:40:23 PM +UTC
 
@@ -1166,7 +1356,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             false,
             data,
-            _getQuote(address(mockAdapter), address(stake), address(stake))
+            _getQuote(address(stake), address(stake))
         );
     }
 
@@ -1191,7 +1381,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         }
 
         {
-            // Add Target to the Space pool
+            // Add Liquidity from Target to the Space pool
             periphery.addLiquidity(
                 address(mockAdapter),
                 maturity,
@@ -1201,14 +1391,14 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
                 1,
                 bob,
                 generatePermit(bobPrivKey, address(periphery), address(target)),
-                _getQuote(address(mockAdapter), address(target), address(0))
+                _getBuyUnderlyingQuote(address(mockAdapter), address(target))
             );
         }
 
         {
-            // Swap PT balance in for Target to initialize the PT side of the pool
+            // Swap PT balance for Target to initialize the PT side of the pool
             pt.approve(AddressBook.PERMIT2, ptsToSwapIn);
-            Periphery.SwapQuote memory quote = _getQuote(address(mockAdapter), address(0), address(target));
+            Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(address(mockAdapter), address(target));
             periphery.swapPTs(
                 address(mockAdapter),
                 maturity,
@@ -1229,7 +1419,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public {
-        Periphery.SwapQuote memory quote = _getQuote(address(mockAdapter), address(mockTarget), address(0));
+        Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(address(mockAdapter), address(mockTarget));
         Periphery.PermitData memory permit = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapForYTs(
@@ -1264,7 +1454,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 targetToBorrow,
         uint256 minOut
     ) public {
-        Periphery.SwapQuote memory quote = _getQuote(address(mockAdapter), address(mockTarget), address(0));
+        Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(address(mockAdapter), address(mockTarget));
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(mockTarget));
         vm.prank(bob);
         (uint256 targetReturned, uint256 ytsOut) = periphery.swapForYTs(
@@ -1308,67 +1498,127 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         periphery.verifyAdapter(adapter, false);
     }
 
-    function _getQuote(
-        address adapter,
-        address fromToken,
-        address toToken
-    ) public returns (Periphery.SwapQuote memory quote) {
+    /// @notice Get the swap call data for a swap from underlying
+    /// We assume stETH to be underlying for these tests
+    /// @dev if fromToken is either target or underlying, we just return the token, no quote is needed
+    function _getSellUnderlyingQuote(address adapter, address toToken)
+        public
+        returns (Periphery.SwapQuote memory quote)
+    {
+        MockAdapter adapter = MockAdapter(adapter);
+        if (toToken == adapter.underlying() || toToken == adapter.target()) {
+            // Create a quote where we only fill the buyToken (with target or underlying) and the rest
+            // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
+            quote.buyToken = ERC20(toToken);
+        } else {
+            // Quote to swap underlying for token via 0x
+            address underlying = MockAdapter(adapter).underlying();
+            quote.sellToken = ERC20(underlying);
+            quote.buyToken = ERC20(toToken);
+            quote.spender = AddressBook.EXCHANGE_PROXY; // from 0x API
+            quote.swapTarget = payable(AddressBook.EXCHANGE_PROXY); // from 0x API
+            if (address(quote.buyToken) == AddressBook.DAI)
+                quote.swapCallData = _getSwapCallData(AddressBook.STETH, AddressBook.DAI);
+            if (address(quote.buyToken) == periphery.ETH())
+                quote.swapCallData = _getSwapCallData(AddressBook.STETH, periphery.ETH());
+        }
+    }
+
+    /// @notice Get the swap call data for a swap to underlying
+    /// We assume stETH to be underlying for these tests
+    /// @dev if fromToken is either target or underlying, we just return the token, no quote is needed
+    function _getBuyUnderlyingQuote(address adapter, address fromToken)
+        public
+        returns (Periphery.SwapQuote memory quote)
+    {
+        MockAdapter adapter = MockAdapter(adapter);
+        if (fromToken == adapter.underlying() || fromToken == adapter.target()) {
+            // Create a quote where we only fill the sellToken (with target or underlying) and the rest
+            // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
+            quote.sellToken = ERC20(fromToken);
+        } else {
+            // Quote to swap token for underlying via 0x
+            address underlying = MockAdapter(adapter).underlying();
+            quote.sellToken = ERC20(fromToken);
+            quote.buyToken = ERC20(underlying);
+            quote.spender = AddressBook.EXCHANGE_PROXY; // from 0x API
+            quote.swapTarget = payable(AddressBook.EXCHANGE_PROXY); // from 0x API
+            if (address(quote.sellToken) == AddressBook.DAI)
+                quote.swapCallData = _getSwapCallData(AddressBook.DAI, AddressBook.STETH);
+            if (address(quote.sellToken) == periphery.ETH())
+                quote.swapCallData = _getSwapCallData(periphery.ETH(), AddressBook.STETH);
+        }
+    }
+
+    /// @dev If fromToken is the same as the toToken, we don't need to swao so we return
+    /// the quote with the tokens as they are. No swap call data is returned.
+    function _getQuote(address fromToken, address toToken) public returns (Periphery.SwapQuote memory quote) {
         if (fromToken == toToken) {
             quote.sellToken = ERC20(fromToken);
             quote.buyToken = ERC20(toToken);
             return quote;
         }
-        MockAdapter adapter = MockAdapter(adapter);
-        if (fromToken == address(0)) {
-            if (toToken == adapter.underlying() || toToken == adapter.target()) {
-                // Create a quote where we only fill the buyToken (with target or underlying) and the rest
-                // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
-                quote.buyToken = ERC20(toToken);
-            } else {
-                // Quote to swap underlying for token via 0x
-                address underlying = MockAdapter(adapter).underlying();
-                quote.sellToken = ERC20(underlying);
-                quote.buyToken = ERC20(toToken);
-                quote.spender = AddressBook.EXCHANGE_PROXY; // from 0x API
-                quote.swapTarget = payable(AddressBook.EXCHANGE_PROXY); // from 0x API
-                if (address(quote.buyToken) == AddressBook.DAI) {
-                    // stETH to DAI quote
-                    // https://api.0x.org/swap/v1/quote?sellToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&buyToken=DAI&sellAmount=957048107692151
-                    quote
-                        .swapCallData = hex"415565b0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000000000000000000000000000000003666e207df077000000000000000000000000000000000000000000000000141618cc9529b7c200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003a00000000000000000000000000000000000000000000000000000000000000760000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000003666e207df077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000154c69646f0000000000000000000000000000000000000000000000000000000000000000000000000003666e207df077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f00000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000002e0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e6973776170563300000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000141618cc9529b7c2000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000427f39c581f595b53c5cb19bd0b3f8da6c935e2ca00001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000004ca866b2c363ea5e3e";
-                }
-                if (address(quote.buyToken) == periphery.ETH()) {
-                    // stETH to ETH quote
-                    // https://api.0x.org/swap/v1/quote?sellToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&buyToken=ETH&sellAmount=97925288322265263
-                    quote
-                        .swapCallData = hex"415565b0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000000000000000000000000000015be687e8f9f0af0000000000000000000000000000000000000000000000000157dfc637b25b4700000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000480000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000000000000000000000000000015be687e8f9f0af000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000143757276650000000000000000000000000000000000000000000000000000000000000000000000015be687e8f9f0af0000000000000000000000000000000000000000000000000157dfc637b25b4700000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000080000000000000000000000000dc24316b9ae028f1497c275eb9192a3ea0f670223df021240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000001000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000546d5ffb4763f4c578";
-                }
-            }
-        } else {
-            if (fromToken == adapter.underlying() || fromToken == adapter.target()) {
-                // Create a quote where we only fill the sellToken (with target or underlying) and the rest
-                // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
-                quote.sellToken = ERC20(fromToken);
-            } else {
-                // Quote to swap token for underlying via 0x
-                address underlying = MockAdapter(adapter).underlying();
-                quote.sellToken = ERC20(fromToken);
-                quote.buyToken = ERC20(underlying);
-                quote.spender = AddressBook.EXCHANGE_PROXY; // from 0x API
-                quote.swapTarget = payable(AddressBook.EXCHANGE_PROXY); // from 0x API
-                if (address(quote.sellToken) == AddressBook.DAI) {
-                    // DAI to stETH quote
-                    // https://api.0x.org/swap/v1/quote?sellToken=DAI&buyToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&sellAmount=1000000000000000000
-                    quote
-                        .swapCallData = hex"415565b00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000021adf49ed07e000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000002537573686953776170000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000260ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000154c69646f000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000021adf49ed07e000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000030000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000b67119692563e364e7";
-                }
-                if (address(quote.sellToken) == periphery.ETH()) {
-                    // https://api.0x.org/swap/v1/quote?sellToken=ETH&buyToken=0xae7ab96520de3a18e5e111b5eaab095312d7fe84&sellAmount=1000000000000000000
-                    // ETH to stETH quote
-                    quote
-                        .swapCallData = hex"415565b0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000dbd425bda847d4800000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000480000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000001437572766500000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000dbd425bda847d4800000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000080000000000000000000000000dc24316b9ae028f1497c275eb9192a3ea0f670223df021240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000000000000000000099788145ed63f48648";
-                }
-            }
+    }
+
+    // function _getQuote(
+    //     address adapter,
+    //     address fromToken,
+    //     address toToken
+    // ) public returns (Periphery.SwapQuote memory quote) {
+    //     if (fromToken == toToken) {
+    //         quote.sellToken = ERC20(fromToken);
+    //         quote.buyToken = ERC20(toToken);
+    //         return quote;
+    //     }
+    //     MockAdapter adapter = MockAdapter(adapter);
+    //     if (fromToken == address(0)) {
+    //         if (toToken == adapter.underlying() || toToken == adapter.target()) {
+    //             // Create a quote where we only fill the buyToken (with target or underlying) and the rest
+    //             // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
+    //             quote.buyToken = ERC20(toToken);
+    //         } else {
+    //             // Quote to swap underlying for token via 0x
+    //             address underlying = MockAdapter(adapter).underlying();
+    //             quote.sellToken = ERC20(underlying);
+    //             quote.buyToken = ERC20(toToken);
+    //             quote.spender = AddressBook.EXCHANGE_PROXY; // from 0x API
+    //             quote.swapTarget = payable(AddressBook.EXCHANGE_PROXY); // from 0x API
+    //             if (address(quote.buyToken) == AddressBook.DAI) _getSwapCallData(AddressBook.STETH, AddressBook.DAI);
+    //             if (address(quote.buyToken) == periphery.ETH()) _getSwapCallData(AddressBook.STETH, periphery.ETH());
+    //         }
+    //     } else {
+    //         if (fromToken == adapter.underlying() || fromToken == adapter.target()) {
+    //             // Create a quote where we only fill the sellToken (with target or underlying) and the rest
+    //             // is empty. This is used by the Periphery so it knows it does not have to perform a swap.
+    //             quote.sellToken = ERC20(fromToken);
+    //         } else {
+    //             // Quote to swap token for underlying via 0x
+    //             address underlying = MockAdapter(adapter).underlying();
+    //             quote.sellToken = ERC20(fromToken);
+    //             quote.buyToken = ERC20(underlying);
+    //             quote.spender = AddressBook.EXCHANGE_PROXY; // from 0x API
+    //             quote.swapTarget = payable(AddressBook.EXCHANGE_PROXY); // from 0x API
+    //             if (address(quote.sellToken) == AddressBook.DAI) _getSwapCallData(AddressBook.DAI, AddressBook.STETH);
+    //             if (address(quote.sellToken) == periphery.ETH()) _getSwapCallData(periphery.ETH(), AddressBook.STETH);
+    //         }
+    //     }
+    // }
+
+    function _getSwapCallData(address from, address to) internal view returns (bytes memory) {
+        if (from == AddressBook.DAI && to == AddressBook.STETH) {
+            return DAI_STETH_SWAP_QUOTE_DATA;
+        }
+        if (from == AddressBook.STETH && to == AddressBook.DAI) {
+            return STETH_DAI_SWAP_QUOTE_DATA;
+        }
+        if (from == AddressBook.STETH && to == periphery.ETH()) {
+            return STETH_ETH_SWAP_QUOTE_DATA;
+        }
+        if (from == periphery.ETH() && to == AddressBook.STETH) {
+            return ETH_STETH_SWAP_QUOTE_DATA;
+        }
+        if (from == AddressBook.USDC && to == AddressBook.DAI) {
+            return USDC_DAI_SWAP_QUOTE_DATA;
         }
     }
 
@@ -1405,10 +1655,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 tokenBalPre = token.balanceOf(bob);
 
         // assert we've swapped tokens through 0x
-        if (address(quote.sellToken) != address(0) && address(quote.buyToken) != address(0)) {
-            vm.expectEmit(true, true, false, false);
-            emit BoughtTokens(address(token), MockAdapter(adapter).underlying(), 0, 0);
-        }
+        // TODO: fix, we are getting a stack too deep because of the emitEvent param
+        // if (emitEvent) {
+        //     vm.expectEmit(true, true, false, false);
+        //     emit BoughtTokens(address(token), address(quote.buyToken), 0, 0);
+        // }
 
         vm.prank(bob);
         uint256 ptBal = periphery.swapForPTs(adapter, maturity, amt, 0, bob, data, quote);
@@ -1455,7 +1706,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             uint256 tokenBalPre = token.balanceOf(bob);
 
             // assert we've swapped tokens through 0x
-            if (address(quote.sellToken) != address(0) && address(quote.buyToken) != address(0)) {
+            if (
+                address(quote.sellToken) != MockAdapter(adapter).target() &&
+                address(quote.sellToken) != address(0) &&
+                address(quote.buyToken) != address(0)
+            ) {
                 vm.expectEmit(true, true, false, false);
                 emit BoughtTokens(MockAdapter(adapter).underlying(), address(token), 0, 0);
             }
@@ -1499,7 +1754,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 lpBalPre = ERC20(SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity)).balanceOf(bob);
 
         // assert we've swapped tokens through 0x
-        if (address(quote.sellToken) != address(0) && address(quote.buyToken) != address(0)) {
+        if (
+            address(quote.sellToken) != MockAdapter(adapter).target() &&
+            address(quote.sellToken) != address(0) &&
+            address(quote.buyToken) != address(0)
+        ) {
             vm.expectEmit(true, true, false, false);
             emit BoughtTokens(address(token), MockAdapter(adapter).underlying(), 0, 0);
         }
@@ -1572,7 +1831,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) public {
         bool isETH = address(quote.buyToken) == periphery.ETH();
         ERC20 token = ERC20(address(quote.buyToken));
@@ -1592,7 +1852,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 ptBalPre = pt.balanceOf(bob);
 
         // assert we've swapped tokens through 0x
-        if (address(quote.sellToken) != address(0) && address(quote.buyToken) != address(0)) {
+        if (emitEvent) {
             vm.expectEmit(true, true, false, false);
             emit BoughtTokens(MockAdapter(adapter).underlying(), address(token), 0, 0);
         }

@@ -282,6 +282,20 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         amt = _swapSenseToken(adapter, maturity, ytBal, minAccepted, 1, receiver, permit, quote);
     }
 
+    // TODO: this is adding quite a lof of code size :( +0.436kb
+    function swapYTsForTarget(
+        address adapter,
+        uint256 maturity,
+        uint256 ytBal
+    ) external returns (uint256 amt) {
+        if (msg.sender != adapter) revert Errors.OnlyAdapter();
+        PermitData memory permit = PermitData(
+            IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0),
+            "0x"
+        );
+        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, 0, permit);
+    }
+
     function _swapSenseToken(
         address adapter,
         uint256 maturity,
@@ -292,15 +306,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) private returns (uint256 amt) {
-        // if (address(quote.sellToken) != address(0) && address(quote.sellToken) != Adapter(adapter).underlying())
+        // if (address(quote.sellToken) != address(0)   && address(quote.sellToken) != Adapter(adapter).underlying())
         // revert Errors.InvalidQuote(); // GAS SAVING
         amt = (mode == 1)
             ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, minAccepted, permit)
             : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);
         amt = _fromTarget(adapter, amt, quote);
-        address(quote.buyToken) == ETH
-            ? payable(receiver).transfer(amt)
-            : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
+
+        _transfer(quote.buyToken, receiver, amt);
 
         // transfer any remaining underlying to receiver
         ERC20 underlying = ERC20(Adapter(adapter).underlying());
@@ -308,7 +321,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (remaining > 0) underlying.safeTransfer(receiver, remaining);
     }
 
-    /// @notice Adds liquidity providing underlying
+    /// @notice Adds liquidity providing any Token
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param amt Amount to provide
@@ -389,9 +402,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             permit
         );
         amt = _fromTarget(adapter, amt, quote);
-        address(quote.buyToken) == ETH
-            ? payable(receiver).transfer(amt)
-            : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
+        _transfer(quote.buyToken, receiver, amt);
     }
 
     /* ========== UTILS ========== */
@@ -405,7 +416,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param permit Permit to pull tokens
     /// @param quote Quote with swap details
     /// @return uBal Amount of PTs and YTs minted
-    /// @dev if quote.sellToken is neither target nor underlying, it will unwrap target
+    /// @dev if quote.sellToken is neither target nor underlying, it will swap on 0x and wrap to target
     /// and swap it on 0x
     function issue(
         address adapter,
@@ -446,9 +457,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         // pull underlying
         permit2.permitTransferFrom(permit.msg, sigs, msg.sender, permit.sig);
         amt = _fromTarget(adapter, divider.combine(adapter, maturity, uBal), quote);
-        address(quote.buyToken) == ETH
-            ? payable(receiver).transfer(amt)
-            : ERC20(address(quote.buyToken)).safeTransfer(receiver, amt); // transfer bought tokens to receiver
+        _transfer(quote.buyToken, receiver, amt);
     }
 
     /* ========== ADMIN ========== */
@@ -581,7 +590,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ytBal,
         uint256 minAccepted,
         PermitData calldata permit
-    ) internal returns (uint256 tBal) {
+    ) public returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (ytBal * 10**(18 - ERC20(divider.yt(adapter, maturity)).decimals()) <= MIN_YT_SWAP_IN)
@@ -920,8 +929,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (quote.swapTarget != exchangeProxy) revert Errors.InvalidExchangeProxy();
 
         // Give `spender` an infinite allowance to spend this contract's `sellToken`.
-        // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
-        // allowance to 0 before being able to update it.
         if (address(quote.sellToken) != ETH)
             ERC20(address(quote.sellToken)).safeApprove(quote.spender, type(uint256).max);
 
@@ -936,9 +943,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (!success) revert Errors.ZeroExSwapFailed(res);
 
         // We assume the Periphery does not hold tokens so boughtAmount is always it's balance
-        boughtAmount = (
-            address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this))
-        );
+        boughtAmount = address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this));
+        if (boughtAmount == 0) revert Errors.ZeroBoughtAmt(); // TODO: do we want to add this check?
 
         // Refund any unspent protocol fees (paid in ether) to the sender.
         uint256 refundAmt = address(this).balance;
@@ -961,13 +967,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 _amt,
         SwapQuote calldata quote
     ) internal returns (uint256 amt) {
-        if (address(quote.sellToken) == Adapter(adapter).underlying()) {
+        if (address(quote.sellToken) == Adapter(adapter).target()) {
+            amt = _amt;
+        } else if (address(quote.sellToken) == Adapter(adapter).underlying()) {
             amt = Adapter(adapter).wrapUnderlying(_amt);
-        } else if (address(quote.sellToken) != Adapter(adapter).target()) {
+        } else {
             // sell tokens for underlying and wrap into target
             amt = Adapter(adapter).wrapUnderlying(_fillQuote(quote));
-        } else {
-            amt = _amt;
         }
     }
 
@@ -978,16 +984,16 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 _amt,
         SwapQuote calldata quote
     ) internal returns (uint256 amt) {
-        if (address(quote.buyToken) == Adapter(adapter).underlying()) {
+        if (address(quote.buyToken) == Adapter(adapter).target()) {
+            amt = _amt;
+        } else if (address(quote.buyToken) == Adapter(adapter).underlying()) {
             amt = Adapter(adapter).unwrapTarget(_amt);
-        } else if (address(quote.buyToken) != Adapter(adapter).target()) {
+        } else {
             // TODO:the issue here is that the quote needs to calculate off-chain the amount of underlying that will be received from the unwrapTarget
             // and this underlying amount is what it is swapped on 0x. What happens if there's a mismatch? Maybe better to do the swap with target?
             // sell tokens for underlying and wrap into target
             Adapter(adapter).unwrapTarget(_amt);
             amt = _fillQuote(quote);
-        } else {
-            amt = _amt;
         }
     }
 
@@ -1020,6 +1026,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 msg.sender,
                 permit.sig
             );
+    }
+
+    function _transfer(
+        ERC20 token,
+        address receiver,
+        uint256 amt
+    ) internal {
+        address(token) == ETH ? payable(receiver).transfer(amt) : token.safeTransfer(receiver, amt);
     }
 
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33

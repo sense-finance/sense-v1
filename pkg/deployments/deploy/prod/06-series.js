@@ -122,7 +122,7 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapForPTs(adapter, maturity, quote);
+    await _swapForPTs(adapter, maturity, quote, signer);
 
     log("\n2. Swap underlying for PTs");
     const underlyingAddr = await adapter.underlying();
@@ -134,19 +134,19 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapForPTs(adapter, maturity, quote);
+    await _swapForPTs(adapter, maturity, quote, signer);
 
     log("\n3. Swap DAI for PTs");
     sellAddr = DAI_TOKEN.get(chainId);
     buyAddr = await adapter.underlying();
     quote = await getQuote(sellAddr, buyAddr, oneEther); // get quote from 0x-API
-    await _swapForPTs(adapter, maturity, quote);
+    await _swapForPTs(adapter, maturity, quote, signer);
 
     log("\n4. Swap ETH for PTs");
     sellAddr = ETH_TOKEN.get(chainId);
     buyAddr = await adapter.underlying();
     quote = await getQuote(sellAddr, buyAddr, oneEther);
-    await _swapForPTs(adapter, maturity, quote);
+    await _swapForPTs(adapter, maturity, quote, signer);
   }
 
   async function _swapPTs(adapter, maturity, ptAmt, quote, callStatic) {
@@ -233,7 +233,7 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapPTs(adapter, maturity, ptAmt, quote);
+    await _swapPTs(adapter, maturity, ptAmt, quote, signer);
 
     log("\n3. Swap PTs for DAI");
     sellAddr = await adapter.underlying();
@@ -250,18 +250,18 @@ module.exports = async function () {
     };
     let underlyingAmt = await _swapPTs(adapter, maturity, ptAmt, toUnderlyingQuote, true);
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
-    await _swapPTs(adapter, maturity, ptAmt, quote);
+    await _swapPTs(adapter, maturity, ptAmt, quote, signer);
 
     log("\n4. Swap PTs for ETH");
     sellAddr = await adapter.underlying();
     buyAddr = ETH_TOKEN.get(chainId);
     underlyingAmt = await _swapPTs(adapter, maturity, ptAmt, toUnderlyingQuote, true);
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
-    await _swapPTs(adapter, maturity, ptAmt, quote);
+    await _swapPTs(adapter, maturity, ptAmt, quote, signer);
   }
 
   // YTs SWAPS
-  async function _swapForYTs(adapter, maturity, quote) {
+  async function _swapForYTs(adapter, maturity, quote, signer) {
     const buyToken = await ethers.getContractAt(tokenAbi, quote.buyTokenAddress, signer);
     const sellToken = await ethers.getContractAt(tokenAbi, quote.sellTokenAddress, signer);
     const isETH = sellToken.address.toLowerCase() === ETH_TOKEN.get(chainId).toLowerCase();
@@ -338,7 +338,7 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapForYTs(adapter, maturity, quote);
+    await _swapForYTs(adapter, maturity, quote, signer);
 
     log("\n2. Swap underlying for YTs");
     const underlyingAddr = await adapter.underlying();
@@ -350,22 +350,22 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapForYTs(adapter, maturity, quote);
+    await _swapForYTs(adapter, maturity, quote, signer);
 
     log("\n3. Swap DAI for YTs");
     sellAddr = DAI_TOKEN.get(chainId);
     buyAddr = await adapter.underlying();
     quote = await getQuote(sellAddr, buyAddr, oneEther);
-    await _swapForYTs(adapter, maturity, quote);
+    await _swapForYTs(adapter, maturity, quote, signer);
 
     log("\n4. Swap ETH for YTs");
     sellAddr = ETH_TOKEN.get(chainId);
     buyAddr = await adapter.underlying();
     quote = await getQuote(sellAddr, buyAddr, oneEther);
-    await _swapForYTs(adapter, maturity, quote);
+    await _swapForYTs(adapter, maturity, quote, signer);
   }
 
-  async function _swapYTs(adapter, maturity, ytAmt, quote, callStatic) {
+  async function _swapYTs(adapter, maturity, ytAmt, quote, callStatic, signer) {
     const buyToken = await ethers.getContractAt(tokenAbi, quote.buyTokenAddress, signer);
     const sellToken = await ethers.getContractAt(tokenAbi, quote.sellTokenAddress, signer);
     const yt = await ethers.getContractAt(tokenAbi, await divider.yt(adapter.address, maturity), signer);
@@ -389,6 +389,7 @@ module.exports = async function () {
       adapter.address,
       maturity,
       ytAmt,
+      0, // min accepted
       deployer,
       { msg: message, sig: signature },
       [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
@@ -424,7 +425,8 @@ module.exports = async function () {
     let sellAddr, buyAddr, quote;
 
     const yt = await ethers.getContractAt(tokenAbi, await divider.yt(adapter.address, maturity), signer);
-    const ytAmt = one(await yt.decimals()).div(4);
+    let ytAmt = one(await yt.decimals()).div(4);
+    console.log("YT BALANCE:", (await yt.balanceOf(deployer)).toString());
 
     log("\n1. Swap YTs for target");
     const targetAddr = await adapter.target();
@@ -436,8 +438,9 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapYTs(adapter, maturity, ytAmt, quote);
+    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
 
+    console.log("YT BALANCE:", (await yt.balanceOf(deployer)).toString());
     log("\n2. Swap YTs for underlying");
     const underlyingAddr = await adapter.underlying();
     // since we are swapping underlying, we only need the quote to have the sellTokenAddress with the underlying's address
@@ -448,9 +451,11 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    await _swapYTs(adapter, maturity, ytAmt, quote);
+    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
 
+    console.log("YT BALANCE:", (await yt.balanceOf(deployer)).toString());
     log("\n3. Swap YTs for DAI");
+    ytAmt = fourtyThousand(await yt.decimals());
     sellAddr = await adapter.underlying();
     buyAddr = DAI_TOKEN.get(chainId);
     // In order to know how much the YT we want to sell is worth in underlying we first do a staticCall and save the `underlyingAmt`
@@ -463,16 +468,16 @@ module.exports = async function () {
       to: zeroAddress(),
       data: "0x",
     };
-    let underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true);
+    let underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true, signer);
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
-    await _swapYTs(adapter, maturity, ytAmt, quote);
+    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
 
     log("\n4. Swap YTs for ETH");
     sellAddr = await adapter.underlying();
     buyAddr = ETH_TOKEN.get(chainId);
-    underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true);
+    underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true, signer);
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
-    await _swapYTs(adapter, maturity, ytAmt, quote);
+    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
   }
 
   async function sponsor(t) {
@@ -612,8 +617,9 @@ module.exports = async function () {
             adapter.address,
             seriesMaturity,
             one(decimals),
-            1,
             0,
+            0,
+            1,
             deployer,
             { msg: message, sig: signature },
             [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
@@ -669,8 +675,9 @@ module.exports = async function () {
             adapter.address,
             seriesMaturity,
             oneMillion(decimals).mul(2),
-            1,
             0,
+            0,
+            1,
             deployer,
             { msg: message, sig: signature },
             quote,
@@ -765,8 +772,9 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           one(decimals),
-          1,
           0,
+          0,
+          1,
           deployer,
           { msg: message, sig: signature },
           [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
