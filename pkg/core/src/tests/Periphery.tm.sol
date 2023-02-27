@@ -1242,8 +1242,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         vm.expectRevert();
         periphery.fillQuote(quote);
 
-        // 3. Does NOT revert if sell token does not match the one in the swap call data
-        // but there's enough allowance and balance to spend the token of the swapCallData
+        // 3. Revert if sell token does not match the one in the swap call data, there's enough
+        // allowance and balance to spend the token of the swapCallData
         // We assume there's approval from periphery to Exchange Proxy to spend USDC (probably from a previous swap)
         deal(AddressBook.USDC, address(periphery), 1e6);
         vm.prank(address(periphery));
@@ -1257,6 +1257,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             swapTarget: payable(AddressBook.EXCHANGE_PROXY), // from 0x API
             swapCallData: USDC_DAI_SWAP_QUOTE
         });
+        vm.expectRevert();
         periphery.fillQuote(quote);
 
         // 4. Revert if sell token does not match the one in the swap call data
