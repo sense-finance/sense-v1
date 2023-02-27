@@ -490,9 +490,9 @@ module.exports = async function () {
     const { name: targetName, series, address: targetAddress } = t;
     const target = new ethers.Contract(targetAddress, tokenAbi, signer);
 
-    log(`\nEnable the Divider to move the deployer's ${targetName} for issuance`);
+    log(`\nEnable the Periphery to move the deployer's ${targetName} for issuance`);
     if (!(await target.allowance(deployer, divider.address)).eq(ethers.constants.MaxUint256)) {
-      await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
+      await target.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
     }
 
     for (let seriesMaturity of series) {
@@ -553,7 +553,7 @@ module.exports = async function () {
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
       const decimals = await target.decimals();
 
-      log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
+      log("Have the periphery issue the first 1,000,000 Target worth of PT/YT for this Series");
       if (!(await pt.balanceOf(deployer)).gte(fourtyThousand(decimals))) {
         const balance = await target.balanceOf(deployer); // deployer's stake balance
         if (balance.lt(oneMillion(decimals))) {
@@ -565,7 +565,24 @@ module.exports = async function () {
             throw Error("Not enough target funds on wallet");
           }
         }
-        await divider.issue(adapter.address, seriesMaturity, oneMillion(decimals)).then(tx => tx.wait());
+        const [signature, message] = await generatePermit(
+          target.address,
+          oneMillion(decimals),
+          periphery.address,
+          permit2,
+          chainId,
+          signer,
+        );
+        await periphery
+          .issue(
+            adapter.address,
+            seriesMaturity,
+            oneMillion(decimals),
+            deployer,
+            { msg: message, sig: signature },
+            [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
+          )
+          .then(tx => tx.wait());
       }
 
       const { abi: spaceAbi } = await deployments.getArtifact("lib/v1-space/src/Space.sol:Space");
