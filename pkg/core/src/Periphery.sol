@@ -944,12 +944,17 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         // We assume the Periphery does not hold tokens so boughtAmount is always it's balance
         boughtAmount = address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this));
-        if (boughtAmount == 0) revert Errors.ZeroBoughtAmt(); // TODO: do we want to add this check?
+        sellAmount =
+            sellAmount -
+            (address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this)));
+        if (boughtAmount == 0 || sellAmount == 0) revert Errors.ZeroSwapAmt(); // TODO: do we want to add this check?
 
         // Refund any unspent protocol fees (paid in ether) to the sender.
         uint256 refundAmt = address(this).balance;
         if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
         payable(msg.sender).transfer(refundAmt);
+        // TODO: if sellToken or buyToken does not match the swapCallData, then BoughtTokens
+        // will have the wrong params.
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
     }
 

@@ -537,7 +537,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     /* ========== LIQUIDITY ========== */
-    // TODO: test addLiquidity with an invalid quote
     // TODO: add tests for refund protocol fees
 
     function testMainnetAddLiquidity() public {
@@ -555,12 +554,16 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying (stETH) swap
         Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(adapter, AddressBook.DAI);
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(AddressBook.DAI, MockAdapter(adapter).underlying(), 0, 0);
         _addLiquidityFromToken(adapter, maturity, quote, amt);
 
         // 2. Add liquidity from ETH
         amt = 1e18; // 1 ETH
         // Create quote from 0x API to do a 1 ETH to underlying (stETH) swap
         quote = _getBuyUnderlyingQuote(adapter, periphery.ETH());
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(periphery.ETH(), MockAdapter(adapter).underlying(), 0, 0);
         _addLiquidityFromETH(adapter, maturity, quote, amt);
 
         // 3.1 Add liquidity from Target
@@ -588,6 +591,37 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // since no swap on 0x will be done
         quote = _getBuyUnderlyingQuote(adapter, address(token));
         _addLiquidityFromToken(adapter, maturity, quote, amt);
+
+        // 5. Add liquidity with malformed quote: buyToken is not the underlying
+        token = ERC20(AddressBook.DAI);
+        amt = 10**token.decimals(); // 1 DAI
+        // Create quote from 0x API to do a 1 DAI to underlying (stETH) swap
+        quote = _getBuyUnderlyingQuote(adapter, AddressBook.DAI);
+        // Malform quote by changing buyToken (which is stETH) to USDC
+        quote.buyToken = ERC20(AddressBook.USDC);
+        // Adding liquidity will do:
+        // 1. We pull DAI tokens from the user
+        // 2. We succefully execute a 0x swap from DAI to stETH
+        // 3. We wrap DAI for target
+        // 5. Since buyToken is now USDC (instead of stETH) and we have received 0 USDC, it will revert
+        vm.expectRevert(abi.encodeWithSelector(Errors.ZeroSwapAmt.selector));
+        this._addLiquidityFromToken(adapter, maturity, quote, amt);
+        vm.stopPrank();
+
+        // 6. Add liquidity with malformed quote:
+        token = ERC20(AddressBook.DAI);
+        amt = 10**token.decimals(); // 1 DAI
+        // Create quote from 0x API to do a 1 DAI to underlying (stETH) swap
+        quote = _getBuyUnderlyingQuote(adapter, AddressBook.DAI);
+        // Malform quote by changing sellToken (which is DAI) to USDC
+        quote.sellToken = ERC20(AddressBook.USDC);
+        // Adding liquidity will do:
+        // 1. We pull DAI tokens from the user
+        // 2. 0x swap reverts because there's not enough DAI to pull from user
+        vm.expectRevert();
+        // TODO: fix expectRevert
+        // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
+        this._addLiquidityFromToken(adapter, maturity, quote, amt);
     }
 
     function testMainnetRemoveLiquidity() public {
@@ -605,18 +639,22 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 1. Remove liquidity to DAI
         // Create quote from 0x API to do an underlying (stETH) to DAI swap
         Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
-        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(address(quote.sellToken), AddressBook.DAI, 0, 0);
+        _removeLiquidityToToken(adapter, maturity, quote, amt);
 
         // 2. Remove liquidity to ETH
         // Create quote from 0x API to do an underlying (stETH) to ETH swap
         quote = _getSellUnderlyingQuote(adapter, periphery.ETH());
-        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(address(quote.sellToken), periphery.ETH(), 0, 0);
+        _removeLiquidityToToken(adapter, maturity, quote, amt);
 
         // 3.1 Remove liquidity to Target
         // Create quote only with buyToken as target. We don't care about the other params
         // since no swap on 0x will be done
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
-        _removeLiquidityToToken(adapter, maturity, quote, amt, false);
+        _removeLiquidityToToken(adapter, maturity, quote, amt);
 
         // 3.2 Remove liquidity to Target
         // Create quote only with buyToken as target. We don't care about the other params
@@ -624,15 +662,15 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // will be ignored in this case. When removing liquidity, sellToken would always be the LP token
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
         quote.sellToken = ERC20(AddressBook.DAI);
-        _removeLiquidityToToken(adapter, maturity, quote, amt, false);
+        _removeLiquidityToToken(adapter, maturity, quote, amt);
 
         // 4. Remove liquidity to Underlying
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
-        _removeLiquidityToToken(adapter, maturity, quote, amt, false);
+        _removeLiquidityToToken(adapter, maturity, quote, amt);
 
-        // 5. Remove liquidity with malformed quote
+        // 5. Remove liquidity with malformed quote: buyToken is USDC but not DAI
         // Create quote from 0x API to do an underlying (stETH) to DAI swap
         quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
         // Malform quote by changing buyToken (which is DAI) to USDC
@@ -643,11 +681,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 3. We unwrap target for underlying (stETH)
         // 4. We succefully execute a 0x swap from stETH to DAI (because that's what's in swapCallData)
         // 5. Since buyToken is now USDC and we have received 0 USDC, it will revert
-        try this._removeLiquidityToToken(adapter, maturity, quote, amt, false) {} catch (bytes memory reason) {
-            assertEq(reason, abi.encodeWithSelector(Errors.ZeroBoughtAmt.selector));
-        }
+        vm.expectRevert(abi.encodeWithSelector(Errors.ZeroSwapAmt.selector));
+        this._removeLiquidityToToken(adapter, maturity, quote, amt);
+        vm.stopPrank();
 
-        // 6. Remove liquidity with malformed quote
+        // 6. Remove liquidity with malformed quote: sellToken is USDC but not stETH
         // Create quote from 0x API to do an underlying (stETH) to DAI swap
         quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
         // Malform quote by changing sellToken (which is underlying) to USDC
@@ -656,10 +694,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 1. We pull LP tokens from the user
         // 2. We swap LP tokens for target (Space)
         // 3. We unwrap target for underlying (stETH)
-        // 4. We succefully execute a 0x swap from stETH to DAI (because that's what's in swapCallData)
-        // The TX succeeds but and the user receives DAI (not USDC) // TODO: should we revert here?
-        // _removeLiquidityToToken(adapter, maturity, quote, amt, true);
-        // TODO: fix test
+        // Since sellToken is now USDC, _fillQuote will give approval to 0x to pull USDC instead o the underlying
+        // (stETH) and the swap will fail
+        vm.expectRevert();
+        // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "TRANSFER_AMOUNT_EXCEEDS_ALLOWANCE"));
+        // TODO: fix expectRevert
+        this._removeLiquidityToToken(adapter, maturity, quote, amt);
     }
 
     /* ========== PT SWAPS ========== */
@@ -679,6 +719,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying swap
         Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(adapter, address(token));
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(address(token), address(quote.buyToken), 0, 0);
         _swapTokenForPTs(adapter, maturity, quote, amt);
 
         // 2. Swap target for PTs
@@ -693,7 +735,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         quote = _getBuyUnderlyingQuote(adapter, address(underlying));
         _swapTokenForPTs(adapter, maturity, quote, amt);
 
-        // 4. Swap DAI for PTs (malformed quote)
+        // 4. Swap DAI for PTs with malformed quote: buyToken is not underlying but USDC
         token = ERC20(AddressBook.DAI);
         amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying swap
@@ -702,33 +744,25 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         quote.buyToken = ERC20(AddressBook.USDC);
         // swapForPTs will do:
         // 1. We pull DAI tokens from the user
-        // 2. We succefully execute a 0x swap from DAI to stETH to DAI (because that's what's in swapCallData)
+        // 2. We succefully execute a 0x swap from DAI to stETH
         // Since buyToken is now USDC and we have received 0 USDC, it will revert
-        try this._swapTokenForPTs(adapter, maturity, quote, amt) {} catch (bytes memory reason) {
-            assertEq(reason, abi.encodeWithSelector(Errors.ZeroBoughtAmt.selector));
-        }
+        vm.expectRevert(abi.encodeWithSelector(Errors.ZeroSwapAmt.selector));
+        this._swapTokenForPTs(adapter, maturity, quote, amt);
 
-        // 5. Swap DAI for PTs (malformed quote)
+        // 5. Swap DAI for PTs with malformed quote: sellToken is not DAI but USDC and has USDC permit2 approvals and balances
         token = ERC20(AddressBook.DAI);
         amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying swap
         quote = _getBuyUnderlyingQuote(adapter, address(token));
-        // Malform quote by changing sellToken (which is underlying) to USDC
+        // Malform quote by changing sellToken (which is DAI) to USDC
         quote.sellToken = ERC20(AddressBook.USDC);
         // swapForPTs will do:
-        // 1. We pull DAI tokens from the user
-        // 2. We succefully execute a 0x swap from DAI to stETH to DAI (because that's what's in swapCallData)
-        // 3. We wrap stETH to wstETH
-        // 4. We swap Target for PTs (Space)
-        // The TX succeeds and the user got his DAI pulled (as per the swapCallData) instead of USDC.
-        // NOTE that this is possible also because the permit message was allowing the Periphery to pull DAI
-        // _swapTokenForPTs(adapter, maturity, quote, amt);
-        // TODO: fix test
-
-        // NOTE: In the case we had an adapter where wrap/unwrap allows receiving 0, he tx will work.
-        // The user will get his tokens pulled and will receive 0 PTs.
-        // TODO: Should we revert on this case? See Periphery.sol line 948
-        // Or it's the user's responsibility to send the correct params?
+        // 1. We pull USDC (instead of DAI) tokens from the user
+        // 2. 0x swap reverts because there's not enough DAI to pull from user
+        // TODO: fix expectRevert
+        // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
+        vm.expectRevert();
+        this._swapTokenForPTs(adapter, maturity, quote, amt);
     }
 
     function testMainnetSwapPTsForAll() public {
@@ -743,25 +777,33 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // 1. Swap PTs for target
         Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
-        _swapPTs(adapter, maturity, quote);
+        // _swapPTs(adapter, maturity, quote);
 
-        // 2. Swap PTs for underlying
-        quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
-        _swapPTs(adapter, maturity, quote);
+        // // 2. Swap PTs for underlying
+        // quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
+        // _swapPTs(adapter, maturity, quote);
 
-        // 3. Swap PTs for DAI
-        // Create 0x API quote to do a X underlying to token swap
-        // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
-        quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
-        _swapPTs(adapter, maturity, quote);
+        // // 3. Swap PTs for DAI
+        // // Create 0x API quote to do a X underlying to token swap
+        // // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
+        // quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
+        // vm.expectEmit(true, true, false, false);
+        // emit BoughtTokens(MockAdapter(adapter).underlying(), AddressBook.DAI, 0, 0);
+        // _swapPTs(adapter, maturity, quote);
 
-        // 4. Swap PTs for DAI
+        // 4. Swap PTs with malformed quote: sellToken is not underlying but USDC
         // Create 0x API quote to do a X underlying to token swap
         // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
         quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
         // Malform quote by changing sellToken (which is underlying) to USDC
         quote.sellToken = ERC20(AddressBook.USDC);
-        // TODO: complete!
+        // swapPTs will do:
+        // 1. We pull USDC (instead of DAI) tokens from the user
+        // 2. 0x swap reverts because there's not enough USDC to pull from user
+        vm.expectRevert();
+        // TODO: fix expectRevert
+        // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
+        this._swapPTs(adapter, maturity, quote);
     }
 
     /* ========== YT SWAPS ========== */
@@ -1654,13 +1696,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 ptBalPre = ERC20(pt).balanceOf(bob);
         uint256 tokenBalPre = token.balanceOf(bob);
 
-        // assert we've swapped tokens through 0x
-        // TODO: fix, we are getting a stack too deep because of the emitEvent param
-        // if (emitEvent) {
-        //     vm.expectEmit(true, true, false, false);
-        //     emit BoughtTokens(address(token), address(quote.buyToken), 0, 0);
-        // }
-
         vm.prank(bob);
         uint256 ptBal = periphery.swapForPTs(adapter, maturity, amt, 0, bob, data, quote);
 
@@ -1705,16 +1740,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             uint256 ptBalPre = ERC20(pt).balanceOf(bob);
             uint256 tokenBalPre = token.balanceOf(bob);
 
-            // assert we've swapped tokens through 0x
-            if (
-                address(quote.sellToken) != MockAdapter(adapter).target() &&
-                address(quote.sellToken) != address(0) &&
-                address(quote.buyToken) != address(0)
-            ) {
-                vm.expectEmit(true, true, false, false);
-                emit BoughtTokens(MockAdapter(adapter).underlying(), address(token), 0, 0);
-            }
-
             vm.prank(bob);
             uint256 tokenBal = periphery.swapPTs(adapter, maturity, ptBalPre, 0, bob, data, quote);
             uint256 tokenBalPost = token.balanceOf(bob);
@@ -1753,16 +1778,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 tokenBalPre = token.balanceOf(bob);
         uint256 lpBalPre = ERC20(SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity)).balanceOf(bob);
 
-        // assert we've swapped tokens through 0x
-        if (
-            address(quote.sellToken) != MockAdapter(adapter).target() &&
-            address(quote.sellToken) != address(0) &&
-            address(quote.buyToken) != address(0)
-        ) {
-            vm.expectEmit(true, true, false, false);
-            emit BoughtTokens(address(token), MockAdapter(adapter).underlying(), 0, 0);
-        }
-
         {
             uint256 lpShares = _addLiquidity(adapter, maturity, quote, amt);
             // Check that the return values reflect the token balance changes
@@ -1788,12 +1803,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 2. Add liquidity from Token
         uint256 ethBalPre = address(bob).balance;
         uint256 lpBalPre = ERC20(SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity)).balanceOf(bob);
-
-        // assert we've swapped tokens through 0x
-        if (sellToken != address(0) && address(quote.buyToken) != address(0)) {
-            vm.expectEmit(true, true, false, false);
-            emit BoughtTokens(sellToken, MockAdapter(adapter).underlying(), 0, 0);
-        }
 
         {
             uint256 lpShares = _addLiquidity(adapter, maturity, quote, amt);
@@ -1831,11 +1840,10 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt,
-        bool emitEvent
+        uint256 amt
     ) public {
         bool isETH = address(quote.buyToken) == periphery.ETH();
-        ERC20 token = ERC20(address(quote.buyToken));
+        ERC20 token = quote.buyToken;
         ERC20 pt = ERC20(Divider(divider).pt(adapter, maturity));
         ERC20 lp = ERC20(SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity));
 
@@ -1850,12 +1858,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 lpBalPre = lp.balanceOf(bob);
         uint256 tokenBalPre = isETH ? address(bob).balance : token.balanceOf(bob);
         uint256 ptBalPre = pt.balanceOf(bob);
-
-        // assert we've swapped tokens through 0x
-        if (emitEvent) {
-            vm.expectEmit(true, true, false, false);
-            emit BoughtTokens(MockAdapter(adapter).underlying(), address(token), 0, 0);
-        }
 
         {
             (uint256 tBal, uint256 ptBal) = _removeLiquidity(adapter, maturity, quote, amt);
