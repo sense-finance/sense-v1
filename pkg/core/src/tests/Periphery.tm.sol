@@ -228,7 +228,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
         vm.stopPrank(); // Stop prank calling
 
         periphery.onboardAdapter(address(mockAdapter), true);
-        periphery.verifyAdapter(address(mockAdapter), true);
+        periphery.verifyAdapter(address(mockAdapter));
 
         // Set adapter scale to 1
         mockAdapter.setScale(1e18);
@@ -1504,7 +1504,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // 3. Onboard & Verify adapter into Periphery
         periphery.onboardAdapter(adapter, false);
-        periphery.verifyAdapter(adapter, false);
+        periphery.verifyAdapter(adapter);
     }
 
     /// @notice Get the swap call data for a swap from underlying

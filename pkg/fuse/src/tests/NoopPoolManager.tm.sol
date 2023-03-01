@@ -241,7 +241,7 @@ contract NoopPoolManagerTest is ForkTest, Permit2Helper {
         vm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
 
-        periphery.verifyAdapter(address(mockAdapter), true);
+        periphery.verifyAdapter(address(mockAdapter));
     }
 
     // Sanity check with the normal pool manager
@@ -260,7 +260,7 @@ contract NoopPoolManagerTest is ForkTest, Permit2Helper {
         vm.expectEmit(true, false, false, false);
         emit TargetAdded(address(target), address(0));
 
-        periphery.verifyAdapter(address(mockAdapter), true);
+        periphery.verifyAdapter(address(mockAdapter));
     }
 
     function _getValidMaturity() internal view returns (uint256 maturity) {

@@ -385,6 +385,7 @@ module.exports = async function () {
 
     if (!callStatic) console.info(` - Swap YTs for ${isETH ? "ETH" : await buyToken.symbol()}...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
+    console.log("quote", quote);
     const fnParams = [
       adapter.address,
       maturity,
@@ -394,9 +395,14 @@ module.exports = async function () {
       { msg: message, sig: signature },
       [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
     ];
+    console.log("LINA", [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data]);
+    console.log("fnParams", fnParams);
     const amtOut = await periphery.callStatic.swapYTs(...fnParams);
+    console.log("amtOut", amtOut);
     if (!callStatic) {
+      console.log("HOLA");
       const receipt = await (await periphery.swapYTs(...fnParams)).wait();
+      console.log("HOLA2");
       console.info(
         `  ${"✔"} Successfully swapped YTs for ${
           quote.sellTokenAddress === zeroAddress()
@@ -469,7 +475,9 @@ module.exports = async function () {
       data: "0x",
     };
     let underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true, signer);
+    console.log("UNDERLYING AMOUNT:", underlyingAmt.toString());
     quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
+    console.log("quote.sellAmount", quote.sellAmount);
     await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
 
     log("\n4. Swap YTs for ETH");

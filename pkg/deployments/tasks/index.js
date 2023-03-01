@@ -20,6 +20,7 @@ require("./20221112-periphery-v1.4");
 require("./20221114-ownable-factory");
 require("./20221512-factories-and-idle");
 require("./20230102-ownable-erc4626-crop-factory");
+require("./20230301-periphery-v2");
 
 // utils
 require("./goerli-tokens-factories");

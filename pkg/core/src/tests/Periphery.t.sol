@@ -154,7 +154,7 @@ contract PeripheryTest is TestHelper {
 
     // function testSponsorSeriesWhenPoolManagerZero() public {
     //     periphery.setPoolManager(address(0));
-    //     periphery.verifyAdapter(address(adapter), true);
+    //     periphery.verifyAdapter(address(adapter));
 
     //     // try sponsoring
     //     uint256 maturity = getValidMaturity(2021, 10);
@@ -172,7 +172,7 @@ contract PeripheryTest is TestHelper {
 
     // function testFailSponsorSeriesWhenPoolManagerZero() public {
     //     periphery.setPoolManager(address(0));
-    //     periphery.verifyAdapter(address(adapter), true);
+    //     periphery.verifyAdapter(address(adapter));
 
     //     // try sponsoring
     //     uint256 maturity = getValidMaturity(2021, 10);
@@ -400,7 +400,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter otherAdapter = MockAdapter(
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
-        periphery.verifyAdapter(address(otherAdapter), true);
+        periphery.verifyAdapter(address(otherAdapter));
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
@@ -428,7 +428,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter otherAdapter = MockAdapter(
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
-        periphery.verifyAdapter(address(otherAdapter), true);
+        periphery.verifyAdapter(address(otherAdapter));
         periphery.onboardAdapter(address(otherAdapter), true);
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
         assertTrue(enabled);
@@ -458,7 +458,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter otherAdapter = MockAdapter(
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
-        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        periphery.verifyAdapter(address(otherAdapter)); // admin verification
         periphery.setIsTrusted(alice, false);
 
         vm.expectRevert(abi.encodeWithSelector(Errors.OnlyPermissionless.selector));
@@ -488,7 +488,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter otherAdapter = MockAdapter(
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
-        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        periphery.verifyAdapter(address(otherAdapter)); // admin verification
         periphery.setIsTrusted(alice, false);
         periphery.onboardAdapter(address(otherAdapter), true); // non admin onboarding
         (, bool enabled, , ) = divider.adapterMeta(address(otherAdapter));
@@ -550,7 +550,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter otherAdapter = MockAdapter(
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
-        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        periphery.verifyAdapter(address(otherAdapter)); // admin verification
         assertTrue(periphery.verified(address(otherAdapter)));
     }
 
@@ -563,7 +563,7 @@ contract PeripheryTest is TestHelper {
         MockAdapter otherAdapter = MockAdapter(
             deployMockAdapter(address(divider), address(otherTarget), address(reward))
         );
-        periphery.verifyAdapter(address(otherAdapter), true); // admin verification
+        periphery.verifyAdapter(address(otherAdapter)); // admin verification
         assertTrue(periphery.verified(address(otherAdapter)));
     }
 
@@ -577,7 +577,7 @@ contract PeripheryTest is TestHelper {
     //     );
     //     periphery.setPoolManager(address(0));
 
-    //     periphery.verifyAdapter(address(otherAdapter), true);
+    //     periphery.verifyAdapter(address(otherAdapter));
 
     //     assertTrue(periphery.verified(address(otherAdapter)));
     // }
@@ -594,7 +594,7 @@ contract PeripheryTest is TestHelper {
 
     //     vm.expectEmit(false, false, false, false);
     //     emit TargetAdded(address(1), address(2));
-    //     periphery.verifyAdapter(address(otherAdapter), true);
+    //     periphery.verifyAdapter(address(otherAdapter));
 
     //     assertTrue(periphery.verified(address(otherAdapter)));
     // }
@@ -609,7 +609,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setIsTrusted(alice, false);
         vm.expectRevert("UNTRUSTED");
-        periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
+        periphery.verifyAdapter(address(otherAdapter)); // non-admin verification
         assertTrue(!periphery.verified(address(otherAdapter)));
     }
 
@@ -624,7 +624,7 @@ contract PeripheryTest is TestHelper {
         );
         periphery.setIsTrusted(alice, false);
         vm.expectRevert("UNTRUSTED");
-        periphery.verifyAdapter(address(otherAdapter), true); // non-admin verification
+        periphery.verifyAdapter(address(otherAdapter)); // non-admin verification
         assertTrue(!periphery.verified(address(otherAdapter)));
     }
 
@@ -1534,7 +1534,7 @@ contract PeripheryTest is TestHelper {
         DEFAULT_ADAPTER_PARAMS.level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted;
         adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
 
-        periphery.verifyAdapter(address(adapter), true);
+        periphery.verifyAdapter(address(adapter));
         periphery.onboardAdapter(address(adapter), true);
         divider.setGuard(address(adapter), 10 * 2**128);
 

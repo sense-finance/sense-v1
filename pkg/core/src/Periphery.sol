@@ -158,7 +158,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (!factories[f]) revert Errors.FactoryNotSupported();
         adapter = AdapterFactory(f).deployAdapter(target, data);
         emit AdapterDeployed(adapter);
-        _verifyAdapter(adapter, true);
+        _verifyAdapter(adapter);
         _onboardAdapter(adapter, true);
     }
 
@@ -468,13 +468,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         spaceFactory = SpaceFactoryLike(newSpaceFactory);
     }
 
-    /// @dev Verifies an Adapter and optionally adds the Target to the money market
+    /// @dev Verifies an Adapter
     /// @param adapter Adapter to verify
-    function verifyAdapter(address adapter, bool addToPool) public requiresTrust {
-        _verifyAdapter(adapter, addToPool);
+    function verifyAdapter(address adapter) public requiresTrust {
+        _verifyAdapter(adapter);
     }
 
-    function _verifyAdapter(address adapter, bool addToPool) private {
+    function _verifyAdapter(address adapter) private {
         verified[adapter] = true;
         emit AdapterVerified(adapter);
     }
