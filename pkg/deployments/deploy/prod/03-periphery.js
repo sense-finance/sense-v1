@@ -14,23 +14,22 @@ module.exports = async function () {
 
   const divider = await ethers.getContract("Divider", signer);
   const spaceFactory = await ethers.getContract("SpaceFactory", signer);
-  const poolManager = await ethers.getContract("PoolManager", signer);
 
   log("\n-------------------------------------------------------");
   log("\nDeploy Periphery");
   const { address: peripheryAddress } = await deploy("Periphery", {
     from: deployer,
-    args: [divider.address, poolManager.address, spaceFactory.address, balancerVault, permit2, exchangeProxy],
+    args: [divider.address, spaceFactory.address, balancerVault, permit2, exchangeProxy],
     log: true,
   });
 
   log("Set the periphery on the Divider");
   await (await divider.setPeriphery(peripheryAddress)).wait();
 
-  log("Give the periphery auth over the pool manager");
-  if (!(await poolManager.isTrusted(peripheryAddress))) {
-    await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
-  }
+  // log("Give the periphery auth over the pool manager");
+  // if (!(await poolManager.isTrusted(peripheryAddress))) {
+  //   await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+  // }
 };
 
 module.exports.tags = ["prod:periphery", "scenario:prod"];

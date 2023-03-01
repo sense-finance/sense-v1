@@ -90,7 +90,7 @@ contract TestHelper is Test, Permit2Helper {
     MockCropFactory internal factory;
     MockOracle internal masterOracle;
 
-    PoolManager internal poolManager;
+    // PoolManager internal poolManager;
     Divider internal divider;
     TokenHandler internal tokenHandler;
     Periphery internal periphery;
@@ -184,32 +184,31 @@ contract TestHelper is Test, Permit2Helper {
         masterOracle = new MockOracle();
 
         // pool manager
-        poolManager = new PoolManager(
-            address(fuseDirectory),
-            address(comptroller),
-            address(1),
-            address(divider),
-            address(masterOracle) // oracle impl
-        );
-        poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(1));
-        PoolManager.AssetParams memory params = PoolManager.AssetParams({
-            irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
-            reserveFactor: 0.1 ether,
-            collateralFactor: 0.5 ether
-        });
-        poolManager.setParams("TARGET_PARAMS", params);
+        // poolManager = new PoolManager(
+        //     address(fuseDirectory),
+        //     address(comptroller),
+        //     address(1),
+        //     address(divider),
+        //     address(masterOracle) // oracle impl
+        // );
+        // poolManager.deployPool("Sense Fuse Pool", 0.051 ether, 1 ether, address(1));
+        // PoolManager.AssetParams memory params = PoolManager.AssetParams({
+        //     irModel: 0xEDE47399e2aA8f076d40DC52896331CBa8bd40f7,
+        //     reserveFactor: 0.1 ether,
+        //     collateralFactor: 0.5 ether
+        // });
+        // poolManager.setParams("TARGET_PARAMS", params);
 
         // periphery
         periphery = new Periphery(
             address(divider),
-            address(poolManager),
             address(spaceFactory),
             address(balancerVault),
             address(permit2),
             address(0)
         );
         divider.setPeriphery(address(periphery));
-        poolManager.setIsTrusted(address(periphery), true);
+        // poolManager.setIsTrusted(address(periphery), true);
 
         // scale stake size to stake decimals
         STAKE_SIZE = STAKE_SIZE.fdiv(1e18, sDecimals);

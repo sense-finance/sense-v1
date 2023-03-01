@@ -8,7 +8,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const chainId = await getChainId();
 
   const divider = await ethers.getContract("Divider", signer);
-  const poolManager = await ethers.getContract("PoolManager", signer);
   const balancerVault = await ethers.getContract("Vault", signer);
   const spaceFactory = await ethers.getContract("SpaceFactory", signer);
 
@@ -18,7 +17,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     from: deployer,
     args: [
       divider.address,
-      poolManager.address,
       spaceFactory.address,
       balancerVault.address,
       PERMIT2.get(chainId),
@@ -32,10 +30,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     await (await divider.setPeriphery(peripheryAddress)).wait();
   }
 
-  log("Give the periphery auth over the pool manager");
-  if (!(await poolManager.isTrusted(peripheryAddress))) {
-    await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
-  }
+  // log("Give the periphery auth over the pool manager");
+  // if (!(await poolManager.isTrusted(peripheryAddress))) {
+  //   await (await poolManager.setIsTrusted(peripheryAddress, true)).wait();
+  // }
 };
 
 module.exports.tags = ["simulated:periphery", "scenario:simulated"];

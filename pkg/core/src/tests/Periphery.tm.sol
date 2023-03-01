@@ -8,7 +8,6 @@ import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 
 // Internal references
 import { Periphery } from "../Periphery.sol";
-import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { Divider } from "../Divider.sol";
 import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
 import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
@@ -57,12 +56,11 @@ interface SpaceFactoryLike {
 contract PeripheryFQ is Periphery {
     constructor(
         address _divider,
-        address _poolManager,
         address _spaceFactory,
         address _balancerVault,
         address _permit2,
         address _exchangeProxy
-    ) Periphery(_divider, _poolManager, _spaceFactory, _balancerVault, _permit2, _exchangeProxy) {}
+    ) Periphery(_divider, _spaceFactory, _balancerVault, _permit2, _exchangeProxy) {}
 
     function fillQuote(SwapQuote calldata quote) public payable returns (uint256 boughtAmount) {
         return _fillQuote(quote);
@@ -91,7 +89,6 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
     // Mainnet contracts for forking
     address internal balancerVault;
     address internal spaceFactory;
-    address internal poolManager;
     address internal divider;
     address internal stake;
 
@@ -143,13 +140,11 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
         divider = AddressBook.DIVIDER_1_2_0;
         spaceFactory = AddressBook.SPACE_FACTORY_1_3_0;
         balancerVault = AddressBook.BALANCER_VAULT;
-        poolManager = AddressBook.POOL_MANAGER_1_2_0;
         permit2 = IPermit2(AddressBook.PERMIT2);
 
         vm.label(divider, "Divider");
         vm.label(spaceFactory, "SpaceFactory");
         vm.label(balancerVault, "BalancerVault");
-        vm.label(poolManager, "PoolManager");
 
         // Deploy an mock underlying token
         underlying = new MockToken("TestUnderlying", "TU", 18);
@@ -210,14 +205,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
         ffactory = new FFactory(divider, Constants.RESTRICTED_ADMIN, Constants.REWARDS_RECIPIENT, factoryParams);
 
         // Deploy Periphery
-        periphery = new PeripheryFQ(
-            divider,
-            poolManager,
-            spaceFactory,
-            balancerVault,
-            address(permit2),
-            AddressBook.EXCHANGE_PROXY
-        );
+        periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
         periphery.setFactory(address(cfactory), true);
         periphery.setFactory(address(ffactory), true);
@@ -232,7 +220,6 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
         Divider(divider).setPeriphery(address(periphery));
         Divider(divider).setGuard(address(mockAdapter), type(uint256).max);
 
-        PoolManager(poolManager).setIsTrusted(address(periphery), true);
         uint256 ts = 1e18 / (uint256(31536000) * uint256(12));
         uint256 g1 = (uint256(950) * 1e18) / uint256(1000);
         uint256 g2 = (uint256(1000) * 1e18) / uint256(950);
@@ -294,8 +281,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testMainnetSponsorSeriesFromToken() public {
@@ -346,8 +333,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testMainnetSponsorSeriesFromETH() public {
@@ -403,8 +390,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testMainnetSponsorSeriesFromTokenWithTokenExcess() public {
@@ -457,8 +444,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
 
         // Check that the extra DAI are returned to the user
         assertEq(ERC20(AddressBook.DAI).balanceOf(bob), 99921386850310204870);
@@ -507,8 +494,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(yt != address(0));
 
         // Check PT and YT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(fadapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(fadapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testMainnetSponsorSeriesOnMockAdapter() public {
@@ -520,21 +507,21 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertTrue(yt != address(0));
 
         // Check that PTs and YTs are onboarded via the PoolManager into Fuse
-        (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(mockAdapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(mockAdapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
-    function testMainnetSponsorSeriesOnMockAdapterWhenPoolManagerZero() public {
-        // 1. Set pool manager to zero address
-        periphery.setPoolManager(address(0));
+    // function testMainnetSponsorSeriesOnMockAdapterWhenPoolManagerZero() public {
+    //     // 1. Set pool manager to zero address
+    //     periphery.setPoolManager(address(0));
 
-        // 2. Sponsor a Series
-        (uint256 maturity, address pt, address yt) = _sponsorSeries();
+    //     // 2. Sponsor a Series
+    //     (uint256 maturity, address pt, address yt) = _sponsorSeries();
 
-        // Check that the PT and YT contracts have been deployed
-        assertTrue(pt != address(0));
-        assertTrue(yt != address(0));
-    }
+    //     // Check that the PT and YT contracts have been deployed
+    //     assertTrue(pt != address(0));
+    //     assertTrue(yt != address(0));
+    // }
 
     /* ========== LIQUIDITY ========== */
     // TODO: add tests for refund protocol fees
@@ -1084,14 +1071,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetFillQuote() public {
         vm.rollFork(16669120); // Feb-15-2023 01:40:23 PM +UTC
 
-        periphery = new PeripheryFQ(
-            divider,
-            poolManager,
-            spaceFactory,
-            balancerVault,
-            address(permit2),
-            AddressBook.EXCHANGE_PROXY
-        );
+        periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
         // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         deal(AddressBook.USDC, address(periphery), 1e6);
@@ -1205,14 +1185,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetFillQuoteEdgeCases() public {
         vm.rollFork(16669120); // Feb-15-2023 01:40:23 PM +UTC
 
-        periphery = new PeripheryFQ(
-            divider,
-            poolManager,
-            spaceFactory,
-            balancerVault,
-            address(permit2),
-            AddressBook.EXCHANGE_PROXY
-        );
+        periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
         // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         bytes
@@ -1298,14 +1271,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetCantFillQuoteIfNotEnoughBalance() public {
         vm.rollFork(16664305); // Feb-15-2023 01:40:23 PM +UTC
 
-        periphery = new PeripheryFQ(
-            divider,
-            poolManager,
-            spaceFactory,
-            balancerVault,
-            address(permit2),
-            AddressBook.EXCHANGE_PROXY
-        );
+        periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
         // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         deal(AddressBook.USDC, address(periphery), 0.1e6);

@@ -17,7 +17,6 @@ import { Trust } from "@sense-finance/v1-utils/Trust.sol";
 import { BaseAdapter as Adapter } from "./adapters/abstract/BaseAdapter.sol";
 import { BaseFactory as AdapterFactory } from "./adapters/abstract/factories/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
-import { PoolManager } from "@sense-finance/v1-fuse/PoolManager.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
@@ -54,12 +53,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     IPermit2 public immutable permit2;
 
     // 0x ExchangeProxy address. See https://docs.0x.org/developer-resources/contract-addresses
-    address public immutable exchangeProxy; // TODO: do we want this to be mutable?
+    address public immutable exchangeProxy;
 
     /* ========== PUBLIC MUTABLE STORAGE ========== */
-
-    /// @notice Sense core Divider address
-    PoolManager public poolManager;
 
     /// @notice Sense core Divider address
     SpaceFactoryLike public spaceFactory;
@@ -98,14 +94,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     constructor(
         address _divider,
-        address _poolManager,
         address _spaceFactory,
         address _balancerVault,
         address _permit2,
         address _exchangeProxy
     ) Trust(msg.sender) {
         divider = Divider(_divider);
-        poolManager = PoolManager(_poolManager);
         spaceFactory = SpaceFactoryLike(_spaceFactory);
         balancerVault = BalancerVault(_balancerVault);
         permit2 = IPermit2(_permit2);
@@ -138,11 +132,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         // Space pool is always created for verified adapters whilst is optional for unverified ones.
         // Automatically queueing series is only for verified adapters
         if (verified[adapter]) {
-            if (address(poolManager) == address(0)) {
-                spaceFactory.create(adapter, maturity);
-            } else {
-                poolManager.queueSeries(adapter, maturity, spaceFactory.create(adapter, maturity));
-            }
+            spaceFactory.create(adapter, maturity);
         } else {
             if (withPool) {
                 spaceFactory.create(adapter, maturity);
@@ -478,13 +468,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         spaceFactory = SpaceFactoryLike(newSpaceFactory);
     }
 
-    /// @notice Update the address for the Pool Manager
-    /// @param newPoolManager The Pool Manager addresss to set
-    function setPoolManager(address newPoolManager) external requiresTrust {
-        emit PoolManagerChanged(address(poolManager), newPoolManager);
-        poolManager = PoolManager(newPoolManager);
-    }
-
     /// @dev Verifies an Adapter and optionally adds the Target to the money market
     /// @param adapter Adapter to verify
     function verifyAdapter(address adapter, bool addToPool) public requiresTrust {
@@ -493,7 +476,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     function _verifyAdapter(address adapter, bool addToPool) private {
         verified[adapter] = true;
-        if (addToPool && address(poolManager) != address(0)) poolManager.addTarget(Adapter(adapter).target(), adapter);
         emit AdapterVerified(adapter);
     }
 
@@ -953,8 +935,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 refundAmt = address(this).balance;
         if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
         payable(msg.sender).transfer(refundAmt);
-        // TODO: if sellToken or buyToken does not match the swapCallData, then BoughtTokens
-        // will have the wrong params.
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
     }
 
@@ -1056,7 +1036,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     event FactoryChanged(address indexed factory, bool indexed isOn);
     event SpaceFactoryChanged(address oldSpaceFactory, address newSpaceFactory);
-    event PoolManagerChanged(address oldPoolManager, address newPoolManager);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);

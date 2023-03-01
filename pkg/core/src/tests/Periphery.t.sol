@@ -4,7 +4,6 @@ pragma solidity 0.8.15;
 import { FixedMath } from "../external/FixedMath.sol";
 import { Periphery } from "../Periphery.sol";
 import { Token } from "../tokens/Token.sol";
-import { PoolManager, ComptrollerLike } from "@sense-finance/v1-fuse/PoolManager.sol";
 import { BaseAdapter } from "../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../adapters/abstract/factories/BaseFactory.sol";
 import { TestHelper, MockTargetLike } from "./test-helpers/TestHelper.sol";
@@ -12,7 +11,6 @@ import { MockToken } from "./test-helpers/mocks/MockToken.sol";
 import { MockTarget } from "./test-helpers/mocks/MockTarget.sol";
 import { MockAdapter, MockCropAdapter } from "./test-helpers/mocks/MockAdapter.sol";
 import { MockFactory, MockCropFactory, Mock4626CropFactory } from "./test-helpers/mocks/MockFactory.sol";
-import { MockPoolManager } from "./test-helpers/mocks/MockPoolManager.sol";
 import { MockSpacePool } from "./test-helpers/mocks/MockSpace.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
@@ -25,12 +23,10 @@ contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
 
     function testDeployPeriphery() public {
-        MockPoolManager poolManager = new MockPoolManager();
         address spaceFactory = address(2);
         address balancerVault = address(3);
         Periphery somePeriphery = new Periphery(
             address(divider),
-            address(poolManager),
             spaceFactory,
             balancerVault,
             address(permit2),
@@ -38,7 +34,6 @@ contract PeripheryTest is TestHelper {
         );
         assertTrue(address(somePeriphery) != address(0));
         assertEq(address(Periphery(somePeriphery).divider()), address(divider));
-        assertEq(address(Periphery(somePeriphery).poolManager()), address(poolManager));
         assertEq(address(Periphery(somePeriphery).spaceFactory()), address(spaceFactory));
         assertEq(address(Periphery(somePeriphery).balancerVault()), address(balancerVault));
     }
@@ -66,8 +61,8 @@ contract PeripheryTest is TestHelper {
         assertTrue(address(spaceFactory.pool()) != address(0));
 
         // check pt and YTs onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
     function testSponsorSeriesWhenUnverifiedAdapter() public {
@@ -103,95 +98,97 @@ contract PeripheryTest is TestHelper {
         assertTrue(address(spaceFactory.pool()) != address(0));
 
         // check pt and YTs NOT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.NONE);
+        // (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.NONE);
     }
 
-    function testSponsorSeriesWhenUnverifiedAdapterAndWithPoolFalse() public {
-        divider.setPermissionless(true);
+    // Pool Manager tests (commented since we removed this feature from the Periphery)
 
-        BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
-            oracle: ORACLE,
-            stake: address(stake),
-            stakeSize: STAKE_SIZE,
-            minm: MIN_MATURITY,
-            maxm: MAX_MATURITY,
-            mode: 0,
-            tilt: 0,
-            level: DEFAULT_LEVEL
-        });
-        MockCropAdapter adapter = new MockCropAdapter(
-            address(divider),
-            address(target),
-            !is4626Target ? target.underlying() : target.asset(),
-            Constants.REWARDS_RECIPIENT,
-            ISSUANCE_FEE,
-            adapterParams,
-            address(reward)
-        );
+    // function testSponsorSeriesWhenUnverifiedAdapterAndWithPoolFalse() public {
+    //     divider.setPermissionless(true);
 
-        divider.addAdapter(address(adapter));
+    //     BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
+    //         oracle: ORACLE,
+    //         stake: address(stake),
+    //         stakeSize: STAKE_SIZE,
+    //         minm: MIN_MATURITY,
+    //         maxm: MAX_MATURITY,
+    //         mode: 0,
+    //         tilt: 0,
+    //         level: DEFAULT_LEVEL
+    //     });
+    //     MockCropAdapter adapter = new MockCropAdapter(
+    //         address(divider),
+    //         address(target),
+    //         !is4626Target ? target.underlying() : target.asset(),
+    //         Constants.REWARDS_RECIPIENT,
+    //         ISSUANCE_FEE,
+    //         adapterParams,
+    //         address(reward)
+    //     );
 
-        uint256 maturity = getValidMaturity(2021, 10);
-        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
-        vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(
-            address(adapter),
-            maturity,
-            false,
-            data,
-            _getQuote(address(stake), address(stake))
-        );
+    //     divider.addAdapter(address(adapter));
 
-        // check pt and yt deployed
-        assertTrue(pt != address(0));
-        assertTrue(yt != address(0));
+    //     uint256 maturity = getValidMaturity(2021, 10);
+    //     Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
+    //     vm.prank(bob);
+    //     (address pt, address yt) = periphery.sponsorSeries(
+    //         address(adapter),
+    //         maturity,
+    //         false,
+    //         data,
+    //         _getQuote(address(stake), address(stake))
+    //     );
 
-        // check Space pool is NOT deployed
-        assertTrue(address(spaceFactory.pool()) == address(0));
+    //     // check pt and yt deployed
+    //     assertTrue(pt != address(0));
+    //     assertTrue(yt != address(0));
 
-        // check pt and YTs NOT onboarded on PoolManager (Fuse)
-        (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
-        assertTrue(status == PoolManager.SeriesStatus.NONE);
-    }
+    //     // check Space pool is NOT deployed
+    //     assertTrue(address(spaceFactory.pool()) == address(0));
 
-    function testSponsorSeriesWhenPoolManagerZero() public {
-        periphery.setPoolManager(address(0));
-        periphery.verifyAdapter(address(adapter), true);
+    //     // check pt and YTs NOT onboarded on PoolManager (Fuse)
+    //     (PoolManager.SeriesStatus status, ) = PoolManager(address(poolManager)).sSeries(address(adapter), maturity);
+    //     assertTrue(status == PoolManager.SeriesStatus.NONE);
+    // }
 
-        // try sponsoring
-        uint256 maturity = getValidMaturity(2021, 10);
-        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
-        vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(
-            address(adapter),
-            maturity,
-            true,
-            data,
-            _getQuote(address(stake), address(stake))
-        );
-        assertTrue(yt != address(0));
-    }
+    // function testSponsorSeriesWhenPoolManagerZero() public {
+    //     periphery.setPoolManager(address(0));
+    //     periphery.verifyAdapter(address(adapter), true);
 
-    function testFailSponsorSeriesWhenPoolManagerZero() public {
-        periphery.setPoolManager(address(0));
-        periphery.verifyAdapter(address(adapter), true);
+    //     // try sponsoring
+    //     uint256 maturity = getValidMaturity(2021, 10);
+    //     Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
+    //     vm.prank(bob);
+    //     (, address yt) = periphery.sponsorSeries(
+    //         address(adapter),
+    //         maturity,
+    //         true,
+    //         data,
+    //         _getQuote(address(stake), address(stake))
+    //     );
+    //     assertTrue(yt != address(0));
+    // }
 
-        // try sponsoring
-        uint256 maturity = getValidMaturity(2021, 10);
-        vm.expectEmit(false, false, false, false);
-        emit SeriesQueued(address(1), 2, address(3));
-        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
-        vm.prank(bob);
-        (, address yt) = periphery.sponsorSeries(
-            address(adapter),
-            maturity,
-            true,
-            data,
-            _getQuote(address(stake), address(stake))
-        );
-        assertTrue(yt != address(0));
-    }
+    // function testFailSponsorSeriesWhenPoolManagerZero() public {
+    //     periphery.setPoolManager(address(0));
+    //     periphery.verifyAdapter(address(adapter), true);
+
+    //     // try sponsoring
+    //     uint256 maturity = getValidMaturity(2021, 10);
+    //     vm.expectEmit(false, false, false, false);
+    //     emit SeriesQueued(address(1), 2, address(3));
+    //     Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
+    //     vm.prank(bob);
+    //     (, address yt) = periphery.sponsorSeries(
+    //         address(adapter),
+    //         maturity,
+    //         true,
+    //         data,
+    //         _getQuote(address(stake), address(stake))
+    //     );
+    //     assertTrue(yt != address(0));
+    // }
 
     function testDeployAdapter() public {
         // add a new target to the factory supported targets
@@ -212,8 +209,8 @@ contract PeripheryTest is TestHelper {
         // onboard target
         address[] memory rewardTokens;
         periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
-        assertTrue(cTarget != address(0));
+        // address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        // assertTrue(cTarget != address(0));
     }
 
     function testDeployCropAdapter() public {
@@ -263,8 +260,8 @@ contract PeripheryTest is TestHelper {
         // onboard target
         address[] memory rewardTokens;
         periphery.deployAdapter(cropFactory, address(newTarget), abi.encode(rewardTokens));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
-        assertTrue(cTarget != address(0));
+        // address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        // assertTrue(cTarget != address(0));
     }
 
     function testDeployAdapterWhenPermissionless() public {
@@ -277,8 +274,8 @@ contract PeripheryTest is TestHelper {
         // onboard target
         address[] memory rewardTokens;
         periphery.deployAdapter(address(factory), address(newTarget), abi.encode(rewardTokens));
-        address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
-        assertTrue(cTarget != address(0));
+        // address cTarget = ComptrollerLike(poolManager.comptroller()).cTokensByUnderlying(address(newTarget));
+        // assertTrue(cTarget != address(0));
     }
 
     function testCantDeployAdapterIfTargetIsNotSupportedOnSpecificAdapter() public {
@@ -306,25 +303,25 @@ contract PeripheryTest is TestHelper {
 
     /* ========== admin update storage addresses ========== */
 
-    function testUpdatePoolManager() public {
-        address oldPoolManager = address(periphery.poolManager());
+    // function testUpdatePoolManager() public {
+    //     address oldPoolManager = address(periphery.poolManager());
 
-        vm.record();
-        address NEW_POOL_MANAGER = address(0xbabe);
+    //     vm.record();
+    //     address NEW_POOL_MANAGER = address(0xbabe);
 
-        // Expect the new Pool Manager to be set, and for a "change" event to be emitted
-        vm.expectEmit(true, false, false, true);
-        emit PoolManagerChanged(oldPoolManager, NEW_POOL_MANAGER);
+    //     // Expect the new Pool Manager to be set, and for a "change" event to be emitted
+    //     vm.expectEmit(true, false, false, true);
+    //     emit PoolManagerChanged(oldPoolManager, NEW_POOL_MANAGER);
 
-        // 1. Update the Pool Manager address
-        periphery.setPoolManager(NEW_POOL_MANAGER);
-        (, bytes32[] memory writes) = vm.accesses(address(periphery));
+    //     // 1. Update the Pool Manager address
+    //     periphery.setPoolManager(NEW_POOL_MANAGER);
+    //     (, bytes32[] memory writes) = vm.accesses(address(periphery));
 
-        // Check that the storage slot was updated correctly
-        assertEq(address(periphery.poolManager()), NEW_POOL_MANAGER);
-        // Check that only one storage slot was written to
-        assertEq(writes.length, 1);
-    }
+    //     // Check that the storage slot was updated correctly
+    //     assertEq(address(periphery.poolManager()), NEW_POOL_MANAGER);
+    //     // Check that only one storage slot was written to
+    //     assertEq(writes.length, 1);
+    // }
 
     function testUpdateSpaceFactory() public {
         address oldSpaceFactory = address(periphery.spaceFactory());
@@ -346,20 +343,20 @@ contract PeripheryTest is TestHelper {
         assertEq(writes.length, 1);
     }
 
-    function testFuzzUpdatePoolManager(address lad) public {
-        vm.record();
-        vm.assume(lad != alice); // For any address other than the testing contract
-        address NEW_POOL_MANAGER = address(0xbabe);
+    // function testFuzzUpdatePoolManager(address lad) public {
+    //     vm.record();
+    //     vm.assume(lad != alice); // For any address other than the testing contract
+    //     address NEW_POOL_MANAGER = address(0xbabe);
 
-        // 1. Impersonate the fuzzed address and try to update the Pool Manager address
-        vm.prank(lad);
-        vm.expectRevert("UNTRUSTED");
-        periphery.setPoolManager(NEW_POOL_MANAGER);
+    //     // 1. Impersonate the fuzzed address and try to update the Pool Manager address
+    //     vm.prank(lad);
+    //     vm.expectRevert("UNTRUSTED");
+    //     periphery.setPoolManager(NEW_POOL_MANAGER);
 
-        (, bytes32[] memory writes) = vm.accesses(address(periphery));
-        // Check that only no storage slots were written to
-        assertEq(writes.length, 0);
-    }
+    //     (, bytes32[] memory writes) = vm.accesses(address(periphery));
+    //     // Check that only no storage slots were written to
+    //     assertEq(writes.length, 0);
+    // }
 
     function testFuzzUpdateSpaceFactory(address lad) public {
         vm.record();
@@ -516,7 +513,7 @@ contract PeripheryTest is TestHelper {
     function testReOnboardVerifiedAdapterAfterUpgradingPeriphery() public {
         Periphery somePeriphery = new Periphery(
             address(divider),
-            address(poolManager),
+            // address(poolManager),
             address(spaceFactory),
             address(balancerVault),
             address(permit2),
@@ -570,37 +567,37 @@ contract PeripheryTest is TestHelper {
         assertTrue(periphery.verified(address(otherAdapter)));
     }
 
-    function testAdminVerifyAdapterWhenPoolManagerZero() public {
-        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTargetLike otherTarget = MockTargetLike(
-            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
-        );
-        MockAdapter otherAdapter = MockAdapter(
-            deployMockAdapter(address(divider), address(otherTarget), address(reward))
-        );
-        periphery.setPoolManager(address(0));
+    // function testAdminVerifyAdapterWhenPoolManagerZero() public {
+    //     MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+    //     MockTargetLike otherTarget = MockTargetLike(
+    //         deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+    //     );
+    //     MockAdapter otherAdapter = MockAdapter(
+    //         deployMockAdapter(address(divider), address(otherTarget), address(reward))
+    //     );
+    //     periphery.setPoolManager(address(0));
 
-        periphery.verifyAdapter(address(otherAdapter), true);
+    //     periphery.verifyAdapter(address(otherAdapter), true);
 
-        assertTrue(periphery.verified(address(otherAdapter)));
-    }
+    //     assertTrue(periphery.verified(address(otherAdapter)));
+    // }
 
-    function testFailAdminVerifyAdapterWhenPoolManagerZero() public {
-        MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
-        MockTargetLike otherTarget = MockTargetLike(
-            deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
-        );
-        MockAdapter otherAdapter = MockAdapter(
-            deployMockAdapter(address(divider), address(otherTarget), address(reward))
-        );
-        periphery.setPoolManager(address(0));
+    // function testFailAdminVerifyAdapterWhenPoolManagerZero() public {
+    //     MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
+    //     MockTargetLike otherTarget = MockTargetLike(
+    //         deployMockTarget(address(otherUnderlying), "Compound Usdc", "cUSDC", 18)
+    //     );
+    //     MockAdapter otherAdapter = MockAdapter(
+    //         deployMockAdapter(address(divider), address(otherTarget), address(reward))
+    //     );
+    //     periphery.setPoolManager(address(0));
 
-        vm.expectEmit(false, false, false, false);
-        emit TargetAdded(address(1), address(2));
-        periphery.verifyAdapter(address(otherAdapter), true);
+    //     vm.expectEmit(false, false, false, false);
+    //     emit TargetAdded(address(1), address(2));
+    //     periphery.verifyAdapter(address(otherAdapter), true);
 
-        assertTrue(periphery.verified(address(otherAdapter)));
-    }
+    //     assertTrue(periphery.verified(address(otherAdapter)));
+    // }
 
     function testCantVerifyAdapterNonAdmin() public {
         MockToken otherUnderlying = new MockToken("Usdc", "USDC", 18);
@@ -1968,7 +1965,7 @@ contract PeripheryTest is TestHelper {
 
     event FactoryChanged(address indexed factory, bool indexed isOn);
     event SpaceFactoryChanged(address oldSpaceFactory, address newSpaceFactory);
-    event PoolManagerChanged(address oldPoolManager, address newPoolManager);
+    // event PoolManagerChanged(address oldPoolManager, address newPoolManager);
     event SeriesSponsored(address indexed adapter, uint256 indexed maturity, address indexed sponsor);
     event AdapterDeployed(address indexed adapter);
     event AdapterOnboarded(address indexed adapter);
