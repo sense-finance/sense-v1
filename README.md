@@ -191,7 +191,7 @@ To create a new task:
 
     After successfully executing the task, Hardhat would have saved the resulting deployments (contract addresses along their abi, bytecode, metadata...) on `pkg/deployments/deployments`. **Move that folder inside `pkg/deployments/tasks/YYYYMMYY-TASK_NAME` and rename it to `output`**.
 
-5. Commit and push code to Github.
+5. Commit and push code to GitHub.
 
 *NOTE: check existing tasks as a guide on how to create and execute a new one.*
 
