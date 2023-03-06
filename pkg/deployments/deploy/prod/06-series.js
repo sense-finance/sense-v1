@@ -11,6 +11,7 @@ const {
   tenMillion,
   zeroAddress,
   ONE_YEAR_SECONDS,
+  oneHundred,
 } = require("../../hardhat.utils");
 const log = console.log;
 const permit2Abi = require("./Permit2.json");
@@ -278,7 +279,7 @@ module.exports = async function () {
     }
     [signature, message] = await generatePermit(
       sellToken.address,
-      one(decimals),
+      oneHundred(decimals),
       periphery.address,
       permit2,
       chainId,
@@ -291,7 +292,7 @@ module.exports = async function () {
       await periphery.swapForYTs(
         adapter.address,
         maturity,
-        one(decimals), // we want to swap 1 DAI
+        one(decimals).mul(100), // we want to swap 1 DAI
         quote.buyAmount || one(decimals), // this is the target to borrow (which is 1 DAI swapped to target). We should probably take into account the slippage
         0, // min amount out
         deployer,
@@ -355,7 +356,7 @@ module.exports = async function () {
     log("\n3. Swap DAI for YTs");
     sellAddr = DAI_TOKEN.get(chainId);
     buyAddr = await adapter.underlying();
-    quote = await getQuote(sellAddr, buyAddr, oneEther);
+    quote = await getQuote(sellAddr, buyAddr, ethers.utils.parseEther("100").toString());
     await _swapForYTs(adapter, maturity, quote, signer);
 
     log("\n4. Swap ETH for YTs");
@@ -365,7 +366,7 @@ module.exports = async function () {
     await _swapForYTs(adapter, maturity, quote, signer);
   }
 
-  async function _swapYTs(adapter, maturity, ytAmt, quote, callStatic, signer) {
+  async function _swapYTs(adapter, maturity, ytAmt, quote, callStatic, signer, minAccepted) {
     const buyToken = await ethers.getContractAt(tokenAbi, quote.buyTokenAddress, signer);
     const sellToken = await ethers.getContractAt(tokenAbi, quote.sellTokenAddress, signer);
     const yt = await ethers.getContractAt(tokenAbi, await divider.yt(adapter.address, maturity), signer);
@@ -385,24 +386,18 @@ module.exports = async function () {
 
     if (!callStatic) console.info(` - Swap YTs for ${isETH ? "ETH" : await buyToken.symbol()}...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
-    console.log("quote", quote);
     const fnParams = [
       adapter.address,
       maturity,
       ytAmt,
-      0, // min accepted
+      minAccepted || 0, // min accepted
       deployer,
       { msg: message, sig: signature },
       [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
     ];
-    console.log("LINA", [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data]);
-    console.log("fnParams", fnParams);
     const amtOut = await periphery.callStatic.swapYTs(...fnParams);
-    console.log("amtOut", amtOut);
     if (!callStatic) {
-      console.log("HOLA");
       const receipt = await (await periphery.swapYTs(...fnParams)).wait();
-      console.log("HOLA2");
       console.info(
         `  ${"✔"} Successfully swapped YTs for ${
           quote.sellTokenAddress === zeroAddress()
@@ -432,7 +427,6 @@ module.exports = async function () {
 
     const yt = await ethers.getContractAt(tokenAbi, await divider.yt(adapter.address, maturity), signer);
     let ytAmt = one(await yt.decimals()).div(4);
-    console.log("YT BALANCE:", (await yt.balanceOf(deployer)).toString());
 
     log("\n1. Swap YTs for target");
     const targetAddr = await adapter.target();
@@ -446,7 +440,6 @@ module.exports = async function () {
     };
     await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
 
-    console.log("YT BALANCE:", (await yt.balanceOf(deployer)).toString());
     log("\n2. Swap YTs for underlying");
     const underlyingAddr = await adapter.underlying();
     // since we are swapping underlying, we only need the quote to have the sellTokenAddress with the underlying's address
@@ -459,14 +452,12 @@ module.exports = async function () {
     };
     await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
 
-    console.log("YT BALANCE:", (await yt.balanceOf(deployer)).toString());
     log("\n3. Swap YTs for DAI");
-    ytAmt = fourtyThousand(await yt.decimals());
+    ytAmt = fourtyThousand(await yt.decimals()).div(2);
     sellAddr = await adapter.underlying();
     buyAddr = DAI_TOKEN.get(chainId);
-    // In order to know how much the YT we want to sell is worth in underlying we first do a staticCall and save the `underlyingAmt`
+    // In order to know how much the YT we want to sell is worth in underlying we first do a staticCall and save it in `underlyingAmt`
     // Then, we use this value to generate the quote so then the Periphery will do the underlying to DAI swap on 0x
-    // TODO: check this, sometimes fails...
     const toUnderlyingQuote = {
       sellTokenAddress: zeroAddress(),
       buyTokenAddress: underlyingAddr,
@@ -475,17 +466,30 @@ module.exports = async function () {
       data: "0x",
     };
     let underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true, signer);
-    console.log("UNDERLYING AMOUNT:", underlyingAmt.toString());
-    quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
-    console.log("quote.sellAmount", quote.sellAmount);
-    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
+    // As `underlyingAmt` is an estimation, it may happen that when we actually do the swap from YTs to Target on Space, we receive less
+    // than this. If so, then the 0x swap will fail because it will be trying to pull more than what the Periphery is holding.
+    // So, we have to decrease a little bit the amount of `underlyingAmt` expected.
+    // In the following example, we decrease it by 1%.
+    // NOTE that, after doing the whole swap of YTs for DAI, if there's a remainder of underlying (stETH)
+    // they will be sent back to the user.
+    // QUESTION: What's the ideal buffer? 1%? 0.5%? 0.1%?
+    let scale = await adapter.callStatic.scale();
+    let underlyingAmtMinusBuffer = underlyingAmt.mul(99).div(100);
+    let targetAmtMinusBuffer = underlyingAmtMinusBuffer
+      .mul(ethers.utils.parseEther("1"))
+      .div(scale.toString());
+    quote = await getQuote(sellAddr, buyAddr, underlyingAmtMinusBuffer.toString()); // get quote from 0x-API
+    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer, targetAmtMinusBuffer); // NOTE that minAccepted is in target
 
     log("\n4. Swap YTs for ETH");
     sellAddr = await adapter.underlying();
     buyAddr = ETH_TOKEN.get(chainId);
     underlyingAmt = await _swapYTs(adapter, maturity, ytAmt, toUnderlyingQuote, true, signer);
-    quote = await getQuote(sellAddr, buyAddr, underlyingAmt.toString()); // get quote from 0x-API
-    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer);
+    scale = await adapter.callStatic.scale();
+    underlyingAmtMinusBuffer = underlyingAmt.mul(99).div(100);
+    targetAmtMinusBuffer = underlyingAmtMinusBuffer.mul(ethers.utils.parseEther("1")).div(scale.toString());
+    quote = await getQuote(sellAddr, buyAddr, underlyingAmtMinusBuffer.toString()); // get quote from 0x-API
+    await _swapYTs(adapter, maturity, ytAmt, quote, false, signer, targetAmtMinusBuffer);
   }
 
   async function sponsor(t) {
@@ -685,11 +689,11 @@ module.exports = async function () {
       balances = (await balancerVault.getPoolTokens(poolId)).balances;
 
       log("- add liquidity via target");
-      if (balances[0].lt(oneMillion(decimals).mul(2))) {
+      if (balances[0].lt(oneMillion(decimals))) {
         const quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
         const [signature, message] = await generatePermit(
           target.address,
-          oneMillion(decimals).mul(2),
+          oneMillion(decimals),
           periphery.address,
           permit2,
           chainId,
@@ -699,7 +703,7 @@ module.exports = async function () {
           .addLiquidity(
             adapter.address,
             seriesMaturity,
-            oneMillion(decimals).mul(2),
+            oneMillion(decimals),
             0,
             0,
             1,
@@ -715,7 +719,7 @@ module.exports = async function () {
       balances = (await balancerVault.getPoolTokens(poolId)).balances;
       [signature, message] = await generatePermit(
         pt.address,
-        oneMillion(decimals).mul(2),
+        oneMillion(decimals),
         periphery.address,
         permit2,
         chainId,
@@ -807,6 +811,7 @@ module.exports = async function () {
         .then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
+      log(`Periphery Dust: ${peripheryDust}`);
       // If there's anything more than dust in the Periphery, throw
       if (peripheryDust > 100) {
         throw new Error("Periphery has an unexpected amount of Target dust");

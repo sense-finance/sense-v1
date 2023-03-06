@@ -230,7 +230,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param ptBal Balance of PT to sell
-    /// @param minAccepted Min accepted amount of Target
+    /// @param minAccepted Min accepted amount of Target when selling them on Space // TODO: are we good with this? Or should be minAccepted amount of tokens?
     /// @param receiver Address to receive the Target
     /// @param permit Permit to pull PTs
     /// @param quote Quote with swap details
@@ -249,11 +249,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         amt = _swapSenseToken(adapter, maturity, ptBal, minAccepted, 0, receiver, permit, quote);
     }
 
-    /// @notice Swap YT for Target of a particular series
+    /// @notice Swap YTs of a particular series
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param ytBal Balance of YTs to swap
-    /// @param minAccepted Min accepted amount of Target
+    /// @param minAccepted Min accepted amount of Target when selling them on Space // TODO: are we good with this? Or should be minAccepted amount of tokens? or should we have both minAccepted and minTarget?
     /// @param receiver Address to receive the Target
     /// @param permit Permit to pull YTs
     /// @param quote Quote with swap details
@@ -272,7 +272,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         amt = _swapSenseToken(adapter, maturity, ytBal, minAccepted, 1, receiver, permit, quote);
     }
 
-    // TODO: this is adding quite a lof of code size :( +0.436kb
     function swapYTsForTarget(
         address adapter,
         uint256 maturity,
@@ -296,8 +295,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) private returns (uint256 amt) {
-        // if (address(quote.sellToken) != address(0)   && address(quote.sellToken) != Adapter(adapter).underlying())
-        // revert Errors.InvalidQuote(); // GAS SAVING
         amt = (mode == 1)
             ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, minAccepted, permit)
             : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);

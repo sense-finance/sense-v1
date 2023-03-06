@@ -333,6 +333,7 @@ const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 exports.ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
 
 exports.one = decimals => ethers.utils.parseUnits("1", decimals);
+exports.oneHundred = decimals => ethers.utils.parseUnits("100", decimals);
 exports.fourtyThousand = decimals => ethers.utils.parseUnits("40000", decimals);
 exports.oneMillion = decimals => ethers.utils.parseUnits("1000000", decimals);
 exports.tenMillion = decimals => ethers.utils.parseUnits("10000000", decimals);
