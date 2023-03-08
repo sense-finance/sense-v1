@@ -1,27 +1,41 @@
 const log = console.log;
 const dayjs = require("dayjs");
 const { ethers } = require("hardhat");
-const { getDeployedAdapters } = require("../../hardhat.utils");
+const {
+  getDeployedAdapters,
+  generatePermit,
+  zeroAddress,
+  one,
+  oneMillion,
+  fourtyThousand,
+} = require("../../hardhat.utils");
 
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
 
 module.exports = async function () {
+  const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const signer = await ethers.getSigner(deployer);
 
+  // contracts
   const divider = await ethers.getContract("Divider", signer);
   const stake = await ethers.getContract("STAKE", signer);
   const periphery = await ethers.getContract("Periphery", signer);
+  const { abi: adapterAbi } = await deployments.getArtifact("BaseAdapter");
 
   const chainId = await getChainId();
 
-  const ADAPTER_ABI = [
-    "function stake() public view returns (address)",
-    "function stakeSize() public view returns (uint256)",
-    "function scale() public view returns (uint256)",
-  ];
+  log("\n-------------------------------------------------------");
+  log("\nDeploy the Permit2");
+  await deploy("Permit2Clone", {
+    from: deployer,
+    args: [],
+    log: true,
+  });
+  const permit2 = await ethers.getContract("Permit2Clone", signer);
+
   const adapters = await getDeployedAdapters();
   log("\n-------------------------------------------------------");
   log("SPONSOR SERIES & SANITY CHECK SWAPS");
@@ -54,32 +68,47 @@ module.exports = async function () {
       await target.approve(divider.address, ethers.constants.MaxUint256).then(tx => tx.wait());
     }
 
+    let quote, signature, message;
+    [signature, message] = await generatePermit(zeroAddress(), 0, zeroAddress(), permit2, chainId, signer);
+
     for (let seriesMaturity of series) {
-      const adapter = new ethers.Contract(adapters[targetName], ADAPTER_ABI, signer);
+      const adapter = new ethers.Contract(adapters[targetName], adapterAbi, signer);
+      const [, , stakeSize] = await adapter.getStakeAndTarget();
+
       log(`\nInitializing Series maturing on ${dayjs(seriesMaturity * 1000)} for ${targetName}`);
       let { pt: ptAddress, yt: ytAddress } = await divider.series(adapter.address, seriesMaturity);
       if (ptAddress === ethers.constants.AddressZero) {
+        const [signature, message] = await generatePermit(
+          stake.address,
+          stakeSize,
+          periphery.address,
+          permit2,
+          chainId,
+          signer,
+        );
+        quote = [target.address, target.address, zeroAddress(), zeroAddress(), "0x"];
         const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
           true,
+          { msg: message, sig: signature },
+          quote,
         );
         ptAddress = _ptAddress;
         ytAddress = _ytAddress;
-        await periphery.sponsorSeries(adapter.address, seriesMaturity, true).then(tx => tx.wait());
+        await periphery
+          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote)
+          .then(tx => tx.wait());
       }
 
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
       const pt = new ethers.Contract(ptAddress, tokenAbi, signer);
       const yt = new ethers.Contract(ytAddress, tokenAbi, signer);
       const decimals = await target.decimals();
-      const one = ethers.utils.parseUnits("1", decimals);
-      const fourtyThousand = ethers.utils.parseUnits("40000", decimals);
-      const oneMillion = ethers.utils.parseUnits("1000000", decimals);
 
       log("Have the deployer issue the first 1,000,000 Target worth of PT/YT for this Series");
-      if (!(await pt.balanceOf(deployer)).gte(fourtyThousand)) {
-        await divider.issue(adapter.address, seriesMaturity, oneMillion).then(tx => tx.wait());
+      if (!(await pt.balanceOf(deployer)).gte(fourtyThousand(decimals))) {
+        await divider.issue(adapter.address, seriesMaturity, oneMillion(decimals)).then(tx => tx.wait());
       }
 
       const { abi: spaceAbi } = await deployments.getArtifact("lib/v1-space/src/Space.sol:Space");
@@ -118,9 +147,20 @@ module.exports = async function () {
       let balances = data.balances;
 
       log("- adding liquidity via target");
-      if (balances[0].lt(one)) {
+      if (balances[0].lt(one(decimals))) {
+        quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
         await periphery
-          .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0, deployer)
+          .addLiquidity(
+            adapter.address,
+            seriesMaturity,
+            one(decimals),
+            0,
+            0,
+            1,
+            deployer,
+            { msg: message, sig: signature },
+            quote,
+          )
           .then(t => t.wait());
       }
 
@@ -128,8 +168,22 @@ module.exports = async function () {
       log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
       let lpBalance = await pool.balanceOf(deployer);
       if (lpBalance.gte(ethers.utils.parseEther("0"))) {
+        quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
         await periphery
-          .removeLiquidity(adapter.address, seriesMaturity, lpBalance, [0, 0], 0, false, deployer)
+          .removeLiquidity(
+            adapter.address,
+            seriesMaturity,
+            lpBalance,
+            [0, 0],
+            0,
+            false,
+            deployer,
+            {
+              msg: message,
+              sig: signature,
+            },
+            quote,
+          )
           .then(t => t.wait());
       }
 
@@ -137,23 +191,43 @@ module.exports = async function () {
       balances = data.balances;
 
       log("- adding liquidity via target");
-      if (balances[0].lt(oneMillion.mul(2))) {
+      if (balances[0].lt(oneMillion(decimals).mul(2))) {
+        quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
         await periphery
-          .addLiquidityFromTarget(adapter.address, seriesMaturity, oneMillion.mul(2), 1, 0, deployer)
+          .addLiquidity(
+            adapter.address,
+            seriesMaturity,
+            oneMillion(decimals).mul(2),
+            0,
+            0,
+            1,
+            deployer,
+            { msg: message, sig: signature },
+            quote,
+          )
           .then(t => t.wait());
       }
 
       log("Making swap to init PT");
+      quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
       await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, fourtyThousand, 0, deployer)
+        .swapPTs(
+          adapter.address,
+          seriesMaturity,
+          fourtyThousand(decimals),
+          0,
+          deployer,
+          { msg: message, sig: signature },
+          quote,
+        )
         .then(t => t.wait());
 
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
 
-      const ptIn = one.div(10);
+      const ptIn = one(decimals).div(10);
       const principalPriceInTarget = await balancerVault.callStatic
         .swap(
           {
@@ -196,30 +270,78 @@ module.exports = async function () {
       // Sanity check that all the swaps on this testchain are working
       log(`--- Sanity check swaps ---`);
 
+      quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+
       log("swapping target for pt");
       await periphery
-        .swapTargetForPTs(adapter.address, seriesMaturity, one, 0, deployer)
+        .swapForPTs(
+          adapter.address,
+          seriesMaturity,
+          one(decimals),
+          0,
+          deployer,
+          { msg: message, sig: signature },
+          quote,
+        )
         .then(tx => tx.wait());
 
-      log("swapping target for yields");
+      log("swapping target for yt");
       await periphery
-        .swapTargetForYTs(adapter.address, seriesMaturity, one, one, one, deployer)
+        .swapForYTs(
+          adapter.address,
+          seriesMaturity,
+          one(decimals),
+          one(decimals),
+          one(decimals),
+          deployer,
+          { msg: message, sig: signature },
+          quote,
+        )
         .then(tx => tx.wait());
+
+      quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
 
       log("swapping pt for target");
       await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
       await periphery
-        .swapPTsForTarget(adapter.address, seriesMaturity, one.div(2), 0, deployer)
+        .swapPTs(
+          adapter.address,
+          seriesMaturity,
+          one(decimals).div(2),
+          0,
+          deployer,
+          { msg: message, sig: signature },
+          quote,
+        )
         .then(tx => tx.wait());
 
-      log("swapping yields for target");
+      log("swapping yt for target");
       await periphery
-        .swapYTsForTarget(adapter.address, seriesMaturity, one.div(2), deployer)
+        .swapYTs(
+          adapter.address,
+          seriesMaturity,
+          one(decimals).div(2),
+          0,
+          deployer,
+          { msg: message, sig: signature },
+          quote,
+        )
         .then(tx => tx.wait());
 
       log("adding liquidity via target");
+      quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
       await periphery
-        .addLiquidityFromTarget(adapter.address, seriesMaturity, one, 1, 0, deployer)
+        .addLiquidity(
+          adapter.address,
+          seriesMaturity,
+          one(decimals),
+          0,
+          0,
+          1,
+          deployer,
+          { msg: message, sig: signature },
+          quote,
+        )
         .then(t => t.wait());
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
