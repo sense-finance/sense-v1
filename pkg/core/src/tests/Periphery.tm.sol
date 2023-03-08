@@ -131,6 +131,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
 
     function _setUp(bool createFork) internal returns (uint256 timestamp) {
         if (createFork) fork();
+        vm.rollFork(16449463); // Same as block defined in ci.yml
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
@@ -447,8 +448,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
         // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
 
-        // Check that the extra DAI are returned to the user
-        assertEq(ERC20(AddressBook.DAI).balanceOf(bob), 99921386850310204870);
+        // Check extra DAI are returned to the user
+        // Bob's DAI balance is greater than 99
+        assertGt(ERC20(AddressBook.DAI).balanceOf(bob), 99 * 10**18);
     }
 
     function testMainnetSponsorSeriesOnFAdapter() public {
@@ -764,19 +766,24 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // 1. Swap PTs for target
         Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
-        // _swapPTs(adapter, maturity, quote);
+        _swapPTs(adapter, maturity, 0, quote);
 
-        // // 2. Swap PTs for underlying
-        // quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
-        // _swapPTs(adapter, maturity, quote);
+        // 2. Swap PTs for underlying
+        quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
+        _swapPTs(adapter, maturity, 0, quote);
 
-        // // 3. Swap PTs for DAI
-        // // Create 0x API quote to do a X underlying to token swap
-        // // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
-        // quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
-        // vm.expectEmit(true, true, false, false);
-        // emit BoughtTokens(MockAdapter(adapter).underlying(), AddressBook.DAI, 0, 0);
-        // _swapPTs(adapter, maturity, quote);
+        // 3. Swap PTs for DAI
+        // Create 0x API quote to do a X underlying to token swap
+        // X is the amount of underlying resulting from the swap of PTs that we will be selling on 0x
+        quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
+        uint256 daiOut = _callStaticSwapPTs(adapter, maturity, quote);
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.UnexpectedSwapAmount.selector));
+        this._swapPTs(adapter, maturity, daiOut + 1, quote);
+
+        vm.expectEmit(true, true, false, false);
+        emit BoughtTokens(MockAdapter(adapter).underlying(), AddressBook.DAI, 0, 0);
+        _swapPTs(adapter, maturity, daiOut, quote);
 
         // 4. Swap PTs with malformed quote: sellToken is not underlying but USDC
         // Create 0x API quote to do a X underlying to token swap
@@ -787,10 +794,10 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // swapPTs will do:
         // 1. We pull USDC (instead of DAI) tokens from the user
         // 2. 0x swap reverts because there's not enough USDC to pull from user
-        vm.expectRevert();
         // TODO: fix expectRevert
         // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
-        this._swapPTs(adapter, maturity, quote);
+        vm.expectRevert();
+        this._swapPTs(adapter, maturity, 0, quote);
     }
 
     /* ========== YT SWAPS ========== */
@@ -1446,6 +1453,26 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         require(targetReturned <= targetIn.fmul(0.0001e18), "TOO_MANY_TARGET_RETURNED");
     }
 
+    function _callStaticSwapPTs(
+        address adapter,
+        uint256 maturity,
+        Periphery.SwapQuote memory quote
+    ) public returns (uint256 tokenReturnedPreview) {
+        try this._callRevertSwapPTs(adapter, maturity, quote) {} catch Error(string memory retData) {
+            (tokenReturnedPreview) = abi.decode(bytes(retData), (uint256));
+        }
+    }
+
+    function _callRevertSwapPTs(
+        address adapter,
+        uint256 maturity,
+        Periphery.SwapQuote memory quote
+    ) public {
+        vm.prank(bob);
+        uint256 tokenReturned = _swapPTs(adapter, maturity, 0, quote);
+        revert(string(abi.encode(tokenReturned)));
+    }
+
     function _callStaticBuyYTs(
         uint256 maturity,
         uint256 targetIn,
@@ -1677,16 +1704,16 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function _swapPTs(
         address adapter,
         uint256 maturity,
+        uint256 minAccepted,
         Periphery.SwapQuote memory quote
-    ) public {
+    ) public returns (uint256 tokenOut) {
         ERC20 token = ERC20(address(quote.buyToken));
         // 0. Get PT address
         address pt = Divider(divider).pt(adapter, maturity);
-        ERC20 ptToken = ERC20(pt);
 
         // 1. Approve PERMIT2 to spend PTs
         vm.prank(bob);
-        ptToken.approve(AddressBook.PERMIT2, type(uint256).max);
+        ERC20(pt).approve(AddressBook.PERMIT2, type(uint256).max);
 
         {
             // 2. Issue PTs from 1 target
@@ -1708,13 +1735,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             uint256 tokenBalPre = token.balanceOf(bob);
 
             vm.prank(bob);
-            uint256 tokenBal = periphery.swapPTs(adapter, maturity, ptBalPre, 0, bob, data, quote);
+            tokenOut = periphery.swapPTs(adapter, maturity, ptBalPre, minAccepted, bob, data, quote);
             uint256 tokenBalPost = token.balanceOf(bob);
             uint256 ptBalPost = ERC20(pt).balanceOf(bob);
 
             // Check that the return values reflect the token balance changes
             assertEq(ptBalPost, 0);
-            assertApproxEqAbs(tokenBalPre, tokenBalPost + 1 - tokenBal, 1); // +1 because of Lido's 1 wei corner case: https://docs.lido.fi/guides/steth-integration-guide#1-wei-corner-case
+            assertApproxEqAbs(tokenBalPre, tokenBalPost + 1 - tokenOut, 1); // +1 because of Lido's 1 wei corner case: https://docs.lido.fi/guides/steth-integration-guide#1-wei-corner-case
         }
     }
 

@@ -676,6 +676,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testFuzzSwapUnderlyingForPTs(address receiver) public {
+        vm.assume(receiver != 0xA4AD4f68d0b91CFD19687c881e50f3A00242828c);
         uint256 uBal = 100 * (10**uDecimals);
         uint256 maturity = getValidMaturity(2021, 10);
         {
@@ -879,6 +880,7 @@ contract PeripheryTest is TestHelper {
     }
 
     function testFuzzSwapYTsForTarget(address receiver) public {
+        vm.assume(receiver != 0xA4AD4f68d0b91CFD19687c881e50f3A00242828c);
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));

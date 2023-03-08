@@ -227,11 +227,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     }
 
     /// @notice Swap PTs of a particular series
-    /// @param adapter Adapter address for the Series
-    /// @param maturity Maturity date for the Series
+    /// @param adapter Adapter address for the series
+    /// @param maturity Maturity date for the series
     /// @param ptBal Balance of PT to sell
-    /// @param minAccepted Min accepted amount of Target when selling them on Space // TODO: are we good with this? Or should be minAccepted amount of tokens?
-    /// @param receiver Address to receive the Target
+    /// @param minAccepted Min accepted amount of tokens when selling them on Space
+    /// @param receiver Address to receive the tokens
     /// @param permit Permit to pull PTs
     /// @param quote Quote with swap details
     /// @return amt amount of tokens received
@@ -253,7 +253,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param ytBal Balance of YTs to swap
-    /// @param minAccepted Min accepted amount of Target when selling them on Space // TODO: are we good with this? Or should be minAccepted amount of tokens? or should we have both minAccepted and minTarget?
+    /// @param minAccepted Min accepted amount of tokens when selling them on Space
     /// @param receiver Address to receive the Target
     /// @param permit Permit to pull YTs
     /// @param quote Quote with swap details
@@ -282,7 +282,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0),
             "0x"
         );
-        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, 0, permit);
+        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit);
     }
 
     function _swapSenseToken(
@@ -296,10 +296,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         SwapQuote calldata quote
     ) private returns (uint256 amt) {
         amt = (mode == 1)
-            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, minAccepted, permit)
-            : _swapPTsForTarget(adapter, maturity, sellAmt, minAccepted, permit);
+            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, permit)
+            : _swapPTsForTarget(adapter, maturity, sellAmt, permit);
         amt = _fromTarget(adapter, amt, quote);
 
+        if (amt < minAccepted) revert Errors.UnexpectedSwapAmount();
         _transfer(quote.buyToken, receiver, amt);
 
         // transfer any remaining underlying to receiver
@@ -531,7 +532,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ptBal,
-        uint256 minAccepted,
         PermitData calldata permit
     ) internal returns (uint256 tBal) {
         _transferFrom(permit, divider.pt(adapter, maturity), ptBal);
@@ -544,7 +544,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 Adapter(adapter).target(),
                 ptBal,
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
-                minAccepted,
+                0,
                 payable(address(this))
             );
         }
@@ -567,7 +567,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
-        uint256 minAccepted,
         PermitData calldata permit
     ) public returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
@@ -603,9 +602,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         // Flash borrow target (following actions in `onFlashLoan`)
         tBal = _flashBorrowAndSwapFromYTs(adapter, maturity, ytBal, targetToBorrow);
-
-        // Check that we got enough target
-        if (tBal < minAccepted) revert Errors.InvalidPrice();
     }
 
     /// @return tAmount if mode = 0, target received from selling YTs, otherwise, returns 0
@@ -640,10 +636,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
-                    minAccepted,
-                    permit // we send the permit thought it won't be used
-                    // PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
+                    permit // we send permit thought it won't be used
                 );
+                // Check that we got enough target
+                if (tAmount < minAccepted) revert Errors.UnexpectedSwapAmount();
 
                 // 3. Send remaining Target to the receiver
                 ERC20(Adapter(adapter).target()).safeTransfer(receiver, tAmount);
@@ -926,7 +922,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         sellAmount =
             sellAmount -
             (address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this)));
-        if (boughtAmount == 0 || sellAmount == 0) revert Errors.ZeroSwapAmt(); // TODO: do we want to add this check?
+        if (boughtAmount == 0 || sellAmount == 0) revert Errors.ZeroSwapAmt();
 
         // Refund any unspent protocol fees (paid in ether) to the sender.
         uint256 refundAmt = address(this).balance;
@@ -961,6 +957,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     /// @notice Given an amount and a quote, decides whether it needs to unwrap and make a swap on 0x,
     /// simply unwrap tokens or do nothing
+    /// @dev when swapping via 0x, the quote needs the amount of underlying that will be received from
+    // the unwrapTarget. This calculation is done off-chain.
     function _fromTarget(
         address adapter,
         uint256 _amt,
@@ -971,9 +969,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         } else if (address(quote.buyToken) == Adapter(adapter).underlying()) {
             amt = Adapter(adapter).unwrapTarget(_amt);
         } else {
-            // TODO:the issue here is that the quote needs to calculate off-chain the amount of underlying that will be received from the unwrapTarget
-            // and this underlying amount is what it is swapped on 0x. What happens if there's a mismatch? Maybe better to do the swap with target?
-            // sell tokens for underlying and wrap into target
             Adapter(adapter).unwrapTarget(_amt);
             amt = _fillQuote(quote);
         }
