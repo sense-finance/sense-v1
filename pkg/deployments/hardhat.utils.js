@@ -217,10 +217,9 @@ exports.generateTokens = async (tokenAddress, to, signer, amt) => {
   const slot = this.STORAGE_SLOT[symbol];
   const index = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
-    [to, typeof this.STORAGE_SLOT[symbol] === "undefined" ? 2 : this.STORAGE_SLOT[symbol]], // key, slot
+    [to, typeof slot === "undefined" ? 2 : slot], // key, slot
   );
 
-  const amt = amount || ethers.utils.parseEther("10000");
   await setStorageAt(
     tokenAddress,
     index.toString(),
