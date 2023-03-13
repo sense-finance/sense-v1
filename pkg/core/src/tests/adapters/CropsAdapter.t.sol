@@ -1654,7 +1654,15 @@ contract CropsAdapters is TestHelper {
     function testPingPongClaimer() public {
         uint256 tBal = 100e18;
         uint256 maturity = getValidMaturity(2021, 10);
-        (, address yt) = periphery.sponsorSeries(address(cropsAdapter), maturity, true);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (, address yt) = periphery.sponsorSeries(
+            address(cropsAdapter),
+            maturity,
+            true,
+            data,
+            _getQuote(address(stake), address(stake))
+        );
 
         PingPongClaimer claimer = new PingPongClaimer();
         vm.prank(Constants.RESTRICTED_ADMIN);

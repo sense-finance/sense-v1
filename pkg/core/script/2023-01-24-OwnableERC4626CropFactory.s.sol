@@ -84,7 +84,7 @@ contract OwnableERC4626CropFactoryScript is Script, StdCheats {
             vm.deal(senseMultisig, 1 ether);
         }
 
-        Periphery periphery = Periphery(addressGuru.periphery());
+        Periphery periphery = Periphery(payable(addressGuru.periphery()));
 
         if (chainId != Constants.MAINNET) {
             // Broadcast following txs from multisig
