@@ -40,7 +40,7 @@ library AddressBook {
 
     // deployed sense contract
     address public constant SPACE_FACTORY_1_2_0 = 0x984682770f1EED90C00cd57B06b151EC12e7c51C;
-    address public constant SPACE_FACTORY_1_3_0 = 0x1621cb1a1A4BA17aF0aD62c6142A7389C81e831D;
+    address public constant SPACE_FACTORY_1_3_0 = 0x9e629751b3FE0b030C219e567156adCB70ad5541;
     address public constant DIVIDER_1_2_0 = 0x86bA3E96Be68563E41c2f5769F1AF9fAf758e6E0;
     address public constant POOL_MANAGER_1_2_0 = 0xf01eb98de53ed964AC3F786b80ED8ce33f05F417;
     address public constant POOL_MANAGER_1_3_0 = 0x9BFcA4882c1D8CDE3b4f787d3d74eb0E1bb0ec1B;
@@ -70,6 +70,12 @@ library AddressBook {
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
     address public constant FRAX_POOL_MANAGER = 0x6b4eE7352406707003bC6f6b96595FD35925af48;
     address public constant ANGLE = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
+
+    // permit2
+    address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
+    // 0x
+    address public constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     /////////// Others ///////////
 

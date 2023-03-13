@@ -27,6 +27,7 @@ contract MockSpacePool is MockToken {
     address public target;
     address public adapter;
     uint256 public oraclePrice = 1e18;
+    bytes32 public poolId;
 
     constructor(
         address _vault,
@@ -41,10 +42,11 @@ contract MockSpacePool is MockToken {
         impliedRateFromPrice = 1e18;
         priceFromImpliedRate = 1e18;
         oraclePrice = 1e18;
+        poolId = bytes32(keccak256(abi.encodePacked(adapter, blockhash(block.number - 1))));
     }
 
     function getPoolId() external view returns (bytes32) {
-        return bytes32(0);
+        return poolId;
     }
 
     function getVault() external view returns (address) {
@@ -155,13 +157,13 @@ contract MockSpacePool is MockToken {
 
 contract MockBalancerVault {
     using FixedMath for uint256;
-    MockSpacePool public yieldSpacePool;
+    MockSpaceFactory public spaceFactory;
     uint256 public constant EXCHANGE_RATE = 0.95e18;
 
     constructor() {}
 
-    function setYieldSpace(address _yieldSapcePool) external {
-        yieldSpacePool = MockSpacePool(_yieldSapcePool);
+    function setSpaceFactory(address _spaceFactory) external {
+        spaceFactory = MockSpaceFactory(_spaceFactory);
     }
 
     function swap(
@@ -170,10 +172,11 @@ contract MockBalancerVault {
         uint256 limit,
         uint256 deadline
     ) external payable returns (uint256) {
+        MockSpacePool pool = MockSpacePool(spaceFactory.poolsByPoolId(singleSwap.poolId));
         if (singleSwap.amount == 0) revert("BAL#510");
         Token(address(singleSwap.assetIn)).transferFrom(msg.sender, address(this), singleSwap.amount);
         uint256 amountInOrOut;
-        if (address(singleSwap.assetIn) == yieldSpacePool.pt()) {
+        if (address(singleSwap.assetIn) == pool.pt()) {
             if (singleSwap.kind == BalancerVault.SwapKind.GIVEN_IN) {
                 amountInOrOut = (singleSwap.amount).fmul(EXCHANGE_RATE);
             } else {
@@ -201,7 +204,8 @@ contract MockBalancerVault {
         MockToken(address(assets[0])).transferFrom(sender, address(this), maxAmountsIn[0]);
         MockToken(address(assets[1])).transferFrom(sender, address(this), maxAmountsIn[1]);
         uint256 amountOut = 100e18; // pool tokens
-        MockToken(yieldSpacePool).mint(recipient, amountOut);
+        MockSpacePool pool = MockSpacePool(spaceFactory.poolsByPoolId(poolId));
+        pool.mint(recipient, amountOut);
     }
 
     function exitPool(
@@ -213,7 +217,8 @@ contract MockBalancerVault {
         IAsset[] memory assets = request.assets;
         uint256[] memory minAmountsOut = request.minAmountsOut;
         uint256 lpBal = abi.decode(request.userData, (uint256));
-        MockToken(yieldSpacePool).burn(recipient, lpBal);
+        MockSpacePool pool = MockSpacePool(spaceFactory.poolsByPoolId(poolId));
+        pool.burn(recipient, lpBal);
         MockToken(address(assets[0])).transfer(recipient, minAmountsOut[0]);
         MockToken(address(assets[1])).transfer(recipient, minAmountsOut[1]);
     }
@@ -227,17 +232,19 @@ contract MockBalancerVault {
             uint256 maxBlockNumber
         )
     {
+        MockSpacePool pool = MockSpacePool(spaceFactory.poolsByPoolId(poolId));
         tokens = new ERC20[](2);
-        tokens[0] = ERC20(yieldSpacePool.target());
-        tokens[1] = ERC20(yieldSpacePool.pt());
+        tokens[0] = ERC20(pool.target());
+        tokens[1] = ERC20(pool.pt());
 
         balances = new uint256[](2);
-        balances[0] = ERC20(yieldSpacePool.target()).balanceOf(address(this));
-        balances[1] = ERC20(yieldSpacePool.pt()).balanceOf(address(this));
+        balances[0] = ERC20(pool.target()).balanceOf(address(this));
+        balances[1] = ERC20(pool.pt()).balanceOf(address(this));
     }
 
     function getPool(bytes32 poolId) external view returns (address, BalancerVault.PoolSpecialization) {
-        return (address(yieldSpacePool), BalancerVault.PoolSpecialization.GENERAL);
+        MockSpacePool pool = MockSpacePool(spaceFactory.poolsByPoolId(poolId));
+        return (address(pool), BalancerVault.PoolSpecialization.GENERAL);
     }
 }
 
@@ -247,6 +254,7 @@ contract MockSpaceFactory {
     Divider public divider;
 
     mapping(address => mapping(uint256 => address)) public pools;
+    mapping(bytes32 => address) public poolsByPoolId;
 
     constructor(address _vault, address _divider) {
         vault = MockBalancerVault(_vault);
@@ -254,14 +262,11 @@ contract MockSpaceFactory {
     }
 
     function create(address _adapter, uint256 _maturity) external returns (address) {
-        (address pt, , , , , , , , ) = Divider(divider).series(_adapter, _maturity);
+        address pt = Divider(divider).pt(_adapter, _maturity);
         address _target = Adapter(_adapter).target();
-
         pool = new MockSpacePool(address(vault), _target, pt, _adapter);
         pools[_adapter][_maturity] = address(pool);
-
-        vault.setYieldSpace(address(pool));
-
+        poolsByPoolId[pool.getPoolId()] = address(pool);
         return address(pool);
     }
 }

@@ -24,6 +24,7 @@ import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockToken.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockTarget.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockFactory.sol";
 import "@sense-finance/v1-core/src/tests/test-helpers/mocks/MockERC4626.sol";
+import { Permit2Clone } from "@sense-finance/v1-core/src/tests/test-helpers/Permit2Clone.sol";
 import { CAdapter } from "@sense-finance/v1-core/src/adapters/implementations/compound/CAdapter.sol";
 import { FAdapter } from "@sense-finance/v1-core/src/adapters/implementations/fuse/FAdapter.sol";
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";

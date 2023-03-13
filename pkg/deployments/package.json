@@ -33,6 +33,7 @@
     "@openzeppelin/contracts": "^4.7.3",
     "@sense-finance/v1-core": "workspace:pkg/core",
     "@sense-finance/v1-utils": "workspace:pkg/utils",
+    "@uniswap/permit2-sdk": "^1.2.0",
     "add": "^2.0.6",
     "defender-relay-client": "^1.37.0",
     "fs-extra": "^10.0.1",

@@ -1,17 +1,4 @@
-const {
-  WETH_TOKEN,
-  WSTETH_TOKEN,
-  MASTER_ORACLE,
-  COMP_TOKEN,
-  F156FRAX3CRV_TOKEN,
-  FRAX3CRV_TOKEN,
-  CONVEX_TOKEN,
-  CRV_TOKEN,
-  TRIBE_CONVEX,
-  REWARDS_DISTRIBUTOR_CVX,
-  REWARDS_DISTRIBUTOR_CRV,
-  CDAI_TOKEN,
-} = require("./hardhat.addresses");
+const { WETH_TOKEN, WSTETH_TOKEN, MASTER_ORACLE, COMP_TOKEN, CDAI_TOKEN } = require("./hardhat.addresses");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const en = require("dayjs/locale/en");
@@ -182,7 +169,7 @@ const DEV_ADAPTERS = [
       name: "cUSDC",
       tDecimals: 8,
       uDecimals: 6,
-      guard: ethers.utils.parseEther("1"),
+      guard: ethers.utils.parseEther("100000"),
       series: DEV_SERIES_MATURITIES,
     },
     underlying: "0x0",
@@ -206,7 +193,7 @@ const DEV_ADAPTERS = [
       name: "cBAT",
       tDecimals: 8,
       uDecimals: 6,
-      guard: ethers.utils.parseEther("1"),
+      guard: ethers.utils.parseEther("100000"),
       series: DEV_SERIES_MATURITIES,
     },
     underlying: "0x0",
@@ -230,7 +217,7 @@ const DEV_ADAPTERS = [
       name: "cUSDT",
       tDecimals: 8,
       uDecimals: 6,
-      guard: ethers.utils.parseEther("1"),
+      guard: ethers.utils.parseEther("100000"),
       series: DEV_SERIES_MATURITIES,
     },
     underlying: "0x0",
@@ -404,7 +391,7 @@ const MAINNET_ADAPTERS = [
     target: {
       name: "wstETH",
       address: WSTETH_TOKEN.get(chainId),
-      guard: ethers.utils.parseEther("1"),
+      guard: ethers.constants.MaxUint256,
       series: CUSDC_WSTETH_SERIES_MATURITIES,
     },
     ifee: ethers.utils.parseEther("0.01"),
@@ -421,31 +408,31 @@ const MAINNET_ADAPTERS = [
     },
   }),
   // FAdapter example
-  chainId => ({
-    contractName: "FAdapter",
-    target: {
-      name: "fFRAX3CRV-f-156",
-      address: F156FRAX3CRV_TOKEN.get(chainId),
-      guard: ethers.utils.parseEther("1"),
-      series: CUSDC_WSTETH_SERIES_MATURITIES,
-      comptroller: TRIBE_CONVEX.get(chainId),
-      rewardsTokens: [CRV_TOKEN.get(chainId), CONVEX_TOKEN.get(chainId)],
-      rewardsDistributors: [REWARDS_DISTRIBUTOR_CRV.get(chainId), REWARDS_DISTRIBUTOR_CVX.get(chainId)],
-    },
-    underlying: FRAX3CRV_TOKEN.get(chainId),
-    ifee: ethers.utils.parseEther("0.01"),
-    rType: CROPS,
-    adapterParams: {
-      oracle: MASTER_ORACLE.get(chainId), // oracle address
-      stake: WETH_TOKEN.get(chainId),
-      stakeSize: ethers.utils.parseEther("0.0025"),
-      minm: "0", // 0 weeks
-      maxm: "604800", // 1 week
-      mode: 1, // 0 monthly, 1 weekly;
-      tilt: 0,
-      level: 31,
-    },
-  }),
+  // chainId => ({
+  //   contractName: "FAdapter",
+  //   target: {
+  //     name: "fFRAX3CRV-f-156",
+  //     address: F156FRAX3CRV_TOKEN.get(chainId),
+  //     guard: ethers.utils.parseEther("100000"),
+  //     series: CUSDC_WSTETH_SERIES_MATURITIES,
+  //     comptroller: TRIBE_CONVEX.get(chainId),
+  //     rewardsTokens: [CRV_TOKEN.get(chainId), CONVEX_TOKEN.get(chainId)],
+  //     rewardsDistributors: [REWARDS_DISTRIBUTOR_CRV.get(chainId), REWARDS_DISTRIBUTOR_CVX.get(chainId)],
+  //   },
+  //   underlying: FRAX3CRV_TOKEN.get(chainId),
+  //   ifee: ethers.utils.parseEther("0.01"),
+  //   rType: CROPS,
+  //   adapterParams: {
+  //     oracle: MASTER_ORACLE.get(chainId), // oracle address
+  //     stake: WETH_TOKEN.get(chainId),
+  //     stakeSize: ethers.utils.parseEther("0.0025"),
+  //     minm: "0", // 0 weeks
+  //     maxm: "604800", // 1 week
+  //     mode: 1, // 0 monthly, 1 weekly;
+  //     tilt: 0,
+  //     level: 31,
+  //   },
+  // }),
 ];
 // ------------------------------------
 

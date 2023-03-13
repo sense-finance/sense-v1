@@ -3,10 +3,13 @@ const path = require("path");
 const { exec } = require("child_process");
 const log = console.log;
 const { DefenderRelayProvider, DefenderRelaySigner } = require("defender-relay-client/lib/ethers");
+const { SignatureTransfer } = require("@uniswap/permit2-sdk");
+const { ETH_TOKEN, CHAINS } = require("./hardhat.addresses");
 
 // More info here (https://kndrck.co/posts/local_erc20_bal_mani_w_hh/)
 exports.STORAGE_SLOT = {
   DAI: 2,
+  stETH: 0,
   wstETH: 0,
   WETH: 3,
   USDC: 9,
@@ -205,26 +208,23 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
   }
 };
 
-exports.generateTokens = async (tokenAddress, to, signer, amount) => {
-  const ERC20_ABI = [
-    "function symbol() public view returns (string)",
-    "function balanceOf(address) public view returns (uint256)",
-  ];
-  const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+exports.generateTokens = async (tokenAddress, to, signer, amt) => {
+  const { abi: tokenAbi } = await deployments.getArtifact("Token");
+  const token = new ethers.Contract(tokenAddress, tokenAbi, signer);
   const symbol = await token.symbol();
 
   // Get storage slot index
   const slot = this.STORAGE_SLOT[symbol];
   const index = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
-    [to, typeof slot !== "undefined" ? slot : 2], // key, slot
+    [to, typeof this.STORAGE_SLOT[symbol] === "undefined" ? 2 : this.STORAGE_SLOT[symbol]], // key, slot
   );
 
   const amt = amount || ethers.utils.parseEther("10000");
   await setStorageAt(
     tokenAddress,
     index.toString(),
-    this.toBytes32(amount || ethers.utils.parseEther("10000")).toString(),
+    this.toBytes32(amt || ethers.utils.parseEther("10000000")).toString(),
   );
   if ((await token.balanceOf(to)).eq(0)) {
     throw new Error(`\n - Failed to generate ${amt} ${symbol} to deployer: ${to}`);
@@ -259,3 +259,83 @@ exports.decimalToPercentage = percentage => percentage * 100;
 // e.g 0.05% will return 5
 exports.bpsToDecimal = percentage => percentage * 100;
 exports.decimalToBps = percentage => percentage / 100;
+
+// TODO: is there any better way to calculate nonces? should I use last transaction and have ordered nonces?
+exports.generatePermit = async (token, amount, spender, permit2, chainId, signer) => {
+  const block = await ethers.provider.getBlock("latest");
+  const deadline = block.timestamp + 20; // 20 seconds
+  // const nonce = (await permit2.allowance(signer.address, token, spender)).nonce;
+  // const nonce = await signer.getTransactionCount(signer.address);
+  let nonce = Math.floor(Math.random() * 1000);
+  // let nonceBitmap = await permit2.nonceBitmap(signer.address, nonce);
+  // console.log("Nonce", nonce);
+  // console.log("Nonce bitmap", nonceBitmap);
+  // console.log("Nonce from allowance", (await permit2.allowance(signer.address, token, spender)).nonce)
+  // console.log("Nonce expiration", (await permit2.allowance(signer.address, token, spender)).expiration)
+  const message = {
+    permitted: {
+      token,
+      amount,
+    },
+    nonce,
+    deadline,
+  };
+
+  const { domain, types, values } = SignatureTransfer.getPermitData(
+    { ...message, spender },
+    permit2.address,
+    chainId,
+  );
+  const signature = await signer._signTypedData(domain, types, values);
+  return [signature, message];
+};
+
+// Get a quote from 0x-API to sell the WETH we just deposited into the contract.
+exports.getQuote = async (sellTokenAddr, buyTokenAddr, sellAmount) => {
+  const { abi: tokenAbi } = await deployments.getArtifact("Token");
+  const sellToken = new ethers.Contract(sellTokenAddr, tokenAbi, ethers.provider);
+  const buyToken = new ethers.Contract(buyTokenAddr, tokenAbi, ethers.provider);
+  const sellETH = sellTokenAddr === ETH_TOKEN.get(CHAINS.MAINNET);
+  const buyETH = buyTokenAddr === ETH_TOKEN.get(CHAINS.MAINNET);
+
+  // let decimals = 18;
+  // if (!sellETH) decimals = await sellToken.decimals();
+  // amt = ethers.utils.parseEther(amt, decimals);
+
+  console.info(
+    ` - Fetch swap quote from 0x-API to sell ${ethers.utils.formatEther(sellAmount)} ${
+      sellETH ? "ETH" : await sellToken.symbol()
+    } for ${buyETH ? "ETH" : await buyToken.symbol()}...`,
+  );
+  const qs = createQueryString({
+    sellToken: sellToken.address,
+    buyToken: buyToken.address,
+    sellAmount,
+  });
+  const API_QUOTE_URL = "https://api.0x.org/swap/v1/quote";
+  const quoteUrl = `${API_QUOTE_URL}?${qs}`;
+  console.info(`  * Fetching quote ${quoteUrl}...`);
+  const response = await fetch(quoteUrl);
+  const quote = await response.json();
+  console.info(`  * Received a quote with price ${quote.price}`);
+  return quote;
+};
+
+const createQueryString = params => {
+  return Object.entries(params)
+    .map(([k, v]) => `${k}=${v}`)
+    .join("&");
+};
+
+// utils
+const ONE_MINUTE_MS = 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
+exports.ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
+
+exports.one = decimals => ethers.utils.parseUnits("1", decimals);
+exports.oneHundred = decimals => ethers.utils.parseUnits("100", decimals);
+exports.fourtyThousand = decimals => ethers.utils.parseUnits("40000", decimals);
+exports.oneMillion = decimals => ethers.utils.parseUnits("1000000", decimals);
+exports.tenMillion = decimals => ethers.utils.parseUnits("10000000", decimals);
+
+exports.zeroAddress = () => ethers.constants.AddressZero;

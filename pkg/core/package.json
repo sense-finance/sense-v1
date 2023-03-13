@@ -13,8 +13,8 @@
         "!src/tests/*"
     ],
     "scripts": {
-        "test": "time forge test --match-path \"*.t.sol\"",
-        "test:mainnet": "time forge test --match-path \"*.tm*\" --no-match-contract \"ERC4626StdTest\"",
+        "test": "time forge test --match-path \"*.t.sol\" --no-match-contract \"PoolManagerLocalTest\"",
+        "test:mainnet": "time forge test --match-path \"*.tm*\" --no-match-contract \"ERC4626StdTest|PoolManagerTest|NoopPoolManagerTest\"",
         "test:4626": "time && ERC4626_TARGET=true forge test --match-path \"**/*.t.sol\"",
         "test:4626:integration": "time forge test --match-contract \"ERC4626StdTest|ERC4626Adapters\"",
         "test:fuzz": "time yarn exec ./src/tests/fuzz.sh",

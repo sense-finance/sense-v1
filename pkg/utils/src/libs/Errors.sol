@@ -10,6 +10,7 @@ library Errors {
     error OnlyDivider();
     error OnlyPeriphery();
     error OnlyPermissionless();
+    error OnlyAdapter();
     error RedeemRestricted();
     error Untrusted();
 
@@ -55,6 +56,10 @@ library Errors {
     error FlashUntrustedLoanInitiator();
     error UnexpectedSwapAmount();
     error TooMuchLeftoverTarget();
+    error InvalidExchangeProxy();
+    error ZeroExSwapFailed(bytes);
+    error ZeroSwapAmt();
+    error InvalidQuote();
 
     // Fuse
     error AdapterNotSet();

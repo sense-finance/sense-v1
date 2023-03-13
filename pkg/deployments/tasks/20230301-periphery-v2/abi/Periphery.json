@@ -1,0 +1,1853 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_divider",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_spaceFactory",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_balancerVault",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_permit2",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_exchangeProxy",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "ExistingValue",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FactoryNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FlashBorrowFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FlashUntrustedBorrower",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FlashUntrustedLoanInitiator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidExchangeProxy",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPrice",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyAdapter",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyPermissionless",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SwapTooSmall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "ZeroExSwapFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroSwapAmt",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      }
+    ],
+    "name": "AdapterDeployed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      }
+    ],
+    "name": "AdapterOnboarded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      }
+    ],
+    "name": "AdapterVerified",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sellToken",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyToken",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "sellAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "boughtAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "BoughtTokens",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "factory",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bool",
+        "name": "isOn",
+        "type": "bool"
+      }
+    ],
+    "name": "FactoryChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sponsor",
+        "type": "address"
+      }
+    ],
+    "name": "SeriesSponsored",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldSpaceFactory",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newSpaceFactory",
+        "type": "address"
+      }
+    ],
+    "name": "SpaceFactoryChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "poolId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "assetIn",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "assetOut",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes4",
+        "name": "sig",
+        "type": "bytes4"
+      }
+    ],
+    "name": "Swapped",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "trusted",
+        "type": "bool"
+      }
+    ],
+    "name": "UserTrustUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "targetIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "targetReturned",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "ytOut",
+        "type": "uint256"
+      }
+    ],
+    "name": "YTsPurchased",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ETH",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_YT_SWAP_IN",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PRICE_ESTIMATE_ACCEPTABLE_ERROR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ytBal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      }
+    ],
+    "name": "_swapYTsForTarget",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tBal",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minBptOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "mode",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "addLiquidity",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "issued",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lpShares",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "balancerVault",
+    "outputs": [
+      {
+        "internalType": "contract BalancerVault",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "uBal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions[]",
+                "name": "permitted",
+                "type": "tuple[]"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitBatchTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitBatchData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "combine",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "f",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "deployAdapter",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "divider",
+    "outputs": [
+      {
+        "internalType": "contract Divider",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "exchangeProxy",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "factories",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isTrusted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "issue",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "uBal",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "initiator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountBorrrowed",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "onFlashLoan",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "addAdapter",
+        "type": "bool"
+      }
+    ],
+    "name": "onboardAdapter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "permit2",
+    "outputs": [
+      {
+        "internalType": "contract IPermit2",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lpBal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "minAmountsOut",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "swapPTs",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "removeLiquidity",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ptBal",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "f",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isOn",
+        "type": "bool"
+      }
+    ],
+    "name": "setFactory",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "trusted",
+        "type": "bool"
+      }
+    ],
+    "name": "setIsTrusted",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newSpaceFactory",
+        "type": "address"
+      }
+    ],
+    "name": "setSpaceFactory",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "spaceFactory",
+    "outputs": [
+      {
+        "internalType": "contract SpaceFactoryLike",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "withPool",
+        "type": "bool"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "sponsorSeries",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "pt",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "yt",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "swapForPTs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "ptBal",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetToBorrow",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "swapForYTs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "targetBal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ytBal",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ptBal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "swapPTs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ytBal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAccepted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "contract ERC20",
+                    "name": "token",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct IPermit2.TokenPermissions",
+                "name": "permitted",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPermit2.PermitTransferFrom",
+            "name": "msg",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "sig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.PermitData",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "contract ERC20",
+            "name": "sellToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ERC20",
+            "name": "buyToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "address payable",
+            "name": "swapTarget",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "swapCallData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Periphery.SwapQuote",
+        "name": "quote",
+        "type": "tuple"
+      }
+    ],
+    "name": "swapYTs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maturity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ytBal",
+        "type": "uint256"
+      }
+    ],
+    "name": "swapYTsForTarget",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "verified",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adapter",
+        "type": "address"
+      }
+    ],
+    "name": "verifyAdapter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]

@@ -109,7 +109,7 @@ module.exports = async function () {
     await divider.setGuard(adapterAddress, target.guard).then(tx => tx.wait());
 
     log(`Verify ${contractName} adapter`);
-    await periphery.verifyAdapter(adapterAddress, true).then(tx => tx.wait());
+    await periphery.verifyAdapter(adapterAddress).then(tx => tx.wait());
 
     log(`Onboard ${contractName} adapter`);
     await periphery.onboardAdapter(adapterAddress, true).then(tx => tx.wait());

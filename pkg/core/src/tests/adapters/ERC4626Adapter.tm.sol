@@ -132,7 +132,7 @@ contract ERC4626Adapters is ForkTest {
 
         // Onboard adapter
         vm.prank(AddressBook.SENSE_MULTISIG);
-        Periphery(AddressBook.PERIPHERY_1_4_0).onboardAdapter(address(erc4626Adapter), true);
+        Periphery(payable(AddressBook.PERIPHERY_1_4_0)).onboardAdapter(address(erc4626Adapter), true);
     }
 
     function testMainnetCantWrapMoreThanBalance() public {

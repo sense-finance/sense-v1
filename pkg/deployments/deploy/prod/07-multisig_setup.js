@@ -17,7 +17,6 @@ module.exports = async function () {
 
   let tokenHandler = await ethers.getContract("TokenHandler", deployerSigner);
   let divider = await ethers.getContract("Divider", deployerSigner);
-  let poolManager = await ethers.getContract("PoolManager", deployerSigner);
   let spaceFactory = await ethers.getContract("SpaceFactory", deployerSigner);
   let periphery = await ethers.getContract("Periphery", deployerSigner);
   let emergencyStop = await ethers.getContract("EmergencyStop", deployerSigner);
@@ -35,10 +34,10 @@ module.exports = async function () {
     await (await divider.setIsTrusted(signer, true)).wait();
   }
 
-  log("Trust the signer address on the pool manager");
-  if (!(await poolManager.isTrusted(signer))) {
-    await (await poolManager.setIsTrusted(signer, true)).wait();
-  }
+  // log("Trust the signer address on the pool manager");
+  // if (!(await poolManager.isTrusted(signer))) {
+  //   await (await poolManager.setIsTrusted(signer, true)).wait();
+  // }
 
   log("Trust the signer address on the space factory");
   if (!(await spaceFactory.isTrusted(signer))) {
@@ -70,10 +69,10 @@ module.exports = async function () {
       await (await divider.setIsTrusted(deployer, false)).wait();
     }
 
-    log("Untrust deployer on the pool manager");
-    if (await poolManager.isTrusted(deployer)) {
-      await (await poolManager.setIsTrusted(deployer, false)).wait();
-    }
+    // log("Untrust deployer on the pool manager");
+    // if (await poolManager.isTrusted(deployer)) {
+    //   await (await poolManager.setIsTrusted(deployer, false)).wait();
+    // }
 
     log("Untrust deployer on the space factory");
     if (await spaceFactory.isTrusted(deployer)) {
@@ -96,7 +95,6 @@ module.exports = async function () {
     const calls = [
       tokenHandler.callStatic.setIsTrusted(dev, false),
       divider.callStatic.setIsTrusted(dev, false),
-      poolManager.callStatic.setIsTrusted(dev, false),
       spaceFactory.callStatic.setIsTrusted(dev, false),
       periphery.callStatic.setIsTrusted(dev, false),
       emergencyStop.callStatic.setIsTrusted(dev, false),
@@ -115,7 +113,6 @@ module.exports = async function () {
   const multisigSigner = await hre.ethers.getSigner(signer);
   tokenHandler = tokenHandler.connect(multisigSigner);
   divider = divider.connect(multisigSigner);
-  poolManager = poolManager.connect(multisigSigner);
   spaceFactory = spaceFactory.connect(multisigSigner);
   periphery = periphery.connect(multisigSigner);
   emergencyStop = emergencyStop.connect(multisigSigner);
@@ -128,7 +125,6 @@ module.exports = async function () {
   const calls = [
     tokenHandler.callStatic.setIsTrusted(dev, false),
     divider.callStatic.setIsTrusted(dev, false),
-    poolManager.callStatic.setIsTrusted(dev, false),
     spaceFactory.callStatic.setIsTrusted(dev, false),
     periphery.callStatic.setIsTrusted(dev, false),
     emergencyStop.callStatic.setIsTrusted(dev, false),

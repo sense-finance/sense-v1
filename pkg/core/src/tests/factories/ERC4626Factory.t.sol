@@ -19,6 +19,8 @@ import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { BaseFactory } from "../../adapters/abstract/factories/BaseFactory.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Constants } from "../test-helpers/Constants.sol";
+import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
+import { Periphery } from "../../Periphery.sol";
 
 contract ERC4626FactoryTest is TestHelper {
     function setUp() public override {
@@ -170,29 +172,40 @@ contract ERC4626FactoryTest is TestHelper {
     }
 
     function testDeployAdapterAndInitializeSeries() public {
+        address adapter;
         MockERC4626 someTarget = new MockERC4626(underlying, "Some Target", "ST", MockToken(underlying).decimals());
 
-        // Deploy non-crop factory
-        ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
+        {
+            // Prepare data
+            address[] memory rewardTokens;
+            bytes memory rdata = abi.encode(rewardTokens);
 
-        // Prepare data
-        address[] memory rewardTokens;
-        bytes memory data = abi.encode(rewardTokens);
+            // Deploy non-crop factory
+            ERC4626Factory someFactory = ERC4626Factory(deployFactory(address(someTarget)));
 
-        // Deploy adapter
-        address adapter = periphery.deployAdapter(address(someFactory), address(someTarget), data);
-        assertTrue(adapter != address(0));
+            // Deploy adapter
+            adapter = periphery.deployAdapter(address(someFactory), address(someTarget), rdata);
+            assertTrue(adapter != address(0));
 
-        uint256 scale = MockAdapter(adapter).scale();
-        assertEq(scale, 1e18);
+            uint256 scale = MockAdapter(adapter).scale();
+            assertEq(scale, 1e18);
+        }
 
         vm.warp(block.timestamp + 1 days);
         uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 1, 0, 0, 0);
 
         // Sponsor series
-        (address principal, address yield) = periphery.sponsorSeries(adapter, maturity, true);
-        assertTrue(principal != address(0));
-        assertTrue(yield != address(0));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(
+            adapter,
+            maturity,
+            true,
+            data,
+            _getQuote(address(stake), address(stake))
+        );
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
     }
 
     function testCantDeployAdapterIfNotPeriphery() public {
