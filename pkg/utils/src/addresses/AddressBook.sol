@@ -76,6 +76,13 @@ library AddressBook {
     // 0x
     address public constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
+    // Aura
+    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
+    address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
+    address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
+    address public constant AURA_B_RETH_STABLE = 0x001B78CEC62DcFdc660E06A91Eb1bC966541d758;
+    address public constant B_RETH_STABLE = 0x1E19CF2D73a72Ef1332C882F20534B6519Be0276;
+
     /////////// Others ///////////
 
     // fuse f18 olympus pool party

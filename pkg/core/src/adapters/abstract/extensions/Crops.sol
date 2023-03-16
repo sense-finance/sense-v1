@@ -107,6 +107,8 @@ abstract contract Crops is Trust {
         }
     }
 
+    // TODO: should we remove the reconcile?
+
     /// @notice Distributes rewarded tokens to users proportionally based on their `tBalance`
     /// @param _usr User to distribute reward tokens to
     function _distribute(address _usr) internal {

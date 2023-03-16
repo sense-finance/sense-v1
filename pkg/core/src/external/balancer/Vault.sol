@@ -73,4 +73,8 @@ interface BalancerVault {
         address payable recipient,
         ExitPoolRequest memory request
     ) external;
+
+    function getProtocolFeesCollector() external view returns (address);
+
+    function getAuthorizer() external returns (address);
 }

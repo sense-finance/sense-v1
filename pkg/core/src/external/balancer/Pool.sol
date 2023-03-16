@@ -3,6 +3,7 @@ pragma solidity 0.8.15;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { BalancerVault } from "./Vault.sol";
+import { RateProvider } from "./RateProvider.sol";
 
 interface BalancerPool {
     function getTimeWeightedAverage(OracleAverageQuery[] memory queries)
@@ -60,4 +61,6 @@ interface BalancerPool {
     ) external returns (uint256 amount);
 
     function getIndices() external view returns (uint256 pti, uint256 targeti);
+
+    function getRateProviders() external view returns (RateProvider[] memory providers);
 }
