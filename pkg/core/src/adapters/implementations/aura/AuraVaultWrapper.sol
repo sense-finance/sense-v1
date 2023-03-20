@@ -137,6 +137,43 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         revert("NOT IMPLEMENTED");
     }
 
+    /* ========== Convenience Methods ========== */
+
+    function depositFromBPT(uint256 bptIn, address receiver) external returns (uint256 shares) {
+        // transfer BPT from user to here
+        ERC20(address(pool)).safeTransferFrom(msg.sender, address(this), bptIn);
+
+        _mint(receiver, bptIn);
+
+        // lock BPT into Aura Vault
+        auraBooster.deposit(auraPID, bptIn, true);
+
+        //TODO: modify event for DepositFromBPT
+        emit Deposit(msg.sender, receiver, bptIn, bptIn);
+
+        return bptIn;
+    }
+
+    function withdrawToBPT(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) external returns (uint256 bptOut) {
+        if (msg.sender != owner) {
+            uint256 allowed = allowance[owner][msg.sender]; // Saves gas for limited approvals.
+            if (allowed != type(uint256).max) allowance[owner][msg.sender] = allowed - shares;
+        }
+
+        _burn(owner, shares);
+
+        //TODO: modify event for WithdrawToBPT
+        emit Withdraw(msg.sender, receiver, owner, shares, shares);
+
+        bptOut = aToken.withdraw(shares, address(this), address(this));
+
+        ERC20(address(pool)).safeTransfer(receiver, bptOut);
+    }
+
     /* ========== ExtractableReward overrides ========== */
 
     function _isValid(address _token) internal virtual override returns (bool) {

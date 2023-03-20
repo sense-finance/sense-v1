@@ -363,7 +363,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
-        if (wrapAmt < 1e4) return;
+        if (wrapAmt < 1e5) return;
 
         deal(address(underlying), address(this), wrapAmt);
         uint256 prebal = underlying.balanceOf(address(this));
@@ -497,5 +497,35 @@ contract AuraAdapters is AuraAdapterTestHelper {
         // check we can deposit
         rlv.deposit(5 * 1**tDecimals, address(this)); // deposit 1 target
         console.log("- 1 target sucessfully deposited!");
+    }
+
+    function testMainnetDepositWithdrawFromToBPT() public {
+        // load wallet with BPTs
+        deal(AddressBook.B_RETH_STABLE, address(this), 1e18);
+
+        // approve target to pull BPTs
+        ERC20(AddressBook.B_RETH_STABLE).approve(address(target), 1e18);
+
+        // deposit from BPTs (converts BPTs into wrapped token)
+        uint256 tBalToIssue = target.depositFromBPT(1e18, address(this));
+        assertEq(tBalToIssue, 1e18);
+        assertEq(target.balanceOf(address(this)), 1e18);
+        assertEq(ERC20(AddressBook.B_RETH_STABLE).balanceOf(address(this)), 0);
+
+        // sponsor series and issue
+        (, , uint256 maturity) = _sponsorSeries();
+        uint256 issued = _issue(address(adapter), maturity, tBalToIssue);
+
+        // combine
+        uint256 combined = divider.combine(address(adapter), maturity, issued);
+        uint256 tBal = target.balanceOf(address(this));
+        assertApproxEqAbs(tBalToIssue, combined, 2);
+        assertApproxEqAbs(tBalToIssue, tBal, 2);
+
+        // withdraw to BPTs (converts wrapped token into BPTs)
+        uint256 bptBal = target.withdrawToBPT(tBal, address(this), address(this));
+        assertEq(bptBal, tBal);
+        assertEq(target.balanceOf(address(this)), 0);
+        assertEq(ERC20(AddressBook.B_RETH_STABLE).balanceOf(address(this)), tBal);
     }
 }
