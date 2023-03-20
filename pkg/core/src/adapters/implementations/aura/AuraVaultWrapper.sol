@@ -29,6 +29,18 @@ interface IBalancerStablePreview {
     ) external view returns (uint256 amountTokenOut);
 }
 
+interface IBooster {
+    function deposit(
+        uint256 _pid,
+        uint256 _amount,
+        bool _stake
+    ) external returns (bool);
+}
+
+interface IBaseRewardPool4626 {
+    function pid() external view returns (uint256);
+}
+
 /// @title Aura Vault Wrapper
 /// @notice Wraps an Aura vault to make it transferable. Its asset token (underlying) is the base token
 /// of the Balancer pool.
@@ -48,6 +60,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
     /// @notice The Aura vault contract
     ERC4626 public immutable aToken;
+    uint256 public immutable auraPID;
 
     /// @notice pool data
     BalancerPool public immutable pool;
@@ -62,16 +75,14 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
     IBalancerStablePreview internal constant previewHelper =
         IBalancerStablePreview(0x21a9fd7212F37c35B030e9374510F99128d59CD3);
     IVault public constant balancerVault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
-
-    // TODO: check if we need it
-    // uint256 internal constant AURA_PID = 15;
-    // address internal constant LP = 0x1E19CF2D73a72Ef1332C882F20534B6519Be0276;
+    IBooster public constant auraBooster = IBooster(0xA57b8d98dAE62B26Ec3bcC4a365338157060B234); // Aura Booster
 
     constructor(ERC20 asset_, ERC4626 aToken_)
         ERC4626(asset_, _vaultName(asset_), _vaultSymbol(asset_))
         ExtractableReward(msg.sender)
     {
         aToken = aToken_;
+        auraPID = IBaseRewardPool4626(address(aToken)).pid();
 
         // set pool data
         pool = BalancerPool(address(aToken.asset()));
@@ -84,6 +95,9 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         }
         poolAssets = _convertERC20sToAssets(tokens);
         rateProviders = _convertRateProvidersToAddresses(pool.getRateProviders());
+
+        // approve Aura Booster to pull LP
+        ERC20(address(pool)).safeApprove(address(auraBooster), type(uint256).max);
     }
 
     /* ========== ERC4626 overrides ========== */
@@ -99,14 +113,11 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
     function convertToAssets(uint256 shares) public view override returns (uint256 assets) {
         IVault.ExitPoolRequest memory request = _assembleExitRequest(shares);
-
         assets = previewHelper.exitPoolPreview(poolId, address(this), address(this), request, _getImmutablePoolData());
     }
 
-    function beforeWithdraw(uint256 assets, uint256 shares) internal virtual override {
+    function beforeWithdraw(uint256, uint256 shares) internal virtual override {
         aToken.withdraw(shares, address(this), address(this));
-        // TODO: check diff with:
-        // IRewards(auraRewardManager).withdrawAndUnwrap(amountSharesToRedeem, false);
         _redeemFromBalancer(shares);
     }
 
@@ -114,11 +125,8 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         uint256 assets,
         uint256 /*shares*/
     ) internal virtual override {
-        uint256 bptOut = _depositToBalancer(assets);
-
         // lock BPT into Aura Vault
-        ERC20(address(pool)).safeApprove(address(aToken), assets); // approve Aura vault to pull BPT
-        aToken.deposit(bptOut, address(this)); // TODO: check if I should do this or rather what Pendle does -> calls booster.deposit()
+        auraBooster.deposit(auraPID, _depositToBalancer(assets), true);
     }
 
     function previewMint(uint256 shares) public view virtual override returns (uint256) {

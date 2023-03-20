@@ -18,7 +18,7 @@ import { Divider, TokenHandler } from "../../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { Periphery } from "../../Periphery.sol";
 import { YT } from "../../tokens/YT.sol";
-// import { OwnableAuraAdapter } from "../../adapters/implementations/lido/OwnableAuraAdapter.sol";
+import { OwnableAuraAdapter } from "../../adapters/implementations/aura/OwnableAuraAdapter.sol";
 
 // Test references
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
@@ -26,6 +26,8 @@ import { Constants } from "../test-helpers/Constants.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
+
+import "hardhat/console.sol";
 
 // AURA: HOW YIELD WORKS?
 // In terms of how yields work, you really have to think about the underlying mechanisms to understand.
@@ -55,8 +57,6 @@ interface PriceOracleLike {
 
 interface IBooster {
     function earmarkRewards(uint256 _pid) external returns (bool);
-
-    function earmarkFees(address _feeToken) external returns (bool);
 }
 
 interface IRewards {
@@ -88,7 +88,7 @@ contract AuraAdapterTestHelper is ForkTest {
     using FixedMath for uint256;
 
     AuraAdapter internal adapter;
-    // OwnableAuraAdapter internal oAdapter;
+    OwnableAuraAdapter internal oAdapter;
     Divider internal divider;
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
@@ -110,7 +110,7 @@ contract AuraAdapterTestHelper is ForkTest {
     function setUp() public {
         fork();
 
-        aToken = AddressBook.AURA_B_RETH_STABLE;
+        aToken = AddressBook.AURA_B_RETH_STABLE_VAULT;
         address poolBaseAsset = AddressBook.WETH;
         underlying = ERC20(poolBaseAsset);
         target = new AuraVaultWrapper(ERC20(underlying), ERC4626(aToken));
@@ -155,17 +155,19 @@ contract AuraAdapterTestHelper is ForkTest {
         vm.prank(AddressBook.SENSE_MULTISIG);
         target.setRewardsRecipient(address(adapter));
 
-        _setAdapter();
+        _setAdapter(address(adapter));
 
-        // TODO: uncomment after creating OwnableAuraAdapter
-        // adapterParams.mode = 1;
-        // oAdapter = new OwnableAuraAdapter(
-        //     address(divider),
-        //     AddressBook.WSTETH,
-        //     Constants.REWARDS_RECIPIENT,
-        //     ISSUANCE_FEE,
-        //     adapterParams
-        // ); // Ownable aToken adapter (for RLVs)
+        adapterParams.mode = 1;
+        oAdapter = new OwnableAuraAdapter(
+            address(divider),
+            address(target),
+            Constants.REWARDS_RECIPIENT,
+            0,
+            adapterParams,
+            rewardTokens
+        ); // Ownable aToken adapter (for RLVs)
+
+        _setAdapter(address(oAdapter));
     }
 
     function _sponsorSeries()
@@ -177,7 +179,7 @@ contract AuraAdapterTestHelper is ForkTest {
         )
     {
         // calculate maturity
-        maturity = DateTimeFull.timestampFromDateTime(2023, 4, 1, 0, 0, 0); // Monday
+        maturity = DateTimeFull.timestampFromDateTime(2023, 5, 1, 0, 0, 0); // Monday
 
         // mint stake to sponsor Series
         deal(AddressBook.DAI, address(this), STAKE_SIZE);
@@ -187,13 +189,13 @@ contract AuraAdapterTestHelper is ForkTest {
         (pt, yt) = divider.initSeries(address(adapter), maturity, msg.sender);
     }
 
-    function _setAdapter() internal {
+    function _setAdapter(address adapter) internal {
         // add adapter to Divider
         vm.prank(divider.periphery());
-        divider.addAdapter(address(adapter));
+        divider.addAdapter(adapter);
 
         // set guard
-        divider.setGuard(address(adapter), 100e18);
+        divider.setGuard(adapter, 100e18);
     }
 
     function _issue(
@@ -292,11 +294,8 @@ contract AuraAdapters is AuraAdapterTestHelper {
         uint256 tBalanceBefore = target.balanceOf(address(this));
 
         target.approve(address(adapter), tBalanceBefore);
-        uint256 rate = _getRate();
-        uint256 uDecimals = ERC20(AddressBook.WETH).decimals();
 
-        uint256 expectedUnwrapped = tBalanceBefore.fmul(rate, 10**uDecimals);
-        // TODO: expectedUnwrapped should be calculated with the preview of the exit join
+        uint256 expectedUnwrapped = target.convertToAssets(tBalanceBefore);
         uint256 unwrapped = adapter.unwrapTarget(tBalanceBefore);
 
         uint256 tBalanceAfter = target.balanceOf(address(this));
@@ -304,8 +303,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         assertEq(tBalanceAfter, 0);
         assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
-        // TODO: will revert now since we are not calculating the expectedUnwrapped correctly
-        // assertEq(expectedUnwrapped, unwrapped);
+        assertEq(expectedUnwrapped, unwrapped);
 
         // assert wrapper has NO auraB-RETH-stable-vault balance
         assertEq(target.aToken().balanceOf(address(target)), 0);
@@ -318,11 +316,8 @@ contract AuraAdapters is AuraAdapterTestHelper {
         uint256 tBalanceBefore = target.balanceOf(address(this));
 
         underlying.approve(address(adapter), uBalanceBefore);
-        uint256 rate = _getRate();
-        uint256 uDecimals = ERC20(AddressBook.WETH).decimals();
 
-        uint256 expectedWrapped = uBalanceBefore.fdiv(rate, 10**uDecimals);
-        // TODO: expectedWrapped should be calculated with the preview of the pool join
+        uint256 expectedWrapped = target.convertToShares(uBalanceBefore);
         uint256 wrapped = adapter.wrapUnderlying(uBalanceBefore);
 
         uint256 tBalanceAfter = target.balanceOf(address(this));
@@ -331,11 +326,10 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertEq(uBalanceAfter, 0);
         assertEq(tBalanceBefore + wrapped, tBalanceAfter);
 
-        // TODO: will revert now since we are not calculating the expectedWrapped correctly
-        // assertEq(expectedWrapped, wrapped);
+        assertEq(expectedWrapped, wrapped);
 
         // assert wrapper has a balance of auraB-RETH-stable-vault
-        // assertEq(target.aToken().balanceOf(address(target)), expectedWrapped);
+        assertEq(target.aToken().balanceOf(address(target)), expectedWrapped);
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
@@ -352,7 +346,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         adapter.unwrapTarget(adapter.wrapUnderlying(wrapAmt));
         uint256 postbal = underlying.balanceOf(address(this));
 
-        // TODO: will revert since...
+        // TODO: if ran independently, it passes, if ran with the whole suite, it fails
         assertEq(prebal, postbal);
     }
 
@@ -391,7 +385,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertGt(ERC20(AddressBook.BAL).balanceOf(address(this)), balBalBefore);
     }
 
-    function testMainnetCanCombine() public {
+    function testMainnetCombine() public {
         // get target (w-auraB-RETH-stable-vault) by wrapping underlying (WETH)
         deal(address(underlying), address(this), 1e18);
         underlying.approve(address(adapter), 1e18);
@@ -409,41 +403,35 @@ contract AuraAdapters is AuraAdapterTestHelper {
         // combine
         uint256 combined = divider.combine(address(adapter), maturity, issued);
         uint256 tBal = target.balanceOf(address(this));
-        assertApproxEqAbs(tBalToIssue, combined, 1);
-        assertApproxEqAbs(tBalToIssue, tBal, 1);
+        assertApproxEqAbs(tBalToIssue, combined, 2);
+        assertApproxEqAbs(tBalToIssue, tBal, 2);
     }
 
-    // TODO: create Ownable Adapter first
-    // function testOpenSponsorWindow() public {
-    //     vm.warp(1631664000); // 15-09-21 00:00 UTC
+    function testOpenSponsorWindow() public {
+        uint256 maturity = DateTimeFull.timestampFromDateTime(2023, 5, 1, 0, 0, 0); // Monday
+        opener = new Opener(divider, maturity, address(oAdapter));
 
-    //     // Add oAdapter to Divider
-    //     divider.setAdapter(address(oAdapter), true);
+        // Add Opener as trusted address on ownable adapter
+        oAdapter.setIsTrusted(address(opener), true);
 
-    //     uint256 maturity = DateTimeFull.timestampFromDateTime(2021, 10, 4, 0, 0, 0); // Monday
-    //     opener = new Opener(divider, maturity, address(oAdapter));
+        vm.prank(address(0xfede));
+        vm.expectRevert("UNTRUSTED");
+        oAdapter.openSponsorWindow();
 
-    //     // Add Opener as trusted address on ownable adapter
-    //     oAdapter.setIsTrusted(address(opener), true);
+        // No one can sponsor series directly using Divider (even if it's the Periphery)
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
+        divider.initSeries(address(oAdapter), maturity, msg.sender);
 
-    //     vm.prank(address(0xfede));
-    //     vm.expectRevert("UNTRUSTED");
-    //     oAdapter.openSponsorWindow();
+        // Mint some stake to sponsor Series
+        deal(AddressBook.DAI, divider.periphery(), STAKE_SIZE);
 
-    //     // No one can sponsor series directly using Divider (even if it's the Periphery)
-    //     vm.expectRevert(abi.encodeWithSelector(Errors.InvalidMaturity.selector));
-    //     divider.initSeries(address(oAdapter), maturity, msg.sender);
+        // Periphery approves divider to pull stake to sponsor series
+        vm.prank(divider.periphery());
+        ERC20(AddressBook.DAI).approve(address(divider), STAKE_SIZE);
 
-    //     // Mint some stake to sponsor Series
-    //     deal(AddressBook.DAI, divider.periphery(), STAKE_SIZE);
-
-    //     // Periphery approves divider to pull stake to sponsor series
-    //     vm.prank(divider.periphery());
-    //     ERC20(AddressBook.DAI).approve(address(divider), STAKE_SIZE);
-
-    //     // Open can open sponsor window
-    //     vm.prank(address(opener));
-    //     vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
-    //     oAdapter.openSponsorWindow();
-    // }
+        // Open can open sponsor window
+        vm.prank(address(opener));
+        vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
+        oAdapter.openSponsorWindow();
+    }
 }

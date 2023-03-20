@@ -57,7 +57,7 @@ contract AuraAdapter is BaseAdapter, Crops, ExtractableReward {
         Crops(_divider, _rewardTokens)
         ExtractableReward(_rewardsRecipient)
     {
-        // approve wstETH contract to pull stETH (used on wrapUnderlying())
+        // approve target (wrapper) to pull WETH (used on wrapUnderlying())
         ERC20(underlying).approve(target, type(uint256).max);
         // set an inital cached scale value
         scaleStored = _getRate();
@@ -102,9 +102,6 @@ contract AuraAdapter is BaseAdapter, Crops, ExtractableReward {
     function _claimRewards() internal override {
         address aToken = address(AuraVaultWrapper(target).aToken());
         uint256 extraRewardsLen = IRewards(aToken).extraRewardsLength();
-        // TODO: auraRewardManager is always the same as address as the vault? Not sure why pendle uses this. CHECK difference.
-        // if (extraRewardsLen == 0) IRewards(auraRewardManager).getReward(address(this), false);
-        // else IRewards(auraRewardManager).getReward(address(this), true);
         if (extraRewardsLen == 0) {
             IRewards(aToken).getReward(address(target), false);
         } else {
