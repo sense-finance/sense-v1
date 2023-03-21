@@ -139,45 +139,32 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
     /* ========== Convenience Methods ========== */
 
-    function depositFromBPT(uint256 bptIn, address receiver) external returns (uint256 shares) {
-        // transfer BPT from user to here
+    function depositFromBPT(uint256 bptIn, address receiver) external {
         ERC20(address(pool)).safeTransferFrom(msg.sender, address(this), bptIn);
-
         _mint(receiver, bptIn);
-
-        // lock BPT into Aura Vault
-        auraBooster.deposit(auraPID, bptIn, true);
-
-        //TODO: modify event for DepositFromBPT
-        emit Deposit(msg.sender, receiver, bptIn, bptIn);
-
-        return bptIn;
+        auraBooster.deposit(auraPID, bptIn, true); // lock BPT into Aura Vault
+        emit DepositFromBPT(msg.sender, receiver, bptIn);
     }
 
     function withdrawToBPT(
         uint256 shares,
         address receiver,
         address owner
-    ) external returns (uint256 bptOut) {
+    ) external {
         if (msg.sender != owner) {
             uint256 allowed = allowance[owner][msg.sender]; // Saves gas for limited approvals.
             if (allowed != type(uint256).max) allowance[owner][msg.sender] = allowed - shares;
         }
-
         _burn(owner, shares);
-
-        //TODO: modify event for WithdrawToBPT
-        emit Withdraw(msg.sender, receiver, owner, shares, shares);
-
-        bptOut = aToken.withdraw(shares, address(this), address(this));
-
-        ERC20(address(pool)).safeTransfer(receiver, bptOut);
+        emit WithdrawToBPT(msg.sender, receiver, owner, shares);
+        aToken.withdraw(shares, address(this), address(this));
+        ERC20(address(pool)).safeTransfer(receiver, shares);
     }
 
     /* ========== ExtractableReward overrides ========== */
 
     function _isValid(address _token) internal virtual override returns (bool) {
-        return (_token != address(aToken)); // TODO: aToken is anyways non-transferable, maybe this check is not needed?
+        return true;
     }
 
     /* ========== ERC20 metadata generation ========== */
@@ -204,13 +191,11 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
         uint256[] memory amountsIn = new uint256[](amountsLength);
         uint256 index = find(poolAssets, address(asset)); // find index of underlying
-        // uint256 indexSkipBPT = index > _getBPTIndex() ? index - 1 : index;
         amountsIn[index] = amt;
 
         // encode user data
         uint256 minBptOut = 0; // TODO: fine to be 0?
-        // 1 = EXACT_TOKENS_IN_FOR_BPT_OUT
-        bytes memory userData = abi.encode(1, amountsIn, minBptOut);
+        bytes memory userData = abi.encode(IVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amountsIn, minBptOut);
 
         request = IVault.JoinPoolRequest({
             assets: poolAssets,
@@ -239,8 +224,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
         // must drop BPT index as well
         exitTokenIndex = _getBPTIndex() < exitTokenIndex ? exitTokenIndex - 1 : exitTokenIndex;
-        // 0 = EXACT_BPT_IN_FOR_ONE_TOKEN_OUT
-        bytes memory userData = abi.encode(0, lpAmt, exitTokenIndex);
+        bytes memory userData = abi.encode(IVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, lpAmt, exitTokenIndex);
 
         request = IVault.ExitPoolRequest(poolAssets, minAmountsOut, userData, false);
     }
@@ -293,4 +277,9 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
             assets := tokens
         }
     }
+
+    /* ========== Events ========== */
+
+    event DepositFromBPT(address indexed sender, address indexed receiver, uint256 indexed amount);
+    event WithdrawToBPT(address indexed sender, address indexed receiver, address owner, uint256 indexed amount);
 }
