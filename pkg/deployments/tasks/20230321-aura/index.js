@@ -5,9 +5,7 @@ const {
   SENSE_MULTISIG,
   CHAINS,
   VERIFY_CHAINS,
-  FRAX,
   WETH_TOKEN,
-  ANGLE,
   auraB_rETH_STABLE_vault,
 } = require("../../hardhat.addresses");
 
@@ -15,7 +13,6 @@ const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const rlvFactoryAbi = require("./abi/AutoRollerFactory.json");
 const rlvAbi = require("./abi/AutoRoller.json");
-const rewardsDistributorAbi = require("./abi/RewardsDistributor.json");
 const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
 const ChainlinkOracleAbi = [
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
