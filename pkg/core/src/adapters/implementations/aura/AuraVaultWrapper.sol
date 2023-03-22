@@ -56,6 +56,9 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         uint256[] rawScalingFactors;
     }
 
+    error BoosterDepositFailed();
+    error NotImplemented();
+
     /* ========== IMMUTABLE PARAMS ========== */
 
     /// @notice The Aura vault contract
@@ -78,7 +81,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
     IBooster public constant auraBooster = IBooster(0xA57b8d98dAE62B26Ec3bcC4a365338157060B234); // Aura Booster
 
     constructor(ERC20 asset_, ERC4626 aToken_)
-        ERC4626(asset_, _vaultName(asset_), _vaultSymbol(asset_))
+        ERC4626(asset_, _vaultName(aToken_), _vaultSymbol(aToken_))
         ExtractableReward(msg.sender)
     {
         aToken = aToken_;
@@ -126,15 +129,15 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         uint256 /*shares*/
     ) internal virtual override {
         // lock BPT into Aura Vault
-        auraBooster.deposit(auraPID, _depositToBalancer(assets), true);
+        if (!auraBooster.deposit(auraPID, _depositToBalancer(assets), true)) revert BoosterDepositFailed();
     }
 
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
-        revert("NOT IMPLEMENTED");
+    function previewMint(uint256) public view virtual override returns (uint256) {
+        revert NotImplemented();
     }
 
-    function previewWithdraw(uint256 assets) public view virtual override returns (uint256) {
-        revert("NOT IMPLEMENTED");
+    function previewWithdraw(uint256) public view virtual override returns (uint256) {
+        revert NotImplemented();
     }
 
     /* ========== Convenience Methods ========== */
@@ -142,7 +145,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
     function depositFromBPT(uint256 bptIn, address receiver) external {
         ERC20(address(pool)).safeTransferFrom(msg.sender, address(this), bptIn);
         _mint(receiver, bptIn);
-        auraBooster.deposit(auraPID, bptIn, true); // lock BPT into Aura Vault
+        if (!auraBooster.deposit(auraPID, bptIn, true)) revert BoosterDepositFailed(); // lock BPT into Aura Vault
         emit DepositFromBPT(msg.sender, receiver, bptIn);
     }
 
@@ -194,7 +197,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         amountsIn[index] = amt;
 
         // encode user data
-        uint256 minBptOut = 0; // TODO: fine to be 0?
+        uint256 minBptOut = 0;
         bytes memory userData = abi.encode(IVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amountsIn, minBptOut);
 
         request = IVault.JoinPoolRequest({

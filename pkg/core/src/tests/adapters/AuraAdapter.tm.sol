@@ -229,17 +229,20 @@ contract AuraAdapterTestHelper is ForkTest {
     function _issue(
         address _adapter,
         uint256 _maturity,
+        address _from,
         uint256 _amt
     ) internal returns (uint256 issued) {
+        vm.startPrank(_from);
         // issue `_amt`
         target.approve(address(divider), _amt);
         issued = divider.issue(_adapter, _maturity, _amt);
+        vm.stopPrank();
 
         // we use the getRate from the BPT to calculate how many PTs and YTs have been issued
         assertEq(issued, _amt.fmul(_getRate()));
 
-        assertGt(ERC20(divider.pt(_adapter, _maturity)).balanceOf(address(this)), 0);
-        assertGt(ERC20(divider.pt(_adapter, _maturity)).balanceOf(address(this)), 0);
+        assertGt(ERC20(divider.pt(_adapter, _maturity)).balanceOf(_from), 0);
+        assertGt(ERC20(divider.yt(_adapter, _maturity)).balanceOf(_from), 0);
     }
 
     function _getRate() internal view returns (uint256) {
@@ -276,13 +279,14 @@ contract AuraAdapterTestHelper is ForkTest {
         amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
     }
 
-    function _increaseScale() internal {
+    function _increaseScale(uint64 swapSize) internal {
         // increase scale (BPT price) by doing a swap
-        vm.startPrank(address(0xfede));
-        deal(address(underlying), address(0xfede), 100e18);
+        address from = address(0x123);
+        vm.startPrank(from);
+        deal(address(underlying), from, swapSize);
         address RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
         BalancerPool pool = BalancerPool(address(target.aToken().asset()));
-        _balancerSwap(address(underlying), RETH, 100e18, pool.getPoolId(), 0, payable(address(0xfede)));
+        _balancerSwap(address(underlying), RETH, swapSize, pool.getPoolId(), 0, payable(from));
         vm.stopPrank();
     }
 }
@@ -376,8 +380,9 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertApproxEqAbs(prebal, postbal, prebal.fmul(0.0010e18));
     }
 
-    function testMainnetCanCollectRewards(uint64 uBal) public {
+    function testMainnetCanCollectRewards(uint64 uBal, uint64 swapSize) public {
         vm.assume(uBal > 1e10);
+        vm.assume(swapSize > 1e4);
 
         // get target (w-auraB-RETH-stable-vault) by wrapping underlying (WETH)
         deal(address(underlying), address(this), uBal);
@@ -386,7 +391,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         // sponsor series and issue
         (, , uint256 maturity) = _sponsorSeries();
-        _issue(address(adapter), maturity, tBal);
+        _issue(address(adapter), maturity, address(this), tBal);
 
         uint256 scale = adapter.scale(); // current scale
 
@@ -397,7 +402,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         uint256 AURA_PID = 15; // 15 is the aura PID
         IBooster(AddressBook.AURA_BOOSTER).earmarkRewards(AURA_PID);
 
-        _increaseScale();
+        _increaseScale(swapSize);
 
         uint256 auraBalBefore = ERC20(AddressBook.AURA).balanceOf(address(this));
         uint256 balBalBefore = ERC20(AddressBook.BAL).balanceOf(address(this));
@@ -407,14 +412,85 @@ contract AuraAdapters is AuraAdapterTestHelper {
         uint256 uBal = yt.balanceOf(address(this));
         uint256 tBalNow = uBal.fdivUp(adapter.scale());
         uint256 tBalPrev = uBal.fdiv(scale);
-        assertEq(yt.collect(), tBalPrev - tBalNow);
+        uint256 collected = tBalPrev > tBalNow ? tBalPrev - tBalNow : 0;
+        assertEq(yt.collect(), collected);
+        console.log("Collecting %s target", collected);
 
         assertGt(ERC20(AddressBook.AURA).balanceOf(address(this)), auraBalBefore);
         assertGt(ERC20(AddressBook.BAL).balanceOf(address(this)), balBalBefore);
     }
 
-    function testMainnetCombine(uint64 uBal) public {
+    function testMainnetCanCollectRewardsProportionally(uint256 tBal, uint64 swapSize) public {
+        vm.assume(tBal > 1e10);
+        vm.assume(tBal < type(uint64).max);
+        vm.assume(swapSize > 1e4);
+
+        // sponsor series and issue
+        (, , uint256 maturity) = _sponsorSeries();
+
+        address bpt = address(target.pool());
+
+        // load Alice with some target by wrapping BPT tokens (B-RETH-stable-vault)
+        uint256 amt = (60 * tBal) / 100;
+        deal(bpt, address(this), amt);
+        ERC20(bpt).approve(address(target), amt);
+        target.depositFromBPT(amt, address(this));
+
+        // alice issues
+        _issue(address(adapter), maturity, address(this), amt);
+
+        vm.startPrank(address(0xfede));
+        // load 0xfede with some target by wrapping BPT tokens (B-RETH-stable-vault)
+        amt = (40 * tBal) / 100;
+        deal(bpt, address(0xfede), amt);
+        ERC20(bpt).approve(address(target), amt);
+        target.depositFromBPT(amt, address(0xfede));
+        vm.stopPrank();
+
+        // 0xfede issues
+        _issue(address(adapter), maturity, address(0xfede), amt);
+
+        // roll to period finish
+        vm.warp(IRewards(address(target.aToken())).periodFinish() + 100);
+
+        // increase scale and distribute rewards
+        _increaseScale(swapSize);
+
+        uint256 AURA_PID = 15; // 15 is the aura PID
+        vm.prank(address(0x2)); // this address will receive a reward for calling `earmarkRewards`
+        IBooster(AddressBook.AURA_BOOSTER).earmarkRewards(AURA_PID);
+
+        // force rewards distribution to adapter
+        vm.prank(address(0x1));
+        divider.issue(address(adapter), maturity, 0);
+
+        // check adapter rewards balances
+        uint256 adapterAuraBal = ERC20(AddressBook.AURA).balanceOf(address(adapter));
+        uint256 adapterBalBal = ERC20(AddressBook.BAL).balanceOf(address(adapter));
+
+        YT yt = YT(divider.yt(address(adapter), maturity));
+
+        // collect for alice
+        yt.collect();
+
+        // collect for 0xfede
+        vm.prank(address(0xfede));
+        yt.collect();
+
+        // check rewards were distributed proportionally
+        assertApproxEqAbs(ERC20(AddressBook.AURA).balanceOf(address(this)), (60 * adapterAuraBal) / 100, 1);
+        assertApproxEqAbs(ERC20(AddressBook.BAL).balanceOf(address(this)), (60 * adapterBalBal) / 100, 1);
+        assertApproxEqAbs(ERC20(AddressBook.AURA).balanceOf(address(0xfede)), (40 * adapterAuraBal) / 100, 1);
+        assertApproxEqAbs(ERC20(AddressBook.BAL).balanceOf(address(0xfede)), (40 * adapterBalBal) / 100, 1);
+
+        // assert adapter has no more rewards
+        assertApproxEqAbs(ERC20(AddressBook.AURA).balanceOf(address(adapter)), 0, 2);
+        assertApproxEqAbs(ERC20(AddressBook.BAL).balanceOf(address(adapter)), 0, 2);
+    }
+
+    function testMainnetCombine(uint64 uBal, uint64 swapSize) public {
         vm.assume(uBal > 1e10);
+        vm.assume(swapSize > 1e4);
 
         // get target (w-auraB-RETH-stable-vault) by wrapping underlying (WETH)
         deal(address(underlying), address(this), uBal);
@@ -423,12 +499,12 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         // sponsor series and issue
         (, , uint256 maturity) = _sponsorSeries();
-        uint256 issued = _issue(address(adapter), maturity, tBalToIssue);
+        uint256 issued = _issue(address(adapter), maturity, address(this), tBalToIssue);
 
         // roll to period finish
         vm.warp(IRewards(address(target.aToken())).periodFinish() + 100);
 
-        _increaseScale();
+        _increaseScale(swapSize);
 
         // combine
         uint256 combined = divider.combine(address(adapter), maturity, issued);
@@ -500,6 +576,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
     function testMainnetDepositWithdrawFromToBPT(uint64 bptAmt) public {
         vm.assume(bptAmt > 0);
+        bptAmt = 10e18;
 
         // load wallet with BPTs
         deal(AddressBook.B_RETH_STABLE, address(this), bptAmt);
@@ -514,10 +591,11 @@ contract AuraAdapters is AuraAdapterTestHelper {
         target.depositFromBPT(bptAmt, address(this));
         assertEq(target.balanceOf(address(this)), bptAmt);
         assertEq(ERC20(AddressBook.B_RETH_STABLE).balanceOf(address(this)), 0);
+        assertEq(ERC20(AddressBook.AURA_B_RETH_STABLE_VAULT).balanceOf(address(target)), bptAmt);
 
         // sponsor series and issue
         (, , uint256 maturity) = _sponsorSeries();
-        uint256 issued = _issue(address(adapter), maturity, bptAmt);
+        uint256 issued = _issue(address(adapter), maturity, address(this), bptAmt);
 
         // combine
         uint256 combined = divider.combine(address(adapter), maturity, issued);
