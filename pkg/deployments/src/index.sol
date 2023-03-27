@@ -33,6 +33,7 @@ import { AuraVaultWrapper } from "@sense-finance/v1-core/src/adapters/implementa
 import { PoolManager } from "@sense-finance/v1-fuse/src/PoolManager.sol";
 import { NoopPoolManager } from "@sense-finance/v1-fuse/src/NoopPoolManager.sol";
 import { EmergencyStop } from "@sense-finance/v1-utils/src/EmergencyStop.sol";
+import { MultiRewardsDistributor } from "@sense-finance/v1-core/src/external/MultiRewardsDistributor.sol";
 
 import { EulerERC4626WrapperFactory } from "@sense-finance/v1-core/src/adapters/abstract/erc4626/yield-daddy/euler/EulerERC4626WrapperFactory.sol";
 import { RewardsDistributor } from "../lib/morpho-core-v1/contracts/common/rewards-distribution/RewardsDistributor.sol";

@@ -138,21 +138,20 @@ task(
     return new ethers.Contract(targetAddress, abi, deployerSigner);
   };
 
-  const _deployRLV = async (adapter, rlvFactory) => {
-    // TODO: we don't need a rewards distributor for this RLV, right?
-    // console.log("\nDeploy rewards distributor");
-    // const { address: rdAddress } = await deploy("RewardsDistributor", {
-    //   from: deployer,
-    //   args: [],
-    //   log: true,
-    //   // gasPrice: 28000000000,
-    // });
-    // console.log("- Rewards distributor deployed @ %s", rdAddress);
+  const _deployRLV = async (adapter, rlvFactory, rewardTokens) => {
+    console.log(`\nDeploy multi rewards distributor with reward tokens: ${rewardTokens}`);
+    const { address: rdAddress } = await deploy("MultiRewardsDistributor", {
+      from: deployer,
+      args: [rewardTokens],
+      log: true,
+      // gasPrice: 28000000000,
+    });
+    console.log("- Rewards distributor deployed @ %s", rdAddress);
 
-    // if (chainId !== CHAINS.HARDHAT) {
-    //   console.log("\n-------------------------------------------------------");
-    //   await verifyOnEtherscan("RewardsDistributor");
-    // }
+    if (chainId !== CHAINS.HARDHAT) {
+      console.log("\n-------------------------------------------------------");
+      await verifyOnEtherscan("RewardsDistributor");
+    }
 
     // create RLV
     console.log("\n-------------------------------------------------------");
@@ -245,7 +244,7 @@ task(
   const adapter = await _deployAdapter(divider, wrapper);
   await _onboardAdapter();
 
-  const rlv = await _deployRLV(adapter, rlvFactory);
+  const rlv = await _deployRLV(adapter, rlvFactory, adapterArgs.rewardTokens);
 
   if (chainId !== CHAINS.MAINNET) {
     // roll first series
