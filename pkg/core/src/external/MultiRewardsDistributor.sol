@@ -92,7 +92,10 @@ contract MultiRewardsDistributor is Ownable {
         uint256 _claimable,
         bytes32[] calldata _proof
     ) external {
-        bytes32 candidateRoot = MerkleProof.processProof(_proof, keccak256(abi.encodePacked(_account, _claimable)));
+        bytes32 candidateRoot = MerkleProof.processProof(
+            _proof,
+            keccak256(abi.encodePacked(_reward, _account, _claimable))
+        );
         if (candidateRoot != nodes[_reward].currRoot && candidateRoot != nodes[_reward].prevRoot)
             revert ProofInvalidOrExpired();
 
