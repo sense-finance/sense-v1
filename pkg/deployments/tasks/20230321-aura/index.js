@@ -1,5 +1,6 @@
 const { task } = require("hardhat/config");
 const data = require("./input");
+const dayjs = require("dayjs");
 
 const {
   SENSE_MULTISIG,
@@ -7,6 +8,7 @@ const {
   VERIFY_CHAINS,
   WETH_TOKEN,
   auraB_rETH_STABLE_vault,
+  ROLLER_UTILS,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
@@ -17,7 +19,11 @@ const ERC20_ABI = ["function approve(address spender, uint256 amount) public ret
 const ChainlinkOracleAbi = [
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
 ];
+const RollerUtilsAbi = [
+  "function getFutureMaturity(uint256 targetDuration) external view returns (uint256 maturity)",
+];
 const ETH_USD_PRICEFEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // Chainlink ETH-USD price feed
+const TARGET_DURATION = 4;
 
 const {
   verifyOnEtherscan,
@@ -79,6 +85,7 @@ task(
       // gasPrice: 28000000000,
     });
     const adapter = new ethers.Contract(adapterAddress, abi, deployerSigner);
+    console.log(`\n${contractName} deployed to ${adapterAddress}`);
 
     console.log(`- Set rlvFactory as trusted address of adapter`);
     await (await adapter.setIsTrusted(rlvFactory.address, true)).wait();
@@ -113,8 +120,6 @@ task(
       console.log("\n-------------------------------------------------------");
       await verifyOnEtherscan(contractName);
     }
-
-    console.log(`${contractName} deployed to ${adapterAddress}`);
     return adapter;
   };
 
@@ -139,8 +144,8 @@ task(
   };
 
   const _deployRLV = async (adapter, rlvFactory, rewardTokens) => {
-    console.log(`\nDeploy multi rewards distributor with reward tokens: ${rewardTokens}`);
-    const { address: rdAddress } = await deploy("MultiRewardsDistributor", {
+    console.log(`\nDeploy MultiRewardsDistributor with reward tokens: ${rewardTokens}`);
+    const { address: rdAddress, abi } = await deploy("MultiRewardsDistributor", {
       from: deployer,
       args: [rewardTokens],
       log: true,
@@ -150,7 +155,7 @@ task(
 
     if (chainId !== CHAINS.HARDHAT) {
       console.log("\n-------------------------------------------------------");
-      await verifyOnEtherscan("RewardsDistributor");
+      await verifyOnEtherscan("MultiRewardsDistributor");
     }
 
     // create RLV
@@ -158,10 +163,11 @@ task(
     console.log("Create RLV for %s", await adapter.name());
     console.log("-------------------------------------------------------\n");
     const rlvAddress = await rlvFactory.callStatic.create(adapter.address, adapterArgs.rewardsRecipient, 3);
-    await (await rlvFactory.create(adapter.address, adapterArgs.rewardsRecipient, 3)).wait();
+    await (await rlvFactory.create(adapter.address, adapterArgs.rewardsRecipient, TARGET_DURATION)).wait();
     const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
     console.log("- RLV %s deployed @ %s", await rlv.name(), rlvAddress);
-    return rlv;
+    const rewardsDistributor = new ethers.Contract(rdAddress, abi, deployerSigner);
+    return { rlv, rewardsDistributor };
   };
 
   const _roll = async (target, stake, stakeSize, rlv) => {
@@ -186,6 +192,15 @@ task(
     await (await target.depositFromBPT(ethers.utils.parseEther("10"), deployer)).wait();
 
     // roll 1st series
+    const rollerUtils = new ethers.Contract(ROLLER_UTILS.get(chainId), RollerUtilsAbi, deployerSigner);
+    let maturity = await rollerUtils.getFutureMaturity(TARGET_DURATION);
+    (maturity = dayjs(maturity.mul(1000).toNumber())),
+      console.log(
+        `- First series will be sponsored with maturity ${maturity
+          .utc()
+          .format("DD/MM/YYYY")} (${maturity.unix()})`,
+      );
+
     await (await rlv.roll()).wait();
     console.log("- First series sucessfully rolled!");
 
@@ -202,7 +217,7 @@ task(
         periphery = periphery.connect(multisigSigner);
       }
 
-      console.log(`- Onboard ${await adapter.name()} adapter`);
+      console.log(`- Onboard ${await adapter.name()} adapter via Periphery`);
       await (await periphery.onboardAdapter(adapter.address, true)).wait();
 
       if (chainId === CHAINS.HARDHAT) {
@@ -244,7 +259,7 @@ task(
   const adapter = await _deployAdapter(divider, wrapper);
   await _onboardAdapter();
 
-  const rlv = await _deployRLV(adapter, rlvFactory, adapterArgs.rewardTokens);
+  const { rlv, rewardsDistributor } = await _deployRLV(adapter, rlvFactory, adapterArgs.rewardTokens);
 
   if (chainId !== CHAINS.MAINNET) {
     // roll first series
@@ -266,8 +281,11 @@ task(
     console.log(`\n- Set multisig as trusted address of Adapter`);
     await (await adapter.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
-    console.log(`- Unset deployer as trusted address of Adapter`);
+    console.log(`\n- Unset deployer as trusted address of Adapter`);
     await (await adapter.setIsTrusted(deployer, false)).wait();
+
+    console.log("- Transfer ownership of RewardsDistributor from deployer to multisig");
+    await (await rewardsDistributor.transferOwnership(senseAdminMultisigAddress)).wait();
   }
 
   if (VERIFY_CHAINS.includes(chainId)) {
