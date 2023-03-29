@@ -160,6 +160,10 @@ const auraB_rETH_STABLE_vault = new Map();
 auraB_rETH_STABLE_vault.set("1", "0x001B78CEC62DcFdc660E06A91Eb1bC966541d758");
 auraB_rETH_STABLE_vault.set("111", "0x001B78CEC62DcFdc660E06A91Eb1bC966541d758");
 
+const aurawstETH_rETH_sfrxETH_BPT_vault = new Map();
+aurawstETH_rETH_sfrxETH_BPT_vault.set("1", "0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47");
+aurawstETH_rETH_sfrxETH_BPT_vault.set("111", "0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47");
+
 // mStable
 const IMUSD_TOKEN = new Map();
 IMUSD_TOKEN.set("1", "0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19");
@@ -418,6 +422,7 @@ exports.BB_wstETH4626 = BB_wstETH4626;
 
 // Aura
 exports.auraB_rETH_STABLE_vault = auraB_rETH_STABLE_vault;
+exports.aurawstETH_rETH_sfrxETH_BPT_vault = aurawstETH-rETH-sfrxETH-BPT-vault;
 exports.AURA = AURA;
 
 // Angle

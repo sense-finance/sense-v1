@@ -10,8 +10,22 @@ import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.s
 import { BalancerPool } from "../../../external/balancer/Pool.sol";
 import { BalancerVault as IVault, IAsset } from "../../../external/balancer/Vault.sol";
 import { RateProvider } from "../../../external/balancer/RateProvider.sol";
+import "hardhat/console.sol";
 
 interface IBalancerStablePreview {
+    // ComposableStablePreview ImmutableData
+    struct ImmutableData {
+        address[] poolTokens;
+        address[] rateProviders;
+        uint256[] rawScalingFactors;
+        bool[] isExemptFromYieldProtocolFee;
+        address LP;
+        bool noTokensExempt;
+        bool allTokensExempt;
+        uint256 bptIndex;
+        uint256 totalTokens;
+    }
+
     function joinPoolPreview(
         bytes32 poolId,
         address sender,
@@ -49,13 +63,6 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
     using FixedMath for uint256;
     using SafeTransferLib for ERC20;
 
-    struct ImmutableData {
-        address LP;
-        address[] poolTokens;
-        address[] rateProviders;
-        uint256[] rawScalingFactors;
-    }
-
     error BoosterDepositFailed();
     error NotImplemented();
 
@@ -68,35 +75,39 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
     /// @notice pool data
     BalancerPool public immutable pool;
     bytes32 internal immutable poolId;
-    address[] internal rateProviders;
+    address[] public rateProviders;
     uint256[] internal scalingFactors;
+    bool[] internal exemptions = [false, false, false, false];
     IAsset[] internal poolAssets;
+    IBalancerStablePreview public immutable previewHelper;
 
     /* ========== CONSTANTS ========== */
 
-    // Helper from Pendle Finance to preview Balancer joins/exits
-    IBalancerStablePreview internal constant previewHelper =
-        IBalancerStablePreview(0x21a9fd7212F37c35B030e9374510F99128d59CD3);
     IVault public constant balancerVault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
     IBooster public constant auraBooster = IBooster(0xA57b8d98dAE62B26Ec3bcC4a365338157060B234); // Aura Booster
+    uint256 public constant BPT_INDEX = 0;
+    bool public constant NO_TOKENS_EXEMPT = true;
+    bool public constant ALL_TOKENS_EXEMPT = false;
 
-    constructor(ERC20 asset_, ERC4626 aToken_)
-        ERC4626(asset_, _vaultName(aToken_), _vaultSymbol(aToken_))
-        ExtractableReward(msg.sender)
-    {
+    constructor(
+        ERC20 asset_,
+        ERC4626 aToken_,
+        IBalancerStablePreview previewHelper_
+    ) ERC4626(asset_, _vaultName(aToken_), _vaultSymbol(aToken_)) ExtractableReward(msg.sender) {
+        previewHelper = previewHelper_;
         aToken = aToken_;
         auraPID = IBaseRewardPool4626(address(aToken)).pid();
 
         // set pool data
         pool = BalancerPool(address(aToken.asset()));
-        (ERC20[] memory tokens, , ) = balancerVault.getPoolTokens(pool.getPoolId());
         poolId = pool.getPoolId();
+        (ERC20[] memory tokens, , ) = balancerVault.getPoolTokens(poolId);
 
         for (uint8 i; i < tokens.length; i++) {
             scalingFactors.push(10**tokens[i].decimals());
             tokens[i].safeApprove(address(balancerVault), type(uint256).max);
+            poolAssets.push(IAsset(address(tokens[i])));
         }
-        poolAssets = _convertERC20sToAssets(tokens);
         rateProviders = _convertRateProvidersToAddresses(pool.getRateProviders());
 
         // approve Aura Booster to pull LP
@@ -193,8 +204,10 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         uint256 amountsLength = _getBPTIndex() < type(uint256).max ? poolAssets.length - 1 : poolAssets.length;
 
         uint256[] memory amountsIn = new uint256[](amountsLength);
+        uint256[] memory maxAmountsIn = new uint256[](poolAssets.length);
         uint256 index = find(poolAssets, address(asset)); // find index of underlying
-        amountsIn[index] = amt;
+        uint256 indexSkipBPT = index > _getBPTIndex() ? index - 1 : index;
+        maxAmountsIn[index] = amountsIn[indexSkipBPT] = amt;
 
         // encode user data
         uint256 minBptOut = 0;
@@ -202,7 +215,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
         request = IVault.JoinPoolRequest({
             assets: poolAssets,
-            maxAmountsIn: amountsIn,
+            maxAmountsIn: maxAmountsIn,
             userData: userData,
             fromInternalBalance: false
         });
@@ -234,7 +247,7 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
 
     /// @dev should be overriden if and only if BPT is one of the pool tokens
     function _getBPTIndex() internal view virtual returns (uint256) {
-        return type(uint256).max;
+        return BPT_INDEX;
     }
 
     /// @notice return index of the element if found, else return uint256.max
@@ -250,13 +263,23 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
     }
 
     function _getImmutablePoolData() internal view virtual returns (bytes memory) {
-        ImmutableData memory res;
-        res.LP = address(pool);
+        IBalancerStablePreview.ImmutableData memory res;
         res.poolTokens = _convertIAssetsToAddresses(poolAssets);
         res.rateProviders = rateProviders;
         res.rawScalingFactors = scalingFactors;
+        res.isExemptFromYieldProtocolFee = exemptions;
+        res.LP = address(pool);
+        res.noTokensExempt = NO_TOKENS_EXEMPT;
+        res.allTokensExempt = ALL_TOKENS_EXEMPT;
+        res.bptIndex = BPT_INDEX;
+        res.totalTokens = res.poolTokens.length;
 
         return abi.encode(res);
+    }
+
+    function _getExemption() internal view virtual returns (bool[] memory res) {
+        res = new bool[](4);
+        res[0] = res[1] = res[2] = res[3] = false;
     }
 
     function _convertIAssetsToAddresses(IAsset[] memory assets) internal pure returns (address[] memory addresses) {

@@ -14,7 +14,7 @@ import { AutoRollerFactory } from "@auto-roller/src/AutoRollerFactory.sol";
 
 // Internal references
 import { AuraAdapter } from "../../adapters/implementations/aura/AuraAdapter.sol";
-import { AuraVaultWrapper } from "../../adapters/implementations/aura/AuraVaultWrapper.sol";
+import { AuraVaultWrapper, IBalancerStablePreview } from "../../adapters/implementations/aura/AuraVaultWrapper.sol";
 import { BaseAdapter } from "../../adapters/abstract/BaseAdapter.sol";
 import { Divider, TokenHandler } from "../../Divider.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
@@ -118,17 +118,19 @@ contract AuraAdapterTestHelper is ForkTest {
     uint48 public constant DEFAULT_LEVEL = 31;
     uint8 public constant DEFAULT_MODE = 0;
     uint64 public constant DEFAULT_TILT = 0;
+    address public constant RETH_ETH_PRICEFEED = 0x536218f9E9Eb48863970252233c8F271f554C2d0; // Chainlink RETH-ETH price feed
 
     AutoRollerFactory public constant rlvFactory = AutoRollerFactory(0x3B0f35bDD6Da9e3b8513c58Af8Fdf231f60232E5);
 
     function setUp() public {
         fork();
-        vm.rollFork(16869769); // Mar-20-2023 03:26:59 PM +UTC
 
-        aToken = AddressBook.AURA_B_RETH_STABLE_VAULT;
-        address poolBaseAsset = AddressBook.WETH;
+        address previewHelper = deployCode("ComposableStablePreview.sol");
+
+        aToken = AddressBook.aurawstETH_rETH_sfrxETH_BPT_vault;
+        address poolBaseAsset = AddressBook.RETH;
         underlying = ERC20(poolBaseAsset);
-        target = new AuraVaultWrapper(ERC20(underlying), ERC4626(aToken));
+        target = new AuraVaultWrapper(ERC20(underlying), ERC4626(aToken), IBalancerStablePreview(previewHelper));
         balancerVault = BalancerVault(address(target.balancerVault()));
         divider = Divider(AddressBook.DIVIDER_1_2_0);
 
@@ -284,9 +286,8 @@ contract AuraAdapterTestHelper is ForkTest {
         address from = address(0x123);
         vm.startPrank(from);
         deal(address(underlying), from, swapSize);
-        address RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
         BalancerPool pool = BalancerPool(address(target.aToken().asset()));
-        _balancerSwap(address(underlying), RETH, swapSize, pool.getPoolId(), 0, payable(from));
+        _balancerSwap(address(underlying), AddressBook.WSTETH, swapSize, pool.getPoolId(), 0, payable(from));
         vm.stopPrank();
     }
 }
@@ -300,17 +301,20 @@ contract AuraAdapters is AuraAdapterTestHelper {
     }
 
     function testMainnetGetUnderlyingPrice() public {
-        assertEq(adapter.getUnderlyingPrice(), 1e18);
+        (, int256 rethPrice, , , ) = PriceOracleLike(RETH_ETH_PRICEFEED).latestRoundData();
+        // within 1%
+        uint256 rETHPrice = adapter.getUnderlyingPrice();
+        assertApproxEqAbs(rETHPrice, uint256(rethPrice), rETHPrice.fmul(0.050e18));
     }
 
     function testMainnetUnwrapTarget() public {
         deal(address(underlying), address(this), 1e18);
 
-        // deposit underlying (BPT) to get some target (w-auraB-RETH-stable-vault)
+        // deposit underlying (BPT) to get some target (w-aurawstETH_rETH_sfrxETH_BPT_vault)
         underlying.approve(address(target), 1e18);
         uint256 deposit = target.deposit(1e18, address(this));
 
-        // assert that the wrapper now has a balance of auraB-RETH-stable-vault
+        // assert that the wrapper now has a balance of aurawstETH_rETH_sfrxETH_BPT_vault
         // which should be the same as the deposit (since 1:1)
         assertEq(target.aToken().balanceOf(address(target)), deposit);
 
@@ -330,7 +334,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertEq(uBalanceBefore + unwrapped, uBalanceAfter);
         assertEq(expectedUnwrapped, unwrapped);
 
-        // assert wrapper has NO auraB-RETH-stable-vault balance
+        // assert wrapper has NO aurawstETH_rETH_sfrxETH_BPT_vault balance
         assertEq(target.aToken().balanceOf(address(target)), 0);
     }
 
@@ -353,7 +357,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         assertEq(expectedWrapped, wrapped);
 
-        // assert wrapper has a balance of auraB-RETH-stable-vault
+        // assert wrapper has a balance of aurawstETH_rETH_sfrxETH_BPT_vault
         assertEq(target.aToken().balanceOf(address(target)), expectedWrapped);
     }
 
@@ -384,7 +388,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         vm.assume(uBal > 1e10);
         vm.assume(swapSize > 1e4);
 
-        // get target (w-auraB-RETH-stable-vault) by wrapping underlying (WETH)
+        // get target (w-aurawstETH_rETH_sfrxETH_BPT_vault) by wrapping underlying (WETH)
         deal(address(underlying), address(this), uBal);
         underlying.approve(address(adapter), uBal);
         uint256 tBal = adapter.wrapUnderlying(uBal);
@@ -430,7 +434,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         address bpt = address(target.pool());
 
-        // load Alice with some target by wrapping BPT tokens (B-RETH-stable-vault)
+        // load Alice with some target by wrapping BPT tokens (wstETH_rETH_sfrxETH_BPT_vault)
         uint256 amt = (60 * tBal) / 100;
         deal(bpt, address(this), amt);
         ERC20(bpt).approve(address(target), amt);
@@ -440,7 +444,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         _issue(address(adapter), maturity, address(this), amt);
 
         vm.startPrank(address(0xfede));
-        // load 0xfede with some target by wrapping BPT tokens (B-RETH-stable-vault)
+        // load 0xfede with some target by wrapping BPT tokens (wstETH_rETH_sfrxETH_BPT_vault)
         amt = (40 * tBal) / 100;
         deal(bpt, address(0xfede), amt);
         ERC20(bpt).approve(address(target), amt);
@@ -456,7 +460,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         // increase scale and distribute rewards
         _increaseScale(swapSize);
 
-        uint256 AURA_PID = 15; // 15 is the aura PID
+        uint256 AURA_PID = 50; // 50 is the aura PID
         vm.prank(address(0x2)); // this address will receive a reward for calling `earmarkRewards`
         IBooster(AddressBook.AURA_BOOSTER).earmarkRewards(AURA_PID);
 
@@ -492,7 +496,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         vm.assume(uBal > 1e10);
         vm.assume(swapSize > 1e4);
 
-        // get target (w-auraB-RETH-stable-vault) by wrapping underlying (WETH)
+        // get target (w-aurawstETH_rETH_sfrxETH_BPT_vault) by wrapping underlying (WETH)
         deal(address(underlying), address(this), uBal);
         underlying.approve(address(adapter), uBal);
         uint256 tBalToIssue = adapter.wrapUnderlying(uBal);
@@ -579,10 +583,10 @@ contract AuraAdapters is AuraAdapterTestHelper {
         bptAmt = 10e18;
 
         // load wallet with BPTs
-        deal(AddressBook.B_RETH_STABLE, address(this), bptAmt);
+        deal(AddressBook.wstETH_rETH_sfrxETH_BPT_vault, address(this), bptAmt);
 
         // approve target to pull BPTs
-        ERC20(AddressBook.B_RETH_STABLE).approve(address(target), bptAmt);
+        ERC20(AddressBook.wstETH_rETH_sfrxETH_BPT_vault).approve(address(target), bptAmt);
 
         // deposit from BPTs (converts BPTs into wrapped token)
         vm.expectEmit(true, true, true, true);
@@ -590,8 +594,8 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         target.depositFromBPT(bptAmt, address(this));
         assertEq(target.balanceOf(address(this)), bptAmt);
-        assertEq(ERC20(AddressBook.B_RETH_STABLE).balanceOf(address(this)), 0);
-        assertEq(ERC20(AddressBook.AURA_B_RETH_STABLE_VAULT).balanceOf(address(target)), bptAmt);
+        assertEq(ERC20(AddressBook.wstETH_rETH_sfrxETH_BPT_vault).balanceOf(address(this)), 0);
+        assertEq(ERC20(AddressBook.aurawstETH_rETH_sfrxETH_BPT_vault).balanceOf(address(target)), bptAmt);
 
         // sponsor series and issue
         (, , uint256 maturity) = _sponsorSeries();
@@ -609,7 +613,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         target.withdrawToBPT(tBal, address(this), address(this));
         assertEq(target.balanceOf(address(this)), 0);
-        assertEq(ERC20(AddressBook.B_RETH_STABLE).balanceOf(address(this)), tBal);
+        assertEq(ERC20(AddressBook.wstETH_rETH_sfrxETH_BPT_vault).balanceOf(address(this)), tBal);
     }
 
     event DepositFromBPT(address indexed sender, address indexed receiver, uint256 indexed amount);

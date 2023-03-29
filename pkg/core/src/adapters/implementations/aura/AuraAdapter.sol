@@ -13,6 +13,7 @@ import { Crops } from "../../abstract/extensions/Crops.sol";
 import { Errors } from "@sense-finance/v1-utils/libs/Errors.sol";
 import { ExtractableReward } from "../../abstract/extensions/ExtractableReward.sol";
 import { FixedMath } from "../../../external/FixedMath.sol";
+import "hardhat/console.sol";
 
 interface PriceOracleLike {
     function latestRoundData()
@@ -71,8 +72,8 @@ contract AuraAdapter is BaseAdapter, Crops, ExtractableReward {
         if (exRate != scaleStored) scaleStored = exRate;
     }
 
-    function getUnderlyingPrice() external view override returns (uint256 price) {
-        return 1e18;
+    function getUnderlyingPrice() external view override returns (uint256 rethPrice) {
+        rethPrice = RateProvider(AuraVaultWrapper(target).rateProviders(3)).getRate(); // RETH is the 4th rate provider
     }
 
     function unwrapTarget(uint256 amount) external override returns (uint256 assets) {

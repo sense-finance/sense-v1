@@ -7,8 +7,8 @@ const {
   CHAINS,
   VERIFY_CHAINS,
   WETH_TOKEN,
-  auraB_rETH_STABLE_vault,
   ROLLER_UTILS,
+  aurawstETH_rETH_sfrxETH_BPT_vault,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
@@ -36,7 +36,7 @@ const {
 
 task(
   "20230321-aura",
-  "Deploys an Aura Vault Wrapper for auraB-rETH-WETH-STABLE-vault and deploys an Ownable Aura Adapter & tests deploying an RLV and rolling",
+  "Deploys an Aura Vault Wrapper for aurawstETH_rETH_sfrxETH_BPT_vault and deploys an Ownable Aura Adapter & tests deploying an RLV and rolling",
 ).setAction(async (_, { ethers }) => {
   const _deployAdapter = async (divider, target) => {
     console.log("\n-------------------------------------------------------");
@@ -129,7 +129,7 @@ task(
     console.log("-------------------------------------------------------");
     const { address: targetAddress, abi } = await deploy("AuraVaultWrapper", {
       from: deployer,
-      args: [WETH_TOKEN.get(chainId), auraB_rETH_STABLE_vault.get(chainId)],
+      args: [WETH_TOKEN.get(chainId), aurawstETH_rETH_sfrxETH_BPT_vault.get(chainId)],
       log: true,
       // gasPrice: 28000000000,
     });
@@ -267,11 +267,12 @@ task(
     await _roll(wrapper, stake, adapterArgs.stakeSize, rlv);
   }
 
-  console.log("\n-------------------------------------------------------");
-
   if (deployer.toUpperCase() !== senseAdminMultisigAddress.toUpperCase()) {
+    console.log("-------------------------------------------------------");
+    console.log("Unset deployer as trusted address and set multisig");
+    console.log("-------------------------------------------------------");
+    
     // Unset deployer and set multisig as trusted address
-
     console.log(`\n- Set multisig as trusted address of Wrapper`);
     await (await wrapper.setIsTrusted(senseAdminMultisigAddress, true)).wait();
 
