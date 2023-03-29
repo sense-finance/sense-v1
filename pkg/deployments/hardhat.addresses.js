@@ -422,7 +422,7 @@ exports.BB_wstETH4626 = BB_wstETH4626;
 
 // Aura
 exports.auraB_rETH_STABLE_vault = auraB_rETH_STABLE_vault;
-exports.aurawstETH_rETH_sfrxETH_BPT_vault = aurawstETH-rETH-sfrxETH-BPT-vault;
+exports.aurawstETH_rETH_sfrxETH_BPT_vault = aurawstETH_rETH_sfrxETH_BPT_vault;
 exports.AURA = AURA;
 
 // Angle

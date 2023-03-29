@@ -45,7 +45,7 @@ contract ComposableStablePreview is StablePreviewBase {
         ImmutableData memory imd = abi.decode(poolImmutableData, (ImmutableData));
 
         TokenRateCache[] memory caches = _beforeSwapJoinExit(imd);
-        
+
         uint256[] memory scalingFactors = _scalingFactors(imd, caches);
 
         // skip totalSupply == 0 case

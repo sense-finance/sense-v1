@@ -271,7 +271,7 @@ task(
     console.log("-------------------------------------------------------");
     console.log("Unset deployer as trusted address and set multisig");
     console.log("-------------------------------------------------------");
-    
+
     // Unset deployer and set multisig as trusted address
     console.log(`\n- Set multisig as trusted address of Wrapper`);
     await (await wrapper.setIsTrusted(senseAdminMultisigAddress, true)).wait();
