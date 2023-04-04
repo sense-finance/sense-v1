@@ -275,7 +275,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         vm.prank(bob);
         ERC20(AddressBook.DAI).approve(AddressBook.PERMIT2, type(uint256).max);
 
-        Periphery.SwapQuote memory quote = _getQuote(AddressBook.DAI, AddressBook.DAI);
+        Periphery.SwapQuote memory quote = _getQuote(AddressBook.DAI, AddressBook.DAI, Constants.DEFAULT_STAKE_SIZE);
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.DAI);
         vm.prank(bob);
         (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
@@ -492,7 +492,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&buyAmount=100000000000000000000
         // NOTE we are using a quote to sell 100 USDC which will give us ~100 DAI which is more than the 1 DAI we need to pay the stake
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
-            amount: 0,
+            amount: 100e18,
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,
@@ -550,7 +550,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             false,
             data,
-            _getQuote(AddressBook.DAI, AddressBook.DAI)
+            _getQuote(AddressBook.DAI, AddressBook.DAI, Constants.DEFAULT_STAKE_SIZE)
         );
 
         // Check pt and yt deployed
@@ -1463,7 +1463,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             maturity,
             false,
             data,
-            _getQuote(address(stake), address(stake))
+            _getQuote(address(stake), address(stake), 0)
         );
     }
 
@@ -1681,10 +1681,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     /// @dev If fromToken is the same as the toToken, we don't need to swao so we return
     /// the quote with the tokens as they are. No swap call data is returned.
-    function _getQuote(address fromToken, address toToken) public returns (Periphery.SwapQuote memory quote) {
+    function _getQuote(address fromToken, address toToken, uint256 amt) public returns (Periphery.SwapQuote memory quote) {
         if (fromToken == toToken) {
             quote.sellToken = ERC20(fromToken);
             quote.buyToken = ERC20(toToken);
+            quote.amount = amt;
             return quote;
         }
     }

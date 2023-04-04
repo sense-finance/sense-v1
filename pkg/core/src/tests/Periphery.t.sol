@@ -888,6 +888,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             1e18,
+            DEADLINE,
             0,
             jim,
             data,
@@ -1917,6 +1918,67 @@ contract PeripheryTest is TestHelper {
     }
 
     /* ========== issuance tests ========== */
+    function testCanReceiveETH() public {
+        // we make sure functions have the payable modifier, otherwise, this would not even compile
+        Periphery.PermitData memory permit;
+        Periphery.PermitBatchData memory batchPermit;
+        uint256[] memory minAmountsOut;
+
+        vm.expectRevert();
+        periphery.sponsorSeries{ value: 1e18 }(address(0), 0, false, permit, _getQuote(address(0), address(0)));
+
+        vm.expectRevert();
+        periphery.swapForPTs{ value: 1e18 }(address(0), 0, 0, 0, 0, address(0), permit, _getQuote(address(0), address(0)));
+
+        vm.expectRevert();
+        periphery.swapForYTs{ value: 1e18 }(
+            address(0),
+            0,
+            0,
+            0,
+            0,
+            0,
+            address(0),
+            permit,
+            _getQuote(address(0), address(0))
+        );
+
+        vm.expectRevert();
+        periphery.swapPTs{ value: 1e18 }(address(0), 0, 0, 0, 0, address(0), permit, _getQuote(address(0), address(0)));
+
+        vm.expectRevert();
+        periphery.swapYTs{ value: 1e18 }(address(0), 0, 0, 0, 0, address(0), permit, _getQuote(address(0), address(0)));
+
+        vm.expectRevert();
+        periphery.addLiquidity{ value: 1e18 }(
+            address(0),
+            0,
+            0,
+            Periphery.AddLiquidityParams(0, 0, 0),
+            0,
+            address(0),
+            permit,
+            _getQuote(address(0), address(0))
+        );
+
+        vm.expectRevert();
+        periphery.removeLiquidity{ value: 1e18 }(
+            address(0),
+            0,
+            0,
+            Periphery.RemoveLiquidityParams(0, minAmountsOut, 0),
+            false,
+            address(0),
+            permit,
+            _getQuote(address(0), address(0))
+        );
+
+        vm.expectRevert();
+        periphery.issue{ value: 1e18 }(address(0), 0, 0, jim, permit, _getQuote(address(0), address(0)));
+
+        vm.expectRevert();
+        periphery.combine{ value: 1e18 }(address(0), 0, 0, address(0), batchPermit, _getQuote(address(0), address(0)));
+    }
 
     function testIssue() public {
         uint256 tBal = 100 * 10**tDecimals;
