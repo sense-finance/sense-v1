@@ -13,7 +13,6 @@ library AddressBook {
     address public constant LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
     address public constant FXS = 0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0;
     address public constant MUSD = 0xe2f2a5C287993345a840Db3B0845fbC70f5935a5;
-    address public constant HT = 0x6f259637dcD74C767781E37Bc6133cd6A68aa161;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
 
     // ctokens
