@@ -286,7 +286,60 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
-    function testMainnetSponsorSeriesFromToken() public {
+    function testMainnetSponsorSeriesFromTokenWithApprove() public {
+        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        vm.rollFork(16583087);
+
+        // Re-deploy Periphery and set everything up
+        _setUp(false);
+
+        // Set guarded as false to skip setting a guard
+        vm.prank(AddressBook.SENSE_MULTISIG);
+        Divider(divider).setGuarded(false);
+
+        CAdapter cadapter = CAdapter(payable(periphery.deployAdapter(address(cfactory), AddressBook.cBAT, "")));
+
+        // Calculate maturity
+        (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(
+            block.timestamp + Constants.DEFAULT_MIN_MATURITY
+        );
+        uint256 maturity = DateTimeFull.timestampFromDateTime(
+            month == 12 ? year + 1 : year,
+            month == 12 ? 1 : (month + 1),
+            1,
+            0,
+            0,
+            0
+        );
+
+        // Mint bob some AddressBook.USDC (to then swap for DAI to pay stake)
+        deal(AddressBook.USDC, bob, type(uint256).max);
+
+        vm.prank(bob);
+        ERC20(AddressBook.USDC).approve(address(periphery), type(uint256).max);
+
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
+        Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 1e18,
+            sellToken: ERC20(AddressBook.USDC),
+            buyToken: ERC20(AddressBook.DAI),
+            spender: AddressBook.EXCHANGE_PROXY,
+            swapTarget: payable(AddressBook.EXCHANGE_PROXY),
+            swapCallData: _getSwapCallData(AddressBook.USDC, AddressBook.DAI)
+        });
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
+
+        // Check pt and yt deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
+
+        // Check PT and YT onboarded on PoolManager (Fuse)
+        // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
+        // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+    }
+
+    function testMainnetSponsorSeriesFromTokenWithPermit() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
 
@@ -320,6 +373,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,
@@ -371,6 +425,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // NOTE we are using buyAmount instead of sellAmount
         // TODO: not sure why it's failing to buy a small amount (I'm changing the quote to be to buy 500 DAI instead of 1 DAI to make it pass)
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(periphery.ETH()),
             buyToken: ERC20(AddressBook.DAI),
             spender: address(0),
@@ -431,6 +486,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&buyAmount=100000000000000000000
         // NOTE we are using a quote to sell 100 USDC which will give us ~100 DAI which is more than the 1 DAI we need to pay the stake
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,
@@ -1083,6 +1139,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         deal(AddressBook.USDC, address(periphery), 1e6);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API
@@ -1201,6 +1258,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 1. Revert if sell token is address(0)
         deal(AddressBook.USDC, address(periphery), 1e6);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(address(0)),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API
@@ -1213,6 +1271,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 2. Revert if buy token is address(0)
         deal(AddressBook.USDC, address(periphery), 1e6);
         quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(address(0)),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API
@@ -1231,6 +1290,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         deal(AddressBook.USDT, address(periphery), 1e6);
         quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDT),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API
@@ -1249,6 +1309,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Load USDT (NOT USDC)
         deal(AddressBook.USDT, address(periphery), 1e6);
         quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDT),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API
@@ -1265,6 +1326,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Load USDT (NOT USDC)
         deal(AddressBook.USDT, address(periphery), 1e6);
         quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDT),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API
@@ -1283,6 +1345,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // USDC to DAI: https://api.0x.org/swap/v1/quote?sellToken=USDC&buyToken=DAI&sellAmount=1000000
         deal(AddressBook.USDC, address(periphery), 0.1e6);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
+            amount: 0,
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY, // from 0x API

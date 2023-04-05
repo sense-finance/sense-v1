@@ -41,6 +41,7 @@ contract PeripheryTest is TestHelper {
     function testSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
 
+        vm.expectEmit(false, false, false, false);
         emit SeriesSponsored(address(adapter), maturity, address(this));
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
