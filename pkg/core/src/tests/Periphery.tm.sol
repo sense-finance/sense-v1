@@ -97,6 +97,8 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
     uint256 internal jimPrivKey = _randomUint256();
     address internal jim = vm.addr(jimPrivKey);
 
+    uint256 internal DEADLINE = block.timestamp + 1000;
+
     // Fee used for testing YT swaps, must be accounted for when doing external ref checks with the yt buying lib
     uint128 internal constant IFEE_FOR_YT_SWAPS = 0.042e18; // 4.2%
 
@@ -132,6 +134,7 @@ contract PeripheryTestHelper is ForkTest, Permit2Helper {
     function _setUp(bool createFork) internal returns (uint256 timestamp) {
         if (createFork) fork();
         vm.rollFork(16449463); // Same as block defined in ci.yml
+        DEADLINE = block.timestamp + 1000;
 
         (uint256 year, uint256 month, ) = DateTimeFull.timestampToDate(block.timestamp);
         uint256 firstDayOfMonth = DateTimeFull.timestampFromDateTime(year, month, 1, 0, 0, 0);
@@ -289,6 +292,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetSponsorSeriesFromToken() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -341,6 +345,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetSponsorSeriesFromETH() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -398,6 +403,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetSponsorSeriesFromTokenWithTokenExcess() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -531,6 +537,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetAddLiquidity() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -616,6 +623,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetRemoveLiquidity() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -696,6 +704,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     function testMainnetSwapAllForPTs() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -752,11 +761,21 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
         vm.expectRevert();
         this._swapTokenForPTs(adapter, maturity, quote, amt);
+
+        // 6. Can't swap if deadline expires
+        vm.warp(DEADLINE + 1);
+        token = ERC20(AddressBook.DAI);
+        amt = 10**token.decimals(); // 1 DAI
+        // Create quote from 0x API to do a 1 DAI to underlying swap
+        quote = _getBuyUnderlyingQuote(adapter, address(token));
+        vm.expectRevert("BAL#508"); // #508 = SWAP_DEADLINE
+        this._swapTokenForPTs(adapter, maturity, quote, amt);
     }
 
     function testMainnetSwapPTsForAll() public {
         // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
         vm.rollFork(16583087);
+        DEADLINE = block.timestamp + 1000;
 
         // Re-deploy Periphery and set everything up
         _setUp(false);
@@ -819,6 +838,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             address(mockAdapter),
             maturity,
             ytBalPre / 10,
+            DEADLINE,
             0,
             bob,
             data,
@@ -854,6 +874,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             address(mockAdapter),
             maturity,
             TARGET_IN,
+            DEADLINE,
             TARGET_TO_BORROW,
             TARGET_TO_BORROW, // Min out is just the amount of Target borrowed
             // (if at least the Target borrowed is not swapped out, then we won't be able to pay back the flashloan)
@@ -1015,6 +1036,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             address(mockAdapter),
             maturity,
             TARGET_IN,
+            DEADLINE,
             TARGET_TO_BORROW,
             TARGET_TO_BORROW,
             msg.sender,
@@ -1077,6 +1099,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     function testMainnetFillQuote() public {
         vm.rollFork(16669120); // Feb-15-2023 01:40:23 PM +UTC
+        DEADLINE = block.timestamp + 1000;
 
         periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
@@ -1191,6 +1214,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     function testMainnetFillQuoteEdgeCases() public {
         vm.rollFork(16669120); // Feb-15-2023 01:40:23 PM +UTC
+        DEADLINE = block.timestamp + 1000;
 
         periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
@@ -1277,6 +1301,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     function testMainnetCantFillQuoteIfNotEnoughBalance() public {
         vm.rollFork(16664305); // Feb-15-2023 01:40:23 PM +UTC
+        DEADLINE = block.timestamp + 1000;
 
         periphery = new PeripheryFQ(divider, spaceFactory, balancerVault, address(permit2), AddressBook.EXCHANGE_PROXY);
 
@@ -1402,8 +1427,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
                 address(mockAdapter),
                 maturity,
                 targetToJoin,
-                0,
-                0,
+                Periphery.AddLiquidityData(0, 0, DEADLINE),
                 1,
                 bob,
                 generatePermit(bobPrivKey, address(periphery), address(target)),
@@ -1419,6 +1443,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
                 address(mockAdapter),
                 maturity,
                 ptsToSwapIn,
+                DEADLINE,
                 0,
                 bob,
                 generatePermit(bobPrivKey, address(periphery), address(pt)),
@@ -1442,6 +1467,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             address(mockAdapter),
             maturity,
             targetIn,
+            DEADLINE,
             targetToBorrow,
             minOut,
             bob,
@@ -1497,6 +1523,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             address(mockAdapter),
             maturity,
             targetIn,
+            DEADLINE,
             targetToBorrow,
             minOut,
             msg.sender,
@@ -1666,9 +1693,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     ) public {
         ERC20 token = ERC20(address(quote.sellToken));
 
-        // 0. Get PT address
-        address pt = Divider(divider).pt(adapter, maturity);
-
         // 1. Load token into Bob's address
         if (address(token) == AddressBook.STETH) {
             // get steth by unwrapping wsteth because `deal()` won't work
@@ -1687,14 +1711,14 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(token));
 
         // 4. Swap Token for PTs
-        uint256 ptBalPre = ERC20(pt).balanceOf(bob);
+        uint256 ptBalPre = ERC20(Divider(divider).pt(adapter, maturity)).balanceOf(bob);
         uint256 tokenBalPre = token.balanceOf(bob);
 
         vm.prank(bob);
-        uint256 ptBal = periphery.swapForPTs(adapter, maturity, amt, 0, bob, data, quote);
+        uint256 ptBal = periphery.swapForPTs(adapter, maturity, amt, DEADLINE, 0, bob, data, quote);
 
         uint256 tokenBalPost = token.balanceOf(bob);
-        uint256 ptBalPost = ERC20(pt).balanceOf(bob);
+        uint256 ptBalPost = ERC20(Divider(divider).pt(adapter, maturity)).balanceOf(bob);
 
         // Check that the return values reflect the token balance changes
         assertEq(tokenBalPre, tokenBalPost + amt);
@@ -1735,7 +1759,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             uint256 tokenBalPre = token.balanceOf(bob);
 
             vm.prank(bob);
-            tokenOut = periphery.swapPTs(adapter, maturity, ptBalPre, minAccepted, bob, data, quote);
+            tokenOut = periphery.swapPTs(adapter, maturity, ptBalPre, DEADLINE, minAccepted, bob, data, quote);
             uint256 tokenBalPost = token.balanceOf(bob);
             uint256 ptBalPost = ERC20(pt).balanceOf(bob);
 
@@ -1820,8 +1844,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             adapter,
             maturity,
             amt,
-            0,
-            0,
+            Periphery.AddLiquidityData(0, 0, DEADLINE),
             1,
             bob,
             generatePermit(bobPrivKey, address(periphery), address(quote.sellToken)),
@@ -1876,8 +1899,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             adapter,
             maturity,
             amt,
-            new uint256[](2),
-            0,
+            Periphery.RemoveLiquidityData(0, new uint256[](2), DEADLINE),
             true, // swap PTs for tokens
             bob,
             generatePermit(bobPrivKey, address(periphery), lp),

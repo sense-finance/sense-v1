@@ -21,6 +21,7 @@ import { IPermit2 } from "@sense-finance/v1-core/external/IPermit2.sol";
 
 contract PeripheryTest is TestHelper {
     using FixedMath for uint256;
+    uint256 public DEADLINE = block.timestamp + 1000;
 
     function testDeployPeriphery() public {
         address spaceFactory = address(2);
@@ -630,49 +631,74 @@ contract PeripheryTest is TestHelper {
 
     /* ========== swap tests ========== */
 
-    function testFuzzSwapTargetForPTs(address receiver) public {
-        vm.assume(receiver != 0xA4AD4f68d0b91CFD19687c881e50f3A00242828c);
+    function testSwapTargetForPTsWhenDeadlineExpired() public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
+
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (address pt, address yt) = periphery.sponsorSeries(
-            address(adapter),
-            maturity,
-            true,
-            data,
-            _getQuote(address(stake), address(stake))
-        );
+        periphery.sponsorSeries(address(adapter), maturity, true, data, _getQuote(address(stake), address(stake)));
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
 
-        uint256 ytBalBefore = ERC20(yt).balanceOf(receiver);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(receiver);
+        // roll to deadline + 1 so the swap should fail
+        vm.warp(DEADLINE + 1);
 
-        // unwrap target into underlying
-        uint256 uBal = tBal.fmul(adapter.scale());
+        {
+            data = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.swapForPTs(
+                address(adapter),
+                maturity,
+                tBal,
+                DEADLINE,
+                0,
+                bob,
+                data,
+                _getQuote(address(target), address(0))
+            );
+        }
+    }
 
-        // calculate underlying swapped to pt
-        uint256 ptBal = uBal.fdiv(balancerVault.EXCHANGE_RATE());
+    function testFuzzSwapTargetForPTs(address receiver) public {
+        vm.assume(receiver != 0xA4AD4f68d0b91CFD19687c881e50f3A00242828c);
+        uint256 tBal = 100 * 10**tDecimals;
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
+        vm.prank(bob);
+        periphery.sponsorSeries(address(adapter), maturity, true, data, _getQuote(address(stake), address(stake)));
+
+        // add liquidity to mockBalancerVault
+        addLiquidityToBalancerVault(maturity, 1000e18);
+
+        uint256 ytBalBefore = ERC20(divider.yt(address(adapter), maturity)).balanceOf(receiver);
+        uint256 ptBalBefore = ERC20(divider.pt(address(adapter), maturity)).balanceOf(receiver);
+
+        // unwrap target into underlying & calculate underlying swapped to pt
+        uint256 ptBal = tBal.fmul(adapter.scale()).fdiv(balancerVault.EXCHANGE_RATE());
 
         vm.expectEmit(true, false, false, false);
         emit Swapped(bob, "0", adapter.target(), address(0), 0, 0, msg.sig);
 
-        data = generatePermit(bobPrivKey, address(periphery), address(target));
-        vm.prank(bob);
-        periphery.swapForPTs(
-            address(adapter),
-            maturity,
-            tBal,
-            0,
-            receiver,
-            data,
-            _getQuote(address(target), address(0))
-        );
+        {
+            data = generatePermit(bobPrivKey, address(periphery), address(target));
+            vm.prank(bob);
+            periphery.swapForPTs(
+                address(adapter),
+                maturity,
+                tBal,
+                DEADLINE,
+                0,
+                receiver,
+                data,
+                _getQuote(address(target), address(0))
+            );
+        }
 
-        assertEq(ytBalBefore, ERC20(yt).balanceOf(receiver));
-        assertEq(ptBalBefore + ptBal, ERC20(pt).balanceOf(receiver));
+        assertEq(ytBalBefore, ERC20(divider.yt(address(adapter), maturity)).balanceOf(receiver));
+        assertEq(ptBalBefore + ptBal, ERC20(divider.pt(address(adapter), maturity)).balanceOf(receiver));
     }
 
     function testFuzzSwapUnderlyingForPTs(address receiver) public {
@@ -713,6 +739,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             uBal,
+            DEADLINE,
             0,
             receiver,
             data,
@@ -763,6 +790,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             ptBalBefore,
+            DEADLINE,
             0,
             receiver,
             data,
@@ -778,13 +806,7 @@ contract PeripheryTest is TestHelper {
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(stake));
         vm.prank(bob);
-        (address pt, ) = periphery.sponsorSeries(
-            address(adapter),
-            maturity,
-            true,
-            data,
-            _getQuote(address(stake), address(stake))
-        );
+        periphery.sponsorSeries(address(adapter), maturity, true, data, _getQuote(address(stake), address(stake)));
 
         // add liquidity to mockBalancerVault
         addLiquidityToBalancerVault(maturity, 1000e18);
@@ -798,29 +820,29 @@ contract PeripheryTest is TestHelper {
         divider.settleSeries(address(adapter), maturity);
 
         uint256 tBalBefore = ERC20(adapter.target()).balanceOf(receiver);
-        uint256 ptBalBefore = ERC20(pt).balanceOf(receiver);
+        uint256 ptBalBefore = ERC20(divider.pt(address(adapter), maturity)).balanceOf(receiver);
 
         vm.prank(bob);
-        ERC20(pt).approve(address(permit2), ptBalBefore);
+        ERC20(divider.pt(address(adapter), maturity)).approve(address(permit2), ptBalBefore);
 
         (, , , , , , , uint256 mscale, ) = divider.series(address(adapter), maturity);
         uint256 tBalRedeemed = ptBalBefore.fdiv(mscale);
         vm.expectEmit(true, true, true, false);
         emit PTRedeemed(address(adapter), maturity, tBalRedeemed);
 
-        data = generatePermit(bobPrivKey, address(periphery), pt);
+        data = generatePermit(bobPrivKey, address(periphery), divider.pt(address(adapter), maturity));
         vm.prank(bob);
         uint256 redeemed = periphery.swapPTs(
             address(adapter),
             maturity,
             ptBalBefore,
+            DEADLINE,
             0,
             receiver,
             data,
             _getQuote(address(0), address(target))
         );
-        uint256 ptBalAfter = ERC20(pt).balanceOf(receiver);
-        assertEq(ptBalAfter, 0);
+        assertEq(ERC20(divider.pt(address(adapter), maturity)).balanceOf(receiver), 0);
         assertEq(tBalBefore + redeemed, target.balanceOf(receiver));
     }
 
@@ -870,6 +892,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             ptBalBefore,
+            DEADLINE,
             0,
             receiver,
             data,
@@ -922,6 +945,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             ytBalBefore,
+            DEADLINE,
             remainingYTInTarget,
             receiver,
             data,
@@ -949,8 +973,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             tBal,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             0,
             alice,
             data,
@@ -982,8 +1005,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             tBal,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             1,
             alice,
             data,
@@ -1013,8 +1035,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             1,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             0,
             bob,
             data,
@@ -1030,8 +1051,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             tBal,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             0,
             alice,
             data,
@@ -1061,8 +1081,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             1,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             0,
             bob,
             data,
@@ -1078,8 +1097,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             tBal,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             1,
             alice,
             data,
@@ -1117,8 +1135,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 1,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 0,
                 bob,
                 data,
@@ -1171,8 +1188,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 tBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 0,
                 jim,
                 data,
@@ -1219,8 +1235,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 1,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 bob,
                 data,
@@ -1258,8 +1273,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 tBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 jim,
                 data,
@@ -1299,8 +1313,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 1,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 bob,
                 data,
@@ -1347,8 +1360,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 uBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 jim,
                 data,
@@ -1398,8 +1410,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             tBal,
-            0,
-            type(uint256).max,
+            Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
             1,
             bob,
             data,
@@ -1421,8 +1432,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             lpBal,
-            minAmountsOut,
-            0,
+            Periphery.RemoveLiquidityData(0, minAmountsOut, DEADLINE),
             true,
             alice,
             data,
@@ -1475,8 +1485,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 tBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 bob,
                 data,
@@ -1507,8 +1516,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 lpBal,
-                minAmountsOut,
-                0,
+                Periphery.RemoveLiquidityData(0, minAmountsOut, DEADLINE),
                 true,
                 jim,
                 data,
@@ -1577,8 +1585,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 tBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 bob,
                 data,
@@ -1611,8 +1618,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 3 * 10**tDecimals,
-                minAmountsOut,
-                0,
+                Periphery.RemoveLiquidityData(0, minAmountsOut, DEADLINE),
                 true,
                 jim,
                 data,
@@ -1647,8 +1653,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 tBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 bob,
                 data,
@@ -1674,8 +1679,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 lpBalBefore,
-                minAmountsOut,
-                0,
+                Periphery.RemoveLiquidityData(0, minAmountsOut, DEADLINE),
                 true,
                 jim,
                 data,
@@ -1822,8 +1826,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 tBal,
-                0,
-                type(uint256).max,
+                Periphery.AddLiquidityData(0, type(uint256).max, DEADLINE),
                 1,
                 bob,
                 data,
@@ -1840,8 +1843,7 @@ contract PeripheryTest is TestHelper {
                 address(adapter),
                 maturity,
                 ERC20(pool).balanceOf(bob),
-                minAmountsOut,
-                0,
+                Periphery.RemoveLiquidityData(0, minAmountsOut, DEADLINE),
                 false,
                 jim,
                 data,
