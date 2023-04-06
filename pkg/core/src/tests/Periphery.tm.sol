@@ -1427,7 +1427,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
                 address(mockAdapter),
                 maturity,
                 targetToJoin,
-                Periphery.AddLiquidityData(0, 0, DEADLINE),
+                0,
+                0,
+                DEADLINE,
                 1,
                 bob,
                 generatePermit(bobPrivKey, address(periphery), address(target)),
@@ -1840,14 +1842,17 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 amt
     ) internal returns (uint256 lpShares) {
         vm.startPrank(bob);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(quote.sellToken));
         (, , lpShares) = periphery.addLiquidity{ value: address(quote.sellToken) == periphery.ETH() ? amt : 0 }(
             adapter,
             maturity,
             amt,
-            Periphery.AddLiquidityData(0, 0, DEADLINE),
+            0,
+            0,
+            DEADLINE,
             1,
             bob,
-            generatePermit(bobPrivKey, address(periphery), address(quote.sellToken)),
+            data,
             quote
         );
         vm.stopPrank();
@@ -1899,7 +1904,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             adapter,
             maturity,
             amt,
-            Periphery.RemoveLiquidityData(0, new uint256[](2), DEADLINE),
+            new uint256[](2),
+            0,
+            DEADLINE,
             true, // swap PTs for tokens
             bob,
             generatePermit(bobPrivKey, address(periphery), lp),
