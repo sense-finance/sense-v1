@@ -373,7 +373,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
-            amount: 0,
+            amount: 1000000e6, // we a large amount of USDC (which will be converted into stake token)
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,

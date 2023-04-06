@@ -675,5 +675,8 @@ contract TestHelper is Test, Permit2Helper {
         } else {
             quote.sellToken = ERC20(fromToken);
         }
+        if (fromToken == address(stake)) {
+            quote.amount = STAKE_SIZE;
+        }
     }
 }
