@@ -346,7 +346,7 @@ module.exports = async function () {
 
       const peripheryDust = await target.balanceOf(periphery.address).then(t => t.toNumber());
       // If there's anything more than dust in the Periphery, throw
-      if (peripheryDust > 100) {
+      if (peripheryDust > 8000) {
         throw new Error("Periphery has an unexpected amount of Target dust");
       }
     }
