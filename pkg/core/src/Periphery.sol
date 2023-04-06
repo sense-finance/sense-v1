@@ -742,6 +742,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bytes32 poolId;
 
         {
+            // 1. Remove liquidity from Space
             BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
             _transferFrom(permit, address(pool), lpBal);
             poolId = pool.getPoolId();
