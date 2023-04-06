@@ -824,6 +824,62 @@ contract PeripheryTest is TestHelper {
         assertEq(tBalBefore + redeemed, target.balanceOf(receiver));
     }
 
+    function testSwapFuzzPTsForTargetNoAutoRedeemIfRedeemRestricted() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        // create adapter with ptRedeem restricted
+        target = MockTargetLike(deployMockTarget(address(underlying), "Compound USDC", "cUSDC", tDecimals));
+
+        divider.setPermissionless(true);
+        DEFAULT_ADAPTER_PARAMS.level = 0x1 + 0x2 + 0x4 + 0x8; // redeem restricted;
+        adapter = MockCropAdapter(deployMockAdapter(address(divider), address(target), address(reward)));
+
+        periphery.verifyAdapter(address(adapter));
+        periphery.onboardAdapter(address(adapter), true);
+        divider.setGuard(address(adapter), 10 * 2**128);
+
+        // sponsor series
+        stake.approve(address(periphery), type(uint256).max);
+        Periphery.PermitData memory data;
+        (address pt, ) = periphery.sponsorSeries(
+            address(adapter),
+            maturity,
+            true,
+            data,
+            _getQuote(address(stake), address(0))
+        );
+
+        spaceFactory.create(address(adapter), maturity);
+        adapter.scale();
+        addLiquidityToBalancerVault(address(adapter), maturity, 1000 * 10**tDecimals);
+
+        // settle series
+        vm.warp(maturity);
+        divider.settleSeries(address(adapter), maturity);
+
+        uint256 ptBalBefore = ERC20(pt).balanceOf(jim);
+        uint256 tBalBefore = ERC20(adapter.target()).balanceOf(jim);
+
+        vm.startPrank(bob);
+        deal(divider.pt(address(adapter), maturity), bob, 1e18); // load bob's wallet with 1 PT
+        ERC20(pt).approve(address(permit2), 1e18); // approve permit2 to pull PT
+        data = generatePermit(bobPrivKey, address(periphery), pt);
+        uint256 tBal = periphery.swapPTs(
+            address(adapter),
+            maturity,
+            1e18,
+            0,
+            jim,
+            data,
+            _getQuote(address(0), address(target))
+        );
+        vm.stopPrank();
+
+        assertEq(tBal, ERC20(adapter.target()).balanceOf(jim) - tBalBefore);
+        assertEq(ptBalBefore, ERC20(pt).balanceOf(jim));
+        assertEq(ERC20(pt).balanceOf(bob), 0);
+    }
+
     function testFuzzSwapPTsForUnderlying(address receiver) public {
         uint256 tBal = 100 * 10**tDecimals;
         uint256 maturity = getValidMaturity(2021, 10);
