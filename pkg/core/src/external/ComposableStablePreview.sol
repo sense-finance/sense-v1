@@ -19,7 +19,6 @@ contract ComposableStablePreview is StablePreviewBase {
         address[] rateProviders;
         uint256[] rawScalingFactors;
         bool[] isExemptFromYieldProtocolFee;
-        //
         address LP;
         bool noTokensExempt;
         bool allTokensExempt;

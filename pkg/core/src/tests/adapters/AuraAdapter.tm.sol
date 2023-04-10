@@ -28,6 +28,8 @@ import { Constants } from "../test-helpers/Constants.sol";
 import { DateTimeFull } from "../test-helpers/DateTimeFull.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 import { MockFactory } from "../test-helpers/mocks/MockFactory.sol";
+import { ERC4626Adapters } from "@sense-finance/v1-core/tests/adapters/ERC4626Adapter.tm.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import "hardhat/console.sol";
 
@@ -96,7 +98,7 @@ contract Opener is ForkTest {
     }
 }
 
-contract AuraAdapterTestHelper is ForkTest {
+contract AuraAdapterTestHelper is ERC4626Adapters {
     using FixedMath for uint256;
 
     AuraAdapter internal adapter;
@@ -105,9 +107,9 @@ contract AuraAdapterTestHelper is ForkTest {
     Periphery internal periphery;
     TokenHandler internal tokenHandler;
     Opener public opener;
+    ERC4626Adapters public erc4626Adapters;
 
-    ERC20 public underlying;
-    AuraVaultWrapper public target;
+    AuraVaultWrapper public wrapper;
     BalancerVault public balancerVault;
     address public aToken;
 
@@ -122,7 +124,7 @@ contract AuraAdapterTestHelper is ForkTest {
 
     AutoRollerFactory public constant rlvFactory = AutoRollerFactory(0x3B0f35bDD6Da9e3b8513c58Af8Fdf231f60232E5);
 
-    function setUp() public {
+    function setUp() public override {
         fork();
 
         address previewHelper = deployCode("ComposableStablePreview.sol");
@@ -131,11 +133,12 @@ contract AuraAdapterTestHelper is ForkTest {
         address poolBaseAsset = AddressBook.RETH;
         underlying = ERC20(poolBaseAsset);
         target = new AuraVaultWrapper(ERC20(underlying), ERC4626(aToken), IBalancerStablePreview(previewHelper));
-        balancerVault = BalancerVault(address(target.balancerVault()));
+        wrapper = AuraVaultWrapper(address(target));
+        balancerVault = BalancerVault(address(wrapper.balancerVault()));
         divider = Divider(AddressBook.DIVIDER_1_2_0);
 
         vm.prank(AddressBook.SENSE_MULTISIG);
-        divider.setPeriphery(address(this));
+        // divider.setPeriphery(address(this));
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: AddressBook.ETH_USD_PRICEFEED, // Chainlink ETH-USD price feed
@@ -162,14 +165,14 @@ contract AuraAdapterTestHelper is ForkTest {
         ); // aToken adapter
 
         // we set Sense Multisig as trusted so we can set the adapter as a rewardsReceipient
-        target.setIsTrusted(AddressBook.SENSE_MULTISIG, true);
+        wrapper.setIsTrusted(AddressBook.SENSE_MULTISIG, true);
 
         // we unset the deployer as trusted from target
-        target.setIsTrusted(address(this), false);
+        wrapper.setIsTrusted(address(this), false);
 
         // set adapter as rewards recipient
         vm.prank(AddressBook.SENSE_MULTISIG);
-        target.setRewardsRecipient(address(adapter));
+        wrapper.setRewardsRecipient(address(adapter));
 
         _setAdapter(address(adapter));
 
@@ -196,6 +199,12 @@ contract AuraAdapterTestHelper is ForkTest {
         vm.prank(0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f);
         authorizer.grantRole(actionId, address(this));
         protocolFeesCollector.setSwapFeePercentage(0);
+
+        // Prepare to run ERC4626Adapters test suite using wrapper as target
+        vm.setEnv("ERC4626_ADDRESS", Strings.toHexString(address(target)));
+        vm.setEnv("DELTA_PERCENTAGE", Strings.toString(0.001e18));
+        _setUp(false);
+        console.log("Running tests with vault: ", target.symbol());
     }
 
     function _sponsorSeries()
@@ -210,12 +219,13 @@ contract AuraAdapterTestHelper is ForkTest {
         maturity = DateTimeFull.timestampFromDateTime(2023, 5, 1, 0, 0, 0); // Monday
 
         // mint stake to sponsor Series
-        deal(AddressBook.DAI, address(this), STAKE_SIZE);
+        deal(AddressBook.DAI, divider.periphery(), STAKE_SIZE);
 
         // sponsor series
+        vm.startPrank(divider.periphery());
         ERC20(AddressBook.DAI).approve(address(divider), STAKE_SIZE);
-        vm.prank(divider.periphery());
         (pt, yt) = divider.initSeries(address(adapter), maturity, msg.sender);
+        vm.stopPrank();
     }
 
     function _setAdapter(address _adapter) internal {
@@ -236,7 +246,7 @@ contract AuraAdapterTestHelper is ForkTest {
     ) internal returns (uint256 issued) {
         vm.startPrank(_from);
         // issue `_amt`
-        target.approve(address(divider), _amt);
+        wrapper.approve(address(divider), _amt);
         issued = divider.issue(_adapter, _maturity, _amt);
         vm.stopPrank();
 
@@ -248,7 +258,7 @@ contract AuraAdapterTestHelper is ForkTest {
     }
 
     function _getRate() internal view returns (uint256) {
-        return RateProvider(address(target.pool())).getRate();
+        return RateProvider(address(wrapper.pool())).getRate();
     }
 
     function _balancerSwap(
@@ -281,12 +291,13 @@ contract AuraAdapterTestHelper is ForkTest {
         amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
     }
 
-    function _increaseScale(uint64 swapSize) internal {
+    function _increaseVaultYield(uint256 swapSize) internal override {
+        vm.assume(swapSize <= type(uint64).max);
         // increase scale (BPT price) by doing a swap
         address from = address(0x123);
         vm.startPrank(from);
         deal(address(underlying), from, swapSize);
-        BalancerPool pool = BalancerPool(address(target.aToken().asset()));
+        BalancerPool pool = BalancerPool(address(wrapper.aToken().asset()));
         _balancerSwap(address(underlying), AddressBook.WSTETH, swapSize, pool.getPoolId(), 0, payable(from));
         vm.stopPrank();
     }
@@ -300,11 +311,11 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertEq(adapter.scale(), aTokenUnderlying);
     }
 
-    function testMainnetGetUnderlyingPrice() public {
+    function testMainnetGetUnderlyingPrice2() public {
         (, int256 rethPrice, , , ) = PriceOracleLike(RETH_ETH_PRICEFEED).latestRoundData();
         // within 1%
-        uint256 rETHPrice = adapter.getUnderlyingPrice();
-        assertApproxEqAbs(rETHPrice, uint256(rethPrice), rETHPrice.fmul(0.050e18));
+        uint256 rETHPriceAdapter = adapter.getUnderlyingPrice();
+        assertApproxEqAbs(rETHPriceAdapter, uint256(rethPrice), rETHPriceAdapter.fmul(0.010e18));
     }
 
     function testMainnetUnwrapTarget() public {
@@ -312,22 +323,22 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         // deposit underlying (BPT) to get some target (w-aurawstETH_rETH_sfrxETH_BPT_vault)
         underlying.approve(address(target), 1e18);
-        uint256 deposit = target.deposit(1e18, address(this));
+        uint256 deposit = wrapper.deposit(1e18, address(this));
 
         // assert that the wrapper now has a balance of aurawstETH_rETH_sfrxETH_BPT_vault
         // which should be the same as the deposit (since 1:1)
-        assertEq(target.aToken().balanceOf(address(target)), deposit);
+        assertEq(wrapper.aToken().balanceOf(address(target)), deposit);
 
         // unwrap target (will return WETH)
         uint256 uBalanceBefore = underlying.balanceOf(address(this));
-        uint256 tBalanceBefore = target.balanceOf(address(this));
+        uint256 tBalanceBefore = wrapper.balanceOf(address(this));
 
-        target.approve(address(adapter), tBalanceBefore);
+        wrapper.approve(address(adapter), tBalanceBefore);
 
-        uint256 expectedUnwrapped = target.convertToAssets(tBalanceBefore);
+        uint256 expectedUnwrapped = wrapper.convertToAssets(tBalanceBefore);
         uint256 unwrapped = adapter.unwrapTarget(tBalanceBefore);
 
-        uint256 tBalanceAfter = target.balanceOf(address(this));
+        uint256 tBalanceAfter = wrapper.balanceOf(address(this));
         uint256 uBalanceAfter = underlying.balanceOf(address(this));
 
         assertEq(tBalanceAfter, 0);
@@ -335,21 +346,21 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertEq(expectedUnwrapped, unwrapped);
 
         // assert wrapper has NO aurawstETH_rETH_sfrxETH_BPT_vault balance
-        assertEq(target.aToken().balanceOf(address(target)), 0);
+        assertEq(wrapper.aToken().balanceOf(address(target)), 0);
     }
 
     function testMainnetWrapUnderlying() public {
         deal(address(underlying), address(this), 1e18);
 
         uint256 uBalanceBefore = underlying.balanceOf(address(this));
-        uint256 tBalanceBefore = target.balanceOf(address(this));
+        uint256 tBalanceBefore = wrapper.balanceOf(address(this));
 
         underlying.approve(address(adapter), uBalanceBefore);
 
-        uint256 expectedWrapped = target.convertToShares(uBalanceBefore);
+        uint256 expectedWrapped = wrapper.convertToShares(uBalanceBefore);
         uint256 wrapped = adapter.wrapUnderlying(uBalanceBefore);
 
-        uint256 tBalanceAfter = target.balanceOf(address(this));
+        uint256 tBalanceAfter = wrapper.balanceOf(address(this));
         uint256 uBalanceAfter = underlying.balanceOf(address(this));
 
         assertEq(uBalanceAfter, 0);
@@ -358,7 +369,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         assertEq(expectedWrapped, wrapped);
 
         // assert wrapper has a balance of aurawstETH_rETH_sfrxETH_BPT_vault
-        assertEq(target.aToken().balanceOf(address(target)), expectedWrapped);
+        assertEq(wrapper.aToken().balanceOf(address(target)), expectedWrapped);
     }
 
     function testMainnetWrapUnwrap(uint64 wrapAmt) public {
@@ -369,7 +380,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         // Approvals
         underlying.approve(address(adapter), type(uint256).max);
-        target.approve(address(adapter), type(uint256).max);
+        wrapper.approve(address(adapter), type(uint256).max);
 
         // Full cycle
         adapter.unwrapTarget(adapter.wrapUnderlying(wrapAmt));
@@ -400,13 +411,13 @@ contract AuraAdapters is AuraAdapterTestHelper {
         uint256 scale = adapter.scale(); // current scale
 
         // roll to period finish
-        vm.warp(IRewards(address(target.aToken())).periodFinish() + 100);
+        vm.warp(IRewards(address(wrapper.aToken())).periodFinish() + 100);
 
         // distribute rewards
         uint256 AURA_PID = 15; // 15 is the aura PID
         IBooster(AddressBook.AURA_BOOSTER).earmarkRewards(AURA_PID);
 
-        _increaseScale(swapSize);
+        _increaseVaultYield(swapSize);
 
         uint256 auraBalBefore = ERC20(AddressBook.AURA).balanceOf(address(this));
         uint256 balBalBefore = ERC20(AddressBook.BAL).balanceOf(address(this));
@@ -432,13 +443,13 @@ contract AuraAdapters is AuraAdapterTestHelper {
         // sponsor series and issue
         (, , uint256 maturity) = _sponsorSeries();
 
-        address bpt = address(target.pool());
+        address bpt = address(wrapper.pool());
 
         // load Alice with some target by wrapping BPT tokens (wstETH_rETH_sfrxETH_BPT_vault)
         uint256 amt = (60 * tBal) / 100;
         deal(bpt, address(this), amt);
         ERC20(bpt).approve(address(target), amt);
-        target.depositFromBPT(amt, address(this));
+        wrapper.depositFromBPT(amt, address(this));
 
         // alice issues
         _issue(address(adapter), maturity, address(this), amt);
@@ -448,17 +459,17 @@ contract AuraAdapters is AuraAdapterTestHelper {
         amt = (40 * tBal) / 100;
         deal(bpt, address(0xfede), amt);
         ERC20(bpt).approve(address(target), amt);
-        target.depositFromBPT(amt, address(0xfede));
+        wrapper.depositFromBPT(amt, address(0xfede));
         vm.stopPrank();
 
         // 0xfede issues
         _issue(address(adapter), maturity, address(0xfede), amt);
 
         // roll to period finish
-        vm.warp(IRewards(address(target.aToken())).periodFinish() + 100);
+        vm.warp(IRewards(address(wrapper.aToken())).periodFinish() + 100);
 
         // increase scale and distribute rewards
-        _increaseScale(swapSize);
+        _increaseVaultYield(swapSize);
 
         uint256 AURA_PID = 50; // 50 is the aura PID
         vm.prank(address(0x2)); // this address will receive a reward for calling `earmarkRewards`
@@ -506,13 +517,13 @@ contract AuraAdapters is AuraAdapterTestHelper {
         uint256 issued = _issue(address(adapter), maturity, address(this), tBalToIssue);
 
         // roll to period finish
-        vm.warp(IRewards(address(target.aToken())).periodFinish() + 100);
+        vm.warp(IRewards(address(wrapper.aToken())).periodFinish() + 100);
 
-        _increaseScale(swapSize);
+        _increaseVaultYield(swapSize);
 
         // combine
         uint256 combined = divider.combine(address(adapter), maturity, issued);
-        uint256 tBal = target.balanceOf(address(this));
+        uint256 tBal = wrapper.balanceOf(address(this));
         assertApproxEqAbs(tBalToIssue, combined, 2);
         assertApproxEqAbs(tBalToIssue, tBal, 2);
     }
@@ -547,7 +558,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
     }
 
     function testMainnetRoll(uint64 tBal) public {
-        uint256 tDecimals = target.decimals();
+        uint256 tDecimals = wrapper.decimals();
         uint256 rollAmt = 10**(tDecimals - 2); // amount needed for rolling (0.01 target)
         vm.assume(tBal > rollAmt);
 
@@ -563,7 +574,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
         deal(t, address(this), tBal); // 1 target for deposit + 0.1 target for roll
 
         // approve RLV to pull target
-        target.approve(address(rlv), type(uint64).max);
+        wrapper.approve(address(rlv), type(uint64).max);
 
         // approve RLV to pull stake
         ERC20 stake = ERC20(s);
@@ -592,8 +603,8 @@ contract AuraAdapters is AuraAdapterTestHelper {
         vm.expectEmit(true, true, true, true);
         emit DepositFromBPT(address(this), address(this), bptAmt);
 
-        target.depositFromBPT(bptAmt, address(this));
-        assertEq(target.balanceOf(address(this)), bptAmt);
+        wrapper.depositFromBPT(bptAmt, address(this));
+        assertEq(wrapper.balanceOf(address(this)), bptAmt);
         assertEq(ERC20(AddressBook.wstETH_rETH_sfrxETH_BPT_vault).balanceOf(address(this)), 0);
         assertEq(ERC20(AddressBook.aurawstETH_rETH_sfrxETH_BPT_vault).balanceOf(address(target)), bptAmt);
 
@@ -603,7 +614,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
         // combine
         uint256 combined = divider.combine(address(adapter), maturity, issued);
-        uint256 tBal = target.balanceOf(address(this));
+        uint256 tBal = wrapper.balanceOf(address(this));
         assertApproxEqAbs(bptAmt, combined, 2);
         assertApproxEqAbs(bptAmt, tBal, 2);
 
@@ -611,9 +622,15 @@ contract AuraAdapters is AuraAdapterTestHelper {
         vm.expectEmit(true, true, true, true);
         emit WithdrawToBPT(address(this), address(this), address(this), tBal);
 
-        target.withdrawToBPT(tBal, address(this), address(this));
-        assertEq(target.balanceOf(address(this)), 0);
+        wrapper.withdrawToBPT(tBal, address(this), address(this));
+        assertEq(wrapper.balanceOf(address(this)), 0);
         assertEq(ERC20(AddressBook.wstETH_rETH_sfrxETH_BPT_vault).balanceOf(address(this)), tBal);
+    }
+
+    // override testMainnetWrapUnwrap to avoid swapping very small amounts on balancer
+    function testMainnetWrapUnwrap(uint256 wrapAmt) public override {
+        vm.assume(wrapAmt > 1e6);
+        super.testMainnetWrapUnwrap(wrapAmt);
     }
 
     event DepositFromBPT(address indexed sender, address indexed receiver, uint256 indexed amount);

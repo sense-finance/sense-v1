@@ -277,11 +277,6 @@ contract AuraVaultWrapper is ERC4626, ExtractableReward {
         return abi.encode(res);
     }
 
-    function _getExemption() internal view virtual returns (bool[] memory res) {
-        res = new bool[](4);
-        res[0] = res[1] = res[2] = res[3] = false;
-    }
-
     function _convertIAssetsToAddresses(IAsset[] memory assets) internal pure returns (address[] memory addresses) {
         assembly {
             addresses := assets
