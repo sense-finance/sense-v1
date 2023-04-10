@@ -95,13 +95,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     struct AddLiquidityParams {
         uint256 minAccepted; // Min accepted amount of Target (from the sell of YTs)
         uint256 minBptOut; // Min BPT the user will accept out for this transaction
-        uint256 deadline;
+        uint256 deadline; // The UNIX timestamp at which our trade must be completed by - if the transaction is confirmed after this time then the transaction will fail.
     }
 
     struct RemoveLiquidityParams {
         uint256 minAccepted; // Min accepted when swapping PTs to underlying (only used when removing liquidity on/after maturity)
         uint256[] minAmountsOut; // Min accepted amounts of PTs and Target given the amount of LP shares provided
-        uint256 deadline;
+        uint256 deadline; // The UNIX timestamp at which our trade must be completed by - if the transaction is confirmed after this time then the transaction will fail.
     }
 
     constructor(
@@ -332,7 +332,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param amt Amount to provide
-    /// @param data AddLiquidityParams struct with data for the addLiquidity call
+    /// @param params AddLiquidityParams struct with the params for the addLiquidity call
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
     /// @param receiver Address to receive the BPT
     /// @param permit Permit to pull the tokens to swap from
@@ -344,7 +344,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
-        AddLiquidityParams memory data,
+        AddLiquidityParams memory params,
         uint8 mode,
         address receiver,
         PermitData calldata permit,
@@ -363,7 +363,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             adapter,
             maturity,
             _toTarget(adapter, amt, quote),
-            data,
+            params,
             mode,
             receiver,
             permit
@@ -375,7 +375,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param data RemoveLiquidityParams struct with data for the removeLiquidity call
+    /// @param params RemoveLiquidityParams struct with the params for the removeLiquidity call
     /// @param receiver Address to receive the Underlying
     /// @param permit Permit to pull the LP tokens
     /// @param quote Quote with swap details
@@ -387,13 +387,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 lpBal,
-        RemoveLiquidityParams memory data,
+        RemoveLiquidityParams memory params,
         bool swapPTs,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt, uint256 ptBal) {
-        (amt, ptBal) = _removeLiquidity(adapter, maturity, lpBal, data, swapPTs, receiver, permit);
+        (amt, ptBal) = _removeLiquidity(adapter, maturity, lpBal, params, swapPTs, receiver, permit);
         amt = _fromTarget(adapter, amt, quote);
         _transfer(quote.buyToken, receiver, amt);
     }
@@ -596,27 +596,30 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (sender != address(this)) _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
 
         // Calculate target to borrow by calling AMM
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        bytes32 poolId = pool.getPoolId();
-        (uint256 pti, uint256 targeti) = pool.getIndices();
-        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
-        // Determine how much Target we'll need in to get `ytBal` balance of PT out
-        // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after are placeholders)
-        uint256 targetToBorrow = BalancerPool(pool).onSwap(
-            BalancerPool.SwapRequest({
-                kind: BalancerVault.SwapKind.GIVEN_OUT,
-                tokenIn: tokens[targeti],
-                tokenOut: tokens[pti],
-                amount: ytBal,
-                poolId: poolId,
-                lastChangeBlock: 0,
-                from: address(0),
-                to: address(0),
-                userData: ""
-            }),
-            balances[targeti],
-            balances[pti]
-        );
+        uint256 targetToBorrow;
+        {
+            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+            bytes32 poolId = pool.getPoolId();
+            (uint256 pti, uint256 targeti) = pool.getIndices();
+            (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+            // Determine how much Target we'll need in to get `ytBal` balance of PT out
+            // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after are placeholders)
+            targetToBorrow = BalancerPool(pool).onSwap(
+                BalancerPool.SwapRequest({
+                    kind: BalancerVault.SwapKind.GIVEN_OUT,
+                    tokenIn: tokens[targeti],
+                    tokenOut: tokens[pti],
+                    amount: ytBal,
+                    poolId: poolId,
+                    lastChangeBlock: 0,
+                    from: address(0),
+                    to: address(0),
+                    userData: ""
+                }),
+                balances[targeti],
+                balances[pti]
+            );
+        }
 
         // Flash borrow target (following actions in `onFlashLoan`)
         tBal = _flashBorrowAndSwapFromYTs(adapter, maturity, abi.encode(ytBal, targetToBorrow, deadline));
@@ -629,7 +632,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        AddLiquidityParams memory data,
+        AddLiquidityParams memory params,
         uint8 mode,
         address receiver,
         PermitData calldata permit
@@ -642,7 +645,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         )
     {
         // 1. Compute target, issue PTs & YTs & add liquidity to space
-        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal, data.minBptOut, receiver);
+        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal, params.minBptOut, receiver);
 
         if (issued > 0) {
             // issue = 0 means that we are on the first pool provision or that the pt:target ratio is 0:target
@@ -653,11 +656,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
-                    data.deadline,
+                    params.deadline,
                     permit // we send permit thought it won't be used
                 );
                 // Check that we got enough target
-                if (tAmount < data.minAccepted) revert Errors.UnexpectedSwapAmount();
+                if (tAmount < params.minAccepted) revert Errors.UnexpectedSwapAmount();
 
                 // 3. Send remaining Target to the receiver
                 ERC20(Adapter(adapter).target()).safeTransfer(receiver, tAmount);
@@ -717,24 +720,22 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 lpBal,
-        RemoveLiquidityParams memory data,
+        RemoveLiquidityParams memory params,
         bool swapPTs,
         address receiver,
         PermitData calldata permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        _transferFrom(permit, address(pool), lpBal);
+        bytes32 poolId;
+        {
+            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+            _transferFrom(permit, address(pool), lpBal);
+            poolId = pool.getPoolId();
+        }
 
         // 1. Remove liquidity from Space
         address pt = divider.pt(adapter, maturity);
         uint256 _ptBal;
-        (tBal, _ptBal) = _removeLiquidityFromSpace(
-            pool.getPoolId(),
-            pt,
-            Adapter(adapter).target(),
-            data.minAmountsOut,
-            lpBal
-        );
+        (tBal, _ptBal) = _removeLiquidityFromSpace(poolId, pt, Adapter(adapter).target(), params.minAmountsOut, lpBal);
 
         if (divider.mscale(adapter, maturity) > 0) {
             if (uint256(Adapter(adapter).level()).redeemRestricted()) {
@@ -750,9 +751,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     pt,
                     Adapter(adapter).target(),
                     _ptBal,
-                    data.deadline,
-                    pool.getPoolId(),
-                    data.minAccepted,
+                    params.deadline,
+                    poolId,
+                    params.minAccepted,
                     payable(address(this))
                 );
             } else {
