@@ -287,7 +287,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSponsorSeriesFromTokenWithApprove() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -340,7 +340,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSponsorSeriesFromTokenWithPermit() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -373,7 +373,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), AddressBook.USDC);
         Periphery.SwapQuote memory quote = Periphery.SwapQuote({
-            amount: 1000000e6, // we a large amount of USDC (which will be converted into stake token)
+            amount: 1000000e6, // we send a large amount of USDC (which will be converted into stake token)
             sellToken: ERC20(AddressBook.USDC),
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,
@@ -393,7 +393,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSponsorSeriesFromETH() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -451,7 +451,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSponsorSeriesFromTokenWithTokenExcess() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -585,7 +585,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     // TODO: add tests for refund protocol fees
 
     function testMainnetAddLiquidity() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -670,7 +670,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetRemoveLiquidity() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter) with liquidity
+        // and so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -750,7 +751,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     /* ========== PT SWAPS ========== */
 
     function testMainnetSwapAllForPTs() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter) with liquidity
+        // and so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
@@ -811,7 +813,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
     function testMainnetSwapPTsForAll() public {
-        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter)
+        // Roll to Feb-08-2023 09:12:23 AM +UTC where we have a real adapter (wstETH adapter) with liquidity
+        // and so the 0x swap works because _getSwapCallData uses a swapCallData valid for that date
         vm.rollFork(16583087);
 
         // Re-deploy Periphery and set everything up
