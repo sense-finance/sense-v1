@@ -18,6 +18,7 @@ import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 interface Token {
     // IMUSD
@@ -75,13 +76,19 @@ contract ERC4626Adapters is ForkTest {
     ERC4626Adapter public erc4626Adapter;
     address public userWithAssets; // address of a user with underlying balance
     uint256 public delta = 1;
-    uint256 public deltaPercentage = 0; // e.g 0.001e18 = 0.1%
+    uint256 public deltaPercentage = 1; // e.g 0.001e18 = 0.1%
+    uint256 public minAmount;
 
     function setUp() public virtual {
+        // default env alues
+        vm.setEnv("ERC4626_ADDRESS", Strings.toHexString(AddressBook.IMUSD));
+        vm.setEnv("DELTA_PERCENTAGE", Strings.toString(1));
+        vm.setEnv("DELTA", Strings.toString(1));
+        vm.setEnv("MIN_AMOUNT", Strings.toString(0));
         _setUp(true);
     }
 
-    function _setUp(bool _fork) internal {
+    function _setUp(bool _fork) internal virtual {
         if (_fork) fork();
 
         try vm.envAddress("ERC4626_ADDRESS") returns (address _target) {
@@ -106,6 +113,11 @@ contract ERC4626Adapters is ForkTest {
         // set `deltaPercentage` if exists
         try vm.envUint("DELTA_PERCENTAGE") returns (uint256 _deltaPercentage) {
             deltaPercentage = _deltaPercentage;
+        } catch {}
+
+        // set `minAmount` if exists
+        try vm.envUint("MIN_AMOUNT") returns (uint256 _minAmount) {
+            minAmount = _minAmount;
         } catch {}
 
         if (address(underlying) == AddressBook.MUSD) {
@@ -178,6 +190,8 @@ contract ERC4626Adapters is ForkTest {
     // }
 
     function testMainnetWrapUnwrap(uint256 wrapAmt) public virtual {
+        vm.assume(wrapAmt >= minAmount);
+
         // Trigger a small deposit so if there's a pending yield it will collect and the exchange rate gets updated
         underlying.approve(address(target), 1e6);
         target.deposit(1e6, address(this));
@@ -323,14 +337,6 @@ contract ERC4626Adapters is ForkTest {
             Token(stableMaster).mint(amt, address(this), AddressBook.FRAX_POOL_MANAGER, 0);
 
             vm.warp(block.timestamp + 1 days);
-            return;
-        }
-
-        if (
-            keccak256(abi.encodePacked(target.symbol())) ==
-            keccak256(abi.encodePacked("w-aurawstETH-rETH-sfrxETH-BPT-vault"))
-        ) {
-            IAuraAdapterTestHelper(msg.sender).increaseScale(uint64(amt));
             return;
         }
 

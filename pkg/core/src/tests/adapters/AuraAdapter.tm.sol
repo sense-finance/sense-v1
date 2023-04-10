@@ -203,8 +203,8 @@ contract AuraAdapterTestHelper is ERC4626Adapters {
         // Prepare to run ERC4626Adapters test suite using wrapper as target
         vm.setEnv("ERC4626_ADDRESS", Strings.toHexString(address(target)));
         vm.setEnv("DELTA_PERCENTAGE", Strings.toString(0.001e18));
+        vm.setEnv("MIN_AMOUNT", Strings.toString(1e10));
         _setUp(false);
-        console.log("Running tests with vault: ", target.symbol());
     }
 
     function _sponsorSeries()
@@ -629,7 +629,7 @@ contract AuraAdapters is AuraAdapterTestHelper {
 
     // override testMainnetWrapUnwrap to avoid swapping very small amounts on balancer
     function testMainnetWrapUnwrap(uint256 wrapAmt) public override {
-        vm.assume(wrapAmt > 1e6);
+        vm.assume(wrapAmt > 1e10);
         super.testMainnetWrapUnwrap(wrapAmt);
     }
 
