@@ -92,15 +92,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bytes swapCallData;
     }
 
-    struct AddLiquidityData {
+    struct AddLiquidityParams {
         uint256 minAccepted; // Min accepted amount of Target (from the sell of YTs)
-        uint256 minBptOut; // Minimum BPT the user will accept out for this transaction
+        uint256 minBptOut; // Min BPT the user will accept out for this transaction
         uint256 deadline;
     }
 
-    struct RemoveLiquidityData {
-        uint256 minAccepted; // min accepted when swapping PTs to underlying (only used when removing liquidity on/after maturity)
-        uint256[] minAmountsOut; // min accepted amounts of PTs and Target given the amount of LP shares provided
+    struct RemoveLiquidityParams {
+        uint256 minAccepted; // Min accepted when swapping PTs to underlying (only used when removing liquidity on/after maturity)
+        uint256[] minAmountsOut; // Min accepted amounts of PTs and Target given the amount of LP shares provided
         uint256 deadline;
     }
 
@@ -332,7 +332,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param amt Amount to provide
-    /// @param data AddLiquidityData struct with data for the addLiquidity call
+    /// @param data AddLiquidityParams struct with data for the addLiquidity call
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
     /// @param receiver Address to receive the BPT
     /// @param permit Permit to pull the tokens to swap from
@@ -344,7 +344,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
-        AddLiquidityData memory data,
+        AddLiquidityParams memory data,
         uint8 mode,
         address receiver,
         PermitData calldata permit,
@@ -375,7 +375,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param data RemoveLiquidityData struct with data for the removeLiquidity call
+    /// @param data RemoveLiquidityParams struct with data for the removeLiquidity call
     /// @param receiver Address to receive the Underlying
     /// @param permit Permit to pull the LP tokens
     /// @param quote Quote with swap details
@@ -387,7 +387,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 lpBal,
-        RemoveLiquidityData memory data,
+        RemoveLiquidityParams memory data,
         bool swapPTs,
         address receiver,
         PermitData calldata permit,
@@ -629,7 +629,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        AddLiquidityData memory data,
+        AddLiquidityParams memory data,
         uint8 mode,
         address receiver,
         PermitData calldata permit
@@ -717,7 +717,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 lpBal,
-        RemoveLiquidityData memory data,
+        RemoveLiquidityParams memory data,
         bool swapPTs,
         address receiver,
         PermitData calldata permit
@@ -768,6 +768,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param data abi.encoded data:
     /// - YT amount the user has sent in
     /// - target amount to borrow
+    /// - deadline for the swap
     /// @return tBal amount of Target obtained from a sale of YTs
     function _flashBorrowAndSwapFromYTs(
         address adapter,
