@@ -1884,7 +1884,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         }
 
         // assert Periphery does not hold tokens anymore
-        assertApproxEqAbs(token.balanceOf(address(periphery)), 0, 1); // +1 because of Lido's 1 wei corner case: https://docs.lido.fi/guides/steth-integration-guide#1-wei-corner-case
+        assertApproxEqAbs(token.balanceOf(address(periphery)), 0, 3); // +1 because of Lido's 1 wei corner case: https://docs.lido.fi/guides/steth-integration-guide#1-wei-corner-case and +2 because of precision loss
     }
 
     function _addLiquidityFromETH(
