@@ -94,17 +94,16 @@ task(
       startPrank(senseAdminMultisigAddress);
       const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
       divider = divider.connect(multisigSigner);
-    }
 
-    console.log(`- Set guard`);
-    const ethPrice = (
-      await new ethers.Contract(ETH_USD_PRICEFEED, ChainlinkOracleAbi, deployerSigner).latestRoundData()
-    ).answer;
-    const ethPriceScaled = ethers.utils.parseUnits(ethPrice.toString(), 10);
-    const guardInEth = ethers.utils.parseEther(guard.div(ethPriceScaled).toString());
-    await (await divider.setGuard(adapter.address, guardInEth)).wait();
+      console.log(`- Set guard`);
+      const ethPrice = (
+        await new ethers.Contract(ETH_USD_PRICEFEED, ChainlinkOracleAbi, deployerSigner).latestRoundData()
+      ).answer;
+      const ethPriceScaled = ethers.utils.parseUnits(ethPrice.toString(), 10);
+      const guardInEth = ethers.utils.parseEther(guard.div(ethPriceScaled).toString());
+      console.log(`- Guard set to: ${guardInEth.toString()} ETH`);
+      await (await divider.setGuard(adapter.address, guardInEth)).wait();
 
-    if (chainId === CHAINS.HARDHAT) {
       stopPrank(senseAdminMultisigAddress);
       divider = divider.connect(deployerSigner);
     }
