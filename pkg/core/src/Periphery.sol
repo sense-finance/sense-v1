@@ -289,6 +289,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         amt = _swapSenseToken(adapter, maturity, ytBal, deadline, minAccepted, 1, receiver, permit, quote);
     }
 
+    /// @notice this function is here for backwards compatibility with AutoRoller. It does not suppport
+    /// the use of `deadline` parameter. Use `swapYTs` instead.
     function swapYTsForTarget(
         address adapter,
         uint256 maturity,
@@ -299,8 +301,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0),
             "0x"
         );
-        uint256 deadline = block.timestamp + 14400; // 4 hours
-        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, deadline, permit);
+        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, block.timestamp, permit);
     }
 
     function _swapSenseToken(
