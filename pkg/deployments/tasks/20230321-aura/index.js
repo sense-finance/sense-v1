@@ -6,16 +6,16 @@ const {
   SENSE_MULTISIG,
   CHAINS,
   VERIFY_CHAINS,
-  WETH_TOKEN,
   ROLLER_UTILS,
   aurawstETH_rETH_sfrxETH_BPT_vault,
+  RETH_TOKEN,
+  ROLLER_PERIPHERY,
 } = require("../../hardhat.addresses");
 
 const dividerAbi = require("./abi/Divider.json");
 const peripheryAbi = require("./abi/Periphery.json");
 const rlvFactoryAbi = require("./abi/AutoRollerFactory.json");
 const rlvAbi = require("./abi/AutoRoller.json");
-const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
 const ChainlinkOracleAbi = [
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
 ];
@@ -101,7 +101,7 @@ task(
       ).answer;
       const ethPriceScaled = ethers.utils.parseUnits(ethPrice.toString(), 10);
       const guardInEth = ethers.utils.parseEther(guard.div(ethPriceScaled).toString());
-      console.log(`- Guard set to: ${guardInEth.toString()} ETH`);
+      console.log(`- Guard set to: ${ethers.utils.formatEther(guardInEth)} ETH`);
       await (await divider.setGuard(adapter.address, guardInEth)).wait();
 
       stopPrank(senseAdminMultisigAddress);
@@ -122,13 +122,33 @@ task(
     return adapter;
   };
 
-  const _deployWrapper = async () => {
+  const _deployPreviewHelper = async () => {
+    console.log("-------------------------------------------------------");
+    console.log("Deploy Composable Preview Helper");
+    console.log("-------------------------------------------------------");
+    const { address: previewHelperAddress, abi } = await deploy("ComposableStablePreview", {
+      from: deployer,
+      args: [],
+      log: true,
+      // gasPrice: 28000000000,
+    });
+
+    if (chainId !== CHAINS.HARDHAT) {
+      console.log("\n-------------------------------------------------------");
+      await verifyOnEtherscan("ComposableStablePreview");
+    }
+
+    console.log(`ComposableStablePreview deployed to ${previewHelperAddress}\n`);
+    return new ethers.Contract(previewHelperAddress, abi, deployerSigner);
+  };
+
+  const _deployWrapper = async previewHelper => {
     console.log("-------------------------------------------------------");
     console.log("Deploy Aura Vault Wrapper");
     console.log("-------------------------------------------------------");
     const { address: targetAddress, abi } = await deploy("AuraVaultWrapper", {
       from: deployer,
-      args: [WETH_TOKEN.get(chainId), aurawstETH_rETH_sfrxETH_BPT_vault.get(chainId)],
+      args: [RETH_TOKEN.get(chainId), aurawstETH_rETH_sfrxETH_BPT_vault.get(chainId), previewHelper.address],
       log: true,
       // gasPrice: 28000000000,
     });
@@ -183,12 +203,20 @@ task(
     const pool = await target.pool();
     await generateTokens(pool, deployer, deployerSigner, ethers.utils.parseEther("10"));
 
+    // load wallet with rETH
+    await generateTokens(RETH_TOKEN.get(chainId), deployer, deployerSigner, ethers.utils.parseEther("10"));
+
     // approve target to pull target's BPT
-    const bpt = new ethers.Contract(pool, ERC20_ABI, deployerSigner);
+    const bpt = new ethers.Contract(pool, erc20Abi, deployerSigner);
     await (await bpt.approve(target.address, ethers.constants.MaxUint256)).wait();
 
     // wrap BPT into target
     await (await target.depositFromBPT(ethers.utils.parseEther("10"), deployer)).wait();
+
+    // we can also deposit with rETH
+    const reth = new ethers.Contract(RETH_TOKEN.get(chainId), erc20Abi, deployerSigner);
+    await (await reth.approve(target.address, ethers.constants.MaxUint256)).wait();
+    await (await target.deposit(ethers.utils.parseEther("10"), deployer)).wait();
 
     // roll 1st series
     const rollerUtils = new ethers.Contract(ROLLER_UTILS.get(chainId), RollerUtilsAbi, deployerSigner);
@@ -206,6 +234,33 @@ task(
     // check we can deposit
     await (await rlv.deposit(ethers.utils.parseEther("1"), deployer)).wait(); // deposit 1 target
     console.log("- 1 target sucessfully deposited!");
+
+    // check we can mintFromUnderlying
+    const ROLLER_PERIPHERY_ABI = [
+      "function mintFromUnderlying(address roller, uint256 shares, address receiver, uint256 maxAmountIn) external returns (uint256 underlyingIn)",
+    ];
+    const rollerPeriphery = new ethers.Contract(
+      ROLLER_PERIPHERY.get(chainId),
+      ROLLER_PERIPHERY_ABI,
+      deployerSigner,
+    );
+    await generateTokens(RETH_TOKEN.get(chainId), deployer, deployerSigner, ethers.utils.parseEther("10"));
+    await (await reth.approve(rollerPeriphery.address, ethers.constants.MaxUint256)).wait();
+    const underlyingIn = await rollerPeriphery.callStatic.mintFromUnderlying(
+      rlv.address,
+      ethers.utils.parseEther("1"),
+      deployer,
+      ethers.utils.parseEther("10"),
+    );
+    await (
+      await rollerPeriphery.mintFromUnderlying(
+        rlv.address,
+        ethers.utils.parseEther("1"),
+        deployer,
+        ethers.utils.parseEther("10"),
+      )
+    ).wait();
+    console.log(`- Minted 1 share using ${ethers.utils.formatEther(underlyingIn)} underlying`);
   };
 
   const _onboardAdapter = async () => {
@@ -230,6 +285,7 @@ task(
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);
+  const { abi: erc20Abi } = await deployments.getArtifact("solmate/src/tokens/ERC20.sol:ERC20");
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
   const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
@@ -254,15 +310,17 @@ task(
     await setBalance(senseAdminMultisigAddress, ethers.utils.parseEther("1").toString());
   }
 
-  const wrapper = await _deployWrapper();
+  const previewHelper = await _deployPreviewHelper();
+  const wrapper = await _deployWrapper(previewHelper);
   const adapter = await _deployAdapter(divider, wrapper);
+
   await _onboardAdapter();
 
   const { rlv, rewardsDistributor } = await _deployRLV(adapter, rlvFactory, adapterArgs.rewardTokens);
 
   if (chainId !== CHAINS.MAINNET) {
     // roll first series
-    const stake = new ethers.Contract(adapterArgs.stake, ERC20_ABI, deployerSigner);
+    const stake = new ethers.Contract(adapterArgs.stake, erc20Abi, deployerSigner);
     await _roll(wrapper, stake, adapterArgs.stakeSize, rlv);
   }
 

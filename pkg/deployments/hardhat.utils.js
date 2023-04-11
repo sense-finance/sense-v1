@@ -18,6 +18,7 @@ exports.STORAGE_SLOT = {
   maUSDT: 51,
   FRAX: 0,
   B_rETH_STABLE: 0,
+  rETH: 1,
 };
 
 // Copy deployments from `deployments` folder to `deployed` including versions folders
@@ -193,8 +194,8 @@ exports.verifyOnEtherscan = async (contractName, address, constructorArguments, 
         fs.writeFileSync(`${path}/${file}`, JSON.stringify(m));
       });
 
-      console.log("Waiting 30 seconds for Etherscan to sync...");
-      await delay(30);
+      console.log("Waiting 15 seconds for Etherscan to sync...");
+      await delay(15);
       console.log("Trying to verify contract on Etherscan...");
       await hre.run("etherscan-verify", {
         contractName,

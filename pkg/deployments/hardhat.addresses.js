@@ -164,6 +164,11 @@ const aurawstETH_rETH_sfrxETH_BPT_vault = new Map();
 aurawstETH_rETH_sfrxETH_BPT_vault.set("1", "0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47");
 aurawstETH_rETH_sfrxETH_BPT_vault.set("111", "0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47");
 
+// Rocket
+const RETH_TOKEN = new Map();
+RETH_TOKEN.set("1", "0xae78736cd615f374d3085123a210448e74fc6393");
+RETH_TOKEN.set("111", "0xae78736cd615f374d3085123a210448e74fc6393");
+
 // mStable
 const IMUSD_TOKEN = new Map();
 IMUSD_TOKEN.set("1", "0x30647a72Dc82d7Fbb1123EA74716aB8A317Eac19");
@@ -429,6 +434,9 @@ exports.AURA = AURA;
 exports.FRAX = FRAX;
 exports.sanFRAX_EUR_Wrapper = sanFRAX_EUR_Wrapper;
 exports.ANGLE = ANGLE;
+
+// Rocket
+exports.RETH_TOKEN = RETH_TOKEN;
 
 // mStable
 exports.MUSD_TOKEN = MUSD_TOKEN;
