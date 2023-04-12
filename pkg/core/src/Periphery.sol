@@ -1006,7 +1006,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address receiver,
         uint256 amt
     ) internal {
-        address(token) == ETH ? payable(receiver).transfer(amt) : token.safeTransfer(receiver, amt);
+        if (address(token) == ETH) {
+            (bool sent, ) = receiver.call{ value: amt }("");
+            if (!sent) revert Errors.TransferFailed();
+        } else {
+            token.safeTransfer(receiver, amt);
+        }
     }
 
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
