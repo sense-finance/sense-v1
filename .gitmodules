@@ -19,3 +19,6 @@
 [submodule "pkg/core/lib/morpho-core-v1"]
 	path = pkg/core/lib/morpho-core-v1
 	url = https://github.com/morpho-dao/morpho-core-v1
+[submodule "pkg/core/lib/pendle-core-v2-public"]
+	path = pkg/core/lib/pendle-core-v2-public
+	url = https://github.com/pendle-finance/pendle-core-v2-public

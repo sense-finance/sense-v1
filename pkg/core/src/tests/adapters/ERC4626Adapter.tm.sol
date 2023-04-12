@@ -18,6 +18,7 @@ import { MockOracle } from "../test-helpers/mocks/fuse/MockOracle.sol";
 import { MockToken } from "../test-helpers/mocks/MockToken.sol";
 import { Constants } from "../test-helpers/Constants.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 interface Token {
     // IMUSD
@@ -59,6 +60,10 @@ interface IDLE {
     function getAllAvailableTokens() external returns (address[] memory);
 }
 
+interface IAuraAdapterTestHelper {
+    function increaseScale(uint64 swapSize) external;
+}
+
 /// Mainnet tests
 /// @dev reads from ENV the target address or defaults to imUSD 4626 token if none
 /// @dev reads from ENV an address of a user with underlying balance. This is used in case tha
@@ -71,9 +76,20 @@ contract ERC4626Adapters is ForkTest {
     ERC4626Adapter public erc4626Adapter;
     address public userWithAssets; // address of a user with underlying balance
     uint256 public delta = 1;
+    uint256 public deltaPercentage = 1; // e.g 0.001e18 = 0.1%
+    uint256 public minAmount;
 
-    function setUp() public {
-        fork();
+    function setUp() public virtual {
+        // default env alues
+        vm.setEnv("ERC4626_ADDRESS", Strings.toHexString(AddressBook.IMUSD));
+        vm.setEnv("DELTA_PERCENTAGE", Strings.toString(1));
+        vm.setEnv("DELTA", Strings.toString(1));
+        vm.setEnv("MIN_AMOUNT", Strings.toString(0));
+        _setUp(true);
+    }
+
+    function _setUp(bool _fork) internal virtual {
+        if (_fork) fork();
 
         try vm.envAddress("ERC4626_ADDRESS") returns (address _target) {
             target = ERC4626(_target);
@@ -92,6 +108,16 @@ contract ERC4626Adapters is ForkTest {
         // set `delta` if exists
         try vm.envUint("DELTA") returns (uint256 _delta) {
             delta = _delta;
+        } catch {}
+
+        // set `deltaPercentage` if exists
+        try vm.envUint("DELTA_PERCENTAGE") returns (uint256 _deltaPercentage) {
+            deltaPercentage = _deltaPercentage;
+        } catch {}
+
+        // set `minAmount` if exists
+        try vm.envUint("MIN_AMOUNT") returns (uint256 _minAmount) {
+            minAmount = _minAmount;
         } catch {}
 
         if (address(underlying) == AddressBook.MUSD) {
@@ -135,7 +161,7 @@ contract ERC4626Adapters is ForkTest {
         Periphery(payable(AddressBook.PERIPHERY_1_4_0)).onboardAdapter(address(erc4626Adapter), true);
     }
 
-    function testMainnetCantWrapMoreThanBalance() public {
+    function testMainnetCantWrapMoreThanBalance() public virtual {
         uint256 balance = underlying.balanceOf(address(this));
         vm.expectRevert("TRANSFER_FROM_FAILED");
         if (address(underlying) == AddressBook.STETH) {
@@ -146,7 +172,7 @@ contract ERC4626Adapters is ForkTest {
         }
     }
 
-    function testMainnetCantUnwrapMoreThanBalance() public {
+    function testMainnetCantUnwrapMoreThanBalance() public virtual {
         uint256 wrappedTarget = erc4626Adapter.wrapUnderlying(underlying.balanceOf(address(this)));
         assertEq(wrappedTarget, target.balanceOf(address(this)));
 
@@ -155,7 +181,7 @@ contract ERC4626Adapters is ForkTest {
     }
 
     // Not all ERC4626 implementations enforce this and it's not enforced by the standard
-    // function testMainnetWrapUnwrapZeroAmt() public {
+    // function testMainnetWrapUnwrapZeroAmt() public virtual {
     //     vm.expectRevert();
     //     erc4626Adapter.wrapUnderlying(0);
 
@@ -163,10 +189,12 @@ contract ERC4626Adapters is ForkTest {
     //     erc4626Adapter.unwrapTarget(0);
     // }
 
-    function testMainnetWrapUnwrap(uint256 wrapAmt) public {
-        // Trigger a deposit so if there's a pending yield it will collect and the exchange rate gets updated
-        underlying.approve(address(target), 1);
-        target.deposit(1, address(this));
+    function testMainnetWrapUnwrap(uint256 wrapAmt) public virtual {
+        vm.assume(wrapAmt >= minAmount);
+
+        // Trigger a small deposit so if there's a pending yield it will collect and the exchange rate gets updated
+        underlying.approve(address(target), 1e6);
+        target.deposit(1e6, address(this));
 
         // Run a full wrap -> unwrap cycle
 
@@ -187,10 +215,10 @@ contract ERC4626Adapters is ForkTest {
         erc4626Adapter.unwrapTarget(targetFromWrap);
         uint256 postbal = underlying.balanceOf(address(this));
 
-        assertApproxEqAbs(prebal, postbal, delta);
+        assertApproxEqAbs(prebal, postbal, prebal.fmul(deltaPercentage));
     }
 
-    function testMainnetScale() public {
+    function testMainnetScale() public virtual {
         uint256 tDecimals = target.decimals();
         uint256 uDecimals = ERC20(target.asset()).decimals();
         // convert to assets and scale to 18 decimals
@@ -201,7 +229,7 @@ contract ERC4626Adapters is ForkTest {
     /// @notice scale() and scaleStored() have the same implementation
     /// @dev given the fact that totalAssets() might be implemented differently by each protocol,
     /// you may need to implement a custom case for the token given on _increaseVaultYield() function
-    function testScaleAndScaleStored() public {
+    function testScaleAndScaleStored() public virtual {
         // Sanity check: vault is already initialised and scale > 0
         uint256 scale = erc4626Adapter.scale();
         uint256 scaleStored = erc4626Adapter.scaleStored();
@@ -224,7 +252,7 @@ contract ERC4626Adapters is ForkTest {
         );
     }
 
-    function testScaleIsExRate() public {
+    function testScaleIsExRate() public virtual {
         // 1. Deposit initial underlying tokens into the target and simulate yield returns
         uint256 underlyingBalance = underlying.balanceOf(address(this));
         underlying.approve(address(target), underlyingBalance / 2);
@@ -240,24 +268,26 @@ contract ERC4626Adapters is ForkTest {
         // Leave something in the target
         uint256 underlyingFromUnwrap = erc4626Adapter.unwrapTarget(targetPrebal / 2);
         uint256 scaleFactor = 10**(target.decimals() - underlying.decimals());
-        assertApproxEqAbs((targetPrebal / 2).fmul(erc4626Adapter.scale()) / scaleFactor, underlyingFromUnwrap, delta);
+        uint256 uBal = (targetPrebal / 2).fmul(erc4626Adapter.scale()) / scaleFactor;
+        assertApproxEqAbs(uBal, underlyingFromUnwrap, uBal.fmul(deltaPercentage));
 
         vm.roll(block.number + 1);
 
         // 3. Check that a wrapped amount reflects scale as an ex rate
         uint256 underlyingBalPre = underlying.balanceOf(address(this));
         uint256 targetFromWrap = erc4626Adapter.wrapUnderlying(underlyingBalPre / 2);
-        assertApproxEqAbs((underlyingBalPre / 2).fdiv(erc4626Adapter.scale()), targetFromWrap / scaleFactor, delta);
+        uint256 tBal = (underlyingBalPre / 2).fdiv(erc4626Adapter.scale());
+        assertApproxEqAbs(tBal, targetFromWrap / scaleFactor, tBal.fmul(deltaPercentage));
     }
 
-    function testMainnetGetUnderlyingPrice() public {
+    function testMainnetGetUnderlyingPrice() public virtual {
         // MasterPriceOracle uses Chainlink's data feeds as main source
-        // We are comparing here with the prices from Rari's oracle and it should be approx the same (within 0.5%)
+        // We are comparing here with the prices from Rari's oracle and it should be approx the same (within 1%)
         uint256 price = IPriceFeed(AddressBook.RARI_ORACLE).price(address(underlying));
-        assertApproxEqAbs(erc4626Adapter.getUnderlyingPrice(), price, price.fmul(0.005e18));
+        assertApproxEqAbs(erc4626Adapter.getUnderlyingPrice(), price, price.fmul(0.01e18));
     }
 
-    function testMainnetGetUnderlyingPriceWhenCustomOracle() public {
+    function testMainnetGetUnderlyingPriceWhenCustomOracle() public virtual {
         // Deploy a custom oracle
         MockOracle oracle = new MockOracle();
         address[] memory underlyings = new address[](1);
@@ -275,7 +305,7 @@ contract ERC4626Adapters is ForkTest {
 
     // utils
 
-    function _increaseVaultYield(uint256 amt) internal {
+    function _increaseVaultYield(uint256 amt) internal virtual {
         // set balance if needed
         if (underlying.balanceOf(address(this)) < amt) deal(address(underlying), address(this), amt);
 

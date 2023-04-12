@@ -29,6 +29,7 @@
     },
     "dependencies": {
         "@openzeppelin/contracts": "^4.7.3",
+        "@openzeppelin/contracts-upgradeable": "^4.8.2",
         "@sense-finance/v1-fuse": "workspace:pkg/fuse",
         "@sense-finance/v1-utils": "workspace:pkg/utils",
         "solmate": "transmissions11/solmate#v7"
