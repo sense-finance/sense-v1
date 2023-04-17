@@ -10,4 +10,9 @@ contract ForkTest is Test {
         mainnetFork = vm.createFork(getChain("mainnet").rpcUrl);
         vm.selectFork(mainnetFork);
     }
+
+    function fork(uint256 blockNumber) public {
+        mainnetFork = vm.createFork(getChain("mainnet").rpcUrl, blockNumber);
+        vm.selectFork(mainnetFork);
+    }
 }

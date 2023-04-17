@@ -125,7 +125,7 @@ contract AuraAdapterTestHelper is ERC4626Adapters {
     AutoRollerFactory public constant rlvFactory = AutoRollerFactory(0x3B0f35bDD6Da9e3b8513c58Af8Fdf231f60232E5);
 
     function setUp() public override {
-        fork();
+        fork(17033703);
 
         address previewHelper = deployCode("ComposableStablePreview.sol");
 
@@ -138,7 +138,6 @@ contract AuraAdapterTestHelper is ERC4626Adapters {
         divider = Divider(AddressBook.DIVIDER_1_2_0);
 
         vm.prank(AddressBook.SENSE_MULTISIG);
-        // divider.setPeriphery(address(this));
 
         BaseAdapter.AdapterParams memory adapterParams = BaseAdapter.AdapterParams({
             oracle: AddressBook.ETH_USD_PRICEFEED, // Chainlink ETH-USD price feed
