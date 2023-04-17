@@ -64,6 +64,15 @@ interface IAuraAdapterTestHelper {
     function increaseScale(uint64 swapSize) external;
 }
 
+interface ISturdyLendingPool {
+    function deposit(
+        address asset,
+        uint256 amount,
+        address onBehalfOf,
+        uint16 referralCode
+    ) external;
+}
+
 /// Mainnet tests
 /// @dev reads from ENV the target address or defaults to imUSD 4626 token if none
 /// @dev reads from ENV an address of a user with underlying balance. This is used in case tha
@@ -81,10 +90,6 @@ contract ERC4626Adapters is ForkTest {
 
     function setUp() public virtual {
         // default env alues
-        vm.setEnv("ERC4626_ADDRESS", Strings.toHexString(AddressBook.IMUSD));
-        vm.setEnv("DELTA_PERCENTAGE", Strings.toString(1));
-        vm.setEnv("DELTA", Strings.toString(1));
-        vm.setEnv("MIN_AMOUNT", Strings.toString(0));
         _setUp(true);
     }
 
@@ -108,16 +113,19 @@ contract ERC4626Adapters is ForkTest {
         // set `delta` if exists
         try vm.envUint("DELTA") returns (uint256 _delta) {
             delta = _delta;
+            console.log("Delta is: ", delta);
         } catch {}
 
         // set `deltaPercentage` if exists
         try vm.envUint("DELTA_PERCENTAGE") returns (uint256 _deltaPercentage) {
             deltaPercentage = _deltaPercentage;
+            console.log("Delta percentage is: ", deltaPercentage);
         } catch {}
 
         // set `minAmount` if exists
         try vm.envUint("MIN_AMOUNT") returns (uint256 _minAmount) {
             minAmount = _minAmount;
+            console.log("Min amount is: ", minAmount);
         } catch {}
 
         if (address(underlying) == AddressBook.MUSD) {
@@ -129,6 +137,18 @@ contract ERC4626Adapters is ForkTest {
             oracles[0] = AddressBook.RARI_MSTABLE_ORACLE;
             vm.prank(AddressBook.SENSE_MULTISIG);
             MasterPriceOracle(AddressBook.SENSE_MASTER_ORACLE).add(underlyings, oracles);
+        }
+
+        if (address(underlying) == AddressBook.ws2USDC) {
+            // Deposit some underlying if totalSupply is 0
+            if (target.totalSupply() == 0) {
+                address user = address(0xfede);
+                deal(address(underlying), user, 1 * 10**underlying.decimals());
+                vm.startPrank(user);
+                underlying.approve(address(target), 1 * 10**underlying.decimals());
+                target.deposit(1 * 10**underlying.decimals(), user);
+                vm.stopPrank();
+            }
         }
 
         // Add some balance of underlying to this contract
@@ -337,6 +357,18 @@ contract ERC4626Adapters is ForkTest {
             Token(stableMaster).mint(amt, address(this), AddressBook.FRAX_POOL_MANAGER, 0);
 
             vm.warp(block.timestamp + 1 days);
+            return;
+        }
+
+        if (address(target) == AddressBook.ws2USDC) {
+            address user = address(1);
+            vm.startPrank(user);
+            deal(address(underlying), user, 1e6);
+            underlying.approve(AddressBook.LENDING_POOL, 1e6);
+            ISturdyLendingPool(AddressBook.LENDING_POOL).deposit(AddressBook.USDC, 1e6, user, 0);
+            uint256 bal = ERC20(AddressBook.sUSDC).balanceOf(user);
+            ERC20(AddressBook.sUSDC).transfer(address(target), bal);
+            vm.stopPrank();
             return;
         }
 

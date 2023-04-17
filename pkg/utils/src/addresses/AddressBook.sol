@@ -86,6 +86,11 @@ library AddressBook {
     address public constant aurawstETH_rETH_sfrxETH_BPT_vault = 0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47;
     address public constant wstETH_rETH_sfrxETH_BPT_vault = 0x5aEe1e99fE86960377DE9f88689616916D5DcaBe;
 
+    // Sturdy
+    address public constant ws2USDC = 0x8eA4b4C9bd07E2fa10dfA712B683F2461397cf19;
+    address public constant sUSDC = 0x51D5c5D784334a4b52a07AC13D9db79cBefa1642;
+    address public constant LENDING_POOL = 0xA422CA380bd70EeF876292839222159E41AAEe17;
+
     /////////// Others ///////////
 
     // fuse f18 olympus pool party
