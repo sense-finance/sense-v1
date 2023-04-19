@@ -536,7 +536,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) internal returns (uint256 tBal) {
         _transferFrom(permit, divider.pt(adapter, maturity), ptBal);
 
-        if (divider.mscale(adapter, maturity) > 0) {
+        if (divider.mscale(adapter, maturity) > 0 && !uint256(Adapter(adapter).level()).redeemRestricted()) {
             tBal = divider.redeem(adapter, maturity, ptBal);
         } else {
             tBal = _balancerSwap(
