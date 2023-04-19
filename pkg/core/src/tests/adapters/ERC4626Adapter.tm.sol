@@ -77,10 +77,10 @@ contract ERC4626Adapters is ForkTest {
 
         try vm.envAddress("ERC4626_ADDRESS") returns (address _target) {
             target = ERC4626(_target);
-            console.log("Running tests for token: ", target.symbol());
         } catch {
             target = ERC4626(AddressBook.IMUSD);
         }
+        console.log("Running tests for token: ", target.symbol());
         underlying = ERC20(target.asset());
 
         // set `userWithAssets` if exists
@@ -93,6 +93,7 @@ contract ERC4626Adapters is ForkTest {
         try vm.envUint("DELTA") returns (uint256 _delta) {
             delta = _delta;
         } catch {}
+        console.log("Delta is: ", delta);
 
         if (address(underlying) == AddressBook.MUSD) {
             // Add Rari mStable oracle to Sense Oracle
