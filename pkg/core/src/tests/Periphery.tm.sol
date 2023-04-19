@@ -372,7 +372,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         );
 
         // Mint bob some AddressBook.USDC (to then swap for DAI to pay stake)
-        deal(AddressBook.USDC, bob, type(uint256).max);
+        deal(AddressBook.USDC, bob, 1000000e6);
 
         vm.prank(bob);
         ERC20(AddressBook.USDC).approve(AddressBook.PERMIT2, type(uint256).max);
@@ -384,7 +384,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             buyToken: ERC20(AddressBook.DAI),
             spender: AddressBook.EXCHANGE_PROXY,
             swapTarget: payable(AddressBook.EXCHANGE_PROXY),
-            swapCallData: _getSwapCallData(AddressBook.USDC, AddressBook.DAI)
+            swapCallData: _getSwapCallData(AddressBook.USDC, AddressBook.DAI) // quote is buying 1 DAI
         });
         vm.prank(bob);
         (address pt, address yt) = periphery.sponsorSeries(address(cadapter), maturity, false, data, quote);
@@ -396,6 +396,12 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Check PT and YT onboarded on PoolManager (Fuse)
         // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
         // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
+
+        // The swap performed on 0x pulled 1009257 (~1.009) USDC and returned 1002326387008991121 (~1.002) DAI 
+        // Since we've used 1 DAI for the stake, the user should have been reimbursed 1002326387008991121 - 1e18 = 2326387008991121 (~0.002) DAI
+        assertEq(ERC20(AddressBook.DAI).balanceOf(bob), 2326387008991121);
+        // And user should now have his prev balance of 1000000e6 USDC - 1009257 USDC = 999998990743 (~999998.99) USDC
+        assertEq(ERC20(AddressBook.USDC).balanceOf(bob), 999998990743);
     }
 
     function testMainnetSponsorSeriesFromETH() public {
