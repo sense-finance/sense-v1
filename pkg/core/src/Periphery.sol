@@ -970,13 +970,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
     }
 
-    // function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
-    //     if (_returnData.length < 68) return "SWAP_CALL_FAILED";
-    //     assembly {
-    //         _returnData := add(_returnData, 0x04)
-    //     }
-    // }
-
     /// @notice Given an amount and a quote, decides whether it needs to wrap and make a swap on 0x,
     /// simply wrap tokens or do nothing
     function _toTarget(
