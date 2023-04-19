@@ -87,6 +87,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     struct SwapQuote {
         ERC20 sellToken;
         ERC20 buyToken;
+        uint256 amount;
         address spender;
         address payable swapTarget;
         bytes swapCallData;
@@ -133,7 +134,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         SwapQuote calldata quote
     ) external payable returns (address pt, address yt) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
-        if (address(quote.sellToken) != ETH) _transferFrom(permit, stake, stakeSize);
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), quote.amount);
         if (address(quote.sellToken) != stake) _fillQuote(quote);
 
         // Approve divider to withdraw stake assets
