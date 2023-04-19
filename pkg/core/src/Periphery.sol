@@ -206,7 +206,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         SwapQuote calldata quote
     ) external payable returns (uint256 ptBal) {
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
-        ptBal = _swapTargetForPTs(adapter, maturity, _toTarget(adapter, amt, receiver, quote), deadline, minAccepted, receiver);
+        ptBal = _swapTargetForPTs(
+            adapter,
+            maturity,
+            _toTarget(adapter, amt, receiver, quote),
+            deadline,
+            minAccepted,
+            receiver
+        );
         // refund any remaining quote.sellToken to receiver
         _transfer(
             quote.sellToken,
