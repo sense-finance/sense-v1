@@ -397,7 +397,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // (PoolManager.SeriesStatus status, ) = PoolManager(poolManager).sSeries(address(cadapter), maturity);
         // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
 
-        // The swap performed on 0x pulled 1009257 (~1.009) USDC and returned 1002326387008991121 (~1.002) DAI 
+        // The swap performed on 0x pulled 1009257 (~1.009) USDC and returned 1002326387008991121 (~1.002) DAI
         // Since we've used 1 DAI for the stake, the user should have been reimbursed 1002326387008991121 - 1e18 = 2326387008991121 (~0.002) DAI
         assertEq(ERC20(AddressBook.DAI).balanceOf(bob), 2326387008991121);
         // And user should now have his prev balance of 1000000e6 USDC - 1009257 USDC = 999998990743 (~999998.99) USDC
