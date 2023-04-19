@@ -20,7 +20,6 @@ import { Divider } from "./Divider.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
-
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
 
@@ -957,7 +956,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success, bytes memory res) = quote.swapTarget.call{ value: msg.value }(quote.swapCallData);
-        // if (!success) revert(_getRevertMsg(res));
         if (!success) revert Errors.ZeroExSwapFailed(res);
 
         // We assume the Periphery does not hold tokens so boughtAmount is always it's balance
