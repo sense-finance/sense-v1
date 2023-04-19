@@ -888,6 +888,7 @@ contract PeripheryTest is TestHelper {
             address(adapter),
             maturity,
             1e18,
+            DEADLINE,
             0,
             jim,
             data,
