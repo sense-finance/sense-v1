@@ -24,8 +24,9 @@
         "script:mainnet": "cp ../../.env ./.env && time forge script --rpc-url https://eth-mainnet.g.alchemy.com/v2/2NWsUiJppRQbTLKeiXvu0l6JwTTOnKp7 --chain-id 1 --optimize --optimizer-runs 500 -vvv --broadcast --verify",
         "script:goerli": "cp ../../.env ./.env && time forge script --rpc-url https://eth-goerli.g.alchemy.com/v2/Ef0GN4VITrvOPk8qVRASZLqoCyMWo_Pd --chain-id 5 --optimize --optimizer-runs 500 -vvv --broadcast --verify",
         "coverage": "time forge coverage --match-path \"**/*.{t.sol,tm.sol}\" --no-match-contract \"ERC4626StdTest\" --report lcov",
-        "gas-snapshot": "forge snapshot --no-match-path \"*.tm*\"",
-        "gas-snapshot:diff": "forge snapshot --no-match-path \"*.tm*\" --diff"
+        "gas-snapshot": "forge snapshot --match-path \"**/*.{t.sol,tm.sol}\" --no-match-contract \"ERC4626StdTest\"",
+        "gas-snapshot:diff": "forge snapshot --match-path \"**/*.{t.sol,tm.sol}\" --no-match-contract \"ERC4626StdTest\" --diff",
+        "gas-report": "forge test --gas-report --match-path \"**/*.{t.sol,tm.sol}\" --no-match-contract \"ERC4626StdTest\""
     },
     "dependencies": {
         "@openzeppelin/contracts": "^4.7.3",

@@ -92,6 +92,18 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bytes swapCallData;
     }
 
+    struct AddLiquidityParams {
+        uint256 minAccepted; // Min accepted amount of Target (from the sell of YTs)
+        uint256 minBptOut; // Min BPT the user will accept out for this transaction
+        uint256 deadline; // The UNIX timestamp at which our trade must be completed by - if the transaction is confirmed after this time then the transaction will fail.
+    }
+
+    struct RemoveLiquidityParams {
+        uint256 minAccepted; // Min accepted when swapping PTs to underlying (only used when removing liquidity on/after maturity)
+        uint256[] minAmountsOut; // Min accepted amounts of PTs and Target given the amount of LP shares provided
+        uint256 deadline; // The UNIX timestamp at which our trade must be completed by - if the transaction is confirmed after this time then the transaction will fail.
+    }
+
     constructor(
         address _divider,
         address _spaceFactory,
@@ -179,13 +191,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
+        uint256 deadline,
         uint256 minAccepted,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external payable returns (uint256 ptBal) {
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
-        return _swapTargetForPTs(adapter, maturity, _toTarget(adapter, amt, quote), minAccepted, receiver);
+        return _swapTargetForPTs(adapter, maturity, _toTarget(adapter, amt, quote), deadline, minAccepted, receiver);
     }
 
     /// @notice Swap to YTs of a particular series
@@ -205,6 +218,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
+        uint256 deadline,
         uint256 targetToBorrow,
         uint256 minAccepted,
         address receiver,
@@ -218,6 +232,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             adapter,
             maturity,
             _toTarget(adapter, amt, quote),
+            deadline,
             targetToBorrow,
             minAccepted
         );
@@ -241,12 +256,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ptBal,
+        uint256 deadline,
         uint256 minAccepted,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt) {
-        amt = _swapSenseToken(adapter, maturity, ptBal, minAccepted, 0, receiver, permit, quote);
+        amt = _swapSenseToken(adapter, maturity, ptBal, deadline, minAccepted, 0, receiver, permit, quote);
     }
 
     /// @notice Swap YTs of a particular series
@@ -264,14 +280,17 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
+        uint256 deadline,
         uint256 minAccepted,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt) {
-        amt = _swapSenseToken(adapter, maturity, ytBal, minAccepted, 1, receiver, permit, quote);
+        amt = _swapSenseToken(adapter, maturity, ytBal, deadline, minAccepted, 1, receiver, permit, quote);
     }
 
+    /// @notice this function is here for backwards compatibility with AutoRoller. It does not suppport
+    /// the use of `deadline` parameter. Use `swapYTs` instead.
     function swapYTsForTarget(
         address adapter,
         uint256 maturity,
@@ -282,13 +301,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0),
             "0x"
         );
-        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, permit);
+        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, block.timestamp, permit);
     }
 
     function _swapSenseToken(
         address adapter,
         uint256 maturity,
         uint256 sellAmt,
+        uint256 deadline,
         uint256 minAccepted,
         uint8 mode, // 0 = PTs, 1 = YTs
         address receiver,
@@ -296,8 +316,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         SwapQuote calldata quote
     ) private returns (uint256 amt) {
         amt = (mode == 1)
-            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, permit)
-            : _swapPTsForTarget(adapter, maturity, sellAmt, permit);
+            ? _swapYTsForTarget(msg.sender, adapter, maturity, sellAmt, deadline, permit)
+            : _swapPTsForTarget(adapter, maturity, sellAmt, deadline, permit);
         amt = _fromTarget(adapter, amt, quote);
 
         if (amt < minAccepted) revert Errors.UnexpectedSwapAmount();
@@ -313,9 +333,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param amt Amount to provide
+    /// @param params AddLiquidityParams struct with the params for the addLiquidity call
     /// @param mode 0 = issues and sell YT, 1 = issue and hold YT
-    /// @param minAccepted Min accepted amount of Target (from the sell of YTs)
-    /// @param minBptOut Minimum BPT the user will accept out for this transaction
     /// @param receiver Address to receive the BPT
     /// @param permit Permit to pull the tokens to swap from
     /// @param quote Quote with swap details
@@ -326,8 +345,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 amt,
-        uint256 minAccepted,
-        uint256 minBptOut,
+        AddLiquidityParams memory params,
         uint8 mode,
         address receiver,
         PermitData calldata permit,
@@ -346,8 +364,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             adapter,
             maturity,
             _toTarget(adapter, amt, quote),
-            minAccepted,
-            minBptOut,
+            params,
             mode,
             receiver,
             permit
@@ -359,8 +376,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the Series
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
-    /// @param minAmountsOut minimum accepted amounts of PTs and Target given the amount of LP shares provided
-    /// @param minAccepted only used when removing liquidity on/after maturity and its the min accepted when swapping PTs to underlying
+    /// @param params RemoveLiquidityParams struct with the params for the removeLiquidity call
     /// @param receiver Address to receive the Underlying
     /// @param permit Permit to pull the LP tokens
     /// @param quote Quote with swap details
@@ -372,23 +388,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 lpBal,
-        uint256[] memory minAmountsOut,
-        uint256 minAccepted,
+        RemoveLiquidityParams memory params,
         bool swapPTs,
         address receiver,
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external returns (uint256 amt, uint256 ptBal) {
-        (amt, ptBal) = _removeLiquidity(
-            adapter,
-            maturity,
-            lpBal,
-            minAmountsOut,
-            minAccepted,
-            swapPTs,
-            receiver,
-            permit
-        );
+        (amt, ptBal) = _removeLiquidity(adapter, maturity, lpBal, params, swapPTs, receiver, permit);
         amt = _fromTarget(adapter, amt, quote);
         _transfer(quote.buyToken, receiver, amt);
     }
@@ -501,6 +507,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address assetIn,
         address assetOut,
         uint256 amountIn,
+        uint256 deadline,
         bytes32 poolId,
         uint256 minAccepted,
         address payable receiver
@@ -524,7 +531,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             toInternalBalance: false
         });
 
-        amountOut = balancerVault.swap(request, funds, minAccepted, type(uint256).max);
+        amountOut = balancerVault.swap(request, funds, minAccepted, deadline);
         emit Swapped(msg.sender, poolId, assetIn, assetOut, amountIn, amountOut, msg.sig);
     }
 
@@ -532,6 +539,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ptBal,
+        uint256 deadline,
         PermitData calldata permit
     ) internal returns (uint256 tBal) {
         _transferFrom(permit, divider.pt(adapter, maturity), ptBal);
@@ -543,6 +551,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 divider.pt(adapter, maturity),
                 Adapter(adapter).target(),
                 ptBal,
+                deadline,
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 0,
                 payable(address(this))
@@ -554,12 +563,21 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
+        uint256 deadline,
         uint256 minAccepted,
         address receiver
     ) internal returns (uint256 ptBal) {
         address pt = divider.pt(adapter, maturity);
         BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        ptBal = _balancerSwap(Adapter(adapter).target(), pt, tBal, pool.getPoolId(), minAccepted, payable(receiver)); // swap target for PTs
+        ptBal = _balancerSwap(
+            Adapter(adapter).target(),
+            pt,
+            tBal,
+            deadline,
+            pool.getPoolId(),
+            minAccepted,
+            payable(receiver)
+        ); // swap target for PTs
     }
 
     function _swapYTsForTarget(
@@ -567,6 +585,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 ytBal,
+        uint256 deadline,
         PermitData calldata permit
     ) public returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
@@ -578,30 +597,33 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (sender != address(this)) _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
 
         // Calculate target to borrow by calling AMM
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        bytes32 poolId = pool.getPoolId();
-        (uint256 pti, uint256 targeti) = pool.getIndices();
-        (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
-        // Determine how much Target we'll need in to get `ytBal` balance of PT out
-        // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after are placeholders)
-        uint256 targetToBorrow = BalancerPool(pool).onSwap(
-            BalancerPool.SwapRequest({
-                kind: BalancerVault.SwapKind.GIVEN_OUT,
-                tokenIn: tokens[targeti],
-                tokenOut: tokens[pti],
-                amount: ytBal,
-                poolId: poolId,
-                lastChangeBlock: 0,
-                from: address(0),
-                to: address(0),
-                userData: ""
-            }),
-            balances[targeti],
-            balances[pti]
-        );
+        uint256 targetToBorrow;
+        {
+            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+            bytes32 poolId = pool.getPoolId();
+            (uint256 pti, uint256 targeti) = pool.getIndices();
+            (ERC20[] memory tokens, uint256[] memory balances, ) = balancerVault.getPoolTokens(poolId);
+            // Determine how much Target we'll need in to get `ytBal` balance of PT out
+            // (space doesn't directly use of the fields from `SwapRequest` beyond `poolId`, so the values after are placeholders)
+            targetToBorrow = BalancerPool(pool).onSwap(
+                BalancerPool.SwapRequest({
+                    kind: BalancerVault.SwapKind.GIVEN_OUT,
+                    tokenIn: tokens[targeti],
+                    tokenOut: tokens[pti],
+                    amount: ytBal,
+                    poolId: poolId,
+                    lastChangeBlock: 0,
+                    from: address(0),
+                    to: address(0),
+                    userData: ""
+                }),
+                balances[targeti],
+                balances[pti]
+            );
+        }
 
         // Flash borrow target (following actions in `onFlashLoan`)
-        tBal = _flashBorrowAndSwapFromYTs(adapter, maturity, ytBal, targetToBorrow);
+        tBal = _flashBorrowAndSwapFromYTs(adapter, maturity, abi.encode(ytBal, targetToBorrow, deadline));
     }
 
     /// @return tAmount if mode = 0, target received from selling YTs, otherwise, returns 0
@@ -611,8 +633,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 tBal,
-        uint256 minAccepted,
-        uint256 minBptOut,
+        AddLiquidityParams memory params,
         uint8 mode,
         address receiver,
         PermitData calldata permit
@@ -625,7 +646,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         )
     {
         // 1. Compute target, issue PTs & YTs & add liquidity to space
-        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal, minBptOut, receiver);
+        (issued, lpShares) = _computeIssueAddLiq(adapter, maturity, tBal, params.minBptOut, receiver);
 
         if (issued > 0) {
             // issue = 0 means that we are on the first pool provision or that the pt:target ratio is 0:target
@@ -636,10 +657,11 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     adapter,
                     maturity,
                     issued,
+                    params.deadline,
                     permit // we send permit thought it won't be used
                 );
                 // Check that we got enough target
-                if (tAmount < minAccepted) revert Errors.UnexpectedSwapAmount();
+                if (tAmount < params.minAccepted) revert Errors.UnexpectedSwapAmount();
 
                 // 3. Send remaining Target to the receiver
                 ERC20(Adapter(adapter).target()).safeTransfer(receiver, tAmount);
@@ -699,25 +721,22 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 lpBal,
-        uint256[] memory minAmountsOut,
-        uint256 minAccepted,
+        RemoveLiquidityParams memory params,
         bool swapPTs,
         address receiver,
         PermitData calldata permit
     ) internal returns (uint256 tBal, uint256 ptBal) {
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-        _transferFrom(permit, address(pool), lpBal);
+        bytes32 poolId;
+        {
+            BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
+            _transferFrom(permit, address(pool), lpBal);
+            poolId = pool.getPoolId();
+        }
 
         // 1. Remove liquidity from Space
         address pt = divider.pt(adapter, maturity);
         uint256 _ptBal;
-        (tBal, _ptBal) = _removeLiquidityFromSpace(
-            pool.getPoolId(),
-            pt,
-            Adapter(adapter).target(),
-            minAmountsOut,
-            lpBal
-        );
+        (tBal, _ptBal) = _removeLiquidityFromSpace(poolId, pt, Adapter(adapter).target(), params.minAmountsOut, lpBal);
 
         if (divider.mscale(adapter, maturity) > 0) {
             if (uint256(Adapter(adapter).level()).redeemRestricted()) {
@@ -733,8 +752,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                     pt,
                     Adapter(adapter).target(),
                     _ptBal,
-                    pool.getPoolId(),
-                    minAccepted,
+                    params.deadline,
+                    poolId,
+                    params.minAccepted,
                     payable(address(this))
                 );
             } else {
@@ -747,23 +767,25 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Initiates a flash loan of Target, swaps target amount to PTs and combines
     /// @param adapter adapter
     /// @param maturity maturity
-    /// @param ytBalIn YT amount the user has sent in
-    /// @param amountToBorrow target amount to borrow
+    /// @param data abi.encoded data:
+    /// - YT amount the user has sent in
+    /// - target amount to borrow
+    /// - deadline for the swap
     /// @return tBal amount of Target obtained from a sale of YTs
     function _flashBorrowAndSwapFromYTs(
         address adapter,
         uint256 maturity,
-        uint256 ytBalIn,
-        uint256 amountToBorrow
+        bytes memory data
     ) internal returns (uint256 tBal) {
         ERC20 target = ERC20(Adapter(adapter).target());
         uint256 decimals = target.decimals();
         uint256 acceptableError = decimals < 9 ? 1 : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - decimals);
+        (uint256 ytBalIn, uint256 amountToBorrow, uint256 deadline) = abi.decode(data, (uint256, uint256, uint256));
         bool result = Adapter(adapter).flashLoan(
             this,
             address(target),
             amountToBorrow,
-            abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, true)
+            abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, deadline, true)
         );
         if (!result) revert Errors.FlashBorrowFailed();
         tBal = target.balanceOf(address(this));
@@ -781,6 +803,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         uint256 targetIn,
+        uint256 deadline,
         uint256 amountToBorrow,
         uint256 minAccepted
     ) internal returns (uint256 targetBal, uint256 ytBal) {
@@ -788,7 +811,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             this,
             Adapter(adapter).target(),
             amountToBorrow,
-            abi.encode(adapter, uint256(maturity), targetIn, minAccepted, false)
+            abi.encode(adapter, uint256(maturity), targetIn, minAccepted, deadline, false)
         );
         if (!result) revert Errors.FlashBorrowFailed();
 
@@ -805,24 +828,27 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256, /* fee */
         bytes calldata data
     ) external returns (bytes32) {
-        (address adapter, uint256 maturity, uint256 amountIn, uint256 minAccepted, bool ytToTarget) = abi.decode(
-            data,
-            (address, uint256, uint256, uint256, bool)
-        );
+        (
+            address adapter,
+            uint256 maturity,
+            uint256 amountIn,
+            uint256 minAccepted,
+            uint256 deadline,
+            bool ytToTarget
+        ) = abi.decode(data, (address, uint256, uint256, uint256, uint256, bool));
 
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
         if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
 
-        BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
         ERC20 target = ERC20(Adapter(adapter).target());
-
         if (ytToTarget) {
             // Swap Target for PTs
             uint256 ptBal = _balancerSwap(
                 address(target),
                 divider.pt(adapter, maturity),
                 target.balanceOf(address(this)),
-                pool.getPoolId(),
+                deadline,
+                BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted, // min pt out
                 payable(address(this))
             );
@@ -839,7 +865,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 address(pt),
                 address(target),
                 pt.balanceOf(address(this)),
-                pool.getPoolId(),
+                deadline,
+                BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted, // min Target accepted
                 payable(address(this))
             ); // minAccepted should be close to amountBorrrowed so that minimal Target dust is sent back to the caller
