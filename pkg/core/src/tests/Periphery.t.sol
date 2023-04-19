@@ -1928,7 +1928,16 @@ contract PeripheryTest is TestHelper {
         periphery.sponsorSeries{ value: 1e18 }(address(0), 0, false, permit, _getQuote(address(0), address(0)));
 
         vm.expectRevert();
-        periphery.swapForPTs{ value: 1e18 }(address(0), 0, 0, 0, 0, address(0), permit, _getQuote(address(0), address(0)));
+        periphery.swapForPTs{ value: 1e18 }(
+            address(0),
+            0,
+            0,
+            0,
+            0,
+            address(0),
+            permit,
+            _getQuote(address(0), address(0))
+        );
 
         vm.expectRevert();
         periphery.swapForYTs{ value: 1e18 }(

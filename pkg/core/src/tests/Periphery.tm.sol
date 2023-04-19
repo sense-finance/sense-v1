@@ -1681,7 +1681,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     /// @dev If fromToken is the same as the toToken, we don't need to swao so we return
     /// the quote with the tokens as they are. No swap call data is returned.
-    function _getQuote(address fromToken, address toToken, uint256 amt) public returns (Periphery.SwapQuote memory quote) {
+    function _getQuote(
+        address fromToken,
+        address toToken,
+        uint256 amt
+    ) public returns (Periphery.SwapQuote memory quote) {
         if (fromToken == toToken) {
             quote.sellToken = ERC20(fromToken);
             quote.buyToken = ERC20(toToken);
