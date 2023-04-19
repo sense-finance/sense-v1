@@ -951,10 +951,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             (address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this)));
         if (boughtAmount == 0 || sellAmount == 0) revert Errors.ZeroSwapAmt();
 
-        // Refund any unspent protocol fees (paid in ether) to the sender.
-        uint256 refundAmt = address(this).balance;
-        if (address(quote.buyToken) == ETH) refundAmt = refundAmt - boughtAmount;
-        payable(msg.sender).transfer(refundAmt);
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
     }
 
@@ -1037,7 +1033,12 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address receiver,
         uint256 amt
     ) internal {
-        address(token) == ETH ? payable(receiver).transfer(amt) : token.safeTransfer(receiver, amt);
+        if (address(token) == ETH) {
+            (bool sent, ) = receiver.call{ value: amt }("");
+            if (!sent) revert Errors.TransferFailed();
+        } else {
+            token.safeTransfer(receiver, amt);
+        }
     }
 
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33
