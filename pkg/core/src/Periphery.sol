@@ -20,6 +20,7 @@ import { Divider } from "./Divider.sol";
 
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
+
     function pools(address adapter, uint256 maturity) external view returns (address);
 }
 
