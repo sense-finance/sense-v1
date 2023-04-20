@@ -132,7 +132,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         SwapQuote calldata quote
     ) external payable returns (address pt, address yt) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
-        if (address(quote.sellToken) != ETH) PeripheryLogic.transferFrom(permit, address(quote.sellToken), quote.amount);
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), quote.amount);
         if (address(quote.sellToken) != stake) _fillQuote(quote);
 
         // Approve divider to withdraw stake assets
@@ -154,7 +154,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         ERC20(stake).safeTransfer(msg.sender, ERC20(stake).balanceOf(address(this)));
 
         // refund any remaining quote.sellToken to receiver
-        PeripheryLogic.transfer(
+        _transfer(
             quote.sellToken,
             msg.sender,
             address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this))
@@ -203,7 +203,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external payable returns (uint256 ptBal) {
-        if (address(quote.sellToken) != ETH) PeripheryLogic.transferFrom(permit, address(quote.sellToken), amt);
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
         ptBal = _swapTargetForPTs(
             adapter,
             maturity,
@@ -213,7 +213,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             receiver
         );
         // refund any remaining quote.sellToken to receiver
-        PeripheryLogic.transfer(
+        _transfer(
             quote.sellToken,
             receiver,
             address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this))
@@ -244,7 +244,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external payable returns (uint256 targetBal, uint256 ytBal) {
-        if (address(quote.sellToken) != ETH) PeripheryLogic.transferFrom(permit, address(quote.sellToken), amt);
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
 
         // swap sellToken to target, borrow more target and swap to YTs
         (targetBal, ytBal) = _flashBorrowAndSwapToYTs(
@@ -340,7 +340,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         amt = _fromTarget(adapter, amt, receiver, quote);
 
         if (amt < minAccepted) revert Errors.UnexpectedSwapAmount();
-        PeripheryLogic.transfer(quote.buyToken, receiver, amt);
+        _transfer(quote.buyToken, receiver, amt);
     }
 
     /// @notice Adds liquidity providing any Token
@@ -373,7 +373,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             uint256 lpShares
         )
     {
-        if (address(quote.sellToken) != ETH) PeripheryLogic.transferFrom(permit, address(quote.sellToken), amt);
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
         (tAmount, issued, lpShares) = _addLiquidity(
             adapter,
             maturity,
@@ -410,7 +410,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     ) external payable returns (uint256 amt, uint256 ptBal) {
         (amt, ptBal) = _removeLiquidity(adapter, maturity, lpBal, params, swapPTs, receiver, permit);
         amt = _fromTarget(adapter, amt, receiver, quote);
-        PeripheryLogic.transfer(quote.buyToken, receiver, amt);
+        _transfer(quote.buyToken, receiver, amt);
     }
 
     /* ========== UTILS ========== */
@@ -434,7 +434,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external payable returns (uint256 uBal) {
-        if (address(quote.sellToken) != ETH) PeripheryLogic.transferFrom(permit, address(quote.sellToken), amt);
+        if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), amt);
         uBal = divider.issue(adapter, maturity, _toTarget(adapter, amt, receiver, quote));
         ERC20(divider.pt(adapter, maturity)).transfer(receiver, uBal); // Send PTs to the receiver
         ERC20(divider.yt(adapter, maturity)).transfer(receiver, uBal); // Send YT to the receiver
@@ -465,7 +465,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         // pull underlying
         permit2.permitTransferFrom(permit.msg, sigs, msg.sender, permit.sig);
         amt = _fromTarget(adapter, divider.combine(adapter, maturity, uBal), receiver, quote);
-        PeripheryLogic.transfer(quote.buyToken, receiver, amt);
+        _transfer(quote.buyToken, receiver, amt);
     }
 
     /* ========== ADMIN ========== */
@@ -556,7 +556,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 deadline,
         PermitData calldata permit
     ) internal returns (uint256 tBal) {
-        PeripheryLogic.transferFrom(permit, divider.pt(adapter, maturity), ptBal);
+        _transferFrom(permit, divider.pt(adapter, maturity), ptBal);
 
         if (divider.mscale(adapter, maturity) > 0 && !uint256(Adapter(adapter).level()).redeemRestricted()) {
             tBal = divider.redeem(adapter, maturity, ptBal);
@@ -608,7 +608,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             revert Errors.SwapTooSmall();
 
         // Transfer YTs into this contract if needed
-        if (sender != address(this)) PeripheryLogic.transferFrom(permit, divider.yt(adapter, maturity), ytBal);
+        if (sender != address(this)) _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
 
         // Calculate target to borrow by calling AMM
         uint256 targetToBorrow;
@@ -743,7 +743,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bytes32 poolId;
         {
             BalancerPool pool = BalancerPool(spaceFactory.pools(adapter, maturity));
-            PeripheryLogic.transferFrom(permit, address(pool), lpBal);
+            _transferFrom(permit, address(pool), lpBal);
             poolId = pool.getPoolId();
         }
 
@@ -946,6 +946,22 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
     }
 
+    function _transferFrom (
+        Periphery.PermitData memory permit,
+        address token,
+        uint256 amt
+    ) internal {
+        PeripheryLogic.transferFrom(permit, token, amt);
+    }
+
+    function _transfer (
+        ERC20 token,
+        address receiver,
+        uint256 amt
+    ) internal {
+        PeripheryLogic.transfer(token, receiver, amt);
+    }
+
     /// @notice Given an amount and a quote, decides whether it needs to wrap and make a swap on 0x,
     /// simply wrap tokens or do nothing
     function _toTarget(
@@ -963,7 +979,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             amt = Adapter(adapter).wrapUnderlying(_fillQuote(quote));
 
             // refund any remaining quote.sellToken to receiver
-            PeripheryLogic.transfer(
+            _transfer(
                 quote.sellToken,
                 receiver,
                 address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this))
@@ -989,7 +1005,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             Adapter(adapter).unwrapTarget(_amt);
             amt = _fillQuote(quote);
             // refund excess tokens to receiver
-            PeripheryLogic.transfer(quote.sellToken, receiver, quote.sellToken.balanceOf(address(this)));
+            _transfer(quote.sellToken, receiver, quote.sellToken.balanceOf(address(this)));
         }
     }
 
