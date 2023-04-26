@@ -132,14 +132,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         PermitData calldata permit,
         SwapQuote calldata quote
     ) external payable returns (address pt, address yt) {
-        (, address stakeAddress, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
+        (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), quote.amount);
-        if (address(quote.sellToken) != stakeAddress) _fillQuote(quote);
+        if (address(quote.sellToken) != stake) _fillQuote(quote);
 
-        ERC20 stake = ERC20(stakeAddress);
+        ERC20 stakeToken = ERC20(stake);
 
         // Approve divider to withdraw stake assets
-        stake.safeApprove(address(divider), stakeSize);
+        stakeToken.safeApprove(address(divider), stakeSize);
 
         (pt, yt) = divider.initSeries(adapter, maturity, msg.sender);
 
@@ -154,7 +154,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         }
 
         // refund any excess stake assets
-        stake.safeTransfer(msg.sender, _balanceOf(stake, address(this)));
+        stakeToken.safeTransfer(msg.sender, _balanceOf(stakeToken, address(this)));
 
         // refund any remaining quote.sellToken to receiver
         _transfer(
@@ -510,9 +510,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     }
 
     function _onboardAdapter(address adapter, bool addAdapter) private {
-        ERC20 target = ERC20(Adapter(adapter).target());
-        target.safeApprove(address(divider), type(uint256).max);
-        target.safeApprove(address(adapter), type(uint256).max);
+        ERC20 targetToken = ERC20(Adapter(adapter).target());
+        targetToken.safeApprove(address(divider), type(uint256).max);
+        targetToken.safeApprove(address(adapter), type(uint256).max);
         ERC20(Adapter(adapter).underlying()).safeApprove(address(adapter), type(uint256).max);
         if (addAdapter) divider.addAdapter(adapter);
         emit AdapterOnboarded(adapter);
@@ -794,18 +794,18 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         bytes memory data
     ) internal returns (uint256 tBal) {
-        ERC20 target = ERC20(Adapter(adapter).target());
-        uint256 decimals = target.decimals();
+        ERC20 targetToken = ERC20(Adapter(adapter).target());
+        uint256 decimals = targetToken.decimals();
         uint256 acceptableError = decimals < 9 ? 1 : PRICE_ESTIMATE_ACCEPTABLE_ERROR / 10**(18 - decimals);
         (uint256 ytBalIn, uint256 amountToBorrow, uint256 deadline) = abi.decode(data, (uint256, uint256, uint256));
         bool result = Adapter(adapter).flashLoan(
             this,
-            address(target),
+            address(targetToken),
             amountToBorrow,
             abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, deadline, true)
         );
         if (!result) revert Errors.FlashBorrowFailed();
-        tBal = _balanceOf(target, address(this));
+        tBal = _balanceOf(targetToken, address(this));
     }
 
     /// @notice Initiates a flash loan of Target, issues PTs/YTs and swaps the PTs to Target
@@ -824,7 +824,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 amountToBorrow,
         uint256 minAccepted
     ) internal returns (uint256 targetBal, uint256 ytBal) {
-        address target =  Adapter(adapter).target();
+        address target = Adapter(adapter).target();
         bool result = Adapter(adapter).flashLoan(
             this,
             target,
@@ -858,13 +858,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
         if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
 
-        ERC20 target = ERC20(Adapter(adapter).target());
+        ERC20 targetToken = ERC20(Adapter(adapter).target());
         if (ytToTarget) {
             // Swap Target for PTs
             uint256 ptBal = _balancerSwap(
-                address(target),
+                address(targetToken),
                 divider.pt(adapter, maturity),
-                _balanceOf(target, address(this)),
+                _balanceOf(targetToken, address(this)),
                 deadline,
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted, // min pt out
@@ -876,13 +876,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         } else {
             // Issue PTs and YTs
             divider.issue(adapter, maturity, amountIn + amountBorrrowed);
-            ERC20 pt = ERC20(divider.pt(adapter, maturity));
+            ERC20 ptToken = ERC20(divider.pt(adapter, maturity));
 
             // Swap PTs for Target
             _balancerSwap(
-                address(pt),
-                address(target),
-                _balanceOf(pt, address(this)),
+                address(ptToken),
+                address(targetToken),
+                _balanceOf(ptToken, address(this)),
                 deadline,
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted, // min Target accepted
@@ -938,16 +938,16 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             toInternalBalance: false
         });
 
-        ERC20 targeErc20 = ERC20(target);
-        ERC20 ptErc20 = ERC20(pt);
+        ERC20 targetToken = ERC20(target);
+        ERC20 ptToken = ERC20(pt);
 
-        tBal = _balanceOf(targeErc20, address(this));
-        ptBal = _balanceOf(ptErc20, address(this));
+        tBal = _balanceOf(targetToken, address(this));
+        ptBal = _balanceOf(ptToken, address(this));
 
         balancerVault.exitPool(poolId, address(this), payable(address(this)), request);
 
-        tBal = _balanceOf(targeErc20, address(this)) - tBal;
-        ptBal = _balanceOf(ptErc20, address(this)) - ptBal;
+        tBal = _balanceOf(targetToken, address(this)) - tBal;
+        ptBal = _balanceOf(ptToken, address(this)) - ptBal;
     }
 
     // @dev Swaps ETH->ERC20, ERC20->ERC20 or ERC20->ETH held by this contract using a 0x-API quote
@@ -969,7 +969,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (!success) revert Errors.ZeroExSwapFailed(res);
 
         // We assume the Periphery does not hold tokens so boughtAmount is always it's balance
-        boughtAmount = address(quote.buyToken) == ETH ? address(this).balance : _balanceOf(quote.buyToken, address(this));
+        boughtAmount = address(quote.buyToken) == ETH
+            ? address(this).balance
+            : _balanceOf(quote.buyToken, address(this));
         sellAmount =
             sellAmount -
             (address(quote.sellToken) == ETH ? address(this).balance : _balanceOf(quote.sellToken, address(this)));
@@ -1071,10 +1073,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         }
     }
 
-    function _balanceOf(
-        ERC20 token,
-        address user
-    ) internal returns (uint256 amt){
+    function _balanceOf(ERC20 token, address user) internal returns (uint256 amt) {
         amt = token.balanceOf(user);
     }
 
