@@ -20,6 +20,10 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
+  // Get deployer's balance before deployment
+  const initialBalance = await deployerSigner.getBalance();
+  console.log(`Deployer's initial balance: ${ethers.utils.formatEther(initialBalance)} ETH`);
+
   const {
     divider: dividerAddress,
     periphery: oldPeripheryAddress,
@@ -43,6 +47,25 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   });
   const newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
   console.log(`Periphery deployed to ${peripheryAddress}`);
+
+  const Periphery = await ethers.getContractFactory("Periphery");
+  const gasPrice = await ethers.provider.getGasPrice();
+
+  // Create a deployment transaction with the same arguments
+  const deploymentTransaction = Periphery.getDeployTransaction(
+    divider.address,
+    spaceFactoryAddress,
+    balancerVaultAddress,
+    permit2Address,
+    exchangeProxyAddress,
+  );
+
+  // Estimate the gas required for the deployment transaction
+  const gasEstimate = await ethers.provider.estimateGas(deploymentTransaction);
+
+  // Calculate the estimated cost
+  const estimatedCost = gasPrice.mul(gasEstimate);
+  console.log(`Estimated deployment cost: ${ethers.utils.formatEther(estimatedCost)} ETH`);
 
   // We are only onboarding and verifying adapters whose guard is > 0
   // We can also assume all our onboarded adapters are verified (we have NO un-verified adapters so far)
@@ -153,5 +176,14 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     console.log("\n1. Unset the multisig as an authority on the old Periphery");
     console.log("\n2. Set the periphery on the Divider");
   }
+
+  // Get deployer's balance after deployment
+  const finalBalance = await deployerSigner.getBalance();
+  console.log(`Deployer's final balance: ${ethers.utils.formatEther(finalBalance)} ETH`);
+
+  // Calculate the cost
+  const cost = initialBalance.sub(finalBalance);
+  console.log(`Deployment cost: ${ethers.utils.formatEther(cost)} ETH`);
+
   console.log("\n-------------------------------------------------------");
 });
