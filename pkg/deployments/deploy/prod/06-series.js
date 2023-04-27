@@ -71,9 +71,27 @@ module.exports = async function () {
       chainId,
       signer,
     );
+    console.log("signature", signature);
+    console.log("message", message);
+    console.log("chainId", chainId);
 
     console.info(` - Swap ${isETH ? "ETH" : await sellToken.symbol()} for PTs...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
+
+    console.log(
+      "message",
+      adapter.address,
+      maturity,
+      one(decimals),
+      0, // min amount out
+      deployer,
+      { msg: message, sig: signature },
+      [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
+      {
+        value: isETH ? one(decimals) : 0,
+      },
+    );
+
     let receipt = await (
       await periphery.swapForPTs(
         adapter.address,
