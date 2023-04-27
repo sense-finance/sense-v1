@@ -13,6 +13,7 @@ const {
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * ONE_MINUTE_MS;
 const ONE_YEAR_SECONDS = (365 * ONE_DAY_MS) / 1000;
+const DEADLINE = dayjs().add(1, "day").unix();
 
 module.exports = async function () {
   const { deploy } = deployments;
@@ -86,7 +87,7 @@ module.exports = async function () {
           chainId,
           signer,
         );
-        quote = [target.address, target.address, zeroAddress(), zeroAddress(), "0x"];
+        quote = [stake.address, stake.address, stakeSize, zeroAddress(), zeroAddress(), "0x"];
         const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
@@ -148,14 +149,13 @@ module.exports = async function () {
 
       log("- adding liquidity via target");
       if (balances[0].lt(one(decimals))) {
-        quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+        quote = [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"];
         await periphery
           .addLiquidity(
             adapter.address,
             seriesMaturity,
             one(decimals),
-            0,
-            0,
+            [0, 0, 0],
             1,
             deployer,
             { msg: message, sig: signature },
@@ -168,14 +168,13 @@ module.exports = async function () {
       log("- removing liquidity when one side liquidity (skip swap as there would be no liquidity)");
       let lpBalance = await pool.balanceOf(deployer);
       if (lpBalance.gte(ethers.utils.parseEther("0"))) {
-        quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
+        quote = [zeroAddress(), target.address, 0, zeroAddress(), zeroAddress(), "0x"];
         await periphery
           .removeLiquidity(
             adapter.address,
             seriesMaturity,
             lpBalance,
-            [0, 0],
-            0,
+            [0, [0, 0], 0],
             false,
             deployer,
             {
@@ -192,14 +191,13 @@ module.exports = async function () {
 
       log("- adding liquidity via target");
       if (balances[0].lt(oneMillion(decimals).mul(2))) {
-        quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+        quote = [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"];
         await periphery
           .addLiquidity(
             adapter.address,
             seriesMaturity,
             oneMillion(decimals).mul(2),
-            0,
-            0,
+            [0, 0, 0],
             1,
             deployer,
             { msg: message, sig: signature },
@@ -209,7 +207,7 @@ module.exports = async function () {
       }
 
       log("Making swap to init PT");
-      quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
+      quote = [zeroAddress(), target.address, 0, zeroAddress(), zeroAddress(), "0x"];
       data = await balancerVault.getPoolTokens(poolId);
       balances = data.balances;
       await periphery
@@ -217,6 +215,7 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           fourtyThousand(decimals),
+          DEADLINE,
           0,
           deployer,
           { msg: message, sig: signature },
@@ -270,7 +269,7 @@ module.exports = async function () {
       // Sanity check that all the swaps on this testchain are working
       log(`--- Sanity check swaps ---`);
 
-      quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+      quote = [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"];
 
       log("swapping target for pt");
       await periphery
@@ -278,6 +277,7 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           one(decimals),
+          DEADLINE,
           0,
           deployer,
           { msg: message, sig: signature },
@@ -291,6 +291,7 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           one(decimals),
+          DEADLINE,
           one(decimals),
           one(decimals),
           deployer,
@@ -299,7 +300,7 @@ module.exports = async function () {
         )
         .then(tx => tx.wait());
 
-      quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
+      quote = [zeroAddress(), target.address, 0, zeroAddress(), zeroAddress(), "0x"];
 
       log("swapping pt for target");
       await pt.approve(periphery.address, ethers.constants.MaxUint256).then(tx => tx.wait());
@@ -308,6 +309,7 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           one(decimals).div(2),
+          DEADLINE,
           0,
           deployer,
           { msg: message, sig: signature },
@@ -321,6 +323,7 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           one(decimals).div(2),
+          DEADLINE,
           0,
           deployer,
           { msg: message, sig: signature },
@@ -329,14 +332,13 @@ module.exports = async function () {
         .then(tx => tx.wait());
 
       log("adding liquidity via target");
-      quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
+      quote = [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"];
       await periphery
         .addLiquidity(
           adapter.address,
           seriesMaturity,
           one(decimals),
-          0,
-          0,
+          [0, 0, 0],
           1,
           deployer,
           { msg: message, sig: signature },
