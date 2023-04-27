@@ -100,7 +100,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     }
 
     struct RemoveLiquidityParams {
-        uint256 minAccepted; // Min accepted when swapping PTs to underlying (only used when removing liquidity on/after maturity)
+        uint256 minAccepted; // Min accepted when swapping PTs to underlying (only used when removing liquidity before maturity)
         uint256[] minAmountsOut; // Min accepted amounts of PTs and Target given the amount of LP shares provided
         uint256 deadline; // The UNIX timestamp at which our trade must be completed by - if the transaction is confirmed after this time then the transaction will fail.
     }
@@ -270,7 +270,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param adapter Adapter address for the series
     /// @param maturity Maturity date for the series
     /// @param ptBal Balance of PT to sell
-    /// @param minAccepted Min accepted amount of tokens when selling them on Space
+    /// @param minAccepted Min accepted amount of quote.buyToken the user receives
     /// @param receiver Address to receive the tokens
     /// @param permit Permit to pull PTs
     /// @param quote Quote with swap details
@@ -397,6 +397,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @param maturity Maturity date for the Series
     /// @param lpBal Balance of LP tokens to provide
     /// @param params RemoveLiquidityParams struct with the params for the removeLiquidity call
+    /// @param swapPTs Whether to swap PTs or not. If false, it will transfer PTs to the user
     /// @param receiver Address to receive the Underlying
     /// @param permit Permit to pull the LP tokens
     /// @param quote Quote with swap details

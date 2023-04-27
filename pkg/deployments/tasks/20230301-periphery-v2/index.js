@@ -2,9 +2,6 @@ const { task } = require("hardhat/config");
 const data = require("./input");
 
 const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.addresses");
-
-const dividerAbi = require("./abi/Divider.json");
-const peripheryAbi = require("./abi/Periphery.json");
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
 task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setAction(async (_, { ethers }) => {
@@ -12,6 +9,11 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);
+
+  const { abi: dividerAbi } = await deployments.getArtifact("Divider");
+  const { abi: peripheryAbi } = await deployments.getArtifact("Periphery");
+  const { abi: rlvFactoryAbi } = await deployments.getArtifact("AutoRollerFactory");
+  const { abi: rlvAbi } = await deployments.getArtifact("AutoRoller");
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
   const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
@@ -25,10 +27,12 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     balancerVault: balancerVaultAddress,
     permit2: permit2Address,
     exchangeProxy: exchangeProxyAddress,
+    rlvFactory: rlvFactoryAddress,
   } = data[chainId] || data[CHAINS.MAINNET];
 
   let divider = new ethers.Contract(dividerAddress, dividerAbi, deployerSigner);
   let oldPeriphery = new ethers.Contract(oldPeripheryAddress, peripheryAbi, deployerSigner);
+  let rlvFactory = new ethers.Contract(rlvFactoryAddress, rlvFactoryAbi, deployerSigner);
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Periphery");
@@ -69,9 +73,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
       (await oldPeriphery.queryFilter(oldPeriphery.filters.FactoryChanged(null))).map(e => e.args.factory),
     ),
   ];
-
   console.log("Factories to onboard:", factoriesOnboarded);
-
   for (let factory of factoriesOnboarded) {
     console.log(`\nOnboarding factory ${factory}...`);
     if (await oldPeriphery.factories(factory)) {
@@ -80,6 +82,28 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     } else {
       console.log(`- Skipped ${factory} as it has been unverified`);
     }
+  }
+
+  console.log("\nUpdate Periphery address on existing RLVs");
+  const rlvs = [
+    ...new Set(
+      (await rlvFactory.queryFilter(rlvFactory.filters.RollerCreated(null))).map(e => e.args.autoRoller),
+    ),
+  ];
+  console.log("RLVs to update:", rlvs);
+  for (let rlvAddress of rlvs) {
+    const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
+    await rlv["setParam(bytes32,address)"](
+      ethers.utils.formatBytes32String("PERIPHERY"),
+      peripheryAddress,
+    ).then(t => t.wait());
+    console.log(`- Periphery address successfully updated on RLV ${rlv}`);
+
+    await rlv["setParam(bytes32,address)"](
+      ethers.utils.formatBytes32String("OWNER"),
+      senseAdminMultisigAddress,
+    ).then(t => t.wait());
+    console.log(`- Owner successfully updated on RLV ${rlv}`);
   }
 
   if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
