@@ -10,6 +10,10 @@ BALANCER_VAULT.set("1", "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
 BALANCER_VAULT.set("5", "0x1aB16CB0cb0e5520e0C081530C679B2e846e4D37");
 BALANCER_VAULT.set("111", "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
 
+const BAL = new Map();
+BAL.set("1", "0xba100000625a3754423978a60c9317c58a424e3D");
+BAL.set("111", "0xba100000625a3754423978a60c9317c58a424e3D");
+
 // Compound
 const COMP_TOKEN = new Map();
 COMP_TOKEN.set("1", "0xc00e94cb662c3520282e6f5717214004a7f26888");
@@ -146,6 +150,24 @@ const FRAX = new Map();
 FRAX.set("1", "0x853d955acef822db058eb8505911ed77f175b99e");
 FRAX.set("5", "0xc4723445bD201f685A8128DC2D602DD86B696E22"); // USDC
 FRAX.set("111", "0x853d955acef822db058eb8505911ed77f175b99e");
+
+// Aura
+const AURA = new Map();
+AURA.set("1", "0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF");
+AURA.set("111", "0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF");
+
+const auraB_rETH_STABLE_vault = new Map();
+auraB_rETH_STABLE_vault.set("1", "0x001B78CEC62DcFdc660E06A91Eb1bC966541d758");
+auraB_rETH_STABLE_vault.set("111", "0x001B78CEC62DcFdc660E06A91Eb1bC966541d758");
+
+const aurawstETH_rETH_sfrxETH_BPT_vault = new Map();
+aurawstETH_rETH_sfrxETH_BPT_vault.set("1", "0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47");
+aurawstETH_rETH_sfrxETH_BPT_vault.set("111", "0xd26948E7a0223700e3C3cdEA21cA2471abCb8d47");
+
+// Rocket
+const RETH_TOKEN = new Map();
+RETH_TOKEN.set("1", "0xae78736cd615f374d3085123a210448e74fc6393");
+RETH_TOKEN.set("111", "0xae78736cd615f374d3085123a210448e74fc6393");
 
 // mStable
 const IMUSD_TOKEN = new Map();
@@ -359,6 +381,7 @@ const VERIFY_CHAINS = [CHAINS.MAINNET, CHAINS.GOERLI, CHAINS.ARBITRUM];
 
 // Balancer
 exports.BALANCER_VAULT = BALANCER_VAULT;
+exports.BAL = BAL;
 
 // Compound
 exports.COMPOUND_PRICE_FEED = COMPOUND_PRICE_FEED;
@@ -402,10 +425,18 @@ exports.MORPHO_USDT = MORPHO_USDT;
 // Idle Finance
 exports.BB_wstETH4626 = BB_wstETH4626;
 
+// Aura
+exports.auraB_rETH_STABLE_vault = auraB_rETH_STABLE_vault;
+exports.aurawstETH_rETH_sfrxETH_BPT_vault = aurawstETH_rETH_sfrxETH_BPT_vault;
+exports.AURA = AURA;
+
 // Angle
 exports.FRAX = FRAX;
 exports.sanFRAX_EUR_Wrapper = sanFRAX_EUR_Wrapper;
 exports.ANGLE = ANGLE;
+
+// Rocket
+exports.RETH_TOKEN = RETH_TOKEN;
 
 // mStable
 exports.MUSD_TOKEN = MUSD_TOKEN;

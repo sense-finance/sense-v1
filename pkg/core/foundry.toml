@@ -16,7 +16,8 @@ remappings = [
     '@auto-roller=lib/auto-roller',
     'sense-v1-utils=../utils/src/',
     '@morpho=lib/morpho-core-v1',
-    '@rari-capital/solmate/=../../node_modules/solmate'
+    '@rari-capital/solmate/=../../node_modules/solmate',
+    '@pendle/=lib/pendle-core-v2-public/contracts',
 ]
 
 [rpc_endpoints]

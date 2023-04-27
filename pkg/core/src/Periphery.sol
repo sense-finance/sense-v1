@@ -1009,7 +1009,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     /// @notice Given an amount and a quote, decides whether it needs to unwrap and make a swap on 0x,
     /// simply unwrap tokens or do nothing
     /// @dev when swapping via 0x, the quote needs the amount of underlying that will be received from
-    // the unwrapTarget. This calculation is done off-chain.
+    /// the unwrapTarget. This calculation is done off-chain.
     function _fromTarget(
         address adapter,
         uint256 _amt,

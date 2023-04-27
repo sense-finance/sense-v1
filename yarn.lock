@@ -1331,6 +1331,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts-upgradeable@npm:^4.8.2":
+  version: 4.8.2
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.8.2"
+  checksum: e78bd2682138738f272c9313e4b54c4d90df6b9d9c8e6205ca6c15fa0d02cd339aaeadd50c5ffb347821c43132250edb9297cf73acee5509b66fb154a9b09af0
+  languageName: node
+  linkType: hard
+
 "@openzeppelin/contracts@npm:^4.7.3":
   version: 4.7.3
   resolution: "@openzeppelin/contracts@npm:4.7.3"
@@ -1384,6 +1391,7 @@ __metadata:
   resolution: "@sense-finance/v1-core@workspace:pkg/core"
   dependencies:
     "@openzeppelin/contracts": ^4.7.3
+    "@openzeppelin/contracts-upgradeable": ^4.8.2
     "@sense-finance/v1-fuse": "workspace:pkg/fuse"
     "@sense-finance/v1-utils": "workspace:pkg/utils"
     "@types/prettier": ^2

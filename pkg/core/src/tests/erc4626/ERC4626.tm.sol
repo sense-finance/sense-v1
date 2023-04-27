@@ -22,6 +22,8 @@ contract ERC4626StdTest is ERC4626Test, ForkTest {
         } catch {
             _vault_ = AddressBook.IMUSD;
         }
+        console.log("Running tests for token: ", ERC4626(_vault_).symbol());
+
         try vm.envAddress("USER_WITH_ASSETS") {
             userWithAssets = vm.envAddress("USER_WITH_ASSETS");
         } catch {}

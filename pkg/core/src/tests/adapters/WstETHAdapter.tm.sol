@@ -245,7 +245,7 @@ contract WstETHAdapters is WstETHAdapterTestHelper {
         vm.prank(divider.periphery());
         ERC20(AddressBook.DAI).approve(address(divider), STAKE_SIZE);
 
-        // Open can open sponsor window
+        // Opener can open sponsor window
         vm.prank(address(opener));
         vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
         oAdapter.openSponsorWindow();

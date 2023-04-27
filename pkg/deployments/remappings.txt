@@ -7,3 +7,4 @@ solmate/=solmate/src/
 @auto-roller=../lib/auto-roller
 sense-v1-utils=@sense-finance/v1-utils/src
 sense-v1-core=@sense-finance/v1-core/src
+@pendle/=@sense-finance/v1-core/lib/pendle-core-v2-public/contracts/

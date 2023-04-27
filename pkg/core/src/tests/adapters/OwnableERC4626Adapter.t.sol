@@ -149,7 +149,7 @@ contract OwnableERC4626AdapterTest is Test {
         vm.prank(divider.periphery());
         stake.approve(address(divider), 1e18);
 
-        // Open can open sponsor window
+        // Opener can open sponsor window
         vm.prank(address(opener));
         vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
         adapter.openSponsorWindow();
@@ -172,7 +172,7 @@ contract OwnableERC4626AdapterTest is Test {
         vm.prank(divider.periphery());
         stake.approve(address(divider), 1e18);
 
-        // Open can open sponsor window
+        // Opener can open sponsor window
         vm.prank(address(cropOpener));
         vm.expectCall(address(divider), abi.encodeWithSelector(divider.initSeries.selector));
         cropAdapter.openSponsorWindow();
