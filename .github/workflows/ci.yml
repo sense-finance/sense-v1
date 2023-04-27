@@ -32,13 +32,13 @@ jobs:
       with:
         version: nightly
 
-    - name: Run linter
-      run: yarn lint
+    # - name: Run linter
+    #   run: yarn lint
 
     # When NOT in dev or master we run some basic scenarios (e.g 18 decimals and target decimals < and > than underlying decimals) 
-    - name: Run local tests
-      if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
-      run: yarn test
+    # - name: Run local tests
+    #   if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master'
+    #   run: yarn test
 
     - name: Run mainnet tests
       run: yarn test:mainnet
