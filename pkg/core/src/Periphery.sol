@@ -153,13 +153,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         }
 
         // refund any excess stake assets
-        ERC20(stake).safeTransfer(msg.sender, ERC20(stake).balanceOf(address(this)));
+        ERC20(stake).safeTransfer(msg.sender, _balanceOf(stake, address(this)));
 
         // refund any remaining quote.sellToken to receiver
         _transfer(
             quote.sellToken,
             msg.sender,
-            address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this))
+            address(quote.sellToken) == ETH
+                ? address(this).balance
+                : _balanceOf(address(quote.sellToken), address(this))
         );
 
         emit SeriesSponsored(adapter, maturity, msg.sender);
@@ -218,7 +220,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         _transfer(
             quote.sellToken,
             receiver,
-            address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this))
+            address(quote.sellToken) == ETH
+                ? address(this).balance
+                : _balanceOf(address(quote.sellToken), address(this))
         );
     }
 
@@ -804,7 +808,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             abi.encode(adapter, uint256(maturity), ytBalIn, ytBalIn - acceptableError, deadline, true)
         );
         if (!result) revert Errors.FlashBorrowFailed();
-        tBal = target.balanceOf(address(this));
+        tBal = _balanceOf(address(target), address(this));
     }
 
     /// @notice Initiates a flash loan of Target, issues PTs/YTs and swaps the PTs to Target
@@ -831,8 +835,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         );
         if (!result) revert Errors.FlashBorrowFailed();
 
-        targetBal = ERC20(Adapter(adapter).target()).balanceOf(address(this));
-        ytBal = ERC20(divider.yt(adapter, maturity)).balanceOf(address(this));
+        targetBal = _balanceOf(Adapter(adapter).target(), address(this));
+        ytBal = _balanceOf(divider.yt(adapter, maturity), address(this));
         emit YTsPurchased(msg.sender, adapter, maturity, targetIn, targetBal, ytBal);
     }
 
@@ -856,13 +860,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (msg.sender != address(adapter)) revert Errors.FlashUntrustedBorrower();
         if (initiator != address(this)) revert Errors.FlashUntrustedLoanInitiator();
 
-        ERC20 target = ERC20(Adapter(adapter).target());
+        address target = Adapter(adapter).target();
         if (ytToTarget) {
             // Swap Target for PTs
             uint256 ptBal = _balancerSwap(
-                address(target),
+                target,
                 divider.pt(adapter, maturity),
-                target.balanceOf(address(this)),
+                _balanceOf(target, address(this)),
                 deadline,
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted, // min pt out
@@ -874,13 +878,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         } else {
             // Issue PTs and YTs
             divider.issue(adapter, maturity, amountIn + amountBorrrowed);
-            ERC20 pt = ERC20(divider.pt(adapter, maturity));
+            address pt = divider.pt(adapter, maturity);
 
             // Swap PTs for Target
             _balancerSwap(
-                address(pt),
-                address(target),
-                pt.balanceOf(address(this)),
+                pt,
+                target,
+                _balanceOf(pt, address(this)),
                 deadline,
                 BalancerPool(spaceFactory.pools(adapter, maturity)).getPoolId(),
                 minAccepted, // min Target accepted
@@ -912,9 +916,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             userData: abi.encode(liq.amounts, liq.minBptOut),
             fromInternalBalance: false
         });
-        lpBal = ERC20(address(pool)).balanceOf(receiver);
+        lpBal = _balanceOf(address(pool), receiver);
         balancerVault.joinPool(pool.getPoolId(), address(this), receiver, request);
-        lpBal = ERC20(address(pool)).balanceOf(receiver) - lpBal;
+        lpBal = _balanceOf(address(pool), receiver) - lpBal;
     }
 
     function _removeLiquidityFromSpace(
@@ -932,13 +936,13 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             userData: abi.encode(lpBal),
             toInternalBalance: false
         });
-        tBal = ERC20(target).balanceOf(address(this));
-        ptBal = ERC20(pt).balanceOf(address(this));
+        tBal = _balanceOf(target, address(this));
+        ptBal = _balanceOf(pt, address(this));
 
         balancerVault.exitPool(poolId, address(this), payable(address(this)), request);
 
-        tBal = ERC20(target).balanceOf(address(this)) - tBal;
-        ptBal = ERC20(pt).balanceOf(address(this)) - ptBal;
+        tBal = _balanceOf(target, address(this)) - tBal;
+        ptBal = _balanceOf(pt, address(this)) - ptBal;
     }
 
     // @dev Swaps ETH->ERC20, ERC20->ERC20 or ERC20->ETH held by this contract using a 0x-API quote
@@ -952,7 +956,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
         uint256 sellAmount = address(quote.sellToken) == ETH
             ? address(this).balance
-            : quote.sellToken.balanceOf(address(this));
+            : _balanceOf(address(quote.sellToken), address(this));
 
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
@@ -960,10 +964,16 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (!success) revert Errors.ZeroExSwapFailed(res);
 
         // We assume the Periphery does not hold tokens so boughtAmount is always it's balance
-        boughtAmount = address(quote.buyToken) == ETH ? address(this).balance : quote.buyToken.balanceOf(address(this));
+        boughtAmount = address(quote.buyToken) == ETH
+            ? address(this).balance
+            : _balanceOf(address(quote.buyToken), address(this));
         sellAmount =
             sellAmount -
-            (address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this)));
+            (
+                address(quote.sellToken) == ETH
+                    ? address(this).balance
+                    : _balanceOf(address(quote.sellToken), address(this))
+            );
         if (boughtAmount == 0 || sellAmount == 0) revert Errors.ZeroSwapAmt();
 
         emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), sellAmount, boughtAmount);
@@ -989,7 +999,9 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             _transfer(
                 quote.sellToken,
                 receiver,
-                address(quote.sellToken) == ETH ? address(this).balance : quote.sellToken.balanceOf(address(this))
+                address(quote.sellToken) == ETH
+                    ? address(this).balance
+                    : _balanceOf(address(quote.sellToken), address(this))
             );
         }
     }
@@ -1012,7 +1024,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             Adapter(adapter).unwrapTarget(_amt);
             amt = _fillQuote(quote);
             // refund excess tokens to receiver
-            _transfer(quote.sellToken, receiver, quote.sellToken.balanceOf(address(this)));
+            _transfer(quote.sellToken, receiver, _balanceOf(address(quote.sellToken), address(this)));
         }
     }
 
@@ -1060,6 +1072,10 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 token.safeTransfer(receiver, amt);
             }
         }
+    }
+
+    function _balanceOf(address token, address user) internal returns (uint256 amt) {
+        amt = ERC20(token).balanceOf(user);
     }
 
     /// @notice From: https://github.com/balancer-labs/balancer-examples/blob/master/packages/liquidity-provision/contracts/LiquidityProvider.sol#L33

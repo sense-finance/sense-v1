@@ -122,7 +122,11 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
+<<<<<<< HEAD
+            runs: 0,
+=======
             runs: 100,
+>>>>>>> fix-review
           },
         },
       },
@@ -133,7 +137,11 @@ module.exports = {
             enabled: true,
             // The Balancer Vault becomes too large to deploy with more optimizer runs,
             // but we only need to deploy it on sim runs (we use the existing mainnet Vault on prod runs)
+<<<<<<< HEAD
+            runs: 0,
+=======
             runs: 100,
+>>>>>>> fix-review
           },
         },
       },
