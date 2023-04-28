@@ -40,11 +40,12 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Periphery");
-  const { address: peripheryAddress } = await deploy("Periphery", {
-    from: deployer,
-    args: [divider.address, spaceFactoryAddress, balancerVaultAddress, permit2Address, exchangeProxyAddress],
-    log: true,
-  });
+  // const { address: peripheryAddress } = await deploy("Periphery", {
+  //   from: deployer,
+  //   args: [divider.address, spaceFactoryAddress, balancerVaultAddress, permit2Address, exchangeProxyAddress],
+  //   log: true,
+  // });
+  const peripheryAddress = "0x1dc2cff5451b839d83b6d2598779c90f34cd3bc7";
   const newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
   console.log(`Periphery deployed to ${peripheryAddress}`);
 
@@ -77,14 +78,46 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   ];
   console.log("Adapters to verify & onboard:", adaptersOnboarded);
 
+  let onboarded = [
+    "0x36c744Dd2916E9E04173Bee9d93D554f955a999d".toLowerCase(),
+    "0x6fC4843aac4786b4420e954a2271BE16f225a482".toLowerCase(),
+    "0x2C4D2Ba7C6Cb6Fb7AD67d76201cfB22B174B2C4b".toLowerCase(),
+    "0x60fe5A21A4a8529c3d94e4B1d52f6Dae2d289dC5".toLowerCase(),
+    "0x9887e67AaB4388eA4cf173B010dF5c92B91f55B5".toLowerCase(),
+    "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680".toLowerCase(),
+    "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
+    "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
+    "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(),
+  ]
+
+  let verified = [
+    "0x36c744Dd2916E9E04173Bee9d93D554f955a999d".toLowerCase(),
+    "0x6fC4843aac4786b4420e954a2271BE16f225a482".toLowerCase(),
+    "0x2C4D2Ba7C6Cb6Fb7AD67d76201cfB22B174B2C4b".toLowerCase(),
+    "0x60fe5A21A4a8529c3d94e4B1d52f6Dae2d289dC5".toLowerCase(),
+    "0x9887e67AaB4388eA4cf173B010dF5c92B91f55B5".toLowerCase(),
+    "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680".toLowerCase(),
+    "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
+    "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
+    // "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(), PENDING
+  ]
+
   for (let adapter of adaptersOnboarded) {
     console.log("\nOnboarding adapter", adapter);
     const params = await divider.adapterMeta(adapter);
     if (params[2].gt(0)) {
-      await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
-      console.log(`- Adapter ${adapter} onboarded`);
-      await newPeriphery.verifyAdapter(adapter).then(t => t.wait());
-      console.log(`- Adapter ${adapter} verified`);
+      if (!onboarded.includes(adapter.toLowerCase())) {
+        await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
+        console.log(`- Adapter ${adapter} onboarded`);
+      } else {
+        console.log(`- Skipped adapter ${adapter} onboarding as it's already onboarded`);
+      }
+      if (!verified.includes(adapter.toLowerCase())) {
+        await newPeriphery.verifyAdapter(adapter).then(t => t.wait());
+        console.log(`- Adapter ${adapter} verified`);
+      } else {
+        console.log(`- Skipped adapter ${adapter} verification as it's already verified`);
+      }
     } else {
       console.log(`- Skipped adapter ${adapter} verification as it's guard is ${params[2]}`);
     }
