@@ -7,6 +7,7 @@ module.exports = {
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     exchangeProxy: "0xDef1C0ded9bec7F1a1670819833240f027b25EfF",
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    rlvFactory: "0x3B0f35bDD6Da9e3b8513c58Af8Fdf231f60232E5",
   },
   5: {
     divider: "0x09B10E45A912BcD4E80a8A3119f0cfCcad1e1f12",

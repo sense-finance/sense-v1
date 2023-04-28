@@ -15,6 +15,7 @@ const {
 } = require("../../hardhat.utils");
 const log = console.log;
 const permit2Abi = require("./Permit2.json");
+const DEADLINE = dayjs().add(1, "day").unix();
 
 module.exports = async function () {
   const { deployer } = await getNamedAccounts();
@@ -96,10 +97,11 @@ module.exports = async function () {
         adapter.address,
         maturity,
         one(decimals),
+        DEADLINE,
         0, // min amount out
         deployer,
         { msg: message, sig: signature },
-        [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
+        [sellTokenAddress, buyTokenAddress, 0, allowanceTarget, to, data],
         {
           value: isETH ? one(decimals) : 0,
         },
@@ -192,10 +194,11 @@ module.exports = async function () {
       adapter.address,
       maturity,
       ptAmt,
+      DEADLINE,
       0, // min amount out
       deployer,
       { msg: message, sig: signature },
-      [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
+      [sellTokenAddress, buyTokenAddress, 0, allowanceTarget, to, data],
     ];
     const amtOut = await periphery.callStatic.swapPTs(...fnParams);
     if (!callStatic) {
@@ -311,11 +314,12 @@ module.exports = async function () {
         adapter.address,
         maturity,
         one(decimals).mul(100), // we want to swap 1 DAI
+        DEADLINE,
         quote.buyAmount || one(decimals), // this is the target to borrow (which is 1 DAI swapped to target). We should probably take into account the slippage
         0, // min amount out
         deployer,
         { msg: message, sig: signature },
-        [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
+        [sellTokenAddress, buyTokenAddress, 0, allowanceTarget, to, data],
         {
           value: isETH ? one(decimals) : 0,
         },
@@ -408,10 +412,11 @@ module.exports = async function () {
       adapter.address,
       maturity,
       ytAmt,
+      DEADLINE,
       minAccepted || 0, // min accepted
       deployer,
       { msg: message, sig: signature },
-      [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
+      [sellTokenAddress, buyTokenAddress, 0, allowanceTarget, to, data],
     ];
     const amtOut = await periphery.callStatic.swapYTs(...fnParams);
     if (!callStatic) {
@@ -557,23 +562,18 @@ module.exports = async function () {
           chainId,
           signer,
         );
+        const quote = [stake.address, stake.address, stakeSize, zeroAddress(), zeroAddress(), "0x"];
         const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
           adapter.address,
           seriesMaturity,
           true,
           { msg: message, sig: signature },
-          [target.address, target.address, zeroAddress(), zeroAddress(), "0x"],
+          quote,
         );
         ptAddress = _ptAddress;
         ytAddress = _ytAddress;
         await periphery
-          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, [
-            target.address,
-            target.address,
-            zeroAddress(),
-            zeroAddress(),
-            "0x",
-          ])
+          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote)
           .then(tx => tx.wait());
         log(`${"✔"} Series successfully sponsored`);
       }
@@ -610,7 +610,7 @@ module.exports = async function () {
             oneMillion(decimals),
             deployer,
             { msg: message, sig: signature },
-            [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
+            [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"],
           )
           .then(tx => tx.wait());
       }
@@ -664,12 +664,11 @@ module.exports = async function () {
             adapter.address,
             seriesMaturity,
             one(decimals),
-            0,
-            0,
+            [0, 0, 0],
             1,
             deployer,
             { msg: message, sig: signature },
-            [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
+            [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"],
           )
           .then(t => t.wait());
       }
@@ -691,15 +690,14 @@ module.exports = async function () {
             adapter.address,
             seriesMaturity,
             lpBalance,
-            [0, 0],
-            0,
+            [0, [0, 0], 0],
             false,
             deployer,
             {
               msg: message,
               sig: signature,
             },
-            [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"],
+            [zeroAddress(), target.address, 0, zeroAddress(), zeroAddress(), "0x"],
           )
           .then(t => t.wait());
       }
@@ -708,7 +706,6 @@ module.exports = async function () {
 
       log("- add liquidity via target");
       if (balances[0].lt(oneMillion(decimals))) {
-        const quote = [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"];
         const [signature, message] = await generatePermit(
           target.address,
           oneMillion(decimals),
@@ -722,12 +719,11 @@ module.exports = async function () {
             adapter.address,
             seriesMaturity,
             oneMillion(decimals),
-            0,
-            0,
+            [0, 0, 0],
             1,
             deployer,
             { msg: message, sig: signature },
-            quote,
+            [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"],
           )
           .then(t => t.wait());
       }
@@ -743,12 +739,13 @@ module.exports = async function () {
         chainId,
         signer,
       );
-      let quote = [zeroAddress(), target.address, zeroAddress(), zeroAddress(), "0x"];
+      let quote = [zeroAddress(), target.address, 0, zeroAddress(), zeroAddress(), "0x"];
       await periphery
         .swapPTs(
           adapter.address,
           seriesMaturity,
           fourtyThousand(decimals),
+          DEADLINE,
           0,
           deployer,
           { msg: message, sig: signature },
@@ -819,12 +816,11 @@ module.exports = async function () {
           adapter.address,
           seriesMaturity,
           one(decimals),
-          0,
-          0,
+          [0, 0, 0],
           1,
           deployer,
           { msg: message, sig: signature },
-          [target.address, zeroAddress(), zeroAddress(), zeroAddress(), "0x"],
+          [target.address, zeroAddress(), 0, zeroAddress(), zeroAddress(), "0x"],
         )
         .then(t => t.wait());
 
