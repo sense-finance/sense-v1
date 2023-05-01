@@ -892,7 +892,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
     /* ========== YT SWAPS ========== */
 
-    function testMainnetSwapYTsForTarget() public {
+    function testMainnetSwapYTs() public {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, address yt) = _sponsorSeries();
 
@@ -915,6 +915,27 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             data,
             _getSellUnderlyingQuote(address(mockAdapter), address(mockTarget))
         );
+        uint256 ytBalPost = ERC20(yt).balanceOf(bob);
+        uint256 targetBalPost = mockTarget.balanceOf(bob);
+
+        // Check that this address has fewer YTs and more Target
+        assertLt(ytBalPost, ytBalPre);
+        assertGt(targetBalPost, targetBalPre);
+    }
+
+    function testMainnetSwapYTsForTarget() public {
+        // 1. Sponsor a Series
+        (uint256 maturity, address pt, address yt) = _sponsorSeries();
+
+        // 2. Initialize the pool by joining 0.5 Target in, then swapping 0.5 PTs in for Target
+        _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
+
+        // 3. Swap 10% of bob's YTs for Target
+        vm.startPrank(bob);
+        uint256 ytBalPre = ERC20(yt).balanceOf(bob);
+        uint256 targetBalPre = mockTarget.balanceOf(bob);
+        ERC20(yt).approve(address(periphery), ytBalPre / 10);
+        periphery.swapYTsForTarget(address(mockAdapter), maturity, ytBalPre / 10);
         uint256 ytBalPost = ERC20(yt).balanceOf(bob);
         uint256 targetBalPost = mockTarget.balanceOf(bob);
 
