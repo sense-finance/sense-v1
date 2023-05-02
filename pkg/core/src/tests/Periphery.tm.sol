@@ -945,7 +945,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
     }
 
 
-    function testMainnetCannotCallSwapYTsForTargetHelper() public {
+    function testMainnetFuzzCannotCallSwapYTsForTargetHelper(address from) public {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, address yt) = _sponsorSeries();
 
@@ -953,7 +953,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
 
         // 3. Swap 10% of bob's YTs for Target
-        vm.startPrank(bob);
+        vm.startPrank(from);
         uint256 ytBalPre = ERC20(yt).balanceOf(bob);
         uint256 targetBalPre = mockTarget.balanceOf(bob);
 
