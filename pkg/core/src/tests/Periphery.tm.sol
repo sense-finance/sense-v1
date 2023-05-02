@@ -944,7 +944,6 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertGt(targetBalPost, targetBalPre);
     }
 
-
     function testMainnetFuzzCannotCallSwapYTsForTargetHelper(address from) public {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, address yt) = _sponsorSeries();
