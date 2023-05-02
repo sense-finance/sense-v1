@@ -18,7 +18,6 @@ import { BaseAdapter as Adapter } from "./adapters/abstract/BaseAdapter.sol";
 import { BaseFactory as AdapterFactory } from "./adapters/abstract/factories/BaseFactory.sol";
 import { Divider } from "./Divider.sol";
 
-
 interface SpaceFactoryLike {
     function create(address, uint256) external returns (address);
 
@@ -323,10 +322,14 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ytBal
     ) external returns (uint256 amt) {
         ERC20(divider.yt(adapter, maturity)).transferFrom(msg.sender, address(this), ytBal);
-        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, block.timestamp, PermitData(
-            IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0),
-            "0x"
-        ));
+        amt = this._swapYTsForTarget(
+            msg.sender,
+            adapter,
+            maturity,
+            ytBal,
+            block.timestamp,
+            PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
+        );
         _transfer(ERC20(Adapter(adapter).target()), msg.sender, amt);
     }
 
@@ -616,7 +619,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
             revert Errors.SwapTooSmall();
 
         // Transfer YTs into this contract if needed
-        if (sender != address(this) && msg.sender != address(this)) _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
+        if (sender != address(this) && msg.sender != address(this))
+            _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
 
         // Calculate target to borrow by calling AMM
         uint256 targetToBorrow;

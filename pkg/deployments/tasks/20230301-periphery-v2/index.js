@@ -5,7 +5,6 @@ const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.address
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
 task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setAction(async (_, { ethers }) => {
-  const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);
@@ -88,7 +87,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
     "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
     "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(),
-  ]
+  ];
 
   let verified = [
     "0x36c744Dd2916E9E04173Bee9d93D554f955a999d".toLowerCase(),
@@ -100,7 +99,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
     "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
     // "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(), PENDING
-  ]
+  ];
 
   for (let adapter of adaptersOnboarded) {
     console.log("\nOnboarding adapter", adapter);
