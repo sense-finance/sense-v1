@@ -944,6 +944,25 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         assertGt(targetBalPost, targetBalPre);
     }
 
+
+    function testMainnetCannotCallSwapYTsForTargetHelper() public {
+        // 1. Sponsor a Series
+        (uint256 maturity, address pt, address yt) = _sponsorSeries();
+
+        // 2. Initialize the pool by joining 0.5 Target in, then swapping 0.5 PTs in for Target
+        _initializePool(maturity, ERC20(pt), 1e18, 0.5e18);
+
+        // 3. Swap 10% of bob's YTs for Target
+        vm.startPrank(bob);
+        uint256 ytBalPre = ERC20(yt).balanceOf(bob);
+        uint256 targetBalPre = mockTarget.balanceOf(bob);
+
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(yt));
+
+        vm.expectRevert(Errors.OnlyPeriphery.selector);
+        periphery.swapYTsForTargetHelper(bob, address(mockAdapter), maturity, ytBalPre / 10, data);
+    }
+
     function testMainnetSwapTargetForYTsReturnValues() public {
         // 1. Sponsor a Series
         (uint256 maturity, address pt, address yt) = _sponsorSeries();
