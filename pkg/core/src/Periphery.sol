@@ -322,15 +322,25 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ytBal
     ) external returns (uint256 amt) {
         ERC20(divider.yt(adapter, maturity)).transferFrom(msg.sender, address(this), ytBal);
-        amt = this._swapYTsForTarget(
+        amt = this.swapYTsForTargetHelper(
             msg.sender,
             adapter,
             maturity,
             ytBal,
-            block.timestamp,
             PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
         );
         _transfer(ERC20(Adapter(adapter).target()), msg.sender, amt);
+    }
+
+    function swapYTsForTargetHelper(
+        address sender,
+        address adapter,
+        uint256 maturity,
+        uint256 ytBal,
+        PermitData calldata permit
+    ) external returns (uint256 amt) {
+        if (msg.sender != address(this)) revert Errors.OnlyPeriphery();
+        amt = _swapYTsForTarget(sender, adapter, maturity, ytBal, block.timestamp, permit);
     }
 
     function _swapSenseToken(
@@ -612,7 +622,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ytBal,
         uint256 deadline,
         PermitData calldata permit
-    ) public returns (uint256 tBal) {
+    ) internal returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (ytBal * 10**(18 - ERC20(divider.yt(adapter, maturity)).decimals()) <= MIN_YT_SWAP_IN)
