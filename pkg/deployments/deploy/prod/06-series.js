@@ -71,26 +71,9 @@ module.exports = async function () {
       chainId,
       signer,
     );
-    console.log("signature", signature);
-    console.log("message", message);
-    console.log("chainId", chainId);
 
     console.info(` - Swap ${isETH ? "ETH" : await sellToken.symbol()} for PTs...`);
     const { sellTokenAddress, buyTokenAddress, allowanceTarget, to, data } = quote;
-
-    console.log(
-      "message",
-      adapter.address,
-      maturity,
-      one(decimals),
-      0, // min amount out
-      deployer,
-      { msg: message, sig: signature },
-      [sellTokenAddress, buyTokenAddress, allowanceTarget, to, data],
-      {
-        value: isETH ? one(decimals) : 0,
-      },
-    );
 
     let receipt = await (
       await periphery.swapForPTs(
@@ -563,18 +546,16 @@ module.exports = async function () {
           signer,
         );
         const quote = [stake.address, stake.address, stakeSize, zeroAddress(), zeroAddress(), "0x"];
-        const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
-          adapter.address,
-          seriesMaturity,
-          true,
-          { msg: message, sig: signature },
-          quote,
-        );
+        const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic[
+          "sponsorSeries(address,uint256,bool,(((address,uint256),uint256,uint256),bytes),(address,address,uint256,address,address,bytes))"
+        ](adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote);
         ptAddress = _ptAddress;
         ytAddress = _ytAddress;
-        await periphery
-          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote)
-          .then(tx => tx.wait());
+        await periphery[
+          "sponsorSeries(address,uint256,bool,(((address,uint256),uint256,uint256),bytes),(address,address,uint256,address,address,bytes))"
+        ](adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote).then(tx =>
+          tx.wait(),
+        );
         log(`${"✔"} Series successfully sponsored`);
       }
       log("\n-------------------------------------------------------\n");

@@ -67,6 +67,30 @@ contract PeripheryTest is TestHelper {
         // assertTrue(status == PoolManager.SeriesStatus.QUEUED);
     }
 
+    function testNonPermitSponsorSeries() public {
+        uint256 maturity = getValidMaturity(2021, 10);
+
+        vm.expectEmit(true, true, true, true);
+        emit SeriesSponsored(address(adapter), maturity, bob);
+
+        // load bob's wallet with 1 stake
+        deal(address(stake), bob, 1e18);
+
+        // approve Periphery to pull Bob's stake
+        vm.prank(bob);
+        stake.approve(address(periphery), 1e18);
+
+        vm.prank(bob);
+        (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
+
+        // check pt and yt deployed
+        assertTrue(pt != address(0));
+        assertTrue(yt != address(0));
+
+        // check Space pool is deployed
+        assertTrue(address(spaceFactory.pool()) != address(0));
+    }
+
     function testSponsorSeriesWhenUnverifiedAdapter() public {
         divider.setPermissionless(true);
         MockCropAdapter adapter = new MockCropAdapter(

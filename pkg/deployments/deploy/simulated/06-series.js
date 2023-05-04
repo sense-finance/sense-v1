@@ -88,18 +88,16 @@ module.exports = async function () {
           signer,
         );
         quote = [stake.address, stake.address, stakeSize, zeroAddress(), zeroAddress(), "0x"];
-        const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic.sponsorSeries(
-          adapter.address,
-          seriesMaturity,
-          true,
-          { msg: message, sig: signature },
-          quote,
-        );
+        const { pt: _ptAddress, yt: _ytAddress } = await periphery.callStatic[
+          "sponsorSeries(address,uint256,bool,(((address,uint256),uint256,uint256),bytes),(address,address,uint256,address,address,bytes))"
+        ](adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote);
         ptAddress = _ptAddress;
         ytAddress = _ytAddress;
-        await periphery
-          .sponsorSeries(adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote)
-          .then(tx => tx.wait());
+        await periphery[
+          "sponsorSeries(address,uint256,bool,(((address,uint256),uint256,uint256),bytes),(address,address,uint256,address,address,bytes))"
+        ](adapter.address, seriesMaturity, true, { msg: message, sig: signature }, quote).then(tx =>
+          tx.wait(),
+        );
       }
 
       const { abi: tokenAbi } = await deployments.getArtifact("Token");
