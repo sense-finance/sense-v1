@@ -172,7 +172,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address adapter,
         uint256 maturity,
         bool withPool,
-        address stake, 
+        address stake,
         uint256 stakeSize
     ) internal returns (address pt, address yt) {
         ERC20(stake).transferFrom(msg.sender, address(this), stakeSize);
@@ -1132,13 +1132,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
 
     // required for refunds
     receive() external payable {}
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyThis() {
-        if (msg.sender != address(this)) revert Errors.OnlyPeriphery();
-        _;
-    }
 
     /* ========== LOGS ========== */
 
