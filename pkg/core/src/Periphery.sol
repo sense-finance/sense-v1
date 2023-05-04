@@ -132,6 +132,7 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         bool withPool
     ) external returns (address pt, address yt) {
         (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
+        ERC20(stake).transferFrom(msg.sender, address(this), stakeSize);
         return _sponsorSeries(adapter, maturity, withPool, stake, stakeSize);
     }
 
@@ -175,8 +176,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         address stake,
         uint256 stakeSize
     ) internal returns (address pt, address yt) {
-        ERC20(stake).transferFrom(msg.sender, address(this), stakeSize);
-
         // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
 
