@@ -366,7 +366,8 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 ytBal,
         PermitData calldata permit
-    ) external onlyThis returns (uint256 amt){
+    ) external returns (uint256 amt) {
+        if (msg.sender != address(this)) revert Errors.OnlyPeriphery();
         amt = _swapYTsForTarget(sender, adapter, maturity, ytBal, block.timestamp, permit);
     }
 
