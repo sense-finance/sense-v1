@@ -5,6 +5,7 @@ import "./ERC4626.test.sol";
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/mixins/ERC4626.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import { AddressBook } from "@sense-finance/v1-utils/addresses/AddressBook.sol";
 import { ForkTest } from "@sense-finance/v1-core/tests/test-helpers/ForkTest.sol";
 
@@ -41,7 +42,7 @@ contract ERC4626StdTest is ERC4626Test, ForkTest {
         if (userWithAssets != address(0)) {
             // init vault
             vm.startPrank(userWithAssets);
-            ERC20(_underlying_).approve(_vault_, type(uint256).max);
+            _safeApprove(_underlying_, _vault_,type(uint256).max);
             IERC4626(_vault_).deposit(1 * 10**ERC20(_underlying_).decimals(), userWithAssets);
             vm.stopPrank();
 
@@ -79,7 +80,7 @@ contract ERC4626StdTest is ERC4626Test, ForkTest {
                 init.asset[i] = bound(init.asset[i], 0, maxAssetPerUser);
                 uint256 assets = init.asset[i];
                 vm.prank(userWithAssets);
-                ERC20(_underlying_).transfer(user, assets);
+                SafeTransferLib.safeTransfer(ERC20(_underlying_), user, assets);
             }
 
             if (_needsRolling) vm.roll(block.number + 1);
