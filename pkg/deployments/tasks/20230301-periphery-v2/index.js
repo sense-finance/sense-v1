@@ -16,6 +16,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
   const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
+  const multisigSigner = await ethers.getSigner(senseAdminMultisigAddress);
 
   console.log(`Deploying from ${deployer} on chain ${chainId}`);
 
@@ -45,7 +46,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   //   log: true,
   // });
   const peripheryAddress = "0x1dc2cff5451b839d83b6d2598779c90f34cd3bc7";
-  const newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
+  let newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
   console.log(`Periphery deployed to ${peripheryAddress}`);
 
   const Periphery = await ethers.getContractFactory("Periphery");
@@ -98,8 +99,24 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680".toLowerCase(),
     "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
     "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
-    // "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(), PENDING
+    "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(),
   ];
+
+  // if fork from mainnet, set newPeriphery's signer with sense admin multisig
+  if (chainId == CHAINS.HARDHAT) {
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [senseAdminMultisigAddress],
+    });
+    console.log(`\nFund multisig to be able to make calls from that address`);
+    await deployerSigner
+      .sendTransaction({
+        to: senseAdminMultisigAddress,
+        value: ethers.utils.parseEther("1"),
+      })
+      .then(t => t.wait());
+    newPeriphery = newPeriphery.connect(multisigSigner);
+  }
 
   for (let adapter of adaptersOnboarded) {
     console.log("\nOnboarding adapter", adapter);
@@ -132,8 +149,12 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   for (let factory of factoriesOnboarded) {
     console.log(`\nOnboarding factory ${factory}...`);
     if (await oldPeriphery.factories(factory)) {
-      await newPeriphery.setFactory(factory, true).then(t => t.wait());
-      console.log(`- Factory ${factory} onboarded`);
+      if (await newPeriphery.factories(factory)) {
+        console.log(`- Skipped ${factory} as it's already onboarded`);
+      } else {
+        await newPeriphery.setFactory(factory, true).then(t => t.wait());
+        console.log(`- Factory ${factory} onboarded`);
+      }
     } else {
       console.log(`- Skipped ${factory} as it has been unverified`);
     }
@@ -147,26 +168,36 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   ];
   console.log("RLVs to update:", rlvs);
   for (let rlvAddress of rlvs) {
-    const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
+    const rlvOwner = await getInternalVar(9, rlvAddress);
+    console.log(`\nRLV owner is: ${rlvOwner}`);
+    const rlv = new ethers.Contract(rlvAddress, rlvAbi, multisigSigner);
     await rlv["setParam(bytes32,address)"](
       ethers.utils.formatBytes32String("PERIPHERY"),
       peripheryAddress,
     ).then(t => t.wait());
-    console.log(`- Periphery address successfully updated on RLV ${rlv}`);
+    console.log(`- Periphery address successfully updated on RLV ${rlv.address}`);
 
     await rlv["setParam(bytes32,address)"](
       ethers.utils.formatBytes32String("OWNER"),
       senseAdminMultisigAddress,
     ).then(t => t.wait());
-    console.log(`- Owner successfully updated on RLV ${rlv}`);
+    console.log(`- Owner successfully updated on RLV ${rlv.address}`);
   }
 
   if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
-    console.log("\nAdding admin multisig as admin on Periphery");
-    await newPeriphery.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
+    console.log("\nAdding admin multisig as trusted address on Periphery");
+    if (!(await newPeriphery.isTrusted(senseAdminMultisigAddress))) {
+      await newPeriphery.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
+    } else {
+      console.log(`- Skipped ${senseAdminMultisigAddress} as it's already a trusted address`);
+    }
 
-    console.log("\nRemoving deployer as admin on Periphery");
-    await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
+    console.log("\nRemoving deployer as trusted address on Periphery");
+    if (await newPeriphery.isTrusted(deployer)) {
+      await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
+    } else {
+      console.log(`- Skipped ${deployer} as it's already not a trusted address`);
+    }
   }
 
   if (chainId !== CHAINS.HARDHAT) {
@@ -187,7 +218,6 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
       params: [senseAdminMultisigAddress],
     });
 
-    const multisigSigner = await hre.ethers.getSigner(senseAdminMultisigAddress);
     oldPeriphery = oldPeriphery.connect(multisigSigner);
     divider = divider.connect(multisigSigner);
 
@@ -219,3 +249,9 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
   console.log("\n-------------------------------------------------------");
 });
+
+async function getInternalVar(slot, contractAddress) {
+  const paddedSlot = ethers.utils.hexZeroPad(slot, 32);
+  const value = await ethers.provider.getStorageAt(contractAddress, paddedSlot);
+  return ethers.utils.hexStripZeros(value);
+}
