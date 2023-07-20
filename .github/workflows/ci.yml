@@ -59,6 +59,7 @@ jobs:
         FORK_TOP_UP: ${{ secrets.FORK_TOP_UP }}
         MAINNET_RPC_URL: "test"
         GOERLI_RPC_URL: "test"
+        ZEROEX_API_KEY: ${{ secrets.ZEROEX_API_KEY }}
 
     - name: Check code coverage
       run: yarn coverage
