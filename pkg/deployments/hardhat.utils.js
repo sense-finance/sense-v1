@@ -232,7 +232,7 @@ exports.generateTokens = async (tokenAddress, to, signer, amt) => {
     index.toString(),
     this.toBytes32(amt || ethers.utils.parseEther("10000000")).toString(),
   );
-  if ((await token.balanceOf(to)).lt(amt)) {
+  if ((await token.balanceOf(to)).eq(0)) {
     throw new Error(`\n - Failed to generate ${amt} ${symbol} to deployer: ${to}`);
   }
 };
