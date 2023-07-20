@@ -155,6 +155,11 @@ async function stopPrank(address) {
 }
 exports.stopPrank = stopPrank;
 
+async function fund(signer, to, value) {
+  await signer.sendTransaction({ to, value }).then(t => t.wait());
+}
+exports.fund = fund;
+
 const delay = n => new Promise(r => setTimeout(r, n * 1000));
 exports.delay = delay;
 
@@ -227,7 +232,7 @@ exports.generateTokens = async (tokenAddress, to, signer, amt) => {
     index.toString(),
     this.toBytes32(amt || ethers.utils.parseEther("10000000")).toString(),
   );
-  if ((await token.balanceOf(to)).eq(0)) {
+  if ((await token.balanceOf(to)).lt(amt)) {
     throw new Error(`\n - Failed to generate ${amt} ${symbol} to deployer: ${to}`);
   }
 };

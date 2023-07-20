@@ -2,9 +2,11 @@ const { task } = require("hardhat/config");
 const data = require("./input");
 
 const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.addresses");
-const { verifyOnEtherscan } = require("../../hardhat.utils");
+const { verifyOnEtherscan, fund, generateTokens } = require("../../hardhat.utils");
+const { startPrank } = require("../../hardhat.utils");
 
 task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setAction(async (_, { ethers }) => {
+  const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);
@@ -13,6 +15,8 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   const { abi: peripheryAbi } = await deployments.getArtifact("Periphery");
   const { abi: rlvFactoryAbi } = await deployments.getArtifact("AutoRollerFactory");
   const { abi: rlvAbi } = await deployments.getArtifact("AutoRoller");
+  const { abi: adapterAbi } = await deployments.getArtifact("BaseAdapter");
+  const { abi: erc20Abi } = await deployments.getArtifact("solmate/src/tokens/ERC20.sol:ERC20");
 
   if (!SENSE_MULTISIG.has(chainId)) throw Error("No balancer vault found");
   const senseAdminMultisigAddress = SENSE_MULTISIG.get(chainId);
@@ -40,14 +44,18 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
   console.log("\n-------------------------------------------------------");
   console.log("\nDeploy Periphery");
-  // const { address: peripheryAddress } = await deploy("Periphery", {
-  //   from: deployer,
-  //   args: [divider.address, spaceFactoryAddress, balancerVaultAddress, permit2Address, exchangeProxyAddress],
-  //   log: true,
-  // });
-  const peripheryAddress = "0x1dc2cff5451b839d83b6d2598779c90f34cd3bc7";
+  const { address: peripheryAddress } = await deploy("Periphery", {
+    from: deployer,
+    args: [divider.address, spaceFactoryAddress, balancerVaultAddress, permit2Address, exchangeProxyAddress],
+    log: true,
+  });
   let newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
   console.log(`Periphery deployed to ${peripheryAddress}`);
+
+  if (chainId !== CHAINS.HARDHAT) {
+    console.log("\n-------------------------------------------------------");
+    await verifyOnEtherscan("Periphery");
+  }
 
   const Periphery = await ethers.getContractFactory("Periphery");
   const gasPrice = await ethers.provider.getGasPrice();
@@ -68,76 +76,108 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   const estimatedCost = gasPrice.mul(gasEstimate);
   console.log(`Estimated deployment cost: ${ethers.utils.formatEther(estimatedCost)} ETH`);
 
+  console.log("\n-------------------------------------------------------");
+  console.log("\n---------ADAPTERS ONBOARDING/VERIFICATION--------------");
+  console.log("\n-------------------------------------------------------");
+
   // We are only onboarding and verifying adapters whose guard is > 0
-  // We can also assume all our onboarded adapters are verified (we have NO un-verified adapters so far)
-  console.log("\nOnboarding and verifying pre-approved adapters on Periphery");
-  const adaptersOnboarded = [
+  console.log("\nOnboarding pre-onboarded adapters on Periphery");
+  const adaptersOnboardedInOldPeriphery = [
     ...new Set(
       (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterOnboarded(null))).map(e => e.args.adapter),
     ),
   ];
-  console.log("Adapters to verify & onboard:", adaptersOnboarded);
+  console.log(
+    `${adaptersOnboardedInOldPeriphery.length} adapters already onboarded on new Periphery:`,
+    adaptersOnboardedInOldPeriphery,
+  );
 
-  let onboarded = [
-    "0x36c744Dd2916E9E04173Bee9d93D554f955a999d".toLowerCase(),
-    "0x6fC4843aac4786b4420e954a2271BE16f225a482".toLowerCase(),
-    "0x2C4D2Ba7C6Cb6Fb7AD67d76201cfB22B174B2C4b".toLowerCase(),
-    "0x60fe5A21A4a8529c3d94e4B1d52f6Dae2d289dC5".toLowerCase(),
-    "0x9887e67AaB4388eA4cf173B010dF5c92B91f55B5".toLowerCase(),
-    "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680".toLowerCase(),
-    "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
-    "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
-    "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(),
+  // Adapters that have been onboarded on the new Periphery
+  const adaptersOnboardedInNewPeriphery = [
+    ...new Set(
+      (await newPeriphery.queryFilter(newPeriphery.filters.AdapterOnboarded(null))).map(e => e.args.adapter),
+    ),
   ];
+  console.log(
+    `${adaptersOnboardedInNewPeriphery.length} adapters already onboarded on new Periphery:`,
+    adaptersOnboardedInNewPeriphery,
+  );
 
-  let verified = [
-    "0x36c744Dd2916E9E04173Bee9d93D554f955a999d".toLowerCase(),
-    "0x6fC4843aac4786b4420e954a2271BE16f225a482".toLowerCase(),
-    "0x2C4D2Ba7C6Cb6Fb7AD67d76201cfB22B174B2C4b".toLowerCase(),
-    "0x60fe5A21A4a8529c3d94e4B1d52f6Dae2d289dC5".toLowerCase(),
-    "0x9887e67AaB4388eA4cf173B010dF5c92B91f55B5".toLowerCase(),
-    "0x66E1AD7cDa66A0B291aEC63f3dBD8cB9eAF76680".toLowerCase(),
-    "0x529c90E6d3a1AedaB9B3011196C495439D23b893".toLowerCase(),
-    "0x8c5e7301a012DC677DD7DaD97aE44032feBCD0FD".toLowerCase(),
-    "0x86c55BFFb64f8fCC8beA33F3176950FDD0fb160D".toLowerCase(),
+  console.log("\nVerifying pre-verified adapters on Periphery");
+  const adaptersVerifiedInOldPeriphery = [
+    ...new Set(
+      (await oldPeriphery.queryFilter(oldPeriphery.filters.AdapterVerified(null))).map(e => e.args.adapter),
+    ),
   ];
+  console.log(
+    `${adaptersVerifiedInOldPeriphery.length} adapters already verified on new Periphery:`,
+    adaptersVerifiedInOldPeriphery,
+  );
 
+  // Adapters that have been already verified on the new Periphery
+  const adaptersVerifiedInNewPeriphery = [
+    ...new Set(
+      (await newPeriphery.queryFilter(newPeriphery.filters.AdapterVerified(null))).map(e => e.args.adapter),
+    ),
+  ];
+  console.log(
+    `${adaptersVerifiedInNewPeriphery.length} adapters already verified on new Periphery:`,
+    adaptersVerifiedInNewPeriphery,
+  );
+
+  const onboardedDifference = adaptersOnboardedInOldPeriphery.filter(
+    x => !adaptersOnboardedInNewPeriphery.includes(x),
+  );
+  const verifiedDifference = adaptersVerifiedInOldPeriphery.filter(
+    x => !adaptersVerifiedInNewPeriphery.includes(x),
+  );
+
+  console.log(
+    `\n${onboardedDifference.length} adapters yet to be onboarded on new Periphery:`,
+    onboardedDifference,
+  );
+  console.log(
+    `${verifiedDifference.length} adapters yet to be verified on new Periphery:`,
+    verifiedDifference,
+  );
+
+  // new Periphery's owner is deployer (first run of this script), we can call functions directly
+  // otherwise, we would need to do it through the multisig
   // if fork from mainnet, set newPeriphery's signer with sense admin multisig
-  if (chainId == CHAINS.HARDHAT) {
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [senseAdminMultisigAddress],
-    });
+  if (chainId == CHAINS.HARDHAT && (await newPeriphery.isTrusted(senseAdminMultisigAddress))) {
+    await startPrank(senseAdminMultisigAddress);
     console.log(`\nFund multisig to be able to make calls from that address`);
-    await deployerSigner
-      .sendTransaction({
-        to: senseAdminMultisigAddress,
-        value: ethers.utils.parseEther("1"),
-      })
-      .then(t => t.wait());
+    await fund(deployerSigner, senseAdminMultisigAddress, ethers.utils.parseEther("1"));
     newPeriphery = newPeriphery.connect(multisigSigner);
   }
 
-  for (let adapter of adaptersOnboarded) {
+  // Onboard adapters
+  for (let adapter of onboardedDifference) {
     console.log("\nOnboarding adapter", adapter);
     const params = await divider.adapterMeta(adapter);
     if (params[2].gt(0)) {
-      if (!onboarded.includes(adapter.toLowerCase())) {
-        await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
-        console.log(`- Adapter ${adapter} onboarded`);
-      } else {
-        console.log(`- Skipped adapter ${adapter} onboarding as it's already onboarded`);
-      }
-      if (!verified.includes(adapter.toLowerCase())) {
-        await newPeriphery.verifyAdapter(adapter).then(t => t.wait());
-        console.log(`- Adapter ${adapter} verified`);
-      } else {
-        console.log(`- Skipped adapter ${adapter} verification as it's already verified`);
-      }
+      await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
+      console.log(`- Adapter ${adapter} onboarded`);
     } else {
       console.log(`- Skipped adapter ${adapter} verification as it's guard is ${params[2]}`);
     }
   }
+
+  // Verify adapters
+  for (let adapter of verifiedDifference) {
+    console.log("\nOnboarding adapter", adapter);
+    const params = await divider.adapterMeta(adapter);
+    if (params[2].gt(0)) {
+      await newPeriphery.verifyAdapter(adapter).then(t => t.wait());
+      console.log(`- Adapter ${adapter} verified`);
+    } else {
+      console.log(`- Skipped adapter ${adapter} verification as it's guard is ${params[2]}`);
+    }
+  }
+
+  console.log("\n-------------------------------------------------------");
+  console.log("\n----------------FACTORIES ONBOARDING-------------------");
+  console.log("\n-------------------------------------------------------");
 
   console.log("\nVerifying pre-approved factories on Periphery");
   const factoriesOnboarded = [
@@ -160,29 +200,9 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     }
   }
 
-  console.log("\nUpdate Periphery address on existing RLVs");
-  const rlvs = [
-    ...new Set(
-      (await rlvFactory.queryFilter(rlvFactory.filters.RollerCreated(null))).map(e => e.args.autoRoller),
-    ),
-  ];
-  console.log("RLVs to update:", rlvs);
-  for (let rlvAddress of rlvs) {
-    const rlvOwner = await getInternalVar(9, rlvAddress);
-    console.log(`\nRLV owner is: ${rlvOwner}`);
-    const rlv = new ethers.Contract(rlvAddress, rlvAbi, multisigSigner);
-    await rlv["setParam(bytes32,address)"](
-      ethers.utils.formatBytes32String("PERIPHERY"),
-      peripheryAddress,
-    ).then(t => t.wait());
-    console.log(`- Periphery address successfully updated on RLV ${rlv.address}`);
-
-    await rlv["setParam(bytes32,address)"](
-      ethers.utils.formatBytes32String("OWNER"),
-      senseAdminMultisigAddress,
-    ).then(t => t.wait());
-    console.log(`- Owner successfully updated on RLV ${rlv.address}`);
-  }
+  console.log("\n-------------------------------------------------------");
+  console.log("\n----------------SET/UNSET TRUSTED ADDRS----------------");
+  console.log("\n-------------------------------------------------------");
 
   if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
     console.log("\nAdding admin multisig as trusted address on Periphery");
@@ -200,43 +220,62 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     }
   }
 
-  if (chainId !== CHAINS.HARDHAT) {
-    console.log("\n-------------------------------------------------------");
-    await verifyOnEtherscan("Periphery");
-  } else {
-    // If we're in a forked environment, check the txs we need to send from the multisig as wel
-    console.log(`\nFund multisig to be able to make calls from that address`);
-    await deployerSigner
-      .sendTransaction({
-        to: senseAdminMultisigAddress,
-        value: ethers.utils.parseEther("1"),
-      })
-      .then(t => t.wait());
+  console.log("\n-------------------------------------------------------");
+  console.log("\n----------------RLVS PERIPHERY UPDATING-----------------");
+  console.log("\n-------------------------------------------------------");
 
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [senseAdminMultisigAddress],
-    });
+  // Impersonate multisig if fork from mainnet && fund it
+  if (chainId == CHAINS.HARDHAT) {
+    await startPrank(senseAdminMultisigAddress);
+    await fund(deployerSigner, senseAdminMultisigAddress, ethers.utils.parseEther("1"));
+
+    // Update Periphery address on existing RLVs (requires multisig)
+    console.log("\nUpdate Periphery address on existing RLVs");
+    const rlvs = [
+      ...new Set(
+        (await rlvFactory.queryFilter(rlvFactory.filters.RollerCreated(null))).map(e => e.args.autoRoller),
+      ),
+    ];
+
+    console.log("RLVs to update:", rlvs);
+    for (let rlvAddress of rlvs) {
+      const rlv = new ethers.Contract(rlvAddress, rlvAbi, multisigSigner);
+
+      const rlvPeriphery = await getInternalVar(7, rlvAddress);
+      console.log(`\nRLV periphery is: ${rlvPeriphery}`);
+      if (rlvPeriphery.toUpperCase() !== newPeriphery.address.toUpperCase()) {
+        await rlv["setParam(bytes32,address)"](
+          ethers.utils.formatBytes32String("PERIPHERY"),
+          peripheryAddress,
+        ).then(t => t.wait());
+        console.log(`- Periphery address successfully updated on RLV ${rlv.address}`);
+      }
+
+      const rlvOwner = await getInternalVar(9, rlvAddress);
+      console.log(`\nRLV owner is: ${rlvOwner}`);
+      if (rlvPeriphery.toUpperCase() !== newPeriphery.address.toUpperCase()) {
+        await rlv["setParam(bytes32,address)"](
+          ethers.utils.formatBytes32String("OWNER"),
+          senseAdminMultisigAddress,
+        ).then(t => t.wait());
+        console.log(`- Owner successfully updated on RLV ${rlv.address}`);
+      }
+    }
 
     oldPeriphery = oldPeriphery.connect(multisigSigner);
     divider = divider.connect(multisigSigner);
 
     if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
       console.log("\nUnset the multisig as an authority on the old Periphery");
-      await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
+      if (await oldPeriphery.isTrusted(senseAdminMultisigAddress)) {
+        await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
+      }
     }
   }
 
   if ([CHAINS.GOERLI, CHAINS.HARDHAT].includes(chainId)) {
     console.log("\nSet the periphery on the Divider");
     await divider.setPeriphery(peripheryAddress).then(t => t.wait());
-  }
-
-  if (VERIFY_CHAINS.includes(chainId)) {
-    console.log("\n-------------------------------------------------------");
-    console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
-    console.log("\n1. Unset the multisig as an authority on the old Periphery");
-    console.log("\n2. Set the periphery on the Divider");
   }
 
   // Get deployer's balance after deployment
@@ -248,6 +287,64 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   console.log(`Deployment cost: ${ethers.utils.formatEther(cost)} ETH`);
 
   console.log("\n-------------------------------------------------------");
+  console.log("\n-----------------SANITY CHECKS-------------------------");
+  console.log("\n-------------------------------------------------------");
+
+  console.log("\nTry rolling RLVs");
+  const rlvs = [
+    ...new Set(
+      (await rlvFactory.queryFilter(rlvFactory.filters.RollerCreated(null))).map(e => e.args.autoRoller),
+    ),
+  ];
+
+  for (let rlvAddress of rlvs) {
+    console.log(`\nRLV is: ${rlvAddress}`);
+    const rlvOwner = await getInternalVar(9, rlvAddress);
+    console.log(`RLV owner is: ${rlvOwner}`);
+
+    await startPrank(deployer);
+
+    let rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
+    const adptr = new ethers.Contract(await rlv.adapter(), adapterAbi, deployerSigner);
+    const [targetAddress, stakeAddress] = await adptr.getStakeAndTarget();
+
+    // generate stake tokens
+    const stakeSize = ethers.utils.parseEther("0.25");
+    await generateTokens(stakeAddress, deployer, deployerSigner, stakeSize);
+
+    // approve RLV to pull stake
+    const stake = new ethers.Contract(stakeAddress, erc20Abi, deployerSigner);
+    await (await stake.approve(rlv.address, stakeSize)).wait();
+
+    // generate target tokens (for first roll RLVs)
+    // sometimes, when we can't find the slot, we fail at generating the tokens
+    // we skip this RLV from the sanity test
+    const firstDeposit = ethers.utils.parseEther("1");
+    let skip = false;
+    try {
+      await generateTokens(targetAddress, deployer, deployerSigner, firstDeposit);
+    } catch (e) {
+      skip = true;
+    }
+    if (skip) {
+      console.log(`- Skipping RLV ${rlv.address} as we couldn't generate target tokens for it`);
+    } else {
+      // approve RLV to pull target (for first roll RLVs)
+      const target = new ethers.Contract(targetAddress, erc20Abi, deployerSigner);
+      await (await target.approve(rlv.address, stakeSize)).wait();
+
+      await rlv.roll().then(t => t.wait());
+      console.log(`- RLV successfully rolled`);
+    }
+  }
+
+  if (VERIFY_CHAINS.includes(chainId)) {
+    console.log("\n-------------------------------------------------------");
+    console.log("\nACTIONS TO BE DONE ON DEFENDER: ");
+    console.log("\n1. Unset the multisig as an authority on the old Periphery");
+    console.log("\n2. Set the periphery on the Divider");
+    console.log("\n3. Update each RLV with the new Periphery address");
+  }
 });
 
 async function getInternalVar(slot, contractAddress) {
