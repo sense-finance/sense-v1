@@ -70,15 +70,15 @@ contract PeripheryTest is TestHelper {
     function testNonPermitSponsorSeries() public {
         uint256 maturity = getValidMaturity(2021, 10);
 
-        vm.expectEmit(true, true, true, true);
-        emit SeriesSponsored(address(adapter), maturity, bob);
-
         // load bob's wallet with 1 stake
         deal(address(stake), bob, 1e18);
 
         // approve Periphery to pull Bob's stake
         vm.prank(bob);
         stake.approve(address(periphery), 1e18);
+
+        vm.expectEmit(true, true, true, true);
+        emit SeriesSponsored(address(adapter), maturity, bob);
 
         vm.prank(bob);
         (address pt, address yt) = periphery.sponsorSeries(address(adapter), maturity, true);
@@ -751,11 +751,12 @@ contract PeripheryTest is TestHelper {
         // calculate underlying swapped to pt
         uint256 ptBal = tBal.fdiv(balancerVault.EXCHANGE_RATE());
 
+        initUser(bob, target, uBal);
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(underlying));
+
         vm.expectEmit(true, false, false, false);
         emit Swapped(bob, "0", adapter.target(), address(0), 0, 0, msg.sig);
 
-        initUser(bob, target, uBal);
-        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(underlying));
         vm.prank(bob);
         periphery.swapForPTs(
             address(adapter),

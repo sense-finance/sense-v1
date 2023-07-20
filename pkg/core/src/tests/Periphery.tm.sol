@@ -614,18 +614,14 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying (stETH) swap
         Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(adapter, AddressBook.DAI);
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(AddressBook.DAI, MockAdapter(adapter).underlying(), 0, 0);
-        _addLiquidityFromToken(adapter, maturity, quote, amt);
+        _addLiquidityFromToken(adapter, maturity, quote, amt, true);
         deal(AddressBook.WSTETH, address(periphery), 0); // reset Periphery's target balance
 
         // 2. Add liquidity from ETH
         amt = 1e18; // 1 ETH
         // Create quote from 0x API to do a 1 ETH to underlying (stETH) swap
         quote = _getBuyUnderlyingQuote(adapter, periphery.ETH());
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(periphery.ETH(), MockAdapter(adapter).underlying(), 0, 0);
-        _addLiquidityFromETH(adapter, maturity, quote, amt);
+        _addLiquidityFromETH(adapter, maturity, quote, amt, true);
         deal(AddressBook.WSTETH, address(periphery), 0); // reset Periphery's target balance
 
         // 3.1 Add liquidity from Target
@@ -634,7 +630,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
         quote = _getBuyUnderlyingQuote(adapter, address(token));
-        _addLiquidityFromToken(adapter, maturity, quote, amt);
+        _addLiquidityFromToken(adapter, maturity, quote, amt, false);
         deal(AddressBook.WSTETH, address(periphery), 0); // reset Periphery's target balance
 
         // 3.2 Add liquidity from Target
@@ -645,7 +641,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // will be ignored in this case. When adding liquidity, buyToken would always be the LP token
         quote = _getBuyUnderlyingQuote(adapter, address(token));
         quote.buyToken = ERC20(AddressBook.DAI);
-        _addLiquidityFromToken(adapter, maturity, quote, amt);
+        _addLiquidityFromToken(adapter, maturity, quote, amt, false);
         deal(AddressBook.WSTETH, address(periphery), 0); // reset Periphery's target balance
 
         // 4. Add liquidity from Underlying
@@ -654,7 +650,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
         quote = _getBuyUnderlyingQuote(adapter, address(token));
-        _addLiquidityFromToken(adapter, maturity, quote, amt);
+        _addLiquidityFromToken(adapter, maturity, quote, amt, false);
         deal(AddressBook.WSTETH, address(periphery), 0); // reset Periphery's target balance
 
         // 5. Add liquidity with malformed quote: buyToken is not the underlying
@@ -670,7 +666,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 3. We wrap DAI for target
         // 5. Since buyToken is now USDC (instead of stETH) and we have received 0 USDC, it will revert
         vm.expectRevert(abi.encodeWithSelector(Errors.ZeroSwapAmt.selector));
-        this._addLiquidityFromToken(adapter, maturity, quote, amt);
+        this._addLiquidityFromToken(adapter, maturity, quote, amt, false);
         vm.stopPrank();
 
         // 6. Add liquidity with malformed quote:
@@ -686,7 +682,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         vm.expectRevert();
         // TODO: fix expectRevert
         // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
-        this._addLiquidityFromToken(adapter, maturity, quote, amt);
+        this._addLiquidityFromToken(adapter, maturity, quote, amt, false);
     }
 
     function testMainnetRemoveLiquidity() public {
@@ -706,22 +702,22 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 1. Remove liquidity to DAI
         // Create quote from 0x API to do an underlying (stETH) to DAI swap
         Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, AddressBook.DAI);
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(address(quote.sellToken), AddressBook.DAI, 0, 0);
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        // vm.expectEmit(true, true, false, false);
+        // emit BoughtTokens(address(quote.sellToken), AddressBook.DAI, 0, 0);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 2. Remove liquidity to ETH
         // Create quote from 0x API to do an underlying (stETH) to ETH swap
         quote = _getSellUnderlyingQuote(adapter, periphery.ETH());
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(address(quote.sellToken), periphery.ETH(), 0, 0);
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        // vm.expectEmit(true, true, false, false);
+        // emit BoughtTokens(address(quote.sellToken), periphery.ETH(), 0, 0);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 3.1 Remove liquidity to Target
         // Create quote only with buyToken as target. We don't care about the other params
         // since no swap on 0x will be done
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 3.2 Remove liquidity to Target
         // Create quote only with buyToken as target. We don't care about the other params
@@ -729,13 +725,13 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // will be ignored in this case. When removing liquidity, sellToken would always be the LP token
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
         quote.sellToken = ERC20(AddressBook.DAI);
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 4. Remove liquidity to Underlying
         // Create quote only with sellToken as target. We don't care about the other params
         // since no swap on 0x will be done
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
-        _removeLiquidityToToken(adapter, maturity, quote, amt);
+        _removeLiquidityToToken(adapter, maturity, quote, amt, true);
 
         // 5. Remove liquidity with malformed quote: buyToken is USDC but not DAI
         // Create quote from 0x API to do an underlying (stETH) to DAI swap
@@ -749,7 +745,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 4. We succefully execute a 0x swap from stETH to DAI (because that's what's in swapCallData)
         // 5. Since buyToken is now USDC and we have received 0 USDC, it will revert
         vm.expectRevert(abi.encodeWithSelector(Errors.ZeroSwapAmt.selector));
-        this._removeLiquidityToToken(adapter, maturity, quote, amt);
+        this._removeLiquidityToToken(adapter, maturity, quote, amt, false);
 
         // 6. Remove liquidity with malformed quote: sellToken is USDC but not stETH
         // Create quote from 0x API to do an underlying (stETH) to DAI swap
@@ -765,7 +761,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         vm.expectRevert();
         // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "TRANSFER_AMOUNT_EXCEEDS_ALLOWANCE"));
         // TODO: fix expectRevert
-        this._removeLiquidityToToken(adapter, maturity, quote, amt);
+        this._removeLiquidityToToken(adapter, maturity, quote, amt, false);
     }
 
     /* ========== PT SWAPS ========== */
@@ -787,21 +783,19 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 amt = 10**token.decimals(); // 1 DAI
         // Create quote from 0x API to do a 1 DAI to underlying swap
         Periphery.SwapQuote memory quote = _getBuyUnderlyingQuote(adapter, address(token));
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(address(token), address(quote.buyToken), 0, 0);
-        _swapTokenForPTs(adapter, maturity, quote, amt);
+        _swapTokenForPTs(adapter, maturity, quote, amt, true);
 
         // 2. Swap target for PTs
         ERC20 target = ERC20(MockAdapter(adapter).target());
         amt = 10**(target.decimals() - 1); // 0.1 target
         quote = _getBuyUnderlyingQuote(adapter, address(target));
-        _swapTokenForPTs(adapter, maturity, quote, amt);
+        _swapTokenForPTs(adapter, maturity, quote, amt, true);
 
         // 3. Swap underlying for PTs
         ERC20 underlying = ERC20(MockAdapter(adapter).underlying());
         amt = 10**(underlying.decimals() - 1); // 0.1 underlying
         quote = _getBuyUnderlyingQuote(adapter, address(underlying));
-        _swapTokenForPTs(adapter, maturity, quote, amt);
+        _swapTokenForPTs(adapter, maturity, quote, amt, true);
 
         // 4. Swap DAI for PTs with malformed quote: buyToken is not underlying but USDC
         token = ERC20(AddressBook.DAI);
@@ -815,7 +809,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // 2. We succefully execute a 0x swap from DAI to stETH
         // Since buyToken is now USDC and we have received 0 USDC, it will revert
         vm.expectRevert(abi.encodeWithSelector(Errors.ZeroSwapAmt.selector));
-        this._swapTokenForPTs(adapter, maturity, quote, amt);
+        this._swapTokenForPTs(adapter, maturity, quote, amt, false);
 
         // 5. Swap DAI for PTs with malformed quote: sellToken is not DAI but USDC and has USDC permit2 approvals and balances
         token = ERC20(AddressBook.DAI);
@@ -830,7 +824,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // TODO: fix expectRevert
         // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
         vm.expectRevert();
-        this._swapTokenForPTs(adapter, maturity, quote, amt);
+        this._swapTokenForPTs(adapter, maturity, quote, amt, false);
 
         // 6. Can't swap if deadline expires
         vm.warp(DEADLINE + 1);
@@ -839,7 +833,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // Create quote from 0x API to do a 1 DAI to underlying swap
         quote = _getBuyUnderlyingQuote(adapter, address(token));
         vm.expectRevert("BAL#508"); // #508 = SWAP_DEADLINE
-        this._swapTokenForPTs(adapter, maturity, quote, amt);
+        this._swapTokenForPTs(adapter, maturity, quote, amt, false);
     }
 
     function testMainnetSwapPTsForAll() public {
@@ -856,11 +850,11 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
 
         // 1. Swap PTs for target
         Periphery.SwapQuote memory quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).target());
-        _swapPTs(adapter, maturity, 0, quote);
+        _swapPTs(adapter, maturity, 0, quote, true);
 
         // 2. Swap PTs for underlying
         quote = _getSellUnderlyingQuote(adapter, MockAdapter(adapter).underlying());
-        _swapPTs(adapter, maturity, 0, quote);
+        _swapPTs(adapter, maturity, 0, quote, true);
 
         // 3. Swap PTs for DAI
         // Create 0x API quote to do a X underlying to token swap
@@ -869,11 +863,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 daiOut = _callStaticSwapPTs(adapter, maturity, quote);
 
         vm.expectRevert(abi.encodeWithSelector(Errors.UnexpectedSwapAmount.selector));
-        this._swapPTs(adapter, maturity, daiOut + 1, quote);
+        this._swapPTs(adapter, maturity, daiOut + 1, quote, false);
 
-        vm.expectEmit(true, true, false, false);
-        emit BoughtTokens(MockAdapter(adapter).underlying(), AddressBook.DAI, 0, 0);
-        _swapPTs(adapter, maturity, daiOut, quote);
+        _swapPTs(adapter, maturity, daiOut, quote, true);
 
         // 4. Swap PTs with malformed quote: sellToken is not underlying but USDC
         // Create 0x API quote to do a X underlying to token swap
@@ -887,7 +879,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         // TODO: fix expectRevert
         // vm.expectRevert(abi.encodeWithSelector(Errors.ZeroExSwapFailed.selector, "Dai/insufficient-balance"));
         vm.expectRevert();
-        this._swapPTs(adapter, maturity, 0, quote);
+        this._swapPTs(adapter, maturity, 0, quote, false);
     }
 
     /* ========== YT SWAPS ========== */
@@ -1612,7 +1604,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         Periphery.SwapQuote memory quote
     ) public {
         vm.prank(bob);
-        uint256 tokenReturned = _swapPTs(adapter, maturity, 0, quote);
+        uint256 tokenReturned = _swapPTs(adapter, maturity, 0, quote, true);
         revert(string(abi.encode(tokenReturned)));
     }
 
@@ -1811,35 +1803,41 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) public {
-        ERC20 token = ERC20(address(quote.sellToken));
-
         // 1. Load token into Bob's address
-        if (address(token) == AddressBook.STETH) {
+        if (address(quote.sellToken) == AddressBook.STETH) {
             // get steth by unwrapping wsteth because `deal()` won't work
             deal(AddressBook.WSTETH, bob, amt);
             vm.prank(bob);
             WstETHLike(AddressBook.WSTETH).unwrap(amt);
         } else {
-            deal(address(token), bob, amt);
+            deal(address(quote.sellToken), bob, amt);
         }
 
         // 2. Approve PERMIT2 to spend token
         vm.prank(bob);
-        token.approve(AddressBook.PERMIT2, type(uint256).max);
+        quote.sellToken.approve(AddressBook.PERMIT2, type(uint256).max);
 
         // 3. Generate permit message and signature
-        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(token));
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), address(quote.sellToken));
 
         // 4. Swap Token for PTs
         uint256 ptBalPre = ERC20(Divider(divider).pt(adapter, maturity)).balanceOf(bob);
-        uint256 tokenBalPre = token.balanceOf(bob);
+        uint256 tokenBalPre = quote.sellToken.balanceOf(bob);
+
+        if (emitEvent) {
+            if (address(quote.buyToken) != address(0)) {
+                vm.expectEmit(true, true, false, false);
+                emit BoughtTokens(address(quote.sellToken), address(quote.buyToken), 0, 0);
+            }
+        }
 
         vm.prank(bob);
         uint256 ptBal = periphery.swapForPTs(adapter, maturity, amt, DEADLINE, 0, bob, data, quote);
 
-        uint256 tokenBalPost = token.balanceOf(bob);
+        uint256 tokenBalPost = quote.sellToken.balanceOf(bob);
         uint256 ptBalPost = ERC20(Divider(divider).pt(adapter, maturity)).balanceOf(bob);
 
         // Check that the return values reflect the token balance changes
@@ -1851,9 +1849,9 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         uint256 minAccepted,
-        Periphery.SwapQuote memory quote
+        Periphery.SwapQuote memory quote,
+        bool emitEvent
     ) public returns (uint256 tokenOut) {
-        ERC20 token = ERC20(address(quote.buyToken));
         // 0. Get PT address
         address pt = Divider(divider).pt(adapter, maturity);
 
@@ -1878,11 +1876,18 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         {
             // 4. Swap PTs for Token
             uint256 ptBalPre = ERC20(pt).balanceOf(bob);
-            uint256 tokenBalPre = token.balanceOf(bob);
+            uint256 tokenBalPre = quote.buyToken.balanceOf(bob);
+
+            if (emitEvent) {
+                if (address(quote.sellToken) != address(0)) {
+                    vm.expectEmit(true, true, false, false);
+                    emit BoughtTokens(MockAdapter(adapter).underlying(), address(quote.buyToken), 0, 0);
+                }
+            }
 
             vm.prank(bob);
             tokenOut = periphery.swapPTs(adapter, maturity, ptBalPre, DEADLINE, minAccepted, bob, data, quote);
-            uint256 tokenBalPost = token.balanceOf(bob);
+            uint256 tokenBalPost = quote.buyToken.balanceOf(bob);
             uint256 ptBalPost = ERC20(pt).balanceOf(bob);
 
             // Check that the return values reflect the token balance changes
@@ -1895,7 +1900,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) public {
         ERC20 token = ERC20(address(quote.sellToken));
 
@@ -1919,7 +1925,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 lpBalPre = ERC20(SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity)).balanceOf(bob);
 
         {
-            uint256 lpShares = _addLiquidity(adapter, maturity, quote, amt);
+            uint256 lpShares = _addLiquidity(adapter, maturity, quote, amt, emitEvent);
             // Check that the return values reflect the token balance changes
             assertApproxEqAbs(tokenBalPre, token.balanceOf(bob) + amt, 4);
             assertEq(
@@ -1936,7 +1942,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) public {
         address sellToken = address(quote.sellToken);
 
@@ -1948,7 +1955,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 lpBalPre = ERC20(SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity)).balanceOf(bob);
 
         {
-            uint256 lpShares = _addLiquidity(adapter, maturity, quote, amt);
+            uint256 lpShares = _addLiquidity(adapter, maturity, quote, amt, emitEvent);
             // Check that the return values reflect the token balance changes
             assertEq(ethBalPre, address(bob).balance + amt);
             assertEq(
@@ -1965,8 +1972,16 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) internal returns (uint256 lpShares) {
+        if (emitEvent) {
+            if (address(quote.sellToken) != address(0)) {
+                vm.expectEmit(true, true, false, false);
+                emit BoughtTokens(address(quote.sellToken), MockAdapter(adapter).underlying(), 0, 0);
+            }
+        }
+
         vm.startPrank(bob);
         (, , lpShares) = periphery.addLiquidity{ value: address(quote.sellToken) == periphery.ETH() ? amt : 0 }(
             adapter,
@@ -1985,7 +2000,8 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) public {
         bool isETH = address(quote.buyToken) == periphery.ETH();
         ERC20 token = quote.buyToken;
@@ -2005,7 +2021,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         uint256 ptBalPre = pt.balanceOf(bob);
 
         {
-            (uint256 tBal, uint256 ptBal) = _removeLiquidity(adapter, maturity, quote, amt);
+            (uint256 tBal, uint256 ptBal) = _removeLiquidity(adapter, maturity, quote, amt, emitEvent);
             // Check that the return values reflect the token balance changes
             assertEq(lp.balanceOf(bob), lpBalPre - amt);
             assertEq(pt.balanceOf(bob), ptBalPre + ptBal);
@@ -2022,9 +2038,24 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
         address adapter,
         uint256 maturity,
         Periphery.SwapQuote memory quote,
-        uint256 amt
+        uint256 amt,
+        bool emitEvent
     ) internal returns (uint256 tBal, uint256 ptBal) {
         address lp = SpaceFactoryLike(spaceFactory).pools(address(adapter), maturity);
+
+        Periphery.PermitData memory data = generatePermit(bobPrivKey, address(periphery), lp);
+
+        if (emitEvent) {
+            if (
+                address(quote.buyToken) != address(0) &&
+                address(quote.buyToken) != MockAdapter(adapter).underlying() &&
+                address(quote.buyToken) != MockAdapter(adapter).target()
+            ) {
+                vm.expectEmit(true, true, false, false);
+                emit BoughtTokens(MockAdapter(adapter).underlying(), address(quote.buyToken), 0, 0);
+            }
+        }
+
         vm.startPrank(bob);
         (tBal, ptBal) = periphery.removeLiquidity(
             adapter,
@@ -2033,7 +2064,7 @@ contract PeripheryMainnetTests is PeripheryTestHelper {
             Periphery.RemoveLiquidityParams(0, new uint256[](2), DEADLINE),
             true, // swap PTs for tokens
             bob,
-            generatePermit(bobPrivKey, address(periphery), lp),
+            data,
             quote
         );
         vm.stopPrank();
