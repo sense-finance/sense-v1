@@ -165,7 +165,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
   // Verify adapters
   for (let adapter of verifiedDifference) {
-    console.log("\nOnboarding adapter", adapter);
+    console.log("\nVerifying adapter", adapter);
     const params = await divider.adapterMeta(adapter);
     if (params[2].gt(0)) {
       await newPeriphery.verifyAdapter(adapter).then(t => t.wait());
@@ -265,12 +265,12 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     oldPeriphery = oldPeriphery.connect(multisigSigner);
     divider = divider.connect(multisigSigner);
 
-    if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
-      console.log("\nUnset the multisig as an authority on the old Periphery");
-      if (await oldPeriphery.isTrusted(senseAdminMultisigAddress)) {
-        await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
-      }
-    }
+    // if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
+    //   console.log("\nUnset the multisig as an authority on the old Periphery");
+    //   if (await oldPeriphery.isTrusted(senseAdminMultisigAddress)) {
+    //     await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
+    //   }
+    // }
   }
 
   if ([CHAINS.GOERLI, CHAINS.HARDHAT].includes(chainId)) {
