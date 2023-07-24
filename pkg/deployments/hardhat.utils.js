@@ -155,6 +155,11 @@ async function stopPrank(address) {
 }
 exports.stopPrank = stopPrank;
 
+async function fund(signer, to, value) {
+  await signer.sendTransaction({ to, value }).then(t => t.wait());
+}
+exports.fund = fund;
+
 const delay = n => new Promise(r => setTimeout(r, n * 1000));
 exports.delay = delay;
 
