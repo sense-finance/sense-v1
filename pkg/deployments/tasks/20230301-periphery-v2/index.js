@@ -5,7 +5,6 @@ const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.address
 const { verifyOnEtherscan } = require("../../hardhat.utils");
 
 task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setAction(async (_, { ethers }) => {
-  // const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
   const deployerSigner = await ethers.getSigner(deployer);

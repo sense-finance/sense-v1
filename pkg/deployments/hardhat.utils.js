@@ -316,7 +316,11 @@ exports.getQuote = async (sellTokenAddr, buyTokenAddr, sellAmount) => {
   const API_QUOTE_URL = "https://api.0x.org/swap/v1/quote";
   const quoteUrl = `${API_QUOTE_URL}?${qs}`;
   console.info(`  * Fetching quote ${quoteUrl}...`);
-  const response = await fetch(quoteUrl);
+  const response = await fetch(quoteUrl, {
+    headers: {
+      "0x-api-key": process.env.ZEROEX_API_KEY,
+    },
+  });
   const quote = await response.json();
   console.info(`  * Received a quote with price ${quote.price}`);
   return quote;

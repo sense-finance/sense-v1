@@ -129,6 +129,23 @@ contract Periphery is Trust, IERC3156FlashBorrower {
     function sponsorSeries(
         address adapter,
         uint256 maturity,
+        bool withPool
+    ) external returns (address pt, address yt) {
+        (, address stake, uint256 stakeSize) = Adapter(adapter).getStakeAndTarget();
+        ERC20(stake).transferFrom(msg.sender, address(this), stakeSize);
+        return _sponsorSeries(adapter, maturity, withPool, stake, stakeSize);
+    }
+
+    /// @notice Sponsor a new Series in any adapter previously onboarded onto the Divider
+    /// @dev Called by an external address, initializes a new series in the Divider
+    /// @param adapter Adapter to associate with the Series
+    /// @param maturity Maturity date for the Series, in units of unix time
+    /// @param withPool Whether to deploy a Space pool or not (only works for unverified adapters)
+    /// @param permit Permit to pull the tokens to swap from
+    /// @param quote Quote with swap details
+    function sponsorSeries(
+        address adapter,
+        uint256 maturity,
         bool withPool,
         PermitData calldata permit,
         SwapQuote calldata quote
@@ -137,6 +154,28 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         if (address(quote.sellToken) != ETH) _transferFrom(permit, address(quote.sellToken), quote.amount);
         if (address(quote.sellToken) != stake) _fillQuote(quote);
 
+        (pt, yt) = _sponsorSeries(adapter, maturity, withPool, stake, stakeSize);
+
+        // refund any excess stake assets
+        ERC20(stake).safeTransfer(msg.sender, _balanceOf(stake, address(this)));
+
+        // refund any remaining quote.sellToken to receiver
+        _transfer(
+            quote.sellToken,
+            msg.sender,
+            address(quote.sellToken) == ETH
+                ? address(this).balance
+                : _balanceOf(address(quote.sellToken), address(this))
+        );
+    }
+
+    function _sponsorSeries(
+        address adapter,
+        uint256 maturity,
+        bool withPool,
+        address stake,
+        uint256 stakeSize
+    ) internal returns (address pt, address yt) {
         // Approve divider to withdraw stake assets
         ERC20(stake).safeApprove(address(divider), stakeSize);
 
@@ -151,18 +190,6 @@ contract Periphery is Trust, IERC3156FlashBorrower {
                 spaceFactory.create(adapter, maturity);
             }
         }
-
-        // refund any excess stake assets
-        ERC20(stake).safeTransfer(msg.sender, _balanceOf(stake, address(this)));
-
-        // refund any remaining quote.sellToken to receiver
-        _transfer(
-            quote.sellToken,
-            msg.sender,
-            address(quote.sellToken) == ETH
-                ? address(this).balance
-                : _balanceOf(address(quote.sellToken), address(this))
-        );
 
         emit SeriesSponsored(adapter, maturity, msg.sender);
     }
@@ -321,12 +348,26 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 maturity,
         uint256 ytBal
     ) external returns (uint256 amt) {
-        if (msg.sender != adapter) revert Errors.OnlyAdapter();
-        PermitData memory permit = PermitData(
-            IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0),
-            "0x"
+        ERC20(divider.yt(adapter, maturity)).transferFrom(msg.sender, address(this), ytBal);
+        amt = this.swapYTsForTargetHelper(
+            msg.sender,
+            adapter,
+            maturity,
+            ytBal,
+            PermitData(IPermit2.PermitTransferFrom(IPermit2.TokenPermissions(ERC20(address(0)), 0), 0, 0), "0x")
         );
-        amt = this._swapYTsForTarget(msg.sender, adapter, maturity, ytBal, block.timestamp, permit);
+        _transfer(ERC20(Adapter(adapter).target()), msg.sender, amt);
+    }
+
+    function swapYTsForTargetHelper(
+        address sender,
+        address adapter,
+        uint256 maturity,
+        uint256 ytBal,
+        PermitData calldata permit
+    ) external returns (uint256 amt) {
+        if (msg.sender != address(this)) revert Errors.OnlyPeriphery();
+        amt = _swapYTsForTarget(sender, adapter, maturity, ytBal, block.timestamp, permit);
     }
 
     function _swapSenseToken(
@@ -608,14 +649,15 @@ contract Periphery is Trust, IERC3156FlashBorrower {
         uint256 ytBal,
         uint256 deadline,
         PermitData calldata permit
-    ) public returns (uint256 tBal) {
+    ) internal returns (uint256 tBal) {
         // Because there's some margin of error in the pricing functions here, smaller
         // swaps will be unreliable. Tokens with more than 18 decimals are not supported.
         if (ytBal * 10**(18 - ERC20(divider.yt(adapter, maturity)).decimals()) <= MIN_YT_SWAP_IN)
             revert Errors.SwapTooSmall();
 
         // Transfer YTs into this contract if needed
-        if (sender != address(this)) _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
+        if (sender != address(this) && msg.sender != address(this))
+            _transferFrom(permit, divider.yt(adapter, maturity), ytBal);
 
         // Calculate target to borrow by calling AMM
         uint256 targetToBorrow;
