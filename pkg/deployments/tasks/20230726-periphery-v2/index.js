@@ -2,10 +2,10 @@ const { task } = require("hardhat/config");
 const data = require("./input");
 
 const { SENSE_MULTISIG, CHAINS, VERIFY_CHAINS } = require("../../hardhat.addresses");
-const { verifyOnEtherscan, fund, generateTokens } = require("../../hardhat.utils");
+const { verifyOnEtherscan, fund, generateTokens, boostedGasPrice } = require("../../hardhat.utils");
 const { startPrank } = require("../../hardhat.utils");
 
-task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setAction(async (_, { ethers }) => {
+task("20230726-periphery-v2", "Deploys and authenticates Periphery V2").setAction(async (_, { ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
@@ -49,6 +49,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     args: [divider.address, spaceFactoryAddress, balancerVaultAddress, permit2Address, exchangeProxyAddress],
     log: true,
   });
+  // const peripheryAddress = "0xAe90a191999DfA22d42c2D704f4712D6eb3cB0B3";
   let newPeriphery = new ethers.Contract(peripheryAddress, peripheryAbi, deployerSigner);
   console.log(`Periphery deployed to ${peripheryAddress}`);
 
@@ -156,7 +157,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     console.log("\nOnboarding adapter", adapter);
     const params = await divider.adapterMeta(adapter);
     if (params[2].gt(0)) {
-      await newPeriphery.onboardAdapter(adapter, false).then(t => t.wait());
+      await newPeriphery.onboardAdapter(adapter, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
       console.log(`- Adapter ${adapter} onboarded`);
     } else {
       console.log(`- Skipped adapter ${adapter} verification as it's guard is ${params[2]}`);
@@ -168,7 +169,12 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     console.log("\nVerifying adapter", adapter);
     const params = await divider.adapterMeta(adapter);
     if (params[2].gt(0)) {
-      await newPeriphery.verifyAdapter(adapter).then(t => t.wait());
+      // if (adapter.toLowerCase() == "0x2C4D2Ba7C6Cb6Fb7AD67d76201cfB22B174B2C4b".toLowerCase()) {
+      //   console.log(`Drop and replace...`, )
+      //   await newPeriphery.verifyAdapter(adapter, { nonce: await ethers.provider.getTransactionCount(deployer), gasPrice: boostedGasPrice }).then(t => t.wait());
+      // } else {
+      await newPeriphery.verifyAdapter(adapter, { gasPrice: boostedGasPrice() }).then(t => t.wait());
+      // }
       console.log(`- Adapter ${adapter} verified`);
     } else {
       console.log(`- Skipped adapter ${adapter} verification as it's guard is ${params[2]}`);
@@ -192,7 +198,7 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
       if (await newPeriphery.factories(factory)) {
         console.log(`- Skipped ${factory} as it's already onboarded`);
       } else {
-        await newPeriphery.setFactory(factory, true).then(t => t.wait());
+        await newPeriphery.setFactory(factory, true, { gasPrice: boostedGasPrice() }).then(t => t.wait());
         console.log(`- Factory ${factory} onboarded`);
       }
     } else {
@@ -207,14 +213,16 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
   if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
     console.log("\nAdding admin multisig as trusted address on Periphery");
     if (!(await newPeriphery.isTrusted(senseAdminMultisigAddress))) {
-      await newPeriphery.setIsTrusted(senseAdminMultisigAddress, true).then(t => t.wait());
+      await newPeriphery
+        .setIsTrusted(senseAdminMultisigAddress, true, { gasPrice: boostedGasPrice() })
+        .then(t => t.wait());
     } else {
       console.log(`- Skipped ${senseAdminMultisigAddress} as it's already a trusted address`);
     }
 
     console.log("\nRemoving deployer as trusted address on Periphery");
     if (await newPeriphery.isTrusted(deployer)) {
-      await newPeriphery.setIsTrusted(deployer, false).then(t => t.wait());
+      await newPeriphery.setIsTrusted(deployer, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
     } else {
       console.log(`- Skipped ${deployer} as it's already not a trusted address`);
     }
@@ -241,24 +249,34 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     for (let rlvAddress of rlvs) {
       const rlv = new ethers.Contract(rlvAddress, rlvAbi, multisigSigner);
 
+      console.log("\n-------------------------------------------------------");
+      const adptr = new ethers.Contract(await rlv.adapter(), adapterAbi, deployerSigner);
+      console.log(`\nUpdating RLV @ ${rlv.address} whose adapter is ${await adptr.name()}`);
+
       const rlvPeriphery = await getInternalVar(7, rlvAddress);
       console.log(`\nRLV periphery is: ${rlvPeriphery}`);
       if (rlvPeriphery.toUpperCase() !== newPeriphery.address.toUpperCase()) {
         await rlv["setParam(bytes32,address)"](
           ethers.utils.formatBytes32String("PERIPHERY"),
           peripheryAddress,
+          { gasPrice: boostedGasPrice() },
         ).then(t => t.wait());
         console.log(`- Periphery address successfully updated on RLV ${rlv.address}`);
+      } else {
+        console.log(`- Skipped periphery address update on RLV ${rlv.address} as it's already set`);
       }
 
       const rlvOwner = await getInternalVar(9, rlvAddress);
       console.log(`\nRLV owner is: ${rlvOwner}`);
-      if (rlvPeriphery.toUpperCase() !== newPeriphery.address.toUpperCase()) {
+      if (rlvOwner.toUpperCase() !== senseAdminMultisigAddress.toUpperCase()) {
         await rlv["setParam(bytes32,address)"](
           ethers.utils.formatBytes32String("OWNER"),
           senseAdminMultisigAddress,
+          { gasPrice: boostedGasPrice() },
         ).then(t => t.wait());
         console.log(`- Owner successfully updated on RLV ${rlv.address}`);
+      } else {
+        console.log(`- Skipped owner update on RLV ${rlv.address} as it's already set`);
       }
     }
 
@@ -268,14 +286,14 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
     // if (senseAdminMultisigAddress.toUpperCase() !== deployer.toUpperCase()) {
     //   console.log("\nUnset the multisig as an authority on the old Periphery");
     //   if (await oldPeriphery.isTrusted(senseAdminMultisigAddress)) {
-    //     await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false).then(t => t.wait());
+    //     await oldPeriphery.setIsTrusted(senseAdminMultisigAddress, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
     //   }
     // }
   }
 
   if ([CHAINS.GOERLI, CHAINS.HARDHAT].includes(chainId)) {
     console.log("\nSet the periphery on the Divider");
-    await divider.setPeriphery(peripheryAddress).then(t => t.wait());
+    await divider.setPeriphery(peripheryAddress, { gasPrice: boostedGasPrice() }).then(t => t.wait());
   }
 
   // Get deployer's balance after deployment
@@ -314,26 +332,27 @@ task("20230301-periphery-v2", "Deploys and authenticates Periphery V2").setActio
 
     // approve RLV to pull stake
     const stake = new ethers.Contract(stakeAddress, erc20Abi, deployerSigner);
-    await (await stake.approve(rlv.address, stakeSize)).wait();
+    await (await stake.approve(rlv.address, stakeSize, { gasPrice: boostedGasPrice() })).wait();
 
-    // generate target tokens (for first roll RLVs)
-    // sometimes, when we can't find the slot, we fail at generating the tokens
-    // we skip this RLV from the sanity test
-    const firstDeposit = ethers.utils.parseEther("1");
     let skip = false;
-    try {
-      await generateTokens(targetAddress, deployer, deployerSigner, firstDeposit);
-    } catch (e) {
-      skip = true;
+    // if this is the RLV's first roll, we need to generate some target tokens for the first deposit
+    if ((await rlv.lastSettle()).eq(0)) {
+      // sometimes we can't find the slot so we fail at generating the tokens
+      // so we will skip this RLV from the sanity checks
+      try {
+        const firstDeposit = ethers.utils.parseEther("1");
+        await generateTokens(targetAddress, deployer, deployerSigner, firstDeposit);
+        // approve RLV to pull target (for first roll RLVs)
+        const target = new ethers.Contract(targetAddress, erc20Abi, deployerSigner);
+        await (await target.approve(rlv.address, firstDeposit, { gasPrice: boostedGasPrice() })).wait();
+      } catch (e) {
+        skip = true;
+        console.log(`- Skipping RLV ${rlv.address} as we couldn't generate target tokens for it`);
+      }
     }
-    if (skip) {
-      console.log(`- Skipping RLV ${rlv.address} as we couldn't generate target tokens for it`);
-    } else {
-      // approve RLV to pull target (for first roll RLVs)
-      const target = new ethers.Contract(targetAddress, erc20Abi, deployerSigner);
-      await (await target.approve(rlv.address, stakeSize)).wait();
 
-      await rlv.roll().then(t => t.wait());
+    if (!skip) {
+      await rlv.roll({ gasPrice: boostedGasPrice() }).then(t => t.wait());
       console.log(`- RLV successfully rolled`);
     }
   }

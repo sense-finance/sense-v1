@@ -227,12 +227,9 @@ exports.generateTokens = async (tokenAddress, to, signer, amt) => {
     [to, typeof slot === "undefined" ? 2 : slot], // key, slot
   );
 
-  await setStorageAt(
-    tokenAddress,
-    index.toString(),
-    this.toBytes32(amt || ethers.utils.parseEther("10000000")).toString(),
-  );
-  if ((await token.balanceOf(to)).eq(0)) {
+  amt = this.toBytes32(amt || ethers.utils.parseEther("10000000")).toString();
+  await setStorageAt(tokenAddress, index.toString(), amt);
+  if ((await token.balanceOf(to)).lt(amt)) {
     throw new Error(`\n - Failed to generate ${amt} ${symbol} to deployer: ${to}`);
   }
 };
@@ -329,6 +326,12 @@ exports.getQuote = async (sellTokenAddr, buyTokenAddr, sellAmount) => {
   const quote = await response.json();
   console.info(`  * Received a quote with price ${quote.price}`);
   return quote;
+};
+
+exports.boostedGasPrice = async () => {
+  const gasPrice = await ethers.provider.getGasPrice();
+  // boost gas price by 10%
+  return gasPrice.mul(110).div(100);
 };
 
 const createQueryString = params => {
