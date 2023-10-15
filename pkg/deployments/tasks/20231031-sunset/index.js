@@ -200,7 +200,6 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
       if (address.toLowerCase() === SENSE_ADMIN_ADDRESSES.multisig.toLowerCase()) {
         multisigTxs.push(getTx(contract.address, "setIsTrusted", SET_IS_TRUSTED_DATA));
       }
-      console.log(`   * ${address} is no longer trusted`);
     }
 
     // last call with corresponding remaining address
@@ -214,6 +213,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
         .then(t => t.wait());
       multisigTxs.push(getTx(contract.address, "setIsTrusted", SET_IS_TRUSTED_DATA));
     }
+    console.log(`   * ${address} is no longer trusted`);
 
     if (trusted.other.length > 0) console.log(`   * Other trusted addresses: ${trusted.other}`); // log other trusted addresses
     if (isFork && includesDeployer) await startPrank(SENSE_ADMIN_ADDRESSES.multisig); // re-start pranking
