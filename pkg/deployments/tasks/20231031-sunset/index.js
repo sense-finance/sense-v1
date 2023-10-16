@@ -2,6 +2,8 @@ const { task } = require("hardhat/config");
 const data = require("./input");
 const fs = require("fs");
 const axios = require("axios");
+const web3 = require("web3");
+const path = require("path");
 
 const { CHAINS } = require("../../hardhat.addresses");
 const { fund, boostedGasPrice, zeroAddress, stopPrank } = require("../../hardhat.utils");
@@ -26,18 +28,15 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
   const multisigSigner = await ethers.getSigner(SENSE_ADMIN_ADDRESSES.multisig);
   const deployerSigner = await ethers.getSigner(deployer);
 
-  // contracts
+  // ABIs
   const { abi: dividerAbi } = await deployments.getArtifact("Divider");
-  const { abi: rlvFactoryAbi } = await deployments.getArtifact("AutoRollerFactory");
-  const { abi: rlvAbi } = await deployments.getArtifact("AutoRoller");
-  const { abi: adapterAbi } = await deployments.getArtifact("BaseAdapter");
   const { abi: extractableRewardAbi } = await deployments.getArtifact("ExtractableReward");
   const { abi: trustAbi } = await deployments.getArtifact("Trust");
+  // const { abi: rlvAbi } = await deployments.getArtifact("AutoRoller");
 
-  const { divider: dividerAddress, rlvFactory: rlvFactoryAddress } = data[chainId] || data[CHAINS.MAINNET];
-
+  // divider
+  const { divider: dividerAddress } = data[chainId] || data[CHAINS.MAINNET];
   let divider = new ethers.Contract(dividerAddress, dividerAbi, multisigSigner);
-  let rlvFactory = new ethers.Contract(rlvFactoryAddress, rlvFactoryAbi, multisigSigner);
 
   const SET_IS_TRUSTED_DATA = divider.interface.encodeFunctionData("setIsTrusted", [
     SENSE_ADMIN_ADDRESSES.multisig,
@@ -45,11 +44,6 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
   ]);
 
   let multisigTxs = []; // store all multisig txs to create a JSON
-  const rlvs = [
-    ...new Set(
-      (await rlvFactory.queryFilter(rlvFactory.filters.RollerCreated(null))).map(e => e.args.autoRoller),
-    ),
-  ];
 
   // Fund multisig
   if (isFork) await fund(deployerSigner, SENSE_ADMIN_ADDRESSES.multisig, ethers.utils.parseEther("1"));
@@ -95,8 +89,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
     delete tx.method;
   });
 
-  // TODO: check how to generate the meta data, otherwise we will have to manually input each tx on the
-  // Gnosis UI Builder
+  // (4). Prepare JSON file with batched txs for Gnosis Safe Transaction Builder UI
   const file = {
     version: "1.0",
     chainId: "1",
@@ -108,27 +101,26 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
       createdFromSafeAddress: "0xDd76360C26Eaf63AFCF3a8d2c0121F13AE864D57",
       createdFromOwnerAddress: "",
       checksum: "",
-      transactions: multisigTxs,
     },
+    transactions: multisigTxs,
   };
+  file.meta.checksum = calculateChecksum(file);
   const jsonString = JSON.stringify(file);
-  fs.writeFileSync("./multisigTxs.json", jsonString);
+  const filePath = path.join(__dirname, "multisigTxs.json");
+  fs.writeFileSync(filePath, jsonString);
   console.log("Transactions JSON file created");
-  const multisend = "0x38869bf66a61cF6bDB996A6aE40D5853Fd43B526";
 
-  /// UTILS ///
+  /// HELPERS ///
 
-  async function isRLV(adapter) {
-    let roller = false;
-    for (const rlvAddress of rlvs) {
-      const rlv = new ethers.Contract(rlvAddress, rlvAbi, deployerSigner);
-      if ((await rlv.adapter()).toLowerCase() === adapter.toLowerCase()) {
-        roller = true;
-        break;
-      }
-    }
-    return roller;
-  }
+  // async function isRLV(address) {
+  //   let rlv = new ethers.Contract(address, rlvAbi, deployerSigner);
+  //   try {
+  //     await rlv.cooldown();
+  //     return true;
+  //   } catch (e) {
+  //     return false;
+  //   }
+  // }
 
   async function removeRewardsRecipient(address) {
     let contract = new ethers.Contract(address, extractableRewardAbi, multisigSigner);
@@ -269,7 +261,12 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
       if (isContract) {
         contractAddresses = await Promise.all(
           transactions
-            .filter(tx => tx.isError === "0" && tx.type === "create" && tx.contractAddress !== address)
+            .filter(
+              tx =>
+                tx.isError === "0" &&
+                (tx.type === "create" || tx.type === "create2") &&
+                tx.contractAddress !== address,
+            )
             .map(async tx => {
               return {
                 address: tx.contractAddress,
@@ -321,53 +318,47 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
     return allContracts;
   }
 
-  async function disableAdapter(contract) {
-    let adapter = new ethers.Contract(adapterAddress, adapterAbi, multisigSigner);
-    let roller = isRLV(adapterAddress);
-    console.log(
-      `- Contract is adapter ${await adapter.symbol()} @ ${adapterAddress} ${roller ? "(RLV)" : ""} -`,
-    );
+  // async function disableAdapter(address) {
+  //   const rlv = new ethers.Contract(address, rlvAbi, deployerSigner);
+  //   const adapterAddress = await rlv.adapter();
 
-    adapter = new ethers.Contract(adapterAddress, extractableRewardAbi, multisigSigner);
-    adapter = adapter.connect(multisigSigner);
+  //   if ((await divider.adapterMeta(adapterAddress)).enabled) {
+  //     await divider.setAdapter(adapterAddress, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
+  //     multisigTxs.push(
+  //       getTx(
+  //         dividerAddress,
+  //         "setAdapter",
+  //         divider.interface.encodeFunctionData("setAdapter", [adapterAddress, false]),
+  //       ),
+  //     );
+  //     console.log(`   * RLV's Adapter ${adapterAddress} marked as disabled on divider`);
+  //   } else {
+  //     console.log(`   * RLV's Adapter ${adapterAddress} is already disabled on divider`);
+  //   }
+  // }
 
-    // since RLVs have a rewardsRecipient that is immutable, we will disable the adapter
-    if (roller) {
-      if ((await divider.adapterMeta(adapterAddress)).enabled) {
-        await divider.setAdapter(adapterAddress, false, { gasPrice: boostedGasPrice() }).then(t => t.wait()); // (ADMIN ACTION)
-        multisigTxs.push(
-          getTx(
-            dividerAddress,
-            "setAdapter",
-            divider.interface.encodeFunctionData("setAdapter", [adapterAddress, false]),
-          ),
-        );
-        console.log(`   * Adapter marked as disabled on divider`);
-      } else {
-        console.log(`   * Adapter is already disabled on divider`);
-      }
-    }
-  }
-
-  async function getContractName(address) {
-    await delay(200); // Introducing a delay of 200ms to stay under rate limit
-    const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-    const etherscanUrl = `https://api.etherscan.io/api?`;
-    const response = await axios.get(etherscanUrl, {
-      params: {
-        module: "contract",
-        action: "getsourcecode",
-        address,
-        apikey: ETHERSCAN_API_KEY,
-      },
-    });
-    return response.data.result[0].ContractName;
-  }
+  //   async function getContractName(address) {
+  //     await delay(200); // Introducing a delay of 200ms to stay under rate limit
+  //     const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+  //     const etherscanUrl = `https://api.etherscan.io/api?`;
+  //     const response = await axios.get(etherscanUrl, {
+  //       params: {
+  //         module: "contract",
+  //         action: "getsourcecode",
+  //         address,
+  //         apikey: ETHERSCAN_API_KEY,
+  //       },
+  //     });
+  //     return response.data.result[0].ContractName;
+  //   }
 });
+
+// UTILS
+
+// const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const asyncFilter = async (arr, predicate) =>
   Promise.all(arr.map(predicate)).then(results => arr.filter((_v, index) => results[index]));
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const getTx = (to, method, data) => {
   return {
     to,
@@ -378,4 +369,36 @@ const getTx = (to, method, data) => {
     contractMethod: null,
     contractInputsValues: null,
   };
+};
+
+const stringifyReplacer = (_, value) => (value === undefined ? null : value);
+
+const serializeJSONObject = json => {
+  if (Array.isArray(json)) {
+    return `[${json.map(el => serializeJSONObject(el)).join(",")}]`;
+  }
+
+  if (typeof json === "object" && json !== null) {
+    let acc = "";
+    const keys = Object.keys(json).sort();
+    acc += `{${JSON.stringify(keys, stringifyReplacer)}`;
+
+    for (let i = 0; i < keys.length; i++) {
+      acc += `${serializeJSONObject(json[keys[i]])},`;
+    }
+
+    return `${acc}}`;
+  }
+
+  return `${JSON.stringify(json, stringifyReplacer)}`;
+};
+
+const calculateChecksum = batchFile => {
+  const serialized = serializeJSONObject({
+    ...batchFile,
+    meta: { ...batchFile.meta, name: null },
+  });
+  const sha = web3.utils.sha3(serialized);
+
+  return sha || undefined;
 };
