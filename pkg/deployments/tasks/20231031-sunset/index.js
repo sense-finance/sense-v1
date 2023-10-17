@@ -50,7 +50,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
 
   // (1). Turn permissionless mode ON
   if (!(await divider.permissionless())) {
-    await divider.setPermissionless(true, { gasPrice: boostedGasPrice() }).then(t => t.wait());
+    if (isFork) await divider.setPermissionless(true, { gasPrice: boostedGasPrice() }).then(t => t.wait());
     multisigTxs.push(
       getTx(
         dividerAddress,
@@ -69,17 +69,27 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
     allContracts[SENSE_ADMIN_ADDRESSES[key]] = await getDeployedContracts(SENSE_ADMIN_ADDRESSES[key]);
   }
 
-  // (2). For each contract, we want to remove us as reward recipients and remove us as trusted addresses
+  // (2). For each contract, remove us as reward recipients
   for (const address of Object.keys(allContracts)) {
     for (const contract of allContracts[address]) {
-      console.log(`\n- Processing contract ${contract.address} -`);
-      await removeRewardsRecipient(contract.address);
-      // if (await isRLV(contract.address)) await disableAdapter(contract.address); // do we want to disable the adapter is it's an RLV?
-      await removeTrust(contract.address);
+      console.log(`\n- Processing contract ${contract} -`);
+      await removeRewardsRecipient(contract);
     }
   }
 
-  // (3). Show functions to execute from multisig
+  await sanitiseExtractableContracts(allContracts);
+
+  // (3). For each contract, remove us as trusted addresses
+  for (const address of Object.keys(allContracts)) {
+    for (const contract of allContracts[address]) {
+      console.log(`\n- Processing contract ${contract} -`);
+      await removeTrust(contract);
+    }
+  }
+
+  await sanitiseTrustContracts(allContracts);
+
+  // (4). Show functions to execute from multisig
   console.log(`\n------- TOTAL ADMIN TRANSACTIONS TO EXECUTE: ${multisigTxs.length} -------`);
   console.log(`------------------------------------------------------------------`);
   for (let i = 0; i < multisigTxs.length; i++) {
@@ -89,7 +99,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
     delete tx.method;
   });
 
-  // (4). Prepare JSON file with batched txs for Gnosis Safe Transaction Builder UI
+  // (5). Prepare JSON file with batched txs for Gnosis Safe Transaction Builder UI
   const file = {
     version: "1.0",
     chainId: "1",
@@ -112,41 +122,35 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
 
   /// HELPERS ///
 
-  // async function isRLV(address) {
-  //   let rlv = new ethers.Contract(address, rlvAbi, deployerSigner);
-  //   try {
-  //     await rlv.cooldown();
-  //     return true;
-  //   } catch (e) {
-  //     return false;
-  //   }
-  // }
-
+  // set reward recipient to zero address
   async function removeRewardsRecipient(address) {
     let contract = new ethers.Contract(address, extractableRewardAbi, multisigSigner);
 
-    // check if contract is ExtractableReward.sol
-    try {
-      await contract.rewardsRecipient();
-    } catch (e) {
+    // Check if contract is ExtractableReward.sol
+    if (!(await isExtractableContract(contract))) {
       console.log(`   * Is not an extractable contract`);
       return;
     }
 
     const trusted = await getTrustedAddresses(contract);
-    if (trusted.sense.length > 1) {
-      throw new Error(`   * More than one trusted address: ${trusted.sense}`);
-    }
+    const rewardsRecipient = (await contract.rewardsRecipient()).toLowerCase();
+    const isDeployerTrusted = trusted.sense.includes(SENSE_ADMIN_ADDRESSES.deployer);
+    const isMultisigTrusted = trusted.sense.includes(SENSE_ADMIN_ADDRESSES.multisig);
 
-    // set reward recipient to zero address
-    if (Object.values(SENSE_ADMIN_ADDRESSES).includes((await contract.rewardsRecipient()).toLowerCase())) {
-      // some contracts were never changed to be trusted by the multisig and remained trusted by the deployer
-      if (!(await contract.isTrusted(SENSE_ADMIN_ADDRESSES.multisig))) {
-        contract = contract.connect(deployerSigner);
-      } else {
+    if (Object.values(SENSE_ADMIN_ADDRESSES).includes(rewardsRecipient)) {
+      contract = isDeployerTrusted ? contract.connect(deployerSigner) : contract;
+
+      if (isFork && isDeployerTrusted) await stopPrank(SENSE_ADMIN_ADDRESSES.multisig);
+
+      if (isFork || isDeployerTrusted) {
         await contract
           .setRewardsRecipient(zeroAddress(), { gasPrice: boostedGasPrice() })
           .then(t => t.wait());
+
+        if (isFork) await startPrank(SENSE_ADMIN_ADDRESSES.multisig); // assuming this is how you restart the prank
+      }
+
+      if (!isDeployerTrusted && isMultisigTrusted) {
         multisigTxs.push(
           getTx(
             address,
@@ -155,6 +159,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
           ),
         );
       }
+
       console.log(`   * Rewards recipient set to zero address`);
     } else {
       console.log(`   * Rewards recipient is already zero address`);
@@ -165,10 +170,8 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
   async function removeTrust(address) {
     let contract = new ethers.Contract(address, trustAbi, multisigSigner);
 
-    // check if contract is Trust.sol
-    try {
-      await contract.isTrusted(SENSE_ADMIN_ADDRESSES.multisig);
-    } catch (e) {
+    // Validate if the contract has the 'isTrusted' method
+    if (!(await isTrustContract(contract))) {
       console.log(`   * Is not a trust contract`);
       return;
     }
@@ -178,62 +181,108 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
       console.log(`   * No trusted addresses`);
       return;
     }
-    // if deployer is trusted, we can call setIsTrusted for all the addresses directly from this script
-    const includesDeployer = trusted.sense.includes(SENSE_ADMIN_ADDRESSES.deployer.toLowerCase());
-    if (includesDeployer) contract = contract.connect(deployerSigner);
-    if (isFork && includesDeployer) await stopPrank(SENSE_ADMIN_ADDRESSES.multisig); // stop pranking
 
-    for (const address of trusted.sense) {
-      if (includesDeployer && address === SENSE_ADMIN_ADDRESSES.deployer.toLowerCase()) continue;
-      if (!includesDeployer && address === SENSE_ADMIN_ADDRESSES.multisig.toLowerCase()) continue;
+    const isDeployerTrusted = trusted.sense.includes(SENSE_ADMIN_ADDRESSES.deployer);
+    const isMultisigTrusted = trusted.sense.includes(SENSE_ADMIN_ADDRESSES.multisig);
+    contract = isDeployerTrusted ? contract.connect(deployerSigner) : contract;
+    if (isFork && isDeployerTrusted) await stopPrank(SENSE_ADMIN_ADDRESSES.multisig);
 
-      await contract.setIsTrusted(address, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
+    for (const trustAddress of trusted.sense) {
+      if (isFork || isDeployerTrusted) {
+        await contract.setIsTrusted(trustAddress, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
+      }
 
-      if (address.toLowerCase() === SENSE_ADMIN_ADDRESSES.multisig.toLowerCase()) {
+      if (!isDeployerTrusted && isMultisigTrusted) {
         multisigTxs.push(getTx(contract.address, "setIsTrusted", SET_IS_TRUSTED_DATA));
       }
     }
 
-    // last call with corresponding remaining address
-    if (includesDeployer) {
-      await contract
-        .setIsTrusted(SENSE_ADMIN_ADDRESSES.deployer, false, { gasPrice: boostedGasPrice() })
-        .then(t => t.wait());
-    } else {
-      await contract
-        .setIsTrusted(SENSE_ADMIN_ADDRESSES.multisig, false, { gasPrice: boostedGasPrice() })
-        .then(t => t.wait());
-      multisigTxs.push(getTx(contract.address, "setIsTrusted", SET_IS_TRUSTED_DATA));
-    }
     console.log(`   * ${address} is no longer trusted`);
+    if (trusted.other.length > 0) console.log(`   * Other trusted addresses: ${trusted.other}`);
+    if (isFork && isDeployerTrusted) await startPrank(SENSE_ADMIN_ADDRESSES.multisig);
+  }
 
-    if (trusted.other.length > 0) console.log(`   * Other trusted addresses: ${trusted.other}`); // log other trusted addresses
-    if (isFork && includesDeployer) await startPrank(SENSE_ADMIN_ADDRESSES.multisig); // re-start pranking
+  async function isTrustContract(contract) {
+    try {
+      await contract.isTrusted(SENSE_ADMIN_ADDRESSES.multisig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function isExtractableContract(contract) {
+    try {
+      await contract.rewardsRecipient();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // iterates over the contracts and check that we are not longer a rewards recipient
+  async function sanitiseExtractableContracts(allContracts) {
+    for (const addresses of Object.values(allContracts)) {
+      for (const contractAddress of addresses) {
+        const contract = new ethers.Contract(contractAddress, extractableRewardAbi, multisigSigner);
+        if (
+          (await isExtractableContract(contract)) &&
+          (await contract.rewardsRecipient()).toLowerCase() !== zeroAddress()
+        ) {
+          throw new Error(`Extractable contract ${contractAddress} is not sanitised`);
+        }
+      }
+    }
+  }
+
+  // iterates over the contracts and check that we are not longer trusted
+  async function sanitiseTrustContracts(allContracts) {
+    for (const addresses of Object.values(allContracts)) {
+      for (const contractAddress of addresses) {
+        const contract = new ethers.Contract(contractAddress, trustAbi, multisigSigner);
+        for (const address of Object.values(SENSE_ADMIN_ADDRESSES)) {
+          if ((await isTrustContract(contract)) && (await contract.isTrusted(address))) {
+            throw new Error(`Trust contract ${contractAddress} is not sanitised`);
+          }
+        }
+      }
+    }
   }
 
   async function getTrustedAddresses(contract) {
-    const trustedAddresses = [
+    let trustedAddresses = [
       ...new Set(
         (await contract.queryFilter(contract.filters.UserTrustUpdated(null))).map(e =>
           e.args.user.toLowerCase(),
         ),
       ),
     ];
-    // if (trustedAddresses.length > 0) console.log(`   * Trusted addresses: ${trustedAddresses}`)
-
-    const senseTrustedAddresses = await asyncFilter(
+    trustedAddresses = await asyncFilter(
       trustedAddresses,
-      async a =>
-        Object.values(SENSE_ADMIN_ADDRESSES).includes(a.toLowerCase()) && (await contract.isTrusted(a)),
+      async a => Object.values(SENSE_ADMIN_ADDRESSES).includes(a) && (await contract.isTrusted(a)),
     );
-    // if (senseTrustedAddresses.length > 0) console.log(`   * Sense trusted addresses: ${senseTrustedAddresses}`);
+
+    // if multisig is trusted, send it to the second to last position of the array
+    if (trustedAddresses.length > 1 && trustedAddresses.includes(SENSE_ADMIN_ADDRESSES.multisig)) {
+      trustedAddresses.push(
+        trustedAddresses.splice(trustedAddresses.indexOf(SENSE_ADMIN_ADDRESSES.multisig), 1)[0],
+      );
+    }
+    // if deployer is trusted, send it to the last position of the array
+    if (trustedAddresses.length > 1 && trustedAddresses.includes(SENSE_ADMIN_ADDRESSES.deployer)) {
+      trustedAddresses.push(
+        trustedAddresses.splice(trustedAddresses.indexOf(SENSE_ADMIN_ADDRESSES.deployer), 1)[0],
+      );
+    }
+
+    const senseTrustedAddresses = await asyncFilter(trustedAddresses, async a =>
+      Object.values(SENSE_ADMIN_ADDRESSES).includes(a),
+    );
 
     const otherTrustedAddresses = await asyncFilter(
       trustedAddresses,
-      async a =>
-        !Object.values(SENSE_ADMIN_ADDRESSES).includes(a.toLowerCase()) && (await contract.isTrusted(a)),
+      async a => !Object.values(SENSE_ADMIN_ADDRESSES).includes(a),
     );
-    // if (otherTrustedAddresses.length > 0) console.log(`   * Sense trusted addresses: ${otherTrustedAddresses}`);
 
     return {
       all: trustedAddresses,
@@ -267,12 +316,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
                 (tx.type === "create" || tx.type === "create2") &&
                 tx.contractAddress !== address,
             )
-            .map(async tx => {
-              return {
-                address: tx.contractAddress,
-                // name: await getContractName(tx.contractAddress)
-              };
-            }),
+            .map(tx => tx.contractAddress),
         );
       } else {
         contractAddresses = await Promise.all(
@@ -280,12 +324,7 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
             .filter(
               tx => tx.to === "" || tx.to === null || tx.to === "0x0000000000000000000000000000000000000000",
             )
-            .map(async tx => {
-              return {
-                address: tx.contractAddress,
-                // name: await getContractName(tx.contractAddress)
-              };
-            }),
+            .map(async tx => tx.contractAddress),
         );
       }
 
@@ -306,56 +345,17 @@ task("20231031-sunset", "Sunsets Sense v1").setAction(async (_, { ethers }) => {
       console.log(`${" ".repeat(indent)}- Contracts deployed by ${address} -`);
 
       for (const contract of contracts) {
-        console.log(`${" ".repeat(indent + 3)}* ${contract.address} - ${contract.name || ""}`);
-        allContracts.push({
-          address: contract.address,
-          name: contract.name,
-        });
-        allContracts = allContracts.concat(await getDeployedContracts(contract.address, true, indent + 3));
+        console.log(`${" ".repeat(indent + 3)}* ${contract}`);
+        allContracts.push(contract);
+        allContracts = allContracts.concat(await getDeployedContracts(contract, true, indent + 3));
       }
     }
 
     return allContracts;
   }
-
-  // async function disableAdapter(address) {
-  //   const rlv = new ethers.Contract(address, rlvAbi, deployerSigner);
-  //   const adapterAddress = await rlv.adapter();
-
-  //   if ((await divider.adapterMeta(adapterAddress)).enabled) {
-  //     await divider.setAdapter(adapterAddress, false, { gasPrice: boostedGasPrice() }).then(t => t.wait());
-  //     multisigTxs.push(
-  //       getTx(
-  //         dividerAddress,
-  //         "setAdapter",
-  //         divider.interface.encodeFunctionData("setAdapter", [adapterAddress, false]),
-  //       ),
-  //     );
-  //     console.log(`   * RLV's Adapter ${adapterAddress} marked as disabled on divider`);
-  //   } else {
-  //     console.log(`   * RLV's Adapter ${adapterAddress} is already disabled on divider`);
-  //   }
-  // }
-
-  //   async function getContractName(address) {
-  //     await delay(200); // Introducing a delay of 200ms to stay under rate limit
-  //     const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-  //     const etherscanUrl = `https://api.etherscan.io/api?`;
-  //     const response = await axios.get(etherscanUrl, {
-  //       params: {
-  //         module: "contract",
-  //         action: "getsourcecode",
-  //         address,
-  //         apikey: ETHERSCAN_API_KEY,
-  //       },
-  //     });
-  //     return response.data.result[0].ContractName;
-  //   }
 });
 
 // UTILS
-
-// const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const asyncFilter = async (arr, predicate) =>
   Promise.all(arr.map(predicate)).then(results => arr.filter((_v, index) => results[index]));
@@ -396,7 +396,7 @@ const serializeJSONObject = json => {
 const calculateChecksum = batchFile => {
   const serialized = serializeJSONObject({
     ...batchFile,
-    meta: { ...batchFile.meta, name: null },
+    meta: { ...batchFile.meta },
   });
   const sha = web3.utils.sha3(serialized);
 
