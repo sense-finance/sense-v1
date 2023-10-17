@@ -23,6 +23,10 @@ require("./20230102-ownable-erc4626-crop-factory");
 require("./20230726-periphery-v2");
 require("./20230321-aura");
 require("./20231031-sunset");
+require("./20231031-sunset-remove-rewards-recipients");
+require("./20231031-sunset-remove-rewards-recipients-sanity-check");
+require("./20231031-sunset-remove-trust");
+require("./20231031-sunset-remove-trust-sanity-check");
 
 // utils
 require("./goerli-tokens-factories");
